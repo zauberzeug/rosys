@@ -16,9 +16,6 @@ void handleMsg(std::string msg)
     std::string module_name = space < 0 ? msg : msg.substr(0, space);
     std::string remainder = space < 0 ? std::string() : msg.substr(space + 1);
 
-    printf("module_name: '%s'\n", module_name.c_str());
-    printf("remainder:   '%s'\n", remainder.c_str());
-
     if (module_name == "configure")
     {
         Module *module = configuration::create(remainder);
