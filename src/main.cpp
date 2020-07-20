@@ -13,10 +13,11 @@ std::map<std::string, Module *> modules;
 void handleMsg(std::string msg)
 {
     int space = msg.find(' ');
-    if (space < 0)
-        space = msg.length();
-    std::string module_name = msg.substr(0, space);
-    std::string remainder = msg.substr(space + 1);
+    std::string module_name = space < 0 ? msg : msg.substr(0, space);
+    std::string remainder = space < 0 ? std::string() : msg.substr(space + 1);
+
+    printf("module_name: '%s'\n", module_name.c_str());
+    printf("remainder:   '%s'\n", remainder.c_str());
 
     if (module_name == "configure")
     {
