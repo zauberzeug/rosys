@@ -1,46 +1,12 @@
 #!/usr/bin/env python3
-from cmd import Cmd
-import sys
+import asyncio
+from prompt_toolkit import PromptSession
+from prompt_toolkit.patch_stdout import patch_stdout
 import serial
-import os.path
-import readline
-import threading
-
-histfile = '/tmp/robot_brain_history'
-histfile_size = 1000
-if os.path.exists(histfile):
-    readline.read_history_file(histfile)
-
-
-class Prompt(Cmd):
-
-    def __init__(self, port):
-
-        Cmd.__init__(self)
-
-        self.prompt = "> "
-        self.port = port
-
-    def emptyline(self):
-
-        pass
-
-    def do_EOF(self, arg):
-
-        print()
-        sys.exit()
-
-    def default(self, inp):
-
-        self.port.write(('%s\n' % inp).encode('utf-8'))
-
-        readline.set_history_length(histfile_size)
-        readline.write_history_file(histfile)
-
-# https://github.com/pyserial/pyserial/issues/216#issuecomment-369414522
 
 
 class LineReader:
+    # https://github.com/pyserial/pyserial/issues/216#issuecomment-369414522
 
     def __init__(self, s):
 
@@ -66,24 +32,28 @@ class LineReader:
                 self.buf.extend(data)
 
 
+def receive():
+
+    line_reader = LineReader(port)
+
+    while True:
+        line = line_reader.readline().decode('utf-8')
+        print(line.strip())
+
+
+async def send():
+
+    session = PromptSession()
+
+    while True:
+        with patch_stdout():
+            line = await session.prompt_async("> ")
+            port.write(line.encode('utf-8') + b'\n')
+
+
 with serial.Serial('/dev/tty.SLAB_USBtoUART', baudrate=115200, timeout=0.1) as port:
 
-    def echo():
-
-        line_reader = LineReader(port)
-
-        while True:
-
-            line = line_reader.readline().decode('utf-8')
-            print(line.strip())
-
-    thread = threading.Thread(target=echo)
-    thread.daemon = True
-    thread.start()
-
-    try:
-        prompt = Prompt(port)
-        prompt.cmdloop()
-    except KeyboardInterrupt:
-        print(prompt.lastcmd)
-        print()
+    loop = asyncio.get_event_loop()
+    loop.create_task(send())
+    loop.run_in_executor(None, receive)
+    loop.run_forever()
