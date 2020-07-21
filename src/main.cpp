@@ -38,7 +38,7 @@ void loop()
         if (modules.count(module_name))
             modules[module_name]->handleMsg(line);
         else
-            printf("Unknown module_name: %s\n", module_name.c_str());
+            printf("Unknown module name: %s\n", module_name.c_str());
     }
 
     for (auto const &item : modules)
