@@ -3,45 +3,25 @@
 
 #include "modules/Module.h"
 #include "modules/Esp.h"
+#include "modules/Configure.h"
 #include "modules/Led.h"
-#include "configuration.h"
 #include "serial.h"
-#include "simple_arduino.h"
+#include "utils.h"
 
 std::map<std::string, Module *> modules;
-
-void handleMsg(std::string msg)
-{
-    int space = msg.find(' ');
-    std::string module_name = space < 0 ? msg : msg.substr(0, space);
-    std::string remainder = space < 0 ? std::string() : msg.substr(space + 1);
-
-    if (module_name == "configure")
-    {
-        Module *module = configuration::create(remainder);
-        modules[module->name] = module;
-    }
-    else if (modules.count(module_name))
-    {
-        modules[module_name]->handleMsg(remainder);
-    }
-    else
-    {
-        printf("Unknown module_name: %s\n", module_name.c_str());
-    }
-}
 
 void setup()
 {
     serial::begin(115200);
 
+    storage::init();
+
     modules["esp"] = new Esp();
+    modules["configure"] = new Configure();
     modules["led"] = new Led(new Port(GPIO_NUM_13));
 
     for (auto const &item : modules)
-    {
         item.second->setup();
-    }
 }
 
 void loop()
@@ -52,13 +32,15 @@ void loop()
         if (line.empty())
             break;
 
-        handleMsg(line);
+        std::string module_name = cut_first_word(line);
+        if (modules.count(module_name))
+            modules[module_name]->handleMsg(line);
+        else
+            printf("Unknown module_name: %s\n", module_name.c_str());
     }
 
     for (auto const &item : modules)
-    {
         item.second->loop();
-    }
 
     delay(10);
 }
@@ -72,7 +54,5 @@ void app_main()
     setup();
 
     while (true)
-    {
         loop();
-    }
 }

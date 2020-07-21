@@ -5,9 +5,9 @@ class Module
 public:
   std::string name = "";
 
-  virtual void setup() = 0;
+  virtual void setup(){};
 
-  virtual void loop() = 0;
+  virtual void loop(){};
 
   virtual void handleMsg(std::string msg) = 0;
 };
