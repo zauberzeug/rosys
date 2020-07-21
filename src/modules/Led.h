@@ -6,6 +6,7 @@
 
 #include "Module.h"
 #include "Port.h"
+#include "utils/strings.h"
 
 class Led : public Module
 {

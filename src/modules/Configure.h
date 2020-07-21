@@ -6,6 +6,7 @@
 #include "utils/strings.h"
 #include "Module.h"
 #include "Led.h"
+#include "Button.h"
 #include "../Port.h"
 #include "../storage.h"
 
@@ -16,6 +17,8 @@ class Configure : public Module
 public:
     Configure()
     {
+        printf("Reading configuration from persistent storage...\n");
+
         nvs_iterator_t it = nvs_entry_find("nvs", NULL, NVS_TYPE_ANY);
         nvs_entry_info_t info;
         while (it != NULL)
@@ -28,11 +31,15 @@ public:
             std::string value = storage::get(namespace_, key);
             if (namespace_ == "configure")
             {
-                printf("Module %s: %s\n", key.c_str(), value.c_str());
+                printf("+ Module %s: %s\n", key.c_str(), value.c_str());
                 std::string type = cut_first_word(value, ':');
                 if (type == "led")
                 {
                     modules[key] = new Led(new Port((gpio_num_t)atoi(value.c_str())));
+                }
+                else if (type == "button")
+                {
+                    modules[key] = new Button(new Port((gpio_num_t)atoi(value.c_str())));
                 }
                 else
                 {
@@ -42,7 +49,7 @@ public:
             }
             else
             {
-                printf("Setting %s.%s=%s\n", namespace_.c_str(), key.c_str(), value.c_str());
+                printf("+ Setting %s.%s=%s\n", namespace_.c_str(), key.c_str(), value.c_str());
                 modules[namespace_]->handleMsg("set " + key + "=" + value);
             }
         };

@@ -15,6 +15,7 @@ std::map<std::string, Module *> modules;
 void setup()
 {
     serial::begin(115200);
+    delay(500);
 
     storage::init();
 
