@@ -1,3 +1,6 @@
+#pragma once
+
+#include <string>
 #include "driver/uart.h"
 
 namespace serial
