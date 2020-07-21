@@ -44,7 +44,7 @@ public:
             gpio_set_level(port->number, 0);
             break;
         case PULSE:
-            gpio_set_level(port->number, sin(esp_timer_get_time() / 1000.0 * 3.1415 / interval));
+            gpio_set_level(port->number, sin(esp_timer_get_time() / interval * 2e-6 * M_PI) > 0 ? 1 : 0);
             break;
         default:
             printf("Invalid state: %d\n", state);
@@ -53,24 +53,24 @@ public:
 
     void handleMsg(std::string msg)
     {
-        if (msg == "on")
+        std::string command = cut_first_word(msg);
+
+        if (command == "on")
         {
             state = ON;
         }
-        else if (msg == "off")
+        else if (command == "off")
         {
             state = OFF;
         }
-        else if (msg == "pulse")
+        else if (command == "pulse")
         {
             state = PULSE;
         }
-        else if (msg.substr(0, 4) == "set ")
+        else if (command == "set")
         {
-            int space = msg.find(' ');
-            int equal = msg.find('=');
-            std::string key = msg.substr(space + 1, equal);
-            double value = atof(msg.substr(equal + 1).c_str());
+            std::string key = cut_first_word(msg, '=');
+            double value = atof(msg.c_str());
             if (key == "interval")
             {
                 interval = value;
@@ -82,7 +82,7 @@ public:
         }
         else
         {
-            printf("Unknown command: %s\n", msg.c_str());
+            printf("Unknown command: %s\n", command.c_str());
         }
     }
 };

@@ -43,7 +43,7 @@ public:
             else
             {
                 printf("Setting %s.%s=%s\n", namespace_.c_str(), key.c_str(), value.c_str());
-                modules[namespace_]->handleMsg(key + "=" + value);
+                modules[namespace_]->handleMsg("set " + key + "=" + value);
             }
         };
     }
@@ -67,6 +67,10 @@ public:
         else if (command == "erase")
         {
             storage::erase();
+        }
+        else
+        {
+            printf("Unknown command: %s\n", command.c_str());
         }
     }
 };
