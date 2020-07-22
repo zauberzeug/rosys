@@ -72,6 +72,10 @@ public:
             std::string name = cut_first_word(msg);
             storage::put("configure", name, type + ':' + msg);
         }
+        else if (command == "has")
+        {
+            printf("configure has %s %d\n", msg.c_str(), modules.count(msg) > 0 ? 1 : 0);
+        }
         else if (command == "preset")
         {
             std::string name = cut_first_word(msg);
