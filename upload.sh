@@ -7,5 +7,5 @@ then
     . $IDF_PATH/export.sh
     make -j4 flash
 else
-    $HOME/.platformio/penv/bin/pio run
+    $HOME/.platformio/penv/bin/pio run --target upload
 fi
