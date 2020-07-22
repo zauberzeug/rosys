@@ -48,11 +48,11 @@ public:
             std::string key = cut_first_word(msg, '=');
             if (key == "output")
             {
-                output = msg == "on";
+                output = msg == "1";
             }
             else if (key == "pullup")
             {
-                pullup = msg == "on";
+                pullup = msg == "1";
                 gpio_set_pull_mode(port->number, pullup ? GPIO_PULLUP_ONLY : GPIO_FLOATING);
             }
             else
