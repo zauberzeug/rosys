@@ -1,5 +1,6 @@
 #pragma once
 
+#include <string>
 #include <math.h>
 #include "driver/gpio.h"
 #include "esp_timer.h"
@@ -16,7 +17,7 @@ public:
     bool output = false;
     bool pullup = false;
 
-    Button(Port *port)
+    Button(std::string name, Port *port) : Module(name)
     {
         this->port = port;
     }
@@ -28,15 +29,10 @@ public:
         gpio_set_pull_mode(port->number, pullup ? GPIO_PULLUP_ONLY : GPIO_FLOATING);
     }
 
-    void print_state()
-    {
-        printf("%s %d\n", this->name.c_str(), gpio_get_level(port->number));
-    }
-
     void loop()
     {
         if (output)
-            print_state();
+            printf("%s %d\n", this->name.c_str(), gpio_get_level(port->number));
     }
 
     void handleMsg(std::string msg)
@@ -62,7 +58,7 @@ public:
         }
         else if (command == "get")
         {
-            print_state();
+            printf("%s get %d\n", this->name.c_str(), gpio_get_level(port->number));
         }
         else
         {

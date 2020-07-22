@@ -5,7 +5,12 @@
 class Module
 {
 public:
-    std::string name = "";
+    std::string name;
+
+    Module(std::string name)
+    {
+        this->name = name;
+    }
 
     virtual void setup(){};
 

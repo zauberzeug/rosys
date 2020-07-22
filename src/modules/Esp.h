@@ -4,6 +4,11 @@
 
 class Esp : public Module
 {
+public:
+    Esp() : Module("esp")
+    {
+    }
+
     void handleMsg(std::string msg)
     {
         if (msg == "restart")

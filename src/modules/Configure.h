@@ -15,7 +15,7 @@ extern std::map<std::string, Module *> modules;
 class Configure : public Module
 {
 public:
-    Configure()
+    Configure() : Module("configure")
     {
         printf("Reading configuration from persistent storage...\n");
 
@@ -38,9 +38,9 @@ public:
 
             std::string type = cut_first_word(value, ':');
             if (type == "led")
-                modules[key] = new Led(new Port((gpio_num_t)atoi(value.c_str())));
+                modules[key] = new Led(key, new Port((gpio_num_t)atoi(value.c_str())));
             else if (type == "button")
-                modules[key] = new Button(new Port((gpio_num_t)atoi(value.c_str())));
+                modules[key] = new Button(key, new Port((gpio_num_t)atoi(value.c_str())));
             else
                 printf("Unknown module type: %s\n", type.c_str());
         };

@@ -22,7 +22,7 @@ public:
 
     double interval = 1.0;
 
-    Led(Port *port)
+    Led(std::string name, Port *port) : Module(name)
     {
         this->port = port;
         this->state = OFF;
