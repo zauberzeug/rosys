@@ -3,7 +3,7 @@
 #include <string>
 #include <map>
 
-#include "utils/strings.h"
+#include "../utils/strings.h"
 #include "Module.h"
 #include "Led.h"
 #include "Button.h"

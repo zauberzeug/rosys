@@ -5,8 +5,8 @@
 #include "esp_timer.h"
 
 #include "Module.h"
-#include "Port.h"
-#include "utils/strings.h"
+#include "../Port.h"
+#include "../utils/strings.h"
 
 class Button : public Module
 {

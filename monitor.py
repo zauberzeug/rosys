@@ -3,7 +3,7 @@ import asyncio
 from prompt_toolkit import PromptSession
 from prompt_toolkit.patch_stdout import patch_stdout
 import serial
-
+import os.path
 
 class LineReader:
     # https://github.com/pyserial/pyserial/issues/216#issuecomment-369414522
@@ -50,8 +50,16 @@ async def send():
             line = await session.prompt_async("> ")
             port.write(line.encode('utf-8') + b'\n')
 
+for usb_path in [
+    "/dev/tty.SLAB_USBtoUART",
+    "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0",
+    "/dev/ttyTHS1"]:
+    if os.path.exists(usb_path):
+        break
+else:
+    raise Exception("No serial port found")
 
-with serial.Serial('/dev/tty.SLAB_USBtoUART', baudrate=115200, timeout=0.1) as port:
+with serial.Serial(usb_path, baudrate=115200, timeout=0.1) as port:
 
     loop = asyncio.get_event_loop()
     loop.create_task(send())
