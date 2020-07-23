@@ -23,11 +23,10 @@ public:
         this->modules = modules;
         this->globalMessageHandler = globalMessageHandler;
 
-        printf("Reading configuration from persistent storage...\n");
-
         nvs_iterator_t it;
         nvs_entry_info_t info;
 
+        printf("Reading modules from persistent storage...\n");
         it = nvs_entry_find("nvs", NULL, NVS_TYPE_ANY);
         while (it != NULL)
         {
@@ -40,7 +39,7 @@ public:
 
             std::string key = std::string(info.key);
             std::string value = storage::get(namespace_, key);
-            printf("+ Module %s: %s\n", key.c_str(), value.c_str());
+            printf("+ %s: %s\n", key.c_str(), value.c_str());
 
             std::string type = cut_first_word(value, ':');
             if (type == "bluetooth")
@@ -53,6 +52,7 @@ public:
                 printf("Unknown module type: %s\n", type.c_str());
         };
 
+        printf("Reading settings from persistent storage...\n");
         it = nvs_entry_find("nvs", NULL, NVS_TYPE_ANY);
         while (it != NULL)
         {
