@@ -5,12 +5,20 @@
 #include "modules/Module.h"
 #include "modules/Esp.h"
 #include "modules/Configure.h"
-#include "modules/Led.h"
 #include "utils/serial.h"
 #include "utils/delay.h"
 #include "utils/strings.h"
 
 std::map<std::string, Module *> modules;
+
+void handleMsg(std::string msg)
+{
+    std::string module_name = cut_first_word(msg);
+    if (modules.count(module_name))
+        modules[module_name]->handleMsg(msg);
+    else
+        printf("Unknown module name: %s\n", module_name.c_str());
+}
 
 void setup()
 {
@@ -20,7 +28,7 @@ void setup()
     storage::init();
 
     modules["esp"] = new Esp();
-    modules["configure"] = new Configure();
+    modules["configure"] = new Configure(modules, handleMsg);
 
     for (auto const &item : modules)
         item.second->setup();
@@ -33,12 +41,7 @@ void loop()
         std::string line = serial::readStringUntil('\n');
         if (line.empty())
             break;
-
-        std::string module_name = cut_first_word(line);
-        if (modules.count(module_name))
-            modules[module_name]->handleMsg(line);
-        else
-            printf("Unknown module name: %s\n", module_name.c_str());
+        handleMsg(line);
     }
 
     for (auto const &item : modules)

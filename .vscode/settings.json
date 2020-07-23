@@ -86,5 +86,6 @@
   },
   "workbench.colorCustomizations": {
     "statusBar.background": "#3b3e42"
-  }
+  },
+  "python.pythonPath": "/usr/bin/python3"
 }

@@ -5,18 +5,24 @@
 
 #include "../utils/strings.h"
 #include "Module.h"
+#include "Bluetooth.h"
 #include "Led.h"
 #include "Button.h"
 #include "../Port.h"
 #include "../storage.h"
 
-extern std::map<std::string, Module *> modules;
-
 class Configure : public Module
 {
+private:
+    std::map<std::string, Module *> modules;
+    void (*globalMessageHandler)(std::string);
+
 public:
-    Configure() : Module("configure")
+    Configure(std::map<std::string, Module *> modules, void (*globalMessageHandler)(std::string)) : Module("configure")
     {
+        this->modules = modules;
+        this->globalMessageHandler = globalMessageHandler;
+
         printf("Reading configuration from persistent storage...\n");
 
         nvs_iterator_t it;
@@ -37,7 +43,9 @@ public:
             printf("+ Module %s: %s\n", key.c_str(), value.c_str());
 
             std::string type = cut_first_word(value, ':');
-            if (type == "led")
+            if (type == "bluetooth")
+                modules[key] = new Bluetooth(key, value, globalMessageHandler);
+            else if (type == "led")
                 modules[key] = new Led(key, new Port((gpio_num_t)atoi(value.c_str())));
             else if (type == "button")
                 modules[key] = new Button(key, new Port((gpio_num_t)atoi(value.c_str())));
@@ -55,10 +63,11 @@ public:
             if (namespace_ == "configure")
                 continue;
 
-            std::string key = std::string(info.key);
-            std::string value = storage::get(namespace_, key);
-            printf("+ Setting %s.%s=%s\n", namespace_.c_str(), key.c_str(), value.c_str());
-            modules[namespace_]->handleMsg("set " + key + "=" + value);
+            // TODO: DEBUG HERE
+            // std::string key = std::string(info.key);
+            // std::string value = storage::get(namespace_, key);
+            // printf("+ Setting %s.%s=%s\n", namespace_.c_str(), key.c_str(), value.c_str());
+            // modules[namespace_]->handleMsg("set " + key + "=" + value);
         };
     }
 
@@ -70,6 +79,11 @@ public:
         {
             std::string type = cut_first_word(msg);
             std::string name = cut_first_word(msg);
+            if (name.empty())
+            {
+                printf("A name is required.\n");
+                return;
+            }
             storage::put("configure", name, type + ':' + msg);
         }
         else if (command == "has")
