@@ -18,7 +18,7 @@ private:
     void (*globalMessageHandler)(std::string);
 
 public:
-    Configure(std::map<std::string, Module *> modules, void (*globalMessageHandler)(std::string)) : Module("configure")
+    Configure(std::map<std::string, Module *> &modules, void (*globalMessageHandler)(std::string)) : Module("configure")
     {
         this->modules = modules;
         this->globalMessageHandler = globalMessageHandler;
