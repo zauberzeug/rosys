@@ -63,11 +63,13 @@ public:
             if (namespace_ == "configure")
                 continue;
 
-            // TODO: DEBUG HERE
-            // std::string key = std::string(info.key);
-            // std::string value = storage::get(namespace_, key);
-            // printf("+ Setting %s.%s=%s\n", namespace_.c_str(), key.c_str(), value.c_str());
-            // modules[namespace_]->handleMsg("set " + key + "=" + value);
+            std::string key = std::string(info.key);
+            if (modules.count(key) == 0)
+                continue;
+
+            std::string value = storage::get(namespace_, key);
+            printf("+ %s.%s=%s\n", namespace_.c_str(), key.c_str(), value.c_str());
+            modules[namespace_]->handleMsg("set " + key + "=" + value);
         };
     }
 
