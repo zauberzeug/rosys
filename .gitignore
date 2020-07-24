@@ -5,3 +5,6 @@
 .vscode/ipch
 
 build
+
+sdkconfig
+sdkconfig.old
