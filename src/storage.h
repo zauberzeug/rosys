@@ -1,12 +1,10 @@
+#pragma once
+
 #include <string>
 #include "nvs_flash.h"
 
-#include "modules/Configure.h"
-
 namespace storage
 {
-    std::map<std::string, std::string> dict;
-
     void init()
     {
         nvs_flash_init();
@@ -35,15 +33,11 @@ namespace storage
             return;
         }
 
-        dict[key] = std::string(value);
         nvs_close(handle);
     }
 
     std::string get(std::string namespace_, std::string key)
     {
-        if (dict.count(key) == 1)
-            return dict[key];
-
         nvs_handle handle;
         if (nvs_open(namespace_.c_str(), NVS_READWRITE, &handle) != ESP_OK)
         {
@@ -74,14 +68,63 @@ namespace storage
         std::string result = std::string(value);
         free(value);
 
-        dict[key] = result;
         nvs_close(handle);
 
         return result;
     }
 
+    void print(std::string namespace_, std::string key = "")
+    {
+        if (key.empty())
+        {
+            nvs_iterator_t it = nvs_entry_find("nvs", namespace_.c_str(), NVS_TYPE_ANY);
+            nvs_entry_info_t info;
+            while (it != NULL)
+            {
+                nvs_entry_info(it, &info);
+                it = nvs_entry_next(it);
+                print(info.namespace_name, info.key);
+            };
+        }
+        else
+        {
+            std::string value = get(namespace_, key);
+            printf("%s: %s\n", key.c_str(), value.c_str());
+        }
+    }
+
     void erase()
     {
-        nvs_flash_erase();
+        if (nvs_flash_erase() != ESP_OK)
+        {
+            printf("Could not erase storage\n");
+        }
+    }
+
+    void erase(std::string namespace_, std::string key = "")
+    {
+        nvs_handle handle;
+        if (nvs_open(namespace_.c_str(), NVS_READWRITE, &handle) != ESP_OK)
+        {
+            printf("Could not open storage namespace: %s\n", namespace_.c_str());
+            return;
+        }
+
+        if (key.empty())
+        {
+            if (nvs_erase_all(handle) != ESP_OK)
+            {
+                printf("Could not erase namespace: %s\n", namespace_.c_str());
+            }
+        }
+        else
+        {
+            if (nvs_erase_key(handle, key.c_str()) != ESP_OK)
+            {
+                printf("Could not erase key: %s.%s\n", namespace_.c_str(), key.c_str());
+            }
+        }
+
+        nvs_close(handle);
     }
 } // namespace storage

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Module.h"
+#include "../storage.h"
 
 class Esp : public Module
 {
@@ -14,6 +15,10 @@ public:
         if (msg == "restart")
         {
             esp_restart();
+        }
+        else if (msg == "erase")
+        {
+            storage::erase();
         }
         else
         {

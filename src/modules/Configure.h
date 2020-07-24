@@ -14,6 +14,7 @@
 class Configure : public Module
 {
 private:
+    const char *NAMESPACE = "MODULES";
     std::map<std::string, Module *> modules;
     void (*globalMessageHandler)(std::string);
 
@@ -27,49 +28,33 @@ public:
         nvs_entry_info_t info;
 
         printf("Reading modules from persistent storage...\n");
-        it = nvs_entry_find("nvs", NULL, NVS_TYPE_ANY);
+        it = nvs_entry_find("nvs", NAMESPACE, NVS_TYPE_ANY);
         while (it != NULL)
         {
             nvs_entry_info(it, &info);
             it = nvs_entry_next(it);
 
-            std::string namespace_ = std::string(info.namespace_name);
-            if (namespace_ != "configure")
-                continue;
-
-            std::string key = std::string(info.key);
-            std::string value = storage::get(namespace_, key);
-            printf("+ %s: %s\n", key.c_str(), value.c_str());
-
-            std::string type = cut_first_word(value, ':');
+            std::string name = std::string(info.key);
+            std::string lines = storage::get(NAMESPACE, name);
+            std::string line = cut_first_word(lines, '\n');
+            std::string type = cut_first_word(line, ':');
+            printf("+ %s: %s(%s)\n", name.c_str(), type.c_str(), line.c_str());
             if (type == "bluetooth")
-                modules[key] = new Bluetooth(key, value, globalMessageHandler);
+                modules[name] = new Bluetooth(name, line, globalMessageHandler);
             else if (type == "led")
-                modules[key] = new Led(key, new Port((gpio_num_t)atoi(value.c_str())));
+                modules[name] = new Led(name, new Port((gpio_num_t)atoi(line.c_str())));
             else if (type == "button")
-                modules[key] = new Button(key, new Port((gpio_num_t)atoi(value.c_str())));
+                modules[name] = new Button(name, new Port((gpio_num_t)atoi(line.c_str())));
             else
                 printf("Unknown module type: %s\n", type.c_str());
-        };
 
-        printf("Reading settings from persistent storage...\n");
-        it = nvs_entry_find("nvs", NULL, NVS_TYPE_ANY);
-        while (it != NULL)
-        {
-            nvs_entry_info(it, &info);
-            it = nvs_entry_next(it);
-
-            std::string namespace_ = std::string(info.namespace_name);
-            if (namespace_ == "configure")
-                continue;
-
-            std::string key = std::string(info.key);
-            if (modules.count(key) == 0)
-                continue;
-
-            std::string value = storage::get(namespace_, key);
-            printf("+ %s.%s=%s\n", namespace_.c_str(), key.c_str(), value.c_str());
-            modules[namespace_]->handleMsg("set " + key + "=" + value);
+            while (not lines.empty())
+            {
+                line = cut_first_word(lines, '\n');
+                std::string key = cut_first_word(line, '=');
+                printf("  - %s=%s\n", key.c_str(), line.c_str());
+                modules[name]->handleMsg("set " + key + "=" + line);
+            }
         };
     }
 
@@ -86,21 +71,25 @@ public:
                 printf("A name is required.\n");
                 return;
             }
-            storage::put("configure", name, type + ':' + msg);
+            storage::put(NAMESPACE, name, type + ':' + msg);
         }
         else if (command == "has")
         {
             printf("configure has %s %d\n", msg.c_str(), modules.count(msg) > 0 ? 1 : 0);
         }
+        else if (command == "print")
+        {
+            storage::print(NAMESPACE, msg);
+        }
         else if (command == "preset")
         {
             std::string name = cut_first_word(msg);
-            std::string key = cut_first_word(msg, '=');
-            storage::put(name, key, msg);
+            std::string configuration = storage::get(NAMESPACE, name);
+            storage::put(NAMESPACE, name, configuration + "\n" + msg);
         }
         else if (command == "erase")
         {
-            storage::erase();
+            storage::erase(NAMESPACE, msg);
         }
         else
         {

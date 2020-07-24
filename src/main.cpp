@@ -2,6 +2,7 @@
 #include "esp_system.h"
 #include "nvs_flash.h"
 
+#include "storage.h"
 #include "modules/Module.h"
 #include "modules/Esp.h"
 #include "modules/Configure.h"
