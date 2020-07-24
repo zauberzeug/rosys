@@ -7,10 +7,12 @@
 #include "modules/Esp.h"
 #include "modules/Configure.h"
 #include "utils/serial.h"
-#include "utils/delay.h"
+#include "utils/timing.h"
 #include "utils/strings.h"
 
 std::map<std::string, Module *> modules;
+
+Serial *serial;
 
 void handleMsg(std::string msg)
 {
@@ -23,7 +25,7 @@ void handleMsg(std::string msg)
 
 void setup()
 {
-    serial::begin(115200);
+    serial = new Serial(115200);
     delay(500);
 
     storage::init();
@@ -39,7 +41,7 @@ void loop()
 {
     while (true)
     {
-        std::string line = serial::readStringUntil('\n');
+        std::string line = serial->readStringUntil('\n');
         if (line.empty())
             break;
         handleMsg(line);

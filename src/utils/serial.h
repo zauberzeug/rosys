@@ -3,13 +3,13 @@
 #include <string>
 #include "driver/uart.h"
 
-namespace serial
+class Serial
 {
+private:
     const int BUFFER_SIZE = 1024;
-    uint8_t *buffer = (uint8_t *)malloc(BUFFER_SIZE);
-    int offset = 0;
 
-    void begin(int baud_rate)
+public:
+    Serial(int baud_rate)
     {
         uart_config_t uart_config = {
             .baud_rate = baud_rate,
@@ -33,6 +33,9 @@ namespace serial
 
     std::string readStringUntil(char delimiter)
     {
+        static uint8_t *buffer = (uint8_t *)malloc(BUFFER_SIZE);
+        static int offset = 0;
+
         uint8_t c = read();
         while (c)
         {
@@ -47,4 +50,4 @@ namespace serial
         }
         return std::string();
     }
-} // namespace serial
+};
