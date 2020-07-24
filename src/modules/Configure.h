@@ -48,9 +48,12 @@ public:
             else
                 printf("Unknown module type: %s\n", type.c_str());
 
-            while (not lines.empty())
+            while (true)
             {
                 line = cut_first_word(lines, '\n');
+                if (line.empty())
+                    break;
+
                 std::string key = cut_first_word(line, '=');
                 printf("  - %s=%s\n", key.c_str(), line.c_str());
                 modules[name]->handleMsg("set " + key + "=" + line);
@@ -71,7 +74,7 @@ public:
                 printf("A name is required.\n");
                 return;
             }
-            storage::put(NAMESPACE, name, type + ':' + msg);
+            storage::put(NAMESPACE, name, type + ':' + msg + '\n');
         }
         else if (command == "has")
         {
@@ -84,8 +87,23 @@ public:
         else if (command == "preset")
         {
             std::string name = cut_first_word(msg);
+            std::string key = cut_first_word(msg, '=');
+            std::string value = msg;
             std::string configuration = storage::get(NAMESPACE, name);
-            storage::put(NAMESPACE, name, configuration + "\n" + msg);
+
+            while (true)
+            {
+                int start_pos = configuration.find('\n' + key + '=');
+                if (start_pos == std::string::npos)
+                    break;
+
+                int end_pos = configuration.find('\n', start_pos + 1);
+                configuration.replace(start_pos, end_pos - start_pos + 1, "\n");
+            }
+
+            configuration += key + '=' + value + '\n';
+
+            storage::put(NAMESPACE, name, configuration);
         }
         else if (command == "erase")
         {
