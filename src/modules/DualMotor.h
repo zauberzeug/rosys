@@ -3,26 +3,31 @@
 #include <string>
 #include "driver/gpio.h"
 
+#include "roboclaw/RoboClaw.h"
 #include "Module.h"
 #include "../Port.h"
 #include "../utils/strings.h"
+#include "../utils/defines.h"
 
 class DualMotor : public Module
 {
 public:
-    Port *rx_port;
-    Port *tx_port;
+    RoboClaw *claw;
 
     bool output = false;
 
-    DualMotor(std::string name, std::string parameters) : Module(name)
+    DualMotor(std::string name, std::string type) : Module(name)
     {
-        this->rx_port = new Port((gpio_num_t) atoi(cut_first_word(parameters, ',').c_str()));
-        this->tx_port = new Port((gpio_num_t) atoi(cut_first_word(parameters, ',').c_str()));
+        if (type != "roboclaw" and not type.empty()) {
+            printf("Invalid type: %s\n", type.c_str());
+            return;
+        }
+        claw = new RoboClaw(UART_NUM_1, GPIO_NUM_26, GPIO_NUM_27, 38400, 0x80);
     }
 
     void setup()
     {
+        claw->begin();
     }
 
     void loop()
@@ -46,6 +51,13 @@ public:
             {
                 printf("Unknown setting: %s\n", key.c_str());
             }
+        }
+        else if (command == "pw") {
+            double left = atof(cut_first_word(msg, ',').c_str());
+            double right = atof(cut_first_word(msg, ',').c_str());
+            unsigned short int dutyL = (short int)(constrain(left, -1, 1) * 32767);
+            unsigned short int dutyR = (short int)(constrain(right, -1, 1) * 32767);
+            claw->DutyM1M2(dutyL, dutyR);
         }
         else
         {
