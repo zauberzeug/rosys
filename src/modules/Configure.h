@@ -4,12 +4,12 @@
 #include <map>
 
 #include "../utils/strings.h"
+#include "../storage.h"
 #include "Module.h"
 #include "Bluetooth.h"
 #include "Led.h"
 #include "Button.h"
-#include "../Port.h"
-#include "../storage.h"
+#include "DualMotor.h"
 
 class Configure : public Module
 {
@@ -42,9 +42,11 @@ public:
             if (type == "bluetooth")
                 modules[name] = new Bluetooth(name, line, globalMessageHandler);
             else if (type == "led")
-                modules[name] = new Led(name, new Port((gpio_num_t)atoi(line.c_str())));
+                modules[name] = new Led(name, line);
             else if (type == "button")
-                modules[name] = new Button(name, new Port((gpio_num_t)atoi(line.c_str())));
+                modules[name] = new Button(name, line);
+            else if (type == "dualmotor")
+                modules[name] = new DualMotor(name, line);
             else
                 printf("Unknown module type: %s\n", type.c_str());
 

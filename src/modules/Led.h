@@ -22,9 +22,9 @@ public:
 
     double interval = 1.0;
 
-    Led(std::string name, Port *port) : Module(name)
+    Led(std::string name, std::string parameters) : Module(name)
     {
-        this->port = port;
+        this->port = new Port((gpio_num_t)atoi(parameters.c_str()));
         this->state = OFF;
     }
 

@@ -17,9 +17,9 @@ public:
     bool output = false;
     bool pullup = false;
 
-    Button(std::string name, Port *port) : Module(name)
+    Button(std::string name, std::string parameters) : Module(name)
     {
-        this->port = port;
+        this->port = new Port((gpio_num_t)atoi(parameters.c_str()));
     }
 
     void setup()
