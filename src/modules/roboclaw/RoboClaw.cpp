@@ -17,16 +17,18 @@ RoboClaw::RoboClaw(uart_port_t uart_num, gpio_num_t rxPin, gpio_num_t txPin, lon
 
 void RoboClaw::begin()
 {
-    uart_config_t uart_config = {
-        .baud_rate = speed,
-        .data_bits = UART_DATA_8_BITS,
-        .parity    = UART_PARITY_DISABLE,
-        .stop_bits = UART_STOP_BITS_1,
-        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
-    };
+	uart_config_t uart_config = {
+		.baud_rate = speed,
+		.data_bits = UART_DATA_8_BITS,
+		.parity = UART_PARITY_DISABLE,
+		.stop_bits = UART_STOP_BITS_1,
+		.flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+		.rx_flow_ctrl_thresh = 0,
+		.use_ref_tick = false,
+	};
 	uart_param_config(uart_num, &uart_config);
-    uart_set_pin(uart_num, txPin, rxPin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
-    uart_driver_install(uart_num, RX_BUF_SIZE , TX_BUF_SIZE, 0, NULL, 0);
+	uart_set_pin(uart_num, txPin, rxPin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+	uart_driver_install(uart_num, RX_BUF_SIZE, TX_BUF_SIZE, 0, NULL, 0);
 }
 
 size_t RoboClaw::write(uint8_t byte)
@@ -40,7 +42,7 @@ size_t RoboClaw::write(uint8_t byte)
 int RoboClaw::available()
 {
 	size_t available;
-	uart_get_buffered_data_len(UART_NUM_2,&available);
+	uart_get_buffered_data_len(uart_num, &available);
 	return available;
 }
 
@@ -52,14 +54,14 @@ void RoboClaw::flush()
 int RoboClaw::read(uint32_t timeout)
 {
 	uint8_t data = 0;
-	uart_read_bytes(uart_num, &data, 1, timeout);
-	return data;
+	int length = uart_read_bytes(uart_num, &data, 1, timeout);
+	return length >= 0 ? data : -1;
 }
 
 void RoboClaw::clear()
 {
-	while (available())
-		read();
+	while (this->available())
+		this->read();
 }
 
 void RoboClaw::crc_clear()
@@ -98,13 +100,13 @@ bool RoboClaw::write_n(uint8_t cnt, ...)
 		{
 			uint8_t data = va_arg(marker, int);
 			crc_update(data);
-			write(data);
+			this->write(data);
 		}
 		va_end(marker); /* Reset variable arguments.      */
 		uint16_t crc = crc_get();
-		write(crc >> 8);
-		write(crc);
-		if (read(timeout) == 0xFF)
+		this->write(crc >> 8);
+		this->write(crc);
+		if (this->read(timeout) == 0xFF)
 			return true;
 	} while (trys--);
 	return false;
@@ -117,13 +119,13 @@ bool RoboClaw::read_n(uint8_t cnt, uint8_t cmd, ...)
 	int16_t data;
 	do
 	{
-		flush();
+		this->flush();
 
 		data = 0;
 		crc_clear();
-		write(address);
+		this->write(address);
 		crc_update(address);
-		write(cmd);
+		this->write(cmd);
 		crc_update(cmd);
 
 		//send data with crc
@@ -135,7 +137,7 @@ bool RoboClaw::read_n(uint8_t cnt, uint8_t cmd, ...)
 
 			if (data != -1)
 			{
-				data = read(timeout);
+				data = this->read(timeout);
 				crc_update(data);
 				value = (uint32_t)data << 24;
 			}
@@ -146,7 +148,7 @@ bool RoboClaw::read_n(uint8_t cnt, uint8_t cmd, ...)
 
 			if (data != -1)
 			{
-				data = read(timeout);
+				data = this->read(timeout);
 				crc_update(data);
 				value |= (uint32_t)data << 16;
 			}
@@ -157,7 +159,7 @@ bool RoboClaw::read_n(uint8_t cnt, uint8_t cmd, ...)
 
 			if (data != -1)
 			{
-				data = read(timeout);
+				data = this->read(timeout);
 				crc_update(data);
 				value |= (uint32_t)data << 8;
 			}
@@ -168,7 +170,7 @@ bool RoboClaw::read_n(uint8_t cnt, uint8_t cmd, ...)
 
 			if (data != -1)
 			{
-				data = read(timeout);
+				data = this->read(timeout);
 				crc_update(data);
 				value |= (uint32_t)data;
 			}
@@ -184,11 +186,11 @@ bool RoboClaw::read_n(uint8_t cnt, uint8_t cmd, ...)
 		if (data != -1)
 		{
 			uint16_t ccrc;
-			data = read(timeout);
+			data = this->read(timeout);
 			if (data != -1)
 			{
 				ccrc = data << 8;
-				data = read(timeout);
+				data = this->read(timeout);
 				if (data != -1)
 				{
 					ccrc |= data;
@@ -203,8 +205,6 @@ bool RoboClaw::read_n(uint8_t cnt, uint8_t cmd, ...)
 
 uint8_t RoboClaw::Read1(uint8_t cmd, bool *valid)
 {
-	uint8_t crc;
-
 	if (valid)
 		*valid = false;
 
@@ -213,26 +213,26 @@ uint8_t RoboClaw::Read1(uint8_t cmd, bool *valid)
 	int16_t data;
 	do
 	{
-		flush();
+		this->flush();
 
 		crc_clear();
-		write(address);
+		this->write(address);
 		crc_update(address);
-		write(cmd);
+		this->write(cmd);
 		crc_update(cmd);
 
-		data = read(timeout);
+		data = this->read(timeout);
 		crc_update(data);
 		value = data;
 
 		if (data != -1)
 		{
 			uint16_t ccrc;
-			data = read(timeout);
+			data = this->read(timeout);
 			if (data != -1)
 			{
 				ccrc = data << 8;
-				data = read(timeout);
+				data = this->read(timeout);
 				if (data != -1)
 				{
 					ccrc |= data;
@@ -252,8 +252,6 @@ uint8_t RoboClaw::Read1(uint8_t cmd, bool *valid)
 
 uint16_t RoboClaw::Read2(uint8_t cmd, bool *valid)
 {
-	uint8_t crc;
-
 	if (valid)
 		*valid = false;
 
@@ -262,21 +260,21 @@ uint16_t RoboClaw::Read2(uint8_t cmd, bool *valid)
 	int16_t data;
 	do
 	{
-		flush();
+		this->flush();
 
 		crc_clear();
-		write(address);
+		this->write(address);
 		crc_update(address);
-		write(cmd);
+		this->write(cmd);
 		crc_update(cmd);
 
-		data = read(timeout);
+		data = this->read(timeout);
 		crc_update(data);
 		value = (uint16_t)data << 8;
 
 		if (data != -1)
 		{
-			data = read(timeout);
+			data = this->read(timeout);
 			crc_update(data);
 			value |= (uint16_t)data;
 		}
@@ -284,11 +282,11 @@ uint16_t RoboClaw::Read2(uint8_t cmd, bool *valid)
 		if (data != -1)
 		{
 			uint16_t ccrc;
-			data = read(timeout);
+			data = this->read(timeout);
 			if (data != -1)
 			{
 				ccrc = data << 8;
-				data = read(timeout);
+				data = this->read(timeout);
 				if (data != -1)
 				{
 					ccrc |= data;
@@ -308,8 +306,6 @@ uint16_t RoboClaw::Read2(uint8_t cmd, bool *valid)
 
 uint32_t RoboClaw::Read4(uint8_t cmd, bool *valid)
 {
-	uint8_t crc;
-
 	if (valid)
 		*valid = false;
 
@@ -318,35 +314,35 @@ uint32_t RoboClaw::Read4(uint8_t cmd, bool *valid)
 	int16_t data;
 	do
 	{
-		flush();
+		this->flush();
 
 		crc_clear();
-		write(address);
+		this->write(address);
 		crc_update(address);
-		write(cmd);
+		this->write(cmd);
 		crc_update(cmd);
 
-		data = read(timeout);
+		data = this->read(timeout);
 		crc_update(data);
 		value = (uint32_t)data << 24;
 
 		if (data != -1)
 		{
-			data = read(timeout);
+			data = this->read(timeout);
 			crc_update(data);
 			value |= (uint32_t)data << 16;
 		}
 
 		if (data != -1)
 		{
-			data = read(timeout);
+			data = this->read(timeout);
 			crc_update(data);
 			value |= (uint32_t)data << 8;
 		}
 
 		if (data != -1)
 		{
-			data = read(timeout);
+			data = this->read(timeout);
 			crc_update(data);
 			value |= (uint32_t)data;
 		}
@@ -354,11 +350,11 @@ uint32_t RoboClaw::Read4(uint8_t cmd, bool *valid)
 		if (data != -1)
 		{
 			uint16_t ccrc;
-			data = read(timeout);
+			data = this->read(timeout);
 			if (data != -1)
 			{
 				ccrc = data << 8;
-				data = read(timeout);
+				data = this->read(timeout);
 				if (data != -1)
 				{
 					ccrc |= data;
@@ -378,8 +374,6 @@ uint32_t RoboClaw::Read4(uint8_t cmd, bool *valid)
 
 uint32_t RoboClaw::Read4_1(uint8_t cmd, uint8_t *status, bool *valid)
 {
-	uint8_t crc;
-
 	if (valid)
 		*valid = false;
 
@@ -388,42 +382,42 @@ uint32_t RoboClaw::Read4_1(uint8_t cmd, uint8_t *status, bool *valid)
 	int16_t data;
 	do
 	{
-		flush();
+		this->flush();
 
 		crc_clear();
-		write(address);
+		this->write(address);
 		crc_update(address);
-		write(cmd);
+		this->write(cmd);
 		crc_update(cmd);
 
-		data = read(timeout);
+		data = this->read(timeout);
 		crc_update(data);
 		value = (uint32_t)data << 24;
 
 		if (data != -1)
 		{
-			data = read(timeout);
+			data = this->read(timeout);
 			crc_update(data);
 			value |= (uint32_t)data << 16;
 		}
 
 		if (data != -1)
 		{
-			data = read(timeout);
+			data = this->read(timeout);
 			crc_update(data);
 			value |= (uint32_t)data << 8;
 		}
 
 		if (data != -1)
 		{
-			data = read(timeout);
+			data = this->read(timeout);
 			crc_update(data);
 			value |= (uint32_t)data;
 		}
 
 		if (data != -1)
 		{
-			data = read(timeout);
+			data = this->read(timeout);
 			crc_update(data);
 			if (status)
 				*status = data;
@@ -432,11 +426,11 @@ uint32_t RoboClaw::Read4_1(uint8_t cmd, uint8_t *status, bool *valid)
 		if (data != -1)
 		{
 			uint16_t ccrc;
-			data = read(timeout);
+			data = this->read(timeout);
 			if (data != -1)
 			{
 				ccrc = data << 8;
-				data = read(timeout);
+				data = this->read(timeout);
 				if (data != -1)
 				{
 					ccrc |= data;
@@ -551,18 +545,18 @@ bool RoboClaw::ResetEncoders()
 
 bool RoboClaw::ReadVersion(char *version)
 {
-	uint8_t data;
+	int data;
 	uint8_t trys = MAXRETRY;
 	do
 	{
-		flush();
+		this->flush();
 
 		data = 0;
 
 		crc_clear();
-		write(address);
+		this->write(address);
 		crc_update(address);
-		write(GETVERSION);
+		this->write(GETVERSION);
 		crc_update(GETVERSION);
 
 		uint8_t i;
@@ -570,20 +564,20 @@ bool RoboClaw::ReadVersion(char *version)
 		{
 			if (data != -1)
 			{
-				data = read(timeout);
+				data = this->read(timeout);
 				version[i] = data;
 				crc_update(version[i]);
 				if (version[i] == 0)
 				{
 					uint16_t ccrc;
-					data = read(timeout);
+					data = this->read(timeout);
 					if (data != -1)
 					{
-						ccrc = data << 8;
-						data = read(timeout);
+						ccrc = ((uint8_t)data) << 8;
+						data = this->read(timeout);
 						if (data != -1)
 						{
-							ccrc |= data;
+							ccrc |= ((uint8_t)data);
 							return crc_get() == ccrc;
 						}
 					}
@@ -913,35 +907,33 @@ bool RoboClaw::SetPinFunctions(uint8_t S3mode, uint8_t S4mode, uint8_t S5mode)
 
 bool RoboClaw::GetPinFunctions(uint8_t &S3mode, uint8_t &S4mode, uint8_t &S5mode)
 {
-	uint8_t crc;
-	bool valid = false;
 	uint8_t val1 = 0, val2 = 0, val3 = 0;
 	uint8_t trys = MAXRETRY;
 	int16_t data;
 	do
 	{
-		flush();
+		this->flush();
 
 		crc_clear();
-		write(address);
+		this->write(address);
 		crc_update(address);
-		write(GETPINFUNCTIONS);
+		this->write(GETPINFUNCTIONS);
 		crc_update(GETPINFUNCTIONS);
 
-		data = read(timeout);
+		data = this->read(timeout);
 		crc_update(data);
 		val1 = data;
 
 		if (data != -1)
 		{
-			data = read(timeout);
+			data = this->read(timeout);
 			crc_update(data);
 			val2 = data;
 		}
 
 		if (data != -1)
 		{
-			data = read(timeout);
+			data = this->read(timeout);
 			crc_update(data);
 			val3 = data;
 		}
@@ -949,11 +941,11 @@ bool RoboClaw::GetPinFunctions(uint8_t &S3mode, uint8_t &S4mode, uint8_t &S5mode
 		if (data != -1)
 		{
 			uint16_t ccrc;
-			data = read(timeout);
+			data = this->read(timeout);
 			if (data != -1)
 			{
 				ccrc = data << 8;
-				data = read(timeout);
+				data = this->read(timeout);
 				if (data != -1)
 				{
 					ccrc |= data;

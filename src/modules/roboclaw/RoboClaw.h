@@ -10,7 +10,7 @@
 class RoboClaw
 {
 	uint16_t crc;
-	uint32_t timeout = 10000; // [us]
+	uint32_t timeout = 5; // [ticks]
 	uart_port_t uart_num;
 	gpio_num_t rxPin;
 	gpio_num_t txPin;

@@ -18,7 +18,8 @@ public:
 
     DualMotor(std::string name, std::string type) : Module(name)
     {
-        if (type != "roboclaw" and not type.empty()) {
+        if (type != "roboclaw" and not type.empty())
+        {
             printf("Invalid type: %s\n", type.c_str());
             return;
         }
@@ -52,7 +53,8 @@ public:
                 printf("Unknown setting: %s\n", key.c_str());
             }
         }
-        else if (command == "pw") {
+        else if (command == "pw")
+        {
             double left = atof(cut_first_word(msg, ',').c_str());
             double right = atof(cut_first_word(msg, ',').c_str());
             unsigned short int dutyL = (short int)(constrain(left, -1, 1) * 32767);
