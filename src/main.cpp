@@ -6,7 +6,7 @@
 #include "modules/Module.h"
 #include "modules/Esp.h"
 #include "modules/Configure.h"
-#include "utils/serial.h"
+#include "utils/Serial.h"
 #include "utils/timing.h"
 #include "utils/strings.h"
 

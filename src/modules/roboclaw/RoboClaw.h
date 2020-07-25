@@ -4,10 +4,14 @@
 #include <inttypes.h>
 #include <stddef.h>
 
+#include "driver/uart.h"
+#include "driver/gpio.h"
+
 class RoboClaw
 {
 	uint16_t crc;
 	uint32_t timeout = 10000; // [us]
+	uart_port_t uart_num;
 
 	enum
 	{
@@ -106,6 +110,8 @@ class RoboClaw
 	};
 
 public:
+	RoboClaw(uart_port_t uart_num);
+
 	bool ForwardM1(uint8_t address, uint8_t speed);
 	bool BackwardM1(uint8_t address, uint8_t speed);
 	bool SetMinVoltageMainBattery(uint8_t address, uint8_t voltage);
@@ -199,10 +205,8 @@ public:
 	bool GetPWMMode(uint8_t address, uint8_t &mode);
 
 	int available();
-	void begin(long speed, uint32_t config, int8_t rxPin, int8_t txPin);
-	int peek();
-	int read();
-	int read(uint32_t timeout);
+	void begin(long speed, gpio_num_t rxPin, gpio_num_t txPin);
+	int read(uint32_t timeout = 0);
 	size_t write(uint8_t byte);
 	void flush();
 	void clear();

@@ -1,55 +1,61 @@
 #include "RoboClaw.h"
 
+#define RX_BUF_SIZE 1024
+#define TX_BUF_SIZE 1024
 #define MAXRETRY 2
 #define SetDWORDval(arg) (uint8_t)(((uint32_t)arg) >> 24), (uint8_t)(((uint32_t)arg) >> 16), (uint8_t)(((uint32_t)arg) >> 8), (uint8_t)arg
 #define SetWORDval(arg) (uint8_t)(((uint16_t)arg) >> 8), (uint8_t)arg
 
-void RoboClaw::begin(long speed, uint32_t config, int8_t rxPin, int8_t txPin)
+RoboClaw::RoboClaw(uart_port_t uart_num)
 {
+	this->uart_num = uart_num;
 }
 
-int RoboClaw::peek()
+void RoboClaw::begin(long speed, gpio_num_t rxPin, gpio_num_t txPin)
 {
-	return 0; // return hserial->peek();
+    uart_config_t uart_config = {
+        .baud_rate = speed,
+        .data_bits = UART_DATA_8_BITS,
+        .parity    = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+    };
+	uart_param_config(uart_num, &uart_config);
+    uart_set_pin(uart_num, txPin, rxPin, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+    uart_driver_install(uart_num, RX_BUF_SIZE , TX_BUF_SIZE, 0, NULL, 0);
 }
 
 size_t RoboClaw::write(uint8_t byte)
 {
-	return 0; // return hserial->write(byte);
-}
-
-int RoboClaw::read()
-{
-	return 0; // return hserial->read();
+    char send;
+    send = byte;
+    uart_write_bytes(uart_num, &send, 1);
+	return 1;
 }
 
 int RoboClaw::available()
 {
-	return 0; // return hserial->available();
+	size_t available;
+	uart_get_buffered_data_len(UART_NUM_2,&available);
+	return available;
 }
 
 void RoboClaw::flush()
 {
-	// hserial->flush();
+	uart_flush(uart_num);
 }
 
 int RoboClaw::read(uint32_t timeout)
 {
-	return 0;
-	// uint32_t start = millis() * 1000;
-	// // Empty buffer?
-	// while (!hserial->available())
-	// {
-	// 	if ((millis() * 1000 - start) >= timeout)
-	// 		return -1;
-	// }
-	// return hserial->read();
+	uint8_t data = 0;
+	uart_read_bytes(uart_num, &data, 1, timeout);
+	return data;
 }
 
 void RoboClaw::clear()
 {
-	// while (hserial->available())
-	// 	hserial->read();
+	while (available())
+		read();
 }
 
 void RoboClaw::crc_clear()
