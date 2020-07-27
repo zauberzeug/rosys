@@ -11,12 +11,13 @@
 
 class Button : public Module
 {
-public:
-    Port *port;
-
+private:
     bool output = false;
     bool pullup = false;
 
+    Port *port;
+
+public:
     Button(std::string name, std::string parameters) : Module(name)
     {
         this->port = new Port((gpio_num_t)atoi(parameters.c_str()));

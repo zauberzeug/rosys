@@ -9,14 +9,15 @@
 #include "../utils/strings.h"
 #include "../utils/defines.h"
 
-class DualMotor : public Module
+class Drive : public Module
 {
-public:
-    RoboClaw *claw;
-
+private:
     bool output = false;
 
-    DualMotor(std::string name, std::string type) : Module(name)
+    RoboClaw *claw;
+
+public:
+    Drive(std::string name, std::string type) : Module(name)
     {
         if (type != "roboclaw" and not type.empty())
         {

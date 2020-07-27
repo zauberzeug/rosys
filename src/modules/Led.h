@@ -10,7 +10,9 @@
 
 class Led : public Module
 {
-public:
+private:
+    double interval = 1.0;
+
     Port *port;
 
     enum State
@@ -20,8 +22,7 @@ public:
         PULSE,
     } state;
 
-    double interval = 1.0;
-
+public:
     Led(std::string name, std::string parameters) : Module(name)
     {
         this->port = new Port((gpio_num_t)atoi(parameters.c_str()));
