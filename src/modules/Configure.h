@@ -9,6 +9,7 @@
 #include "Bluetooth.h"
 #include "Led.h"
 #include "Button.h"
+#include "Bumper.h"
 #include "Drive.h"
 
 class Configure : public Module
@@ -45,6 +46,8 @@ public:
                 modules[name] = new Led(name, line);
             else if (type == "button")
                 modules[name] = new Button(name, line);
+            else if (type == "bumper")
+                modules[name] = new Bumper(name, line);
             else if (type == "drive")
                 modules[name] = new Drive(name, line);
             else
