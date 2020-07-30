@@ -11,7 +11,7 @@
 
 class Button : public Module
 {
-protected:
+private:
     bool output = false;
     bool pullup = false;
 

@@ -17,6 +17,8 @@ private:
     bool use300HzSpeedReadings = true;
     double mPerTick = 0.001; // wheelDiameter * 3.1415927 / (countsPerSpoke * spokes * gearRatio)
     double width = 1.0;
+    Port *bumper_port = NULL;
+    unsigned long int bumper_debounce = 1000;
 
     double lastTemperature = 0;
     double lastBattery = 0;
@@ -97,14 +99,9 @@ private:
         return valid;
     }
 
-    bool getSpeed(double &linear, double &angular)
+    bool getSpeed(double &left, double &right)
     {
-        double left = 0;
-        double right = 0;
-        bool valid = use300HzSpeedReadings ? getSpeedFromPid(left, right) : getSpeedFromCounterDiffs(left, right);
-        linear = (left + right) / 2.0;
-        angular = (right - left) / width;
-        return valid;
+        return use300HzSpeedReadings ? getSpeedFromPid(left, right) : getSpeedFromCounterDiffs(left, right);
     }
 
     bool getTemp(uint16_t &temp)
@@ -159,7 +156,6 @@ private:
 
     void triggerBump(double current_left_speed, double current_right_speed)
     {
-        timeOfLastBump = millis();
         if (state == SPEEDING)
         {
             state = REVERSING;
@@ -178,13 +174,22 @@ private:
         }
     }
 
+    void init_bumper()
+    {
+        if (bumper_port != NULL)
+        {
+            gpio_reset_pin(bumper_port->number);
+            gpio_set_direction(bumper_port->number, GPIO_MODE_INPUT);
+            gpio_set_pull_mode(bumper_port->number, GPIO_PULLDOWN_ONLY);
+        }
+    }
+
 public:
     Drive(std::string name, std::string type) : Module(name)
     {
         if (type != "roboclaw" and not type.empty())
         {
             printf("Invalid type: %s\n", type.c_str());
-            return;
         }
         claw = new RoboClaw(UART_NUM_1, GPIO_NUM_26, GPIO_NUM_27, 38400, 0x80);
     }
@@ -192,14 +197,16 @@ public:
     void setup()
     {
         claw->begin();
+        init_bumper();
     }
 
     void loop()
     {
-        double linear;
-        double angular;
-        if (not handleError(getSpeed(linear, angular)))
+        double left_speed = 0, right_speed = 0;
+        if (not handleError(getSpeed(left_speed, right_speed)))
             return;
+        double linear = (left_speed + right_speed) / 2.0;
+        double angular = (right_speed - left_speed) / width;
 
         uint16_t temp;
         if (not handleError(getTemp(temp)))
@@ -208,6 +215,20 @@ public:
         uint16_t battery;
         if (not handleError(getBattery(battery)))
             return;
+
+        if (bumper_port != NULL)
+        {
+            static bool bumper_state = false;
+            if (gpio_get_level(bumper_port->number) == 0)
+                timeOfLastBump = millis();
+            unsigned long millisSinceLastBump = millis() - timeOfLastBump;
+            bool new_bumper_state = millisSinceLastBump <= bumper_debounce;
+            if (new_bumper_state != bumper_state and output)
+                printf("%s bump %s\n", name.c_str(), new_bumper_state ? "start" : "stop");
+            bumper_state = new_bumper_state;
+            if (bumper_state)
+                triggerBump(left_speed, right_speed);
+        }
 
         if (state == POWERING)
         {
@@ -285,6 +306,13 @@ public:
                 width = atof(msg.c_str());
             else if (key == "use300HzSpeedReadings")
                 use300HzSpeedReadings = msg == "1";
+            else if (key == "bumper_port")
+            {
+                bumper_port = new Port((gpio_num_t)atoi(msg.c_str()));
+                init_bumper();
+            }
+            else if (key == "bumper_debounce")
+                bumper_debounce = atoi(msg.c_str());
             else
                 printf("Unknown setting: %s\n", key.c_str());
         }
