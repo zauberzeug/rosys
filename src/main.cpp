@@ -1,6 +1,7 @@
 #include <map>
 #include "esp_system.h"
 #include "nvs_flash.h"
+#include "driver/gpio.h"
 
 #include "storage.h"
 #include "modules/Module.h"
@@ -9,6 +10,8 @@
 #include "utils/Serial.h"
 #include "utils/timing.h"
 #include "utils/strings.h"
+
+#define EN_24V GPIO_NUM_12
 
 std::map<std::string, Module *> modules;
 
@@ -37,6 +40,10 @@ void setup()
 
     for (auto const &item : modules)
         item.second->setup();
+
+    gpio_reset_pin(EN_24V);
+    gpio_set_direction(EN_24V, GPIO_MODE_OUTPUT);
+    gpio_set_level(EN_24V, 1);
 }
 
 void loop()
