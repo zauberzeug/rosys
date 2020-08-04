@@ -10,6 +10,7 @@
 #include "Led.h"
 #include "Button.h"
 #include "Drive.h"
+#include "DualMotor.h"
 
 class Configure : public Module
 {
@@ -47,6 +48,8 @@ public:
                 modules[name] = new Button(name, line);
             else if (type == "drive")
                 modules[name] = new Drive(name, line);
+            else if (type == "dualmotor")
+                modules[name] = new DualMotor(name, line);
             else
                 printf("Unknown module type: %s\n", type.c_str());
 
