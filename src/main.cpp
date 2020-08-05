@@ -4,6 +4,7 @@
 #include "driver/gpio.h"
 
 #include "storage.h"
+#include "mcp.h"
 #include "modules/Module.h"
 #include "modules/Esp.h"
 #include "modules/Configure.h"
@@ -32,6 +33,14 @@ void setup()
 {
     serial = new Serial(115200);
     delay(500);
+
+    mcp::init();
+    while (true) {
+        mcp23017_write_register(&mcp::config, MCP23017_GPIO, GPIOB, 0xFF);
+        vTaskDelay(3000 / portTICK_RATE_MS);
+        mcp23017_write_register(&mcp::config, MCP23017_GPIO, GPIOB, 0x00);
+        vTaskDelay(3000 / portTICK_RATE_MS);
+    }
 
     storage::init();
 
