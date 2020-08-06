@@ -5,7 +5,7 @@
 #include "esp_timer.h"
 
 #include "Module.h"
-#include "../Port.h"
+#include "../ports/Port.h"
 #include "../utils/strings.h"
 
 class Led : public Module
@@ -23,16 +23,15 @@ private:
     } state;
 
 public:
-    Led(std::string name, std::string parameters) : Module(name)
+    Led(std::string name, std::string port) : Module(name)
     {
-        this->port = new Port((gpio_num_t)atoi(parameters.c_str()));
+        this->port = Port::fromString(port);
         this->state = OFF;
     }
 
     void setup()
     {
-        gpio_reset_pin(port->number);
-        gpio_set_direction(port->number, GPIO_MODE_OUTPUT);
+        port->setup(false);
     }
 
     void loop()
@@ -40,13 +39,13 @@ public:
         switch (state)
         {
         case ON:
-            gpio_set_level(port->number, 1);
+            port->set_level(1);
             break;
         case OFF:
-            gpio_set_level(port->number, 0);
+            port->set_level(0);
             break;
         case PULSE:
-            gpio_set_level(port->number, sin(esp_timer_get_time() / interval * 2e-6 * M_PI) > 0 ? 1 : 0);
+            port->set_level(sin(esp_timer_get_time() / interval * 2e-6 * M_PI) > 0 ? 1 : 0);
             break;
         default:
             printf("Invalid state: %d\n", state);

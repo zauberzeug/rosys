@@ -6,7 +6,7 @@
 #include "esp_timer.h"
 
 #include "Module.h"
-#include "../Port.h"
+#include "../ports/Port.h"
 #include "../utils/strings.h"
 
 class Button : public Module
@@ -18,22 +18,20 @@ private:
     Port *port;
 
 public:
-    Button(std::string name, std::string parameters) : Module(name)
+    Button(std::string name, std::string port) : Module(name)
     {
-        this->port = new Port((gpio_num_t)atoi(parameters.c_str()));
+        this->port = Port::fromString(port.c_str());
     }
 
     void setup()
     {
-        gpio_reset_pin(port->number);
-        gpio_set_direction(port->number, GPIO_MODE_INPUT);
-        gpio_set_pull_mode(port->number, pullup ? GPIO_PULLUP_ONLY : GPIO_FLOATING);
+        this->port->setup(true, pullup);
     }
 
     void loop()
     {
         if (output)
-            printf("%s %d\n", this->name.c_str(), gpio_get_level(port->number));
+            printf("%s %d\n", this->name.c_str(), port->get_level());
     }
 
     void handleMsg(std::string msg)
@@ -49,8 +47,7 @@ public:
             }
             else if (key == "pullup")
             {
-                pullup = msg == "1";
-                gpio_set_pull_mode(port->number, pullup ? GPIO_PULLUP_ONLY : GPIO_FLOATING);
+                port->setup(true, atoi(msg.c_str()));
             }
             else
             {
@@ -59,7 +56,7 @@ public:
         }
         else if (command == "get")
         {
-            printf("%s get %d\n", this->name.c_str(), gpio_get_level(port->number));
+            printf("%s get %d\n", this->name.c_str(), port->get_level());
         }
         else
         {

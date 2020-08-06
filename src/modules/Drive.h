@@ -5,7 +5,7 @@
 
 #include "roboclaw/RoboClaw.h"
 #include "Module.h"
-#include "../Port.h"
+#include "../ports/Port.h"
 #include "../utils/strings.h"
 #include "../utils/defines.h"
 #include "../utils/timing.h"
@@ -177,11 +177,7 @@ private:
     void init_bumper()
     {
         if (bumper_port != NULL)
-        {
-            gpio_reset_pin(bumper_port->number);
-            gpio_set_direction(bumper_port->number, GPIO_MODE_INPUT);
-            gpio_set_pull_mode(bumper_port->number, GPIO_PULLDOWN_ONLY);
-        }
+            bumper_port->setup(true, -1);
     }
 
 public:
@@ -219,7 +215,7 @@ public:
         if (bumper_port != NULL)
         {
             static bool bumper_state = false;
-            if (gpio_get_level(bumper_port->number) == 0)
+            if (bumper_port->get_level() == 0)
                 timeOfLastBump = millis();
             unsigned long millisSinceLastBump = millis() - timeOfLastBump;
             bool new_bumper_state = millisSinceLastBump <= bumper_debounce;
@@ -308,7 +304,7 @@ public:
                 use300HzSpeedReadings = msg == "1";
             else if (key == "bumper_port")
             {
-                bumper_port = new Port((gpio_num_t)atoi(msg.c_str()));
+                bumper_port = Port::fromString(msg);
                 init_bumper();
             }
             else if (key == "bumper_debounce")

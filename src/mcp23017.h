@@ -1,3 +1,5 @@
+# pragma once
+
 // https://github.com/NSBum/esp32-mcp23017-demo/blob/master/components/mcp23017/include/mcp23017.h
 
 // Error library

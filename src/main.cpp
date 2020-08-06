@@ -35,12 +35,6 @@ void setup()
     delay(500);
 
     mcp::init();
-    while (true) {
-        mcp23017_write_register(&mcp::config, MCP23017_GPIO, GPIOB, 0xFF);
-        vTaskDelay(3000 / portTICK_RATE_MS);
-        mcp23017_write_register(&mcp::config, MCP23017_GPIO, GPIOB, 0x00);
-        vTaskDelay(3000 / portTICK_RATE_MS);
-    }
 
     storage::init();
 
