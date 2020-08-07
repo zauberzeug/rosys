@@ -12,8 +12,6 @@ class DualMotor : public Module
 private:
     bool output = false;
 
-    int32_t scale1 = 1.0;
-    int32_t scale2 = 1.0;
     uint32_t accel1 = 1e5;
     uint32_t accel2 = 1e5;
 
@@ -25,7 +23,7 @@ private:
     double homePw1 = 0;
     double homePw2 = 0;
 
-    const double safety = 0.03;
+    const double safety = 500;
 
     enum States
     {
@@ -45,6 +43,7 @@ private:
         int32_t position2;
         int16_t current1;
         int16_t current2;
+        int32_t countsPerSecond1;
         int32_t countsPerSecond2;
     } values;
 
@@ -84,6 +83,10 @@ private:
         if (not valid)
             return false;
 
+        values.countsPerSecond1 = claw->ReadISpeedM1(&status, &valid);
+        if (not valid)
+            return false;
+
         values.countsPerSecond2 = claw->ReadISpeedM2(&status, &valid);
         if (not valid)
             return false;
@@ -93,10 +96,11 @@ private:
 
     void print_values(claw_values_t values)
     {
-        printf("tool status %.4f\t%.4f\t%.4f\t%d\t%d\t%d\t%d\t%x\n",
-            (double)values.position1 / scale1,
-            (double)values.position2 / scale2,
-            (double)values.countsPerSecond2 / scale2,
+        printf("tool status %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%x\n",
+            values.position1,
+            values.position2,
+            values.countsPerSecond1,
+            values.countsPerSecond2,
             values.depth1,
             values.depth2,
             values.current1,
@@ -179,8 +183,8 @@ public:
             if (limit1 != 0 and limit2 != 0)
             {
                 claw->ResetEncoders();
-                int32_t targetPos1 = -safety * scale1;
-                int32_t targetPos2 = safety * scale2;
+                int32_t targetPos1 = -safety;
+                int32_t targetPos2 = safety;
                 if (handleError(claw->SpeedAccelDeccelPositionM1M2(
                     this->accel1, 10 * abs(targetPos1), this->accel1, targetPos1,
                     this->accel2, 10 * abs(targetPos2), this->accel2, targetPos2, 1)))
@@ -209,10 +213,6 @@ public:
             std::string key = cut_first_word(msg, '=');
             if (key == "output")
                 output = msg == "1";
-            else if (key == "scale1")
-                scale1 = atoi(msg.c_str());
-            else if (key == "scale2")
-                scale2 = atoi(msg.c_str());
             else if (key == "accel1")
                 accel1 = atoi(msg.c_str());
             else if (key == "accel2")
@@ -289,11 +289,12 @@ public:
 
     void move(double target1, double target2, double duration)
     {
-        int32_t targetPos1 = constrain(target1, -1.00, -safety) * scale1;
-        int32_t targetPos2 = constrain(target2, safety, 1.00) * scale2;
+        int32_t targetPos1 = constrain(target1, -1.00, -safety);
+        int32_t targetPos2 = constrain(target2, safety, 1.00);
         uint32_t speed1 = abs(targetPos1 - values.position1) / duration;
         uint32_t speed2 = abs(targetPos2 - values.position2) / duration;
-        if (handleError(claw->SpeedAccelDeccelPositionM1M2(this->accel1, speed1, this->accel1, targetPos1,
+        if (handleError(claw->SpeedAccelDeccelPositionM1M2(
+            this->accel1, speed1, this->accel1, targetPos1,
             this->accel2, speed2, this->accel2, targetPos2, 1)))
             state = MOVING;
     }
