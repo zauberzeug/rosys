@@ -23,6 +23,8 @@ private:
     double homePw1 = 0;
     double homePw2 = 0;
 
+    std::map<std::string, std::pair<int32_t, int32_t>> points;
+
     const double safety = 500;
 
     enum States
@@ -200,8 +202,10 @@ public:
         {
             state = IDLE;
             if (not isEStopPressed)
-                printf("tool move completed\n");
+                printf("tool move completed\n"); // TODO
         }
+
+        // TODO: stop if moving into limit switch
     }
 
     void handleMsg(std::string msg)
@@ -237,6 +241,12 @@ public:
                 homePw1 = atof(msg.c_str());
             else if (key == "homePw2")
                 homePw2 = atof(msg.c_str());
+            else if (starts_with(key, "point_")) {
+                cut_first_word(key, '_');
+                int32_t pos1 = atoi(cut_first_word(msg, ',').c_str());
+                int32_t pos2 = atoi(cut_first_word(msg, ',').c_str());
+                points[key] = std::make_pair(pos1, pos2);
+            }
             else
                 printf("Unknown setting: %s\n", key.c_str());
         }
@@ -252,10 +262,13 @@ public:
         {
             if (state == IDLE)
             {
-                double target1 = atof(cut_first_word(msg, ',').c_str());
-                double target2 = atof(cut_first_word(msg, ',').c_str());
-                double duration = atof(cut_first_word(msg, ',').c_str());
-                move(target1, target2, duration);
+                std::string arg1 = cut_first_word(msg, ',');
+                std::string arg2 = cut_first_word(msg, ',');
+                std::string arg3 = cut_first_word(msg, ',');
+                if (points.count(arg1) > 0)
+                    move(points[arg1].first, points[arg1].second, atof(arg2.c_str()));
+                else
+                    move(atoi(arg1.c_str()), atoi(arg2.c_str()), atof(arg3.c_str()));
             }
             else
             {
@@ -287,15 +300,16 @@ public:
         state = HOMING_START;
     }
 
-    void move(double target1, double target2, double duration)
+    void move(int32_t target1, int32_t target2, double duration)
     {
-        int32_t targetPos1 = constrain(target1, -1.00, -safety);
-        int32_t targetPos2 = constrain(target2, safety, 1.00);
-        uint32_t speed1 = abs(targetPos1 - values.position1) / duration;
-        uint32_t speed2 = abs(targetPos2 - values.position2) / duration;
+        printf("MOVE %d,%d (%.3f s)\n", target1, target2, duration);
+        return;
+
+        uint32_t speed1 = abs(target1 - values.position1) / duration;
+        uint32_t speed2 = abs(target2 - values.position2) / duration;
         if (handleError(claw->SpeedAccelDeccelPositionM1M2(
-            this->accel1, speed1, this->accel1, targetPos1,
-            this->accel2, speed2, this->accel2, targetPos2, 1)))
+            this->accel1, speed1, this->accel1, target1,
+            this->accel2, speed2, this->accel2, target2, 1)))
             state = MOVING;
     }
 
