@@ -1,53 +1,42 @@
 #include "mcp.h"
 
-#include "mcp23017.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include <driver/gpio.h>
+#include <mcp23x17.h>
 
-mcp23017_t config;
-uint8_t value_A = 0;
-uint8_t value_B = 0;
+mcp23x17_t config ={};
 
 void mcp::init()
 {
-    config ={
-        .i2c_addr = 0x20,
-        .port = I2C_NUM_0,
-        .sda_pin = 21,
-        .scl_pin = 22,
-        .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_pullup_en = GPIO_PULLUP_ENABLE,
-    };
-
     gpio_reset_pin(GPIO_NUM_14);
     gpio_set_direction(GPIO_NUM_14, GPIO_MODE_OUTPUT);
     gpio_set_level(GPIO_NUM_14, 1);
 
-    ESP_ERROR_CHECK(mcp23017_init(&config));
+    i2cdev_init();
+    mcp23x17_init_desc(&config, (i2c_port_t)0, MCP23X17_ADDR_BASE, GPIO_NUM_21, GPIO_NUM_22);
+    config.cfg.sda_pullup_en = GPIO_PULLUP_ENABLE;
+    config.cfg.scl_pullup_en = GPIO_PULLUP_ENABLE;
 
-    mcp23017_write_register(&config, MCP23017_IODIR, GPIOA, 0xFF);
-    mcp23017_write_register(&config, MCP23017_IODIR, GPIOB, 0x00);
+    for (int i = 0; i < 8; ++i)
+        mcp23x17_set_mode(&config, i, MCP23X17_GPIO_INPUT);
+    for (int i = 8; i < 15; ++i)
+        mcp23x17_set_mode(&config, i, MCP23X17_GPIO_OUTPUT);
+}
+
+void mcp::set_pullup(int bank, int number, bool value)
+{
+    mcp23x17_set_pullup(&config, 8 * bank + number, value);
 }
 
 void mcp::write_bit(int bank, int number, int level)
 {
-    uint8_t new_value;
-    if (bank == 0) {
-        if (level == 0)
-            new_value = value_A & ~(1 << number);
-        else
-            new_value = value_A | (1 << number);
-        if (new_value == value_A)
-            return;
-        value_A = new_value;
-        mcp23017_write_register(&config, MCP23017_GPIO, GPIOA, value_A);
-    }
-    else {
-        if (level == 0)
-            new_value = value_B & ~(1 << number);
-        else
-            new_value = value_B | (1 << number);
-        if (new_value == value_B)
-            return;
-        value_B = new_value;
-        mcp23017_write_register(&config, MCP23017_GPIO, GPIOB, value_B);
-    }
+    mcp23x17_set_level(&config, 8 * bank + number, level > 0);
+}
+
+int mcp::read_bit(int bank, int number)
+{
+    uint32_t value;
+    mcp23x17_get_level(&config, 8 * bank + number, &value);
+    return value;
 }
