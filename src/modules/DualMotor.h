@@ -17,6 +17,14 @@ private:
     uint32_t accel1 = 1e5;
     uint32_t accel2 = 1e5;
 
+    Port *limit1A = NULL;
+    Port *limit1B = NULL;
+    Port *limit2A = NULL;
+    Port *limit2B = NULL;
+
+    double homePw1 = 0;
+    double homePw2 = 0;
+
     const double safety = 0.03;
 
     enum States
@@ -157,23 +165,24 @@ public:
             }
         }
 
-        bool limit1 = values.statusBits & 0x400000;
-        bool limit2 = values.statusBits & 0x800000;
+        int limit1 = limit1A == NULL ? -1 : limit1A->get_level();
+        int limit2 = limit2A == NULL ? -1 : limit2A->get_level();
         if (state == HOMING_BACKWARD)
         {
-            handleError(sendPower(limit1 ? 0 : 0.1, limit2 ? 0 : -0.15));
-            if (limit1 and limit2)
+            handleError(sendPower(limit1 == 1 ? homePw1 : 0, limit2 == 1 ? homePw2 : 0));
+            if (limit1 != 1 and limit2 != 1)
                 state = HOMING_FORWARD;
         }
         if (state == HOMING_FORWARD)
         {
-            handleError(sendPower(limit1 ? -0.05 : 0, limit2 ? 0.075 : 0));
-            if (not limit1 and not limit2)
+            handleError(sendPower(limit1 == 0 ? -homePw1 / 2 : 0, limit2 == 0 ? -homePw2 / 2 : 0));
+            if (limit1 != 0 and limit2 != 0)
             {
                 claw->ResetEncoders();
                 int32_t targetPos1 = -safety * scale1;
                 int32_t targetPos2 = safety * scale2;
-                if (handleError(claw->SpeedAccelDeccelPositionM1M2(this->accel1, 10 * abs(targetPos1), this->accel1, targetPos1,
+                if (handleError(claw->SpeedAccelDeccelPositionM1M2(
+                    this->accel1, 10 * abs(targetPos1), this->accel1, targetPos1,
                     this->accel2, 10 * abs(targetPos2), this->accel2, targetPos2, 1)))
                 {
                     state = IDLE;
@@ -208,6 +217,26 @@ public:
                 accel1 = atoi(msg.c_str());
             else if (key == "accel2")
                 accel2 = atoi(msg.c_str());
+            else if (key == "limit1A") {
+                limit1A = Port::fromString(msg);
+                limit1A->setup(true, 1);
+            }
+            else if (key == "limit1B") {
+                limit1B = Port::fromString(msg);
+                limit1B->setup(true, 1);
+            }
+            else if (key == "limit2A") {
+                limit2A = Port::fromString(msg);
+                limit2A->setup(true, 1);
+            }
+            else if (key == "limit2B") {
+                limit2B = Port::fromString(msg);
+                limit2B->setup(true, 1);
+            }
+            else if (key == "homePw1")
+                homePw1 = atof(msg.c_str());
+            else if (key == "homePw2")
+                homePw2 = atof(msg.c_str());
             else
                 printf("Unknown setting: %s\n", key.c_str());
         }
