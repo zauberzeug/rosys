@@ -38,7 +38,7 @@ def receive():
 
     while True:
         line = line_reader.readline().decode('utf-8')
-        print(line.strip())
+        print(line.strip('\n'))
 
 
 async def send():

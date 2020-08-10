@@ -118,7 +118,7 @@ private:
             count = 0;
         else
         {
-            printf("%s Communication problem with ToolClaw\n", ++count < 3 ? "warn" : "error");
+            printf("%s Communication problem with RoboClaw\n", ++count < 3 ? "warn" : "error");
             claw->clear();
         }
 

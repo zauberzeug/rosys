@@ -129,7 +129,7 @@ private:
             count = 0;
         else
         {
-            printf("%s Communication problem with WheelClaw\n", ++count < 3 ? "warn" : "error");
+            printf("%s Communication problem with RoboClaw\n", ++count < 3 ? "warn" : "error");
             claw->clear();
         }
 
@@ -226,7 +226,11 @@ public:
                 triggerBump(left_speed, right_speed);
         }
 
-        if (state == POWERING)
+        if (state == IDLE)
+        {
+            handleError(sendPower(0, 0));
+        }
+        else if (state == POWERING)
         {
             handleError(sendPower(leftPower, rightPower));
             if (millisSince(timeOfLastPower) > 0.5e3)
@@ -283,8 +287,8 @@ public:
 
     void to_idle()
     {
-        if (handleError(sendPower(0, 0)))
-            state = IDLE;
+        state = IDLE;
+        sendPower(0, 0);
     }
 
     void handleMsg(std::string msg)
