@@ -129,7 +129,7 @@ private:
             count = 0;
         else
         {
-            printf("%s Communication problem with RoboClaw\n", ++count < 3 ? "warn" : "error");
+            printf("%s Communication problem with %s RoboClaw\n", ++count < 3 ? "warn" : "error", name.c_str());
             claw->clear();
         }
 
@@ -181,13 +181,16 @@ private:
     }
 
 public:
-    Drive(std::string name, std::string type) : Module(name)
+    Drive(std::string name, std::string parameters) : Module(name)
     {
+        std::string type = cut_first_word(parameters, ',');
+        int address = atoi(cut_first_word(parameters, ',').c_str());
+
         if (type != "roboclaw" and not type.empty())
-        {
+        { 
             printf("Invalid type: %s\n", type.c_str());
         }
-        claw = new RoboClaw(UART_NUM_1, GPIO_NUM_26, GPIO_NUM_27, 38400, 0x80);
+        claw = new RoboClaw(UART_NUM_1, GPIO_NUM_26, GPIO_NUM_27, 38400, address);
     }
 
     void setup()
