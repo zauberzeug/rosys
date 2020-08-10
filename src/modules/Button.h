@@ -13,7 +13,7 @@ class Button : public Module
 {
 private:
     bool output = false;
-    bool pullup = false;
+    int pullup = 0;
 
     Port *port;
 
@@ -47,7 +47,8 @@ public:
             }
             else if (key == "pullup")
             {
-                port->setup(true, atoi(msg.c_str()));
+                pullup = atoi(msg.c_str());
+                port->setup(true, pullup);
             }
             else
             {

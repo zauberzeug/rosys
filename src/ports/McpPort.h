@@ -4,7 +4,6 @@
 
 #include "Port.h"
 #include "../mcp.h"
-#include "../mcp23017.h"
 
 class McpPort : public Port
 {
@@ -21,6 +20,13 @@ public:
 
     void setup(bool input, int pull=0)
     {
+        if (this->bank == 0 && not input)
+            printf("Error: Bank A is input only.\n");
+        if (this->bank == 1 && input)
+            printf("Error: Bank B is output only.\n");
+        if (pull < 0)
+            printf("Error: Pull-down is not supported.\n");
+        mcp::set_pullup(this->bank, this->number, pull > 0);
     }
 
     void set_level(int level)
@@ -30,6 +36,6 @@ public:
 
     int get_level()
     {
-        return 0;
+        return mcp::read_bit(this->bank, this->number);
     }
 };

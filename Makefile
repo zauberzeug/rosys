@@ -4,6 +4,6 @@
 #
 
 PROJECT_NAME := zauberzeug-robot-brain
-EXTRA_COMPONENT_DIRS += $(PROJECT_PATH)/src
+EXTRA_COMPONENT_DIRS += $(PROJECT_PATH)/src $(PROJECT_PATH)/components
 
 include $(IDF_PATH)/make/project.mk
