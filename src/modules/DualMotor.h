@@ -307,7 +307,6 @@ public:
     void move(int32_t target1, int32_t target2, double duration)
     {
         printf("MOVE %d,%d (%.3f s)\n", target1, target2, duration);
-        return;
 
         uint32_t speed1 = abs(target1 - values.position1) / duration;
         uint32_t speed2 = abs(target2 - values.position2) / duration;
