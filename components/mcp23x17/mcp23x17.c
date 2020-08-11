@@ -15,7 +15,7 @@
 
 static const char *TAG = "MCP23x17";
 
-#define I2C_FREQ_HZ 1000000  // Max 1MHz for esp-idf, but device supports up to 1.7Mhz
+#define I2C_FREQ_HZ 400000  // Max 1MHz for esp-idf, but device supports up to 1.7Mhz
 
 #define REG_IODIRA   0x00
 #define REG_IODIRB   0x01

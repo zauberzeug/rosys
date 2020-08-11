@@ -20,7 +20,7 @@ void mcp::init()
 
     for (int i = 0; i < 8; ++i)
         mcp23x17_set_mode(&config, i, MCP23X17_GPIO_INPUT);
-    for (int i = 8; i < 15; ++i)
+    for (int i = 8; i < 16; ++i)
         mcp23x17_set_mode(&config, i, MCP23X17_GPIO_OUTPUT);
 }
 
