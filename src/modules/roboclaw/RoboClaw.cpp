@@ -55,7 +55,7 @@ int RoboClaw::read(uint32_t timeout)
 {
 	uint8_t data = 0;
 	int length = uart_read_bytes(uart_num, &data, 1, timeout);
-	return length >= 0 ? data : -1;
+	return length > 0 ? data : -1;
 }
 
 void RoboClaw::clear()
