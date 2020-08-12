@@ -289,6 +289,10 @@ public:
                 printf("Can't start moving in state %s\n", state_to_string(state).c_str());
             }
         }
+        else if (command == "get") {
+            if (handleError(read_values(values)))
+                print_values(values);
+        }
         else if (command == "stop")
             stop();
         else
