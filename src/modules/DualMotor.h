@@ -28,6 +28,9 @@ private:
     double homePw1 = 0;
     double homePw2 = 0;
 
+    int dir1 = 0;
+    int dir2 = 0;
+
     std::map<std::string, std::pair<int32_t, int32_t>> points;
 
     enum LimitStates
@@ -44,6 +47,7 @@ private:
         HOMING_BACKWARD,
         HOMING_FORWARD,
         MOVING,
+        POWERING,
     } state = IDLE;
 
     struct claw_values_t
@@ -67,7 +71,8 @@ private:
             state == HOMING_START ? "HOMING_START" :
             state == HOMING_BACKWARD ? "HOMING_BACKWARD" :
             state == HOMING_FORWARD ? "HOMING_FORWARD" :
-            state == MOVING ? "MOVING" : "unknown";
+            state == MOVING ? "MOVING" :
+            state == POWERING ? "POWERING" : "unknown";
     }
 
     bool sendPower(double pw1, double pw2)
@@ -195,22 +200,22 @@ public:
             }
         }
 
-        LimitStates limit1 = homePw1 < 0 ?
-            (limit1A == NULL ? UNKNOWN : limit1A->get_level() == limit1A_active ? ACTIVE : PASSIVE) :
-            (limit1B == NULL ? UNKNOWN : limit1B->get_level() == limit1B_active ? ACTIVE : PASSIVE);
-        LimitStates limit2 = homePw2 < 0 ?
-            (limit2A == NULL ? UNKNOWN : limit2A->get_level() == limit2A_active ? ACTIVE : PASSIVE) :
-            (limit2B == NULL ? UNKNOWN : limit2B->get_level() == limit2B_active ? ACTIVE : PASSIVE);
+        LimitStates state1A = limit1A == NULL ? UNKNOWN : limit1A->get_level() == limit1A_active ? ACTIVE : PASSIVE;
+        LimitStates state1B = limit1B == NULL ? UNKNOWN : limit1B->get_level() == limit1B_active ? ACTIVE : PASSIVE;
+        LimitStates state2A = limit2A == NULL ? UNKNOWN : limit2A->get_level() == limit2A_active ? ACTIVE : PASSIVE;
+        LimitStates state2B = limit2B == NULL ? UNKNOWN : limit2B->get_level() == limit2B_active ? ACTIVE : PASSIVE;
+        LimitStates state1 = homePw1 < 0 ? state1A : state1B;
+        LimitStates state2 = homePw2 < 0 ? state2A : state2B;
         if (state == HOMING_BACKWARD)
         {
-            handleError(sendPower(limit1 == PASSIVE ? homePw1 : 0, limit2 == PASSIVE ? homePw2 : 0));
-            if (limit1 != PASSIVE and limit2 != PASSIVE)
+            handleError(sendPower(state1 == PASSIVE ? homePw1 : 0, state2 == PASSIVE ? homePw2 : 0));
+            if (state1 != PASSIVE and state2 != PASSIVE)
                 state = HOMING_FORWARD;
         }
         if (state == HOMING_FORWARD)
         {
-            handleError(sendPower(limit1 == ACTIVE ? -homePw1 / 2 : 0, limit2 == ACTIVE ? -homePw2 / 2 : 0));
-            if (limit1 != ACTIVE and limit2 != ACTIVE)
+            handleError(sendPower(state1 == ACTIVE ? -homePw1 / 2 : 0, state2 == ACTIVE ? -homePw2 / 2 : 0));
+            if (state1 != ACTIVE and state2 != ACTIVE)
             {
                 claw->ResetEncoders();
                 state = IDLE;
@@ -226,7 +231,19 @@ public:
                 printf("tool move completed\n"); // TODO
         }
 
-        // TODO: stop if moving into limit switch
+        if (state == MOVING or state == POWERING)
+        {
+            if ((state1A == ACTIVE and dir1 < 0) or
+                (state1B == ACTIVE and dir1 > 0)) {
+                printf("Reached limit switch of motor 1\n");
+                stop();
+            }
+            if ((state2A == ACTIVE and dir2 < 0) or
+                (state2B == ACTIVE and dir2 > 0)) {
+                printf("Reached limit switch of motor 2\n");
+                stop();
+            }
+        }
     }
 
     void handleMsg(std::string msg)
@@ -283,7 +300,10 @@ public:
         {
             double pw1 = atof(cut_first_word(msg, ',').c_str());
             double pw2 = atof(cut_first_word(msg, ',').c_str());
-            handleError(sendPower(pw1, pw2));
+            dir1 = pw1 > 0 ? 1 : -1;
+            dir2 = pw2 > 0 ? 1 : -1;
+            if (handleError(sendPower(pw1, pw2)))
+                state = POWERING;
         }
         else if (command == "home")
             home();
@@ -335,7 +355,8 @@ public:
 
     void move(int32_t target1, int32_t target2, double duration)
     {
-        printf("MOVE %d,%d (%.3f s)\n", target1, target2, duration);
+        dir1 = target1 > values.position1 ? 1 : -1;
+        dir2 = target2 > values.position2 ? 1 : -1;
 
         uint32_t speed1 = abs(target1 - values.position1) / duration;
         uint32_t speed2 = abs(target2 - values.position2) / duration;
