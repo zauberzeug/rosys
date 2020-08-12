@@ -306,7 +306,7 @@ public:
                 state = POWERING;
         }
         else if (command == "home")
-            home();
+            state = HOMING_START;
         else if (command == "move")
         {
             if (state == IDLE)
@@ -334,23 +334,6 @@ public:
         {
             printf("Unknown command: %s\n", command.c_str());
         }
-    }
-
-    void home()
-    {
-        if (claw->ReadError())
-        {
-            printf("error Please move tool out of end position and restart robot.\n");
-            return;
-        }
-
-        if (state != IDLE)
-        {
-            printf("error Tool needs to be in idle state for homing.\n");
-            return;
-        }
-
-        state = HOMING_START;
     }
 
     void move(int32_t target1, int32_t target2, double duration)
