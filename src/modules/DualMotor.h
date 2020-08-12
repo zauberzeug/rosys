@@ -20,12 +20,22 @@ private:
     Port *limit2A = NULL;
     Port *limit2B = NULL;
 
+    int limit1A_active = 0;
+    int limit1B_active = 0;
+    int limit2A_active = 0;
+    int limit2B_active = 0;
+
     double homePw1 = 0;
     double homePw2 = 0;
 
     std::map<std::string, std::pair<int32_t, int32_t>> points;
 
-    const double safety = 500;
+    enum LimitStates
+    {
+        UNKNOWN,
+        ACTIVE,
+        PASSIVE,
+    };
 
     enum States
     {
@@ -185,29 +195,26 @@ public:
             }
         }
 
-        int limit1 = limit1A == NULL ? -1 : limit1A->get_level();
-        int limit2 = limit2A == NULL ? -1 : limit2A->get_level();
+        LimitStates limit1 = homePw1 < 0 ?
+            (limit1A == NULL ? UNKNOWN : limit1A->get_level() == limit1A_active ? ACTIVE : PASSIVE) :
+            (limit1B == NULL ? UNKNOWN : limit1B->get_level() == limit1B_active ? ACTIVE : PASSIVE);
+        LimitStates limit2 = homePw2 < 0 ?
+            (limit2A == NULL ? UNKNOWN : limit2A->get_level() == limit2A_active ? ACTIVE : PASSIVE) :
+            (limit2B == NULL ? UNKNOWN : limit2B->get_level() == limit2B_active ? ACTIVE : PASSIVE);
         if (state == HOMING_BACKWARD)
         {
-            handleError(sendPower(limit1 == 1 ? homePw1 : 0, limit2 == 1 ? homePw2 : 0));
-            if (limit1 != 1 and limit2 != 1)
+            handleError(sendPower(limit1 == PASSIVE ? homePw1 : 0, limit2 == PASSIVE ? homePw2 : 0));
+            if (limit1 != PASSIVE and limit2 != PASSIVE)
                 state = HOMING_FORWARD;
         }
         if (state == HOMING_FORWARD)
         {
-            handleError(sendPower(limit1 == 0 ? -homePw1 / 2 : 0, limit2 == 0 ? -homePw2 / 2 : 0));
-            if (limit1 != 0 and limit2 != 0)
+            handleError(sendPower(limit1 == ACTIVE ? -homePw1 / 2 : 0, limit2 == ACTIVE ? -homePw2 / 2 : 0));
+            if (limit1 != ACTIVE and limit2 != ACTIVE)
             {
                 claw->ResetEncoders();
-                int32_t targetPos1 = -safety;
-                int32_t targetPos2 = safety;
-                if (handleError(claw->SpeedAccelDeccelPositionM1M2(
-                    this->accel1, 10 * abs(targetPos1), this->accel1, targetPos1,
-                    this->accel2, 10 * abs(targetPos2), this->accel2, targetPos2, 1)))
-                {
-                    state = IDLE;
-                    printf("tool home completed\n"); // TODO
-                }
+                state = IDLE;
+                printf("tool home completed\n"); // TODO
             }
         }
 
@@ -251,6 +258,14 @@ public:
                 limit2B = Port::fromString(msg);
                 limit2B->setup(true, 1);
             }
+            else if (key == "limit1A_active")
+                limit1A_active = atoi(msg.c_str());
+            else if (key == "limit1B_active")
+                limit1B_active = atoi(msg.c_str());
+            else if (key == "limit2A_active")
+                limit2A_active = atoi(msg.c_str());
+            else if (key == "limit2B_active")
+                limit2B_active = atoi(msg.c_str());
             else if (key == "homePw1")
                 homePw1 = atof(msg.c_str());
             else if (key == "homePw2")
