@@ -51,6 +51,15 @@ private:
 
     RoboClaw *claw;
 
+    std::string state_to_string(States state)
+    {
+        return state == IDLE ? "IDLE" :
+            state == HOMING_START ? "HOMING_START" :
+            state == HOMING_BACKWARD ? "HOMING_BACKWARD" :
+            state == HOMING_FORWARD ? "HOMING_FORWARD" :
+            state == MOVING ? "MOVING" : "unknown";
+    }
+
     bool sendPower(double pw1, double pw2)
     {
         unsigned short int duty1 = (short int)(constrain(pw1, -1, 1) * 32767);
@@ -98,7 +107,7 @@ private:
 
     void print_values(claw_values_t values)
     {
-        printf("tool status %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%x\n",
+        printf("tool status %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%x\t%s\n",
             values.position1,
             values.position2,
             values.countsPerSecond1,
@@ -107,7 +116,8 @@ private:
             values.depth2,
             values.current1,
             values.current2,
-            values.statusBits);
+            values.statusBits,
+            state_to_string(state).c_str());
     }
 
     bool handleError(bool valid)
@@ -276,7 +286,7 @@ public:
             }
             else
             {
-                printf("Can't start moving in state %d\n", state);
+                printf("Can't start moving in state %s\n", state_to_string(state).c_str());
             }
         }
         else if (command == "stop")

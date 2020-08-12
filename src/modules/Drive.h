@@ -47,6 +47,15 @@ private:
 
     RoboClaw *claw;
 
+    std::string state_to_string(States state)
+    {
+        return state == IDLE ? "IDLE" :
+            state == POWERING ? "POWERING" :
+            state == SPEEDING ? "SPEEDING" :
+            state == BRAKING ? "BRAKING" :
+            state == REVERSING ? "REVERSING" : "unknown";
+    }
+
     bool sendSpeed(double left, double right)
     {
         if (lastTemperature > 70.0)
@@ -188,7 +197,7 @@ public:
         int baud = parameters.empty() ? 38400 : atoi(cut_first_word(parameters, ',').c_str());
 
         if (type != "roboclaw" and not type.empty())
-        { 
+        {
             printf("Invalid type: %s\n", type.c_str());
         }
         claw = new RoboClaw(UART_NUM_1, GPIO_NUM_26, GPIO_NUM_27, baud, address);
@@ -276,16 +285,7 @@ public:
             printf("%.4f\t", angular);
             printf("%.1f\t", temp * 0.1);
             printf("%.1f\t", battery * 0.1);
-            if (state == IDLE)
-                printf("IDLE\n");
-            if (state == POWERING)
-                printf("POWERING\n");
-            if (state == SPEEDING)
-                printf("SPEEDING\n");
-            if (state == BRAKING)
-                printf("BRAKING\n");
-            if (state == REVERSING)
-                printf("REVERSING\n");
+            printf(state_to_string(state).c_str());
         }
     }
 
