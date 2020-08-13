@@ -280,12 +280,13 @@ public:
 
         if (output)
         {
-            printf("%s status\t", this->name.c_str());
-            printf("%.4f\t", linear);
-            printf("%.4f\t", angular);
-            printf("%.1f\t", temp * 0.1);
-            printf("%.1f\t", battery * 0.1);
-            printf(state_to_string(state).c_str());
+            printf("%s status\t%.4f\t%.4f\t%.1f\t%.1f\t%s\n",
+                this->name.c_str(),
+                linear,
+                angular,
+                temp * 0.1,
+                battery * 0.1,
+                state_to_string(state).c_str());
         }
     }
 
