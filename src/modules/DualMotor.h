@@ -236,11 +236,15 @@ public:
             if ((state1A == ACTIVE and dir1 < 0) or
                 (state1B == ACTIVE and dir1 > 0)) {
                 printf("Reached limit switch of motor 1\n");
+                if (state == MOVING)
+                    printf("%s move completed\n", name.c_str());
                 stop();
             }
             if ((state2A == ACTIVE and dir2 < 0) or
                 (state2B == ACTIVE and dir2 > 0)) {
                 printf("Reached limit switch of motor 2\n");
+                if (state == MOVING)
+                    printf("%s move completed\n", name.c_str());
                 stop();
             }
         }
