@@ -17,6 +17,9 @@ RoboClaw::RoboClaw(uart_port_t uart_num, gpio_num_t rxPin, gpio_num_t txPin, lon
 
 void RoboClaw::begin()
 {
+	if (uart_is_driver_installed(uart_num))
+		return;
+
 	uart_config_t uart_config = {
 		.baud_rate = speed,
 		.data_bits = UART_DATA_8_BITS,
