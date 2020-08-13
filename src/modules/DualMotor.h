@@ -219,7 +219,7 @@ public:
             {
                 claw->ResetEncoders();
                 state = IDLE;
-                printf("tool home completed\n"); // TODO
+                printf("%s home completed\n", name.c_str());
             }
         }
 
@@ -228,7 +228,7 @@ public:
         {
             state = IDLE;
             if (not isEStopPressed)
-                printf("tool move completed\n"); // TODO
+                printf("%s move completed\n", name.c_str());
         }
 
         if (state == MOVING or state == POWERING)

@@ -35,6 +35,7 @@ public:
             double pw = atof(msg.c_str());
             this->dir_port->set_level(pw > 0);
             this->pwm_port->set_level(fabs(pw));
+            printf("%s pw completed\n", name.c_str());
         }
         else if (command == "stop") {
             this->pwm_port->set_level(0);
