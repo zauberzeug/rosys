@@ -15,39 +15,17 @@ private:
     uint32_t accel1 = 1e5;
     uint32_t accel2 = 1e5;
 
-    Port *limit1A = NULL;
-    Port *limit1B = NULL;
-    Port *limit2A = NULL;
-    Port *limit2B = NULL;
-
-    int limit1A_active = 0;
-    int limit1B_active = 0;
-    int limit2A_active = 0;
-    int limit2B_active = 0;
-
     double homePw1 = 0;
     double homePw2 = 0;
 
-    int dir1 = 0;
-    int dir2 = 0;
-
     std::map<std::string, std::pair<int32_t, int32_t>> points;
-
-    enum LimitStates
-    {
-        UNKNOWN,
-        ACTIVE,
-        PASSIVE,
-    };
 
     enum States
     {
         IDLE,
         HOMING_START,
-        HOMING_BACKWARD,
-        HOMING_FORWARD,
+        HOMING,
         MOVING,
-        POWERING,
     } state = IDLE;
 
     struct claw_values_t
@@ -67,12 +45,7 @@ private:
 
     std::string state_to_string(States state)
     {
-        return state == IDLE ? "IDLE" :
-            state == HOMING_START ? "HOMING_START" :
-            state == HOMING_BACKWARD ? "HOMING_BACKWARD" :
-            state == HOMING_FORWARD ? "HOMING_FORWARD" :
-            state == MOVING ? "MOVING" :
-            state == POWERING ? "POWERING" : "unknown";
+        return state == IDLE ? "IDLE" : state == HOMING_START ? "HOMING_START" : state == HOMING ? "HOMING" : state == MOVING ? "MOVING" : "unknown";
     }
 
     bool sendPower(double pw1, double pw2)
@@ -84,7 +57,7 @@ private:
 
     bool read_values(claw_values_t &values)
     {
-        values ={};
+        values = {};
 
         uint8_t status;
         bool valid;
@@ -123,16 +96,16 @@ private:
     void print_values(claw_values_t values)
     {
         printf("tool status %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%x\t%s\n",
-            values.position1,
-            values.position2,
-            values.countsPerSecond1,
-            values.countsPerSecond2,
-            values.depth1,
-            values.depth2,
-            values.current1,
-            values.current2,
-            values.statusBits,
-            state_to_string(state).c_str());
+               values.position1,
+               values.position2,
+               values.countsPerSecond1,
+               values.countsPerSecond2,
+               values.depth1,
+               values.depth2,
+               values.current1,
+               values.current2,
+               values.statusBits,
+               state_to_string(state).c_str());
     }
 
     bool handleError(bool valid)
@@ -183,10 +156,10 @@ public:
         {
             lastCurrent1 = 0;
             lastCurrent2 = 0;
-            state = HOMING_BACKWARD;
+            state = HOMING;
         }
 
-        if (state == HOMING_BACKWARD or state == HOMING_FORWARD)
+        if (state == HOMING)
         {
             bool overcurrent1 = _min(lastCurrent1, values.current1) > 1000;
             bool overcurrent2 = _min(lastCurrent2, values.current2) > 1000;
@@ -200,25 +173,15 @@ public:
             }
         }
 
-        LimitStates state1A = limit1A == NULL ? UNKNOWN : limit1A->get_level() == limit1A_active ? ACTIVE : PASSIVE;
-        LimitStates state1B = limit1B == NULL ? UNKNOWN : limit1B->get_level() == limit1B_active ? ACTIVE : PASSIVE;
-        LimitStates state2A = limit2A == NULL ? UNKNOWN : limit2A->get_level() == limit2A_active ? ACTIVE : PASSIVE;
-        LimitStates state2B = limit2B == NULL ? UNKNOWN : limit2B->get_level() == limit2B_active ? ACTIVE : PASSIVE;
-        LimitStates state1 = homePw1 < 0 ? state1A : state1B;
-        LimitStates state2 = homePw2 < 0 ? state2A : state2B;
-        if (state == HOMING_BACKWARD)
+        bool limit1 = values.statusBits & 0x400000;
+        bool limit2 = values.statusBits & 0x800000;
+        if (state == HOMING)
         {
-            handleError(sendPower(state1 == PASSIVE ? homePw1 : 0, state2 == PASSIVE ? homePw2 : 0));
-            if (state1 != PASSIVE and state2 != PASSIVE)
-                state = HOMING_FORWARD;
-        }
-        if (state == HOMING_FORWARD)
-        {
-            handleError(sendPower(state1 == ACTIVE ? -homePw1 / 2 : 0, state2 == ACTIVE ? -homePw2 / 2 : 0));
-            if (state1 != ACTIVE and state2 != ACTIVE)
+            handleError(sendPower(limit1 ? 0 : homePw1, limit2 ? 0 : homePw2));
+            if (limit1 & limit2)
             {
-                claw->ResetEncoders();
                 state = IDLE;
+                claw->ResetEncoders();
                 printf("%s home completed\n", name.c_str());
             }
         }
@@ -229,24 +192,6 @@ public:
             state = IDLE;
             if (not isEStopPressed)
                 printf("%s move completed\n", name.c_str());
-        }
-
-        if (state == MOVING or state == POWERING)
-        {
-            if ((state1A == ACTIVE and dir1 < 0) or
-                (state1B == ACTIVE and dir1 > 0)) {
-                printf("Reached limit switch of motor 1\n");
-                if (state == MOVING)
-                    printf("%s move completed\n", name.c_str());
-                stop();
-            }
-            if ((state2A == ACTIVE and dir2 < 0) or
-                (state2B == ACTIVE and dir2 > 0)) {
-                printf("Reached limit switch of motor 2\n");
-                if (state == MOVING)
-                    printf("%s move completed\n", name.c_str());
-                stop();
-            }
         }
     }
 
@@ -263,35 +208,12 @@ public:
                 accel1 = atoi(msg.c_str());
             else if (key == "accel2")
                 accel2 = atoi(msg.c_str());
-            else if (key == "limit1A") {
-                limit1A = Port::fromString(msg);
-                limit1A->setup(true, 1);
-            }
-            else if (key == "limit1B") {
-                limit1B = Port::fromString(msg);
-                limit1B->setup(true, 1);
-            }
-            else if (key == "limit2A") {
-                limit2A = Port::fromString(msg);
-                limit2A->setup(true, 1);
-            }
-            else if (key == "limit2B") {
-                limit2B = Port::fromString(msg);
-                limit2B->setup(true, 1);
-            }
-            else if (key == "limit1A_active")
-                limit1A_active = atoi(msg.c_str());
-            else if (key == "limit1B_active")
-                limit1B_active = atoi(msg.c_str());
-            else if (key == "limit2A_active")
-                limit2A_active = atoi(msg.c_str());
-            else if (key == "limit2B_active")
-                limit2B_active = atoi(msg.c_str());
             else if (key == "homePw1")
                 homePw1 = atof(msg.c_str());
             else if (key == "homePw2")
                 homePw2 = atof(msg.c_str());
-            else if (starts_with(key, "point_")) {
+            else if (starts_with(key, "point_"))
+            {
                 cut_first_word(key, '_');
                 int32_t pos1 = atoi(cut_first_word(msg, ',').c_str());
                 int32_t pos2 = atoi(cut_first_word(msg, ',').c_str());
@@ -304,10 +226,7 @@ public:
         {
             double pw1 = atof(cut_first_word(msg, ',').c_str());
             double pw2 = atof(cut_first_word(msg, ',').c_str());
-            dir1 = pw1 > 0 ? 1 : -1;
-            dir2 = pw2 > 0 ? 1 : -1;
-            if (handleError(sendPower(pw1, pw2)))
-                state = POWERING;
+            handleError(sendPower(pw1, pw2));
         }
         else if (command == "home")
             state = HOMING_START;
@@ -328,7 +247,8 @@ public:
                 printf("Can't start moving in state %s\n", state_to_string(state).c_str());
             }
         }
-        else if (command == "get") {
+        else if (command == "get")
+        {
             if (handleError(read_values(values)))
                 print_values(values);
         }
@@ -342,14 +262,11 @@ public:
 
     void move(int32_t target1, int32_t target2, double duration)
     {
-        dir1 = target1 > values.position1 ? 1 : -1;
-        dir2 = target2 > values.position2 ? 1 : -1;
-
         uint32_t speed1 = abs(target1 - values.position1) / duration;
         uint32_t speed2 = abs(target2 - values.position2) / duration;
         if (handleError(claw->SpeedAccelDeccelPositionM1M2(
-            this->accel1, speed1, this->accel1, target1,
-            this->accel2, speed2, this->accel2, target2, 1)))
+                this->accel1, speed1, this->accel1, target1,
+                this->accel2, speed2, this->accel2, target2, 1)))
             state = MOVING;
     }
 
