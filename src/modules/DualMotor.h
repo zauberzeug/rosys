@@ -156,7 +156,17 @@ public:
         {
             lastCurrent1 = 0;
             lastCurrent2 = 0;
+
+            claw->DutyM1M2(1, 1);
+            delay(10);
+            claw->DutyM1M2(65535, 65535);
+            delay(10);
+            sendPower(-homePw1, -homePw2);
+            delay(500);
+
             state = HOMING;
+            return;
+
         }
 
         if (state == HOMING)
