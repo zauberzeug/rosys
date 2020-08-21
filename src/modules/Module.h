@@ -17,4 +17,6 @@ public:
     virtual void loop(){};
 
     virtual void handleMsg(std::string msg) = 0;
+
+    virtual void stop(){};
 };

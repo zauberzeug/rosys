@@ -49,11 +49,7 @@ private:
 
     std::string state_to_string(States state)
     {
-        return state == IDLE ? "IDLE" :
-            state == POWERING ? "POWERING" :
-            state == SPEEDING ? "SPEEDING" :
-            state == BRAKING ? "BRAKING" :
-            state == REVERSING ? "REVERSING" : "unknown";
+        return state == IDLE ? "IDLE" : state == POWERING ? "POWERING" : state == SPEEDING ? "SPEEDING" : state == BRAKING ? "BRAKING" : state == REVERSING ? "REVERSING" : "unknown";
     }
 
     bool sendSpeed(double left, double right)
@@ -174,7 +170,7 @@ private:
         }
     }
 
-    void triggerStop()
+    void stop()
     {
         if (state == SPEEDING)
         {
@@ -281,12 +277,12 @@ public:
         if (output)
         {
             printf("%s status\t%.4f\t%.4f\t%.1f\t%.1f\t%s\n",
-                this->name.c_str(),
-                linear,
-                angular,
-                temp * 0.1,
-                battery * 0.1,
-                state_to_string(state).c_str());
+                   this->name.c_str(),
+                   linear,
+                   angular,
+                   temp * 0.1,
+                   battery * 0.1,
+                   state_to_string(state).c_str());
         }
     }
 
@@ -350,7 +346,7 @@ public:
         }
         else if (command == "stop")
         {
-            triggerStop();
+            stop();
         }
         else
         {

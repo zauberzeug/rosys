@@ -37,12 +37,18 @@ public:
             this->pwm_port->set_level(fabs(pw));
             printf("%s pw completed\n", name.c_str());
         }
-        else if (command == "stop") {
-            this->pwm_port->set_level(0);
+        else if (command == "stop")
+        {
+            stop();
         }
         else
         {
             printf("Unknown command: %s\n", command.c_str());
         }
+    }
+
+    void stop()
+    {
+        this->pwm_port->set_level(0);
     }
 };

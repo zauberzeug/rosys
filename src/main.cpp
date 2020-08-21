@@ -23,6 +23,9 @@ void handleMsg(std::string msg)
     std::string module_name = cut_first_word(msg);
     if (modules.count(module_name))
         modules[module_name]->handleMsg(msg);
+    else if (module_name == "stop")
+        for (auto const &item : modules)
+            item.second->stop();
     else if (module_name == "pw")
         handleMsg(std::string("drive pw ") + msg);
     else
