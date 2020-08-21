@@ -35,15 +35,17 @@ public:
             double pw = atof(msg.c_str());
             this->dir_port->set_level(pw > 0);
             this->pwm_port->set_level(fabs(pw));
-            printf("%s pw completed\n", name.c_str());
+            printf("%s %s completed\n", name.c_str(), command.c_str());
         }
         else if (command == "up") {
             // NOTE: deprecated
             handleMsg("pw 1");
+            printf("%s %s completed\n", name.c_str(), command.c_str());
         }
         else if (command == "down") {
             // NOTE: deprecated
             handleMsg("pw -1");
+            printf("%s %s completed\n", name.c_str(), command.c_str());
         }
         else if (command == "stop")
         {
