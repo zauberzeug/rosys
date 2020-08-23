@@ -26,8 +26,10 @@ void handleMsg(std::string msg)
     else if (module_name == "stop")
         for (auto const &item : modules)
             item.second->stop();
-    else if (module_name == "pw")
+    else if (module_name == "pw") // DEPRICATED
         handleMsg(std::string("drive pw ") + msg);
+    else if (module_name == "ros") // DEPRICATED
+        handleMsg(std::string("esp print ") + msg);
     else
         printf("Unknown module name: %s\n", module_name.c_str());
 }
