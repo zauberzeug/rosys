@@ -182,7 +182,7 @@ private:
     void init_bumper()
     {
         if (bumper_port != NULL)
-            bumper_port->setup(true, -1);
+            bumper_port->setup(true, 1);
     }
 
 public:
@@ -224,7 +224,7 @@ public:
         if (bumper_port != NULL)
         {
             static bool bumper_state = false;
-            if (bumper_port->get_level() == 0)
+            if (bumper_port->get_level() == 1)
                 timeOfLastBump = millis();
             unsigned long millisSinceLastBump = millis() - timeOfLastBump;
             bool new_bumper_state = millisSinceLastBump <= bumper_debounce;
