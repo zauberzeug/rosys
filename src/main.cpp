@@ -26,6 +26,10 @@ void handleMsg(std::string msg)
     else if (module_name == "stop")
         for (auto const &item : modules)
             item.second->stop();
+    else if (module_name == "left") // DEPRICATED
+        handleMsg(std::string("drive left ") + msg);
+    else if (module_name == "right") // DEPRICATED
+        handleMsg(std::string("drive right ") + msg);
     else if (module_name == "pw") // DEPRICATED
         handleMsg(std::string("drive pw ") + msg);
     else if (module_name == "ros") // DEPRICATED

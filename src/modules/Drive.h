@@ -348,6 +348,9 @@ public:
         {
             stop();
         }
+        else if (command[0] <= '9') { // DEPRICATED
+            handleMsg(std::string("speed ") + command);
+        }
         else
         {
             printf("Unknown command: %s\n", command.c_str());
