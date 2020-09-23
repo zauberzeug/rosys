@@ -4,13 +4,13 @@
 #include "../utils/strings.h"
 #include "bno055/BNO055ESP32.h"
 
-class Bno055 : public Module
+class Imu : public Module
 {
 private:
     BNO055 *bno;
 
 public:
-    Bno055(std::string name) : Module(name)
+    Imu(std::string name) : Module(name)
     {
         i2c_config_t conf;
         conf.mode = I2C_MODE_MASTER;
