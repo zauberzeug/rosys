@@ -7,6 +7,8 @@
 class Imu : public Module
 {
 private:
+    bool output = false;
+
     BNO055 *bno;
 
 public:
@@ -35,6 +37,11 @@ public:
 
     void loop()
     {
+        if (output)
+        {
+            bno055_vector_t e = this->bno->getVectorEuler();
+            printf("%s %7.2f %7.2f %7.2f\n", this->name.c_str(), e.x, e.y, e.z);
+        }
     }
 
     void handleMsg(std::string msg)
@@ -44,7 +51,19 @@ public:
         if (command == "get")
         {
             bno055_vector_t e = this->bno->getVectorEuler();
-            printf("%s %7.2f %7.2f %7.2f\n", this->name.c_str(), e.x, e.y, e.z);
+            printf("%s get %7.2f %7.2f %7.2f\n", this->name.c_str(), e.x, e.y, e.z);
+        }
+        else if (command == "set")
+        {
+            std::string key = cut_first_word(msg, '=');
+            if (key == "output")
+            {
+                output = msg == "1";
+            }
+            else
+            {
+                printf("Unknown setting: %s\n", key.c_str());
+            }
         }
         else
         {
