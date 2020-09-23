@@ -5,6 +5,7 @@ from prompt_toolkit.patch_stdout import patch_stdout
 import serial
 import os.path
 
+
 class LineReader:
     # https://github.com/pyserial/pyserial/issues/216#issuecomment-369414522
 
@@ -37,8 +38,11 @@ def receive():
     line_reader = LineReader(port)
 
     while True:
-        line = line_reader.readline().decode('utf-8')
-        print(line.strip('\n'))
+        try:
+            line = line_reader.readline().decode('utf-8')
+            print(line.strip('\n'))
+        except Exception as e:
+            print(e)
 
 
 async def send():
