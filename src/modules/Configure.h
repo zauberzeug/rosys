@@ -12,6 +12,7 @@
 #include "Drive.h"
 #include "Motor.h"
 #include "DualMotor.h"
+#include "Bno055.h"
 
 class Configure : public Module
 {
@@ -53,6 +54,8 @@ public:
                 modules[name] = new Motor(name, line);
             else if (type == "dualmotor")
                 modules[name] = new DualMotor(name, line);
+            else if (type == "bno055")
+                modules[name] = new Bno055(name);
             else
                 printf("Unknown module type: %s\n", type.c_str());
 
