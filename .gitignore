@@ -8,3 +8,5 @@ build
 
 sdkconfig
 sdkconfig.old
+
+config.txt
