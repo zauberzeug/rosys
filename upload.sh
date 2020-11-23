@@ -6,7 +6,7 @@ then
     export IDF_PATH="$HOME/esp/esp-idf_4.0.1"
     . $IDF_PATH/export.sh
     
-    if lshw -C system 2>/dev/null | grep -q "NVIDIA Jetson"
+    if lshw -C system 2>/dev/null | grep -q "NVIDIA Jetson\|jetson-nano"
     then
         en=216
         g0=50
