@@ -11,6 +11,7 @@
 class Led : public Module
 {
 private:
+    bool output = false;
     double interval = 1.0;
 
     Port *port;
@@ -34,22 +35,22 @@ public:
         port->setup(false);
     }
 
+    int level()
+    {
+        if (state == ON)
+            return 1;
+        if (state == OFF)
+            return 0;
+        if (state == PULSE)
+            return sin(esp_timer_get_time() / interval * 2e-6 * M_PI) > 0 ? 1 : 0;
+        return -1;
+    }
+
     void loop()
     {
-        switch (state)
-        {
-        case ON:
-            port->set_level(1);
-            break;
-        case OFF:
-            port->set_level(0);
-            break;
-        case PULSE:
-            port->set_level(sin(esp_timer_get_time() / interval * 2e-6 * M_PI) > 0 ? 1 : 0);
-            break;
-        default:
-            printf("Invalid state: %d\n", state);
-        }
+        port->set_level(level());
+        if (output)
+            printf("%s %d\n", this->name.c_str(), level());
     }
 
     void handleMsg(std::string msg)
@@ -72,7 +73,11 @@ public:
         {
             std::string key = cut_first_word(msg, '=');
             double value = atof(msg.c_str());
-            if (key == "interval")
+            if (key == "output")
+            {
+                output = msg == "1";
+            }
+            else if (key == "interval")
             {
                 interval = value;
             }
@@ -80,6 +85,10 @@ public:
             {
                 printf("Unknown setting: %s\n", key.c_str());
             }
+        }
+        else if (command == "get")
+        {
+            printf("%s get %d\n", this->name.c_str(), level());
         }
         else
         {
