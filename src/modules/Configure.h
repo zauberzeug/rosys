@@ -13,6 +13,7 @@
 #include "Motor.h"
 #include "DualMotor.h"
 #include "Imu.h"
+#include "Can.h"
 
 class Configure : public Module
 {
@@ -56,6 +57,8 @@ public:
                 modules[name] = new DualMotor(name, line);
             else if (type == "imu")
                 modules[name] = new Imu(name);
+            else if (type == "can")
+                modules[name] = new Can(name, line);
             else
                 printf("Unknown module type: %s\n", type.c_str());
 
