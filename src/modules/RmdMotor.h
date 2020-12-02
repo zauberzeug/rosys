@@ -13,8 +13,10 @@
 class RmdMotor : public Module
 {
 private:
-    bool output = false;
-    const double ratio = 6.0;
+    double ratio = 1.0;
+    double speed = 10.0;
+    double minAngle = 0.0;
+    double maxAngle = 360.0;
 
     Can *can;
 
@@ -28,11 +30,36 @@ public:
     {
         std::string command = cut_first_word(msg);
 
-        if (command == "turn")
+        if (command == "set")
         {
-            uint16_t speed = atof(cut_first_word(msg, ',').c_str()) * ratio;
-            uint32_t angle = atof(cut_first_word(msg, ',').c_str()) * ratio * 100;
-            printf("speed %d, angle %d\n", speed, angle);
+            std::string key = cut_first_word(msg, '=');
+            if (key == "ratio")
+            {
+                ratio = atof(msg.c_str());
+            }
+            else if (key == "speed")
+            {
+                speed = atof(msg.c_str());
+            }
+            else if (key == "minAngle")
+            {
+                minAngle = atof(msg.c_str());
+            }
+            else if (key == "maxAngle")
+            {
+                maxAngle = atof(msg.c_str());
+            }
+            else
+            {
+                printf("Unknown setting: %s\n", key.c_str());
+            }
+        }
+        else if (command == "turn")
+        {
+            double requested_angle = atof(cut_first_word(msg, ',').c_str());
+            double clipped_angle = std::max(std::min(requested_angle, maxAngle), minAngle);
+            uint16_t speed = this->speed * this->ratio;
+            uint32_t angle = clipped_angle * this->ratio * 100;
             this->can->send(0x141, 0xa4, 0,
                             *((uint8_t *)(&speed) + 0),
                             *((uint8_t *)(&speed) + 1),
