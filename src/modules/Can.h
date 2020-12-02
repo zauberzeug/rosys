@@ -42,6 +42,26 @@ public:
         }
     }
 
+    void send(uint16_t id, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7)
+    {
+        can_message_t message;
+        message.identifier = id;
+        message.flags = CAN_MSG_FLAG_NONE;
+        message.data_length_code = 8;
+        message.data[0] = d0;
+        message.data[1] = d1;
+        message.data[2] = d2;
+        message.data[3] = d3;
+        message.data[4] = d4;
+        message.data[5] = d5;
+        message.data[6] = d6;
+        message.data[7] = d7;
+        if (can_transmit(&message, pdMS_TO_TICKS(0)) != ESP_OK)
+        {
+            printf("Could not send message");
+        }
+    }
+
     void handleMsg(std::string msg)
     {
         std::string command = cut_first_word(msg);
@@ -60,18 +80,15 @@ public:
         }
         else if (command == "send")
         {
-            can_message_t message;
-            message.identifier = std::stoi(cut_first_word(msg, ','), nullptr, 16);
-            message.flags = CAN_MSG_FLAG_NONE;
-            message.data_length_code = 8;
-            for (int i = 0; i < message.data_length_code; ++i)
-            {
-                message.data[i] = std::stoi(cut_first_word(msg, ','), nullptr, 16);
-            }
-            if (can_transmit(&message, pdMS_TO_TICKS(0)) != ESP_OK)
-            {
-                printf("Could not send message");
-            }
+            send(std::stoi(cut_first_word(msg, ','), nullptr, 16),
+                 std::stoi(cut_first_word(msg, ','), nullptr, 16),
+                 std::stoi(cut_first_word(msg, ','), nullptr, 16),
+                 std::stoi(cut_first_word(msg, ','), nullptr, 16),
+                 std::stoi(cut_first_word(msg, ','), nullptr, 16),
+                 std::stoi(cut_first_word(msg, ','), nullptr, 16),
+                 std::stoi(cut_first_word(msg, ','), nullptr, 16),
+                 std::stoi(cut_first_word(msg, ','), nullptr, 16),
+                 std::stoi(cut_first_word(msg, ','), nullptr, 16));
         }
         else
         {

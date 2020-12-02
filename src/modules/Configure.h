@@ -14,6 +14,7 @@
 #include "DualMotor.h"
 #include "Imu.h"
 #include "Can.h"
+#include "RmdMotor.h"
 
 class Configure : public Module
 {
@@ -59,6 +60,8 @@ public:
                 modules[name] = new Imu(name);
             else if (type == "can")
                 modules[name] = new Can(name, line);
+            else if (type == "rmdmotor")
+                modules[name] = new RmdMotor(name, (Can *)modules[line]);
             else
                 printf("Unknown module type: %s\n", type.c_str());
 
