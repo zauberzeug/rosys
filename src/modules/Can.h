@@ -58,7 +58,7 @@ public:
         message.data[7] = d7;
         if (can_transmit(&message, pdMS_TO_TICKS(0)) != ESP_OK)
         {
-            printf("Could not send message");
+            printf("Could not send message\n");
         }
     }
 
