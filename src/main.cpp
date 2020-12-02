@@ -40,7 +40,7 @@ void handleMsg(std::string msg)
 
 void setup()
 {
-    serial = new Serial(115200);
+    serial = new Serial(38400);
     delay(500);
 
     mcp::init();
