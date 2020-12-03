@@ -20,11 +20,11 @@ class Configure : public Module
 {
 private:
     const char *NAMESPACE = "MODULES";
-    std::map<std::string, Module *> modules;
+    std::map<std::string, Module *> *modules;
     void (*globalMessageHandler)(std::string);
 
 public:
-    Configure(std::map<std::string, Module *> &modules, void (*globalMessageHandler)(std::string)) : Module("configure")
+    Configure(std::map<std::string, Module *> *modules, void (*globalMessageHandler)(std::string)) : Module("configure")
     {
         this->modules = modules;
         this->globalMessageHandler = globalMessageHandler;
@@ -45,23 +45,23 @@ public:
             std::string type = cut_first_word(line, ':');
             printf("+ %s: %s(%s)\n", name.c_str(), type.c_str(), line.c_str());
             if (type == "bluetooth")
-                modules[name] = new Bluetooth(name, line, globalMessageHandler);
+                (*modules)[name] = new Bluetooth(name, line, globalMessageHandler);
             else if (type == "led")
-                modules[name] = new Led(name, line);
+                (*modules)[name] = new Led(name, line);
             else if (type == "button")
-                modules[name] = new Button(name, line);
+                (*modules)[name] = new Button(name, line);
             else if (type == "drive")
-                modules[name] = new Drive(name, line);
+                (*modules)[name] = new Drive(name, line);
             else if (type == "motor")
-                modules[name] = new Motor(name, line);
+                (*modules)[name] = new Motor(name, line);
             else if (type == "dualmotor")
-                modules[name] = new DualMotor(name, line);
+                (*modules)[name] = new DualMotor(name, line);
             else if (type == "imu")
-                modules[name] = new Imu(name);
+                (*modules)[name] = new Imu(name);
             else if (type == "can")
-                modules[name] = new Can(name, line);
+                (*modules)[name] = new Can(name, line);
             else if (type == "rmdmotor")
-                modules[name] = new RmdMotor(name, (Can *)modules[line]);
+                (*modules)[name] = new RmdMotor(name, (Can *)(*modules)[line]);
             else
                 printf("Unknown module type: %s\n", type.c_str());
 
@@ -73,7 +73,7 @@ public:
 
                 std::string key = cut_first_word(line, '=');
                 printf("  - %s=%s\n", key.c_str(), line.c_str());
-                modules[name]->handleMsg("set " + key + "=" + line);
+                (*modules)[name]->handleMsg("set " + key + "=" + line);
             }
         };
     }
@@ -95,7 +95,7 @@ public:
         }
         else if (command == "has")
         {
-            printf("configure has %s %d\n", msg.c_str(), modules.count(msg) > 0 ? 1 : 0);
+            printf("configure has %s %d\n", msg.c_str(), modules->count(msg) > 0 ? 1 : 0);
         }
         else if (command == "print")
         {

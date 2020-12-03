@@ -6,9 +6,13 @@
 
 class Esp : public Module
 {
+private:
+    std::map<std::string, Module *> *modules;
+
 public:
-    Esp() : Module("esp")
+    Esp(std::map<std::string, Module *> *modules) : Module("esp")
     {
+        this->modules = modules;
     }
 
     void handleMsg(std::string msg)
@@ -27,9 +31,21 @@ public:
         {
             storage::erase();
         }
+        else if (command == "stop")
+        {
+            stopAll();
+        }
         else
         {
             printf("Unknown command: %s\n", command.c_str());
+        }
+    }
+
+    void stopAll()
+    {
+        for (auto const &item : *modules)
+        {
+            item.second->stop();
         }
     }
 };

@@ -95,4 +95,9 @@ public:
             printf("Unknown command: %s\n", command.c_str());
         }
     }
+
+    void stop()
+    {
+        this->state = OFF;
+    }
 };

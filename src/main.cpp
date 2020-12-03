@@ -23,9 +23,8 @@ void handleMsg(std::string msg)
     std::string module_name = cut_first_word(msg);
     if (modules.count(module_name))
         modules[module_name]->handleMsg(msg);
-    else if (module_name == "stop")
-        for (auto const &item : modules)
-            item.second->stop();
+    else if (module_name == "stop") // DEPRICATED
+        ((Esp *)modules["esp"])->stopAll();
     else if (module_name == "left") // DEPRICATED
         handleMsg(std::string("drive left ") + msg);
     else if (module_name == "right") // DEPRICATED
@@ -47,8 +46,8 @@ void setup()
 
     storage::init();
 
-    modules["esp"] = new Esp();
-    modules["configure"] = new Configure(modules, handleMsg);
+    modules["esp"] = new Esp(&modules);
+    modules["configure"] = new Configure(&modules, handleMsg);
 
     for (auto const &item : modules)
         item.second->setup();
