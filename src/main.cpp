@@ -7,6 +7,7 @@
 #include "mcp.h"
 #include "modules/Module.h"
 #include "modules/Esp.h"
+#include "modules/Safety.h"
 #include "modules/Configure.h"
 #include "utils/Serial.h"
 #include "utils/timing.h"
@@ -18,13 +19,17 @@ std::map<std::string, Module *> modules;
 
 Serial *serial;
 
+Esp *esp;
+Safety *safety;
+Configure *configure;
+
 void handleMsg(std::string msg)
 {
     std::string module_name = cut_first_word(msg);
     if (modules.count(module_name))
         modules[module_name]->handleMsg(msg);
     else if (module_name == "stop") // DEPRICATED
-        ((Esp *)modules["esp"])->stopAll();
+        esp->stopAll();
     else if (module_name == "left") // DEPRICATED
         handleMsg(std::string("drive left ") + msg);
     else if (module_name == "right") // DEPRICATED
@@ -46,8 +51,9 @@ void setup()
 
     storage::init();
 
-    modules["esp"] = new Esp(&modules);
-    modules["configure"] = new Configure(&modules, handleMsg);
+    modules["esp"] = esp = new Esp(&modules);
+    modules["safety"] = safety = new Safety(&modules);
+    modules["configure"] = configure = new Configure(&modules, handleMsg);
 
     for (auto const &item : modules)
         item.second->setup();
@@ -68,7 +74,12 @@ void loop()
     }
 
     for (auto const &item : modules)
-        item.second->loop();
+    {
+        if (safety->check(item.second))
+            item.second->loop();
+        else
+            item.second->stop();
+    }
 
     delay(10);
 }

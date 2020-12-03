@@ -6,6 +6,7 @@ class Module
 {
 public:
     std::string name;
+    int state = 0;
 
     Module(std::string name)
     {

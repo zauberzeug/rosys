@@ -18,10 +18,10 @@ private:
 
     enum State
     {
-        ON,
-        OFF,
-        PULSE,
-    } state;
+        OFF = 0,
+        ON = 1,
+        PULSE = 2,
+    };
 
 public:
     Led(std::string name, std::string port) : Module(name)
