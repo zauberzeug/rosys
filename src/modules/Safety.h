@@ -49,7 +49,7 @@ public:
             std::string name = std::get<0>(item.second);
             std::string trigger = std::get<1>(item.second);
             int state = std::get<2>(item.second);
-            if (module->name == name && (*modules)[trigger]->state != state)
+            if ((name == "*" || name == module->name) && state != (*modules)[trigger]->state)
                 return false;
         }
         return true;

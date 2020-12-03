@@ -75,10 +75,9 @@ void loop()
 
     for (auto const &item : modules)
     {
-        if (safety->check(item.second))
-            item.second->loop();
-        else
+        if (!safety->check(item.second))
             item.second->stop();
+        item.second->loop();
     }
 
     delay(10);

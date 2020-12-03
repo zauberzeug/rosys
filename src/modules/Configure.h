@@ -16,6 +16,8 @@
 #include "Can.h"
 #include "RmdMotor.h"
 
+#define noop
+
 class Configure : public Module
 {
 private:
@@ -44,7 +46,9 @@ public:
             std::string line = cut_first_word(lines, '\n');
             std::string type = cut_first_word(line, ':');
             printf("+ %s: %s(%s)\n", name.c_str(), type.c_str(), line.c_str());
-            if (type == "bluetooth")
+            if (type == "safety")
+                noop; // NOTE: already instantiated in main.cpp
+            else if (type == "bluetooth")
                 (*modules)[name] = new Bluetooth(name, line, globalMessageHandler);
             else if (type == "led")
                 (*modules)[name] = new Led(name, line);
@@ -107,6 +111,8 @@ public:
             std::string key = cut_first_word(msg, '=');
             std::string value = msg;
             std::string configuration = storage::get(NAMESPACE, name);
+            if (configuration.empty())
+                configuration = name + ':' + msg + '\n';
 
             while (true)
             {

@@ -30,8 +30,10 @@ public:
 
     void loop()
     {
+        this->state = port->get_level();
+
         if (output)
-            printf("%s %d\n", this->name.c_str(), port->get_level());
+            printf("%s %d\n", this->name.c_str(), this->state);
     }
 
     void handleMsg(std::string msg)
@@ -57,7 +59,7 @@ public:
         }
         else if (command == "get")
         {
-            printf("%s get %d\n", this->name.c_str(), port->get_level());
+            printf("%s get %d\n", this->name.c_str(), this->state);
         }
         else
         {
