@@ -13,6 +13,7 @@ class Button : public Module
 {
 private:
     bool output = false;
+    bool invert = false;
     int pullup = 0;
 
     Port *port;
@@ -30,7 +31,7 @@ public:
 
     void loop()
     {
-        this->state = port->get_level();
+        this->state = invert ? 1 - port->get_level() : port->get_level();
 
         if (output)
             printf("%s %d\n", this->name.c_str(), this->state);
@@ -55,6 +56,10 @@ public:
         if (key == "output")
         {
             output = value == "1";
+        }
+        else if (key == "invert")
+        {
+            invert = value == "1";
         }
         else if (key == "pullup")
         {
