@@ -31,6 +31,7 @@ Esp *esp;
 Safety *safety;
 
 Module *createModule(std::string type, std::string name, std::string parameters);
+std::string check(std::string line);
 
 void handleMsg(std::string msg)
 {
@@ -122,7 +123,10 @@ void loop()
         std::string line = serial->readStringUntil('\n');
         if (line.empty())
             break;
-        handleMsg(line);
+        std::string msg = check(line);
+        if (msg.empty())
+            continue;
+        handleMsg(msg);
     }
 
     for (auto const &item : modules)
@@ -160,6 +164,25 @@ Module *createModule(std::string type, std::string name, std::string parameters)
         printf("Unknown module type: %s\n", type.c_str());
         return NULL;
     }
+}
+
+std::string check(std::string line)
+{
+    std::string msg = cut_first_word(line, '^');
+    if (line.empty())
+        return msg;
+
+    unsigned int checksum = 0;
+    for (int i = 0; i < msg.size(); ++i)
+        checksum ^= msg[i];
+    if (checksum != atoi(line.c_str()))
+    {
+        printf("Warning: Checksum mismatch for \"%s^%s\" (%d expected)\n",
+               msg.c_str(), line.c_str(), checksum);
+        return "";
+    }
+
+    return msg;
 }
 
 extern "C"
