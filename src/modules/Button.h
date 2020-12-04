@@ -40,30 +40,30 @@ public:
     {
         std::string command = cut_first_word(msg);
 
-        if (command == "set")
-        {
-            std::string key = cut_first_word(msg, '=');
-            if (key == "output")
-            {
-                output = msg == "1";
-            }
-            else if (key == "pullup")
-            {
-                pullup = atoi(msg.c_str());
-                port->setup(true, pullup);
-            }
-            else
-            {
-                printf("Unknown setting: %s\n", key.c_str());
-            }
-        }
-        else if (command == "get")
+        if (command == "get")
         {
             printf("%s get %d\n", this->name.c_str(), this->state);
         }
         else
         {
             printf("Unknown command: %s\n", command.c_str());
+        }
+    }
+
+    void set(std::string key, std::string value)
+    {
+        if (key == "output")
+        {
+            output = value == "1";
+        }
+        else if (key == "pullup")
+        {
+            pullup = atoi(value.c_str());
+            port->setup(true, pullup);
+        }
+        else
+        {
+            printf("Unknown setting: %s\n", key.c_str());
         }
     }
 };

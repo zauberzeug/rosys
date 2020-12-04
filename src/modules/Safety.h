@@ -21,24 +21,22 @@ public:
     void handleMsg(std::string msg)
     {
         std::string command = cut_first_word(msg);
+        printf("Unknown command: %s\n", command.c_str());
+    }
 
-        if (command == "set")
+    void set(std::string key, std::string value)
+    {
+        if (starts_with(key, "condition_"))
         {
-            std::string key = cut_first_word(msg, '=');
-            if (starts_with(key, "condition_"))
-            {
-                cut_first_word(key, '_');
-                std::string module = cut_first_word(msg, ',');
-                std::string trigger = cut_first_word(msg, ',');
-                int state = atoi(cut_first_word(msg, ',').c_str());
-                conditions[key] = std::make_tuple(module, trigger, state);
-            }
-            else
-                printf("Unknown setting: %s\n", key.c_str());
+            cut_first_word(key, '_');
+            std::string module = cut_first_word(value, ',');
+            std::string trigger = cut_first_word(value, ',');
+            int state = atoi(value.c_str());
+            conditions[key] = std::make_tuple(module, trigger, state);
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            printf("Unknown setting: %s\n", key.c_str());
         }
     }
 

@@ -69,23 +69,6 @@ public:
         {
             state = PULSE;
         }
-        else if (command == "set")
-        {
-            std::string key = cut_first_word(msg, '=');
-            double value = atof(msg.c_str());
-            if (key == "output")
-            {
-                output = msg == "1";
-            }
-            else if (key == "interval")
-            {
-                interval = value;
-            }
-            else
-            {
-                printf("Unknown setting: %s\n", key.c_str());
-            }
-        }
         else if (command == "get")
         {
             printf("%s get %d\n", this->name.c_str(), level());
@@ -93,6 +76,22 @@ public:
         else
         {
             printf("Unknown command: %s\n", command.c_str());
+        }
+    }
+
+    void set(std::string key, std::string value)
+    {
+        if (key == "output")
+        {
+            output = value == "1";
+        }
+        else if (key == "interval")
+        {
+            interval = atof(value.c_str());
+        }
+        else
+        {
+            printf("Unknown setting: %s\n", key.c_str());
         }
     }
 

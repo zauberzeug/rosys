@@ -8,12 +8,23 @@
 #include "modules/Module.h"
 #include "modules/Esp.h"
 #include "modules/Safety.h"
-#include "modules/Configure.h"
+#include "modules/Bluetooth.h"
+#include "modules/Led.h"
+#include "modules/Button.h"
+#include "modules/Drive.h"
+#include "modules/Motor.h"
+#include "modules/DualMotor.h"
+#include "modules/Imu.h"
+#include "modules/Can.h"
+#include "modules/RmdMotor.h"
 #include "utils/Serial.h"
 #include "utils/timing.h"
 #include "utils/strings.h"
 
 #define EN_24V GPIO_NUM_12
+
+#define NAMESPACE "storage"
+#define KEY "main"
 
 std::map<std::string, Module *> modules;
 
@@ -21,25 +32,61 @@ Serial *serial;
 
 Esp *esp;
 Safety *safety;
-Configure *configure;
+
+Module *createModule(std::string type, std::string name, std::string parameters);
 
 void handleMsg(std::string msg)
 {
-    std::string module_name = cut_first_word(msg);
-    if (modules.count(module_name))
-        modules[module_name]->handleMsg(msg);
-    else if (module_name == "stop") // DEPRICATED
-        esp->stopAll();
-    else if (module_name == "left") // DEPRICATED
-        handleMsg(std::string("drive left ") + msg);
-    else if (module_name == "right") // DEPRICATED
-        handleMsg(std::string("drive right ") + msg);
-    else if (module_name == "pw") // DEPRICATED
-        handleMsg(std::string("drive pw ") + msg);
-    else if (module_name == "ros") // DEPRICATED
-        handleMsg(std::string("esp print ") + msg);
+    if (msg[0] == '+')
+    {
+        storage::append(NAMESPACE, KEY, msg.substr(1));
+        return;
+    }
+    if (msg[0] == '-')
+    {
+        storage::remove(NAMESPACE, KEY, msg.substr(1));
+        return;
+    }
+    if (msg[0] == '?')
+    {
+        storage::print(NAMESPACE, KEY, msg.substr(1));
+        return;
+    }
+
+    std::string word = cut_first_word(msg);
+    if (word == "new")
+    {
+        std::string type = cut_first_word(msg);
+        std::string name = cut_first_word(msg);
+        modules[name] = createModule(type, name, msg);
+        modules[name]->setup();
+    }
+    else if (word == "set")
+    {
+        std::string name = cut_first_word(msg, '.');
+        std::string key = cut_first_word(msg, '=');
+        modules[name]->set(key, msg);
+    }
+    else if (modules.count(word))
+    {
+        modules[word]->handleMsg(msg);
+    }
     else
-        printf("Unknown module name: %s\n", module_name.c_str());
+    {
+        // DEPRICATED
+        if (word == "stop")
+            esp->stopAll();
+        else if (word == "left")
+            handleMsg(std::string("drive left ") + msg);
+        else if (word == "right")
+            handleMsg(std::string("drive right ") + msg);
+        else if (word == "pw")
+            handleMsg(std::string("drive pw ") + msg);
+        else if (word == "ros")
+            handleMsg(std::string("esp print ") + msg);
+        else
+            printf("Unknown module name: %s\n", word.c_str());
+    }
 }
 
 void setup()
@@ -47,13 +94,20 @@ void setup()
     serial = new Serial(38400);
     delay(500);
 
-    mcp::init();
+    // mcp::init(); // TODO
 
     storage::init();
 
     modules["esp"] = esp = new Esp(&modules);
     modules["safety"] = safety = new Safety(&modules);
-    modules["configure"] = configure = new Configure(&modules, handleMsg);
+
+    std::string content = storage::get(NAMESPACE, KEY);
+    while (!content.empty())
+    {
+        std::string line = cut_first_word(content, '\n');
+        printf("Reading line: %s\n", line.c_str());
+        handleMsg(line);
+    }
 
     for (auto const &item : modules)
         item.second->setup();
@@ -81,6 +135,33 @@ void loop()
     }
 
     delay(10);
+}
+
+Module *createModule(std::string type, std::string name, std::string parameters)
+{
+    if (type == "bluetooth")
+        return new Bluetooth(name, parameters, handleMsg);
+    else if (type == "led")
+        return new Led(name, parameters);
+    else if (type == "button")
+        return new Button(name, parameters);
+    else if (type == "drive")
+        return new Drive(name, parameters);
+    else if (type == "motor")
+        return new Motor(name, parameters);
+    else if (type == "dualmotor")
+        return new DualMotor(name, parameters);
+    else if (type == "imu")
+        return new Imu(name);
+    else if (type == "can")
+        return new Can(name, parameters);
+    else if (type == "rmdmotor")
+        return new RmdMotor(name, (Can *)modules[parameters]);
+    else
+    {
+        printf("Unknown module type: %s\n", type.c_str());
+        return NULL;
+    }
 }
 
 extern "C"

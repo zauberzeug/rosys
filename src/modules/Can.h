@@ -66,19 +66,7 @@ public:
     {
         std::string command = cut_first_word(msg);
 
-        if (command == "set")
-        {
-            std::string key = cut_first_word(msg, '=');
-            if (key == "output")
-            {
-                output = msg == "1";
-            }
-            else
-            {
-                printf("Unknown setting: %s\n", key.c_str());
-            }
-        }
-        else if (command == "send")
+        if (command == "send")
         {
             send(std::stoi(cut_first_word(msg, ','), nullptr, 16),
                  std::stoi(cut_first_word(msg, ','), nullptr, 16),
@@ -93,6 +81,18 @@ public:
         else
         {
             printf("Unknown command: %s\n", command.c_str());
+        }
+    }
+
+    void set(std::string key, std::string value)
+    {
+        if (key == "output")
+        {
+            output = value == "1";
+        }
+        else
+        {
+            printf("Unknown setting: %s\n", key.c_str());
         }
     }
 };

@@ -53,21 +53,21 @@ public:
             bno055_vector_t e = this->bno->getVectorEuler();
             printf("%s get %7.2f %7.2f %7.2f\n", this->name.c_str(), e.x, e.y, e.z);
         }
-        else if (command == "set")
-        {
-            std::string key = cut_first_word(msg, '=');
-            if (key == "output")
-            {
-                output = msg == "1";
-            }
-            else
-            {
-                printf("Unknown setting: %s\n", key.c_str());
-            }
-        }
         else
         {
             printf("Unknown command: %s\n", command.c_str());
+        }
+    }
+
+    void set(std::string key, std::string value)
+    {
+        if (key == "output")
+        {
+            output = value == "1";
+        }
+        else
+        {
+            printf("Unknown setting: %s\n", key.c_str());
         }
     }
 };

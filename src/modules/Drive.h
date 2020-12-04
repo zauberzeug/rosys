@@ -296,28 +296,7 @@ public:
     {
         std::string command = cut_first_word(msg);
 
-        if (command == "set")
-        {
-            std::string key = cut_first_word(msg, '=');
-            if (key == "output")
-                output = msg == "1";
-            else if (key == "mPerTick")
-                mPerTick = atof(msg.c_str());
-            else if (key == "width")
-                width = atof(msg.c_str());
-            else if (key == "use300HzSpeedReadings")
-                use300HzSpeedReadings = msg == "1";
-            else if (key == "bumper_port")
-            {
-                bumper_port = Port::fromString(msg);
-                init_bumper();
-            }
-            else if (key == "bumper_debounce")
-                bumper_debounce = atoi(msg.c_str());
-            else
-                printf("Unknown setting: %s\n", key.c_str());
-        }
-        else if (command == "pw")
+        if (command == "pw")
         {
             double left = atof(cut_first_word(msg, ',').c_str());
             double right = atof(cut_first_word(msg, ',').c_str());
@@ -348,12 +327,46 @@ public:
         {
             stop();
         }
-        else if (command[0] <= '9') { // DEPRICATED
+        else if (command[0] <= '9')
+        { // DEPRICATED
             handleMsg(std::string("speed ") + command);
         }
         else
         {
             printf("Unknown command: %s\n", command.c_str());
+        }
+    }
+
+    void set(std::string key, std::string value)
+    {
+        if (key == "output")
+        {
+            output = value == "1";
+        }
+        else if (key == "mPerTick")
+        {
+            mPerTick = atof(value.c_str());
+        }
+        else if (key == "width")
+        {
+            width = atof(value.c_str());
+        }
+        else if (key == "use300HzSpeedReadings")
+        {
+            use300HzSpeedReadings = value == "1";
+        }
+        else if (key == "bumper_port")
+        {
+            bumper_port = Port::fromString(value);
+            init_bumper();
+        }
+        else if (key == "bumper_debounce")
+        {
+            bumper_debounce = atoi(value.c_str());
+        }
+        else
+        {
+            printf("Unknown setting: %s\n", key.c_str());
         }
     }
 };

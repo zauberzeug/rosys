@@ -37,12 +37,14 @@ public:
             this->pwm_port->set_level(fabs(pw));
             printf("%s %s completed\n", name.c_str(), command.c_str());
         }
-        else if (command == "up") {
+        else if (command == "up")
+        {
             // NOTE: deprecated
             handleMsg("pw 1");
             printf("%s %s completed\n", name.c_str(), command.c_str());
         }
-        else if (command == "down") {
+        else if (command == "down")
+        {
             // NOTE: deprecated
             handleMsg("pw -1");
             printf("%s %s completed\n", name.c_str(), command.c_str());

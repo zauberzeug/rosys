@@ -19,5 +19,7 @@ public:
 
     virtual void handleMsg(std::string msg) = 0;
 
+    virtual void set(std::string key, std::string value){};
+
     virtual void stop(){};
 };

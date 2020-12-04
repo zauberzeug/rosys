@@ -166,7 +166,6 @@ public:
 
             state = HOMING;
             return;
-
         }
 
         if (state == HOMING)
@@ -209,30 +208,7 @@ public:
     {
         std::string command = cut_first_word(msg);
 
-        if (command == "set")
-        {
-            std::string key = cut_first_word(msg, '=');
-            if (key == "output")
-                output = msg == "1";
-            else if (key == "accel1")
-                accel1 = atoi(msg.c_str());
-            else if (key == "accel2")
-                accel2 = atoi(msg.c_str());
-            else if (key == "homePw1")
-                homePw1 = atof(msg.c_str());
-            else if (key == "homePw2")
-                homePw2 = atof(msg.c_str());
-            else if (starts_with(key, "point_"))
-            {
-                cut_first_word(key, '_');
-                int32_t pos1 = atoi(cut_first_word(msg, ',').c_str());
-                int32_t pos2 = atoi(cut_first_word(msg, ',').c_str());
-                points[key] = std::make_pair(pos1, pos2);
-            }
-            else
-                printf("Unknown setting: %s\n", key.c_str());
-        }
-        else if (command == "pw")
+        if (command == "pw")
         {
             double pw1 = atof(cut_first_word(msg, ',').c_str());
             double pw2 = atof(cut_first_word(msg, ',').c_str());
@@ -267,6 +243,41 @@ public:
         else
         {
             printf("Unknown command: %s\n", command.c_str());
+        }
+    }
+
+    void set(std::string key, std::string value)
+    {
+        if (key == "output")
+        {
+            output = value == "1";
+        }
+        else if (key == "accel1")
+        {
+            accel1 = atoi(value.c_str());
+        }
+        else if (key == "accel2")
+        {
+            accel2 = atoi(value.c_str());
+        }
+        else if (key == "homePw1")
+        {
+            homePw1 = atof(value.c_str());
+        }
+        else if (key == "homePw2")
+        {
+            homePw2 = atof(value.c_str());
+        }
+        else if (starts_with(key, "point_"))
+        {
+            cut_first_word(key, '_');
+            int32_t pos1 = atoi(cut_first_word(value, ',').c_str());
+            int32_t pos2 = atoi(cut_first_word(value, ',').c_str());
+            points[key] = std::make_pair(pos1, pos2);
+        }
+        else
+        {
+            printf("Unknown setting: %s\n", key.c_str());
         }
     }
 

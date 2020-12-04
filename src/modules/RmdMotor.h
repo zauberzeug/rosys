@@ -30,31 +30,7 @@ public:
     {
         std::string command = cut_first_word(msg);
 
-        if (command == "set")
-        {
-            std::string key = cut_first_word(msg, '=');
-            if (key == "ratio")
-            {
-                ratio = atof(msg.c_str());
-            }
-            else if (key == "speed")
-            {
-                speed = atof(msg.c_str());
-            }
-            else if (key == "minAngle")
-            {
-                minAngle = atof(msg.c_str());
-            }
-            else if (key == "maxAngle")
-            {
-                maxAngle = atof(msg.c_str());
-            }
-            else
-            {
-                printf("Unknown setting: %s\n", key.c_str());
-            }
-        }
-        else if (command == "turn")
+        if (command == "turn")
         {
             double requested_angle = atof(cut_first_word(msg, ',').c_str());
             double clipped_angle = std::max(std::min(requested_angle, maxAngle), minAngle);
@@ -75,6 +51,30 @@ public:
         else
         {
             printf("Unknown command: %s\n", command.c_str());
+        }
+    }
+
+    void set(std::string key, std::string value)
+    {
+        if (key == "ratio")
+        {
+            ratio = atof(value.c_str());
+        }
+        else if (key == "speed")
+        {
+            speed = atof(value.c_str());
+        }
+        else if (key == "minAngle")
+        {
+            minAngle = atof(value.c_str());
+        }
+        else if (key == "maxAngle")
+        {
+            maxAngle = atof(value.c_str());
+        }
+        else
+        {
+            printf("Unknown setting: %s\n", key.c_str());
         }
     }
 };
