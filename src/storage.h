@@ -5,6 +5,9 @@
 
 #include "utils/strings.h"
 
+#define NAMESPACE "storage"
+#define KEY "main"
+
 namespace storage
 {
     void init()
@@ -12,25 +15,25 @@ namespace storage
         nvs_flash_init();
     }
 
-    void put(std::string namespace_, std::string key, std::string value)
+    void put(std::string value)
     {
         nvs_handle handle;
-        if (nvs_open(namespace_.c_str(), NVS_READWRITE, &handle) != ESP_OK)
+        if (nvs_open(NAMESPACE, NVS_READWRITE, &handle) != ESP_OK)
         {
-            printf("Could not open storage namespace: %s\n", namespace_.c_str());
+            printf("Could not open storage namespace: %s\n", NAMESPACE);
             return;
         }
 
-        if (nvs_set_str(handle, key.c_str(), value.c_str()) != ESP_OK)
+        if (nvs_set_str(handle, KEY, value.c_str()) != ESP_OK)
         {
-            printf("Could write to storage: %s.%s=%s\n", namespace_.c_str(), key.c_str(), value.c_str());
+            printf("Could write to storage: %s.%s=%s\n", NAMESPACE, KEY, value.c_str());
             nvs_close(handle);
             return;
         }
 
         if (nvs_commit(handle) != ESP_OK)
         {
-            printf("Could commit storage: %s.%s=%s\n", namespace_.c_str(), key.c_str(), value.c_str());
+            printf("Could commit storage: %s.%s=%s\n", NAMESPACE, KEY, value.c_str());
             nvs_close(handle);
             return;
         }
@@ -38,19 +41,19 @@ namespace storage
         nvs_close(handle);
     }
 
-    std::string get(std::string namespace_, std::string key)
+    std::string get()
     {
         nvs_handle handle;
-        if (nvs_open(namespace_.c_str(), NVS_READWRITE, &handle) != ESP_OK)
+        if (nvs_open(NAMESPACE, NVS_READWRITE, &handle) != ESP_OK)
         {
-            printf("Could not open storage namespace: %s\n", namespace_.c_str());
+            printf("Could not open storage namespace: %s\n", NAMESPACE);
             return "";
         }
 
         size_t size = 0;
-        if (nvs_get_str(handle, key.c_str(), NULL, &size) != ESP_OK)
+        if (nvs_get_str(handle, KEY, NULL, &size) != ESP_OK)
         {
-            printf("Could not peek storage: %s.%s\n", namespace_.c_str(), key.c_str());
+            printf("Could not peek storage: %s.%s\n", NAMESPACE, KEY);
             nvs_close(handle);
             return "";
         }
@@ -58,9 +61,9 @@ namespace storage
         char *value = (char *)malloc(size);
         if (size > 0)
         {
-            if (nvs_get_str(handle, key.c_str(), value, &size) != ESP_OK)
+            if (nvs_get_str(handle, KEY, value, &size) != ESP_OK)
             {
-                printf("Could not read storage: %s.%s\n", namespace_.c_str(), key.c_str());
+                printf("Could not read storage: %s.%s\n", NAMESPACE, KEY);
                 free(value);
                 nvs_close(handle);
                 return "";
@@ -75,16 +78,16 @@ namespace storage
         return result;
     }
 
-    void append(std::string namespace_, std::string key, std::string line)
+    void append(std::string line)
     {
-        std::string content = get(namespace_, key);
+        std::string content = get();
         content += line + '\n';
-        put(namespace_, key, content);
+        put(content);
     }
 
-    void print(std::string namespace_, std::string key, std::string substring = "")
+    void print(std::string substring = "")
     {
-        std::string content = get(namespace_, key);
+        std::string content = get();
         while (!content.empty())
         {
             std::string line = cut_first_word(content, '\n');
@@ -93,9 +96,9 @@ namespace storage
         }
     }
 
-    void remove(std::string namespace_, std::string key, std::string substring = "")
+    void remove(std::string substring = "")
     {
-        std::string content = get(namespace_, key);
+        std::string content = get();
         std::string newContent = "";
         while (!content.empty())
         {
@@ -103,14 +106,6 @@ namespace storage
             if (!starts_with(line, substring))
                 newContent += line + '\n';
         }
-        put(namespace_, key, newContent);
-    }
-
-    void erase()
-    {
-        if (nvs_flash_erase() != ESP_OK)
-        {
-            printf("Could not erase storage\n");
-        }
+        put(newContent);
     }
 } // namespace storage

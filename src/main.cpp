@@ -23,9 +23,6 @@
 
 #define EN_24V GPIO_NUM_12
 
-#define NAMESPACE "storage"
-#define KEY "main"
-
 std::map<std::string, Module *> modules;
 
 Serial *serial;
@@ -39,17 +36,17 @@ void handleMsg(std::string msg)
 {
     if (msg[0] == '+')
     {
-        storage::append(NAMESPACE, KEY, msg.substr(1));
+        storage::append(msg.substr(1));
         return;
     }
     if (msg[0] == '-')
     {
-        storage::remove(NAMESPACE, KEY, msg.substr(1));
+        storage::remove(msg.substr(1));
         return;
     }
     if (msg[0] == '?')
     {
-        storage::print(NAMESPACE, KEY, msg.substr(1));
+        storage::print(msg.substr(1));
         return;
     }
 
@@ -94,18 +91,19 @@ void setup()
     serial = new Serial(38400);
     delay(500);
 
-    // mcp::init(); // TODO
+    mcp::init(); // TODO
 
     storage::init();
 
     modules["esp"] = esp = new Esp(&modules);
     modules["safety"] = safety = new Safety(&modules);
 
-    std::string content = storage::get(NAMESPACE, KEY);
+    printf("Reading configuration...\n");
+    std::string content = storage::get();
     while (!content.empty())
     {
         std::string line = cut_first_word(content, '\n');
-        printf("Reading line: %s\n", line.c_str());
+        printf(">> %s\n", line.c_str());
         handleMsg(line);
     }
 

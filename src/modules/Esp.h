@@ -29,7 +29,7 @@ public:
         }
         else if (command == "erase")
         {
-            storage::erase();
+            storage::put("");
         }
         else if (command == "stop")
         {
