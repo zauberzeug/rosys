@@ -31,13 +31,16 @@ public:
         can_message_t message;
         while (can_receive(&message, pdMS_TO_TICKS(0)) == ESP_OK)
         {
-            printf("ID is %d\n", message.identifier);
-            if (!(message.flags & CAN_MSG_FLAG_RTR))
-            {
-                for (int i = 0; i < message.data_length_code; i++)
+            if (output) {
+                printf("can %03x", message.identifier);
+                if (!(message.flags & CAN_MSG_FLAG_RTR))
                 {
-                    printf("Data byte %d = %d\n", i, message.data[i]);
+                    for (int i = 0; i < message.data_length_code; ++i)
+                    {
+                        printf(",%02x", message.data[i]);
+                    }
                 }
+                printf("\n");
             }
         }
     }
