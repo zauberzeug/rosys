@@ -31,7 +31,8 @@ public:
         can_message_t message;
         while (can_receive(&message, pdMS_TO_TICKS(0)) == ESP_OK)
         {
-            if (output) {
+            if (output)
+            {
                 printf("can %03x", message.identifier);
                 if (!(message.flags & CAN_MSG_FLAG_RTR))
                 {
@@ -45,7 +46,7 @@ public:
         }
     }
 
-    void send(uint16_t id, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7, bool rtr=false)
+    void send(uint16_t id, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7, bool rtr = false)
     {
         can_message_t message;
         message.identifier = id;

@@ -46,6 +46,14 @@ public:
         {
             this->can->send(0x141, 0x19, 0, 0, 0, 0, 0, 0, 0);
         }
+        else if (command == "stop")
+        {
+            this->stop();
+        }
+        else if (command == "off")
+        {
+            this->can->send(0x141, 0x80, 0, 0, 0, 0, 0, 0, 0);
+        }
         else
         {
             printf("Unknown command: %s\n", command.c_str());
@@ -74,5 +82,10 @@ public:
         {
             printf("Unknown setting: %s\n", key.c_str());
         }
+    }
+
+    void stop()
+    {
+        this->can->send(0x141, 0x81, 0, 0, 0, 0, 0, 0, 0);
     }
 };
