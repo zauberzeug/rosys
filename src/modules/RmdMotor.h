@@ -16,19 +16,20 @@ private:
     double speed = 10.0;
     double minAngle = 0.0;
     double maxAngle = 360.0;
+    double tolerance = 0.1;
 
     const uint16_t id = 0x141;
 
     Can *can;
 
     double target = 0;
+    double angle = 0;
 
     enum State
     {
-        IDLE = 0,
+        STOP = 0,
         MOVE = 1,
         HOME = 2,
-        STOP = 3,
     };
 
 public:
@@ -41,7 +42,10 @@ public:
     void loop()
     {
         if (output)
-            printf("%s %d\n", this->name.c_str(), this->state);
+            printf("%s %d %.3f\n", this->name.c_str(), this->state, this->angle);
+
+        uint8_t data[8] = {0x92, 0, 0, 0, 0, 0, 0, 0};
+        this->can->send(this->id, data);
     }
 
     void handleMsg(std::string msg)
@@ -79,7 +83,17 @@ public:
 
     void handleCanMsg(uint16_t id, uint8_t data[8])
     {
-        // TODO
+        if (data[0] == 0x92)
+        {
+            int64_t value;
+            std::memcpy(&value, data + 1, 7);
+            this->angle = value / 100.0 / this->ratio;
+        }
+
+        if (std::abs(this->angle - this->target) < this->tolerance)
+        {
+            this->state = this->target == 0 ? HOME : STOP;
+        }
     }
 
     void set(std::string key, std::string value)
@@ -103,6 +117,10 @@ public:
         else if (key == "maxAngle")
         {
             maxAngle = atof(value.c_str());
+        }
+        else if (key == "tolerance")
+        {
+            tolerance = atof(value.c_str());
         }
         else
         {
