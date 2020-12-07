@@ -73,7 +73,7 @@ public:
         }
         else if (command == "get")
         {
-            printf("%s get %d\n", this->name.c_str(), this->state);
+            printf("%s get %d %.3f\n", this->name.c_str(), this->state, this->angle);
         }
         else
         {
