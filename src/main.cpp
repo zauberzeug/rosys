@@ -12,6 +12,7 @@
 #include "modules/Led.h"
 #include "modules/Button.h"
 #include "modules/Drive.h"
+#include "modules/Linear.h"
 #include "modules/Motor.h"
 #include "modules/DualMotor.h"
 #include "modules/Imu.h"
@@ -149,6 +150,8 @@ Module *createModule(std::string type, std::string name, std::string parameters)
         return new Button(name, parameters);
     else if (type == "drive")
         return new Drive(name, parameters);
+    else if (type == "linear")
+        return new Linear(name, parameters);
     else if (type == "motor")
         return new Motor(name, parameters);
     else if (type == "dualmotor")
@@ -162,7 +165,7 @@ Module *createModule(std::string type, std::string name, std::string parameters)
     else
     {
         printf("Unknown module type: %s\n", type.c_str());
-        return NULL;
+        return nullptr;
     }
 }
 

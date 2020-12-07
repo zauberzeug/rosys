@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <math.h>
 
 #include "Module.h"
 #include "../ports/Port.h"

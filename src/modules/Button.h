@@ -1,9 +1,6 @@
 #pragma once
 
 #include <string>
-#include <math.h>
-#include "driver/gpio.h"
-#include "esp_timer.h"
 
 #include "Module.h"
 #include "../ports/Port.h"
