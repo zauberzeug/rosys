@@ -53,11 +53,11 @@ public:
         }
     }
 
-    void send(uint16_t id, uint8_t data[8], bool rtr = false)
+    void send(uint16_t id, uint8_t data[8])
     {
         can_message_t message;
         message.identifier = id;
-        message.flags = rtr ? CAN_MSG_FLAG_RTR : CAN_MSG_FLAG_NONE;
+        message.flags = CAN_MSG_FLAG_NONE;
         message.data_length_code = 8;
         for (int i = 0; i < 8; ++i)
         {
