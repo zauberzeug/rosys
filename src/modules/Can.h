@@ -46,11 +46,11 @@ public:
         }
     }
 
-    void send(uint16_t id, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7, bool rtr = false)
+    void send(uint16_t id, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7)
     {
         can_message_t message;
         message.identifier = id;
-        message.flags = rtr ? CAN_MSG_FLAG_RTR : CAN_MSG_FLAG_NONE;
+        message.flags = CAN_MSG_FLAG_NONE;
         message.data_length_code = 8;
         message.data[0] = d0;
         message.data[1] = d1;
@@ -81,10 +81,6 @@ public:
                  std::stoi(cut_first_word(msg, ','), nullptr, 16),
                  std::stoi(cut_first_word(msg, ','), nullptr, 16),
                  std::stoi(cut_first_word(msg, ','), nullptr, 16));
-        }
-        else if (command == "request")
-        {
-            send(std::stoi(cut_first_word(msg, ','), nullptr, 16), 0, 0, 0, 0, 0, 0, 0, 0, true);
         }
         else
         {
