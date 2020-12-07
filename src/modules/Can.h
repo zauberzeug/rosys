@@ -12,6 +12,8 @@ class Can : public Module
 private:
     bool output = false;
 
+    std::map<uint16_t, Module *> subscribers;
+
 public:
     Can(std::string name, std::string parameters) : Module(name)
     {
@@ -31,6 +33,11 @@ public:
         can_message_t message;
         while (can_receive(&message, pdMS_TO_TICKS(0)) == ESP_OK)
         {
+            if (subscribers.count(message.identifier))
+            {
+                subscribers[message.identifier]->handleCanMsg(message.identifier, message.data);
+            }
+
             if (output)
             {
                 printf("can %03x", message.identifier);
@@ -46,20 +53,16 @@ public:
         }
     }
 
-    void send(uint16_t id, uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3, uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7, bool rtr = false)
+    void send(uint16_t id, uint8_t data[8], bool rtr = false)
     {
         can_message_t message;
         message.identifier = id;
         message.flags = rtr ? CAN_MSG_FLAG_RTR : CAN_MSG_FLAG_NONE;
         message.data_length_code = 8;
-        message.data[0] = d0;
-        message.data[1] = d1;
-        message.data[2] = d2;
-        message.data[3] = d3;
-        message.data[4] = d4;
-        message.data[5] = d5;
-        message.data[6] = d6;
-        message.data[7] = d7;
+        for (int i = 0; i < 8; ++i)
+        {
+            message.data[i] = data[i];
+        }
         if (can_transmit(&message, pdMS_TO_TICKS(0)) != ESP_OK)
         {
             printf("Could not send message\n");
@@ -72,19 +75,13 @@ public:
 
         if (command == "send")
         {
-            send(std::stoi(cut_first_word(msg, ','), nullptr, 16),
-                 std::stoi(cut_first_word(msg, ','), nullptr, 16),
-                 std::stoi(cut_first_word(msg, ','), nullptr, 16),
-                 std::stoi(cut_first_word(msg, ','), nullptr, 16),
-                 std::stoi(cut_first_word(msg, ','), nullptr, 16),
-                 std::stoi(cut_first_word(msg, ','), nullptr, 16),
-                 std::stoi(cut_first_word(msg, ','), nullptr, 16),
-                 std::stoi(cut_first_word(msg, ','), nullptr, 16),
-                 std::stoi(cut_first_word(msg, ','), nullptr, 16));
-        }
-        else if (command == "request")
-        {
-            send(std::stoi(cut_first_word(msg, ','), nullptr, 16), 0, 0, 0, 0, 0, 0, 0, 0, true);
+            uint16_t id = std::stoi(cut_first_word(msg, ','), nullptr, 16);
+            uint8_t data[8];
+            for (int i = 0; i < 8; ++i)
+            {
+                data[i] = std::stoi(cut_first_word(msg, ','), nullptr, 16);
+            }
+            send(id, data);
         }
         else
         {
@@ -102,5 +99,10 @@ public:
         {
             printf("Unknown setting: %s\n", key.c_str());
         }
+    }
+
+    void subscribe(uint16_t id, Module *module)
+    {
+        this->subscribers[id] = module;
     }
 };

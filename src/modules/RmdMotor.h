@@ -16,12 +16,15 @@ private:
     double minAngle = 0.0;
     double maxAngle = 360.0;
 
+    const uint16_t id = 0x141;
+
     Can *can;
 
 public:
     RmdMotor(std::string name, Can *can) : Module(name)
     {
         this->can = can;
+        this->can->subscribe(this->id, this);
     }
 
     void handleMsg(std::string msg)
@@ -34,17 +37,22 @@ public:
             double clipped_angle = std::max(std::min(requested_angle, maxAngle), minAngle);
             uint16_t speed = this->speed * this->ratio;
             uint32_t angle = clipped_angle * this->ratio * 100;
-            this->can->send(0x141, 0xa4, 0,
-                            *((uint8_t *)(&speed) + 0),
-                            *((uint8_t *)(&speed) + 1),
-                            *((uint8_t *)(&angle) + 0),
-                            *((uint8_t *)(&angle) + 1),
-                            *((uint8_t *)(&angle) + 2),
-                            *((uint8_t *)(&angle) + 3));
+            uint8_t data[8] = {
+                0xa4,
+                0,
+                *((uint8_t *)(&speed) + 0),
+                *((uint8_t *)(&speed) + 1),
+                *((uint8_t *)(&angle) + 0),
+                *((uint8_t *)(&angle) + 1),
+                *((uint8_t *)(&angle) + 2),
+                *((uint8_t *)(&angle) + 3),
+            };
+            this->can->send(this->id, data);
         }
         else if (command == "zero")
         {
-            this->can->send(0x141, 0x19, 0, 0, 0, 0, 0, 0, 0);
+            uint8_t data[8] = {0x19, 0, 0, 0, 0, 0, 0, 0};
+            this->can->send(this->id, data);
         }
         else if (command == "stop")
         {
@@ -52,12 +60,18 @@ public:
         }
         else if (command == "off")
         {
-            this->can->send(0x141, 0x80, 0, 0, 0, 0, 0, 0, 0);
+            uint8_t data[8] = {0x80, 0, 0, 0, 0, 0, 0, 0};
+            this->can->send(this->id, data);
         }
         else
         {
             printf("Unknown command: %s\n", command.c_str());
         }
+    }
+
+    void handleCanMsg(uint16_t id, uint8_t data[8])
+    {
+        // TODO
     }
 
     void set(std::string key, std::string value)
@@ -86,6 +100,7 @@ public:
 
     void stop()
     {
-        this->can->send(0x141, 0x81, 0, 0, 0, 0, 0, 0, 0);
+        uint8_t data[8] = {0x81, 0, 0, 0, 0, 0, 0, 0};
+        this->can->send(this->id, data);
     }
 };

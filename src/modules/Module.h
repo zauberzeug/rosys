@@ -19,6 +19,8 @@ public:
 
     virtual void handleMsg(std::string msg) = 0;
 
+    virtual void handleCanMsg(uint16_t id, uint8_t d[8]){};
+
     virtual void set(std::string key, std::string value){};
 
     virtual void stop(){};
