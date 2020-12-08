@@ -38,18 +38,21 @@ def receive():
     line_reader = LineReader(port)
 
     while True:
-        line = line_reader.readline().decode('utf-8').strip('\n')
-        if '^' in line:
-            line, check = line.split('^')
-            checksum = 0
-            for c in line:
-                checksum ^= ord(c)
-            if checksum != int(check):
-                print('ERROR: CHECKSUM MISSMATCH ("%s")')
+        try:
+            line = line_reader.readline().decode('utf-8').strip('\n')
+            if '^' in line:
+                line, check = line.split('^')
+                checksum = 0
+                for c in line:
+                    checksum ^= ord(c)
+                if checksum != int(check):
+                    print('ERROR: CHECKSUM MISSMATCH ("%s")')
+                else:
+                    print(line)
             else:
                 print(line)
-        else:
-            print(line)
+        except UnicodeDecodeError as e:
+            print(e)
 
 
 async def send():
