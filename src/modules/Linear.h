@@ -3,6 +3,7 @@
 #include "Module.h"
 #include "../ports/Port.h"
 #include "../utils/strings.h"
+#include "../utils/checksum.h"
 
 class Linear : public Module
 {
@@ -52,7 +53,7 @@ public:
         portMoveOut->set_level(this->state == MOVE_OUT ? 1 : 0);
 
         if (output)
-            printf("%s %d\n", this->name.c_str(), this->state);
+            cprintln("%s %d", this->name.c_str(), this->state);
     }
 
     void handleMsg(std::string msg)
@@ -73,11 +74,11 @@ public:
         }
         else if (command == "get")
         {
-            printf("%s get %d\n", this->name.c_str(), this->state);
+            cprintln("%s get %d", this->name.c_str(), this->state);
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            cprintln("Unknown command: %s", command.c_str());
         }
     }
 
@@ -89,7 +90,7 @@ public:
         }
         else
         {
-            printf("Unknown setting: %s\n", key.c_str());
+            cprintln("Unknown setting: %s", key.c_str());
         }
     }
 

@@ -3,6 +3,7 @@
 #include "Module.h"
 #include "../storage.h"
 #include "../utils/strings.h"
+#include "../utils/checksum.h"
 
 class Esp : public Module
 {
@@ -25,7 +26,7 @@ public:
         }
         else if (command == "print")
         {
-            printf("%s\n", msg.c_str());
+            cprintln("%s", msg.c_str());
         }
         else if (command == "erase")
         {
@@ -37,7 +38,7 @@ public:
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            cprintln("Unknown command: %s", command.c_str());
         }
     }
 

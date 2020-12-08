@@ -5,6 +5,7 @@
 
 #include "Module.h"
 #include "../utils/strings.h"
+#include "../utils/checksum.h"
 
 class Safety : public Module
 {
@@ -21,7 +22,7 @@ public:
     void handleMsg(std::string msg)
     {
         std::string command = cut_first_word(msg);
-        printf("Unknown command: %s\n", command.c_str());
+        cprintln("Unknown command: %s", command.c_str());
     }
 
     void set(std::string key, std::string value)
@@ -36,7 +37,7 @@ public:
         }
         else
         {
-            printf("Unknown setting: %s\n", key.c_str());
+            cprintln("Unknown setting: %s", key.c_str());
         }
     }
 

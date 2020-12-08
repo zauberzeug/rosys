@@ -134,7 +134,7 @@ private:
             count = 0;
         else
         {
-            printf("%s Communication problem with %s RoboClaw\n", ++count < 3 ? "warn" : "error", name.c_str());
+            cprintln("%s Communication problem with %s RoboClaw", ++count < 3 ? "warn" : "error", name.c_str());
             claw->clear();
         }
 
@@ -194,7 +194,7 @@ public:
 
         if (type != "roboclaw" and not type.empty())
         {
-            printf("Invalid type: %s\n", type.c_str());
+            cprintln("Invalid type: %s", type.c_str());
         }
         claw = new RoboClaw(UART_NUM_1, GPIO_NUM_26, GPIO_NUM_27, baud, address);
     }
@@ -229,7 +229,7 @@ public:
             unsigned long millisSinceLastBump = millis() - timeOfLastBump;
             bool new_bumper_state = millisSinceLastBump <= bumper_debounce;
             if (new_bumper_state != bumper_state and output)
-                printf("%s bump %s\n", name.c_str(), new_bumper_state ? "start" : "stop");
+                cprintln("%s bump %s", name.c_str(), new_bumper_state ? "start" : "stop");
             bumper_state = new_bumper_state;
             if (bumper_state)
                 triggerBump(left_speed, right_speed);
@@ -276,13 +276,13 @@ public:
 
         if (output)
         {
-            printf("%s status\t%.4f\t%.4f\t%.1f\t%.1f\t%s\n",
-                   this->name.c_str(),
-                   linear,
-                   angular,
-                   temp * 0.1,
-                   battery * 0.1,
-                   state_to_string(state).c_str());
+            cprintln("%s status\t%.4f\t%.4f\t%.1f\t%.1f\t%s",
+                     this->name.c_str(),
+                     linear,
+                     angular,
+                     temp * 0.1,
+                     battery * 0.1,
+                     state_to_string(state).c_str());
         }
     }
 
@@ -333,7 +333,7 @@ public:
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            cprintln("Unknown command: %s", command.c_str());
         }
     }
 
@@ -366,7 +366,7 @@ public:
         }
         else
         {
-            printf("Unknown setting: %s\n", key.c_str());
+            cprintln("Unknown setting: %s", key.c_str());
         }
     }
 };

@@ -1,8 +1,9 @@
 #pragma once
 
 #include "Module.h"
-#include "../utils/strings.h"
 #include "bno055/BNO055ESP32.h"
+#include "../utils/strings.h"
+#include "../utils/checksum.h"
 
 class Imu : public Module
 {
@@ -40,7 +41,7 @@ public:
         if (output)
         {
             bno055_vector_t e = this->bno->getVectorEuler();
-            printf("%s %7.2f %7.2f %7.2f\n", this->name.c_str(), e.x, e.y, e.z);
+            cprintln("%s %7.2f %7.2f %7.2f", this->name.c_str(), e.x, e.y, e.z);
         }
     }
 
@@ -51,11 +52,11 @@ public:
         if (command == "get")
         {
             bno055_vector_t e = this->bno->getVectorEuler();
-            printf("%s get %7.2f %7.2f %7.2f\n", this->name.c_str(), e.x, e.y, e.z);
+            cprintln("%s get %7.2f %7.2f %7.2f", this->name.c_str(), e.x, e.y, e.z);
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            cprintln("Unknown command: %s", command.c_str());
         }
     }
 
@@ -67,7 +68,7 @@ public:
         }
         else
         {
-            printf("Unknown setting: %s\n", key.c_str());
+            cprintln("Unknown setting: %s", key.c_str());
         }
     }
 };

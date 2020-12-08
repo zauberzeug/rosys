@@ -4,6 +4,7 @@
 #include "nvs_flash.h"
 
 #include "utils/strings.h"
+#include "utils/checksum.h"
 
 #define NAMESPACE "storage"
 #define KEY "main"
@@ -20,20 +21,20 @@ namespace storage
         nvs_handle handle;
         if (nvs_open(NAMESPACE, NVS_READWRITE, &handle) != ESP_OK)
         {
-            printf("Could not open storage namespace: %s\n", NAMESPACE);
+            cprintln("Could not open storage namespace: %s", NAMESPACE);
             return;
         }
 
         if (nvs_set_str(handle, KEY, value.c_str()) != ESP_OK)
         {
-            printf("Could write to storage: %s.%s=%s\n", NAMESPACE, KEY, value.c_str());
+            cprintln("Could write to storage: %s.%s=%s", NAMESPACE, KEY, value.c_str());
             nvs_close(handle);
             return;
         }
 
         if (nvs_commit(handle) != ESP_OK)
         {
-            printf("Could commit storage: %s.%s=%s\n", NAMESPACE, KEY, value.c_str());
+            cprintln("Could commit storage: %s.%s=%s", NAMESPACE, KEY, value.c_str());
             nvs_close(handle);
             return;
         }
@@ -46,14 +47,14 @@ namespace storage
         nvs_handle handle;
         if (nvs_open(NAMESPACE, NVS_READWRITE, &handle) != ESP_OK)
         {
-            printf("Could not open storage namespace: %s\n", NAMESPACE);
+            cprintln("Could not open storage namespace: %s", NAMESPACE);
             return "";
         }
 
         size_t size = 0;
         if (nvs_get_str(handle, KEY, NULL, &size) != ESP_OK)
         {
-            printf("Could not peek storage: %s.%s\n", NAMESPACE, KEY);
+            cprintln("Could not peek storage: %s.%s", NAMESPACE, KEY);
             nvs_close(handle);
             return "";
         }
@@ -63,7 +64,7 @@ namespace storage
         {
             if (nvs_get_str(handle, KEY, value, &size) != ESP_OK)
             {
-                printf("Could not read storage: %s.%s\n", NAMESPACE, KEY);
+                cprintln("Could not read storage: %s.%s", NAMESPACE, KEY);
                 free(value);
                 nvs_close(handle);
                 return "";
@@ -92,7 +93,7 @@ namespace storage
         {
             std::string line = cut_first_word(content, '\n');
             if (starts_with(line, substring))
-                printf("%s\n", line.c_str());
+                cprintln(line.c_str());
         }
     }
 

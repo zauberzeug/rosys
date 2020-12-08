@@ -5,6 +5,7 @@
 #include "Module.h"
 #include "bluetooth/ble.h"
 #include "../utils/strings.h"
+#include "../utils/checksum.h"
 
 class Bluetooth : public Module
 {
@@ -20,11 +21,11 @@ public:
 
         if (command == "send")
         {
-            printf("Sending...\n");
+            cprintln("Sending...");
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            cprintln("Unknown command: %s", command.c_str());
         }
     }
 };
