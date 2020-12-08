@@ -22,7 +22,14 @@ public:
     void handleMsg(std::string msg)
     {
         std::string command = cut_first_word(msg);
-        cprintln("Unknown command: %s", command.c_str());
+
+        if (command == "list")
+        {
+            this->list();
+        }
+        else {
+            cprintln("Unknown command: %s", command.c_str());
+        }
     }
 
     void set(std::string key, std::string value)
@@ -52,5 +59,17 @@ public:
                 return false;
         }
         return true;
+    }
+
+    void list()
+    {
+        for (auto const &item : conditions)
+        {
+            std::string name = std::get<0>(item.second);
+            std::string trigger = std::get<1>(item.second);
+            int state = std::get<2>(item.second);
+            const char* result = state == (*modules)[trigger]->state ? "ok" : "violated";
+            cprintln("\"%s\" %s,%s,%d: %s", item.first.c_str(), name.c_str(), trigger.c_str(), state, result);
+        }
     }
 };
