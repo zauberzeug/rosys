@@ -6,6 +6,7 @@
 #include "roboclaw/RoboClaw.h"
 #include "../utils/strings.h"
 #include "../utils/defines.h"
+#include "../utils/checksum.h"
 
 class DualMotor : public Module
 {
@@ -95,17 +96,17 @@ private:
 
     void print_values(claw_values_t values)
     {
-        printf("tool status %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%x\t%s\n",
-               values.position1,
-               values.position2,
-               values.countsPerSecond1,
-               values.countsPerSecond2,
-               values.depth1,
-               values.depth2,
-               values.current1,
-               values.current2,
-               values.statusBits,
-               state_to_string(state).c_str());
+        cprintln("tool status %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%x\t%s",
+                 values.position1,
+                 values.position2,
+                 values.countsPerSecond1,
+                 values.countsPerSecond2,
+                 values.depth1,
+                 values.depth2,
+                 values.current1,
+                 values.current2,
+                 values.statusBits,
+                 state_to_string(state).c_str());
     }
 
     bool handleError(bool valid)
@@ -116,7 +117,7 @@ private:
             count = 0;
         else
         {
-            printf("%s Communication problem with %s RoboClaw\n", ++count < 3 ? "warn" : "error", name.c_str());
+            cprintln("%s Communication problem with %s RoboClaw", ++count < 3 ? "warn" : "error", name.c_str());
             claw->clear();
         }
 
@@ -132,7 +133,7 @@ public:
 
         if (type != "roboclaw" and not type.empty())
         {
-            printf("Invalid type: %s\n", type.c_str());
+            cprintln("Invalid type: %s", type.c_str());
         }
         claw = new RoboClaw(UART_NUM_1, GPIO_NUM_26, GPIO_NUM_27, baud, address);
     }
@@ -176,7 +177,7 @@ public:
             lastCurrent2 = values.depth2 == 0x80 ? values.current2 : 0;
             if (overcurrent1 or overcurrent2)
             {
-                printf("error Overcurrent\n");
+                cprintln("error Overcurrent");
                 if (handleError(sendPower(0, 0)))
                     state = IDLE;
             }
@@ -191,7 +192,7 @@ public:
             {
                 state = IDLE;
                 claw->ResetEncoders();
-                printf("%s home completed\n", name.c_str());
+                cprintln("%s home completed", name.c_str());
             }
         }
 
@@ -200,7 +201,7 @@ public:
         {
             state = IDLE;
             if (not isEStopPressed)
-                printf("%s move completed\n", name.c_str());
+                cprintln("%s move completed", name.c_str());
         }
     }
 
@@ -230,7 +231,7 @@ public:
             }
             else
             {
-                printf("Can't start moving in state %s\n", state_to_string(state).c_str());
+                cprintln("Can't start moving in state %s", state_to_string(state).c_str());
             }
         }
         else if (command == "get")
@@ -242,7 +243,7 @@ public:
             stop();
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            cprintln("Unknown command: %s", command.c_str());
         }
     }
 
@@ -277,7 +278,7 @@ public:
         }
         else
         {
-            printf("Unknown setting: %s\n", key.c_str());
+            cprintln("Unknown setting: %s", key.c_str());
         }
     }
 

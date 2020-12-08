@@ -6,6 +6,7 @@
 #include "Module.h"
 #include "../ports/Port.h"
 #include "../utils/strings.h"
+#include "../utils/checksum.h"
 
 class Can : public Module
 {
@@ -40,15 +41,15 @@ public:
 
             if (output)
             {
-                printf("can %03x", message.identifier);
+                cprint("can %03x", message.identifier);
                 if (!(message.flags & CAN_MSG_FLAG_RTR))
                 {
                     for (int i = 0; i < message.data_length_code; ++i)
                     {
-                        printf(",%02x", message.data[i]);
+                        cprint(",%02x", message.data[i]);
                     }
                 }
-                printf("\n");
+                cprintln("");
             }
         }
     }
@@ -65,7 +66,7 @@ public:
         }
         if (can_transmit(&message, pdMS_TO_TICKS(0)) != ESP_OK)
         {
-            printf("Could not send message\n");
+            cprintln("Could not send message\n");
         }
     }
 
@@ -85,7 +86,7 @@ public:
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            cprintln("Unknown command: %s\n", command.c_str());
         }
     }
 
@@ -97,7 +98,7 @@ public:
         }
         else
         {
-            printf("Unknown setting: %s\n", key.c_str());
+            cprintln("Unknown setting: %s\n", key.c_str());
         }
     }
 

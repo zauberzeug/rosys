@@ -7,6 +7,7 @@
 #include "Module.h"
 #include "../ports/Port.h"
 #include "../utils/strings.h"
+#include "../utils/checksum.h"
 
 class Led : public Module
 {
@@ -50,7 +51,7 @@ public:
     {
         port->set_level(level());
         if (output)
-            printf("%s %d\n", this->name.c_str(), level());
+            cprintln("%s %d", this->name.c_str(), level());
     }
 
     void handleMsg(std::string msg)
@@ -71,11 +72,11 @@ public:
         }
         else if (command == "get")
         {
-            printf("%s get %d\n", this->name.c_str(), level());
+            cprintln("%s get %d", this->name.c_str(), level());
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            cprintln("Unknown command: %s", command.c_str());
         }
     }
 
@@ -91,7 +92,7 @@ public:
         }
         else
         {
-            printf("Unknown setting: %s\n", key.c_str());
+            cprintln("Unknown setting: %s", key.c_str());
         }
     }
 

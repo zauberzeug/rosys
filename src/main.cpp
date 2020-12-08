@@ -21,6 +21,7 @@
 #include "utils/Serial.h"
 #include "utils/timing.h"
 #include "utils/strings.h"
+#include "utils/checksum.h"
 
 #define EN_24V GPIO_NUM_12
 
@@ -84,7 +85,7 @@ void handleMsg(std::string msg)
         else if (word == "ros")
             handleMsg(std::string("esp print ") + msg);
         else
-            printf("Unknown module name: %s\n", word.c_str());
+            cprintln("Unknown module name: %s", word.c_str());
     }
 }
 
@@ -100,12 +101,12 @@ void setup()
     modules["esp"] = esp = new Esp(&modules);
     modules["safety"] = safety = new Safety(&modules);
 
-    printf("Reading configuration...\n");
+    cprintln("Reading configuration...");
     std::string content = storage::get();
     while (!content.empty())
     {
         std::string line = cut_first_word(content, '\n');
-        printf(">> %s\n", line.c_str());
+        cprintln(">> %s", line.c_str());
         handleMsg(line);
     }
 
@@ -164,7 +165,7 @@ Module *createModule(std::string type, std::string name, std::string parameters)
         return new RmdMotor(name, (Can *)modules[parameters]);
     else
     {
-        printf("Unknown module type: %s\n", type.c_str());
+        cprintln("Unknown module type: %s", type.c_str());
         return nullptr;
     }
 }
@@ -180,8 +181,8 @@ std::string check(std::string line)
         checksum ^= msg[i];
     if (checksum != atoi(line.c_str()))
     {
-        printf("Warning: Checksum mismatch for \"%s^%s\" (%d expected)\n",
-               msg.c_str(), line.c_str(), checksum);
+        cprintln("Warning: Checksum mismatch for \"%s^%s\" (%d expected)",
+                 msg.c_str(), line.c_str(), checksum);
         return "";
     }
 

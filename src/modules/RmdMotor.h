@@ -7,6 +7,7 @@
 #include "../ports/Port.h"
 #include "../utils/strings.h"
 #include "../modules/Can.h"
+#include "../utils/checksum.h"
 
 class RmdMotor : public Module
 {
@@ -42,7 +43,7 @@ public:
     void loop()
     {
         if (output)
-            printf("%s %d %.3f\n", this->name.c_str(), this->state, this->angle);
+            cprintln("%s %d %.3f", this->name.c_str(), this->state, this->angle);
 
         uint8_t data[8] = {0x92, 0, 0, 0, 0, 0, 0, 0};
         this->can->send(this->id, data);
@@ -73,11 +74,11 @@ public:
         }
         else if (command == "get")
         {
-            printf("%s get %d\n", this->name.c_str(), this->state);
+            cprintln("%s get %d", this->name.c_str(), this->state);
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            cprintln("Unknown command: %s", command.c_str());
         }
     }
 
@@ -124,7 +125,7 @@ public:
         }
         else
         {
-            printf("Unknown setting: %s\n", key.c_str());
+            cprintln("Unknown setting: %s", key.c_str());
         }
     }
 

@@ -5,6 +5,7 @@
 #include "Module.h"
 #include "../ports/Port.h"
 #include "../utils/strings.h"
+#include "../utils/checksum.h"
 
 class Button : public Module
 {
@@ -31,7 +32,7 @@ public:
         this->state = invert ? 1 - port->get_level() : port->get_level();
 
         if (output)
-            printf("%s %d\n", this->name.c_str(), this->state);
+            cprintln("%s %d", this->name.c_str(), this->state);
     }
 
     void handleMsg(std::string msg)
@@ -40,11 +41,11 @@ public:
 
         if (command == "get")
         {
-            printf("%s get %d\n", this->name.c_str(), this->state);
+            cprintln("%s get %d", this->name.c_str(), this->state);
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            cprintln("Unknown command: %s", command.c_str());
         }
     }
 
@@ -65,7 +66,7 @@ public:
         }
         else
         {
-            printf("Unknown setting: %s\n", key.c_str());
+            cprintln("Unknown setting: %s", key.c_str());
         }
     }
 };

@@ -5,6 +5,7 @@
 #include "Module.h"
 #include "../ports/Port.h"
 #include "../utils/strings.h"
+#include "../utils/checksum.h"
 
 class Motor : public Module
 {
@@ -34,19 +35,19 @@ public:
             double pw = atof(msg.c_str());
             this->dir_port->set_level(pw > 0);
             this->pwm_port->set_level(fabs(pw));
-            printf("%s %s completed\n", name.c_str(), command.c_str());
+            cprintln("%s %s completed", name.c_str(), command.c_str());
         }
         else if (command == "up")
         {
             // NOTE: deprecated
             handleMsg("pw 1");
-            printf("%s %s completed\n", name.c_str(), command.c_str());
+            cprintln("%s %s completed", name.c_str(), command.c_str());
         }
         else if (command == "down")
         {
             // NOTE: deprecated
             handleMsg("pw -1");
-            printf("%s %s completed\n", name.c_str(), command.c_str());
+            cprintln("%s %s completed", name.c_str(), command.c_str());
         }
         else if (command == "stop")
         {
@@ -54,7 +55,7 @@ public:
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            cprintln("Unknown command: %s", command.c_str());
         }
     }
 
