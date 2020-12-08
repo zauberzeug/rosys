@@ -66,7 +66,7 @@ public:
         }
         if (can_transmit(&message, pdMS_TO_TICKS(0)) != ESP_OK)
         {
-            cprintln("Could not send message\n");
+            cprintln("Could not send message");
         }
     }
 
@@ -86,7 +86,7 @@ public:
         }
         else
         {
-            cprintln("Unknown command: %s\n", command.c_str());
+            cprintln("Unknown command: %s", command.c_str());
         }
     }
 
@@ -98,7 +98,7 @@ public:
         }
         else
         {
-            cprintln("Unknown setting: %s\n", key.c_str());
+            cprintln("Unknown setting: %s", key.c_str());
         }
     }
 

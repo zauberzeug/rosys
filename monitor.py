@@ -46,7 +46,7 @@ def receive():
                 for c in line:
                     checksum ^= ord(c)
                 if checksum != int(check):
-                    print('ERROR: CHECKSUM MISSMATCH ("%s")')
+                    print('ERROR: CHECKSUM MISSMATCH ("%s")' % line)
                 else:
                     print(line)
             else:
