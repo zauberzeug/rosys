@@ -91,9 +91,13 @@ public:
             this->angle = value / 100.0 / this->ratio;
         }
 
-        if (std::abs(this->angle - this->target) < this->tolerance)
-        {
-            this->state = this->target == 0 ? HOME : STOP;
+        if (this->state == MOVE) {
+            if (std::abs(this->angle - this->target) < this->tolerance) {
+                this->state = this->target == 0 ? HOME : STOP;
+            }
+        }
+        else {
+            this->state = std::abs(this->angle) < this->tolerance ? HOME : STOP;
         }
     }
 
@@ -152,6 +156,7 @@ public:
     {
         uint8_t data[8] = {0x81, 0, 0, 0, 0, 0, 0, 0};
         this->can->send(this->id, data);
-        this->state = STOP;
+        if (this->state != HOME)
+            this->state = STOP;
     }
 };
