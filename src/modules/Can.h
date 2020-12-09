@@ -54,11 +54,11 @@ public:
         }
     }
 
-    void send(uint16_t id, uint8_t data[8])
+    void send(uint16_t id, uint8_t data[8], bool rtr=false)
     {
         can_message_t message;
         message.identifier = id;
-        message.flags = CAN_MSG_FLAG_NONE;
+        message.flags = rtr? CAN_MSG_FLAG_RTR : CAN_MSG_FLAG_NONE;
         message.data_length_code = 8;
         for (int i = 0; i < 8; ++i)
         {
@@ -74,15 +74,17 @@ public:
     {
         std::string command = cut_first_word(msg);
 
-        if (command == "send")
+        if (command == "send" or command == "request")
         {
             uint16_t id = std::stoi(cut_first_word(msg, ','), nullptr, 16);
             uint8_t data[8];
             for (int i = 0; i < 8; ++i)
             {
-                data[i] = std::stoi(cut_first_word(msg, ','), nullptr, 16);
+                std::string word = cut_first_word(msg, ',');
+                data[i] = word.empty() ? 0 : std::stoi(word, nullptr, 16);
             }
-            send(id, data);
+            bool rtr = command=="request";
+            send(id, data, rtr);
         }
         else
         {
