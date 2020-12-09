@@ -19,9 +19,8 @@ private:
     double maxAngle = 360.0;
     double tolerance = 0.1;
 
-    const uint16_t id = 0x141;
-
     Can *can;
+    const uint16_t can_id = 0x141;
 
     double target = 0;
     double angle = 0;
@@ -37,18 +36,18 @@ public:
     RmdMotor(std::string name, Can *can) : Module(name)
     {
         this->can = can;
-        this->can->subscribe(this->id, this);
+        this->can->subscribe(this->can_id, this);
     }
-
+    
     void loop()
     {
         if (output)
             cprintln("%s %d %.3f", this->name.c_str(), this->state, this->angle);
 
         uint8_t data[8] = {0x92, 0, 0, 0, 0, 0, 0, 0};
-        this->can->send(this->id, data);
+        this->can->send(this->can_id, data);
     }
-
+    
     void handleMsg(std::string msg)
     {
         std::string command = cut_first_word(msg);
@@ -66,7 +65,7 @@ public:
         else if (command == "zero")
         {
             uint8_t data[8] = {0x19, 0, 0, 0, 0, 0, 0, 0};
-            this->can->send(this->id, data);
+            this->can->send(this->can_id, data);
         }
         else if (command == "stop")
         {
@@ -82,7 +81,7 @@ public:
         }
     }
 
-    void handleCanMsg(uint16_t id, uint8_t data[8])
+    void handleCanMsg(uint16_t can_id, uint8_t data[8])
     {
         if (data[0] == 0x92)
         {
@@ -148,14 +147,14 @@ public:
             *((uint8_t *)(&angle) + 2),
             *((uint8_t *)(&angle) + 3),
         };
-        this->can->send(this->id, data);
+        this->can->send(this->can_id, data);
         this->state = MOVE;
     }
 
     void stop()
     {
         uint8_t data[8] = {0x81, 0, 0, 0, 0, 0, 0, 0};
-        this->can->send(this->id, data);
+        this->can->send(this->can_id, data);
         if (this->state != HOME)
             this->state = STOP;
     }

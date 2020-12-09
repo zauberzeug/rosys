@@ -18,6 +18,7 @@
 #include "modules/Imu.h"
 #include "modules/Can.h"
 #include "modules/RmdMotor.h"
+#include "modules/ODriveAxis.h"
 #include "utils/Serial.h"
 #include "utils/timing.h"
 #include "utils/strings.h"
@@ -163,6 +164,10 @@ Module *createModule(std::string type, std::string name, std::string parameters)
         return new Can(name, parameters);
     else if (type == "rmdmotor")
         return new RmdMotor(name, (Can *)modules[parameters]);
+    else if (type == "odriveaxis") {
+        std::string can_name = cut_first_word(parameters, ',');
+        return new ODriveAxis(name, (Can *)modules[can_name], parameters);
+    }
     else
     {
         cprintln("Unknown module type: %s", type.c_str());
