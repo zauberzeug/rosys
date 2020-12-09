@@ -44,8 +44,7 @@ public:
         if (output)
             cprintln("%s %d %.3f", this->name.c_str(), this->state, this->angle);
 
-        uint8_t data[8] = {0x92, 0, 0, 0, 0, 0, 0, 0};
-        this->can->send(this->can_id, data);
+        this->can->send(this->can_id, 0x92, 0, 0, 0, 0, 0, 0, 0);
     }
     
     void handleMsg(std::string msg)
@@ -64,8 +63,7 @@ public:
         }
         else if (command == "zero")
         {
-            uint8_t data[8] = {0x19, 0, 0, 0, 0, 0, 0, 0};
-            this->can->send(this->can_id, data);
+            this->can->send(this->can_id, 0x19, 0, 0, 0, 0, 0, 0, 0);
         }
         else if (command == "stop")
         {
@@ -137,7 +135,7 @@ public:
         double clipped_angle = std::max(std::min(this->target, maxAngle), minAngle);
         uint16_t speed = this->speed * this->ratio;
         uint32_t angle = clipped_angle * this->ratio * 100;
-        uint8_t data[8] = {
+        this->can->send(this->can_id,
             0xa4,
             0,
             *((uint8_t *)(&speed) + 0),
@@ -145,16 +143,13 @@ public:
             *((uint8_t *)(&angle) + 0),
             *((uint8_t *)(&angle) + 1),
             *((uint8_t *)(&angle) + 2),
-            *((uint8_t *)(&angle) + 3),
-        };
-        this->can->send(this->can_id, data);
+            *((uint8_t *)(&angle) + 3));
         this->state = MOVE;
     }
 
     void stop()
     {
-        uint8_t data[8] = {0x81, 0, 0, 0, 0, 0, 0, 0};
-        this->can->send(this->can_id, data);
+        this->can->send(this->can_id, 0x81, 0, 0, 0, 0, 0, 0, 0);
         if (this->state != HOME)
             this->state = STOP;
     }

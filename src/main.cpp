@@ -165,8 +165,9 @@ Module *createModule(std::string type, std::string name, std::string parameters)
     else if (type == "rmdmotor")
         return new RmdMotor(name, (Can *)modules[parameters]);
     else if (type == "odriveaxis") {
+        std::string switch_name = cut_first_word(parameters, ',');
         std::string can_name = cut_first_word(parameters, ',');
-        return new ODriveAxis(name, (Can *)modules[can_name], parameters);
+        return new ODriveAxis(name, (Button *)modules[switch_name], (Can *)modules[can_name], parameters);
     }
     else
     {

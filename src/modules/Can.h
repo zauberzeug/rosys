@@ -70,6 +70,15 @@ public:
         }
     }
 
+    void send(uint16_t id,
+        uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3,
+        uint8_t d4, uint8_t d5, uint8_t d6, uint8_t d7,
+        bool rtr=false)
+    {
+        uint8_t data[8] = { d0, d1, d2, d3, d4, d5, d6, d7 };
+        this->send(id, data, rtr);
+    }
+
     void handleMsg(std::string msg)
     {
         std::string command = cut_first_word(msg);
