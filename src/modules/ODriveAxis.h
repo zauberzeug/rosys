@@ -13,8 +13,6 @@ class ODriveAxis : public Module
 {
 private:
     bool output = false;
-    double speed = 1.0;
-    double torque = 1.0;
     double minPos = 0.0;
     double maxPos = 1.0;
     double tolerance = 0.1;
@@ -102,14 +100,6 @@ public:
         {
             output = value == "1";
         }
-        else if (key == "speed")
-        {
-            speed = atof(value.c_str());
-        }
-        else if (key == "torque")
-        {
-            torque = atof(value.c_str());
-        }
         else if (key == "minPos")
         {
             minPos = atof(value.c_str());
@@ -134,11 +124,7 @@ public:
         this->can->send(this->can_id + 0x007, data);
 
         float pos = std::max(std::min(this->target, maxPos), minPos);
-        int16_t vel = this->speed * 1000;
-        int16_t trq = this->torque * 1000;
-        std::memcpy(data+0, &pos, 4);
-        std::memcpy(data+4, &vel, 2);
-        std::memcpy(data+6, &trq, 2);
+        std::memcpy(data, &pos, 4);
         this->can->send(this->can_id + 0x00c, data);
         this->state = MOVE;
     }
