@@ -66,7 +66,7 @@ public:
         }
         if (can_transmit(&message, pdMS_TO_TICKS(0)) != ESP_OK)
         {
-            cprintln("Could not send message");
+            cprintln("Could not send message with ID 0x%03x", id);
         }
     }
 
