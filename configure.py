@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import serial
 import os.path
+import time
 
 devs = [
     "/dev/tty.SLAB_USBtoUART",
@@ -15,10 +16,14 @@ else:
 
 def send(line):
 
+    print("Sending:", line)
+
     checksum = 0
     for c in line:
         checksum ^= ord(c)
     port.write(('%s^%d\n' % (line, checksum)).encode())
+
+    time.sleep(0.1)
 
 with serial.Serial(usb_path, baudrate=38400, timeout=1.0) as port:
 
