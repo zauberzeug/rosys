@@ -52,13 +52,9 @@ public:
         this->can->send(this->can_id + 0x009, 0, 0, 0, 0, 0, 0, 0, 0, true);
 
         if (this->state == HOMING and this->home_switch->state == 0) {
-            this->state = HOME;
             this->stop();
-            this->offset = this->position;
-            this->position = 0;
         }
         if (this->state == MOVE and std::abs(this->position - this->target) < this->tolerance) {
-            this->state = STOP;
             this->stop();
         }
     }
@@ -94,9 +90,11 @@ public:
     {
         if (can_id == this->can_id + 0x009)
         {
-            float pos, vel;
+            float pos;
             std::memcpy(&pos, data+0, 4);
-            std::memcpy(&vel, data+4, 4);
+            if (this->home_switch->state == 0) {
+                this->offset = pos;
+            }
             this->position = pos - this->offset;
         }
     }
@@ -156,7 +154,6 @@ public:
     {
         this->can->send(this->can_id + 0x007, 1, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_IDLE
 
-        if (this->state != HOME)
-            this->state = STOP;
+        this->state = this->home_switch->state == 0 ? HOME : STOP;
     }
 };
