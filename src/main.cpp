@@ -71,6 +71,7 @@ void handleMsg(std::string msg)
     else if (modules.count(word))
     {
         modules[word]->handleMsg(msg);
+        safety->applyShadow(word, msg);
     }
     else
     {
