@@ -14,10 +14,10 @@ class ODriveAxis : public Module
 {
 private:
     bool output = false;
-    double minPos = -100.0;
+    double minPos = 0.0;
     double maxPos = 100.0;
     double tolerance = 0.5;
-    double homeTorque = -0.1;
+    float homeSpeed = -10.0;
 
     Can *can;
     uint16_t can_id;
@@ -119,9 +119,9 @@ public:
         {
             tolerance = atof(value.c_str());
         }
-        else if (key == "homeTorque")
+        else if (key == "homeSpeed")
         {
-            homeTorque = atof(value.c_str());
+            homeSpeed = atof(value.c_str());
         }
         else
         {
@@ -135,7 +135,7 @@ public:
         this->can->send(this->can_id + 0x00b, 3, 0, 0, 0, 1, 0, 0, 0); // CONTROL_MODE_POSITION_CONTROL
 
         float pos = std::max(std::min(this->target, maxPos), minPos) + this->offset;
-        uint8_t data[8];
+        uint8_t data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
         std::memcpy(data, &pos, 4);
         this->can->send(this->can_id + 0x00c, data);
         this->state = MOVE;
@@ -144,11 +144,11 @@ public:
     void home()
     {
         this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
-        this->can->send(this->can_id + 0x00b, 1, 0, 0, 0, 1, 0, 0, 0); // CONTROL_MODE_TORQUE_CONTROL
+        this->can->send(this->can_id + 0x00b, 2, 0, 0, 0, 1, 0, 0, 0); // CONTROL_MODE_VELOCITY_CONTROL
 
-        uint8_t data[8];
-        std::memcpy(data, &this->homeTorque, 4);
-        this->can->send(this->can_id + 0x00e, data);
+        uint8_t data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+        std::memcpy(data, &this->homeSpeed, 4);
+        this->can->send(this->can_id + 0x00d, data);
         this->state = HOMING;
     }
 
