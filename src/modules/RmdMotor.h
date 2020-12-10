@@ -30,6 +30,7 @@ private:
         STOP = 0,
         MOVE = 1,
         HOME = 2,
+        HOMING = 3,
     };
 
 public:
@@ -53,13 +54,13 @@ public:
 
         if (command == "move")
         {
-            this->target = atof(cut_first_word(msg, ',').c_str());
-            this->move();
+            this->send_move(atof(cut_first_word(msg, ',').c_str()));
+            this->state = MOVE;
         }
         else if (command == "home")
         {
-            this->target = 0;
-            this->move();
+            this->send_move(0);
+            this->state = HOMING;
         }
         else if (command == "zero")
         {
@@ -88,13 +89,11 @@ public:
             this->angle = value / 100.0 / this->ratio;
         }
 
-        if (this->state == MOVE) {
-            if (std::abs(this->angle - this->target) < this->tolerance) {
-                this->state = this->target == 0 ? HOME : STOP;
-            }
+        if (this->state == MOVE and std::abs(this->angle - this->target) < this->tolerance) {
+            this->state = STOP;
         }
-        else {
-            this->state = std::abs(this->angle) < this->tolerance ? HOME : STOP;
+        if (this->state == HOMING and std::abs(this->angle) < this->tolerance) {
+            this->state = HOME;
         }
     }
 
@@ -130,11 +129,11 @@ public:
         }
     }
 
-    void move()
+    void send_move(double target)
     {
-        double clipped_angle = std::max(std::min(this->target, maxAngle), minAngle);
+        this->target = std::max(std::min(target, maxAngle), minAngle);
         uint16_t speed = this->speed * this->ratio;
-        uint32_t angle = clipped_angle * this->ratio * 100;
+        uint32_t angle = this->target * this->ratio * 100;
         this->can->send(this->can_id,
             0xa4,
             0,
@@ -144,13 +143,20 @@ public:
             *((uint8_t *)(&angle) + 1),
             *((uint8_t *)(&angle) + 2),
             *((uint8_t *)(&angle) + 3));
-        this->state = MOVE;
     }
 
     void stop()
     {
-        this->can->send(this->can_id, 0x81, 0, 0, 0, 0, 0, 0, 0);
-        if (this->state != HOME)
+        if (this->state == STOP) {
+            return;
+        }
+        else if (this->state == HOME) {
+            this->send_move(0);
+            this->state = HOME;
+        }
+        else {
+            this->send_move(this->angle);
             this->state = STOP;
+        }
     }
 };
