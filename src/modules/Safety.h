@@ -10,6 +10,8 @@
 class Safety : public Module
 {
 private:
+    bool active = true;
+
     std::map<std::string, Module *> *modules;
     std::map<std::string, std::tuple<std::string, std::string, int>> conditions;
 
@@ -42,6 +44,10 @@ public:
             int state = atoi(value.c_str());
             conditions[key] = std::make_tuple(module, trigger, state);
         }
+        else if (key == "active")
+        {
+            active = value == "1";
+        }
         else
         {
             cprintln("Unknown setting: %s", key.c_str());
@@ -50,6 +56,9 @@ public:
 
     bool check(Module *module)
     {
+        if (not this->active)
+            return true;
+
         for (auto const &item : conditions)
         {
             std::string name = std::get<0>(item.second);
@@ -63,6 +72,8 @@ public:
 
     void list()
     {
+        cprintln(this->active ? "ACTIVE" : "INACTIVE");
+        
         for (auto const &item : conditions)
         {
             std::string name = std::get<0>(item.second);
