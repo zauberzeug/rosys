@@ -46,6 +46,13 @@ public:
             cprintln("%s %d %.3f", this->name.c_str(), this->state, this->angle);
 
         this->can->send(this->can_id, 0x92, 0, 0, 0, 0, 0, 0, 0);
+
+        if (this->state == MOVE and std::abs(this->angle - this->target) < this->tolerance) {
+            this->state = STOP;
+        }
+        if (this->state != MOVE and std::abs(this->angle) < this->tolerance) {
+            this->state = HOME;
+        }
     }
     
     void handleMsg(std::string msg)
@@ -87,13 +94,6 @@ public:
             int64_t value;
             std::memcpy(&value, data + 1, 7);
             this->angle = value / 100.0 / this->ratio;
-        }
-
-        if (this->state == MOVE and std::abs(this->angle - this->target) < this->tolerance) {
-            this->state = STOP;
-        }
-        if (this->state == HOMING and std::abs(this->angle) < this->tolerance) {
-            this->state = HOME;
         }
     }
 
