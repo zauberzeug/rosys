@@ -36,58 +36,62 @@ Safety *safety;
 Module *createModule(std::string type, std::string name, std::string parameters);
 std::string check(std::string line);
 
-void handleMsg(std::string msg)
+void handleMsg(std::string multiMsg)
 {
-    if (msg[0] == '+')
+    if (multiMsg[0] == '+')
     {
-        storage::append(msg.substr(1));
+        storage::append(multiMsg.substr(1));
         return;
     }
-    if (msg[0] == '-')
+    if (multiMsg[0] == '-')
     {
-        storage::remove(msg.substr(1));
+        storage::remove(multiMsg.substr(1));
         return;
     }
-    if (msg[0] == '?')
+    if (multiMsg[0] == '?')
     {
-        storage::print(msg.substr(1));
+        storage::print(multiMsg.substr(1));
         return;
     }
 
-    std::string word = cut_first_word(msg);
-    if (word == "new")
+    while (not multiMsg.empty())
     {
-        std::string type = cut_first_word(msg);
-        std::string name = cut_first_word(msg);
-        modules[name] = createModule(type, name, msg);
-        modules[name]->setup();
-    }
-    else if (word == "set")
-    {
-        std::string name = cut_first_word(msg, '.');
-        std::string key = cut_first_word(msg, '=');
-        modules[name]->set(key, msg);
-    }
-    else if (modules.count(word))
-    {
-        modules[word]->handleMsg(msg);
-        safety->applyShadow(word, msg);
-    }
-    else
-    {
-        // DEPRICATED
-        if (word == "stop")
-            esp->stopAll();
-        else if (word == "left")
-            handleMsg(std::string("drive left ") + msg);
-        else if (word == "right")
-            handleMsg(std::string("drive right ") + msg);
-        else if (word == "pw")
-            handleMsg(std::string("drive pw ") + msg);
-        else if (word == "ros")
-            handleMsg(std::string("esp print ") + msg);
+        std::string msg = cut_first_word(multiMsg, ';');
+        std::string word = cut_first_word(msg);
+        if (word == "new")
+        {
+            std::string type = cut_first_word(msg);
+            std::string name = cut_first_word(msg);
+            modules[name] = createModule(type, name, msg);
+            modules[name]->setup();
+        }
+        else if (word == "set")
+        {
+            std::string name = cut_first_word(msg, '.');
+            std::string key = cut_first_word(msg, '=');
+            modules[name]->set(key, msg);
+        }
+        else if (modules.count(word))
+        {
+            modules[word]->handleMsg(msg);
+            safety->applyShadow(word, msg);
+        }
         else
-            cprintln("Unknown module name: %s", word.c_str());
+        {
+            // DEPRICATED
+            if (word == "stop")
+                esp->stopAll();
+            else if (word == "left")
+                handleMsg(std::string("drive left ") + msg);
+            else if (word == "right")
+                handleMsg(std::string("drive right ") + msg);
+            else if (word == "pw")
+                handleMsg(std::string("drive pw ") + msg);
+            else if (word == "ros")
+                handleMsg(std::string("esp print ") + msg);
+            else
+                cprintln("Unknown module name: %s", word.c_str());
+        }
     }
 }
 
@@ -165,7 +169,8 @@ Module *createModule(std::string type, std::string name, std::string parameters)
         return new Can(name, parameters);
     else if (type == "rmdmotor")
         return new RmdMotor(name, (Can *)modules[parameters]);
-    else if (type == "odriveaxis") {
+    else if (type == "odriveaxis")
+    {
         std::string switch_name = cut_first_word(parameters, ',');
         std::string can_name = cut_first_word(parameters, ',');
         return new ODriveAxis(name, (Button *)modules[switch_name], (Can *)modules[can_name], parameters);
