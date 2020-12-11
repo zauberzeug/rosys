@@ -14,18 +14,17 @@ class ODriveAxis : public Module
 {
 private:
     bool output = false;
-    double minPos = 0.0;
-    double maxPos = 100.0;
-    double tolerance = 0.5;
+    float minPos = 0.0;
+    float maxPos = 100.0;
+    float tolerance = 0.5;
     float homeSpeed = -10.0;
 
     Can *can;
     uint16_t can_id;
     Button *home_switch;
 
-    double target = 0;
-    double position = 0;
-    double offset = 0;
+    float position = 0;
+    float offset = 0;
 
     enum State
     {
@@ -62,8 +61,11 @@ public:
 
         if (command == "move")
         {
-            this->target = atof(cut_first_word(msg, ',').c_str());
-            this->move();
+            this->move(atof(msg.c_str()));
+        }
+        else if (command == "speed")
+        {
+            this->speed(atof(msg.c_str()));
         }
         else if (command == "home")
         {
@@ -124,15 +126,26 @@ public:
         }
     }
 
-    void move()
+    void move(float target)
     {
         this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
         this->can->send(this->can_id + 0x00b, 3, 0, 0, 0, 5, 0, 0, 0); // CONTROL_MODE_POSITION_CONTROL, INPUT_MODE_TRAP_TRAJ
 
-        float pos = std::max(std::min(this->target, maxPos), minPos) + this->offset;
+        float pos = std::max(std::min(target, maxPos), minPos) + this->offset;
         uint8_t data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
         std::memcpy(data, &pos, 4);
         this->can->send(this->can_id + 0x00c, data);
+        this->state = MOVE;
+    }
+
+    void speed(float velocity)
+    {
+        this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
+        this->can->send(this->can_id + 0x00b, 2, 0, 0, 0, 2, 0, 0, 0); // CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_VEL_RAMP
+
+        uint8_t data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+        std::memcpy(data, &velocity, 4);
+        this->can->send(this->can_id + 0x00d, data);
         this->state = MOVE;
     }
 

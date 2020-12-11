@@ -26,6 +26,7 @@ public:
         can_filter_config_t f_config = CAN_FILTER_CONFIG_ACCEPT_ALL();
 
         g_config.rx_queue_len = 20;
+        g_config.tx_queue_len = 20;
 
         ESP_ERROR_CHECK(can_driver_install(&g_config, &t_config, &f_config));
         ESP_ERROR_CHECK(can_start());
