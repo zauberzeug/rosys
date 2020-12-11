@@ -173,7 +173,8 @@ Module *createModule(std::string type, std::string name, std::string parameters)
     {
         std::string switch_name = cut_first_word(parameters, ',');
         std::string can_name = cut_first_word(parameters, ',');
-        return new ODriveAxis(name, (Button *)modules[switch_name], (Can *)modules[can_name], parameters);
+        Button *home_switch = switch_name == "0" ? nullptr : (Button*)modules[switch_name];
+        return new ODriveAxis(name, home_switch, (Can *)modules[can_name], parameters);
     }
     else
     {

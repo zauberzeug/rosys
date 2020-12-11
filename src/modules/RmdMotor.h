@@ -47,9 +47,6 @@ public:
 
         this->can->send(this->can_id, 0x92, 0, 0, 0, 0, 0, 0, 0);
 
-        if (this->state == MOVE and std::abs(this->angle - this->target) < this->tolerance) {
-            this->state = STOP;
-        }
         if (this->state != MOVE and std::abs(this->angle) < this->tolerance) {
             this->state = HOME;
         }

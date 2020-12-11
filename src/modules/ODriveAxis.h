@@ -51,10 +51,7 @@ public:
 
         this->can->send(this->can_id + 0x009, 0, 0, 0, 0, 0, 0, 0, 0, true);
 
-        if (this->state == HOMING and this->home_switch->state == 0) {
-            this->stop();
-        }
-        if (this->state == MOVE and std::abs(this->position - this->target) < this->tolerance) {
+        if (this->state == HOMING and this->is_home_active()) {
             this->stop();
         }
     }
@@ -92,7 +89,7 @@ public:
         {
             float pos;
             std::memcpy(&pos, data+0, 4);
-            if (this->home_switch->state == 0) {
+            if (this->is_home_active()) {
                 this->offset = pos;
             }
             this->position = pos - this->offset;
@@ -130,7 +127,7 @@ public:
     void move()
     {
         this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
-        this->can->send(this->can_id + 0x00b, 3, 0, 0, 0, 1, 0, 0, 0); // CONTROL_MODE_POSITION_CONTROL
+        this->can->send(this->can_id + 0x00b, 3, 0, 0, 0, 5, 0, 0, 0); // CONTROL_MODE_POSITION_CONTROL, INPUT_MODE_TRAP_TRAJ
 
         float pos = std::max(std::min(this->target, maxPos), minPos) + this->offset;
         uint8_t data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -142,7 +139,7 @@ public:
     void home()
     {
         this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
-        this->can->send(this->can_id + 0x00b, 2, 0, 0, 0, 1, 0, 0, 0); // CONTROL_MODE_VELOCITY_CONTROL
+        this->can->send(this->can_id + 0x00b, 2, 0, 0, 0, 5, 0, 0, 0); // CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_TRAP_TRAJ
 
         uint8_t data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
         std::memcpy(data, &this->homeSpeed, 4);
@@ -154,6 +151,11 @@ public:
     {
         this->can->send(this->can_id + 0x007, 1, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_IDLE
 
-        this->state = this->home_switch->state == 0 ? HOME : STOP;
+        this->state = this->is_home_active() ? HOME : STOP;
+    }
+
+    bool is_home_active()
+    {
+        return this->home_switch != nullptr and this->home_switch->state == 0;
     }
 };
