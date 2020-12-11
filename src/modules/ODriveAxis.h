@@ -139,7 +139,7 @@ public:
     void home()
     {
         this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
-        this->can->send(this->can_id + 0x00b, 2, 0, 0, 0, 5, 0, 0, 0); // CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_TRAP_TRAJ
+        this->can->send(this->can_id + 0x00b, 2, 0, 0, 0, 1, 0, 0, 0); // CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_PASSTHROUGH
 
         uint8_t data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
         std::memcpy(data, &this->homeSpeed, 4);
