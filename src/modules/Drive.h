@@ -315,12 +315,12 @@ public:
         }
         else if (command == "left")
         {
-            double speed = atof(msg.c_str());
+            double speed = atof(msg.c_str()) * width / 2.0;
             triggerSpeed(-speed, speed);
         }
         else if (command == "right")
         {
-            double speed = atof(msg.c_str());
+            double speed = atof(msg.c_str()) * width / 2.0;
             triggerSpeed(speed, -speed);
         }
         else if (command == "stop")

@@ -19,6 +19,7 @@
 #include "modules/Can.h"
 #include "modules/RmdMotor.h"
 #include "modules/ODriveAxis.h"
+#include "modules/WheelPair.h"
 #include "utils/Serial.h"
 #include "utils/timing.h"
 #include "utils/strings.h"
@@ -79,14 +80,16 @@ void handleMsg(std::string multiMsg)
         else
         {
             // DEPRICATED
+            std::string module = modules.count("drive") > 0 ? "drive" : "wheels";
             if (word == "stop")
                 esp->stopAll();
-            else if (word == "left")
-                handleMsg(std::string("drive left ") + msg);
-            else if (word == "right")
-                handleMsg(std::string("drive right ") + msg);
-            else if (word == "pw")
-                handleMsg(std::string("drive pw ") + msg);
+            else if (word == "left" or word == "right")
+                handleMsg(module + " " + word + " " + msg);
+            else if (word == "pw") {
+                if (module == "wheels")
+                    word = "torque";
+                handleMsg(module + " " + word + " " + msg);
+            }
             else if (word == "ros")
                 handleMsg(std::string("esp print ") + msg);
             else
@@ -175,6 +178,12 @@ Module *createModule(std::string type, std::string name, std::string parameters)
         std::string can_name = cut_first_word(parameters, ',');
         Button *home_switch = switch_name == "0" ? nullptr : (Button*)modules[switch_name];
         return new ODriveAxis(name, home_switch, (Can *)modules[can_name], parameters);
+    }
+    else if (type == "wheelpair")
+    {
+        ODriveAxis *left = (ODriveAxis *)modules[cut_first_word(parameters, ',').c_str()];
+        ODriveAxis *right = (ODriveAxis *)modules[cut_first_word(parameters, ',').c_str()];
+        return new WheelPair(name, left, right);
     }
     else
     {

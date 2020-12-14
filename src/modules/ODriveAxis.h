@@ -67,6 +67,10 @@ public:
         {
             this->speed(atof(msg.c_str()));
         }
+        else if (command == "torque")
+        {
+            this->torque(atof(msg.c_str()));
+        }
         else if (command == "home")
         {
             this->home();
@@ -146,6 +150,17 @@ public:
         uint8_t data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
         std::memcpy(data, &velocity, 4);
         this->can->send(this->can_id + 0x00d, data);
+        this->state = MOVE;
+    }
+
+    void torque(float power)
+    {
+        this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
+        this->can->send(this->can_id + 0x00b, 1, 0, 0, 0, 1, 0, 0, 0); // CONTROL_MODE_TORQUE_CONTROL, INPUT_MODE_PASSTHROUGH
+
+        uint8_t data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+        std::memcpy(data, &power, 4);
+        this->can->send(this->can_id + 0x00e, data);
         this->state = MOVE;
     }
 
