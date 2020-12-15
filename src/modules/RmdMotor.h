@@ -87,9 +87,9 @@ public:
     {
         if (data[0] == 0x92)
         {
-            int64_t value;
+            int64_t value = 0;
             std::memcpy(&value, data + 1, 7);
-            this->angle = value / 100.0 / this->ratio;
+            this->angle = (value << 8) / 256.0 / 100.0 / this->ratio;
         }
     }
 
