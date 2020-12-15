@@ -11,8 +11,6 @@
 class DualMotor : public Module
 {
 private:
-    bool output = false;
-
     uint32_t accel1 = 1e5;
     uint32_t accel2 = 1e5;
 
@@ -94,19 +92,21 @@ private:
         return true;
     }
 
-    void print_values(claw_values_t values)
+    std::string getOutput()
     {
-        cprintln("tool status %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%x\t%s",
-                 values.position1,
-                 values.position2,
-                 values.countsPerSecond1,
-                 values.countsPerSecond2,
-                 values.depth1,
-                 values.depth2,
-                 values.current1,
-                 values.current2,
-                 values.statusBits,
-                 state_to_string(state).c_str());
+        char buffer[256];
+        std::sprintf(buffer, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%x\t%s",
+            values.position1,
+            values.position2,
+            values.countsPerSecond1,
+            values.countsPerSecond2,
+            values.depth1,
+            values.depth2,
+            values.current1,
+            values.current2,
+            values.statusBits,
+            state_to_string(state).c_str());
+        return buffer;
     }
 
     bool handleError(bool valid)
@@ -148,8 +148,7 @@ public:
         if (not handleError(read_values(values)))
             return;
 
-        if (output)
-            print_values(values);
+        Module::loop();
 
         static int16_t lastCurrent1 = 0;
         static int16_t lastCurrent2 = 0;
@@ -205,14 +204,12 @@ public:
         }
     }
 
-    void handleMsg(std::string msg)
+    void handleMsg(std::string command, std::string parameters)
     {
-        std::string command = cut_first_word(msg);
-
         if (command == "pw")
         {
-            double pw1 = atof(cut_first_word(msg, ',').c_str());
-            double pw2 = atof(cut_first_word(msg, ',').c_str());
+            double pw1 = atof(cut_first_word(parameters, ',').c_str());
+            double pw2 = atof(cut_first_word(parameters, ',').c_str());
             handleError(sendPower(pw1, pw2));
         }
         else if (command == "home")
@@ -221,9 +218,9 @@ public:
         {
             if (state == IDLE)
             {
-                std::string arg1 = cut_first_word(msg, ',');
-                std::string arg2 = cut_first_word(msg, ',');
-                std::string arg3 = cut_first_word(msg, ',');
+                std::string arg1 = cut_first_word(parameters, ',');
+                std::string arg2 = cut_first_word(parameters, ',');
+                std::string arg3 = cut_first_word(parameters, ',');
                 if (points.count(arg1) > 0)
                     move(points[arg1].first, points[arg1].second, atof(arg2.c_str()));
                 else
@@ -234,26 +231,17 @@ public:
                 cprintln("Can't start moving in state %s", state_to_string(state).c_str());
             }
         }
-        else if (command == "get")
-        {
-            if (handleError(read_values(values)))
-                print_values(values);
-        }
         else if (command == "stop")
             stop();
         else
         {
-            cprintln("Unknown command: %s", command.c_str());
+            Module::handleMsg(command, parameters);
         }
     }
 
     void set(std::string key, std::string value)
     {
-        if (key == "output")
-        {
-            output = value == "1";
-        }
-        else if (key == "accel1")
+        if (key == "accel1")
         {
             accel1 = atoi(value.c_str());
         }
@@ -278,7 +266,7 @@ public:
         }
         else
         {
-            cprintln("Unknown setting: %s", key.c_str());
+            Module::set(key, value);
         }
     }
 

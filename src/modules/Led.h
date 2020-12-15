@@ -12,7 +12,6 @@
 class Led : public Module
 {
 private:
-    bool output = false;
     double interval = 1.0;
 
     Port *port;
@@ -50,14 +49,19 @@ public:
     void loop()
     {
         port->set_level(level());
-        if (output)
-            cprintln("%s %d", this->name.c_str(), level());
+
+        Module::loop();
     }
 
-    void handleMsg(std::string msg)
+    std::string getOutput()
     {
-        std::string command = cut_first_word(msg);
+        char buffer[256];
+        std::sprintf(buffer, "%d", this->level());
+        return buffer;
+    }
 
+    void handleMsg(std::string command, std::string parameters)
+    {
         if (command == "on")
         {
             state = ON;
@@ -70,29 +74,21 @@ public:
         {
             state = PULSE;
         }
-        else if (command == "get")
-        {
-            cprintln("%s get %d", this->name.c_str(), level());
-        }
         else
         {
-            cprintln("Unknown command: %s", command.c_str());
+            Module::handleMsg(command, parameters);
         }
     }
 
     void set(std::string key, std::string value)
     {
-        if (key == "output")
-        {
-            output = value == "1";
-        }
-        else if (key == "interval")
+        if (key == "interval")
         {
             interval = atof(value.c_str());
         }
         else
         {
-            cprintln("Unknown setting: %s", key.c_str());
+            Module::set(key, value);
         }
     }
 

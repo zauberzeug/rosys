@@ -15,17 +15,15 @@ public:
         Ble::init(device_name, globalMessageHandler);
     }
 
-    void handleMsg(std::string msg)
+    void handleMsg(std::string command, std::string parameters)
     {
-        std::string command = cut_first_word(msg);
-
         if (command == "send")
         {
             cprintln("Sending...");
         }
         else
         {
-            cprintln("Unknown command: %s", command.c_str());
+            Module::handleMsg(command, parameters);
         }
     }
 };

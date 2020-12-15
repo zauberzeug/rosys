@@ -26,13 +26,11 @@ public:
         this->pwm_port->setup(false);
     }
 
-    void handleMsg(std::string msg)
+    void handleMsg(std::string command, std::string parameters)
     {
-        std::string command = cut_first_word(msg);
-
         if (command == "pw")
         {
-            double pw = atof(msg.c_str());
+            double pw = atof(parameters.c_str());
             this->dir_port->set_level(pw > 0);
             this->pwm_port->set_level(fabs(pw));
             cprintln("%s %s completed", name.c_str(), command.c_str());
@@ -40,13 +38,13 @@ public:
         else if (command == "up")
         {
             // NOTE: deprecated
-            handleMsg("pw 1");
+            handleMsg("pw", "1");
             cprintln("%s %s completed", name.c_str(), command.c_str());
         }
         else if (command == "down")
         {
             // NOTE: deprecated
-            handleMsg("pw -1");
+            handleMsg("pw", "-1");
             cprintln("%s %s completed", name.c_str(), command.c_str());
         }
         else if (command == "stop")
@@ -55,7 +53,7 @@ public:
         }
         else
         {
-            cprintln("Unknown command: %s", command.c_str());
+            Module::handleMsg(command, parameters);
         }
     }
 

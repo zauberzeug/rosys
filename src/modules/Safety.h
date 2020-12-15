@@ -22,16 +22,14 @@ public:
         this->modules = modules;
     }
 
-    void handleMsg(std::string msg)
+    void handleMsg(std::string command, std::string parameters)
     {
-        std::string command = cut_first_word(msg);
-
         if (command == "list")
         {
             this->list();
         }
         else {
-            cprintln("Unknown command: %s", command.c_str());
+            Module::handleMsg(command, parameters);
         }
     }
 
@@ -58,7 +56,7 @@ public:
         }
         else
         {
-            cprintln("Unknown setting: %s", key.c_str());
+            Module::set(key, value);
         }
     }
 
@@ -78,7 +76,7 @@ public:
         return true;
     }
 
-    void applyShadow(std::string trigger, std::string msg)
+    void applyShadow(std::string trigger, std::string command, std::string parameters)
     {
         if (not this->active)
             return;
@@ -86,7 +84,7 @@ public:
         for (auto const &item : shadows)
         {
             if (item.second.first == trigger) {
-                (*modules)[item.second.second]->handleMsg(msg);
+                (*modules)[item.second.second]->handleMsg(command, parameters);
             }
         }
     }

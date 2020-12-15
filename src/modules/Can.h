@@ -11,8 +11,6 @@
 class Can : public Module
 {
 private:
-    bool output = false;
-
     std::map<uint16_t, Module *> subscribers;
 
 public:
@@ -82,37 +80,23 @@ public:
         this->send(id, data, rtr);
     }
 
-    void handleMsg(std::string msg)
+    void handleMsg(std::string command, std::string parameters)
     {
-        std::string command = cut_first_word(msg);
-
         if (command == "send" or command == "request")
         {
-            uint16_t id = std::stoi(cut_first_word(msg, ','), nullptr, 16);
+            uint16_t id = std::stoi(cut_first_word(parameters, ','), nullptr, 16);
             uint8_t data[8];
             for (int i = 0; i < 8; ++i)
             {
-                std::string word = cut_first_word(msg, ',');
+                std::string word = cut_first_word(parameters, ',');
                 data[i] = word.empty() ? 0 : std::stoi(word, nullptr, 16);
             }
-            bool rtr = command=="request";
+            bool rtr = command == "request";
             send(id, data, rtr);
         }
         else
         {
-            cprintln("Unknown command: %s", command.c_str());
-        }
-    }
-
-    void set(std::string key, std::string value)
-    {
-        if (key == "output")
-        {
-            output = value == "1";
-        }
-        else
-        {
-            cprintln("Unknown setting: %s", key.c_str());
+            Module::handleMsg(command, parameters);
         }
     }
 

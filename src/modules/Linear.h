@@ -8,8 +8,6 @@
 class Linear : public Module
 {
 private:
-    bool output = false;
-
     Port *portMoveIn;
     Port *portMoveOut;
     Port *portStopIn;
@@ -52,14 +50,18 @@ public:
         portMoveIn->set_level(this->state == MOVE_IN ? 1 : 0);
         portMoveOut->set_level(this->state == MOVE_OUT ? 1 : 0);
 
-        if (output)
-            cprintln("%s %d", this->name.c_str(), this->state);
+        Module::loop();
     }
 
-    void handleMsg(std::string msg)
+    std::string getOutput()
     {
-        std::string command = cut_first_word(msg);
+        char buffer[256];
+        std::sprintf(buffer, "%d", this->state);
+        return buffer;
+    }
 
+    void handleMsg(std::string command, std::string parameters)
+    {
         if (command == "in")
         {
             state = MOVE_IN;
@@ -72,13 +74,9 @@ public:
         {
             this->stop();
         }
-        else if (command == "get")
-        {
-            cprintln("%s get %d", this->name.c_str(), this->state);
-        }
         else
         {
-            cprintln("Unknown command: %s", command.c_str());
+            Module::handleMsg(command, parameters);
         }
     }
 

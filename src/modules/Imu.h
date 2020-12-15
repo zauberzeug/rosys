@@ -8,8 +8,6 @@
 class Imu : public Module
 {
 private:
-    bool output = false;
-
     BNO055 *bno;
 
 public:
@@ -32,43 +30,11 @@ public:
         this->bno->setOprModeNdof();
     }
 
-    void setup()
+    std::string getOutput()
     {
-    }
-
-    void loop()
-    {
-        if (output)
-        {
-            bno055_vector_t e = this->bno->getVectorEuler();
-            cprintln("%s %7.2f %7.2f %7.2f", this->name.c_str(), e.x, e.y, e.z);
-        }
-    }
-
-    void handleMsg(std::string msg)
-    {
-        std::string command = cut_first_word(msg);
-
-        if (command == "get")
-        {
-            bno055_vector_t e = this->bno->getVectorEuler();
-            cprintln("%s get %7.2f %7.2f %7.2f", this->name.c_str(), e.x, e.y, e.z);
-        }
-        else
-        {
-            cprintln("Unknown command: %s", command.c_str());
-        }
-    }
-
-    void set(std::string key, std::string value)
-    {
-        if (key == "output")
-        {
-            output = value == "1";
-        }
-        else
-        {
-            cprintln("Unknown setting: %s", key.c_str());
-        }
+        bno055_vector_t e = this->bno->getVectorEuler();
+        char buffer[256];
+        std::sprintf(buffer, "%7.2f %7.2f %7.2f", e.x, e.y, e.z);
+        return buffer;
     }
 };

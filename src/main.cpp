@@ -74,8 +74,9 @@ void handleMsg(std::string multiMsg)
         }
         else if (modules.count(word))
         {
-            modules[word]->handleMsg(msg);
-            safety->applyShadow(word, msg);
+            std::string command = cut_first_word(msg);
+            modules[word]->handleMsg(command, msg);
+            safety->applyShadow(word, command, msg);
         }
         else
         {

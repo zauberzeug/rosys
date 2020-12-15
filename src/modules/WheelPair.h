@@ -26,21 +26,19 @@ public:
         this->rightAxis = right;
     }
 
-    void handleMsg(std::string msg)
+    void handleMsg(std::string command, std::string parameters)
     {
-        std::string command = cut_first_word(msg);
-
         if (command == "torque")
         {
-            double left = atof(cut_first_word(msg, ',').c_str());
-            double right = atof(cut_first_word(msg, ',').c_str());
+            double left = atof(cut_first_word(parameters, ',').c_str());
+            double right = atof(cut_first_word(parameters, ',').c_str());
             this->leftAxis->torque(left * this->leftTorqueFactor);
             this->rightAxis->torque(right * this->rightTorqueFactor);
         }
         else if (command == "speed")
         {
-            double linear = atof(cut_first_word(msg, ',').c_str());
-            double curvature = atof(cut_first_word(msg, ',').c_str());
+            double linear = atof(cut_first_word(parameters, ',').c_str());
+            double curvature = atof(cut_first_word(parameters, ',').c_str());
             double s_l = linear - linear * width * curvature / 2.0;
             double s_r = linear + linear * width * curvature / 2.0;
             double f_l = s_l != 0.0 ? fabs(linear) / fabs(s_l) : 1.0;
@@ -51,13 +49,13 @@ public:
         }
         else if (command == "left")
         {
-            double speed = atof(msg.c_str());
+            double speed = atof(parameters.c_str());
             this->leftAxis->speed(-speed * this->leftSpeedFactor);
             this->rightAxis->speed(speed * this->rightSpeedFactor);
         }
         else if (command == "right")
         {
-            double speed = atof(msg.c_str());
+            double speed = atof(parameters.c_str());
             this->leftAxis->speed(speed * this->leftSpeedFactor);
             this->rightAxis->speed(-speed * this->rightSpeedFactor);
         }
@@ -67,7 +65,7 @@ public:
         }
         else
         {
-            cprintln("Unknown command: %s", command.c_str());
+            Module::handleMsg(command, parameters);
         }
     }
 
@@ -95,7 +93,7 @@ public:
         }
         else
         {
-            cprintln("Unknown setting: %s", key.c_str());
+            Module::set(key, value);
         }
     }
 

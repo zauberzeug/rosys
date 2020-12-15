@@ -10,7 +10,6 @@
 class Button : public Module
 {
 private:
-    bool output = false;
     bool invert = false;
     int pullup = 0;
 
@@ -31,31 +30,19 @@ public:
     {
         this->state = invert ? 1 - port->get_level() : port->get_level();
 
-        if (output)
-            cprintln("%s %d", this->name.c_str(), this->state);
+        Module::loop();
     }
 
-    void handleMsg(std::string msg)
+    std::string output()
     {
-        std::string command = cut_first_word(msg);
-
-        if (command == "get")
-        {
-            cprintln("%s get %d", this->name.c_str(), this->state);
-        }
-        else
-        {
-            cprintln("Unknown command: %s", command.c_str());
-        }
+        char buffer[256];
+        std::sprintf(buffer, "%d", this->state);
+        return buffer;
     }
 
     void set(std::string key, std::string value)
     {
-        if (key == "output")
-        {
-            output = value == "1";
-        }
-        else if (key == "invert")
+        if (key == "invert")
         {
             invert = value == "1";
         }
@@ -66,7 +53,7 @@ public:
         }
         else
         {
-            cprintln("Unknown setting: %s", key.c_str());
+            Module::set(key, value);
         }
     }
 };

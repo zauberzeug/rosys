@@ -13,7 +13,6 @@
 class ODriveAxis : public Module
 {
 private:
-    bool output = false;
     float minPos = 0.0;
     float maxPos = 100.0;
     float tolerance = 0.5;
@@ -45,31 +44,35 @@ public:
 
     void loop()
     {
-        if (output)
-            cprintln("%s %d %.3f", this->name.c_str(), this->state, this->position);
-
         this->can->send(this->can_id + 0x009, 0, 0, 0, 0, 0, 0, 0, 0, true);
 
         if (this->state == HOMING and this->is_home_active()) {
             this->stop();
         }
+
+        Module::loop();
     }
 
-    void handleMsg(std::string msg)
+    std::string getOutput()
     {
-        std::string command = cut_first_word(msg);
+        char buffer[256];
+        std::sprintf(buffer, "%d %.3f", this->state, this->position);
+        return buffer;
+    }
 
+    void handleMsg(std::string command, std::string parameters)
+    {
         if (command == "move")
         {
-            this->move(atof(msg.c_str()));
+            this->move(atof(parameters.c_str()));
         }
         else if (command == "speed")
         {
-            this->speed(atof(msg.c_str()));
+            this->speed(atof(parameters.c_str()));
         }
         else if (command == "torque")
         {
-            this->torque(atof(msg.c_str()));
+            this->torque(atof(parameters.c_str()));
         }
         else if (command == "home")
         {
@@ -79,13 +82,9 @@ public:
         {
             this->stop();
         }
-        else if (command == "get")
-        {
-            cprintln("%s get %d %.3f", this->name.c_str(), this->state, this->position);
-        }
         else
         {
-            cprintln("Unknown command: %s", command.c_str());
+            Module::handleMsg(command, parameters);
         }
     }
 
@@ -104,11 +103,7 @@ public:
 
     void set(std::string key, std::string value)
     {
-        if (key == "output")
-        {
-            output = value == "1";
-        }
-        else if (key == "minPos")
+        if (key == "minPos")
         {
             minPos = atof(value.c_str());
         }
@@ -126,7 +121,7 @@ public:
         }
         else
         {
-            cprintln("Unknown setting: %s", key.c_str());
+            Module::set(key, value);
         }
     }
 
