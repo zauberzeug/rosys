@@ -33,7 +33,7 @@ public:
         Module::loop();
     }
 
-    std::string output()
+    std::string getOutput()
     {
         char buffer[256];
         std::sprintf(buffer, "%d", this->state);
