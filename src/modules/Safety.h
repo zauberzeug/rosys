@@ -33,6 +33,14 @@ public:
         }
     }
 
+    std::string getOutput()
+    {
+        char buffer[256];
+        std::sprintf(buffer, "%d", this->active);
+        return buffer;
+    }
+
+
     void set(std::string key, std::string value)
     {
         if (starts_with(key, "condition_"))
