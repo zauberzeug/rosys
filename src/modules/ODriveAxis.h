@@ -16,6 +16,7 @@ private:
     float minPos = -INFINITY;
     float maxPos = INFINITY;
     float tolerance = 0.5;
+    float moveSpeed = INFINITY;
     float homeSpeed = -10.0;
 
     Can *can;
@@ -131,6 +132,10 @@ public:
         {
             tolerance = atof(value.c_str());
         }
+        else if (key == "moveSpeed")
+        {
+            moveSpeed = atof(value.c_str());
+        }
         else if (key == "homeSpeed")
         {
             homeSpeed = atof(value.c_str());
@@ -146,10 +151,14 @@ public:
         this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
         this->can->send(this->can_id + 0x00b, 3, 0, 0, 0, 5, 0, 0, 0); // CONTROL_MODE_POSITION_CONTROL, INPUT_MODE_TRAP_TRAJ
 
+        uint8_t vel_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+        std::memcpy(vel_data, &this->moveSpeed, 4);
+        this->can->send(this->can_id + 0x011, vel_data);
+
+        uint8_t pos_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         float pos = std::max(std::min(target, maxPos), minPos) + this->offset;
-        uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        std::memcpy(data, &pos, 4);
-        this->can->send(this->can_id + 0x00c, data);
+        std::memcpy(pos_data, &pos, 4);
+        this->can->send(this->can_id + 0x00c, pos_data);
         this->state = MOVE;
     }
 
