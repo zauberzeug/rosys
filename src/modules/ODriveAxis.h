@@ -13,8 +13,8 @@
 class ODriveAxis : public Module
 {
 private:
-    float minPos = 0.0;
-    float maxPos = 100.0;
+    float minPos = -INFINITY;
+    float maxPos = INFINITY;
     float tolerance = 0.5;
     float homeSpeed = -10.0;
 
@@ -46,7 +46,8 @@ public:
     {
         this->can->send(this->can_id + 0x009, 0, 0, 0, 0, 0, 0, 0, 0, true);
 
-        if (this->state == HOMING and this->is_home_active()) {
+        if (this->state == HOMING and this->is_home_active())
+        {
             this->stop();
         }
 
@@ -93,8 +94,9 @@ public:
         if (can_id == this->can_id + 0x009)
         {
             float pos;
-            std::memcpy(&pos, data+0, 4);
-            if (this->is_home_active()) {
+            std::memcpy(&pos, data + 0, 4);
+            if (this->is_home_active())
+            {
                 this->offset = pos;
             }
             this->position = pos - this->offset;
@@ -131,7 +133,7 @@ public:
         this->can->send(this->can_id + 0x00b, 3, 0, 0, 0, 5, 0, 0, 0); // CONTROL_MODE_POSITION_CONTROL, INPUT_MODE_TRAP_TRAJ
 
         float pos = std::max(std::min(target, maxPos), minPos) + this->offset;
-        uint8_t data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+        uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         std::memcpy(data, &pos, 4);
         this->can->send(this->can_id + 0x00c, data);
         this->state = MOVE;
@@ -142,7 +144,7 @@ public:
         this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
         this->can->send(this->can_id + 0x00b, 2, 0, 0, 0, 2, 0, 0, 0); // CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_VEL_RAMP
 
-        uint8_t data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+        uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         std::memcpy(data, &velocity, 4);
         this->can->send(this->can_id + 0x00d, data);
         this->state = MOVE;
@@ -153,7 +155,7 @@ public:
         this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
         this->can->send(this->can_id + 0x00b, 1, 0, 0, 0, 1, 0, 0, 0); // CONTROL_MODE_TORQUE_CONTROL, INPUT_MODE_PASSTHROUGH
 
-        uint8_t data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+        uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         std::memcpy(data, &power, 4);
         this->can->send(this->can_id + 0x00e, data);
         this->state = MOVE;
@@ -164,7 +166,7 @@ public:
         this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
         this->can->send(this->can_id + 0x00b, 2, 0, 0, 0, 1, 0, 0, 0); // CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_PASSTHROUGH
 
-        uint8_t data[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+        uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         std::memcpy(data, &this->homeSpeed, 4);
         this->can->send(this->can_id + 0x00d, data);
         this->state = HOMING;

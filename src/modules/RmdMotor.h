@@ -14,8 +14,8 @@ class RmdMotor : public Module
 private:
     double ratio = 1.0;
     double speed = 10.0;
-    double minAngle = 0.0;
-    double maxAngle = 360.0;
+    double minAngle = -INFINITY;
+    double maxAngle = INFINITY;
     double tolerance = 0.1;
 
     Can *can;
@@ -38,12 +38,13 @@ public:
         this->can = can;
         this->can->subscribe(this->can_id, this);
     }
-    
+
     void loop()
     {
         this->can->send(this->can_id, 0x92, 0, 0, 0, 0, 0, 0, 0);
 
-        if (this->state != MOVE and std::abs(this->angle) < this->tolerance) {
+        if (this->state != MOVE and std::abs(this->angle) < this->tolerance)
+        {
             this->state = HOME;
         }
 
@@ -56,7 +57,7 @@ public:
         std::sprintf(buffer, "%d %.3f", this->state, this->angle);
         return buffer;
     }
-    
+
     void handleMsg(std::string command, std::string parameters)
     {
         if (command == "move")
@@ -127,26 +128,29 @@ public:
         uint16_t speed = this->speed * this->ratio;
         uint32_t angle = this->target * this->ratio * 100;
         this->can->send(this->can_id,
-            0xa4,
-            0,
-            *((uint8_t *)(&speed) + 0),
-            *((uint8_t *)(&speed) + 1),
-            *((uint8_t *)(&angle) + 0),
-            *((uint8_t *)(&angle) + 1),
-            *((uint8_t *)(&angle) + 2),
-            *((uint8_t *)(&angle) + 3));
+                        0xa4,
+                        0,
+                        *((uint8_t *)(&speed) + 0),
+                        *((uint8_t *)(&speed) + 1),
+                        *((uint8_t *)(&angle) + 0),
+                        *((uint8_t *)(&angle) + 1),
+                        *((uint8_t *)(&angle) + 2),
+                        *((uint8_t *)(&angle) + 3));
     }
 
     void stop()
     {
-        if (this->state == STOP) {
+        if (this->state == STOP)
+        {
             return;
         }
-        else if (this->state == HOME) {
+        else if (this->state == HOME)
+        {
             this->send_move(0);
             this->state = HOME;
         }
-        else {
+        else
+        {
             this->send_move(this->angle);
             this->state = STOP;
         }
