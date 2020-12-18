@@ -24,6 +24,7 @@ private:
 
     float position = 0;
     float offset = 0;
+    uint8_t error = 0;
 
     enum State
     {
@@ -39,6 +40,7 @@ public:
         this->can = can;
         this->can_id = std::stoi(parameters, nullptr, 16);
         this->home_switch = home_switch;
+        this->can->subscribe(this->can_id + 0x001, this);
         this->can->subscribe(this->can_id + 0x009, this);
     }
 
@@ -56,7 +58,7 @@ public:
     std::string getOutput()
     {
         char buffer[256];
-        std::sprintf(buffer, "%d %.3f", this->state, this->position);
+        std::sprintf(buffer, "%d %d %.3f", this->state, this->error, this->position);
         return buffer;
     }
 
@@ -82,6 +84,14 @@ public:
         {
             this->stop();
         }
+        else if (command == "reboot")
+        {
+            this->can->send(this->can_id + 0x016, 0, 0, 0, 0, 0, 0, 0, 0);
+        }
+        else if (command == "clearError")
+        {
+            this->can->send(this->can_id + 0x018, 0, 0, 0, 0, 0, 0, 0, 0);
+        }
         else
         {
             Module::handleMsg(command, parameters);
@@ -90,10 +100,14 @@ public:
 
     void handleCanMsg(uint16_t can_id, uint8_t data[8])
     {
+        if (can_id == this->can_id + 0x001)
+        {
+            this->error = data[0];
+        }
         if (can_id == this->can_id + 0x009)
         {
             float pos;
-            std::memcpy(&pos, data+0, 4);
+            std::memcpy(&pos, data, 4);
             if (this->is_home_active()) {
                 this->offset = pos;
             }

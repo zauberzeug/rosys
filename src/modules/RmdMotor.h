@@ -23,6 +23,7 @@ private:
 
     double target = 0;
     double angle = 0;
+    uint8_t error = 0;
 
     enum State
     {
@@ -42,6 +43,7 @@ public:
     void loop()
     {
         this->can->send(this->can_id, 0x92, 0, 0, 0, 0, 0, 0, 0);
+        this->can->send(this->can_id, 0x9a, 0, 0, 0, 0, 0, 0, 0);
 
         if (this->state != MOVE and std::abs(this->angle) < this->tolerance) {
             this->state = HOME;
@@ -53,7 +55,7 @@ public:
     std::string getOutput()
     {
         char buffer[256];
-        std::sprintf(buffer, "%d %.3f", this->state, this->angle);
+        std::sprintf(buffer, "%d %d %.3f", this->state, this->error, this->angle);
         return buffer;
     }
     
@@ -77,6 +79,10 @@ public:
         {
             this->stop();
         }
+        else if (command == "clearError")
+        {
+            this->can->send(this->can_id, 0x9b, 0, 0, 0, 0, 0, 0, 0);
+        }
         else
         {
             Module::handleMsg(command, parameters);
@@ -90,6 +96,10 @@ public:
             int64_t value = 0;
             std::memcpy(&value, data + 1, 7);
             this->angle = (value << 8) / 256.0 / 100.0 / this->ratio;
+        }
+        if (data[0] == 0x9a)
+        {
+            this->error = data[7];
         }
     }
 
