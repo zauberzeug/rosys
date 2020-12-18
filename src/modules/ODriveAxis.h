@@ -15,16 +15,17 @@ class ODriveAxis : public Module
 private:
     float minPos = -INFINITY;
     float maxPos = INFINITY;
-    float tolerance = 0.5;
+    float tolerance = 0.005;
     float moveSpeed = INFINITY;
-    float homeSpeed = -10.0;
+    float homeSpeed = -0.1;
+    float mPerTick = 0.01;
 
     Can *can;
     uint16_t can_id;
     Button *home_switch;
 
-    float position = 0;
-    float offset = 0;
+    float position = 0.0;
+    float tickOffset = 0.0;
     uint8_t error = 0;
 
     enum State
@@ -108,13 +109,13 @@ public:
         }
         if (can_id == this->can_id + 0x009)
         {
-            float pos;
-            std::memcpy(&pos, data, 4);
+            float tick;
+            std::memcpy(&tick, data, 4);
             if (this->is_home_active())
             {
-                this->offset = pos;
+                this->tickOffset = tick;
             }
-            this->position = pos - this->offset;
+            this->position = (tick - this->tickOffset) * this->mPerTick;
         }
     }
 
@@ -140,6 +141,10 @@ public:
         {
             homeSpeed = atof(value.c_str());
         }
+        else if (key == "mPerTick")
+        {
+            mPerTick = atof(value.c_str());
+        }
         else
         {
             Module::set(key, value);
@@ -152,12 +157,13 @@ public:
         this->can->send(this->can_id + 0x00b, 3, 0, 0, 0, 5, 0, 0, 0); // CONTROL_MODE_POSITION_CONTROL, INPUT_MODE_TRAP_TRAJ
 
         uint8_t vel_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        std::memcpy(vel_data, &this->moveSpeed, 4);
+        float vel = this->moveSpeed / this->mPerTick;
+        std::memcpy(vel_data, &vel, 4);
         this->can->send(this->can_id + 0x011, vel_data);
 
         uint8_t pos_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        float pos = std::max(std::min(target, maxPos), minPos) + this->offset;
-        std::memcpy(pos_data, &pos, 4);
+        float tick = std::max(std::min(target, maxPos), minPos) / this->mPerTick + this->tickOffset;
+        std::memcpy(pos_data, &tick, 4);
         this->can->send(this->can_id + 0x00c, pos_data);
         this->state = MOVE;
     }
@@ -168,7 +174,8 @@ public:
         this->can->send(this->can_id + 0x00b, 2, 0, 0, 0, 2, 0, 0, 0); // CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_VEL_RAMP
 
         uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        std::memcpy(data, &velocity, 4);
+        float vel = velocity / this->mPerTick;
+        std::memcpy(data, &vel, 4);
         this->can->send(this->can_id + 0x00d, data);
         this->state = MOVE;
     }
@@ -190,7 +197,8 @@ public:
         this->can->send(this->can_id + 0x00b, 2, 0, 0, 0, 1, 0, 0, 0); // CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_PASSTHROUGH
 
         uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        std::memcpy(data, &this->homeSpeed, 4);
+        float vel = this->homeSpeed / this->mPerTick;
+        std::memcpy(data, &vel, 4);
         this->can->send(this->can_id + 0x00d, data);
         this->state = HOMING;
     }
