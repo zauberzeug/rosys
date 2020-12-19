@@ -76,6 +76,15 @@ public:
             }
             this->move(target, speed);
         }
+        else if (command == "dmove")
+        {
+            float target = atof(cut_first_word(parameters, ',').c_str()) + this->position;
+            float speed = this->moveSpeed;
+            if (not parameters.empty()) {
+                speed = atof(parameters.c_str());
+            }
+            this->move(target, speed);
+        }
         else if (command == "speed")
         {
             this->speed(atof(parameters.c_str()));
