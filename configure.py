@@ -25,7 +25,7 @@ def send(line):
 
     time.sleep(0.1)
 
-with serial.Serial(usb_path, baudrate=38400, timeout=1.0) as port:
+with serial.Serial(usb_path, baudrate=115200, timeout=1.0) as port:
 
     send('esp erase')
     with open('config.txt') as f:

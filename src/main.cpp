@@ -101,7 +101,7 @@ void handleMsg(std::string multiMsg)
 
 void setup()
 {
-    serial = new Serial(38400);
+    serial = new Serial(115200);
     delay(500);
 
     mcp::init(); // TODO

@@ -82,7 +82,7 @@ for usb_path in [
 else:
     raise Exception("No serial port found")
 
-with serial.Serial(usb_path, baudrate=38400, timeout=0.1) as port:
+with serial.Serial(usb_path, baudrate=115200, timeout=0.1) as port:
 
     loop = asyncio.get_event_loop()
     loop.create_task(send())
