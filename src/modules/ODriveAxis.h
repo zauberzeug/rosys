@@ -191,6 +191,9 @@ public:
         float vel = velocity / this->mPerTick;
         std::memcpy(data, &vel, 4);
         this->can->send(this->can_id + 0x00d, data);
+        float limit = fabs(vel * 2);
+        std::memcpy(data, &limit, 4);
+        this->can->send(this->can_id + 0x00f, data);
         this->state = MOVE;
     }
 
