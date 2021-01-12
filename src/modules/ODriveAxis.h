@@ -168,12 +168,12 @@ public:
     void move(float target, float speed)
     {
         this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
-        this->can->send(this->can_id + 0x00b, 3, 0, 0, 0, 5, 0, 0, 0); // CONTROL_MODE_POSITION_CONTROL, INPUT_MODE_TRAP_TRAJ
+        this->can->send(this->can_id + 0x00b, 3, 0, 0, 0, 1, 0, 0, 0); // CONTROL_MODE_POSITION_CONTROL, INPUT_MODE_PASSTHROUGH
 
         uint8_t vel_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         float vel = speed / this->mPerTick;
         std::memcpy(vel_data, &vel, 4);
-        this->can->send(this->can_id + 0x011, vel_data);
+        this->can->send(this->can_id + 0x00f, vel_data);
 
         uint8_t pos_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         float tick = std::max(std::min(target, maxPos), minPos) / this->mPerTick + this->tickOffset;
