@@ -28,6 +28,12 @@ private:
     float tickOffset = 0.0;
     uint8_t error = 0;
 
+    struct odriveState_t {
+        uint8_t state;
+        uint8_t controlMode;
+        uint8_t inputMode;
+    } odriveState;
+
     enum State
     {
         STOP = 0,
@@ -167,8 +173,7 @@ public:
 
     void move(float target, float speed)
     {
-        this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
-        this->can->send(this->can_id + 0x00b, 3, 0, 0, 0, 1, 0, 0, 0); // CONTROL_MODE_POSITION_CONTROL, INPUT_MODE_PASSTHROUGH
+        this->setMode(8, 3, 1); // AXIS_STATE_CLOSED_LOOP_CONTROL, CONTROL_MODE_POSITION_CONTROL, INPUT_MODE_PASSTHROUGH
 
         uint8_t vel_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         float vel = speed / this->mPerTick;
@@ -184,8 +189,7 @@ public:
 
     void speed(float velocity)
     {
-        this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
-        this->can->send(this->can_id + 0x00b, 2, 0, 0, 0, 2, 0, 0, 0); // CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_VEL_RAMP
+        this->setMode(8, 2, 2); // AXIS_STATE_CLOSED_LOOP_CONTROL, CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_VEL_RAMP
 
         uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         float vel = velocity / this->mPerTick;
@@ -199,8 +203,7 @@ public:
 
     void torque(float power)
     {
-        this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
-        this->can->send(this->can_id + 0x00b, 1, 0, 0, 0, 1, 0, 0, 0); // CONTROL_MODE_TORQUE_CONTROL, INPUT_MODE_PASSTHROUGH
+        this->setMode(8, 1, 1); // AXIS_STATE_CLOSED_LOOP_CONTROL, CONTROL_MODE_TORQUE_CONTROL, INPUT_MODE_PASSTHROUGH
 
         uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         std::memcpy(data, &power, 4);
@@ -210,8 +213,7 @@ public:
 
     void home()
     {
-        this->can->send(this->can_id + 0x007, 8, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_CLOSED_LOOP_CONTROL
-        this->can->send(this->can_id + 0x00b, 2, 0, 0, 0, 1, 0, 0, 0); // CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_PASSTHROUGH
+        this->setMode(8, 2, 1); // AXIS_STATE_CLOSED_LOOP_CONTROL, CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_PASSTHROUGH
 
         uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         float vel = this->homeSpeed / this->mPerTick;
@@ -222,9 +224,25 @@ public:
 
     void stop()
     {
-        this->can->send(this->can_id + 0x007, 1, 0, 0, 0, 0, 0, 0, 0); // AXIS_STATE_IDLE
+        this->setMode(1); // AXIS_STATE_IDLE
 
         this->state = this->is_home_active() ? HOME : STOP;
+    }
+
+    void setMode(uint8_t state, uint8_t controlMode=0, uint8_t inputMode=0)
+    {
+        if (this->odriveState.state != state)
+        {
+            this->can->send(this->can_id + 0x007, state, 0, 0, 0, 0, 0, 0, 0);
+            this->odriveState.state = state;
+        }
+        if (this->odriveState.controlMode != controlMode ||
+            this->odriveState.inputMode != inputMode)
+        {
+            this->can->send(this->can_id + 0x00b, controlMode, 0, 0, 0, inputMode, 0, 0, 0);
+            this->odriveState.controlMode = controlMode;
+            this->odriveState.inputMode = inputMode;
+        }
     }
 
     bool is_home_active()
