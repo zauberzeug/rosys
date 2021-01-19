@@ -157,10 +157,7 @@ public:
             lastCurrent1 = 0;
             lastCurrent2 = 0;
 
-            claw->DutyM1M2(1, 1);
-            delay(10);
-            claw->DutyM1M2(65535, 65535);
-            delay(10);
+            wiggle();
             sendPower(-homePw1, -homePw2);
             delay(500);
 
@@ -197,11 +194,21 @@ public:
         }
 
         bool isEStopPressed = values.statusBits & 1;
-        if (state == MOVING and values.depth1 == 0x80 and values.depth2 == 0x80)
+        if (state == MOVING)
         {
-            state = IDLE;
-            if (not isEStopPressed)
-                printf("%s move completed\n", name.c_str());
+            if (values.depth1 == 0x80 and values.depth2 == 0x80)
+            {
+                state = IDLE;
+                if (not isEStopPressed)
+                    printf("%s move completed\n", name.c_str());
+            }
+            else {
+                if (limit1 or limit2) {
+                    wiggle();
+                    stop();
+                    printf("error Limit switch during move command\n");
+                }
+            }
         }
     }
 
@@ -286,5 +293,13 @@ public:
         while (not valid)
             valid = sendPower(0, 0);
         state = IDLE;
+    }
+
+    void wiggle()
+    {
+        claw->DutyM1M2(1, 1);
+        delay(10);
+        claw->DutyM1M2(65535, 65535);
+        delay(10);
     }
 };
