@@ -5,6 +5,7 @@
 #include "Module.h"
 #include "bluetooth/ble.h"
 #include "../utils/strings.h"
+#include "../utils/checksum.h"
 
 class Bluetooth : public Module
 {
@@ -14,17 +15,15 @@ public:
         Ble::init(device_name, globalMessageHandler);
     }
 
-    void handleMsg(std::string msg)
+    void handleMsg(std::string command, std::string parameters)
     {
-        std::string command = cut_first_word(msg);
-
         if (command == "send")
         {
-            printf("Sending...\n");
+            cprintln("Sending...");
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            Module::handleMsg(command, parameters);
         }
     }
 };

@@ -6,12 +6,11 @@
 #include "roboclaw/RoboClaw.h"
 #include "../utils/strings.h"
 #include "../utils/defines.h"
+#include "../utils/checksum.h"
 
 class DualMotor : public Module
 {
 private:
-    bool output = false;
-
     uint32_t accel1 = 1e5;
     uint32_t accel2 = 1e5;
 
@@ -93,19 +92,21 @@ private:
         return true;
     }
 
-    void print_values(claw_values_t values)
+    std::string getOutput()
     {
-        printf("tool status %d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%x\t%s\n",
-               values.position1,
-               values.position2,
-               values.countsPerSecond1,
-               values.countsPerSecond2,
-               values.depth1,
-               values.depth2,
-               values.current1,
-               values.current2,
-               values.statusBits,
-               state_to_string(state).c_str());
+        char buffer[256];
+        std::sprintf(buffer, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%x\t%s",
+            values.position1,
+            values.position2,
+            values.countsPerSecond1,
+            values.countsPerSecond2,
+            values.depth1,
+            values.depth2,
+            values.current1,
+            values.current2,
+            values.statusBits,
+            state_to_string(state).c_str());
+        return buffer;
     }
 
     bool handleError(bool valid)
@@ -116,7 +117,7 @@ private:
             count = 0;
         else
         {
-            printf("%s Communication problem with %s RoboClaw\n", ++count < 3 ? "warn" : "error", name.c_str());
+            cprintln("%s Communication problem with %s RoboClaw", ++count < 3 ? "warn" : "error", name.c_str());
             claw->clear();
         }
 
@@ -132,7 +133,7 @@ public:
 
         if (type != "roboclaw" and not type.empty())
         {
-            printf("Invalid type: %s\n", type.c_str());
+            cprintln("Invalid type: %s", type.c_str());
         }
         claw = new RoboClaw(UART_NUM_1, GPIO_NUM_26, GPIO_NUM_27, baud, address);
     }
@@ -147,8 +148,7 @@ public:
         if (not handleError(read_values(values)))
             return;
 
-        if (output)
-            print_values(values);
+        Module::loop();
 
         static int16_t lastCurrent1 = 0;
         static int16_t lastCurrent2 = 0;
@@ -163,7 +163,6 @@ public:
 
             state = HOMING;
             return;
-
         }
 
         if (state == HOMING)
@@ -174,7 +173,7 @@ public:
             lastCurrent2 = values.depth2 == 0x80 ? values.current2 : 0;
             if (overcurrent1 or overcurrent2)
             {
-                printf("error Overcurrent\n");
+                cprintln("error Overcurrent");
                 if (handleError(sendPower(0, 0)))
                     state = IDLE;
             }
@@ -189,7 +188,7 @@ public:
             {
                 state = IDLE;
                 claw->ResetEncoders();
-                printf("%s home completed\n", name.c_str());
+                cprintln("%s home completed", name.c_str());
             }
         }
 
@@ -200,49 +199,24 @@ public:
             {
                 state = IDLE;
                 if (not isEStopPressed)
-                    printf("%s move completed\n", name.c_str());
+                    cprintln("%s move completed", name.c_str());
             }
             else {
                 if (limit1 or limit2) {
                     wiggle();
                     stop();
-                    printf("error Limit switch during move command\n");
+                    cprintln("error Limit switch during move command");
                 }
             }
         }
     }
 
-    void handleMsg(std::string msg)
+    void handleMsg(std::string command, std::string parameters)
     {
-        std::string command = cut_first_word(msg);
-
-        if (command == "set")
+        if (command == "pw")
         {
-            std::string key = cut_first_word(msg, '=');
-            if (key == "output")
-                output = msg == "1";
-            else if (key == "accel1")
-                accel1 = atoi(msg.c_str());
-            else if (key == "accel2")
-                accel2 = atoi(msg.c_str());
-            else if (key == "homePw1")
-                homePw1 = atof(msg.c_str());
-            else if (key == "homePw2")
-                homePw2 = atof(msg.c_str());
-            else if (starts_with(key, "point_"))
-            {
-                cut_first_word(key, '_');
-                int32_t pos1 = atoi(cut_first_word(msg, ',').c_str());
-                int32_t pos2 = atoi(cut_first_word(msg, ',').c_str());
-                points[key] = std::make_pair(pos1, pos2);
-            }
-            else
-                printf("Unknown setting: %s\n", key.c_str());
-        }
-        else if (command == "pw")
-        {
-            double pw1 = atof(cut_first_word(msg, ',').c_str());
-            double pw2 = atof(cut_first_word(msg, ',').c_str());
+            double pw1 = atof(cut_first_word(parameters, ',').c_str());
+            double pw2 = atof(cut_first_word(parameters, ',').c_str());
             handleError(sendPower(pw1, pw2));
         }
         else if (command == "home")
@@ -251,9 +225,9 @@ public:
         {
             if (state == IDLE)
             {
-                std::string arg1 = cut_first_word(msg, ',');
-                std::string arg2 = cut_first_word(msg, ',');
-                std::string arg3 = cut_first_word(msg, ',');
+                std::string arg1 = cut_first_word(parameters, ',');
+                std::string arg2 = cut_first_word(parameters, ',');
+                std::string arg3 = cut_first_word(parameters, ',');
                 if (points.count(arg1) > 0)
                     move(points[arg1].first, points[arg1].second, atof(arg2.c_str()));
                 else
@@ -261,19 +235,45 @@ public:
             }
             else
             {
-                printf("Can't start moving in state %s\n", state_to_string(state).c_str());
+                cprintln("Can't start moving in state %s", state_to_string(state).c_str());
             }
-        }
-        else if (command == "get")
-        {
-            if (handleError(read_values(values)))
-                print_values(values);
         }
         else if (command == "stop")
             stop();
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            Module::handleMsg(command, parameters);
+        }
+    }
+
+    void set(std::string key, std::string value)
+    {
+        if (key == "accel1")
+        {
+            accel1 = atoi(value.c_str());
+        }
+        else if (key == "accel2")
+        {
+            accel2 = atoi(value.c_str());
+        }
+        else if (key == "homePw1")
+        {
+            homePw1 = atof(value.c_str());
+        }
+        else if (key == "homePw2")
+        {
+            homePw2 = atof(value.c_str());
+        }
+        else if (starts_with(key, "point_"))
+        {
+            cut_first_word(key, '_');
+            int32_t pos1 = atoi(cut_first_word(value, ',').c_str());
+            int32_t pos2 = atoi(cut_first_word(value, ',').c_str());
+            points[key] = std::make_pair(pos1, pos2);
+        }
+        else
+        {
+            Module::set(key, value);
         }
     }
 

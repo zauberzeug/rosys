@@ -13,7 +13,6 @@
 class Drive : public Module
 {
 private:
-    bool output = false;
     bool use300HzSpeedReadings = true;
     double mPerTick = 0.001; // wheelDiameter * 3.1415927 / (countsPerSpoke * spokes * gearRatio)
     double width = 1.0;
@@ -22,6 +21,8 @@ private:
 
     double lastTemperature = 0;
     double lastBattery = 0;
+    double lastLinearSpeed = 0;
+    double lastAngularSpeed = 0;
 
     unsigned long timeOfLastPower = 0;
     unsigned long timeOfLastSpeed = 0;
@@ -46,11 +47,6 @@ private:
     } state = IDLE;
 
     RoboClaw *claw;
-
-    std::string state_to_string(States state)
-    {
-        return state == IDLE ? "IDLE" : state == POWERING ? "POWERING" : state == SPEEDING ? "SPEEDING" : state == BRAKING ? "BRAKING" : state == REVERSING ? "REVERSING" : "unknown";
-    }
 
     bool sendSpeed(double left, double right)
     {
@@ -109,18 +105,19 @@ private:
         return use300HzSpeedReadings ? getSpeedFromPid(left, right) : getSpeedFromCounterDiffs(left, right);
     }
 
-    bool getTemp(uint16_t &temp)
+    bool getTemp()
     {
+        uint16_t temp;
         bool valid = claw->ReadTemp(temp);
         if (valid)
             lastTemperature = 0.1 * temp;
         return valid;
     }
 
-    bool getBattery(uint16_t &battery)
+    bool getBattery()
     {
         bool valid;
-        battery = claw->ReadMainBatteryVoltage(&valid);
+        uint16_t battery = claw->ReadMainBatteryVoltage(&valid);
         if (valid)
             lastBattery = 0.1 * battery;
         return valid;
@@ -134,7 +131,7 @@ private:
             count = 0;
         else
         {
-            printf("%s Communication problem with %s RoboClaw\n", ++count < 3 ? "warn" : "error", name.c_str());
+            cprintln("%s Communication problem with %s RoboClaw", ++count < 3 ? "warn" : "error", name.c_str());
             claw->clear();
         }
 
@@ -194,7 +191,7 @@ public:
 
         if (type != "roboclaw" and not type.empty())
         {
-            printf("Invalid type: %s\n", type.c_str());
+            cprintln("Invalid type: %s", type.c_str());
         }
         claw = new RoboClaw(UART_NUM_1, GPIO_NUM_26, GPIO_NUM_27, baud, address);
     }
@@ -207,19 +204,16 @@ public:
 
     void loop()
     {
-        double left_speed = 0, right_speed = 0;
-        if (not handleError(getSpeed(left_speed, right_speed)))
+        double lastLeftSpeed = 0;
+        double lastRightSpeed = 0;
+        if (not handleError(getSpeed(lastLeftSpeed, lastRightSpeed)))
             return;
-        double linear = (left_speed + right_speed) / 2.0;
-        double angular = (right_speed - left_speed) / width;
+        lastLinearSpeed = (lastLeftSpeed + lastRightSpeed) / 2.0;
+        lastAngularSpeed = (lastRightSpeed - lastLeftSpeed) / width;
 
-        uint16_t temp;
-        if (not handleError(getTemp(temp)))
-            return;
-
-        uint16_t battery;
-        if (not handleError(getBattery(battery)))
-            return;
+    
+        this->getTemp();
+        this->getBattery();
 
         if (bumper_port != NULL)
         {
@@ -229,10 +223,10 @@ public:
             unsigned long millisSinceLastBump = millis() - timeOfLastBump;
             bool new_bumper_state = millisSinceLastBump <= bumper_debounce;
             if (new_bumper_state != bumper_state and output)
-                printf("%s bump %s\n", name.c_str(), new_bumper_state ? "start" : "stop");
+                cprintln("%s bump %s", name.c_str(), new_bumper_state ? "start" : "stop");
             bumper_state = new_bumper_state;
             if (bumper_state)
-                triggerBump(left_speed, right_speed);
+                triggerBump(lastLeftSpeed, lastRightSpeed);
         }
 
         if (state == IDLE)
@@ -274,16 +268,19 @@ public:
                 to_idle();
         }
 
-        if (output)
-        {
-            printf("%s status\t%.4f\t%.4f\t%.1f\t%.1f\t%s\n",
-                   this->name.c_str(),
-                   linear,
-                   angular,
-                   temp * 0.1,
-                   battery * 0.1,
-                   state_to_string(state).c_str());
-        }
+        Module::loop();
+    }
+
+    std::string getOutput()
+    {
+        char buffer[256];
+        std::sprintf(buffer, "%.4f\t%.4f\t%.1f\t%.1f\t%s",
+            this->lastLinearSpeed,
+            this->lastAngularSpeed,
+            this->lastTemperature,
+            this->lastBattery,
+            state == IDLE ? "IDLE" : state == POWERING ? "POWERING" : state == SPEEDING ? "SPEEDING" : state == BRAKING ? "BRAKING" : state == REVERSING ? "REVERSING" : "unknown");
+        return buffer;
     }
 
     void to_idle()
@@ -292,41 +289,18 @@ public:
         sendPower(0, 0);
     }
 
-    void handleMsg(std::string msg)
+    void handleMsg(std::string command, std::string parameters)
     {
-        std::string command = cut_first_word(msg);
-
-        if (command == "set")
+        if (command == "pw")
         {
-            std::string key = cut_first_word(msg, '=');
-            if (key == "output")
-                output = msg == "1";
-            else if (key == "mPerTick")
-                mPerTick = atof(msg.c_str());
-            else if (key == "width")
-                width = atof(msg.c_str());
-            else if (key == "use300HzSpeedReadings")
-                use300HzSpeedReadings = msg == "1";
-            else if (key == "bumper_port")
-            {
-                bumper_port = Port::fromString(msg);
-                init_bumper();
-            }
-            else if (key == "bumper_debounce")
-                bumper_debounce = atoi(msg.c_str());
-            else
-                printf("Unknown setting: %s\n", key.c_str());
-        }
-        else if (command == "pw")
-        {
-            double left = atof(cut_first_word(msg, ',').c_str());
-            double right = atof(cut_first_word(msg, ',').c_str());
+            double left = atof(cut_first_word(parameters, ',').c_str());
+            double right = atof(cut_first_word(parameters, ',').c_str());
             triggerPower(left, right);
         }
         else if (command == "speed")
         {
-            double speed = atof(cut_first_word(msg, ',').c_str());
-            double curvature = atof(cut_first_word(msg, ',').c_str());
+            double speed = atof(cut_first_word(parameters, ',').c_str());
+            double curvature = atof(cut_first_word(parameters, ',').c_str());
             double s_l = speed - speed * width * curvature / 2.0;
             double s_r = speed + speed * width * curvature / 2.0;
             double f_l = s_l != 0.0 ? fabs(speed) / fabs(s_l) : 1.0;
@@ -336,24 +310,54 @@ public:
         }
         else if (command == "left")
         {
-            double speed = atof(msg.c_str());
+            double speed = atof(parameters.c_str()) * width / 2.0;
             triggerSpeed(-speed, speed);
         }
         else if (command == "right")
         {
-            double speed = atof(msg.c_str());
+            double speed = atof(parameters.c_str()) * width / 2.0;
             triggerSpeed(speed, -speed);
         }
         else if (command == "stop")
         {
             stop();
         }
-        else if (command[0] <= '9') { // DEPRICATED
-            handleMsg(std::string("speed ") + command);
+        else if (command[0] <= '9')
+        { // DEPRICATED
+            handleMsg("speed", command);
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            Module::handleMsg(command, parameters);
+        }
+    }
+
+    void set(std::string key, std::string value)
+    {
+        if (key == "mPerTick")
+        {
+            mPerTick = atof(value.c_str());
+        }
+        else if (key == "width")
+        {
+            width = atof(value.c_str());
+        }
+        else if (key == "use300HzSpeedReadings")
+        {
+            use300HzSpeedReadings = value == "1";
+        }
+        else if (key == "bumper_port")
+        {
+            bumper_port = Port::fromString(value);
+            init_bumper();
+        }
+        else if (key == "bumper_debounce")
+        {
+            bumper_debounce = atoi(value.c_str());
+        }
+        else
+        {
+            Module::set(key, value);
         }
     }
 };

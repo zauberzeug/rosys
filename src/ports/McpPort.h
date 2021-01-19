@@ -4,6 +4,7 @@
 
 #include "Port.h"
 #include "../mcp.h"
+#include "../utils/checksum.h"
 
 class McpPort : public Port
 {
@@ -18,14 +19,14 @@ public:
         this->bank = bank;
     }
 
-    void setup(bool input, int pull=0)
+    void setup(bool input, int pull = 0)
     {
         if (this->bank == 0 && not input)
-            printf("Error: Bank A is input only.\n");
+            cprintln("Error: Bank A is input only.");
         if (this->bank == 1 && input)
-            printf("Error: Bank B is output only.\n");
+            cprintln("Error: Bank B is output only.");
         if (pull < 0)
-            printf("Error: Pull-down is not supported.\n");
+            cprintln("Error: Pull-down is not supported.");
         mcp::set_pullup(this->bank, this->number, pull > 0);
     }
 

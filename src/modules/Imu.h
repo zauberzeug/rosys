@@ -1,14 +1,13 @@
 #pragma once
 
 #include "Module.h"
-#include "../utils/strings.h"
 #include "bno055/BNO055ESP32.h"
+#include "../utils/strings.h"
+#include "../utils/checksum.h"
 
 class Imu : public Module
 {
 private:
-    bool output = false;
-
     BNO055 *bno;
 
 public:
@@ -31,43 +30,11 @@ public:
         this->bno->setOprModeNdof();
     }
 
-    void setup()
+    std::string getOutput()
     {
-    }
-
-    void loop()
-    {
-        if (output)
-        {
-            bno055_vector_t e = this->bno->getVectorEuler();
-            printf("%s %7.2f %7.2f %7.2f\n", this->name.c_str(), e.x, e.y, e.z);
-        }
-    }
-
-    void handleMsg(std::string msg)
-    {
-        std::string command = cut_first_word(msg);
-
-        if (command == "get")
-        {
-            bno055_vector_t e = this->bno->getVectorEuler();
-            printf("%s get %7.2f %7.2f %7.2f\n", this->name.c_str(), e.x, e.y, e.z);
-        }
-        else if (command == "set")
-        {
-            std::string key = cut_first_word(msg, '=');
-            if (key == "output")
-            {
-                output = msg == "1";
-            }
-            else
-            {
-                printf("Unknown setting: %s\n", key.c_str());
-            }
-        }
-        else
-        {
-            printf("Unknown command: %s\n", command.c_str());
-        }
+        bno055_vector_t e = this->bno->getVectorEuler();
+        char buffer[256];
+        std::sprintf(buffer, "%7.2f %7.2f %7.2f", e.x, e.y, e.z);
+        return buffer;
     }
 };

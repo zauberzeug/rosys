@@ -7,6 +7,7 @@
 #include "Module.h"
 #include "../ports/Port.h"
 #include "../utils/strings.h"
+#include "../utils/checksum.h"
 
 class Led : public Module
 {
@@ -17,10 +18,10 @@ private:
 
     enum State
     {
-        ON,
-        OFF,
-        PULSE,
-    } state;
+        OFF = 0,
+        ON = 1,
+        PULSE = 2,
+    };
 
 public:
     Led(std::string name, std::string port) : Module(name)
@@ -34,28 +35,33 @@ public:
         port->setup(false);
     }
 
-    void loop()
+    int level()
     {
-        switch (state)
-        {
-        case ON:
-            port->set_level(1);
-            break;
-        case OFF:
-            port->set_level(0);
-            break;
-        case PULSE:
-            port->set_level(sin(esp_timer_get_time() / interval * 2e-6 * M_PI) > 0 ? 1 : 0);
-            break;
-        default:
-            printf("Invalid state: %d\n", state);
-        }
+        if (state == ON)
+            return 1;
+        if (state == OFF)
+            return 0;
+        if (state == PULSE)
+            return sin(esp_timer_get_time() / interval * 2e-6 * M_PI) > 0 ? 1 : 0;
+        return -1;
     }
 
-    void handleMsg(std::string msg)
+    void loop()
     {
-        std::string command = cut_first_word(msg);
+        port->set_level(level());
 
+        Module::loop();
+    }
+
+    std::string getOutput()
+    {
+        char buffer[256];
+        std::sprintf(buffer, "%d", this->level());
+        return buffer;
+    }
+
+    void handleMsg(std::string command, std::string parameters)
+    {
         if (command == "on")
         {
             state = ON;
@@ -68,22 +74,26 @@ public:
         {
             state = PULSE;
         }
-        else if (command == "set")
+        else
         {
-            std::string key = cut_first_word(msg, '=');
-            double value = atof(msg.c_str());
-            if (key == "interval")
-            {
-                interval = value;
-            }
-            else
-            {
-                printf("Unknown setting: %s\n", key.c_str());
-            }
+            Module::handleMsg(command, parameters);
+        }
+    }
+
+    void set(std::string key, std::string value)
+    {
+        if (key == "interval")
+        {
+            interval = atof(value.c_str());
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            Module::set(key, value);
         }
+    }
+
+    void stop()
+    {
+        this->state = OFF;
     }
 };

@@ -1,18 +1,16 @@
 #pragma once
 
 #include <string>
-#include <math.h>
-#include "driver/gpio.h"
-#include "esp_timer.h"
 
 #include "Module.h"
 #include "../ports/Port.h"
 #include "../utils/strings.h"
+#include "../utils/checksum.h"
 
 class Button : public Module
 {
 private:
-    bool output = false;
+    bool invert = false;
     int pullup = 0;
 
     Port *port;
@@ -30,38 +28,32 @@ public:
 
     void loop()
     {
-        if (output)
-            printf("%s %d\n", this->name.c_str(), port->get_level());
+        this->state = invert ? 1 - port->get_level() : port->get_level();
+
+        Module::loop();
     }
 
-    void handleMsg(std::string msg)
+    std::string getOutput()
     {
-        std::string command = cut_first_word(msg);
+        char buffer[256];
+        std::sprintf(buffer, "%d", this->state);
+        return buffer;
+    }
 
-        if (command == "set")
+    void set(std::string key, std::string value)
+    {
+        if (key == "invert")
         {
-            std::string key = cut_first_word(msg, '=');
-            if (key == "output")
-            {
-                output = msg == "1";
-            }
-            else if (key == "pullup")
-            {
-                pullup = atoi(msg.c_str());
-                port->setup(true, pullup);
-            }
-            else
-            {
-                printf("Unknown setting: %s\n", key.c_str());
-            }
+            invert = value == "1";
         }
-        else if (command == "get")
+        else if (key == "pullup")
         {
-            printf("%s get %d\n", this->name.c_str(), port->get_level());
+            pullup = atoi(value.c_str());
+            port->setup(true, pullup);
         }
         else
         {
-            printf("Unknown command: %s\n", command.c_str());
+            Module::set(key, value);
         }
     }
 };

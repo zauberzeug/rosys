@@ -39,9 +39,19 @@ def receive():
 
     while True:
         try:
-            line = line_reader.readline().decode('utf-8')
-            print(line.strip('\n'))
-        except Exception as e:
+            line = line_reader.readline().decode('utf-8').strip('\n')
+            if '^' in line:
+                line, check = line.split('^')
+                checksum = 0
+                for c in line:
+                    checksum ^= ord(c)
+                if checksum != int(check):
+                    print('ERROR: CHECKSUM MISSMATCH ("%s")' % line)
+                else:
+                    print(line)
+            else:
+                print(line)
+        except UnicodeDecodeError as e:
             print(e)
 
 
@@ -50,9 +60,18 @@ async def send():
     session = PromptSession()
 
     while True:
-        with patch_stdout():
-            line = await session.prompt_async("> ")
-            port.write(line.encode('utf-8') + b'\n')
+        try:
+            with patch_stdout():
+                line = await session.prompt_async("> ")
+                checksum = 0
+                for c in line:
+                    checksum ^= ord(c)
+                line += '^%d\n' % checksum
+                port.write(line.encode('utf-8'))
+        except (KeyboardInterrupt, EOFError):
+            print("Bye!")
+            loop.stop()
+            return
 
 for usb_path in [
     "/dev/tty.SLAB_USBtoUART",
