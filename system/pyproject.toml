@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "system"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+requests = "^2.25.1"
+python-socketio = {extras = ["asyncio_client"], version = "^5.0.4"}
+fastapi-socketio = "^0.0.6"
+fastapi = "^0.63.0"
+uvicorn = "^0.13.3"
+fastapi-utils = "^0.2.1"
+simplejson = "^3.17.2"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
