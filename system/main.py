@@ -1,29 +1,13 @@
 from fastapi import FastAPI
 from fastapi_socketio import SocketManager
 import asyncio
-from pydantic import BaseModel
 import serial
 from line_reader import LineReader
+from robot import Robot, Speed, Drive
 
 app = FastAPI()
 sio = SocketManager(app=app)
 
-port = serial.Serial("/dev/esp", baudrate=115200, timeout=0.5)
-line_reader = LineReader(port)
-
-
-class Speed(BaseModel):
-    linear: float = 0
-    angular: float = 0
-
-
-class Drive(BaseModel):
-    left: float = 0
-    right: float = 0
-
-
-class Robot(BaseModel):
-    drive: Drive = Drive(x=0, y=0)
 try:
     port = serial.Serial("/dev/esp", baudrate=115200, timeout=0.5)
     line_reader = LineReader(port)
