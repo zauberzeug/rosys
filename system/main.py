@@ -7,9 +7,13 @@ app = FastAPI()
 sio = SocketManager(app=app)
 
 
+class Drive(BaseModel):
+    left: float = 0
+    right: float = 0
+
+
 class Robot(BaseModel):
-    x: int = 0
-    y: int = 0
+    drive: Drive = Drive(x=0, y=0)
 
 
 robot = Robot()
@@ -18,13 +22,13 @@ robot = Robot()
 @sio.on('drive_power')
 def drive_power(sid, data):
     print(f'{sid} sends {data}', flush=True)
-    robot = Robot.parse_obj(data)
+    robot.drive = Drive.parse_obj(data)
 
 
 async def periodic():
     while True:
         # TODO send serial command to robot
-        print(f'controller power {robot.x}, {robot.y}', flush=True)
+        print(f'controller power {robot.drive.left}, {robot.drive.right}', flush=True)
         await asyncio.sleep(1)  # TODO sleep only 10 ms or so
 
 task = None
