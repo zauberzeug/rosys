@@ -7,7 +7,8 @@ import { JoystickEvent } from "ngx-joystick";
   styleUrls: ["./home.component.scss"],
 })
 export class HomeComponent {
+  constructor() {}
   onMove(event: JoystickEvent) {
-    console.log(event);
+    console.log(event.data.vector.x, event.data.vector.y);
   }
 }
