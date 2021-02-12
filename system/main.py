@@ -24,6 +24,11 @@ class Drive(BaseModel):
 
 class Robot(BaseModel):
     drive: Drive = Drive(x=0, y=0)
+try:
+    port = serial.Serial("/dev/esp", baudrate=115200, timeout=0.5)
+    line_reader = LineReader(port)
+except serial.serialutil.SerialException:
+    print('could not open serial -- using dummy robot')
 
 
 robot = Robot()
