@@ -18,6 +18,7 @@ pytest-asyncio = "^0.14.0"
 websocket_client = "^0.57.0"
 vectormath = "^0.2.2"
 numpy = "^1.20.1"
+easy-vector = "^0.1.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.1"

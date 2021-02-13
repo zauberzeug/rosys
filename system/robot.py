@@ -3,12 +3,12 @@ import serial
 from line_reader import LineReader
 from datetime import datetime
 import numpy as np
-import vectormath as vmath
+from easy_vector import Vector as V
 
 
 class Pose(BaseModel):
-    position: vmath.Vector2
-    orientation: vmath.Vector2
+    position: V
+    orientation: V
 
     class Config:
         arbitrary_types_allowed = True
@@ -27,7 +27,7 @@ class Drive(BaseModel):
 class Robot(BaseModel):
     idle_time: float = 1
     drive: Drive = Drive(left=0, right=0)
-    pose: Pose = Pose(position=vmath.Vector2(0, 0), orientation=vmath.Vector2(0, 1))
+    pose: Pose = Pose(position=V(0, 0), orientation=V(0, 1))
 
     _speed: Speed = Speed(linear=0, angular=0)
     _time: datetime = datetime.now()

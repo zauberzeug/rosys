@@ -103,6 +103,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "easy-vector"
+version = "0.1.0"
+description = "Vectors. Pure, Pythonic."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "fastapi"
 version = "0.63.0"
 description = "FastAPI framework, high performance, easy to learn, fast to code, ready for production"
@@ -575,7 +583,7 @@ testing = ["pytest (>=3.5,!=3.7.3)", "pytest-checkdocs (>=1.2.3)", "pytest-flake
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "0e50129e3b4caf650bb4402158dca647fc6d4f38ac5834b4b7ecff7831de0b23"
+content-hash = "4ccaf014881f1e90c78afee6946dfa648af057d969b744def8389fe9a3fce426"
 
 [metadata.files]
 aiohttp = [
@@ -651,6 +659,10 @@ colorama = [
 ]
 docopt = [
     {file = "docopt-0.6.2.tar.gz", hash = "sha256:49b3a825280bd66b3aa83585ef59c4a8c82f2c8a522dbe754a8bc8d08c85c491"},
+]
+easy-vector = [
+    {file = "easy_vector-0.1.0-py2.py3-none-any.whl", hash = "sha256:a3a8c9c158dfcd1e31939f994a7244ffe526e181980d31a388ac069f0a162381"},
+    {file = "easy_vector-0.1.0.tar.gz", hash = "sha256:1898516e3e7cfedc8f4990258f6101d5b67607d9b95af5228b5674c39dd06d30"},
 ]
 fastapi = [
     {file = "fastapi-0.63.0-py3-none-any.whl", hash = "sha256:98d8ea9591d8512fdadf255d2a8fa56515cdd8624dca4af369da73727409508e"},

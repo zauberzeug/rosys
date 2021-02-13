@@ -5,6 +5,8 @@ import asyncio
 import functools
 import requests
 import tests.test_helper as test_helper
+from robot import Pose
+from easy_vector import Vector as V
 
 
 @pytest.fixture
@@ -35,11 +37,9 @@ async def sio(event_loop) -> Generator:
 @pytest.fixture
 def robot(sio) -> Generator:
     r = test_helper.Robot()
-    print('..xxxxxxxx...', flush=True)
 
     @sio.on('robot_pose')
     def robot_pose(data):
-        robot = test_helper.Robot.parse_obj(data)
-        print('.....', str(data), robot, flush=True)
+        r.pose = Pose(position=V(data['position']['coords']), orientation=V(data['orientation']['coords']))
 
     yield r

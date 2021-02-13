@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi_socketio import SocketManager
 import asyncio
 from robot import Robot, RealRobot, Drive, Pose
-import vectormath as vmath
+from easy_vector import Vector as V
 from fastapi.encoders import jsonable_encoder
 
 
@@ -22,16 +22,11 @@ def drive_power(sid, data):
     robot.drive = Drive.parse_obj(data)
 
 
-custom_encoder = {
-    vmath.Vector2: lambda v: {'x': v.x, 'y': v.y},
-}
-
-
 async def periodic():
     while True:
         speed = robot.get_speed()
         robot.pose.position += robot.pose.orientation * speed.linear
-        await sio.emit("robot_pose", jsonable_encoder(robot.pose, custom_encoder=custom_encoder))
+        await sio.emit("robot_pose", jsonable_encoder(robot.pose))
 
         robot.do_drive()
 
