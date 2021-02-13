@@ -1,9 +1,12 @@
 from pydantic.main import BaseModel
+from pydantic.types import PositiveFloat
 from requests import Session
 from typing import Generator
 from urllib.parse import urljoin
 from fastapi.encoders import jsonable_encoder
 from robot import Pose
+from easy_vector import Vector as V
+from retry import retry
 
 
 class LiveServerSession(Session):
@@ -25,3 +28,9 @@ def assert_properties(obj, **kwargs):
 
 class Robot(BaseModel):
     pose: Pose = None
+
+    @retry(AssertionError, tries=20, delay=0.1)
+    def assert_pose(self, x: int, y: int):
+        assert self.pose is not None
+        assert self.pose.position is not None
+        assert self.pose.position == V(x, y)

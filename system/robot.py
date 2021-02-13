@@ -39,7 +39,6 @@ class Robot(BaseModel):
         delta = datetime.now() - self._time
         self._speed.linear = self.drive.left * delta.seconds
         self._speed.angular = self.drive.right * delta.seconds
-        print(self._speed, flush=True)
 
 
 class RealRobot(Robot):
