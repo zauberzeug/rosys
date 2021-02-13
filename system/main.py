@@ -1,7 +1,10 @@
 from fastapi import FastAPI
 from fastapi_socketio import SocketManager
 import asyncio
-from robot import Robot, RealRobot, Speed, Drive
+from robot import Robot, RealRobot, Drive, Pose
+import vectormath as vmath
+from fastapi.encoders import jsonable_encoder
+
 
 app = FastAPI()
 sio = SocketManager(app=app)
@@ -15,38 +18,41 @@ except:
 
 @sio.on('drive_power')
 def drive_power(sid, data):
-    print(f'{sid} sends {data}', flush=True)
+    print(f'{sid} sends {data} to {robot}', flush=True)
     robot.drive = Drive.parse_obj(data)
+
+
+custom_encoder = {
+    vmath.Vector2: lambda v: {'x': v.x, 'y': v.y},
+}
 
 
 async def periodic():
     while True:
         speed = robot.get_speed()
-        if speed:
-            await sio.emit("odometry_speed", speed.dict())
+        robot.pose.position += robot.pose.orientation * speed.linear
+        await sio.emit("robot_pose", jsonable_encoder(robot.pose, custom_encoder=custom_encoder))
 
-        robot.send_drive()
+        robot.do_drive()
 
         await asyncio.sleep(robot.idle_time)
 
 task = None
 
 
-@app.on_event("startup")
+@ app.on_event("startup")
 async def startup():
     global task
-    print("---- startup", flush=True)
     loop = asyncio.get_event_loop()
     task = loop.create_task(periodic())
 
 
-@app.on_event("shutdown")
+@ app.on_event("shutdown")
 async def shutdown():
     global task
     task.cancel()
-    print("---- stop", flush=True)
 
 
-@app.get("/api")
+@ app.get("/api")
 def main():
     return {"status": "hello, I'm the robot system!"}

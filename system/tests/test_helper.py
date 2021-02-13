@@ -1,7 +1,9 @@
+from pydantic.main import BaseModel
 from requests import Session
 from typing import Generator
 from urllib.parse import urljoin
 from fastapi.encoders import jsonable_encoder
+from robot import Pose
 
 
 class LiveServerSession(Session):
@@ -19,3 +21,7 @@ class LiveServerSession(Session):
 def assert_properties(obj, **kwargs):
     for key, value in kwargs.items():
         assert getattr(obj, key) == value
+
+
+class Robot(BaseModel):
+    pose: Pose = None
