@@ -34,6 +34,7 @@ task = None
 
 @app.on_event("startup")
 async def startup():
+    global task
     print("---- startup", flush=True)
     loop = asyncio.get_event_loop()
     task = loop.create_task(periodic())
@@ -41,6 +42,7 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
+    global task
     task.cancel()
     print("---- stop", flush=True)
 
