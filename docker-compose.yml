@@ -22,7 +22,7 @@ services:
     volumes:
       - ./system:/app
     devices:
-      - "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0:/dev/esp"
+      - "${ESP_SERIAL:-/dev/null}:/dev/esp"
     build:
       context: ./system
       dockerfile: system.dockerfile
@@ -33,7 +33,7 @@ services:
       - traefik.http.routers.system.rule=PathPrefix(`/api`) || PathPrefix(`/ws`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`)
       # use gzip on main route
       #- traefik.http.routers.system.middlewares=gzip
-      
+
   frontend:
     image: "robot_brain_frontend:${TAG-latest}"
     depends_on:
