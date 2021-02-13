@@ -111,17 +111,24 @@ void setup()
     modules["esp"] = esp = new Esp(&modules);
     modules["safety"] = safety = new Safety(&modules);
 
-    cprintln("Reading configuration...");
-    std::string content = storage::get();
-    while (!content.empty())
-    {
-        std::string line = cut_first_word(content, '\n');
-        cprintln(">> %s", line.c_str());
-        handleMsg(line);
+    std::string boot = storage::read("TEMP", "BOOT");
+    int boot_count = boot == "" ? 1 : stoi(boot) + 1;
+    storage::write("TEMP", "BOOT", std::to_string(boot_count));
+    if (boot_count > 3) {
+        cprintln("Boot loop detected. Ignoring configuration this time.");
+    } else {
+        cprintln("Reading configuration...");
+        std::string content = storage::get();
+        while (!content.empty())
+        {
+            std::string line = cut_first_word(content, '\n');
+            cprintln(">> %s", line.c_str());
+            handleMsg(line);
+        }
+        for (auto const &item : modules)
+            item.second->setup();
     }
-
-    for (auto const &item : modules)
-        item.second->setup();
+    storage::write("TEMP", "BOOT", "");
 
     gpio_reset_pin(EN_24V);
     gpio_set_direction(EN_24V, GPIO_MODE_OUTPUT);
