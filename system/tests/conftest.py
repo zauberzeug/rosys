@@ -41,7 +41,7 @@ async def robot(sio, event_loop) -> Generator:
 
     @sio.on('robot_pose')
     def robot_pose(data):
-        r.pose = Pose(location=V(data['location']['coords']), orientation=V(data['orientation']['coords']))
+        r.pose = Pose(location=V(data['location']['coords']), orientation=data['orientation'])
         event_loop.call_soon_threadsafe(is_receiving.set())
 
     await asyncio.wait_for(is_receiving.wait(), 1)

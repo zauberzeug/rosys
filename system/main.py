@@ -36,7 +36,7 @@ async def on_connect(sid, env):
 
 @sio.on('drive_power')
 def on_drive_power(sid, data):
-    print(f'{sid} sends drive_power {data} to {robot}', flush=True)
+    print(f'{sid} received drive_power {data}', flush=True)
     robot.drive = Drive.parse_obj(data)
 
 
@@ -47,13 +47,14 @@ sleep_task = None
 def on_fast_forward(sid, data):
     global fast_forward
     global sleep_task
-    print(f'{sid} sends fast_forward {data}', flush=True)
+    print(f'{sid} received fast_forward {data}', flush=True)
     fast_forward = int(data)
     sleep_task.cancel()
 
 
 @sio.on('reset')
 def on_reset(sid):
+    print(f'{sid} received reset', flush=True)
     reset()
 
 
@@ -74,7 +75,10 @@ async def periodic():
         else:
             passed_time += datetime.now() - time
 
-        robot.pose.location += robot.pose.orientation * speed.linear * passed_time.seconds
+        robot.pose.location += V.polar(1, robot.pose.orientation) * speed.linear * passed_time.seconds
+        # robot should turn 180° when angular speed is 1 m/s
+        new_angle = robot.pose.orientation + speed.angular * 180 * passed_time.seconds
+        robot.pose.orientation = new_angle % 360
         robot.do_drive()
         time = datetime.now()
         passed_time = timedelta(seconds=0)
@@ -94,7 +98,7 @@ async def periodic():
 task = None
 
 
-@app.on_event("startup")
+@ app.on_event("startup")
 async def startup():
     global task
     reset()
@@ -104,7 +108,7 @@ async def startup():
     task = task_logger.create_task(periodic())
 
 
-@app.on_event("shutdown")
+@ app.on_event("shutdown")
 async def shutdown():
     global task
     task.cancel()

@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from pydantic.fields import Field
 import serial
 from line_reader import LineReader
 from datetime import datetime, timedelta
@@ -8,7 +9,7 @@ from easy_vector import Vector as V
 
 class Pose(BaseModel):
     location: V
-    orientation: V
+    orientation: int = Field(..., description='angle in degrees')
 
     class Config:
         arbitrary_types_allowed = True
@@ -27,10 +28,12 @@ class Drive(BaseModel):
 class Robot(BaseModel):
     idle_time: float = 1
     drive: Drive = Drive(left=0, right=0)
-    pose: Pose = Pose(location=V(0, 0), orientation=V(0, 1))
+    pose: Pose = Pose(location=V(0, 0), orientation=0)
     width: float = 0.5
 
     def get_speed(self):
+        print('....vvvvv.....', (self.drive.right - self.drive.left), self.width,
+              (self.drive.right - self.drive.left) / self.width, flush=True)
         return Speed(
             linear=(self.drive.left + self.drive.right) / 2.0,
             angular=(self.drive.right - self.drive.left) / self.width
