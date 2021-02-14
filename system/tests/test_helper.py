@@ -32,5 +32,5 @@ class Robot(BaseModel):
     @retry(AssertionError, tries=20, delay=0.1)
     def assert_pose(self, x: int, y: int):
         assert self.pose is not None
-        assert self.pose.position is not None
-        assert self.pose.position == V(x, y)
+        assert self.pose.location is not None
+        assert self.pose.location == V(x, y)

@@ -1,13 +1,13 @@
 from pydantic import BaseModel
 import serial
 from line_reader import LineReader
-from datetime import datetime
+from datetime import datetime, timedelta
 import numpy as np
 from easy_vector import Vector as V
 
 
 class Pose(BaseModel):
-    position: V
+    location: V
     orientation: V
 
     class Config:
@@ -27,18 +27,17 @@ class Drive(BaseModel):
 class Robot(BaseModel):
     idle_time: float = 1
     drive: Drive = Drive(left=0, right=0)
-    pose: Pose = Pose(position=V(0, 0), orientation=V(0, 1))
-
-    _speed: Speed = Speed(linear=0, angular=0)
-    _time: datetime = datetime.now()
+    pose: Pose = Pose(location=V(0, 0), orientation=V(0, 1))
+    width: float = 0.5
 
     def get_speed(self):
-        return self._speed
+        return Speed(
+            linear=(self.drive.left + self.drive.right) / 2.0,
+            angular=(self.drive.right - self.drive.left) / self.width
+        )
 
     def do_drive(self):
-        delta = datetime.now() - self._time
-        self._speed.linear = self.drive.left * delta.seconds
-        self._speed.angular = self.drive.right * delta.seconds
+        pass
 
 
 class RealRobot(Robot):
@@ -63,7 +62,7 @@ class RealRobot(Robot):
         print("                          ", line, flush=True)
         return Speed(linear=float(line.split()[1]), angular=float(line.split()[2]))
 
-    def do_drive(self):
+    def do_drive(self,):
         line = "drive pw %.3f,%.3f" % (self.drive.left, self.drive.right)
         print(line, flush=True)
         checksum = 0

@@ -26,6 +26,7 @@ pytest = "^6.2.1"
 pytest-watch = "^4.2.0"
 pytest-flakefinder = "^1.0.0"
 pytest-profiling = "^1.7.0"
+autopep8 = "^1.5.5"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -35,11 +35,14 @@ async def sio(event_loop) -> Generator:
 
 
 @pytest.fixture
-def robot(sio) -> Generator:
+async def robot(sio, event_loop) -> Generator:
     r = test_helper.Robot()
+    is_receiving = asyncio.Event()
 
     @sio.on('robot_pose')
     def robot_pose(data):
-        r.pose = Pose(position=V(data['position']['coords']), orientation=V(data['orientation']['coords']))
+        r.pose = Pose(location=V(data['location']['coords']), orientation=V(data['orientation']['coords']))
+        event_loop.call_soon_threadsafe(is_receiving.set())
 
+    await asyncio.wait_for(is_receiving.wait(), 1)
     yield r
