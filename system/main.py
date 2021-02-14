@@ -1,3 +1,4 @@
+from asyncio.tasks import sleep
 from fastapi import FastAPI
 from fastapi_socketio import SocketManager
 import asyncio
@@ -12,11 +13,17 @@ import task_logger
 app = FastAPI()
 sio = SocketManager(app=app)
 
-try:
-    robot = RealRobot()
-except:
-    robot = Robot()
-    print('could not open serial -- using dummy robot', robot, flush=True)
+robot = None
+
+
+def reset():
+    global robot
+    try:
+        robot = RealRobot()
+    except:
+        robot = Robot()
+        print('could not open serial -- using dummy robot', robot, flush=True)
+
 
 fast_forward: int = 0
 
@@ -33,15 +40,26 @@ def on_drive_power(sid, data):
     robot.drive = Drive.parse_obj(data)
 
 
+sleep_task = None
+
+
 @sio.on('fast_forward')
 def on_fast_forward(sid, data):
     global fast_forward
+    global sleep_task
     print(f'{sid} sends fast_forward {data}', flush=True)
     fast_forward = int(data)
+    sleep_task.cancel()
+
+
+@sio.on('reset')
+def on_reset(sid):
+    reset()
 
 
 async def periodic():
     global fast_forward
+    global sleep_task
     next_print = datetime.now()
     step = 0
     time = datetime.now()
@@ -61,12 +79,16 @@ async def periodic():
         time = datetime.now()
         passed_time = timedelta(seconds=0)
 
-        if next_print < datetime.now():
-            print(f'          step: {step}, location {robot.pose.location}', flush=True)
+        if next_print < datetime.now():  # only print every second to not slow down critical serial communication
+            print(f'          step: {step}, location {robot.pose.location}, passed_time: {passed_time}', flush=True)
             next_print = datetime.now() + timedelta(seconds=1)
 
         await sio.emit("robot_pose", jsonable_encoder(robot.pose))
-        await asyncio.sleep(robot.idle_time)
+        sleep_task = asyncio.ensure_future(asyncio.sleep(robot.idle_time))
+        try:
+            await sleep_task
+        except:
+            pass
         step += 1
 
 task = None
@@ -75,6 +97,7 @@ task = None
 @app.on_event("startup")
 async def startup():
     global task
+    reset()
     loop = asyncio.get_event_loop()
     loop.set_debug(True)
 

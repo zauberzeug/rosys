@@ -46,3 +46,10 @@ async def robot(sio, event_loop) -> Generator:
 
     await asyncio.wait_for(is_receiving.wait(), 1)
     yield r
+
+
+@pytest.fixture(autouse=True)
+def reset(sio):
+    sio.call('reset')
+    yield
+    sio.call('reset')

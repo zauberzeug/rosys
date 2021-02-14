@@ -29,7 +29,7 @@ def assert_properties(obj, **kwargs):
 class Robot(BaseModel):
     pose: Pose = None
 
-    @retry(AssertionError, tries=20, delay=0.1)
+    @retry(AssertionError, tries=3, delay=0.1)
     def assert_pose(self, x: int, y: int):
         assert self.pose is not None
         assert self.pose.location is not None
