@@ -17,6 +17,9 @@ private:
     double homePw1 = 0;
     double homePw2 = 0;
 
+    uint32_t homePos1 = 0;
+    uint32_t homePos2 = 0;
+
     std::map<std::string, std::pair<int32_t, int32_t>> points;
 
     enum States
@@ -24,6 +27,7 @@ private:
         IDLE,
         HOMING_START,
         HOMING,
+        HOMING_END,
         MOVING,
     } state = IDLE;
 
@@ -44,7 +48,7 @@ private:
 
     std::string state_to_string(States state)
     {
-        return state == IDLE ? "IDLE" : state == HOMING_START ? "HOMING_START" : state == HOMING ? "HOMING" : state == MOVING ? "MOVING" : "unknown";
+        return state == IDLE ? "IDLE" : state == HOMING_START ? "HOMING_START" : state == HOMING ? "HOMING" : state == HOMING_END ? "HOMING_END" : state == MOVING ? "MOVING" : "unknown";
     }
 
     bool sendPower(double pw1, double pw2)
@@ -181,31 +185,36 @@ public:
 
         bool limit1 = values.statusBits & 0x400000;
         bool limit2 = values.statusBits & 0x800000;
+        bool isEStopPressed = values.statusBits & 1;
+
         if (state == HOMING)
         {
             handleError(sendPower(limit1 ? 0 : homePw1, limit2 ? 0 : homePw2));
             if (limit1 & limit2)
             {
-                state = IDLE;
+                cprintln("%s home offsets: %d %d", name.c_str(), values.position1, values.position2);
                 claw->ResetEncoders();
-                cprintln("%s home completed", name.c_str());
+                move(homePos1, homePos2, 0.5);
+                state = HOMING_END;
+                return;
             }
         }
 
-        bool isEStopPressed = values.statusBits & 1;
-        if (state == MOVING)
+        if (state == HOMING_END or state == MOVING)
         {
+            const char *command = state == HOMING_END ? "home" : "move";
             if (values.depth1 == 0x80 and values.depth2 == 0x80)
             {
                 state = IDLE;
-                if (not isEStopPressed)
-                    cprintln("%s move completed", name.c_str());
+                if (not isEStopPressed) {
+                    cprintln("%s %s completed", name.c_str(), command);
+                }
             }
             else {
                 if (limit1 or limit2) {
                     wiggle();
                     stop();
-                    cprintln("error Limit switch during move command");
+                    cprintln("error Limit switch during %s command", command);
                 }
             }
         }
@@ -263,6 +272,14 @@ public:
         else if (key == "homePw2")
         {
             homePw2 = atof(value.c_str());
+        }
+        else if (key == "homePos1")
+        {
+            homePos1 = atof(value.c_str());
+        }
+        else if (key == "homePos2")
+        {
+            homePos2 = atof(value.c_str());
         }
         else if (starts_with(key, "point_"))
         {
