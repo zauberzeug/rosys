@@ -16,25 +16,25 @@ namespace storage
         nvs_flash_init();
     }
 
-    void put(std::string value)
+    void write(std::string ns, std::string key, std::string value)
     {
         nvs_handle handle;
-        if (nvs_open(NAMESPACE, NVS_READWRITE, &handle) != ESP_OK)
+        if (nvs_open(ns.c_str(), NVS_READWRITE, &handle) != ESP_OK)
         {
-            cprintln("Could not open storage namespace: %s", NAMESPACE);
+            cprintln("Could not open storage namespace: %s", ns.c_str());
             return;
         }
 
-        if (nvs_set_str(handle, KEY, value.c_str()) != ESP_OK)
+        if (nvs_set_str(handle, key.c_str(), value.c_str()) != ESP_OK)
         {
-            cprintln("Could write to storage: %s.%s=%s", NAMESPACE, KEY, value.c_str());
+            cprintln("Could not write to storage: %s.%s=%s", ns.c_str(), key.c_str(), value.c_str());
             nvs_close(handle);
             return;
         }
 
         if (nvs_commit(handle) != ESP_OK)
         {
-            cprintln("Could commit storage: %s.%s=%s", NAMESPACE, KEY, value.c_str());
+            cprintln("Could not commit storage: %s.%s=%s", ns.c_str(), key.c_str(), value.c_str());
             nvs_close(handle);
             return;
         }
@@ -42,19 +42,19 @@ namespace storage
         nvs_close(handle);
     }
 
-    std::string get()
+    std::string read(std::string ns, std::string key)
     {
         nvs_handle handle;
-        if (nvs_open(NAMESPACE, NVS_READWRITE, &handle) != ESP_OK)
+        if (nvs_open(ns.c_str(), NVS_READWRITE, &handle) != ESP_OK)
         {
-            cprintln("Could not open storage namespace: %s", NAMESPACE);
+            cprintln("Could not open storage namespace: %s", ns.c_str());
             return "";
         }
 
         size_t size = 0;
-        if (nvs_get_str(handle, KEY, NULL, &size) != ESP_OK)
+        if (nvs_get_str(handle, key.c_str(), NULL, &size) != ESP_OK)
         {
-            cprintln("Could not peek storage: %s.%s", NAMESPACE, KEY);
+            cprintln("Could not peek storage: %s.%s", ns.c_str(), key.c_str());
             nvs_close(handle);
             return "";
         }
@@ -62,9 +62,9 @@ namespace storage
         char *value = (char *)malloc(size);
         if (size > 0)
         {
-            if (nvs_get_str(handle, KEY, value, &size) != ESP_OK)
+            if (nvs_get_str(handle, key.c_str(), value, &size) != ESP_OK)
             {
-                cprintln("Could not read storage: %s.%s", NAMESPACE, KEY);
+                cprintln("Could not read storage: %s.%s", ns.c_str(), key.c_str());
                 free(value);
                 nvs_close(handle);
                 return "";
@@ -77,6 +77,16 @@ namespace storage
         nvs_close(handle);
 
         return result;
+    }
+
+    void put(std::string value)
+    {
+        write(NAMESPACE, KEY, value);
+    }
+
+    std::string get()
+    {
+        return read(NAMESPACE, KEY);
     }
 
     void append(std::string line)

@@ -40,7 +40,6 @@ public:
         return buffer;
     }
 
-
     void set(std::string key, std::string value)
     {
         if (starts_with(key, "condition_"))

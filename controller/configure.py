@@ -5,6 +5,7 @@ import time
 
 devs = [
     "/dev/tty.SLAB_USBtoUART",
+    "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0",
     "/dev/ttyTHS1",
 ]
 for dev in devs:
