@@ -7,6 +7,7 @@
 #include "../utils/strings.h"
 #include "../utils/defines.h"
 #include "../utils/checksum.h"
+#include "../utils/timing.h"
 
 class DualMotor : public Module
 {
@@ -152,21 +153,31 @@ public:
         if (not handleError(read_values(values)))
             return;
 
+        bool limit1 = values.statusBits & 0x400000;
+        bool limit2 = values.statusBits & 0x800000;
+        bool isEStopPressed = values.statusBits & 1;
+
         Module::loop();
 
         static int16_t lastCurrent1 = 0;
         static int16_t lastCurrent2 = 0;
+        static uint32_t timeOfHomingStart = 0;
         if (state == HOMING_START)
         {
-            lastCurrent1 = 0;
-            lastCurrent2 = 0;
-
-            wiggle();
-            sendPower(-homePw1, -homePw2);
-            delay(500);
-
-            state = HOMING;
-            return;
+            if (timeOfHomingStart == 0) {
+                timeOfHomingStart = millis();
+                wiggle();
+            }
+            if (millisSince(timeOfHomingStart) < 500) {
+                sendPower(-homePw1, -homePw2);
+                return;
+            }
+            else {
+                lastCurrent1 = 0;
+                lastCurrent2 = 0;
+                timeOfHomingStart = 0;
+                state = HOMING;
+            }
         }
 
         if (state == HOMING)
@@ -178,17 +189,11 @@ public:
             if (overcurrent1 or overcurrent2)
             {
                 cprintln("error Overcurrent");
-                if (handleError(sendPower(0, 0)))
+                if (handleError(sendPower(0, 0))) {
                     state = IDLE;
+                    return;
+                }
             }
-        }
-
-        bool limit1 = values.statusBits & 0x400000;
-        bool limit2 = values.statusBits & 0x800000;
-        bool isEStopPressed = values.statusBits & 1;
-
-        if (state == HOMING)
-        {
             handleError(sendPower(limit1 ? 0 : homePw1, limit2 ? 0 : homePw2));
             if (limit1 & limit2)
             {
