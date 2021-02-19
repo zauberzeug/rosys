@@ -1,13 +1,10 @@
-from asyncio.tasks import sleep
 from fastapi import FastAPI
 from fastapi_socketio import SocketManager
 import asyncio
-import signal
-import logging
-from robot import Robot, RealRobot, Drive, Pose
+from robot import Robot, RealRobot, Drive
 from easy_vector import Vector as V
 from fastapi.encoders import jsonable_encoder
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 import task_logger
 
 app = FastAPI()
