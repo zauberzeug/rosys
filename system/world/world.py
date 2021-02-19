@@ -1,11 +1,13 @@
-from pydantic import BaseModel
-from .clock import Clock
 import asyncio
+from pydantic import BaseModel
+from world.robot import Robot
+from world.clock import Clock
 
 
 class World(BaseModel):
 
     clock: Clock
+    robot: Robot
 
     async def run(self):
 
@@ -22,3 +24,4 @@ class World(BaseModel):
     def loop(self):
 
         self.clock.loop()
+        self.robot.loop(self.clock.interval)
