@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi_socketio import SocketManager
 import asyncio
 from fastapi.encoders import jsonable_encoder
-from datetime import datetime, timedelta
 import task_logger
 from world.world import World
 from world.robot import Robot
@@ -17,7 +16,7 @@ world = World(clock=clock, robot=robot)
 
 
 @sio.on('connect')
-async def on_connect(sid, env):
+async def on_connect(sid, _):
     await sio.emit('robot_pose', jsonable_encoder(world.robot.pose), to=sid)
     return True
 
