@@ -10,10 +10,15 @@ class Robot(BaseModel):
     pose: Pose = Pose()
     velocity: Velocity = Velocity()
 
-    def drive(self, linear, angular):
+    def drive(self, m_per_s: float, *, rad_per_s: float = None, deg_per_s: int = None):
 
-        self.velocity.linear = linear
-        self.velocity.angular = angular
+        self.velocity.linear = m_per_s
+        if rad_per_s is not None:
+            self.velocity.angular = rad_per_s
+        elif deg_per_s is not None:
+            self.velocity.angular = np.deg2rad(deg_per_s)
+        else:
+            raise ValueError('missing rad or deg parameter')
 
     def loop(self, dt: float):
 
