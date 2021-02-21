@@ -1,6 +1,7 @@
 import { Component } from "@angular/core";
 import { JoystickEvent } from "ngx-joystick";
 import { WrappedSocket } from "../socket-io/socket-io.service";
+import { Pose } from "./pose";
 
 @Component({
   selector: "app-home",
@@ -11,8 +12,10 @@ export class HomeComponent {
   left: number = 0;
   right: number = 0;
 
+  pose?: Pose;
+
   constructor(private socket: WrappedSocket) {
-    socket.on("robot_pose", (data: any) => console.log(data));
+    socket.on("robot_pose", (data: any) => (this.pose = Pose.from_dict(data)));
 
     setInterval(() => {
       if (this.left || this.right) this.sendPower();

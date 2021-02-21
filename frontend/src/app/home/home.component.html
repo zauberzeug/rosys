@@ -1,2 +1,11 @@
-<p>This is your robot!</p>
-<ngx-joystick #dynamicJoystick (move)="onMove($event)" (end)="stop()"></ngx-joystick>
+<p>Your robot is at:</p>
+<pre *ngIf="pose">
+  x = {{ pose.x | number: "0.3-3" }}
+  y = {{ pose.y | number: "0.3-3" }}
+  yaw = {{ pose.yawDeg | number: "0.3-3" }} deg
+</pre>
+<ngx-joystick
+  #dynamicJoystick
+  (move)="onMove($event)"
+  (end)="stop()"
+></ngx-joystick>
