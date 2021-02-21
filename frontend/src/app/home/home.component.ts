@@ -9,12 +9,12 @@ import { WrappedSocket } from "../socket-io/socket-io.service";
 })
 export class HomeComponent {
   constructor(private socket: WrappedSocket) {
-    socket.on('robot_pose', (data: any) => console.log(data));
+    socket.on("robot_pose", (data: any) => console.log(data));
   }
 
   onMove(event: JoystickEvent) {
     console.log(event.data.vector.x, event.data.vector.y);
-    this.socket.emit('drive_power', {
+    this.socket.emit("drive_power", {
       left: event.data.vector.y + event.data.vector.x,
       right: event.data.vector.y - event.data.vector.x,
     });
@@ -22,6 +22,6 @@ export class HomeComponent {
 
   stop() {
     console.log("stop");
-    this.socket.emit('drive_power', {left: 0, right: 0});
+    this.socket.emit("drive_power", { left: 0, right: 0 });
   }
 }
