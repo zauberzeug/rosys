@@ -1,3 +1,4 @@
+from utilities.angle import Angle
 from pydantic import BaseModel
 import numpy as np
 from world.pose import Pose
@@ -10,10 +11,10 @@ class Robot(BaseModel):
     pose: Pose = Pose()
     velocity: Velocity = Velocity()
 
-    def drive(self, m_per_s: float, rad_per_s: float):
+    def drive(self, linear: float, angular: Angle):
 
-        self.velocity.linear = m_per_s
-        self.velocity.angular = rad_per_s
+        self.velocity.linear = linear
+        self.velocity.angular = angular
 
     def loop(self, dt: float):
 
