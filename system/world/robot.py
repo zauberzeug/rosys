@@ -16,6 +16,11 @@ class Robot(BaseModel):
         self.velocity.linear = linear
         self.velocity.angular = angular
 
+    def power(self, left: float, right: float):
+
+        self.velocity.linear = (left + right) / 2.0
+        self.velocity.angular = (right - left) / self.width
+
     def loop(self, dt: float):
 
         self.pose.x += dt * self.velocity.linear * np.cos(self.pose.yaw)

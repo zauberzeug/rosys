@@ -9,7 +9,7 @@ import { WrappedSocket } from "../socket-io/socket-io.service";
 })
 export class HomeComponent {
   constructor(private socket: WrappedSocket) {
-    socket.on('odometry_speed', (data: any) => console.log(data));
+    socket.on('robot_pose', (data: any) => console.log(data));
   }
 
   onMove(event: JoystickEvent) {
