@@ -6,14 +6,14 @@ from tests.helper import assert_pose, drive
 
 @pytest.mark.asyncio
 async def test_drive(world):
-    assert_pose(0, 0, 0)
+    assert_pose(0, 0, deg(0))
 
     await world.simulate(seconds=1.0)
-    assert_pose(0, 0, 0)
+    assert_pose(0, 0, deg(0))
 
     drive(1.0)
     await world.simulate(seconds=1.0)
-    assert_pose(1.0, 0, 0)
+    assert_pose(1.0, 0, deg(0))
 
     drive(0.0, deg(90))
     await world.simulate(seconds=0.5)

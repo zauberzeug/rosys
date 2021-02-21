@@ -11,6 +11,12 @@ class Angle(float):
     def rad(self):
         return float(self)
 
+    def __iadd__(self, other):
+        return rad(self.rad + other.rad)
+
+    def __add__(self, other):
+        return rad(self.rad + other.rad)
+
 
 def deg(degrees):
 

@@ -1,4 +1,4 @@
-from utilities.angle import Angle
+from utilities.angle import Angle, rad
 from pydantic import BaseModel
 import numpy as np
 from world.pose import Pose
@@ -25,4 +25,4 @@ class Robot(BaseModel):
 
         self.pose.x += dt * self.velocity.linear * np.cos(self.pose.yaw)
         self.pose.y += dt * self.velocity.linear * np.sin(self.pose.yaw)
-        self.pose.yaw += dt * self.velocity.angular
+        self.pose.yaw += rad(dt * self.velocity.angular)

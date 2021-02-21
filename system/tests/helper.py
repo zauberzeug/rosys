@@ -18,8 +18,8 @@ def assert_pose(x: float, y: float, yaw: Angle = None,
     assert pose.y == pytest.approx(y, abs=linear_tolerance)
 
     if yaw is not None:
-        assert pose.yaw == pytest.approx(yaw, abs=angular_tolerance)
+        assert pose.yaw.deg == pytest.approx(yaw.deg, abs=angular_tolerance)
 
 
-def drive(linear: float, angular: Angle = 0):
+def drive(linear: float, angular: Angle = deg(0)):
     global_world.robot.drive(linear, angular)
