@@ -24,7 +24,7 @@ async def on_connect(sid, _):
 @sio.on('drive_power')
 def on_drive_power(sid, data):
     print(f'{sid} received drive_power {data}', flush=True)
-    world.robot.drive(data['m_per_s'], data['rad_per_s'])
+    world.robot.power(data['left'], data['right'])
 
 
 running_world = None
@@ -41,7 +41,6 @@ async def startup():
 
 @app.on_event("shutdown")
 async def shutdown():
-    global running_world
     running_world.cancel()
 
 

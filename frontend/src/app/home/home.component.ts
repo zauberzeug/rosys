@@ -8,20 +8,30 @@ import { WrappedSocket } from "../socket-io/socket-io.service";
   styleUrls: ["./home.component.scss"],
 })
 export class HomeComponent {
+  left: number = 0;
+  right: number = 0;
+
   constructor(private socket: WrappedSocket) {
-    socket.on('odometry_speed', (data: any) => console.log(data));
+    socket.on("robot_pose", (data: any) => console.log(data));
+
+    setInterval(() => {
+      if (this.left || this.right) this.sendPower();
+    }, 50);
+  }
+
+  sendPower() {
+    console.log("sending:", this.left, this.right);
+    this.socket.emit("drive_power", { left: this.left, right: this.right });
   }
 
   onMove(event: JoystickEvent) {
-    console.log(event.data.vector.x, event.data.vector.y);
-    this.socket.emit('drive_power', {
-      left: event.data.vector.y + event.data.vector.x,
-      right: event.data.vector.y - event.data.vector.x,
-    });
+    this.left = event.data.vector.y + event.data.vector.x;
+    this.right = event.data.vector.y - event.data.vector.x;
   }
 
   stop() {
-    console.log("stop");
-    this.socket.emit('drive_power', {left: 0, right: 0});
+    this.left = 0;
+    this.right = 0;
+    this.sendPower();
   }
 }
