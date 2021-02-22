@@ -1,3 +1,4 @@
+import asyncio
 from utilities.angle import Angle, rad
 from pydantic import BaseModel
 import numpy as np
@@ -12,7 +13,6 @@ class Robot(BaseModel):
     velocity: Velocity = Velocity()
 
     def drive(self, linear: float, angular: Angle):
-
         self.velocity.linear = linear
         self.velocity.angular = angular
 
@@ -26,3 +26,8 @@ class Robot(BaseModel):
         self.pose.x += dt * self.velocity.linear * np.cos(self.pose.yaw)
         self.pose.y += dt * self.velocity.linear * np.sin(self.pose.yaw)
         self.pose.yaw += rad(dt * self.velocity.angular)
+        #print('pose', self.pose)
+
+    async def reaches(self, x: float, y: float, yaw: Angle = rad(0)):
+        while abs(x - self.pose.x) > 0.01 or abs(y - self.pose.y) > 0.01 or abs(yaw - self.pose.yaw) > 0.001:
+            await asyncio.sleep(0)
