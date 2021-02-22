@@ -7,8 +7,10 @@ import { WrappedSocket } from "./socket-io/socket-io.service";
 })
 export class RobotService {
   pose?: Pose;
+  width: number = 1.0;
 
   constructor(private socket: WrappedSocket) {
+    socket.on("world", (data: any) => (this.width = data.robot.width));
     socket.on("robot_pose", (data: any) => (this.pose = Pose.from_dict(data)));
   }
 

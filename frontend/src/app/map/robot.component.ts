@@ -16,8 +16,8 @@ import { Object3dComponent } from "./object3d.component";
 export class RobotComponent
   extends Object3dComponent
   implements OnInit, OnChanges {
-  @Input() marker: any;
   @Input() yaw!: number;
+  @Input() width!: number;
 
   mainMesh!: THREE.Mesh;
 
@@ -27,7 +27,7 @@ export class RobotComponent
     this.object3d.name = "robot";
 
     this.mainMesh = new THREE.Mesh(
-      new THREE.BoxGeometry(),
+      new THREE.BoxGeometry(1.0, this.width, 0.3),
       new THREE.MeshPhongMaterial({ transparent: true })
     );
     this.object3d.add(this.mainMesh);
