@@ -1,28 +1,21 @@
 import numpy as np
+from pydantic.main import BaseModel
 
 
-class Angle(float):
+class Angle(BaseModel):
+
+    rad: float = 0
 
     @property
     def deg(self):
-        return float(np.rad2deg(self))
-
-    @property
-    def rad(self):
-        return float(self)
-
-    def __iadd__(self, other):
-        return rad(self.rad + other.rad)
-
-    def __add__(self, other):
-        return rad(self.rad + other.rad)
+        return float(np.rad2deg(self.rad))
 
 
 def deg(degrees):
 
-    return Angle(np.deg2rad(degrees))
+    return Angle(rad=np.deg2rad(degrees))
 
 
 def rad(radians):
 
-    return Angle(radians)
+    return Angle(rad=radians)
