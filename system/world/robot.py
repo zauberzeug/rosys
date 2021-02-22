@@ -1,4 +1,4 @@
-from utilities.angle import Angle
+from utilities.angle import Angle, rad
 from pydantic import BaseModel
 import numpy as np
 from world.pose import Pose
@@ -19,7 +19,7 @@ class Robot(BaseModel):
     def power(self, left: float, right: float):
 
         self.velocity.linear = (left + right) / 2.0
-        self.velocity.angular = (right - left) / self.width
+        self.velocity.angular = rad((right - left) / self.width / 2.0)
 
     def loop(self, dt: float):
 

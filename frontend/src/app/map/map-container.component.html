@@ -1,0 +1,12 @@
+<app-map>
+  <app-background></app-background>
+  <app-camera [x]="0" [y]="-10" [z]="15"></app-camera>
+  <app-light [x]="2" [y]="5" [z]="40"></app-light>
+  <app-robot
+    *ngIf="robotService.pose"
+    [x]="robotService.pose.x"
+    [y]="robotService.pose.y"
+    [z]="0.1"
+    [yaw]="robotService.pose.yaw"
+  ></app-robot>
+</app-map>

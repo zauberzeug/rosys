@@ -12,7 +12,6 @@ def set_global_world(world: World):
 
 def assert_pose(x: float, y: float, yaw: Angle = None,
                 linear_tolerance: float = 0.01, angular_tolerance: Angle = deg(1)):
-    """yaw and tolerances are in degree for better readability"""
     pose = global_world.robot.pose
     assert pose.x == pytest.approx(x, abs=linear_tolerance)
     assert pose.y == pytest.approx(y, abs=linear_tolerance)

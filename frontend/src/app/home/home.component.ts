@@ -1,7 +1,6 @@
 import { Component } from "@angular/core";
 import { JoystickEvent } from "ngx-joystick";
-import { WrappedSocket } from "../socket-io/socket-io.service";
-import { Pose } from "./pose";
+import { RobotService } from "../robot.service";
 
 @Component({
   selector: "app-home",
@@ -9,32 +8,16 @@ import { Pose } from "./pose";
   styleUrls: ["./home.component.scss"],
 })
 export class HomeComponent {
-  left: number = 0;
-  right: number = 0;
-
-  pose?: Pose;
-
-  constructor(private socket: WrappedSocket) {
-    socket.on("robot_pose", (data: any) => (this.pose = Pose.from_dict(data)));
-
-    setInterval(() => {
-      if (this.left || this.right) this.sendPower();
-    }, 50);
-  }
-
-  sendPower() {
-    console.log("sending:", this.left, this.right);
-    this.socket.emit("drive_power", { left: this.left, right: this.right });
-  }
+  constructor(public robotService: RobotService) {}
 
   onMove(event: JoystickEvent) {
-    this.left = event.data.vector.y + event.data.vector.x;
-    this.right = event.data.vector.y - event.data.vector.x;
+    this.robotService.sendPower(
+      event.data.vector.y + event.data.vector.x,
+      event.data.vector.y - event.data.vector.x
+    );
   }
 
   stop() {
-    this.left = 0;
-    this.right = 0;
-    this.sendPower();
+    this.robotService.sendPower(0, 0);
   }
 }

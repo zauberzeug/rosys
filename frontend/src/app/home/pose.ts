@@ -6,6 +6,6 @@ export class Pose {
   }
 
   static from_dict(p: any): Pose {
-    return new Pose(p.x, p.y, p.yaw);
+    return new Pose(p.x, p.y, p.yaw.rad);
   }
 }
