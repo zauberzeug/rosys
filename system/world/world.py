@@ -30,6 +30,5 @@ class World(BaseModel):
         self.robot.loop(self.clock.interval)
 
     def automate(_, coro: Coroutine):
-        print('running coro')
+        print('running automation coroutine', flush=True)
         task_logger.create_task(coro)
-        return

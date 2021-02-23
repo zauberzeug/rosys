@@ -1,3 +1,4 @@
+import asyncio
 from utilities.angle import deg
 import pytest
 import numpy as np
@@ -30,11 +31,23 @@ async def test_driving_a_square(world):
 
     async def square():
         drive(1, deg(0))
-        await world.robot.reaches(2, 0)
+        await world.robot.condition(lambda r: r.pose.x >= 2)
         drive(0, deg(90))
-        await world.robot.reaches(2, 0, deg(90))
+        await world.robot.condition(lambda r: r.pose.yaw.deg >= 90)
         drive(1, deg(0))
+        await world.robot.condition(lambda r: r.pose.y >= 2)
+        drive(0, deg(90))
+        await world.robot.condition(lambda r: r.pose.yaw.deg >= 180)
+        drive(1, deg(0))
+        await world.robot.condition(lambda r: r.pose.x <= 0)
+        drive(0, deg(90))
+        await world.robot.condition(lambda r: r.pose.yaw.deg >= 270)
+        drive(1, deg(0))
+        await world.robot.condition(lambda r: r.pose.y <= 0)
+        drive(0, deg(0))
 
     world.automate(square())
     await world.simulate(seconds=5.0)
     assert_pose(2, 2, deg(90))
+    await world.simulate(seconds=6.0)
+    assert_pose(0, 0, deg(270))
