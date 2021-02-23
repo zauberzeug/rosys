@@ -2,8 +2,6 @@ from pydantic import BaseModel
 from pydantic.fields import Field
 import serial
 from line_reader import LineReader
-from datetime import datetime, timedelta
-import numpy as np
 from easy_vector import Vector as V
 
 

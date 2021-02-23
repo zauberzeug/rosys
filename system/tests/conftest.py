@@ -1,55 +1,17 @@
-import pytest
 from typing import Generator
-import socketio
-import asyncio
-import functools
-import requests
-import tests.test_helper as test_helper
-from robot import Pose
-from easy_vector import Vector as V
+from world.world import World
+from world.robot import Robot
+from world.clock import Clock
+import pytest
+pytest.register_assert_rewrite("tests.helper")
 
 
 @pytest.fixture
-def web() -> Generator:
-    with test_helper.LiveServerSession() as c:
-        yield c
+def world() -> Generator:
 
-
-@pytest.fixture
-async def sio(event_loop) -> Generator:
-
-    sio = socketio.Client()
-    is_connected = asyncio.Event()
-
-    @sio.event
-    def connect():
-        event_loop.call_soon_threadsafe(is_connected.set())
-
-    sio.connect("ws://localhost", socketio_path="/ws/socket.io", transports=['websocket'])
-
-    await asyncio.wait_for(is_connected.wait(), 1)
-    assert sio.transport() == 'websocket'
-
-    yield sio
-    sio.disconnect()
-
-
-@pytest.fixture
-async def robot(sio, event_loop) -> Generator:
-    r = test_helper.Robot()
-    is_receiving = asyncio.Event()
-
-    @sio.on('robot_pose')
-    def robot_pose(data):
-        r.pose = Pose(location=V(data['location']['coords']), orientation=data['orientation'])
-        event_loop.call_soon_threadsafe(is_receiving.set())
-
-    await asyncio.wait_for(is_receiving.wait(), 1)
-    yield r
-
-
-@pytest.fixture(autouse=True)
-def reset(sio):
-    sio.call('reset')
-    yield
-    sio.call('reset')
+    clock = Clock(interval=0.1)
+    robot = Robot(width=0.5)
+    world = World(clock=clock, robot=robot)
+    from tests.helper import set_global_world
+    set_global_world(world)
+    yield world
