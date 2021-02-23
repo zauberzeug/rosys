@@ -44,7 +44,7 @@ async def test_driving_a_square(world):
         await world.robot.condition(lambda r: r.pose.y <= 0)
         drive(0, deg=0)
 
-    world.automate(square())
+    world.robot.automate(square())
     await world.simulate(seconds=5.0)
     assert_pose(2, 2, deg=90)
     await world.simulate(seconds=6.0)

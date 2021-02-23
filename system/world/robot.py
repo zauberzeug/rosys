@@ -3,6 +3,8 @@ from pydantic import BaseModel
 import numpy as np
 from world.pose import Pose
 from world.velocity import Velocity
+import task_logger
+from typing import Coroutine
 
 
 class Robot(BaseModel):
@@ -26,6 +28,9 @@ class Robot(BaseModel):
         self.pose.y += dt * self.velocity.linear * np.sin(self.pose.yaw)
         self.pose.yaw += dt * self.velocity.angular
         #print('pose', self.pose, flush=True)
+
+    def automate(_, coro: Coroutine):
+        task_logger.create_task(coro)
 
     async def condition(self, func):
         while not func(self):

@@ -1,10 +1,7 @@
 import asyncio
-import task_logger
-from typing import Coroutine
 from pydantic import BaseModel
 from world.robot import Robot
 from world.clock import Clock
-import task_logger
 
 
 class World(BaseModel):
@@ -28,7 +25,3 @@ class World(BaseModel):
 
         self.clock.loop()
         self.robot.loop(self.clock.interval)
-
-    def automate(_, coro: Coroutine):
-        print('running automation coroutine', flush=True)
-        task_logger.create_task(coro)
