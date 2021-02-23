@@ -1,5 +1,5 @@
-from utilities.angle import Angle, deg
 import pytest
+import numpy as np
 from world.world import World
 
 global_world: World = None
@@ -10,16 +10,19 @@ def set_global_world(world: World):
     global_world = world
 
 
-def assert_pose(x: float, y: float, yaw: Angle = None,
-                linear_tolerance: float = 0.01, angular_tolerance: Angle = deg(1)):
-    """yaw and tolerances are in degree for better readability"""
+def assert_pose(x: float, y: float, *, deg: float = None,
+                linear_tolerance: float = 0.01, deg_tolerance: float = 1.0):
     pose = global_world.robot.pose
     assert pose.x == pytest.approx(x, abs=linear_tolerance)
     assert pose.y == pytest.approx(y, abs=linear_tolerance)
 
-    if yaw is not None:
-        assert pose.yaw.deg == pytest.approx(yaw.deg, abs=angular_tolerance)
+    if deg is not None:
+        assert np.rad2deg(pose.yaw) == pytest.approx(deg, abs=deg_tolerance)
 
 
-def drive(linear: float, angular: Angle = deg(0)):
-    global_world.robot.drive(linear, angular)
+def drive(linear: float, *, deg: float = 0):
+    global_world.robot.drive(linear, np.deg2rad(deg))
+
+
+def deg(radiant: float):
+    return np.rad2deg(radiant)

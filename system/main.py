@@ -15,9 +15,13 @@ robot = Robot(width=0.5)
 world = World(clock=clock, robot=robot)
 
 
+@sio.on('connect')
+async def on_connect(sid, _):
+    await sio.emit('world', jsonable_encoder(world), to=sid)
+
+
 @sio.on('drive_power')
-def on_drive_power(sid, data):
-    print(f'{sid} received drive_power {data}', flush=True)
+def on_drive_power(_, data):
     world.robot.power(data['left'], data['right'])
 
 

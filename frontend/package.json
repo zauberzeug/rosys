@@ -20,10 +20,12 @@
     "@angular/platform-browser-dynamic": "~11.2.0",
     "@angular/router": "~11.2.0",
     "ngx-joystick": "^1.0.2",
+    "rxjs": "~6.6.0",
     "socket.io": "^3.0.4",
     "socket.io-client": "^3.0.4",
-    "rxjs": "~6.6.0",
+    "three": "^0.125.2",
     "tslib": "^2.0.0",
+    "uuid": "^8.3.2",
     "zone.js": "~0.11.3"
   },
   "devDependencies": {

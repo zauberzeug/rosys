@@ -7,6 +7,12 @@ import { AppComponent } from "./app.component";
 import { HomeComponent } from "./home/home.component";
 import { SocketIoConfig } from "./socket-io/socket-io.service";
 import { SocketIoModule } from "./socket-io/socket-io.module";
+import { MapComponent } from "./map/map.component";
+import { MapContainerComponent } from "./map/map-container.component";
+import { RobotComponent } from "./map/robot.component";
+import { CameraComponent } from "./map/camera.component";
+import { BackgroundComponent } from "./map/background.component";
+import { LightComponent } from "./map/light.component";
 
 const config: SocketIoConfig = {
   url: "",
@@ -14,7 +20,16 @@ const config: SocketIoConfig = {
 };
 
 @NgModule({
-  declarations: [AppComponent, HomeComponent],
+  declarations: [
+    AppComponent,
+    HomeComponent,
+    MapComponent,
+    MapContainerComponent,
+    RobotComponent,
+    CameraComponent,
+    BackgroundComponent,
+    LightComponent,
+  ],
   imports: [
     BrowserModule,
     AppRoutingModule,
