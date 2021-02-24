@@ -199,6 +199,8 @@ public:
             {
                 cprintln("%s home offsets: %d %d", name.c_str(), values.position1, values.position2);
                 claw->ResetEncoders();
+                values.position1 = 0;
+                values.position2 = 0;
                 move(homePos1, homePos2, 0.5);
                 state = HOMING_END;
                 return;
