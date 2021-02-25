@@ -207,10 +207,12 @@ public:
             }
         }
 
+        static unsigned int moveIterations = 0;
         if (state == HOMING_END or state == MOVING)
         {
+            moveIterations += 1;
             const char *command = state == HOMING_END ? "home" : "move";
-            if (values.depth1 == 0x80 and values.depth2 == 0x80)
+            if (values.depth1 == 0x80 and values.depth2 == 0x80 and moveIterations > 1) // NOTE: prevent completion in very first iteration
             {
                 state = IDLE;
                 if (not isEStopPressed) {
@@ -224,6 +226,9 @@ public:
                     cprintln("error Limit switch during %s command", command);
                 }
             }
+        }
+        else {
+            moveIterations = 0;
         }
     }
 
