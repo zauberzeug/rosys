@@ -16,7 +16,7 @@ import { LightComponent } from "./map/light.component";
 
 const config: SocketIoConfig = {
   url: "",
-  options: { path: "/ws/socket.io" },
+  options: { path: location.pathname + "ws/socket.io" },
 };
 
 @NgModule({
