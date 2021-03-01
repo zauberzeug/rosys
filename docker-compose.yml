@@ -14,6 +14,10 @@ services:
     volumes:
       # Traefik must be able to listen for Docker events
       - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      # enable compression
+      - traefik.http.middlewares.gzip.compress=true
+      - traefik.http.routers.proxy.middlewares=gzip
 
   system:
     image: "robot_brain_system:${TAG-latest}"
@@ -31,8 +35,8 @@ services:
     command: /app/start.sh
     labels:
       - traefik.http.routers.system.rule=PathPrefix(`/api`) || PathPrefix(`/ws`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`)
-      # use gzip on main route
-      #- traefik.http.routers.system.middlewares=gzip
+      # enable compression
+      - traefik.http.routers.frontend.middlewares=gzip
 
   frontend:
     image: "robot_brain_frontend:${TAG-latest}"
@@ -49,3 +53,5 @@ services:
     command: npm start
     labels:
       - traefik.http.routers.frontend.rule=PathPrefix(`/`)
+      # enable compression
+      - traefik.http.routers.frontend.middlewares=gzip
