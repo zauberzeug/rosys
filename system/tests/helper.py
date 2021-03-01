@@ -22,7 +22,3 @@ def assert_pose(x: float, y: float, *, deg: float = None,
 
 def drive(linear: float, *, deg: float = 0):
     global_world.robot.drive(linear, np.deg2rad(deg))
-
-
-def deg(radiant: float):
-    return np.rad2deg(radiant)

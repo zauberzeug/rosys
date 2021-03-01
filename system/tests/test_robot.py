@@ -1,6 +1,7 @@
 import pytest
 import numpy as np
-from tests.helper import assert_pose, drive, deg
+from numpy import rad2deg as deg
+from tests.helper import assert_pose, drive
 
 
 @pytest.mark.asyncio
