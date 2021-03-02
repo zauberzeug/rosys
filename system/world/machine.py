@@ -1,4 +1,5 @@
-from typing import Any
+from typing import Any, Optional
+from world.velocity import Velocity
 from pydantic.main import BaseModel
 import aioserial
 
@@ -13,7 +14,7 @@ class Machine(BaseModel):
         super().__init__(*args, **kwargs)
         self.aioserial_instance = aioserial.AioSerial(self.port, baudrate=115200)
 
-    async def read(self):
+    async def read(self) -> Optional[Velocity]:
 
         line = (await self.aioserial_instance.readline_async()).decode().strip()
         if '^' in line:
@@ -23,6 +24,6 @@ class Machine(BaseModel):
                 checksum ^= ord(c)
             if checksum != int(check):
                 return
-        print(line, flush=True)
 
-        # TODO: extract status information from line
+        words = line.split()
+        return Velocity(linear=float(words[1]), angular=float(words[2]))
