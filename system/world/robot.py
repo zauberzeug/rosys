@@ -1,7 +1,9 @@
 import asyncio
 from pydantic import BaseModel
+from typing import Optional
 import numpy as np
 from world.pose import Pose
+from world.machine import Machine
 from world.velocity import Velocity
 import task_logger
 from typing import Coroutine
@@ -9,6 +11,7 @@ from typing import Coroutine
 
 class Robot(BaseModel):
 
+    machine: Optional[Machine]
     width: float
     pose: Pose = Pose()
     velocity: Velocity = Velocity()
@@ -22,7 +25,11 @@ class Robot(BaseModel):
         self.velocity.linear = (left + right) / 2.0
         self.velocity.angular = (right - left) / self.width / 2.0
 
-    def loop(self, dt: float):
+    async def loop(self, dt: float):
+
+        if self.machine:
+            await self.machine.read()
+            # self.velocity = self.machine.velocity
 
         self.pose.x += dt * self.velocity.linear * np.cos(self.pose.yaw)
         self.pose.y += dt * self.velocity.linear * np.sin(self.pose.yaw)

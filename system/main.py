@@ -5,13 +5,15 @@ from fastapi.encoders import jsonable_encoder
 import task_logger
 from world.world import World
 from world.robot import Robot
+from world.machine import Machine
 from world.clock import Clock
 
 app = FastAPI()
 sio = SocketManager(app=app)
 
 clock = Clock(interval=0.1)
-robot = Robot(width=0.5)
+machine = Machine(port="/dev/esp")
+robot = Robot(machine=machine, width=0.5)
 world = World(clock=clock, robot=robot)
 
 
