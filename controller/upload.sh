@@ -2,8 +2,8 @@
 
 if [ `uname` == "Linux" ]
 then
-    export IDF_TOOLS_PATH="$HOME/esp/esp-tools_4.0.1"
-    export IDF_PATH="$HOME/esp/esp-idf_4.0.1"
+    export IDF_TOOLS_PATH="$HOME/esp/esp-tools_4.2"
+    export IDF_PATH="$HOME/esp/esp-idf_4.2"
     . $IDF_PATH/export.sh
     
     if lshw -C system 2>/dev/null | grep -q "NVIDIA Jetson\|jetson-nano"
