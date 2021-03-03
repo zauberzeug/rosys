@@ -211,7 +211,6 @@ public:
         lastLinearSpeed = (lastLeftSpeed + lastRightSpeed) / 2.0;
         lastAngularSpeed = (lastRightSpeed - lastLeftSpeed) / width;
 
-    
         this->getTemp();
         this->getBattery();
 
@@ -274,12 +273,12 @@ public:
     std::string getOutput()
     {
         char buffer[256];
-        std::sprintf(buffer, "%.4f\t%.4f\t%.1f\t%.1f\t%s",
-            this->lastLinearSpeed,
-            this->lastAngularSpeed,
-            this->lastTemperature,
-            this->lastBattery,
-            state == IDLE ? "IDLE" : state == POWERING ? "POWERING" : state == SPEEDING ? "SPEEDING" : state == BRAKING ? "BRAKING" : state == REVERSING ? "REVERSING" : "unknown");
+        std::sprintf(buffer, "%7.4f %7.4f %4.1f %4.1f %-9s",
+                     this->lastLinearSpeed,
+                     this->lastAngularSpeed,
+                     this->lastTemperature,
+                     this->lastBattery,
+                     state == IDLE ? "IDLE" : state == POWERING ? "POWERING" : state == SPEEDING ? "SPEEDING" : state == BRAKING ? "BRAKING" : state == REVERSING ? "REVERSING" : "unknown");
         return buffer;
     }
 

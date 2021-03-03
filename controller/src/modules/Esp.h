@@ -1,11 +1,13 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 #include "Module.h"
 #include "../storage.h"
 #include "../utils/strings.h"
 #include "../utils/checksum.h"
+#include "../utils/timing.h"
 
 class Esp : public Module
 {
@@ -21,8 +23,9 @@ public:
 
     std::string getOutput()
     {
-        std::string result = "";
-        for (const auto name : *(this->outputModules)) {
+        std::string result = std::to_string(millis());
+        for (const auto name : *(this->outputModules))
+        {
             if (not result.empty())
                 result += " ";
             result += (*(this->modules))[name]->getOutput();
