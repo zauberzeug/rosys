@@ -3,7 +3,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <algorithm>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -19,8 +18,6 @@
 #include "esp_gatt_common_api.h"
 
 #define TAG "ble"
-
-std::string Ble::value = "";
 
 static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_if_t gatts_if, esp_ble_gatts_cb_param_t *param);
 
@@ -90,7 +87,7 @@ static uint8_t adv_service_uuid128[32] = {
 static esp_ble_adv_data_t adv_data = {
     .set_scan_rsp = false,
     .include_name = true,
-    .include_txpower = true,
+    .include_txpower = false,
     .min_interval = 0x0006, //slave connection min interval, Time = min_interval * 1.25 msec
     .max_interval = 0x0010, //slave connection max interval, Time = max_interval * 1.25 msec
     .appearance = 0x00,
@@ -106,8 +103,8 @@ static esp_ble_adv_data_t scan_rsp_data = {
     .set_scan_rsp = true,
     .include_name = true,
     .include_txpower = true,
-    .min_interval = 0x0006,
-    .max_interval = 0x0010,
+    //.min_interval = 0x0006,
+    //.max_interval = 0x0010,
     .appearance = 0x00,
     .manufacturer_len = 0,
     .p_manufacturer_data = NULL,
@@ -123,8 +120,8 @@ static esp_ble_adv_params_t adv_params = {
     .adv_int_max = 0x40,
     .adv_type = ADV_TYPE_IND,
     .own_addr_type = BLE_ADDR_TYPE_PUBLIC,
-    .peer_addr = {0},
-    .peer_addr_type = BLE_ADDR_TYPE_PUBLIC,
+    //.peer_addr            =
+    //.peer_addr_type       =
     .channel_map = ADV_CHNL_ALL,
     .adv_filter_policy = ADV_FILTER_ALLOW_SCAN_ANY_CON_ANY,
 };
@@ -325,13 +322,11 @@ static void gatts_profile_a_event_handler(esp_gatts_cb_event_t event, esp_gatt_i
         esp_gatt_rsp_t rsp;
         memset(&rsp, 0, sizeof(esp_gatt_rsp_t));
         rsp.attr_value.handle = param->read.handle;
-        const int LIMIT = 497;
-        rsp.attr_value.len = std::min((int)Ble::value.size(), LIMIT);
-        std::string chunk = Ble::value.substr(0, LIMIT);
-        ESP_LOGI(TAG, "Sending chunk (len: %d)", chunk.size());
-        memcpy((char *)rsp.attr_value.value, chunk.c_str(), chunk.size());
-        Ble::value.erase(0, LIMIT);
-        ESP_LOGI(TAG, "Remaining string length: %d", Ble::value.size());
+        rsp.attr_value.len = 4;
+        rsp.attr_value.value[0] = 0xde;
+        rsp.attr_value.value[1] = 0xed;
+        rsp.attr_value.value[2] = 0xbe;
+        rsp.attr_value.value[3] = 0xef;
         esp_ble_gatts_send_response(gatts_if, param->read.conn_id, param->read.trans_id, ESP_GATT_OK, &rsp);
         break;
     }
@@ -538,6 +533,13 @@ void Ble::init(std::string device_name, void (*handleCommand)(std::string))
     HANDLE_COMMAND = handleCommand;
 
     esp_err_t ret;
+
+    ret = nvs_flash_init();
+    if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        ESP_ERROR_CHECK(nvs_flash_erase());
+        ret = nvs_flash_init();
+    }
+    ESP_ERROR_CHECK(ret);
 
     ESP_ERROR_CHECK(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
 
