@@ -13,6 +13,7 @@ import { RobotComponent } from "./map/robot.component";
 import { CameraComponent } from "./map/camera.component";
 import { BackgroundComponent } from "./map/background.component";
 import { LightComponent } from "./map/light.component";
+import { APP_BASE_HREF } from "@angular/common";
 
 const config: SocketIoConfig = {
   url: "",
@@ -36,7 +37,7 @@ const config: SocketIoConfig = {
     NgxJoystickModule,
     SocketIoModule.forRoot(config),
   ],
-  providers: [],
+  providers: [{provide: APP_BASE_HREF, useValue: window.location.origin}],
   bootstrap: [AppComponent],
 })
 export class AppModule {}
