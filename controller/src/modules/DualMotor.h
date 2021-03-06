@@ -100,7 +100,7 @@ private:
     std::string getOutput()
     {
         char buffer[256];
-        std::sprintf(buffer, "%d\t%d\t%d\t%d\t%d\t%d\t%d\t%d\t%x\t%s",
+        std::sprintf(buffer, "%7d %7d %7d %7d %3d %3d %4d %4d %6x %-12s",
             values.position1,
             values.position2,
             values.countsPerSecond1,
