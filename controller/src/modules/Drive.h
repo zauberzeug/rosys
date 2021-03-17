@@ -221,7 +221,7 @@ public:
                 timeOfLastBump = millis();
             unsigned long millisSinceLastBump = millis() - timeOfLastBump;
             bool new_bumper_state = millisSinceLastBump <= bumper_debounce;
-            if (new_bumper_state != bumper_state and output)
+            if (new_bumper_state != bumper_state)
                 cprintln("%s bump %s", name.c_str(), new_bumper_state ? "start" : "stop");
             bumper_state = new_bumper_state;
             if (bumper_state)
