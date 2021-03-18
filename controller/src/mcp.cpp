@@ -5,7 +5,7 @@
 #include <driver/gpio.h>
 #include <mcp23x17.h>
 
-mcp23x17_t config ={};
+mcp23x17_t config = {};
 
 void mcp::init()
 {
@@ -17,11 +17,11 @@ void mcp::init()
     mcp23x17_init_desc(&config, (i2c_port_t)0, MCP23X17_ADDR_BASE, GPIO_NUM_21, GPIO_NUM_22);
     config.cfg.sda_pullup_en = GPIO_PULLUP_ENABLE;
     config.cfg.scl_pullup_en = GPIO_PULLUP_ENABLE;
+}
 
-    for (int i = 0; i < 8; ++i)
-        mcp23x17_set_mode(&config, i, MCP23X17_GPIO_INPUT);
-    for (int i = 8; i < 16; ++i)
-        mcp23x17_set_mode(&config, i, MCP23X17_GPIO_OUTPUT);
+void mcp::set_mode(int bank, int number, bool input)
+{
+    mcp23x17_set_mode(&config, 8 * bank + number, input ? MCP23X17_GPIO_INPUT : MCP23X17_GPIO_OUTPUT);
 }
 
 void mcp::set_pullup(int bank, int number, bool value)

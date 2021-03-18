@@ -21,10 +21,7 @@ public:
 
     void setup(bool input, int pull = 0)
     {
-        if (this->bank == 0 && not input)
-            cprintln("Error: Bank A is input only.");
-        if (this->bank == 1 && input)
-            cprintln("Error: Bank B is output only.");
+        mcp::set_mode(this->bank, this->number, input);
         if (pull < 0)
             cprintln("Error: Pull-down is not supported.");
         mcp::set_pullup(this->bank, this->number, pull > 0);
