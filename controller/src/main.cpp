@@ -86,7 +86,8 @@ void handleMsg(std::string multiMsg)
                 esp->stopAll();
             else if (word == "left" or word == "right")
                 handleMsg(module + " " + word + " " + msg);
-            else if (word == "pw") {
+            else if (word == "pw")
+            {
                 if (module == "wheels")
                     word = "torque";
                 handleMsg(module + " " + word + " " + msg);
@@ -114,9 +115,12 @@ void setup()
     std::string boot = storage::read("TEMP", "BOOT");
     int boot_count = boot == "" ? 1 : stoi(boot) + 1;
     storage::write("TEMP", "BOOT", std::to_string(boot_count));
-    if (boot_count > 3) {
+    if (boot_count > 3)
+    {
         cprintln("Boot loop detected. Ignoring configuration this time.");
-    } else {
+    }
+    else
+    {
         cprintln("Reading configuration...");
         std::string content = storage::get();
         while (!content.empty())
@@ -125,8 +129,6 @@ void setup()
             cprintln(">> %s", line.c_str());
             handleMsg(line);
         }
-        for (auto const &item : modules)
-            item.second->setup();
     }
     storage::write("TEMP", "BOOT", "");
 
@@ -184,7 +186,7 @@ Module *createModule(std::string type, std::string name, std::string parameters)
     {
         std::string switch_name = cut_first_word(parameters, ',');
         std::string can_name = cut_first_word(parameters, ',');
-        Button *home_switch = switch_name == "0" ? nullptr : (Button*)modules[switch_name];
+        Button *home_switch = switch_name == "0" ? nullptr : (Button *)modules[switch_name];
         return new ODriveAxis(name, home_switch, (Can *)modules[can_name], parameters);
     }
     else if (type == "wheelpair")
