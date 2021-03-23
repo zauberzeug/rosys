@@ -20,9 +20,11 @@ public:
 
     virtual void loop()
     {
-        if (this->output) {
+        if (this->output)
+        {
             std::string str = this->getOutput();
-            if (not str.empty()) {
+            if (not str.empty())
+            {
                 cprintln("%s %s", this->name.c_str(), str.c_str());
             }
         }
@@ -33,6 +35,14 @@ public:
         if (command == "get")
         {
             cprintln("%s get %s", this->name.c_str(), this->getOutput().c_str());
+        }
+        else if (command == "mute")
+        {
+            output = false;
+        }
+        else if (command == "unmute")
+        {
+            output = true;
         }
         else
         {
