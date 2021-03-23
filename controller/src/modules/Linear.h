@@ -36,15 +36,17 @@ public:
     {
         this->portMoveIn->setup(false);
         this->portMoveOut->setup(false);
-        this->portStopIn->setup(true);
-        this->portStopOut->setup(true);
+        if (this->portStopIn)
+            this->portStopIn->setup(true);
+        if (this->portStopOut)
+            this->portStopOut->setup(true);
     }
 
     void loop()
     {
-        if ((this->state == MOVE_IN or this->state == STOP) and this->portStopIn->get_level() == 0)
+        if ((this->state == MOVE_IN or this->state == STOP) and this->portStopIn and this->portStopIn->get_level() == 0)
             this->state = STOP_IN;
-        if ((this->state == MOVE_OUT or this->state == STOP) and this->portStopOut->get_level() == 0)
+        if ((this->state == MOVE_OUT or this->state == STOP) and this->portStopOut and this->portStopOut->get_level() == 0)
             this->state = STOP_OUT;
 
         portMoveIn->set_level(this->state == MOVE_IN ? 1 : 0);
