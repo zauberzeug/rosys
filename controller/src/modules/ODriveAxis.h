@@ -28,7 +28,8 @@ private:
     float tickOffset = 0.0;
     uint8_t error = 0;
 
-    struct odriveState_t {
+    struct odriveState_t
+    {
         uint8_t state;
         uint8_t controlMode;
         uint8_t inputMode;
@@ -77,7 +78,8 @@ public:
         {
             float target = atof(cut_first_word(parameters, ',').c_str());
             float speed = this->moveSpeed;
-            if (not parameters.empty()) {
+            if (not parameters.empty())
+            {
                 speed = atof(parameters.c_str());
             }
             this->move(target, speed);
@@ -86,7 +88,8 @@ public:
         {
             float target = atof(cut_first_word(parameters, ',').c_str()) + this->position;
             float speed = this->moveSpeed;
-            if (not parameters.empty()) {
+            if (not parameters.empty())
+            {
                 speed = atof(parameters.c_str());
             }
             this->move(target, speed);
@@ -178,12 +181,12 @@ public:
         uint8_t vel_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         float vel = speed / this->mPerTick;
         std::memcpy(vel_data, &vel, 4);
-        this->can->send(this->can_id + 0x00f, vel_data);
+        this->can->send(this->can_id + 0x00f, vel_data); // "Set Velocity Limit"
 
         uint8_t pos_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         float tick = std::max(std::min(target, maxPos), minPos) / this->mPerTick + this->tickOffset;
         std::memcpy(pos_data, &tick, 4);
-        this->can->send(this->can_id + 0x00c, pos_data);
+        this->can->send(this->can_id + 0x00c, pos_data); // "Set Input Pos"
         this->state = MOVE;
     }
 
@@ -194,10 +197,10 @@ public:
         uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         float vel = velocity / this->mPerTick;
         std::memcpy(data, &vel, 4);
-        this->can->send(this->can_id + 0x00d, data);
+        this->can->send(this->can_id + 0x00d, data); // "Set Input Vel"
         float limit = fabs(vel * 2);
         std::memcpy(data, &limit, 4);
-        this->can->send(this->can_id + 0x00f, data);
+        this->can->send(this->can_id + 0x00f, data); // "Set Velocity Limit"
         this->state = MOVE;
     }
 
@@ -207,7 +210,7 @@ public:
 
         uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         std::memcpy(data, &power, 4);
-        this->can->send(this->can_id + 0x00e, data);
+        this->can->send(this->can_id + 0x00e, data); // "Set Velocity Torque"
         this->state = MOVE;
     }
 
@@ -218,7 +221,10 @@ public:
         uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         float vel = this->homeSpeed / this->mPerTick;
         std::memcpy(data, &vel, 4);
-        this->can->send(this->can_id + 0x00d, data);
+        this->can->send(this->can_id + 0x00d, data); // "Set Input Vel"
+        float limit = fabs(vel * 2);
+        std::memcpy(data, &limit, 4);
+        this->can->send(this->can_id + 0x00f, data); // "Set Velocity Limit"
         this->state = HOMING;
     }
 
@@ -229,7 +235,7 @@ public:
         this->state = this->is_home_active() ? HOME : STOP;
     }
 
-    void setMode(uint8_t state, uint8_t controlMode=0, uint8_t inputMode=0)
+    void setMode(uint8_t state, uint8_t controlMode = 0, uint8_t inputMode = 0)
     {
         if (this->odriveState.state != state)
         {
