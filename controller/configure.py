@@ -2,6 +2,7 @@
 import serial
 import os.path
 import time
+import sys
 
 devs = [
     "/dev/tty.SLAB_USBtoUART",
@@ -29,7 +30,7 @@ def send(line):
 with serial.Serial(usb_path, baudrate=115200, timeout=1.0) as port:
 
     send('esp erase')
-    with open('config.txt') as f:
+    with open(sys.argv[1] if len(sys.argv) > 1 else 'config.txt') as f:
         for line in f.read().splitlines():
             line = line.strip()
             if line and not line.startswith('#'):
