@@ -37,7 +37,7 @@ class Robot(BaseModel):
         self.pose.x += dt * self.velocity.linear * np.cos(self.pose.yaw)
         self.pose.y += dt * self.velocity.linear * np.sin(self.pose.yaw)
         self.pose.yaw += dt * self.velocity.angular
-        print(self.pose, flush=True)
+        #print(self.pose, flush=True)
 
     def automate(_, coro: Coroutine):
         task_logger.create_task(coro)

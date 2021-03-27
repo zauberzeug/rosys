@@ -12,7 +12,7 @@ app = FastAPI()
 sio = SocketManager(app=app)
 
 clock = Clock(interval=0.1)
-machine = Machine(port="/dev/esp")
+machine = None  # Machine(port="/dev/esp")
 robot = Robot(machine=machine, width=0.5)
 world = World(clock=clock, robot=robot)
 
@@ -54,6 +54,7 @@ async def shutdown():
     client_updates.cancel()
 
 
+@app.get("/")
 @app.get("/api")
 def main():
     return {"status": "hello, I'm the robot system!", 'world': world}

@@ -1,23 +1,13 @@
 version: "3.3"
 services:
   proxy:
-    image: traefik:v2.3
-    command:
-      - --providers.docker
-      - --api.insecure=true
-      - --accesslog # http access log
-      - --log #Traefik log, for configurations and errors
-      - --api # Enable the Dashboard and API
+    image: "robotic_proxy:${TAG-latest}"
     ports:
       - "80:80"
-      - "8080:8080" # Treafik web ui (enabled by --api.insecure=true)
     volumes:
-      # Traefik must be able to listen for Docker events
-      - /var/run/docker.sock:/var/run/docker.sock
-    labels:
-      # enable compression
-      - traefik.http.middlewares.gzip.compress=true
-      - traefik.http.routers.proxy.middlewares=gzip
+      - ./proxy/nginx.conf:/etc/nginx.conf
+    build:
+      context: ./proxy
 
   system:
     image: "robot_brain_system:${TAG-latest}"
@@ -33,10 +23,6 @@ services:
       args:
         INSTALL_DEV: "true"
     command: /app/start.sh
-    labels:
-      - traefik.http.routers.system.rule=PathPrefix(`/api`) || PathPrefix(`/ws`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) || PathPrefix(`/openapi.json`)
-      # enable compression
-      - traefik.http.routers.system.middlewares=gzip
 
   frontend:
     image: "robot_brain_frontend:${TAG-latest}"
@@ -51,7 +37,3 @@ services:
       - ./frontend:/app
       - /app/node_modules
     command: npm start
-    labels:
-      - traefik.http.routers.frontend.rule=PathPrefix(`/`)
-      # enable compression
-      - traefik.http.routers.frontend.middlewares=gzip
