@@ -17,7 +17,7 @@ import { APP_BASE_HREF } from "@angular/common";
 
 const config: SocketIoConfig = {
   url: "",
-  options: { path: location.pathname + "/api/ws/socket.io" },
+  options: { path: location.pathname + "api/ws/socket.io" },
 };
 
 @NgModule({
