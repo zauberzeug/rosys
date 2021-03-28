@@ -17,7 +17,7 @@ import { APP_BASE_HREF } from "@angular/common";
 
 const config: SocketIoConfig = {
   url: "",
-  options: { path: location.pathname + "api/ws/socket.io" },
+  options: { path: location.pathname + "/api/ws/socket.io" },
 };
 
 @NgModule({
@@ -37,7 +37,11 @@ const config: SocketIoConfig = {
     NgxJoystickModule,
     SocketIoModule.forRoot(config),
   ],
-  providers: [{ provide: APP_BASE_HREF, useValue: window.location.origin }],
+  providers: [{ provide: APP_BASE_HREF, useFactory: getBaseUrl }],
   bootstrap: [AppComponent],
 })
 export class AppModule {}
+
+export function getBaseUrl() {
+  return location.pathname;
+}
