@@ -11,7 +11,6 @@ class Button : public Module
 {
 private:
     bool invert = false;
-    int pullup = 0;
 
     Port *port;
 
@@ -23,7 +22,7 @@ public:
 
     void setup()
     {
-        this->port->setup(true, pullup);
+        this->port->setup(true);
     }
 
     void loop()
@@ -48,8 +47,7 @@ public:
         }
         else if (key == "pullup")
         {
-            pullup = atoi(value.c_str());
-            port->setup(true, pullup);
+            port->set_pull(atoi(value.c_str()));
         }
         else
         {

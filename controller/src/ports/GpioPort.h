@@ -15,10 +15,14 @@ public:
         this->number = number;
     }
 
-    void setup(bool input, int pull=0)
+    void setup(bool input)
     {
         gpio_reset_pin(number);
         gpio_set_direction(number, input ? GPIO_MODE_INPUT : GPIO_MODE_OUTPUT);
+    }
+
+    void set_pull(int pull)
+    {
         gpio_set_pull_mode(number, pull > 0 ? GPIO_PULLUP_ONLY : pull < 0 ? GPIO_PULLDOWN_ONLY : GPIO_FLOATING);
     }
 

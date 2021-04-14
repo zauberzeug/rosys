@@ -19,9 +19,13 @@ public:
         this->bank = bank;
     }
 
-    void setup(bool input, int pull = 0)
+    void setup(bool input)
     {
         mcp::set_mode(this->bank, this->number, input);
+    }
+
+    void set_pull(int pull)
+    {
         if (pull < 0)
             cprintln("Error: Pull-down is not supported.");
         mcp::set_pullup(this->bank, this->number, pull > 0);
