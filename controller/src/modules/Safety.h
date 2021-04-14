@@ -16,7 +16,7 @@ private:
     unsigned long last_keep_alive_signal = 0;
 
     std::map<std::string, Module *> *modules;
-    std::map<std::string, std::tuple<std::string, std::string, int>> conditions;
+    std::vector<std::tuple<std::string, bool, int, std::string, std::string>> conditions;
     std::map<std::string, std::pair<std::string, std::string>> shadows;
 
 public:
@@ -43,17 +43,18 @@ public:
         return buffer;
     }
 
+    void addCondition(std::string msg)
+    {
+        std::string trigger = cut_first_word(msg);
+        bool equality = cut_first_word(msg) == "==";
+        int state = atoi(cut_first_word(msg).c_str());
+        std::string target = cut_first_word(msg);
+        conditions.push_back(std::make_tuple(trigger, equality, state, target, msg));
+    }
+
     void set(std::string key, std::string value)
     {
-        if (starts_with(key, "condition_"))
-        {
-            cut_first_word(key, '_');
-            std::string module = cut_first_word(value, ',');
-            std::string trigger = cut_first_word(value, ',');
-            int state = atoi(value.c_str());
-            conditions[key] = std::make_tuple(module, trigger, state);
-        }
-        else if (starts_with(key, "shadow_"))
+        if (starts_with(key, "shadow_"))
         {
             cut_first_word(key, '_');
             std::string trigger = cut_first_word(value, ',');
@@ -89,11 +90,21 @@ public:
 
         for (auto const &item : conditions)
         {
-            std::string name = std::get<0>(item.second);
-            std::string trigger = std::get<1>(item.second);
-            int state = std::get<2>(item.second);
-            if ((name == "*" || name == module->name) && state != (*modules)[trigger]->state)
+            std::string trigger = std::get<0>(item);
+            bool equality = std::get<1>(item);
+            int state = std::get<2>(item);
+            std::string target = std::get<3>(item);
+            std::string msg = std::get<4>(item);
+            if (target != "*" and target != module->name)
+            {
+                continue;
+            }
+            if ((state == (*modules)[trigger]->state) == equality)
+            {
+                std::string command = cut_first_word(msg);
+                (*modules)[target]->handleMsg(command, msg);
                 return false;
+            }
         }
         return true;
     }
@@ -117,11 +128,13 @@ public:
         
         for (auto const &item : conditions)
         {
-            std::string name = std::get<0>(item.second);
-            std::string trigger = std::get<1>(item.second);
-            int state = std::get<2>(item.second);
-            const char* result = state == (*modules)[trigger]->state ? "ok" : "violated";
-            cprintln("condition \"%s\" %s,%s,%d: %s", item.first.c_str(), name.c_str(), trigger.c_str(), state, result);
+            std::string trigger = std::get<0>(item);
+            bool equality = std::get<1>(item);
+            int state = std::get<2>(item);
+            std::string target = std::get<3>(item);
+            std::string msg = std::get<4>(item);
+            const char* result = (state == (*modules)[trigger]->state) == equality ? "--> triggered" : "";
+            cprintln("if %s %s %d %s %s %s", trigger.c_str(), equality ? "==" : "!=", state, target.c_str(), msg.c_str(), result);
         }
 
         for (auto const &item : shadows)

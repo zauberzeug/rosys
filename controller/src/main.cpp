@@ -72,6 +72,10 @@ void handleMsg(std::string multiMsg)
             std::string key = cut_first_word(msg, '=');
             modules[name]->set(key, msg);
         }
+        else if (word == "if")
+        {
+            safety->addCondition(msg);
+        }
         else if (modules.count(word))
         {
             std::string command = cut_first_word(msg);
@@ -153,8 +157,7 @@ void loop()
 
     for (auto const &item : modules)
     {
-        if (!safety->check(item.second))
-            item.second->stop();
+        safety->check(item.second);
         item.second->loop();
     }
 
