@@ -148,6 +148,7 @@ void loop()
         if (msg.empty())
             continue;
         handleMsg(msg);
+        safety->keep_alive();
     }
 
     for (auto const &item : modules)

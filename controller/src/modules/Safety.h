@@ -6,11 +6,14 @@
 #include "Module.h"
 #include "../utils/strings.h"
 #include "../utils/checksum.h"
+#include "../utils/timing.h"
 
 class Safety : public Module
 {
 private:
     bool active = true;
+    unsigned long keep_alive_interval_ms = 0;
+    unsigned long last_keep_alive_signal = 0;
 
     std::map<std::string, Module *> *modules;
     std::map<std::string, std::tuple<std::string, std::string, int>> conditions;
@@ -61,16 +64,28 @@ public:
         {
             active = value == "1";
         }
+        else if (key == "keep_alive_interval")
+        {
+            keep_alive_interval_ms = atof(value.c_str()) * 1000;
+        }
         else
         {
             Module::set(key, value);
         }
     }
 
+    void keep_alive()
+    {
+        last_keep_alive_signal = millis();
+    }
+
     bool check(Module *module)
     {
         if (not this->active)
             return true;
+
+        if (keep_alive_interval_ms > 0 and millisSince(last_keep_alive_signal) > keep_alive_interval_ms)
+            return false;
 
         for (auto const &item : conditions)
         {

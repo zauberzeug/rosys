@@ -47,6 +47,10 @@ public:
         {
             storage::put("");
         }
+        else if (command == "ping")
+        {
+            // do nothing
+        }
         else if (command == "stop")
         {
             stopAll();
