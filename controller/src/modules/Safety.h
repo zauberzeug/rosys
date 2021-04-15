@@ -83,13 +83,15 @@ public:
         last_keep_alive_signal = millis();
     }
 
-    bool check(Module *module)
+    bool is_alive()
+    {
+        return keep_alive_interval_ms == 0 or millisSince(last_keep_alive_signal) < keep_alive_interval_ms;
+    }
+
+    void applyConditions(Module *module)
     {
         if (not this->active)
-            return true;
-
-        if (keep_alive_interval_ms > 0 and millisSince(last_keep_alive_signal) > keep_alive_interval_ms)
-            return false;
+            return;
 
         for (auto const &item : conditions)
         {
@@ -98,7 +100,7 @@ public:
             int state = std::get<2>(item);
             std::string target = std::get<3>(item);
             std::string msg = std::get<4>(item);
-            if (target != "*" and target != module->name)
+            if (target != module->name)
             {
                 continue;
             }
@@ -106,10 +108,8 @@ public:
             {
                 std::string command = cut_first_word(msg);
                 (*modules)[target]->handleMsg(command, msg);
-                return false;
             }
         }
-        return true;
     }
 
     void applyShadow(std::string trigger, std::string command, std::string parameters)

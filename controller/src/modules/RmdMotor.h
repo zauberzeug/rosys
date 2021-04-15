@@ -73,7 +73,7 @@ public:
         else if (command == "home")
         {
             this->send_move(0);
-            this->state = HOMING;
+            this->state = std::abs(this->angle) < this->tolerance ? HOME : HOMING;
         }
         else if (command == "zero")
         {
@@ -158,7 +158,7 @@ public:
 
     void stop()
     {
-        if (this->state == STOP)
+        if (this->state == STOP or this->state == OFF)
         {
             return;
         }
