@@ -17,7 +17,7 @@ private:
 
     std::map<std::string, Module *> *modules;
     std::vector<std::tuple<std::string, bool, int, std::string, std::string>> conditions;
-    std::map<std::string, std::pair<std::string, std::string>> shadows;
+    std::vector<std::pair<std::string, std::string>> shadows;
 
 public:
     Safety(std::map<std::string, Module *> *modules) : Module("safety")
@@ -52,16 +52,19 @@ public:
         conditions.push_back(std::make_tuple(trigger, equality, state, target, msg));
     }
 
+    void addShadow(std::string msg)
+    {
+        std::string trigger = cut_first_word(msg);
+        bool twoway = cut_first_word(msg) == "<>";
+        std::string target = cut_first_word(msg);
+        shadows.push_back(std::make_pair(trigger, target));
+        if (twoway)
+            shadows.push_back(std::make_pair(target, trigger));
+    }
+
     void set(std::string key, std::string value)
     {
-        if (starts_with(key, "shadow_"))
-        {
-            cut_first_word(key, '_');
-            std::string trigger = cut_first_word(value, ',');
-            std::string shadow = cut_first_word(value, ',');
-            shadows[key] = std::make_pair(trigger, shadow);
-        }
-        else if (key == "active")
+        if (key == "active")
         {
             active = value == "1";
         }
@@ -116,8 +119,8 @@ public:
 
         for (auto const &item : shadows)
         {
-            if (item.second.first == trigger) {
-                (*modules)[item.second.second]->handleMsg(command, parameters);
+            if (item.first == trigger) {
+                (*modules)[item.second]->handleMsg(command, parameters);
             }
         }
     }
@@ -139,9 +142,7 @@ public:
 
         for (auto const &item : shadows)
         {
-            std::string trigger = item.second.first;
-            std::string shadow = item.second.second;
-            cprintln("shadow \"%s\" %s->%s", item.first.c_str(), trigger.c_str(), shadow.c_str());
+            cprintln("shadow %s > %s", item.first.c_str(), item.second.c_str());
         }
     }
 };

@@ -76,6 +76,10 @@ void handleMsg(std::string multiMsg)
         {
             safety->addCondition(msg);
         }
+        else if (word == "shadow")
+        {
+            safety->addShadow(msg);
+        }
         else if (modules.count(word))
         {
             std::string command = cut_first_word(msg);
