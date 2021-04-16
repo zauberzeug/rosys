@@ -3,8 +3,8 @@
 #include <map>
 #include <string>
 
-#include "modules/Module.h"
-#include "utils/strings.h"
+#include "Module.h"
+#include "../utils/strings.h"
 
 struct part_t {
     std::string trigger;
@@ -50,8 +50,8 @@ public:
         std::string result = "";
         for (auto const &part : parts)
         {
-            result += "&& " + part.trigger + (part.equality ? " == " : " != ") + std::to_string(part.state);
+            result += "&& " + part.trigger + (part.equality ? " == " : " != ") + std::to_string(part.state) + " ";
         }
-        return result.replace(0, 3, "if ");
+        return result.replace(0, 3, "if ") + msg;
     }
 };
