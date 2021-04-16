@@ -74,7 +74,7 @@ void handleMsg(std::string multiMsg)
         }
         else if (word == "if")
         {
-            safety->addCondition(msg + ";" + multiMsg);
+            safety->addCondition(std::string("if ") + msg + ";" + multiMsg);
         }
         else if (word == "shadow")
         {

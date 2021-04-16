@@ -121,8 +121,8 @@ public:
         
         for (auto const &condition : conditions)
         {
-            const bool result = (state == (*modules)[condition->trigger]->state) == condition->equality;
-            cprintln((condition->to_string() + (result ? " --> triggered" : "")).c_str());
+            std::string result = condition->is_true(modules) ? " --> triggered" : "";
+            cprintln((condition->to_string() + result).c_str());
         }
 
         for (auto const &item : shadows)
