@@ -4,6 +4,7 @@
 #include <string>
 
 #include "Module.h"
+#include "Condition.h"
 #include "../utils/strings.h"
 #include "../utils/checksum.h"
 #include "../utils/timing.h"
@@ -16,7 +17,7 @@ private:
     unsigned long last_keep_alive_signal = 0;
 
     std::map<std::string, Module *> *modules;
-    std::vector<std::tuple<std::string, bool, int, std::string, std::string>> conditions;
+    std::vector<Condition *> conditions;
     std::vector<std::pair<std::string, std::string>> shadows;
 
 public:
@@ -45,11 +46,7 @@ public:
 
     void addCondition(std::string msg)
     {
-        std::string trigger = cut_first_word(msg);
-        bool equality = cut_first_word(msg) == "==";
-        int state = atoi(cut_first_word(msg).c_str());
-        std::string target = cut_first_word(msg);
-        conditions.push_back(std::make_tuple(trigger, equality, state, target, msg));
+        conditions.push_back(new Condition(msg));
     }
 
     void addShadow(std::string msg)
@@ -88,24 +85,17 @@ public:
         return keep_alive_interval_ms == 0 or millisSince(last_keep_alive_signal) < keep_alive_interval_ms;
     }
 
-    void applyConditions(Module *module)
+    void applyConditions()
     {
         if (not this->active)
             return;
 
-        for (auto const &item : conditions)
+        for (auto const &condition : conditions)
         {
-            std::string trigger = std::get<0>(item);
-            bool equality = std::get<1>(item);
-            int state = std::get<2>(item);
-            std::string target = std::get<3>(item);
-            std::string msg = std::get<4>(item);
-            if (target != module->name)
+            if (condition->is_true(modules))
             {
-                continue;
-            }
-            if ((state == (*modules)[trigger]->state) == equality)
-            {
+                std::string msg = std::string(condition->msg);
+                std::string target = cut_first_word(msg);
                 std::string command = cut_first_word(msg);
                 (*modules)[target]->handleMsg(command, msg);
             }
@@ -129,15 +119,10 @@ public:
     {
         cprintln(this->active ? "ACTIVE" : "INACTIVE");
         
-        for (auto const &item : conditions)
+        for (auto const &condition : conditions)
         {
-            std::string trigger = std::get<0>(item);
-            bool equality = std::get<1>(item);
-            int state = std::get<2>(item);
-            std::string target = std::get<3>(item);
-            std::string msg = std::get<4>(item);
-            const char* result = (state == (*modules)[trigger]->state) == equality ? "--> triggered" : "";
-            cprintln("if %s %s %d %s %s %s", trigger.c_str(), equality ? "==" : "!=", state, target.c_str(), msg.c_str(), result);
+            const bool result = (state == (*modules)[condition->trigger]->state) == condition->equality;
+            cprintln((condition->to_string() + (result ? " --> triggered" : "")).c_str());
         }
 
         for (auto const &item : shadows)

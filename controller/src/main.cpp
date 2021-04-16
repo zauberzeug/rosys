@@ -159,9 +159,10 @@ void loop()
         safety->keep_alive();
     }
 
+    safety->applyConditions();
+
     for (auto const &item : modules)
     {
-        safety->applyConditions(item.second);
         if (!safety->is_alive()) {
             item.second->stop();
         }
