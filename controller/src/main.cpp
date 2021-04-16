@@ -74,7 +74,7 @@ void handleMsg(std::string multiMsg)
         }
         else if (word == "if")
         {
-            safety->addCondition(msg);
+            safety->addCondition(msg + ";" + multiMsg);
         }
         else if (word == "shadow")
         {
@@ -118,7 +118,7 @@ void setup()
     storage::init();
 
     modules["esp"] = esp = new Esp(&modules);
-    modules["safety"] = safety = new Safety(&modules);
+    modules["safety"] = safety = new Safety(&modules, handleMsg);
 
     std::string boot = storage::read("TEMP", "BOOT");
     int boot_count = boot == "" ? 1 : stoi(boot) + 1;

@@ -16,14 +16,17 @@ private:
     unsigned long keep_alive_interval_ms = 0;
     unsigned long last_keep_alive_signal = 0;
 
+    void (*handleCommand)(std::string);
+
     std::map<std::string, Module *> *modules;
     std::vector<Condition *> conditions;
     std::vector<std::pair<std::string, std::string>> shadows;
 
 public:
-    Safety(std::map<std::string, Module *> *modules) : Module("safety")
+    Safety(std::map<std::string, Module *> *modules, void (*handleCommand)(std::string)) : Module("safety")
     {
         this->modules = modules;
+        this->handleCommand = handleCommand;
     }
 
     void handleMsg(std::string command, std::string parameters)
@@ -94,10 +97,7 @@ public:
         {
             if (condition->is_true(modules))
             {
-                std::string msg = std::string(condition->msg);
-                std::string target = cut_first_word(msg);
-                std::string command = cut_first_word(msg);
-                (*modules)[target]->handleMsg(command, msg);
+                handleCommand(condition->msg);
             }
         }
     }
