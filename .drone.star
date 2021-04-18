@@ -24,7 +24,7 @@ def main(ctx):
                 'docker-compose -p robot-brain rm -f -v', 
                 'docker-compose -p robot-brain up -d --build',
             ]),
-            docker_compose(name='pytest', cmds='docker-compose -p robot-brain exec -T backend pytest -s -v'),
+            docker_compose(name='pytest', cmds='docker-compose -p robot-brain exec -T system pytest -s -v'),
             docker_compose(name='cleanup', cmds='docker-compose -p robot-brain stop', when={'status': ['success', 'failure']}),
             docker_compose(name='analyze', cmds='docker-compose -p robot-brain ps && docker-compose -p robot-brain logs', when={'status': ['failure']}),
             slack(webhook='https://hooks.slack.com/services/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'),
