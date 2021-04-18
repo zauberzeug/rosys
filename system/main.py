@@ -7,6 +7,7 @@ from world.world import World
 from world.robot import Robot
 from world.machine import Machine
 from world.clock import Clock
+import uvicorn
 
 app = FastAPI()
 sio = SocketManager(app=app)
@@ -63,3 +64,10 @@ def main():
 @app.get("/api/world", response_model=World)
 def get_world():
     return world
+
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "main:app", host="0.0.0.0", port=80,
+        reload=True, lifespan='on', forwarded_allow_ips='*', proxy_headers=True
+    )

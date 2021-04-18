@@ -25,7 +25,7 @@ services:
       dockerfile: system.dockerfile
       args:
         INSTALL_DEV: "true"
-    command: /app/start.sh
+    command: /app/start.sh dev
 
   frontend:
     image: "robot_brain_frontend:${TAG-latest}"
