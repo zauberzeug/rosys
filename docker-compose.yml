@@ -22,7 +22,6 @@ services:
       - "${ESP_SERIAL:-/dev/null}:/dev/esp"
     build:
       context: ./system
-      dockerfile: system.dockerfile
       args:
         INSTALL_DEV: "true"
     command: /app/start.sh dev
@@ -35,7 +34,6 @@ services:
       - "4200:4200"
     build:
       context: ./frontend
-      dockerfile: frontend.dockerfile
     volumes:
       - ./frontend:/app
       - /app/node_modules
