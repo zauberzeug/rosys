@@ -2,6 +2,9 @@ version: "3.3"
 services:
   proxy:
     image: "robotic_proxy:${TAG-latest}"
+    depends_on:
+      - frontend
+      - system
     ports:
       - "80:80"
     volumes:
