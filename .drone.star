@@ -18,8 +18,7 @@ def main(ctx):
                 'yq eval "del(.services.frontend.ports)" docker-compose.yml -i',
 
                 # use real uvicorn call as later in deployment (debugpy somhow disturbs the tests)
-                'yq eval \'(.services.backend.command = "/app/start.sh")\' docker-compose.yml -i',
-                'yq eval \'(.services.*trainer*.command = "/app/start.sh")\' docker-compose.yml -i',
+                'yq eval \'(.services.system.command = "/app/start.sh")\' docker-compose.yml -i',
             ]),
             docker_compose(name='build', cmds=[
                 'docker-compose -p robot-brain rm -f -v', 
