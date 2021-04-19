@@ -10,8 +10,10 @@ def set_global_world(world: World):
     global_world = world
 
 
-def assert_pose(x: float, y: float, *, deg: float = None,
-                linear_tolerance: float = 0.01, deg_tolerance: float = 1.0):
+def assert_pose(
+    x: float, y: float, *, deg: float = None,
+    linear_tolerance: float = 0.1, deg_tolerance: float = 1.0
+):
     pose = global_world.robot.pose
     assert pose.x == pytest.approx(x, abs=linear_tolerance)
     assert pose.y == pytest.approx(y, abs=linear_tolerance)
