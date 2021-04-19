@@ -9,6 +9,7 @@ def main(ctx):
 
                 # docker in docker makes it tricky to mount volumes (see https://discourse.drone.io/t/cannot-figure-out-how-to-mount-volume/3808/2)
                 # but because they are not needed for testing, we just remove the entries
+                'yq eval "del(.services.proxy.volumes)" docker-compose.yml -i',
                 'yq eval "del(.services.db.volumes)" docker-compose.yml -i',
                 'yq eval "del(.services.system.volumes)" docker-compose.yml -i',
                 'yq eval "del(.services.frontend.volumes)" docker-compose.yml -i',
