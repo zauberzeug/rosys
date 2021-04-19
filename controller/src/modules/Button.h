@@ -23,6 +23,7 @@ public:
     void setup()
     {
         this->port->setup(true);
+        this->state = invert ? 1 - port->get_level() : port->get_level();
     }
 
     void loop()

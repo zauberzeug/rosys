@@ -4,6 +4,7 @@
 #include <string>
 
 #include "Module.h"
+#include "../ports/GpioPort.h"
 #include "../storage.h"
 #include "../utils/strings.h"
 #include "../utils/checksum.h"
@@ -14,11 +15,26 @@ class Esp : public Module
 private:
     std::map<std::string, Module *> *modules;
     std::vector<std::string> *outputModules = new std::vector<std::string>();
+    bool ready;
+    GpioPort *readyPort;
 
 public:
     Esp(std::map<std::string, Module *> *modules) : Module("esp")
     {
         this->modules = modules;
+        this->readyPort = new GpioPort(GPIO_NUM_15);
+    }
+
+    void setup()
+    {
+        this->readyPort->setup(false);
+    }
+
+    void loop()
+    {
+        this->readyPort->set_level(ready ? 1 : 0);
+
+        Module::loop();
     }
 
     std::string getOutput()
@@ -30,7 +46,7 @@ public:
                 result += " ";
             result += (*(this->modules))[name]->getOutput();
         }
-        return result;
+        return result + (ready ? " RDY" : "");
     }
 
     void handleMsg(std::string command, std::string parameters)
@@ -70,6 +86,10 @@ public:
             {
                 this->outputModules->push_back(cut_first_word(value, ','));
             }
+        }
+        else if (key == "ready")
+        {
+            this->ready = value == "1";
         }
         else
         {
