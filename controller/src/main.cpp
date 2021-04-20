@@ -118,6 +118,9 @@ void setup()
     modules["esp"] = esp = new Esp(&modules);
     modules["safety"] = safety = new Safety(&modules, handleMsg);
 
+    esp->setup();
+    safety->setup();
+
     std::string boot = storage::read("TEMP", "BOOT");
     int boot_count = boot == "" ? 1 : stoi(boot) + 1;
     storage::write("TEMP", "BOOT", std::to_string(boot_count));
