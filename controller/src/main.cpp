@@ -25,8 +25,6 @@
 #include "utils/strings.h"
 #include "utils/checksum.h"
 
-#define EN_24V GPIO_NUM_12
-
 std::map<std::string, Module *> modules;
 
 Serial *serial;
@@ -139,10 +137,6 @@ void setup()
         }
     }
     storage::write("TEMP", "BOOT", "");
-
-    gpio_reset_pin(EN_24V);
-    gpio_set_direction(EN_24V, GPIO_MODE_OUTPUT);
-    gpio_set_level(EN_24V, 1);
 }
 
 void loop()

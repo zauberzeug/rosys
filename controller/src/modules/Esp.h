@@ -4,6 +4,7 @@
 #include <string>
 
 #include "Module.h"
+#include "../ports/Port.h"
 #include "../ports/GpioPort.h"
 #include "../storage.h"
 #include "../utils/strings.h"
@@ -15,24 +16,30 @@ class Esp : public Module
 private:
     std::map<std::string, Module *> *modules;
     std::vector<std::string> *outputModules = new std::vector<std::string>();
-    bool ready;
-    GpioPort *readyPort;
+    bool ready = false;
+    bool en24v = false;
+    Port *readyPort;
+    Port *en24vPort;
 
 public:
     Esp(std::map<std::string, Module *> *modules) : Module("esp")
     {
         this->modules = modules;
         this->readyPort = new GpioPort(GPIO_NUM_15);
+        this->en24vPort = new GpioPort(GPIO_NUM_12);
     }
 
     void setup()
     {
         this->readyPort->setup(false);
+        this->en24vPort->setup(false);
     }
 
     void loop()
     {
+        printf("%d %d\n", ready ? 1 : 0, en24v ? 1 : 0);
         this->readyPort->set_level(ready ? 1 : 0);
+        this->en24vPort->set_level(en24v ? 1 : 0);
 
         Module::loop();
     }
@@ -46,7 +53,15 @@ public:
                 result += " ";
             result += (*(this->modules))[name]->getOutput();
         }
-        return result + (ready ? " RDY" : "");
+        if (ready)
+        {
+            result += " RDY";
+        }
+        if (en24v)
+        {
+            result += " 24V";
+        }
+        return result;
     }
 
     void handleMsg(std::string command, std::string parameters)
@@ -90,6 +105,10 @@ public:
         else if (key == "ready")
         {
             this->ready = value == "1";
+        }
+        else if (key == "24v")
+        {
+            this->en24v = value == "1";
         }
         else
         {
