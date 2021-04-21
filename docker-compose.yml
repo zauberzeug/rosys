@@ -36,5 +36,5 @@ services:
       context: ./frontend
     volumes:
       - ./frontend:/app
-      - /app/node_modules
-    command: npm start
+      - /home/zauberzeug/.ssh:/root/.ssh
+  
