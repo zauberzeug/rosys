@@ -9,6 +9,7 @@
 #include "../modules/Can.h"
 #include "../modules/Button.h"
 #include "../utils/checksum.h"
+#include "../utils/timing.h"
 
 class ODriveAxis : public Module
 {
@@ -19,6 +20,7 @@ private:
     float moveSpeed = INFINITY;
     float homeSpeed = -0.1;
     float mPerTick = 0.01;
+    float heartbeatTimeout = 0.0;
 
     Can *can;
     uint16_t can_id;
@@ -27,6 +29,8 @@ private:
     float position = 0.0;
     float tickOffset = 0.0;
     uint8_t error = 0;
+
+    unsigned long int lastHeartbeat = 0;
 
     struct odriveState_t
     {
@@ -55,6 +59,11 @@ public:
 
     void loop()
     {
+        if (heartbeatTimeout > 0 and millisSince(lastHeartbeat) > heartbeatTimeout * 1000)
+        {
+            this->error = 255;
+        }
+
         this->can->send(this->can_id + 0x009, 0, 0, 0, 0, 0, 0, 0, 0, true);
 
         if (this->state == HOMING and this->is_home_active())
@@ -129,6 +138,7 @@ public:
         if (can_id == this->can_id + 0x001)
         {
             this->error = data[0];
+            this->lastHeartbeat = millis();
         }
         if (can_id == this->can_id + 0x009)
         {
@@ -167,6 +177,10 @@ public:
         else if (key == "mPerTick")
         {
             mPerTick = atof(value.c_str());
+        }
+        else if (key == "heartbeatTimeout")
+        {
+            heartbeatTimeout = atof(value.c_str());
         }
         else
         {

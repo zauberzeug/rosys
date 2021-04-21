@@ -25,8 +25,6 @@
 #include "utils/strings.h"
 #include "utils/checksum.h"
 
-#define EN_24V GPIO_NUM_12
-
 std::map<std::string, Module *> modules;
 
 Serial *serial;
@@ -72,6 +70,14 @@ void handleMsg(std::string multiMsg)
             std::string key = cut_first_word(msg, '=');
             modules[name]->set(key, msg);
         }
+        else if (word == "if")
+        {
+            safety->addCondition(std::string("if ") + msg + ";" + multiMsg);
+        }
+        else if (word == "shadow")
+        {
+            safety->addShadow(msg);
+        }
         else if (modules.count(word))
         {
             std::string command = cut_first_word(msg);
@@ -110,7 +116,10 @@ void setup()
     storage::init();
 
     modules["esp"] = esp = new Esp(&modules);
-    modules["safety"] = safety = new Safety(&modules);
+    modules["safety"] = safety = new Safety(&modules, handleMsg);
+
+    esp->setup();
+    safety->setup();
 
     std::string boot = storage::read("TEMP", "BOOT");
     int boot_count = boot == "" ? 1 : stoi(boot) + 1;
@@ -131,10 +140,6 @@ void setup()
         }
     }
     storage::write("TEMP", "BOOT", "");
-
-    gpio_reset_pin(EN_24V);
-    gpio_set_direction(EN_24V, GPIO_MODE_OUTPUT);
-    gpio_set_level(EN_24V, 1);
 }
 
 void loop()
@@ -148,12 +153,16 @@ void loop()
         if (msg.empty())
             continue;
         handleMsg(msg);
+        safety->keep_alive();
     }
+
+    safety->applyConditions();
 
     for (auto const &item : modules)
     {
-        if (!safety->check(item.second))
+        if (!safety->is_alive()) {
             item.second->stop();
+        }
         item.second->loop();
     }
 

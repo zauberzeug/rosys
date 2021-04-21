@@ -178,8 +178,10 @@ private:
 
     void init_bumper()
     {
-        if (bumper_port != NULL)
-            bumper_port->setup(true, 1);
+        if (bumper_port != NULL) {
+            bumper_port->setup(true);
+            bumper_port->set_pull(1);
+        }
     }
 
 public:

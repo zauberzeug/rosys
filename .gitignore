@@ -133,3 +133,5 @@ backend/app/prof
 
 # VIM
 *.swp
+PythonImportHelper-v2-Completion.json
+.drone.yml

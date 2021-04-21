@@ -31,6 +31,7 @@ private:
         MOVE = 1,
         HOME = 2,
         HOMING = 3,
+        OFF = 4,
     };
 
 public:
@@ -45,7 +46,9 @@ public:
         this->can->send(this->can_id, 0x92, 0, 0, 0, 0, 0, 0, 0);
         this->can->send(this->can_id, 0x9a, 0, 0, 0, 0, 0, 0, 0);
 
-        if (this->state != MOVE and this->angle != 0 and std::abs(this->angle) < this->tolerance)
+        if (this->state != OFF and
+            this->state != MOVE and
+            std::abs(this->angle) < this->tolerance)
         {
             this->state = HOME;
         }
@@ -70,7 +73,7 @@ public:
         else if (command == "home")
         {
             this->send_move(0);
-            this->state = HOMING;
+            this->state = std::abs(this->angle) < this->tolerance ? HOME : HOMING;
         }
         else if (command == "zero")
         {
@@ -79,6 +82,11 @@ public:
         else if (command == "stop")
         {
             this->stop();
+        }
+        else if (command == "off")
+        {
+            this->can->send(this->can_id, 0x81, 0, 0, 0, 0, 0, 0, 0);
+            this->state = OFF;
         }
         else if (command == "clearError")
         {
@@ -150,7 +158,7 @@ public:
 
     void stop()
     {
-        if (this->state == STOP)
+        if (this->state == STOP or this->state == OFF)
         {
             return;
         }

@@ -2,10 +2,12 @@ import pytest
 import numpy as np
 from numpy import rad2deg as deg
 from tests.helper import assert_pose, drive
+import asyncio
+from world.world import World
 
 
 @pytest.mark.asyncio
-async def test_drive(world):
+async def test_drive(world: World):
     assert_pose(0, 0, deg=0)
 
     await world.simulate(seconds=1.0)
@@ -25,7 +27,23 @@ async def test_drive(world):
 
 
 @pytest.mark.asyncio
-async def test_driving_a_square(world):
+async def test_driving_an_arc(world: World):
+    assert_pose(0, 0, deg=0)
+
+    async def arc():
+        while world.robot.pose.x < 2:
+            drive(1, deg=26)
+            await asyncio.sleep(0)
+        drive(0, deg=0)
+
+    world.robot.automate(arc())
+
+    await world.simulate(seconds=5.0)
+    assert_pose(2, 1.3, deg=65)
+
+
+@pytest.mark.asyncio
+async def test_driving_a_square(world: World):
     assert_pose(0, 0, deg=0)
 
     async def square():

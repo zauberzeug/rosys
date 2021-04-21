@@ -2,6 +2,9 @@ version: "3.3"
 services:
   proxy:
     image: "robotic_proxy:${TAG-latest}"
+    depends_on:
+      - frontend
+      - system
     ports:
       - "80:80"
     volumes:
@@ -19,10 +22,9 @@ services:
       - "${ESP_SERIAL:-/dev/null}:/dev/esp"
     build:
       context: ./system
-      dockerfile: system.dockerfile
       args:
         INSTALL_DEV: "true"
-    command: /app/start.sh
+    command: /app/start.sh dev
 
   frontend:
     image: "robot_brain_frontend:${TAG-latest}"
@@ -32,7 +34,6 @@ services:
       - "4200:4200"
     build:
       context: ./frontend
-      dockerfile: frontend.dockerfile
     volumes:
       - ./frontend:/app
       - /app/node_modules

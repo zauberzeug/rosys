@@ -4,22 +4,29 @@
 #include <string>
 
 #include "Module.h"
+#include "Condition.h"
 #include "../utils/strings.h"
 #include "../utils/checksum.h"
+#include "../utils/timing.h"
 
 class Safety : public Module
 {
 private:
     bool active = true;
+    unsigned long keep_alive_interval_ms = 0;
+    unsigned long last_keep_alive_signal = 0;
+
+    void (*handleCommand)(std::string);
 
     std::map<std::string, Module *> *modules;
-    std::map<std::string, std::tuple<std::string, std::string, int>> conditions;
-    std::map<std::string, std::pair<std::string, std::string>> shadows;
+    std::vector<Condition *> conditions;
+    std::vector<std::pair<std::string, std::string>> shadows;
 
 public:
-    Safety(std::map<std::string, Module *> *modules) : Module("safety")
+    Safety(std::map<std::string, Module *> *modules, void (*handleCommand)(std::string)) : Module("safety")
     {
         this->modules = modules;
+        this->handleCommand = handleCommand;
     }
 
     void handleMsg(std::string command, std::string parameters)
@@ -40,26 +47,30 @@ public:
         return buffer;
     }
 
+    void addCondition(std::string msg)
+    {
+        conditions.push_back(new Condition(msg));
+    }
+
+    void addShadow(std::string msg)
+    {
+        std::string trigger = cut_first_word(msg);
+        bool twoway = cut_first_word(msg) == "<>";
+        std::string target = cut_first_word(msg);
+        shadows.push_back(std::make_pair(trigger, target));
+        if (twoway)
+            shadows.push_back(std::make_pair(target, trigger));
+    }
+
     void set(std::string key, std::string value)
     {
-        if (starts_with(key, "condition_"))
-        {
-            cut_first_word(key, '_');
-            std::string module = cut_first_word(value, ',');
-            std::string trigger = cut_first_word(value, ',');
-            int state = atoi(value.c_str());
-            conditions[key] = std::make_tuple(module, trigger, state);
-        }
-        else if (starts_with(key, "shadow_"))
-        {
-            cut_first_word(key, '_');
-            std::string trigger = cut_first_word(value, ',');
-            std::string shadow = cut_first_word(value, ',');
-            shadows[key] = std::make_pair(trigger, shadow);
-        }
-        else if (key == "active")
+        if (key == "active")
         {
             active = value == "1";
+        }
+        else if (key == "keep_alive_interval")
+        {
+            keep_alive_interval_ms = atof(value.c_str()) * 1000;
         }
         else
         {
@@ -67,20 +78,28 @@ public:
         }
     }
 
-    bool check(Module *module)
+    void keep_alive()
+    {
+        last_keep_alive_signal = millis();
+    }
+
+    bool is_alive()
+    {
+        return keep_alive_interval_ms == 0 or millisSince(last_keep_alive_signal) < keep_alive_interval_ms;
+    }
+
+    void applyConditions()
     {
         if (not this->active)
-            return true;
+            return;
 
-        for (auto const &item : conditions)
+        for (auto const &condition : conditions)
         {
-            std::string name = std::get<0>(item.second);
-            std::string trigger = std::get<1>(item.second);
-            int state = std::get<2>(item.second);
-            if ((name == "*" || name == module->name) && state != (*modules)[trigger]->state)
-                return false;
+            if (condition->is_true(modules))
+            {
+                handleCommand(condition->msg);
+            }
         }
-        return true;
     }
 
     void applyShadow(std::string trigger, std::string command, std::string parameters)
@@ -90,8 +109,8 @@ public:
 
         for (auto const &item : shadows)
         {
-            if (item.second.first == trigger) {
-                (*modules)[item.second.second]->handleMsg(command, parameters);
+            if (item.first == trigger) {
+                (*modules)[item.second]->handleMsg(command, parameters);
             }
         }
     }
@@ -100,20 +119,15 @@ public:
     {
         cprintln(this->active ? "ACTIVE" : "INACTIVE");
         
-        for (auto const &item : conditions)
+        for (auto const &condition : conditions)
         {
-            std::string name = std::get<0>(item.second);
-            std::string trigger = std::get<1>(item.second);
-            int state = std::get<2>(item.second);
-            const char* result = state == (*modules)[trigger]->state ? "ok" : "violated";
-            cprintln("condition \"%s\" %s,%s,%d: %s", item.first.c_str(), name.c_str(), trigger.c_str(), state, result);
+            std::string result = condition->is_true(modules) ? " --> triggered" : "";
+            cprintln((condition->to_string() + result).c_str());
         }
 
         for (auto const &item : shadows)
         {
-            std::string trigger = item.second.first;
-            std::string shadow = item.second.second;
-            cprintln("shadow \"%s\" %s->%s", item.first.c_str(), trigger.c_str(), shadow.c_str());
+            cprintln("shadow %s > %s", item.first.c_str(), item.second.c_str());
         }
     }
 };

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <string>
-#include "driver/can.h"
+#include "driver/twai.h"
 
 #include "Module.h"
 #include "../ports/Port.h"
@@ -19,21 +19,21 @@ public:
         gpio_num_t rx = (gpio_num_t)atoi(cut_first_word(parameters, ',').c_str());
         gpio_num_t tx = (gpio_num_t)atoi(cut_first_word(parameters, ',').c_str());
 
-        can_general_config_t g_config = CAN_GENERAL_CONFIG_DEFAULT(tx, rx, CAN_MODE_NORMAL);
-        can_timing_config_t t_config = CAN_TIMING_CONFIG_1MBITS();
-        can_filter_config_t f_config = CAN_FILTER_CONFIG_ACCEPT_ALL();
+        twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT(tx, rx, TWAI_MODE_NORMAL);
+        twai_timing_config_t t_config = TWAI_TIMING_CONFIG_1MBITS();
+        twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
         g_config.rx_queue_len = 20;
         g_config.tx_queue_len = 20;
 
-        ESP_ERROR_CHECK(can_driver_install(&g_config, &t_config, &f_config));
-        ESP_ERROR_CHECK(can_start());
+        ESP_ERROR_CHECK(twai_driver_install(&g_config, &t_config, &f_config));
+        ESP_ERROR_CHECK(twai_start());
     }
 
     void loop()
     {
-        can_message_t message;
-        while (can_receive(&message, pdMS_TO_TICKS(0)) == ESP_OK)
+        twai_message_t message;
+        while (twai_receive(&message, pdMS_TO_TICKS(0)) == ESP_OK)
         {
             if (subscribers.count(message.identifier))
             {
@@ -43,7 +43,7 @@ public:
             if (output)
             {
                 cprint("can %03x", message.identifier);
-                if (!(message.flags & CAN_MSG_FLAG_RTR))
+                if (!(message.flags & TWAI_MSG_FLAG_RTR))
                 {
                     for (int i = 0; i < message.data_length_code; ++i)
                     {
@@ -57,15 +57,15 @@ public:
 
     void send(uint16_t id, uint8_t data[8], bool rtr=false)
     {
-        can_message_t message;
+        twai_message_t message;
         message.identifier = id;
-        message.flags = rtr? CAN_MSG_FLAG_RTR : CAN_MSG_FLAG_NONE;
+        message.flags = rtr? TWAI_MSG_FLAG_RTR : TWAI_MSG_FLAG_NONE;
         message.data_length_code = 8;
         for (int i = 0; i < 8; ++i)
         {
             message.data[i] = data[i];
         }
-        if (can_transmit(&message, pdMS_TO_TICKS(0)) != ESP_OK)
+        if (twai_transmit(&message, pdMS_TO_TICKS(0)) != ESP_OK)
         {
             cprintln("Could not send message with ID 0x%03x", id);
         }
