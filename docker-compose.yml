@@ -1,4 +1,4 @@
-version: "3.3"
+version: "3.9"
 services:
   proxy:
     image: "robotic_proxy:${TAG-latest}"
@@ -15,25 +15,28 @@ services:
   system:
     image: "robot_brain_system:${TAG-latest}"
     ports:
-      - "8000:80"
+      - "8000:80"   # fastAPI
+      - "5022:5022" # ssh server
     volumes:
       - ./system:/app
+#      - /home/zauberzeug/.ssh:/root/.ssh
     devices:
       - "${ESP_SERIAL:-/dev/null}:/dev/esp"
     build:
-      context: ./system
+      context: ./
+      dockerfile: system.dockerfile
       args:
         INSTALL_DEV: "true"
     command: /app/start.sh dev
 
   frontend:
     image: "robot_brain_frontend:${TAG-latest}"
-    depends_on:
-      - system
     ports:
-      - "4200:4200"
+      - "4200:4200" # angular dev frontend
+      - "4022:4022" # ssh server
     build:
-      context: ./frontend
+      context: ./
+      dockerfile: frontend.dockerfile
     volumes:
       - ./frontend:/app
       - /home/zauberzeug/.ssh:/root/.ssh
