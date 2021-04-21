@@ -37,7 +37,6 @@ public:
 
     void loop()
     {
-        printf("%d %d\n", ready ? 1 : 0, en24v ? 1 : 0);
         this->readyPort->set_level(ready ? 1 : 0);
         this->en24vPort->set_level(en24v ? 1 : 0);
 
