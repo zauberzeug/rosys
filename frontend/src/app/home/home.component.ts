@@ -1,5 +1,6 @@
 import { Component } from "@angular/core";
 import { JoystickEvent } from "ngx-joystick";
+import { throttle } from "throttle-debounce";
 import { RobotService } from "../robot.service";
 
 @Component({
@@ -10,8 +11,12 @@ import { RobotService } from "../robot.service";
 export class HomeComponent {
   constructor(public robotService: RobotService) {}
 
+  sendPower = throttle(100, (left: number, right: number) =>
+    this.robotService.sendPower(left, right)
+  );
+
   onMove(event: JoystickEvent) {
-    this.robotService.sendPower(
+    this.sendPower(
       event.data.vector.y + event.data.vector.x,
       event.data.vector.y - event.data.vector.x
     );

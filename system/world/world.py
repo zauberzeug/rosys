@@ -12,7 +12,7 @@ class World(BaseModel):
     async def run(self):
         while True:
             await self.loop()
-            await asyncio.sleep(self.clock.interval)
+            await asyncio.sleep(0)  # give other coroutines a chance to execute their code
 
     async def simulate(self, seconds):
 
