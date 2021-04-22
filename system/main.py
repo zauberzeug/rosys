@@ -6,22 +6,19 @@ import task_logger
 from world.world import World
 from world.robot import Robot
 from world.machine import Machine
-from world.clock import Clock
 import uvicorn
 
 app = FastAPI()
 sio = SocketManager(app=app)
 
-clock = Clock(interval=0.01)
 machine = Machine(port="/dev/esp")
 robot = Robot(machine=machine, width=0.5)
-world = World(clock=clock, robot=robot)
+world = World(robot=robot)
 
 
 @sio.on('connect')
 async def on_connect(sid, _):
-    data = world.dict(exclude={"robot": {"machine": {"aioserial_instance"}}})
-    await sio.emit('world', data, to=sid)
+    await sio.emit('world', world.dict(), to=sid)
 
 
 @sio.on('drive_power')
@@ -31,7 +28,7 @@ def on_drive_power(_, data):
 
 async def do_updates():
     while True:
-        await sio.emit('robot_pose', jsonable_encoder(world.robot.pose))
+        await sio.emit('robot_pose', world.robot.pose.dict())
         await asyncio.sleep(0.1)
 
 
@@ -58,8 +55,7 @@ async def shutdown():
 
 @app.get("/")
 def main():
-    data = world.dict(exclude={"robot": {"machine": {"aioserial_instance"}}})
-    return {"status": "hello, I'm the robot system!", 'world': data}
+    return {"status": "hello, I'm the robot system!", 'world': world.dict()}
 
 
 @app.get("/world", response_model=World)

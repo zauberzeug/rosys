@@ -10,19 +10,19 @@ from world.world import World
 async def test_drive(world: World):
     assert_pose(0, 0, deg=0)
 
-    await world.simulate(seconds=1.0)
+    await world.run(seconds=1.0)
     assert_pose(0, 0, deg=0)
 
     drive(1.0)
-    await world.simulate(seconds=1.0)
+    await world.run(seconds=1.0)
     assert_pose(1.0, 0, deg=0)
 
     drive(0.0, deg=90)
-    await world.simulate(seconds=0.5)
+    await world.run(seconds=0.5)
     assert_pose(1.0, 0, deg=45)
 
     drive(1.0)
-    await world.simulate(seconds=np.sqrt(2))
+    await world.run(seconds=np.sqrt(2))
     assert_pose(2.0, 1.0, deg=45, linear_tolerance=0.1)
 
 
@@ -38,7 +38,7 @@ async def test_driving_an_arc(world: World):
 
     world.robot.automate(arc())
 
-    await world.simulate(seconds=5.0)
+    await world.run(seconds=5.0)
     assert_pose(2, 1.3, deg=65)
 
 
@@ -64,7 +64,7 @@ async def test_driving_a_square(world: World):
         drive(0, deg=0)
 
     world.robot.automate(square())
-    await world.simulate(seconds=5.0)
+    await world.run(seconds=5.0)
     assert_pose(2, 2, deg=90)
-    await world.simulate(seconds=6.0)
+    await world.run(seconds=6.0)
     assert_pose(0, 0, deg=270)

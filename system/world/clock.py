@@ -6,6 +6,6 @@ class Clock(BaseModel):
     time: float = 0
     interval: float
 
-    def loop(self):
+    def step(self):
 
         self.time += self.interval
