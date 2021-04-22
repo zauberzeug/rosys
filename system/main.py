@@ -1,17 +1,16 @@
 from fastapi import FastAPI
 from fastapi_socketio import SocketManager
 import asyncio
-from fastapi.encoders import jsonable_encoder
 import task_logger
+import uvicorn
 from world.world import World
 from world.robot import Robot
-from world.machine import Machine
-import uvicorn
+from world.machine import SerialMachine
 
 app = FastAPI()
 sio = SocketManager(app=app)
 
-machine = Machine(port="/dev/esp")
+machine = SerialMachine(port="/dev/esp")
 robot = Robot(machine=machine, width=0.5)
 world = World(robot=robot)
 
@@ -22,8 +21,8 @@ async def on_connect(sid, _):
 
 
 @sio.on('drive_power')
-def on_drive_power(_, data):
-    world.robot.power(data['left'], data['right'])
+async def on_drive_power(_, data):
+    await world.robot.power(data['left'], data['right'])
 
 
 async def do_updates():

@@ -11,25 +11,19 @@ from typing import Coroutine
 
 class Robot(BaseModel):
 
-    machine: Optional[Machine]
+    machine: Machine
     width: float
     pose: Pose = Pose()
     velocity: Velocity = Velocity()
     _last_read: Optional[float] = PrivateAttr(None)
 
-    def drive(self, linear: float, angular: float):
+    async def drive(self, linear: float, angular: float):
 
-        # TODO
-        self.velocity.linear = linear
-        self.velocity.angular = angular
+        await self.machine.send('drive speed %.3f,%.3f' % (linear, angular))
 
-    def power(self, left: float, right: float):
+    async def power(self, left: float, right: float):
 
-        self.machine.send('drive pw %.3f,%.3f' % (left, right))
-
-        # TODO
-        # self.velocity.linear = (left + right) / 2.0
-        # self.velocity.angular = (right - left) / self.width / 2.0
+        await self.machine.send('drive pw %.3f,%.3f' % (left, right))
 
     async def step(self):
 

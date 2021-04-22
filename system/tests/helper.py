@@ -22,5 +22,5 @@ def assert_pose(
         assert np.rad2deg(pose.yaw) == pytest.approx(deg, abs=deg_tolerance)
 
 
-def drive(linear: float, *, deg: float = 0):
-    global_world.robot.drive(linear, np.deg2rad(deg))
+async def drive(linear: float, *, deg: float = 0):
+    await global_world.robot.drive(linear, np.deg2rad(deg))

@@ -7,8 +7,12 @@ from world.velocity import Velocity
 
 class Machine(BaseModel):
 
-    port: str
     time: float = 0
+
+
+class SerialMachine(Machine):
+
+    port: str
     _aioserial_instance: Any = PrivateAttr()
     _time_offset: float = PrivateAttr(0)
 
@@ -47,10 +51,33 @@ class Machine(BaseModel):
 
         return Velocity(linear=linear, angular=angular)
 
-    def send(self, line):
+    async def send(self, line):
 
         checksum = 0
         for c in line:
             checksum ^= ord(c)
         line += '^%d\n' % checksum
-        self._aioserial_instance.write(line.encode())
+        await self._aioserial_instance.write_async(line.encode())
+
+
+class MockedMachine(Machine):
+
+    _velocity: Velocity = PrivateAttr(Velocity(linear=0, angular=0))
+
+    async def read(self) -> Velocity:
+
+        self.time += 0.1
+
+        return self._velocity
+
+    async def send(self, line):
+
+        if line.startswith("drive pw "):
+            left = float(line.split()[2].split(',')[0])
+            right = float(line.split()[2].split(',')[1])
+            self._velocity.linear = (left + right) / 2.0
+            self._velocity.angular = (right - left) / self.width / 2.0
+
+        if line.startswith("drive speed "):
+            self._velocity.linear = float(line.split()[2].split(',')[0])
+            self._velocity.angular = float(line.split()[2].split(',')[1])
