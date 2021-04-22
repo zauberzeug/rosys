@@ -15,11 +15,10 @@ services:
   system:
     image: "robot_brain_system:${TAG-latest}"
     ports:
-      - "8000:80"   # fastAPI
+      - "8000:80" # fastAPI
       - "5022:5022" # ssh server
     volumes:
       - ./system:/app
-#      - /home/zauberzeug/.ssh:/root/.ssh
     devices:
       - "${ESP_SERIAL:-/dev/null}:/dev/esp"
     build:
@@ -39,5 +38,3 @@ services:
       dockerfile: frontend.dockerfile
     volumes:
       - ./frontend:/app
-      - /home/zauberzeug/.ssh:/root/.ssh
-  
