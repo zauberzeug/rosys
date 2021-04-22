@@ -300,24 +300,11 @@ public:
         }
         else if (command == "speed")
         {
-            double speed = atof(cut_first_word(parameters, ',').c_str());
-            double curvature = atof(cut_first_word(parameters, ',').c_str());
-            double s_l = speed - speed * width * curvature / 2.0;
-            double s_r = speed + speed * width * curvature / 2.0;
-            double f_l = s_l != 0.0 ? fabs(speed) / fabs(s_l) : 1.0;
-            double f_r = s_r != 0.0 ? fabs(speed) / fabs(s_r) : 1.0;
-            double f = _min(f_l, f_r);
-            triggerSpeed(s_l * f, s_r * f);
-        }
-        else if (command == "left")
-        {
-            double speed = atof(parameters.c_str()) * width / 2.0;
-            triggerSpeed(-speed, speed);
-        }
-        else if (command == "right")
-        {
-            double speed = atof(parameters.c_str()) * width / 2.0;
-            triggerSpeed(speed, -speed);
+            double linear = atof(cut_first_word(parameters, ',').c_str());
+            double angular = atof(cut_first_word(parameters, ',').c_str());
+            double left = linear - angular * width / 2.0;
+            double right = linear + angular * width / 2.0;
+            triggerSpeed(left, right);
         }
         else if (command == "stop")
         {

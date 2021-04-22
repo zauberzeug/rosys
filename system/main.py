@@ -3,6 +3,7 @@ from fastapi_socketio import SocketManager
 import asyncio
 import task_logger
 import uvicorn
+from numpy import deg2rad as rad
 from world.world import World
 from world.robot import Robot
 from world.machine import SerialMachine
@@ -23,6 +24,30 @@ async def on_connect(sid, _):
 @sio.on('drive_power')
 async def on_drive_power(_, data):
     await world.robot.power(data['left'], data['right'])
+
+
+@sio.on('task')
+async def on_task(_, data):
+
+    async def square(linear_speed=0.5, angular_speed=rad(45)):
+        while world.robot.pose.x < 2:
+            await world.robot.drive(linear_speed, 0)
+        while world.robot.pose.yaw < rad(90):
+            await world.robot.drive(0, angular_speed)
+        while world.robot.pose.y < 2:
+            await world.robot.drive(linear_speed, 0)
+        while world.robot.pose.yaw < rad(180):
+            await world.robot.drive(0, angular_speed)
+        while world.robot.pose.x > 0:
+            await world.robot.drive(linear_speed, 0)
+        while world.robot.pose.yaw < rad(270):
+            await world.robot.drive(0, angular_speed)
+        while world.robot.pose.y > 0:
+            await world.robot.drive(linear_speed, 0)
+        await world.robot.drive(0, 0)
+
+    if data == "square":
+        world.robot.automate(square())
 
 
 async def do_updates():

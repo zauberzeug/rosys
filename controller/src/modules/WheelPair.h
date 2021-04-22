@@ -38,26 +38,11 @@ public:
         else if (command == "speed")
         {
             double linear = atof(cut_first_word(parameters, ',').c_str());
-            double curvature = atof(cut_first_word(parameters, ',').c_str());
-            double s_l = linear - linear * width * curvature / 2.0;
-            double s_r = linear + linear * width * curvature / 2.0;
-            double f_l = s_l != 0.0 ? fabs(linear) / fabs(s_l) : 1.0;
-            double f_r = s_r != 0.0 ? fabs(linear) / fabs(s_r) : 1.0;
-            double f = _min(f_l, f_r);
-            this->leftAxis->speed(s_l * f * this->leftSpeedFactor);
-            this->rightAxis->speed(s_r * f * this->rightSpeedFactor);
-        }
-        else if (command == "left")
-        {
-            double speed = atof(parameters.c_str());
-            this->leftAxis->speed(-speed * this->leftSpeedFactor);
-            this->rightAxis->speed(speed * this->rightSpeedFactor);
-        }
-        else if (command == "right")
-        {
-            double speed = atof(parameters.c_str());
-            this->leftAxis->speed(speed * this->leftSpeedFactor);
-            this->rightAxis->speed(-speed * this->rightSpeedFactor);
+            double angular = atof(cut_first_word(parameters, ',').c_str());
+            double left = linear - angular * width / 2.0;
+            double right = linear + angular * width / 2.0;
+            this->leftAxis->speed(left * this->leftSpeedFactor);
+            this->rightAxis->speed(right * this->rightSpeedFactor);
         }
         else if (command == "stop")
         {

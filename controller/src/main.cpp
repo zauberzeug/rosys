@@ -90,8 +90,6 @@ void handleMsg(std::string multiMsg)
             std::string module = modules.count("drive") > 0 ? "drive" : "wheels";
             if (word == "stop")
                 esp->stopAll();
-            else if (word == "left" or word == "right")
-                handleMsg(module + " " + word + " " + msg);
             else if (word == "pw")
             {
                 if (module == "wheels")

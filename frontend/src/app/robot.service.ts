@@ -17,4 +17,8 @@ export class RobotService {
   sendPower(left: number, right: number) {
     this.socket.emit("drive_power", { left: left, right: right });
   }
+
+  sendTask(task: string) {
+    this.socket.emit("task", task);
+  }
 }
