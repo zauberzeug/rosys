@@ -12,15 +12,16 @@ import uvicorn
 app = FastAPI()
 sio = SocketManager(app=app)
 
-clock = Clock(interval=0.1)
-machine = None  # Machine(port="/dev/esp")
+clock = Clock(interval=0.01)
+machine = Machine(port="/dev/esp")
 robot = Robot(machine=machine, width=0.5)
 world = World(clock=clock, robot=robot)
 
 
 @sio.on('connect')
 async def on_connect(sid, _):
-    await sio.emit('world', jsonable_encoder(world), to=sid)
+    data = world.dict(exclude={"robot": {"machine": {"aioserial_instance"}}})
+    await sio.emit('world', data, to=sid)
 
 
 @sio.on('drive_power')
@@ -56,14 +57,14 @@ async def shutdown():
 
 
 @app.get("/")
-@app.get("/api")
 def main():
-    return {"status": "hello, I'm the robot system!", 'world': world}
+    data = world.dict(exclude={"robot": {"machine": {"aioserial_instance"}}})
+    return {"status": "hello, I'm the robot system!", 'world': data}
 
 
-@app.get("/api/world", response_model=World)
+@app.get("/world", response_model=World)
 def get_world():
-    return world
+    return world  # FIXME
 
 
 if __name__ == "__main__":

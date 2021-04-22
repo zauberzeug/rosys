@@ -25,5 +25,16 @@ class Machine(BaseModel):
             if checksum != int(check):
                 return
 
-        words = line.split()
-        return Velocity(linear=float(words[1]), angular=float(words[2]))
+        try:
+            words = line.split()
+            return Velocity(linear=float(words[2]), angular=float(words[3]))
+        except (IndexError, ValueError):
+            return
+
+    def send(self, line):
+
+        checksum = 0
+        for c in line:
+            checksum ^= ord(c)
+        line += '^%d\n' % checksum
+        self.aioserial_instance.write(line.encode())

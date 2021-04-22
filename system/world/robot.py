@@ -24,7 +24,7 @@ class Robot(BaseModel):
     def power(self, left: float, right: float):
 
         if self.machine:
-            self.machine.send('pw %.3f,%.3f' % (left, right))
+            self.machine.send('drive pw %.3f,%.3f' % (left, right))
         else:
             self.velocity.linear = (left + right) / 2.0
             self.velocity.angular = (right - left) / self.width / 2.0
