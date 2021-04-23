@@ -5,7 +5,8 @@ services:
     depends_on:
       - frontend
       - system
-    network_mode: "host"
+    ports:
+      - "80:80"
     volumes:
       - ./proxy/nginx.conf:/etc/nginx.conf
     build:
@@ -13,7 +14,9 @@ services:
 
   system:
     image: "robot_brain_system:${TAG-latest}"
-    network_mode: "host"
+    ports:
+      - "7000:80" # fastAPI
+      - "5022:5022" # ssh server
     volumes:
       - ./system:/app
     devices:
@@ -27,7 +30,9 @@ services:
 
   frontend:
     image: "robot_brain_frontend:${TAG-latest}"
-    network_mode: "host"
+    ports:
+      - "4200:4200" # angular dev frontend
+      - "4022:4022" # ssh server
     build:
       context: ./
       dockerfile: frontend.dockerfile

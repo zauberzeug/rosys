@@ -100,6 +100,6 @@ def get_world():
 
 if __name__ == "__main__":
     uvicorn.run(
-        "main:app", host="0.0.0.0", port=80,
+        "main:app", host="0.0.0.0", port=7000,
         reload=True, lifespan='on', forwarded_allow_ips='*', proxy_headers=True
     )
