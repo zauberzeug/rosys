@@ -6,12 +6,16 @@ import uvicorn
 from numpy import deg2rad as rad
 from world.world import World
 from world.robot import Robot
-from world.machine import SerialMachine
+from world.machine import MockedMachine, SerialMachine
 
 app = FastAPI()
 sio = SocketManager(app=app)
 
-machine = SerialMachine(port="/dev/esp")
+try:
+    machine = SerialMachine(port="/dev/esp")
+except:
+    machine = MockedMachine()
+
 robot = Robot(machine=machine, width=0.5)
 world = World(robot=robot)
 
