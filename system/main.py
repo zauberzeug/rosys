@@ -3,34 +3,20 @@ from fastapi_socketio import SocketManager
 import asyncio
 import task_logger
 import uvicorn
-import time
+import os.path
 from numpy import deg2rad as rad
+from runtime import Runtime, Mode
 from world.world import World
-from world.robot import Robot
-from actors.serial import Serial
-from actors.clock import Clock
-from actors.odometer import Odometer
-from icecream import ic
 
 app = FastAPI()
 sio = SocketManager(app=app)
 
-world = World(
-    time=time.time(),
-    robot=Robot(),
-)
-
-serial = Serial(world)
-actors = [
-    Clock(world),
-    serial,
-    Odometer(world),
-]
+runtime = Runtime(Mode.REAL if os.path.exists("/dev/esp") else Mode.SIMULATION)
 
 
 @sio.on('drive_power')
 async def on_drive_power(_, data):
-    await serial.send('drive pw %.3f,%.3f' % (data['left'], data['right']))
+    await runtime.serial.send('drive pw %.3f,%.3f' % (data['left'], data['right']))
 
 
 @sio.on('task')
@@ -66,7 +52,7 @@ async def on_task(_, data):
 
 async def do_updates():
     while True:
-        await sio.emit('world', world.dict())
+        await sio.emit('world', runtime.world.dict())
         await asyncio.sleep(0.1)
 
 tasks = []
@@ -77,27 +63,24 @@ async def startup():
     loop = asyncio.get_event_loop()
     loop.set_debug(True)
 
-    for actor in actors:
-        tasks.append(task_logger.create_task(actor.run()))
+    tasks.append(task_logger.create_task(runtime.run()))
     tasks.append(task_logger.create_task(do_updates()))
 
 
 @app.on_event("shutdown")
 async def shutdown():
-    ic('shutting down')
     for task in tasks:
         task.cancel()
-    ic('all tasks canceled')
 
 
 @app.get("/")
 def main():
-    return {"status": "hello, I'm the robot system!", 'world': world.dict()}
+    return {"status": "hello, I'm the robot system!", 'world': runtime.world.dict()}
 
 
 @app.get("/world", response_model=World)
 def get_world():
-    return world
+    return runtime.world
 
 
 if __name__ == "__main__":

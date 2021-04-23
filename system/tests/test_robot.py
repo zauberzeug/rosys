@@ -4,10 +4,15 @@ from numpy import rad2deg as deg
 from tests.helper import assert_pose, drive, power
 import asyncio
 from world.world import World
+from actors.actor import Actor
+from actors.clock import TestClock
+from actors.serial import MockedSerial
+from actors.odometer import Odometer
 
 
 @pytest.mark.asyncio
-async def test_drive(world: World):
+async def test_drive(world: World, actors: Array[Actor]):
+
     assert_pose(0, 0, deg=0)
 
     await world.run(seconds=1.0)

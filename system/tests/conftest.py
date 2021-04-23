@@ -1,17 +1,15 @@
 from typing import Generator
-from world.machine import MockedMachine
-from world.world import World
-from world.robot import Robot
+from runtime import Runtime, Mode
 import pytest
 pytest.register_assert_rewrite("tests.helper")
 
 
 @pytest.fixture
-def world() -> Generator:
+def runtime() -> Generator:
 
-    machine = MockedMachine(width=0.5)
-    robot = Robot(machine=machine)
-    world = World(robot=robot)
-    from tests.helper import set_global_world
-    set_global_world(world)
-    yield world
+    runtime = Runtime(Mode.TEST)
+
+    from tests.helper import set_global_runtime
+    set_global_runtime(runtime)
+
+    yield runtime

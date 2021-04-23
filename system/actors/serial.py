@@ -1,4 +1,5 @@
 import aioserial
+from world.velocity import Velocity
 from actors.actor import Actor
 
 
@@ -42,3 +43,25 @@ class Serial(Actor):
             checksum ^= ord(c)
         line += '^%d\n' % checksum
         await self.aioserial_instance.write_async(line.encode())
+
+
+class MockedSerial(Actor):
+
+    width: float
+    _velocity: Velocity = Velocity(linear=0, angular=0)
+
+    async def step(self):
+
+        self.sleep(0.01)
+
+    async def send(self, line):
+
+        if line.startswith("drive pw "):
+            left = float(line.split()[2].split(',')[0])
+            right = float(line.split()[2].split(',')[1])
+            self._velocity.linear = (left + right) / 2.0
+            self._velocity.angular = (right - left) / self.width / 2.0
+
+        if line.startswith("drive speed "):
+            self._velocity.linear = float(line.split()[2].split(',')[0])
+            self._velocity.angular = float(line.split()[2].split(',')[1])
