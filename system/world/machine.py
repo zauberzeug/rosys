@@ -1,6 +1,7 @@
 from typing import Any
 from pydantic.main import BaseModel, PrivateAttr
 import aioserial
+import asyncio
 import time
 from world.velocity import Velocity
 
@@ -16,9 +17,9 @@ class SerialMachine(Machine):
     _aioserial_instance: Any = PrivateAttr()
     _time_offset: float = PrivateAttr(0)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self):
 
-        super().__init__(*args, **kwargs)
+        super().__init__()
 
         self._aioserial_instance = aioserial.AioSerial(self.port, baudrate=115200)
 
@@ -63,10 +64,17 @@ class SerialMachine(Machine):
 class MockedMachine(Machine):
 
     _velocity: Velocity = PrivateAttr(Velocity(linear=0, angular=0))
+    _delay: float = PrivateAttr()
+
+    def __init__(self, delay: float = 0):
+
+        super().__init__()
+        self._delay = delay
 
     async def read(self) -> Velocity:
 
         self.time += 0.1
+        await asyncio.sleep(self._delay)
 
         return self._velocity
 
