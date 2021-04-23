@@ -1,8 +1,9 @@
 <p>Your robot is at:</p>
 <pre *ngIf="robotService.pose">
-  x = {{ robotService.pose.x | number: "0.3-3" }}
-  y = {{ robotService.pose.y | number: "0.3-3" }}
-  yaw = {{ robotService.pose.yawDeg | number: "0.3-3" }} deg
+  time = {{ robotService.time | number: "0.3-3" }}
+  x    = {{ robotService.pose.x | number: "0.3-3" }}
+  y    = {{ robotService.pose.y | number: "0.3-3" }}
+  yaw  = {{ robotService.pose.yawDeg | number: "0.3-3" }} deg
 </pre>
 <ngx-joystick
   #dynamicJoystick

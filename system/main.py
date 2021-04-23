@@ -3,31 +3,34 @@ from fastapi_socketio import SocketManager
 import asyncio
 import task_logger
 import uvicorn
+import time
 from numpy import deg2rad as rad
 from world.world import World
 from world.robot import Robot
-from world.machine import MockedMachine, SerialMachine
+from actors.serial import Serial
+from actors.clock import Clock
+from actors.odometer import Odometer
+from icecream import ic
 
 app = FastAPI()
 sio = SocketManager(app=app)
 
-try:
-    machine = SerialMachine(port="/dev/esp")
-except:
-    machine = MockedMachine(width=0.5, realtime=True)
+world = World(
+    time=time.time(),
+    robot=Robot(),
+)
 
-robot = Robot(machine=machine)
-world = World(robot=robot)
-
-
-@sio.on('connect')
-async def on_connect(sid, _):
-    await sio.emit('world', world.dict(), to=sid)
+serial = Serial(world)
+actors = [
+    Clock(world),
+    serial,
+    Odometer(world),
+]
 
 
 @sio.on('drive_power')
 async def on_drive_power(_, data):
-    await world.robot.power(data['left'], data['right'])
+    await serial.send('drive pw %.3f,%.3f' % (data['left'], data['right']))
 
 
 @sio.on('task')
@@ -63,29 +66,28 @@ async def on_task(_, data):
 
 async def do_updates():
     while True:
-        await sio.emit('robot_pose', world.robot.pose.dict())
+        await sio.emit('world', world.dict())
         await asyncio.sleep(0.1)
 
-
-running_world = None
-client_updates = None
+tasks = []
 
 
 @app.on_event("startup")
 async def startup():
-    global running_world
-    global client_updates
     loop = asyncio.get_event_loop()
     loop.set_debug(True)
 
-    running_world = task_logger.create_task(world.run())
-    client_updates = task_logger.create_task(do_updates())
+    for actor in actors:
+        tasks.append(task_logger.create_task(actor.run()))
+    tasks.append(task_logger.create_task(do_updates()))
 
 
 @app.on_event("shutdown")
 async def shutdown():
-    running_world.cancel()
-    client_updates.cancel()
+    ic('shutting down')
+    for task in tasks:
+        task.cancel()
+    ic('all tasks canceled')
 
 
 @app.get("/")

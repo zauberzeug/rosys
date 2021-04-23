@@ -5,7 +5,8 @@ services:
     depends_on:
       - frontend
       - system
-    network_mode: "host"
+    network_mode: host
+    restart: always
     volumes:
       - ./proxy/nginx.conf:/etc/nginx.conf
     build:
@@ -13,7 +14,8 @@ services:
 
   system:
     image: "robot_brain_system:${TAG-latest}"
-    network_mode: "host"
+    network_mode: host
+    restart: always
     volumes:
       - ./system:/app
     devices:
@@ -27,7 +29,8 @@ services:
 
   frontend:
     image: "robot_brain_frontend:${TAG-latest}"
-    network_mode: "host"
+    network_mode: host
+    restart: always
     build:
       context: ./
       dockerfile: frontend.dockerfile

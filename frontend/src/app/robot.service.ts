@@ -6,12 +6,16 @@ import { WrappedSocket } from "./socket-io/socket-io.service";
   providedIn: "root",
 })
 export class RobotService {
+  time: number = 0;
   pose?: Pose;
   width: number = 1.0;
 
   constructor(private socket: WrappedSocket) {
-    socket.on("world", (data: any) => (this.width = data.robot.width));
-    socket.on("robot_pose", (data: any) => (this.pose = Pose.from_dict(data)));
+    socket.on("world", (data: any) => {
+      this.width = data.robot.width;
+      this.pose = Pose.from_dict(data.robot.pose);
+      this.time = data.time;
+    });
   }
 
   sendPower(left: number, right: number) {
