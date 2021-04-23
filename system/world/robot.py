@@ -12,7 +12,6 @@ from typing import Coroutine
 class Robot(BaseModel):
 
     machine: Machine
-    width: float
     pose: Pose = Pose()
     velocity: Velocity = Velocity()
     _last_read: Optional[float] = PrivateAttr(None)

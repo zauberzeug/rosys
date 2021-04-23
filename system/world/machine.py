@@ -62,11 +62,16 @@ class SerialMachine(Machine):
 
 class MockedMachine(Machine):
 
+    width: float
+    realtime: bool = False
     _velocity: Velocity = PrivateAttr(Velocity(linear=0, angular=0))
 
     async def read(self) -> Velocity:
 
-        self.time += 0.1
+        if self.realtime:
+            self.time = time.time()
+        else:
+            self.time += 0.1
 
         return self._velocity
 
