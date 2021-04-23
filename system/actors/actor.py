@@ -1,6 +1,7 @@
 import sys
 import asyncio
 from world.world import World
+from icecream import ic
 
 
 class Actor:
@@ -19,4 +20,5 @@ class Actor:
 
         end = self.world.time + seconds
         while self.world.time < end:
+            ic(self, self.world.time)
             await asyncio.sleep(0)

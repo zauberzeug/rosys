@@ -1,11 +1,14 @@
 import aioserial
 from world.velocity import Velocity
 from actors.actor import Actor
+from world.world import World
 
 
 class Serial(Actor):
 
-    aioserial_instance = aioserial.AioSerial('/dev/esp', baudrate=115200)
+    def __init__(self, world: World):
+        super(world)
+        self.aioserial_instance = aioserial.AioSerial('/dev/esp', baudrate=115200)
 
     async def step(self):
 
@@ -52,7 +55,7 @@ class MockedSerial(Actor):
 
     async def step(self):
 
-        self.sleep(0.01)
+        await self.sleep(0.01)
 
     async def send(self, line):
 

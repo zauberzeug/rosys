@@ -1,3 +1,4 @@
+from runtime import Runtime
 import pytest
 import numpy as np
 from numpy import rad2deg as deg
@@ -11,7 +12,7 @@ from actors.odometer import Odometer
 
 
 @pytest.mark.asyncio
-async def test_drive(world: World, actors: Array[Actor]):
+async def test_drive(runtime: Runtime):
 
     assert_pose(0, 0, deg=0)
 
