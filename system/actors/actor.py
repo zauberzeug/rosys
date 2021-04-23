@@ -9,14 +9,14 @@ class Actor:
 
         self.world = world
 
-    async def run(self, seconds: float = sys.maxsize):
+    async def run(self, end_time: float = sys.maxsize):
 
-        end = self.world.time + seconds
-        while self.world.time < end:
+        self.run_end_time = end_time
+        while self.world.time < end_time:
             await self.step()
 
     async def sleep(self, seconds: float):
 
-        end = self.world.time + seconds
-        while self.world.time < end:
+        sleep_end_time = min(self.world.time + seconds, self.run_end_time)
+        while self.world.time < sleep_end_time:
             await asyncio.sleep(0)

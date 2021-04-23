@@ -29,11 +29,12 @@ class Runtime:
         self.odometer = Odometer(self.world)
 
         self.actors = [
-            self.clock,
             self.serial,
             self.odometer,
+            self.clock,
         ]
 
     async def run(self, seconds: float = sys.maxsize):
 
-        await asyncio.gather(*[actor.run(seconds) for actor in self.actors])
+        end_time = self.world.time + seconds
+        await asyncio.gather(*[actor.run(end_time) for actor in self.actors])

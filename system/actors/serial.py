@@ -52,7 +52,7 @@ class MockedSerial(Actor):
 
     async def step(self):
 
-        self.sleep(0.01)
+        await self.sleep(0.01)
 
     async def send(self, line):
 
