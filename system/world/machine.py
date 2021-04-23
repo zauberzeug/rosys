@@ -66,21 +66,20 @@ class MockedMachine(Machine):
     width: float = 0
     realtime: bool = False
     _velocity: Velocity = PrivateAttr(Velocity(linear=0, angular=0))
-    _delay: float = PrivateAttr()
 
-    def __init__(self, width: float, delay: float = 0, realtime: bool = False):
+    def __init__(self, width: float, realtime: bool = False):
 
         super().__init__()
         self.width = width
-        self._delay = delay
+        self.realtime = realtime
 
     async def read(self) -> Velocity:
 
         if self.realtime:
             self.time = time.time()
+            await asyncio.sleep(0.1)
         else:
             self.time += 0.1
-        await asyncio.sleep(self._delay)
 
         return self._velocity
 
