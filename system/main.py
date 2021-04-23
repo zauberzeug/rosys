@@ -95,7 +95,7 @@ def main():
 
 @app.get("/world", response_model=World)
 def get_world():
-    return world  # FIXME
+    return world
 
 
 if __name__ == "__main__":
