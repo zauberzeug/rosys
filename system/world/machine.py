@@ -63,11 +63,12 @@ class SerialMachine(Machine):
 
 class MockedMachine(Machine):
 
+    width: float = 0
+    realtime: bool = False
     _velocity: Velocity = PrivateAttr(Velocity(linear=0, angular=0))
     _delay: float = PrivateAttr()
-    width: float = 0
 
-    def __init__(self, width: float, delay: float = 0):
+    def __init__(self, width: float, delay: float = 0, realtime: bool = False):
 
         super().__init__()
         self.width = width
@@ -75,7 +76,10 @@ class MockedMachine(Machine):
 
     async def read(self) -> Velocity:
 
-        self.time += 0.1
+        if self.realtime:
+            self.time = time.time()
+        else:
+            self.time += 0.1
         await asyncio.sleep(self._delay)
 
         return self._velocity

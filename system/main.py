@@ -14,7 +14,7 @@ sio = SocketManager(app=app)
 try:
     machine = SerialMachine(port="/dev/esp")
 except:
-    machine = MockedMachine(width=0.5, delay=0.1)
+    machine = MockedMachine(width=0.5, delay=0.1, realtime=True)
 
 robot = Robot(machine=machine)
 world = World(robot=robot)
