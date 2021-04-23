@@ -67,12 +67,6 @@ class MockedMachine(Machine):
     realtime: bool = False
     _velocity: Velocity = PrivateAttr(Velocity(linear=0, angular=0))
 
-    def __init__(self, width: float, realtime: bool = False):
-
-        super().__init__()
-        self.width = width
-        self.realtime = realtime
-
     async def read(self) -> Velocity:
 
         if self.realtime:
