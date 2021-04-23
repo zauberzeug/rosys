@@ -2,7 +2,7 @@ import sys
 import time
 import asyncio
 from enum import Enum
-from actors.serial import Serial, MockedSerial
+from actors.esp import SerialEsp, MockedEsp
 from actors.clock import Clock, TestClock
 from actors.odometer import Odometer
 from world.world import World
@@ -24,12 +24,12 @@ class Runtime:
             robot=Robot(),
         )
 
-        self.serial = Serial(self.world) if mode == Mode.REAL else MockedSerial(self.world)
+        self.esp = SerialEsp(self.world) if mode == Mode.REAL else MockedEsp(self.world)
         self.clock = TestClock(self.world) if mode == Mode.TEST else Clock(self.world)
         self.odometer = Odometer(self.world)
 
         self.actors = [
-            self.serial,
+            self.esp,
             self.odometer,
             self.clock,
         ]

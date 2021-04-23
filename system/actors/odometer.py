@@ -21,4 +21,4 @@ class Odometer(Actor):
 
         self.last_time = self.world.time
 
-        await self.sleep(0.1)
+        await self.sleep(0.01)

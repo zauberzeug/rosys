@@ -1,6 +1,9 @@
 import pytest
 import numpy as np
 from runtime import Runtime
+import task_logger
+from typing import Coroutine
+import asyncio
 
 global_runtime: Runtime = None
 
@@ -23,8 +26,17 @@ def assert_pose(
 
 
 async def drive(linear: float, *, deg: float = 0):
-    await global_runtime.world.robot.drive(linear, np.deg2rad(deg))
+    await global_runtime.esp.drive(linear, np.deg2rad(deg))
 
 
 async def power(left: float, right: float):
-    await global_runtime.world.robot.power(left, right)
+    await global_runtime.esp.power(left, right)
+
+
+def automate(coro: Coroutine):
+    task_logger.create_task(coro)
+
+
+async def condition(func):
+    while not func(global_runtime.world.robot):
+        await asyncio.sleep(0)

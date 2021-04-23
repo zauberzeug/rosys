@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from numpy import rad2deg as deg
-from tests.helper import assert_pose, drive, power
+from tests.helper import assert_pose, drive, power, automate, condition
 import asyncio
 from runtime import Runtime
 
@@ -37,7 +37,7 @@ async def test_driving_an_arc(runtime: Runtime):
             await asyncio.sleep(0)
         await drive(0, deg=0)
 
-    runtime.world.robot.automate(arc())
+    automate(arc())
 
     await runtime.run(seconds=5.0)
     assert_pose(2, 1.3, deg=65)
@@ -49,22 +49,22 @@ async def test_driving_a_square(runtime: Runtime):
 
     async def square():
         await drive(1, deg=0)
-        await runtime.world.robot.condition(lambda r: r.pose.x >= 2)
+        await condition(lambda r: r.pose.x >= 2)
         await drive(0, deg=90)
-        await runtime.world.robot.condition(lambda r: deg(r.pose.yaw) >= 90)
+        await condition(lambda r: deg(r.pose.yaw) >= 90)
         await drive(1, deg=0)
-        await runtime.world.robot.condition(lambda r: r.pose.y >= 2)
+        await condition(lambda r: r.pose.y >= 2)
         await drive(0, deg=90)
-        await runtime.world.robot.condition(lambda r: deg(r.pose.yaw) >= 180)
+        await condition(lambda r: deg(r.pose.yaw) >= 180)
         await drive(1, deg=0)
-        await runtime.world.robot.condition(lambda r: r.pose.x <= 0)
+        await condition(lambda r: r.pose.x <= 0)
         await drive(0, deg=90)
-        await runtime.world.robot.condition(lambda r: deg(r.pose.yaw) >= 270)
+        await condition(lambda r: deg(r.pose.yaw) >= 270)
         await drive(1, deg=0)
-        await runtime.world.robot.condition(lambda r: r.pose.y <= 0)
+        await condition(lambda r: r.pose.y <= 0)
         await drive(0, deg=0)
 
-    runtime.world.robot.automate(square())
+    automate(square())
     await runtime.run(seconds=5.0)
     assert_pose(2, 2, deg=90)
     await runtime.run(seconds=6.0)
@@ -72,7 +72,7 @@ async def test_driving_a_square(runtime: Runtime):
 
 
 @pytest.mark.asyncio
-async def test_driving_forward_with_power(runtime: Runtime):
+async def test_power(runtime: Runtime):
     assert_pose(0, 0, deg=0)
 
     await power(1, 1)

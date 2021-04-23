@@ -16,7 +16,7 @@ runtime = Runtime(Mode.REAL if os.path.exists("/dev/esp") else Mode.SIMULATION)
 
 @sio.on('drive_power')
 async def on_drive_power(_, data):
-    await runtime.serial.send('drive pw %.3f,%.3f' % (data['left'], data['right']))
+    await runtime.esp.power(data['left'], data['right'])
 
 
 @sio.on('task')

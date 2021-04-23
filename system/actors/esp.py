@@ -1,16 +1,32 @@
 import aioserial
+from world.world import World
 from world.velocity import Velocity
 from actors.actor import Actor
 
 
-class Serial(Actor):
+class Esp(Actor):
 
-    aioserial_instance = aioserial.AioSerial('/dev/esp', baudrate=115200)
+    async def drive(self, linear: float, angular: float):
+
+        await self.send('drive speed %.3f,%.3f' % (linear, angular))
+
+    async def power(self, left: float, right: float):
+
+        await self.send('drive pw %.3f,%.3f' % (left, right))
+
+
+class SerialEsp(Esp):
+
+    def __init__(self, world: World):
+
+        super().__init__(world)
+
+        self.aioserial = aioserial.AioSerial('/dev/esp', baudrate=115200)
 
     async def step(self):
 
         try:
-            line = (await self.aioserial_instance.readline_async()).decode().strip()
+            line = (await self.aioserial.readline_async()).decode().strip()
         except:
             raise IOError('Error reading from serial')
 
@@ -42,16 +58,18 @@ class Serial(Actor):
         for c in line:
             checksum ^= ord(c)
         line += '^%d\n' % checksum
-        await self.aioserial_instance.write_async(line.encode())
+        await self.aioserial.write_async(line.encode())
 
 
-class MockedSerial(Actor):
+class MockedEsp(Esp):
 
-    width: float
+    width: float = 0.5
     _velocity: Velocity = Velocity(linear=0, angular=0)
 
     async def step(self):
 
+        self.world.robot.velocity.linear = self._velocity.linear
+        self.world.robot.velocity.angular = self._velocity.angular
         await self.sleep(0.01)
 
     async def send(self, line):
