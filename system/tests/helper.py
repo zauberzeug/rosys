@@ -24,3 +24,7 @@ def assert_pose(
 
 async def drive(linear: float, *, deg: float = 0):
     await global_world.robot.drive(linear, np.deg2rad(deg))
+
+
+async def power(left: float, right: float):
+    await global_world.robot.power(left, right)

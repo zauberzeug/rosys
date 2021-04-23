@@ -65,10 +65,12 @@ class MockedMachine(Machine):
 
     _velocity: Velocity = PrivateAttr(Velocity(linear=0, angular=0))
     _delay: float = PrivateAttr()
+    width: float = 0
 
-    def __init__(self, delay: float = 0):
+    def __init__(self, width: float, delay: float = 0):
 
         super().__init__()
+        self.width = width
         self._delay = delay
 
     async def read(self) -> Velocity:

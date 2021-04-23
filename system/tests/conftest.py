@@ -9,8 +9,8 @@ pytest.register_assert_rewrite("tests.helper")
 @pytest.fixture
 def world() -> Generator:
 
-    machine = MockedMachine()
-    robot = Robot(width=0.5, machine=machine)
+    machine = MockedMachine(width=0.5)
+    robot = Robot(machine=machine)
     world = World(robot=robot)
     from tests.helper import set_global_world
     set_global_world(world)

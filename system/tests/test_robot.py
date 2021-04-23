@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from numpy import rad2deg as deg
-from tests.helper import assert_pose, drive
+from tests.helper import assert_pose, drive, power
 import asyncio
 from world.world import World
 
@@ -68,3 +68,13 @@ async def test_driving_a_square(world: World):
     assert_pose(2, 2, deg=90)
     await world.run(seconds=6.0)
     assert_pose(0, 0, deg=270)
+
+
+@pytest.mark.asyncio
+async def test_driving_forward_with_power(world: World):
+    assert_pose(0, 0, deg=0)
+
+    await power(1, 1)
+    # await asyncio.sleep(2)
+    # await world.robot.condition(lambda r: r.pose.x >= 1)
+    # assert_pose(1, 0, deg=0)
