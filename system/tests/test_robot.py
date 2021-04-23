@@ -75,6 +75,5 @@ async def test_driving_forward_with_power(world: World):
     assert_pose(0, 0, deg=0)
 
     await power(1, 1)
-    # await asyncio.sleep(2)
-    # await world.robot.condition(lambda r: r.pose.x >= 1)
-    # assert_pose(1, 0, deg=0)
+    await world.run(seconds=1.0)
+    assert_pose(1, 0, deg=0)
