@@ -8,7 +8,7 @@ services:
     network_mode: host
     restart: always
     volumes:
-      - ./proxy/nginx.conf:/etc/nginx.conf
+      - ./proxy/nginx-mac.conf:/etc/nginx.conf
     build:
       context: ./proxy
 
