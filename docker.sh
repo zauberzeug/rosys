@@ -29,8 +29,7 @@ case $os in
         os_args=""
         ;;
     Darwin)
-        export COMPOSE_HTTP_TIMEOUT=200
-        os_args="-f docker-compose-mac.yml"
+        os_args="-f docker-compose.yml -f docker-compose.mac.yml"
         ;;
     *)
         echo "Unsupported OS: $os"
@@ -46,7 +45,7 @@ case $cmd in
     u | up)
         docker-compose $os_args up -d $cmd_args
         ;;
-    U | buildup)
+    U | buildup | upbuild | upb | bup)
         docker-compose $os_args up -d --build $cmd_args
         ;;
     d | down)
@@ -61,7 +60,7 @@ case $cmd in
     h | stop)
         docker-compose $os_args stop $cmd_args
         ;;
-    l | log)
+    l | log | logs)
         docker-compose $os_args logs -f --tail 100 $cmd_args
         ;;
     e | exec)

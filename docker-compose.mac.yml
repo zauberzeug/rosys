@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+  proxy:
+    network_mode: bridge
+    ports:
+      - "80:80"
+      - "8080:8080" # Treafik web ui (enabled by --api.insecure=true)
+
+  system:
+    network_mode: bridge
+
+  frontend:
+    network_mode: bridge
