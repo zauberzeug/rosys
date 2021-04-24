@@ -6,6 +6,7 @@ def main(ctx):
             basic(name='prepare', image='mikefarah/yq:4', cmds=[
                 # port 80 is occupied by drone, so we tell linux to seek any free port by setting "0"
                 'yq eval \'(.services.proxy.ports[0] = "0:80")\' docker-compose.yml -i',
+                'yq eval \'(.services.proxy.network_mode = "bridge")\' docker-compose.yml -i',
 
                 # docker in docker makes it tricky to mount volumes (see https://discourse.drone.io/t/cannot-figure-out-how-to-mount-volume/3808/2)
                 # but because they are not needed for testing, we just remove the entries
