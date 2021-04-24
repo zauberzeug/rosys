@@ -26,10 +26,10 @@ fi
 os=`uname`
 case $os in
     Linux)
-        os_args=""
+        os_args="-p robot-brain"
         ;;
     Darwin)
-        os_args="-f docker-compose.yml -f docker-compose.mac.yml"
+        os_args="-p robot-brain -f docker-compose.yml -f docker-compose.mac.yml"
         ;;
     *)
         echo "Unsupported OS: $os"
@@ -65,6 +65,12 @@ case $cmd in
         ;;
     e | exec)
         docker-compose $os_args exec $cmd_args
+        ;;
+    rm)
+        docker-compose $os_args rm $cmd_args
+        ;;
+    ps)
+        docker-compose $os_args ps $cmd_args
         ;;
     *)
         echo "Unsupported command \"$cmd\""
