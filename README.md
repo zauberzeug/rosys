@@ -2,19 +2,10 @@
 
 ## Starting
 
-### Jetson
+There are some specialities needed to start the robot brain code in different environments. To simplify the usage we wrapped this in a script `./docker.sh`. Highlevel overview
 
-The `docker-compose.yml` (eg. default compose file name) defines the configuration for the infrastructure running on Robot Brain (Nvidia Jetson).
-
-1. define `ESP_SERIAL` in the `.env` file (see `z3.env` for an example)
-2. launch with `docker-compose up -d --build`
-3. on reboot or crash the services will start automatically
-
-### Mac
-
-We use a seperate `docker-compose-mac.yml` on Mac because we can not use the host network here. To simplify usage we wrapped this in a script:
-
-    ./compose.sh up -d --build
+- there is no host network on Mac so the conf is overwritten (on real robots it's necccessary to scan for cameras)
+- the services will start automatically on jetson when rebooting or crashing to simplify work with real robots
 
 ## Continuous Build
 

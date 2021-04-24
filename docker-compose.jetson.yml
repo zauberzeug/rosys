@@ -1,0 +1,10 @@
+version: "3.9"
+services:
+  proxy:
+    restart: always
+
+  system:
+    restart: always
+
+  frontend:
+    restart: always
