@@ -11,7 +11,7 @@ from world.world import World
 app = FastAPI()
 sio = SocketManager(app=app)
 
-runtime = Runtime(Mode.REAL if os.path.exists("/dev/esp") else Mode.SIMULATION)
+runtime = Runtime(Mode.REAL if os.path.isfile("/dev/esp") else Mode.SIMULATION)
 
 
 @sio.on('drive_power')
