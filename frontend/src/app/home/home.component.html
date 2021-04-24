@@ -1,5 +1,6 @@
-<p>Your robot is at:</p>
+<p>Your robot:</p>
 <pre *ngIf="robotService.pose">
+  mode = {{ robotService.mode }}
   time = {{ robotService.time | number: "0.3-3" }}
   x    = {{ robotService.pose.x | number: "0.3-3" }}
   y    = {{ robotService.pose.y | number: "0.3-3" }}
