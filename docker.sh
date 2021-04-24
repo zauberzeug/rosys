@@ -11,6 +11,8 @@ then
     echo "  `basename $0` (s | start)   [<containers>]      Start"
     echo "  `basename $0` (r | restart) [<containers>]      Restart"
     echo "  `basename $0` (h | stop)    [<containers>]      Stop (halt)"
+    echo "  `basename $0` ps            [<containers>]      List"
+    echo "  `basename $0` rm            [<containers>]      Remove"
     echo
     echo "  `basename $0` (l | log)  <container>            Show log tail (last 100 lines)"
     echo "  `basename $0` (e | exec) <container> <command>  Execute command"
@@ -61,17 +63,17 @@ case $cmd in
     h | stop)
         docker-compose $compose_args stop $cmd_args
         ;;
-    l | log | logs)
-        docker-compose $compose_args logs -f --tail 100 $cmd_args
-        ;;
-    e | exec)
-        docker-compose $compose_args exec $cmd_args
-        ;;
     rm)
         docker-compose $compose_args rm $cmd_args
         ;;
     ps)
         docker-compose $compose_args ps $cmd_args
+        ;;
+    l | log | logs)
+        docker-compose $compose_args logs -f --tail 100 $cmd_args
+        ;;
+    e | exec)
+        docker-compose $compose_args exec $cmd_args
         ;;
     *)
         echo "Unsupported command \"$cmd\""
