@@ -1,16 +1,19 @@
 version: "3.9"
 services:
   proxy:
-    image: "robotic_proxy:${TAG-latest}"
-    depends_on:
-      - frontend
-      - system
+    image: traefik:v2.3
+    command:
+      - --providers.docker
+      - --api.insecure=true
+      - --accesslog # http access log
+      - --log #Traefik log, for configurations and errors
+      - --api # Enable the Dashboard and API
     ports:
       - "80:80"
-    build:
-      context: ./proxy
-      args:
-        CONFIG: "./nginx-mac.conf"
+      - "8080:8080" # Treafik web ui (enabled by --api.insecure=true)
+    volumes:
+      # Traefik must be able to listen for Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
 
   system:
     image: "robot_brain_system:${TAG-latest}"
@@ -27,6 +30,17 @@ services:
       args:
         INSTALL_DEV: "true"
     command: /app/start.sh dev
+    labels:
+      # remove prefixed path for internal consumption
+      - traefik.http.middlewares.system-prefix.stripprefix.prefixes=/api
+      - traefik.http.middlewares.system-prefix.stripprefix.forceSlash=false # see https://doc.traefik.io/traefik/middlewares/stripprefix/#forceslash
+
+      # define how the service should be reached
+      - traefik.http.routers.system.rule=PathPrefix(`/api`)
+      # define what should be done before routing to the internal service
+      - traefik.http.routers.system.middlewares=system-prefix
+      # define on which port the internal service runs
+      - traefik.http.services.system.loadbalancer.server.port=7000
 
   frontend:
     image: "robot_brain_frontend:${TAG-latest}"
@@ -38,3 +52,6 @@ services:
       dockerfile: frontend.dockerfile
     volumes:
       - ./frontend:/app
+    labels:
+      - traefik.http.routers.frontend.rule=PathPrefix(`/`)
+      - traefik.http.services.splittable.loadbalancer.server.port=4200
