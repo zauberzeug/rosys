@@ -25,31 +25,31 @@ async def on_drive_power(_, data):
 async def on_task(_, data):
 
     async def square(linear_speed=0.5, angular_speed=rad(45)):
-        while world.robot.pose.x < 2:
-            await world.robot.drive(linear_speed, 0)
-            await asyncio.sleep(0)
-        while world.robot.pose.yaw < rad(90):
-            await world.robot.drive(0, angular_speed)
-            await asyncio.sleep(0)
-        while world.robot.pose.y < 2:
-            await world.robot.drive(linear_speed, 0)
-            await asyncio.sleep(0)
-        while world.robot.pose.yaw < rad(180):
-            await world.robot.drive(0, angular_speed)
-            await asyncio.sleep(0)
-        while world.robot.pose.x > 0:
-            await world.robot.drive(linear_speed, 0)
-            await asyncio.sleep(0)
-        while world.robot.pose.yaw < rad(270):
-            await world.robot.drive(0, angular_speed)
-            await asyncio.sleep(0)
-        while world.robot.pose.y > 0:
-            await world.robot.drive(linear_speed, 0)
-            await asyncio.sleep(0)
-        await world.robot.drive(0, 0)
+        while runtime.world.robot.pose.x < 2:
+            await runtime.esp.drive(linear_speed, 0)
+            await asyncio.sleep(0.01)
+        while runtime.world.robot.pose.yaw < rad(90):
+            await runtime.esp.drive(0, angular_speed)
+            await asyncio.sleep(0.01)
+        while runtime.world.robot.pose.y < 2:
+            await runtime.esp.drive(linear_speed, 0)
+            await asyncio.sleep(0.01)
+        while runtime.world.robot.pose.yaw < rad(180):
+            await runtime.esp.drive(0, angular_speed)
+            await asyncio.sleep(0.01)
+        while runtime.world.robot.pose.x > 0:
+            await runtime.esp.drive(linear_speed, 0)
+            await asyncio.sleep(0.01)
+        while runtime.world.robot.pose.yaw < rad(270):
+            await runtime.esp.drive(0, angular_speed)
+            await asyncio.sleep(0.01)
+        while runtime.world.robot.pose.y > 0:
+            await runtime.esp.drive(linear_speed, 0)
+            await asyncio.sleep(0.01)
+        await runtime.esp.drive(0, 0)
 
     if data == "square":
-        world.robot.automate(square())
+        task_logger.create_task(square())
 
 
 async def do_updates():
