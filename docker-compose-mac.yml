@@ -7,10 +7,10 @@ services:
       - system
     ports:
       - "80:80"
-    volumes:
-      - ./proxy/nginx-mac.conf:/etc/nginx.conf
     build:
       context: ./proxy
+      args:
+        CONFIG: "./nginx-mac.conf"
 
   system:
     image: "robot_brain_system:${TAG-latest}"

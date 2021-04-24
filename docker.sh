@@ -41,7 +41,7 @@ cmd=$1
 cmd_args=${@:2}
 case $cmd in
     b | build)
-        docker-compose $os_args build -d $cmd_args
+        docker-compose $os_args build $cmd_args
         ;;
     u | up)
         docker-compose $os_args up -d $cmd_args
