@@ -2,7 +2,7 @@ import aioserial
 from world.world import World
 from world.velocity import Velocity
 from actors.actor import Actor
-
+import time
 
 class Esp(Actor):
 
@@ -25,6 +25,7 @@ class SerialEsp(Esp):
 
     async def step(self):
 
+        start_time = time.time()
         try:
             line = (await self.aioserial.readline_async()).decode().strip()
         except:
@@ -51,6 +52,8 @@ class SerialEsp(Esp):
 
         self.world.robot.velocity.linear = linear
         self.world.robot.velocity.angular = angular
+        dt = time.time() - start_time
+        await self.sleep(0.01 - dt)
 
     async def send(self, line):
 
