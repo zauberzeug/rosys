@@ -23,13 +23,14 @@ then
     exit
 fi
 
+compose_args="-p robot-brain"
 os=`uname`
 case $os in
     Linux)
-        os_args="-p robot-brain"
+        [ -f /etc/nv_tegra_release ] && compose_args="$compose_args -f docker-compose.yml -f docker-compose.jetson.yml"
         ;;
     Darwin)
-        os_args="-p robot-brain -f docker-compose.yml -f docker-compose.mac.yml"
+        compose_args="$compose_args -f docker-compose.yml -f docker-compose.mac.yml"
         ;;
     *)
         echo "Unsupported OS: $os"
@@ -40,37 +41,37 @@ cmd=$1
 cmd_args=${@:2}
 case $cmd in
     b | build)
-        docker-compose $os_args build $cmd_args
+        docker-compose $compose_args build $cmd_args
         ;;
     u | up)
-        docker-compose $os_args up -d $cmd_args
+        docker-compose $compose_args up -d $cmd_args
         ;;
     U | buildup | upbuild | upb | bup)
-        docker-compose $os_args up -d --build $cmd_args
+        docker-compose $compose_args up -d --build $cmd_args
         ;;
     d | down)
-        docker-compose $os_args down -d $cmd_args
+        docker-compose $compose_args down -d $cmd_args
         ;;
     s | start)
-        docker-compose $os_args start $cmd_args
+        docker-compose $compose_args start $cmd_args
         ;;
     r | restart)
-        docker-compose $os_args restart $cmd_args
+        docker-compose $compose_args restart $cmd_args
         ;;
     h | stop)
-        docker-compose $os_args stop $cmd_args
+        docker-compose $compose_args stop $cmd_args
         ;;
     l | log | logs)
-        docker-compose $os_args logs -f --tail 100 $cmd_args
+        docker-compose $compose_args logs -f --tail 100 $cmd_args
         ;;
     e | exec)
-        docker-compose $os_args exec $cmd_args
+        docker-compose $compose_args exec $cmd_args
         ;;
     rm)
-        docker-compose $os_args rm $cmd_args
+        docker-compose $compose_args rm $cmd_args
         ;;
     ps)
-        docker-compose $os_args ps $cmd_args
+        docker-compose $compose_args ps $cmd_args
         ;;
     *)
         echo "Unsupported command \"$cmd\""
