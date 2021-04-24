@@ -43,7 +43,7 @@ class SerialEsp(Esp):
 
         try:
             words = line.split()[2:]
-            # TODO: read millis and compoare with world time
+            # TODO: read millis and compare with world time
             linear = float(words.pop(0))
             angular = float(words.pop(0))
         except (IndexError, ValueError):

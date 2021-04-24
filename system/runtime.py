@@ -1,18 +1,12 @@
 import sys
 import time
 import asyncio
-from enum import Enum
 from actors.esp import SerialEsp, MockedEsp
 from actors.clock import Clock, TestClock
 from actors.odometer import Odometer
 from world.world import World
 from world.robot import Robot
-
-
-class Mode(Enum):
-    TEST = 1
-    SIMULATION = 2
-    REAL = 3
+from world.mode import Mode
 
 
 class Runtime:
@@ -20,6 +14,7 @@ class Runtime:
     def __init__(self, mode: Mode):
 
         self.world = World(
+            mode=mode,
             time=time.time(),
             robot=Robot(),
         )

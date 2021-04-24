@@ -13,6 +13,7 @@ then
     echo "  `basename $0` (h | stop)    [<containers>]      Stop (halt)"
     echo "  `basename $0` ps            [<containers>]      List"
     echo "  `basename $0` rm            [<containers>]      Remove"
+    echo "  `basename $0` stats                             Show statistics"
     echo
     echo "  `basename $0` (l | log)  <container>            Show log tail (last 100 lines)"
     echo "  `basename $0` (e | exec) <container> <command>  Execute command"
@@ -68,6 +69,9 @@ case $cmd in
         ;;
     ps)
         docker-compose $compose_args ps $cmd_args
+        ;;
+    stat | stats)
+        docker stats $cmd_args
         ;;
     l | log | logs)
         docker-compose $compose_args logs -f --tail 100 $cmd_args

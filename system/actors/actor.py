@@ -1,5 +1,6 @@
 import sys
 import asyncio
+from world.mode import Mode
 from world.world import World
 
 
@@ -18,5 +19,8 @@ class Actor:
     async def sleep(self, seconds: float):
 
         sleep_end_time = min(self.world.time + seconds, self.run_end_time)
-        while self.world.time < sleep_end_time:
-            await asyncio.sleep(0)
+        if self.world.mode == Mode.TEST:
+            while self.world.time <= sleep_end_time:
+                await asyncio.sleep(0)
+        else:
+            await asyncio.sleep(sleep_end_time - self.world.time)

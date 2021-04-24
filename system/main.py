@@ -1,11 +1,13 @@
 from fastapi import FastAPI
+from fastapi.encoders import jsonable_encoder
 from fastapi_socketio import SocketManager
 import asyncio
 import task_logger
 import uvicorn
 import os.path
 from numpy import deg2rad as rad
-from runtime import Runtime, Mode
+from runtime import Runtime
+from world.mode import Mode
 from world.world import World
 
 app = FastAPI()
@@ -52,7 +54,7 @@ async def on_task(_, data):
 
 async def do_updates():
     while True:
-        await sio.emit('world', runtime.world.dict())
+        await sio.emit('world', jsonable_encoder(runtime.world))
         await asyncio.sleep(0.1)
 
 tasks = []
@@ -75,12 +77,12 @@ async def shutdown():
 
 @app.get("/")
 def main():
-    return {"status": "hello, I'm the robot system!", 'world': runtime.world.dict()}
+    return {"status": "hello, I'm the robot system!", 'world': jsonable_encoder(runtime.world)}
 
 
 @app.get("/world", response_model=World)
 def get_world():
-    return runtime.world
+    return jsonable_encoder(runtime.world)
 
 
 if __name__ == "__main__":
