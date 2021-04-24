@@ -4,7 +4,7 @@ from fastapi_socketio import SocketManager
 import asyncio
 import task_logger
 import uvicorn
-import os.path
+import os
 from numpy import deg2rad as rad
 from runtime import Runtime
 from world.mode import Mode
@@ -13,7 +13,8 @@ from world.world import World
 app = FastAPI()
 sio = SocketManager(app=app)
 
-runtime = Runtime(Mode.REAL if os.path.isfile("/dev/esp") else Mode.SIMULATION)
+has_esp = os.stat('/dev/esp').st_gid > 0
+runtime = Runtime(Mode.REAL if has_esp else Mode.SIMULATION)
 
 
 @sio.on('drive_power')
