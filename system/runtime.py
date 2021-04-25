@@ -9,6 +9,7 @@ from actors.odometer import Odometer
 from world.world import World
 from world.robot import Robot
 from world.mode import Mode
+from typing import get_type_hints
 
 
 class Runtime:
@@ -36,5 +37,19 @@ class Runtime:
         end_time = self.world.time + seconds
         await asyncio.gather(*[actor.run(end_time) for actor in self.actors])
 
-    def automate(self, coro: Coroutine):
-        task_logger.create_task(coro)
+    def automate(self, async_func):
+
+        params = []
+        for name, type_ in get_type_hints(async_func).items():
+            p = None
+            if type_ is World:
+                p = self.world
+            for actor in self.actors:
+                if isinstance(actor, type_):
+                    p = actor
+            if p is not None:
+                params.append(p)
+            else:
+                raise Exception(f'parameter "{name}" of type {type_} is unknown')
+
+        task_logger.create_task(async_func(*params))
