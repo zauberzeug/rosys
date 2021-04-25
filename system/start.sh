@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 
-if [[ $1 = "debug" ]]; then
+if [[ $1 = "dev" ]]; then
+   python3 main.py
+elif [[ $1 = "debug" ]]; then
    python3 -m debugpy --listen 5678 /app/main.py
 elif [[ $1 = 'perf' ]]; then
    watchgod performance.main
