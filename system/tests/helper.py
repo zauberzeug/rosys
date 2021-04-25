@@ -1,8 +1,6 @@
 import pytest
 import numpy as np
 from runtime import Runtime
-import task_logger
-from typing import Coroutine
 import asyncio
 
 global_runtime: Runtime = None
@@ -31,10 +29,6 @@ async def drive(linear: float, *, deg: float = 0):
 
 async def power(left: float, right: float):
     await global_runtime.esp.power(left, right)
-
-
-def automate(coro: Coroutine):
-    task_logger.create_task(coro)
 
 
 async def condition(func):

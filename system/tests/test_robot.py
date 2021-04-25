@@ -2,7 +2,7 @@ from runtime import Runtime
 import pytest
 import numpy as np
 from numpy import rad2deg as deg
-from tests.helper import assert_pose, drive, power, automate, condition
+from tests.helper import assert_pose, drive, power, condition
 import asyncio
 from runtime import Runtime
 
@@ -38,7 +38,7 @@ async def test_driving_an_arc(runtime: Runtime):
             await asyncio.sleep(0)
         await drive(0, deg=0)
 
-    automate(arc())
+    runtime.automate(arc())
 
     await runtime.run(seconds=5.0)
     assert_pose(2, 1.3, deg=65)
@@ -65,7 +65,7 @@ async def test_driving_a_square(runtime: Runtime):
         await condition(lambda r: r.pose.y <= 0)
         await drive(0, deg=0)
 
-    automate(square())
+    runtime.automate(square())
     await runtime.run(seconds=5.0)
     assert_pose(2, 2, deg=90)
     await runtime.run(seconds=6.0)

@@ -1,6 +1,8 @@
 import sys
 import time
 import asyncio
+import task_logger
+from typing import Coroutine
 from actors.esp import SerialEsp, MockedEsp
 from actors.clock import Clock, TestClock
 from actors.odometer import Odometer
@@ -33,3 +35,6 @@ class Runtime:
 
         end_time = self.world.time + seconds
         await asyncio.gather(*[actor.run(end_time) for actor in self.actors])
+
+    def automate(self, coro: Coroutine):
+        task_logger.create_task(coro)
