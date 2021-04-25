@@ -1,4 +1,4 @@
-FROM mrnr91/uvicorn-gunicorn-fastapi:python3.7
+FROM mrnr91/uvicorn-gunicorn-fastapi:python3.8
 
 RUN apt update && apt install openssh-server sudo vim less ack-grep rsync wget curl -y
 # we configure the ssh server so we can remotely login via vscode for development
@@ -20,6 +20,8 @@ RUN apt-get update; apt-get -y install libgl1-mesa-dev
 
 # Copy poetry.lock* in case it doesn't exist in the repo
 COPY ./system/pyproject.toml ./system/poetry.lock* /app/
+
+RUN apt-get -y install cmake
 
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
