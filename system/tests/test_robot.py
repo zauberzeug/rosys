@@ -40,7 +40,7 @@ async def test_driving_an_arc(runtime: Runtime):
             await asyncio.sleep(0)
         await drive(0, deg=0)
 
-    runtime.automate(arc)
+    runtime.automate_old(arc)
 
     await runtime.run(seconds=5.0)
     assert_pose(2, 1.3, deg=65)
@@ -67,7 +67,7 @@ async def test_driving_a_square(runtime: Runtime):
         await condition(lambda r: r.pose.y <= 0)
         await drive(0, deg=0)
 
-    runtime.automate(square)
+    runtime.automate_old(square)
     await runtime.run(seconds=5.0)
     assert_pose(2, 2, deg=90)
     await runtime.run(seconds=6.0)

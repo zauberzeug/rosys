@@ -6,7 +6,7 @@ class Odometer(Actor):
 
     last_time: float = None
 
-    async def step(self):
+    async def every_10_ms(self):
 
         if self.last_time is None:
             self.last_time = self.world.time
@@ -20,5 +20,3 @@ class Odometer(Actor):
         robot.pose.yaw += dt * robot.velocity.angular
 
         self.last_time = self.world.time
-
-        await self.sleep(0.01)

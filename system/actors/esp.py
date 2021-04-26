@@ -3,6 +3,7 @@ from world.world import World
 from world.velocity import Velocity
 from actors.actor import Actor
 
+
 class Esp(Actor):
 
     async def drive(self, linear: float, angular: float):
@@ -22,7 +23,7 @@ class SerialEsp(Esp):
 
         self.aioserial = aioserial.AioSerial('/dev/esp', baudrate=115200)
 
-    async def step(self):
+    async def every_10_ms(self):
 
         try:
             line = (await self.aioserial.readline_async()).decode().strip()
@@ -65,11 +66,10 @@ class MockedEsp(Esp):
     width: float = 0.5
     _velocity: Velocity = Velocity(linear=0, angular=0)
 
-    async def step(self):
+    async def every_10_ms(self):
 
         self.world.robot.velocity.linear = self._velocity.linear
         self.world.robot.velocity.angular = self._velocity.angular
-        await self.sleep(0.01)
 
     async def send(self, line):
 
