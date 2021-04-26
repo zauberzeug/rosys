@@ -1,10 +1,12 @@
 <p>Your robot:</p>
-<pre *ngIf="robotService.pose">
-  mode = {{ robotService.mode }}
-  time = {{ robotService.time | number: "0.3-3" }}
-  x    = {{ robotService.pose.x | number: "0.3-3" }}
-  y    = {{ robotService.pose.y | number: "0.3-3" }}
-  yaw  = {{ robotService.pose.yawDeg | number: "0.3-3" }} deg
+<pre *ngIf="robotService.world">
+  mode = {{ robotService.world.mode }}
+  time = {{ robotService.world.time | number: "0.3-3" }}
+  x    = {{ robotService.world.robot.pose.x | number: "0.3-3" }}
+  y    = {{ robotService.world.robot.pose.y | number: "0.3-3" }}
+  yaw  = {{ robotService.world.robot.pose.yawDeg | number: "0.3-3" }} deg
+  batt = {{ robotService.world.robot.battery | number: "0.1-1" }} V
+  temp = {{ robotService.world.robot.temperature | number: "0.1-1" }} C
 </pre>
 <ngx-joystick
   #dynamicJoystick

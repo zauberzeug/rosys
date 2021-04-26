@@ -1,23 +1,15 @@
 import { Injectable } from "@angular/core";
-import { Pose } from "./home/pose";
+import { World } from "./data-classes/world";
 import { WrappedSocket } from "./socket-io/socket-io.service";
 
 @Injectable({
   providedIn: "root",
 })
 export class RobotService {
-  mode?: number;
-  time: number = 0;
-  pose?: Pose;
-  width: number = 1.0;
+  world?: World;
 
   constructor(private socket: WrappedSocket) {
-    socket.on("world", (data: any) => {
-      this.mode = data.mode;
-      this.width = data.robot.width;
-      this.pose = Pose.from_dict(data.robot.pose);
-      this.time = data.time;
-    });
+    socket.on("world", (data: any) => (this.world = World.fromDict(data)));
   }
 
   sendPower(left: number, right: number) {
