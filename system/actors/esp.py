@@ -48,8 +48,8 @@ class SerialEsp(Esp):
             # TODO: read millis and compare with world time
             linear = float(words.pop(0))
             angular = float(words.pop(0))
-            battery = float(words.pop(0))
             temperature = float(words.pop(0))
+            battery = float(words.pop(0))
         except (IndexError, ValueError):
             raise IOError(f'Error parsing serial message "{line}"')
 
