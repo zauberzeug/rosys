@@ -29,8 +29,3 @@ async def drive(linear: float, *, deg: float = 0):
 
 async def power(left: float, right: float):
     await global_runtime.esp.power(left, right)
-
-
-async def condition(func):
-    while not func(global_runtime.world.robot):
-        await asyncio.sleep(0)

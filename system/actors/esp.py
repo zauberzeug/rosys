@@ -23,7 +23,7 @@ class SerialEsp(Esp):
 
         self.aioserial = aioserial.AioSerial('/dev/esp', baudrate=115200)
 
-    async def every_10_ms(self):
+    async def every_10_ms(self, world: World):
 
         try:
             line = (await self.aioserial.readline_async()).decode().strip()
@@ -49,8 +49,8 @@ class SerialEsp(Esp):
         except (IndexError, ValueError):
             raise IOError(f'Error parsing serial message "{line}"')
 
-        self.world.robot.velocity.linear = linear
-        self.world.robot.velocity.angular = angular
+        world.robot.velocity.linear = linear
+        world.robot.velocity.angular = angular
 
     async def send(self, line):
 
@@ -66,10 +66,10 @@ class MockedEsp(Esp):
     width: float = 0.5
     _velocity: Velocity = Velocity(linear=0, angular=0)
 
-    async def every_10_ms(self):
+    async def every_10_ms(self, world: World):
 
-        self.world.robot.velocity.linear = self._velocity.linear
-        self.world.robot.velocity.angular = self._velocity.angular
+        world.robot.velocity.linear = self._velocity.linear
+        world.robot.velocity.angular = self._velocity.angular
 
     async def send(self, line):
 

@@ -1,9 +1,10 @@
+from actors.square_driver import SquareDriver
+from actors.arc_driver import ArcDriver
 from actors.esp import Esp
 from runtime import Runtime
 import pytest
 import numpy as np
-from numpy import rad2deg as deg
-from tests.helper import assert_pose, drive, power, condition
+from tests.helper import assert_pose, drive, power
 import asyncio
 from runtime import Runtime
 from world.world import World
@@ -34,43 +35,20 @@ async def test_drive(runtime: Runtime):
 async def test_driving_an_arc(runtime: Runtime):
     assert_pose(0, 0, deg=0)
 
-    async def arc(world: World, esp: Esp):
-        while world.robot.pose.x < 2:
-            await esp.drive(1, np.deg2rad(26))
-            await asyncio.sleep(0)
-        await drive(0, deg=0)
-
-    runtime.automate_old(arc)
+    runtime.add(ArcDriver)
 
     await runtime.run(seconds=5.0)
-    assert_pose(2, 1.3, deg=65)
+    assert_pose(2, 1.3, deg=62)
 
 
 @pytest.mark.asyncio
 async def test_driving_a_square(runtime: Runtime):
     assert_pose(0, 0, deg=0)
 
-    async def square():
-        await drive(1, deg=0)
-        await condition(lambda r: r.pose.x >= 2)
-        await drive(0, deg=90)
-        await condition(lambda r: deg(r.pose.yaw) >= 90)
-        await drive(1, deg=0)
-        await condition(lambda r: r.pose.y >= 2)
-        await drive(0, deg=90)
-        await condition(lambda r: deg(r.pose.yaw) >= 180)
-        await drive(1, deg=0)
-        await condition(lambda r: r.pose.x <= 0)
-        await drive(0, deg=90)
-        await condition(lambda r: deg(r.pose.yaw) >= 270)
-        await drive(1, deg=0)
-        await condition(lambda r: r.pose.y <= 0)
-        await drive(0, deg=0)
-
-    runtime.automate_old(square)
-    await runtime.run(seconds=5.0)
+    runtime.add(SquareDriver)
+    await runtime.run(seconds=5.1)
     assert_pose(2, 2, deg=90)
-    await runtime.run(seconds=6.0)
+    await runtime.run(seconds=7.0)
     assert_pose(0, 0, deg=270)
 
 
