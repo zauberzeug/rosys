@@ -3,11 +3,11 @@
   <app-camera [x]="0" [y]="-10" [z]="15"></app-camera>
   <app-light [x]="2" [y]="5" [z]="40"></app-light>
   <app-robot
-    *ngIf="robotService.pose"
-    [x]="robotService.pose.x"
-    [y]="robotService.pose.y"
+    *ngIf="robotService.world"
+    [x]="robotService.world.robot.pose.x"
+    [y]="robotService.world.robot.pose.y"
     [z]="0.2"
-    [yaw]="robotService.pose.yaw"
-    [width]="robotService.width"
+    [yaw]="robotService.world.robot.pose.yaw"
+    [width]="0.5"
   ></app-robot>
 </app-map>

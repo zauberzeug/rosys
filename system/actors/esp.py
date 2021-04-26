@@ -1,4 +1,6 @@
 import aioserial
+import time
+import numpy as np
 from world.world import World
 from world.velocity import Velocity
 from actors.actor import Actor
@@ -46,11 +48,15 @@ class SerialEsp(Esp):
             # TODO: read millis and compare with world time
             linear = float(words.pop(0))
             angular = float(words.pop(0))
+            temperature = float(words.pop(0))
+            battery = float(words.pop(0))
         except (IndexError, ValueError):
             raise IOError(f'Error parsing serial message "{line}"')
 
         world.robot.velocity.linear = linear
         world.robot.velocity.angular = angular
+        world.robot.battery = battery
+        world.robot.temperature = temperature
 
     async def send(self, line):
 
@@ -70,6 +76,8 @@ class MockedEsp(Esp):
 
         world.robot.velocity.linear = self._velocity.linear
         world.robot.velocity.angular = self._velocity.angular
+        world.robot.battery = 25.0 + np.sin(0.1 * time.time()) + 0.02 * np.random.randn()
+        world.robot.temperature = np.random.uniform(34, 35)
 
     async def send(self, line):
 
