@@ -36,6 +36,9 @@ class Runtime:
         actor = actor_type(*params)
         self.actors.append(actor)
 
+        if hasattr(actor, "once"):
+            task_logger.create_task(actor.once(*self.get_params(actor.once)))
+
         return actor
 
     async def run(self, seconds: float = sys.maxsize):
@@ -44,8 +47,6 @@ class Runtime:
         tasks = [task_logger.create_task(self.update_time(end_time))]
 
         for actor in self.actors:
-            if hasattr(actor, "once"):
-                task_logger.create_task(actor.once(*self.get_params(actor.once)))
             if hasattr(actor, "every_10_ms"):
                 tasks.append(task_logger.create_task(self.automate(actor.every_10_ms, 0.01, end_time)))
             if hasattr(actor, "every_100_ms"):

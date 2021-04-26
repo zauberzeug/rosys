@@ -8,6 +8,7 @@ from tests.helper import assert_pose, drive, power
 import asyncio
 from runtime import Runtime
 from world.world import World
+import time
 
 
 @pytest.mark.asyncio
@@ -44,12 +45,14 @@ async def test_driving_an_arc(runtime: Runtime):
 @pytest.mark.asyncio
 async def test_driving_a_square(runtime: Runtime):
     assert_pose(0, 0, deg=0)
-
+    start = time.time()
+    assert runtime.world.time == pytest.approx(start, 0.01)
     runtime.add(SquareDriver)
     await runtime.run(seconds=5.1)
     assert_pose(2, 2, deg=90)
     await runtime.run(seconds=7.0)
     assert_pose(0, 0, deg=270)
+    assert runtime.world.time == pytest.approx(start + 13.1, 0.01)
 
 
 @pytest.mark.asyncio

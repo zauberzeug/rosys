@@ -1,3 +1,4 @@
+from actors.square_driver import SquareDriver
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi_socketio import SocketManager
@@ -25,32 +26,8 @@ async def on_drive_power(_, data):
 @sio.on('task')
 async def on_task(_, data):
 
-    async def square(linear_speed=0.5, angular_speed=rad(45)):
-        while runtime.world.robot.pose.x < 2:
-            await runtime.esp.drive(linear_speed, 0)
-            await asyncio.sleep(0.01)
-        while runtime.world.robot.pose.yaw < rad(90):
-            await runtime.esp.drive(0, angular_speed)
-            await asyncio.sleep(0.01)
-        while runtime.world.robot.pose.y < 2:
-            await runtime.esp.drive(linear_speed, 0)
-            await asyncio.sleep(0.01)
-        while runtime.world.robot.pose.yaw < rad(180):
-            await runtime.esp.drive(0, angular_speed)
-            await asyncio.sleep(0.01)
-        while runtime.world.robot.pose.x > 0:
-            await runtime.esp.drive(linear_speed, 0)
-            await asyncio.sleep(0.01)
-        while runtime.world.robot.pose.yaw < rad(270):
-            await runtime.esp.drive(0, angular_speed)
-            await asyncio.sleep(0.01)
-        while runtime.world.robot.pose.y > 0:
-            await runtime.esp.drive(linear_speed, 0)
-            await asyncio.sleep(0.01)
-        await runtime.esp.drive(0, 0)
-
     if data == "square":
-        task_logger.create_task(square())
+        runtime.add(SquareDriver)
 
 
 async def do_updates():
