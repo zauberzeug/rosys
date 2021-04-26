@@ -1,3 +1,4 @@
+from actors.spline_driver import SplineDriver
 from actors.square_driver import SquareDriver
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
@@ -11,8 +12,6 @@ from runtime import Runtime
 from world.mode import Mode
 from world.world import World
 from world.pose import Pose
-from navigation.spline import Spline
-from navigation.carrot import Carrot
 
 from icecream import ic
 
@@ -34,19 +33,8 @@ async def on_task(_, data):
     if data == "square":
         runtime.add(SquareDriver)
 
-    async def drive_spline():
-        spline = Spline(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0))
-        carrot = Carrot(spline)
-        while carrot.move(runtime.world.robot.pose):
-            local_spline = Spline(runtime.world.robot.pose, carrot.pose)
-            curvature = local_spline.max_curvature(0.0, 0.25)
-            linear = 0.5
-            angular = linear * curvature
-            await runtime.esp.drive(linear, angular)
-            await asyncio.sleep(0.01)
-
     if data == "spline":
-        task_logger.create_task(drive_spline())
+        runtime.add(SplineDriver)
 
 
 async def do_updates():
