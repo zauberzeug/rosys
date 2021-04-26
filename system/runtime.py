@@ -21,17 +21,14 @@ class Runtime:
             time=time.time(),
             robot=Robot(),
         )
+        self.actors = []
 
-        self.esp = SerialEsp() if mode == Mode.REAL else MockedEsp()
-        self.odometer = Odometer()
-
-        self.actors = [
-            self.esp,
-            self.odometer,
-        ]
+        self.esp = self.add(SerialEsp if mode == Mode.REAL else MockedEsp)
+        self.odometer = self.add(Odometer)
         self.guard = self.add(Guard)
 
     def add(self, actor_type):
+
         params = self.get_params(actor_type.__init__)
         actor = actor_type(*params)
         self.actors.append(actor)
@@ -44,36 +41,30 @@ class Runtime:
     async def run(self, seconds: float = sys.maxsize):
 
         end_time = self.world.time + seconds
-        tasks = [task_logger.create_task(self.update_time(end_time))]
+        tasks = [task_logger.create_task(self.advance_time(end_time))]
 
         for actor in self.actors:
             if hasattr(actor, "every_10_ms"):
-                tasks.append(task_logger.create_task(self.automate(actor.every_10_ms, 0.01, end_time)))
+                tasks.append(task_logger.create_task(self.repeat(actor.every_10_ms, 0.01, end_time)))
             if hasattr(actor, "every_100_ms"):
-                tasks.append(task_logger.create_task(self.automate(actor.every_100_ms, 0.1, end_time)))
+                tasks.append(task_logger.create_task(self.repeat(actor.every_100_ms, 0.1, end_time)))
 
         await asyncio.gather(*tasks)
 
-    async def automate(self, step, interval, end_time):
+    async def repeat(self, step, interval, end_time):
+
         params = self.get_params(step)
         while self.world.time < end_time:
             await step(*params)
-            await self.sleep(interval)
+            await self.guard.sleep(interval)
 
-    async def update_time(self, end_time):
+    async def advance_time(self, end_time):
+
         while True:
             self.world.time = self.world.time + 0.01 if self.world.mode == Mode.TEST else time.time()
             if self.world.time > end_time:
                 break
             await asyncio.sleep(0 if self.world.mode == Mode.TEST else 0.01)
-
-    async def sleep(self, seconds: float):
-        if self.world.mode == Mode.TEST:
-            end_time = self.world.time + seconds
-            while self.world.time < end_time:
-                await asyncio.sleep(0)
-        else:
-            await asyncio.sleep(seconds)
 
     def get_params(self, func):
 
