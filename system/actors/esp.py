@@ -19,10 +19,8 @@ class Esp(Actor):
 
 class SerialEsp(Esp):
 
-    def __init__(self, world: World):
-
-        super().__init__(world)
-
+    def __init__(self):
+        
         self.aioserial = aioserial.AioSerial('/dev/esp', baudrate=115200)
 
     async def every_10_ms(self, world: World):
