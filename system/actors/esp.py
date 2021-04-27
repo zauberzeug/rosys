@@ -1,12 +1,11 @@
 import asyncio
-from asyncio.locks import Event
-from actors.odometer import Odometer
 import aioserial
 import time
 import numpy as np
 from world.world import World
 from world.velocity import Velocity
 from actors.actor import Actor
+from actors.odometer import Odometer
 
 
 class Esp(Actor):
@@ -56,7 +55,7 @@ class SerialEsp(Esp):
 
         world.robot.velocity.linear = linear
         world.robot.velocity.angular = angular
-        odometer.update(world.robot.velocity, world)
+        odometer.update()
 
         world.robot.battery = battery
         world.robot.temperature = temperature
@@ -79,7 +78,7 @@ class MockedEsp(Esp):
 
         world.robot.velocity.linear = self._velocity.linear
         world.robot.velocity.angular = self._velocity.angular
-        odometer.update(self._velocity, world)
+        odometer.update()
         world.robot.battery = 25.0 + np.sin(0.1 * time.time()) + 0.02 * np.random.randn()
         world.robot.temperature = np.random.uniform(34, 35)
 

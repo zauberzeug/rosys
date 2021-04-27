@@ -1,5 +1,3 @@
-from world.state import State
-from actors.automator import Automator
 import sys
 import time
 import asyncio
@@ -7,8 +5,10 @@ import task_logger
 from typing import get_type_hints
 from actors.esp import SerialEsp, MockedEsp
 from actors.odometer import Odometer
+from actors.automator import Automator
 from world.world import World
 from world.robot import Robot
+from world.state import State
 from world.mode import Mode
 
 
@@ -65,7 +65,7 @@ class Runtime:
         params = self.get_params(step)
         while self.world.time < end_time:
             await step(*params)
-            await actor.time_increment(interval, max_time=end_time)
+            await actor.sleep(interval, max_time=end_time)
 
     async def advance_time(self, end_time):
 

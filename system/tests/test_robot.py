@@ -1,15 +1,10 @@
-from automations.arc_driver import arc
-from automations.square import square
-from automations.spline import spline
-from actors.esp import Esp
-from runtime import Runtime
 import pytest
 import numpy as np
-from tests.helper import assert_pose, drive, power
-import asyncio
 from runtime import Runtime
-from world.world import World
-import time
+from automations.arc import arc
+from automations.square import square
+from automations.spline import spline
+from tests.helper import assert_pose
 
 
 @pytest.mark.asyncio
@@ -20,15 +15,15 @@ async def test_drive(runtime: Runtime):
     await runtime.run(seconds=1.0)
     assert_pose(0, 0, deg=0)
 
-    await drive(1.0)
+    await runtime.esp.drive(1.0, 0.0)
     await runtime.run(seconds=1.0)
     assert_pose(1.0, 0, deg=0)
 
-    await drive(0.0, deg=90)
+    await runtime.esp.drive(0.0, np.deg2rad(90))
     await runtime.run(seconds=0.5)
     assert_pose(1.0, 0, deg=45)
 
-    await drive(1.0)
+    await runtime.esp.drive(1.0, 0.0)
     await runtime.run(seconds=np.sqrt(2))
     assert_pose(2.0, 1.0, deg=45, linear_tolerance=0.1)
 
@@ -56,7 +51,7 @@ async def test_driving_a_square(runtime: Runtime):
 
 @pytest.mark.asyncio
 async def test_pause_and_resume(runtime: Runtime):
-    start = time.time()
+    start = runtime.world.time
     runtime.automator.add(square(runtime.esp, runtime.world))
 
     await runtime.run(seconds=5.05)
@@ -86,6 +81,6 @@ async def test_driving_a_spline(runtime: Runtime):
 async def test_power(runtime: Runtime):
     assert_pose(0, 0, deg=0)
 
-    await power(1, 1)
+    await runtime.esp.power(1, 1)
     await runtime.run(seconds=1.0)
     assert_pose(1, 0, deg=0)

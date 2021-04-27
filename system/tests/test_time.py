@@ -3,7 +3,7 @@ from runtime import Runtime
 
 
 @pytest.mark.asyncio
-async def test_clock(runtime: Runtime):
+async def test_time(runtime: Runtime):
 
     await runtime.run(seconds=1.0)
     assert runtime.world.time > 1.0

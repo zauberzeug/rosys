@@ -1,7 +1,6 @@
 import pytest
 import numpy as np
 from runtime import Runtime
-import asyncio
 
 global_runtime: Runtime = None
 
@@ -21,11 +20,3 @@ def assert_pose(
 
     if deg is not None:
         assert np.rad2deg(pose.yaw) == pytest.approx(deg, abs=deg_tolerance)
-
-
-async def drive(linear: float, *, deg: float = 0):
-    await global_runtime.esp.drive(linear, np.deg2rad(deg))
-
-
-async def power(left: float, right: float):
-    await global_runtime.esp.power(left, right)

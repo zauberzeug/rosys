@@ -5,13 +5,9 @@ import asyncio
 import task_logger
 import uvicorn
 import os
-from numpy import deg2rad as rad
 from runtime import Runtime
 from world.mode import Mode
 from world.world import World
-from world.pose import Pose
-
-from icecream import ic
 
 app = FastAPI()
 sio = SocketManager(app=app)

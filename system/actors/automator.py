@@ -1,9 +1,6 @@
-from asyncio.locks import Event
 from typing import Coroutine
-from world.state import State
 from actors.actor import Actor
-import asyncio
-from world.mode import Mode
+from world.state import State
 from world.world import World
 
 
