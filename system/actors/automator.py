@@ -6,8 +6,7 @@ from world.world import World
 
 class Automator(Actor):
 
-    def __init__(self, world: World):
-        super().__init__(world)
+    def __init__(self):
         self.routines = []
 
     def add(self, coro: Coroutine):

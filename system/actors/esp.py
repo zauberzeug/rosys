@@ -55,7 +55,7 @@ class SerialEsp(Esp):
 
         world.robot.velocity.linear = linear
         world.robot.velocity.angular = angular
-        odometer.update()
+        odometer.update_odometry(world)
 
         world.robot.battery = battery
         world.robot.temperature = temperature
@@ -78,7 +78,7 @@ class MockedEsp(Esp):
 
         world.robot.velocity.linear = self._velocity.linear
         world.robot.velocity.angular = self._velocity.angular
-        odometer.update()
+        odometer.update_odometry(world)
         world.robot.battery = 25.0 + np.sin(0.1 * time.time()) + 0.02 * np.random.randn()
         world.robot.temperature = np.random.uniform(34, 35)
 

@@ -22,22 +22,15 @@ class Runtime:
             time=time.time(),
             robot=Robot(),
         )
-        self.actors = []
+        self.esp = SerialEsp() if mode == Mode.REAL else MockedEsp()
+        self.odometer = Odometer()
+        self.automator = Automator()
 
-        self.esp = self.add(SerialEsp if mode == Mode.REAL else MockedEsp)
-        self.odometer = self.add(Odometer)
-        self.automator = self.add(Automator)
-
-    def add(self, actor_type):
-
-        params = self.get_params(actor_type.__init__)
-        actor = actor_type(*params)
-        self.actors.append(actor)
-
-        if hasattr(actor, "once"):
-            task_logger.create_task(actor.once(*self.get_params(actor.once)))
-
-        return actor
+        self.actors = [
+            self.esp,
+            self.odometer,
+            self.automator,
+        ]
 
     def pause(self):
         self.world.state = State.PAUSED
