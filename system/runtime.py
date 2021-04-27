@@ -56,7 +56,7 @@ class Runtime:
         params = self.get_params(step)
         while self.world.time < end_time:
             await step(*params)
-            await self.guard.sleep(interval)
+            await self.guard.time_increment(interval)
 
     async def advance_time(self, end_time):
 

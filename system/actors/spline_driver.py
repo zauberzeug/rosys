@@ -20,5 +20,5 @@ class SplineDriver(Actor):
             linear = 0.5
             angular = linear * curvature
             await esp.drive(linear, angular)
-            await guard.sleep(0.01)
+            await guard.time_increment(0.01)
         await esp.drive(0, 0)
