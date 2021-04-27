@@ -1,14 +1,13 @@
 import numpy as np
-from actors.actor import Actor
 
 
-class Odometer(Actor):
+class Odometer:
 
-    def __init__(self) -> None:
+    def __init__(self):
         super().__init__()
         self.last_time: float = None
 
-    def update_odometry(self, world):
+    def update_pose(self, world):
 
         if self.last_time is None:
             self.last_time = world.time

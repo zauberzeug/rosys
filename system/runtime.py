@@ -23,12 +23,10 @@ class Runtime:
             robot=Robot(),
         )
         self.esp = SerialEsp() if mode == Mode.REAL else MockedEsp()
-        self.odometer = Odometer()
         self.automator = Automator()
 
         self.actors = [
             self.esp,
-            self.odometer,
             self.automator,
         ]
 
