@@ -1,3 +1,4 @@
+from actors.odometer import Odometer
 import aioserial
 import time
 import numpy as np
@@ -23,7 +24,7 @@ class SerialEsp(Esp):
         
         self.aioserial = aioserial.AioSerial('/dev/esp', baudrate=115200)
 
-    async def every_10_ms(self, world: World):
+    async def every_10_ms(self, world: World, odometer: Odometer):
 
         try:
             line = (await self.aioserial.readline_async()).decode().strip()
@@ -53,6 +54,8 @@ class SerialEsp(Esp):
 
         world.robot.velocity.linear = linear
         world.robot.velocity.angular = angular
+        odometer.update(world.robot.velocity, world)
+
         world.robot.battery = battery
         world.robot.temperature = temperature
 
@@ -70,10 +73,11 @@ class MockedEsp(Esp):
     width: float = 0.5
     _velocity: Velocity = Velocity(linear=0, angular=0)
 
-    async def every_10_ms(self, world: World):
+    async def every_10_ms(self, world: World, odometer: Odometer):
 
         world.robot.velocity.linear = self._velocity.linear
         world.robot.velocity.angular = self._velocity.angular
+        odometer.update(self._velocity, world)
         world.robot.battery = 25.0 + np.sin(0.1 * time.time()) + 0.02 * np.random.randn()
         world.robot.temperature = np.random.uniform(34, 35)
 
