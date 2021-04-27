@@ -48,7 +48,7 @@ tasks = []
 @app.on_event("startup")
 async def startup():
     loop = asyncio.get_event_loop()
-    loop.set_debug(True)
+    # loop.set_debug(True) # NOTE this makes execution slow -- use with care
 
     tasks.append(task_logger.create_task(runtime.run()))
     tasks.append(task_logger.create_task(do_updates()))
