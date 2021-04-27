@@ -19,4 +19,12 @@ export class RobotService {
   sendTask(task: string) {
     this.socket.emit("task", task);
   }
+
+  sendPause() {
+    this.socket.emit("pause");
+  }
+
+  sendResume() {
+    this.socket.emit("resume");
+  }
 }

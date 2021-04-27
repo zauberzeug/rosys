@@ -37,10 +37,23 @@ async def on_task(_, data):
         runtime.automator.add(spline(s, runtime.world, runtime.esp))
 
 
+@sio.on('pause')
+async def pause(*_):
+
+    await runtime.pause()
+
+
+@sio.on('resume')
+def resume(*_):
+
+    runtime.resume()
+
+
 async def do_updates():
     while True:
         await sio.emit('world', jsonable_encoder(runtime.world))
         await asyncio.sleep(0.1)
+
 
 tasks = []
 
