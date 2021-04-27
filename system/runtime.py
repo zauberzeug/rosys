@@ -57,15 +57,22 @@ class Runtime:
 
         await asyncio.gather(*tasks)
 
-    async def repeat(self, actor, function_name, interval, end_time):
+    async def repeat(self, actor, function_name, interval, run_end_time):
         step = getattr(actor, function_name, None)
         if step is None:
             return
 
         params = self.get_params(step)
-        while self.world.time < end_time:
+        while self.world.time < run_end_time:
+
             await step(*params)
-            await actor.sleep(interval, max_time=end_time)
+
+            if self.world.mode == Mode.TEST:
+                sleep_end_time = self.world.time + interval
+                while self.world.time < min(run_end_time, sleep_end_time):
+                    await asyncio.sleep(0)
+            else:
+                await asyncio.sleep(interval)
 
     async def advance_time(self, end_time):
 
