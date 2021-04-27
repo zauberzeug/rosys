@@ -26,6 +26,6 @@ class Automator(Actor):
 
         for coro in self.routines:
             try:
-                next(coro)
+                coro.send(None)
             except StopIteration:
                 self.routines.remove(coro)

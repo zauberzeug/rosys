@@ -1,5 +1,6 @@
+from automations.arc_driver import arc
 from automations.square import square
-from actors.arc_driver import ArcDriver
+from automations.spline import spline
 from actors.esp import Esp
 from runtime import Runtime
 import pytest
@@ -36,7 +37,7 @@ async def test_drive(runtime: Runtime):
 async def test_driving_an_arc(runtime: Runtime):
     assert_pose(0, 0, deg=0)
 
-    runtime.add(ArcDriver)
+    runtime.automator.add(arc(runtime.world, runtime.esp))
 
     await runtime.run(seconds=5.0)
     assert_pose(2, 1.3, deg=62)
@@ -56,9 +57,9 @@ async def test_driving_a_square(runtime: Runtime):
 @pytest.mark.asyncio
 async def test_pause_and_resume(runtime: Runtime):
     start = time.time()
-    runtime.add(SquareDriver)
+    runtime.automator.add(square(runtime.esp, runtime.world))
 
-    await runtime.run(seconds=5.01)
+    await runtime.run(seconds=5.05)
     runtime.pause()
     assert_pose(2, 2, deg=90)
     assert runtime.world.time == pytest.approx(start + 5, abs=0.1)
@@ -76,7 +77,7 @@ async def test_pause_and_resume(runtime: Runtime):
 @pytest.mark.asyncio
 async def test_driving_a_spline(runtime: Runtime):
     assert_pose(0, 0, deg=0)
-    # runtime.add(SplineDriver)
+    runtime.automator.add(spline(runtime.world, runtime.esp))
     await runtime.run(seconds=10)
     assert_pose(2, 1, deg=7)
 
