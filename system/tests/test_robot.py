@@ -5,6 +5,8 @@ from automations.arc import arc
 from automations.square import square
 from automations.spline import spline
 from tests.helper import assert_pose
+from world.pose import Pose
+from navigation.spline import Spline
 
 
 @pytest.mark.asyncio
@@ -51,28 +53,30 @@ async def test_driving_a_square(runtime: Runtime):
 
 @pytest.mark.asyncio
 async def test_pause_and_resume(runtime: Runtime):
-    # start = runtime.world.time
-    runtime.automator.add(square(runtime.esp, runtime.world))
+    start = runtime.world.time
+    s = Spline(Pose(x=0, y=0, yaw=0), Pose(x=2, y=0, yaw=0))
+    runtime.automator.add(spline(s, runtime.world, runtime.esp))
 
-    # await runtime.run(seconds=5.05)
-    # runtime.pause()
-    # assert_pose(2, 2, deg=90)
-    # assert runtime.world.time == pytest.approx(start + 5, abs=0.1)
-    # await runtime.run(seconds=2)
-    # assert_pose(2, 2, deg=90)
-    # assert runtime.world.time == pytest.approx(start + 7, abs=0.1)
+    await runtime.run(seconds=2)
+    runtime.pause()
+    assert_pose(1, 0, deg=0)
+    assert runtime.world.time == pytest.approx(start + 2, abs=0.1)
 
-    # runtime.resume()
-    # await runtime.run(seconds=7.0)
-    # assert_pose(0, 0, deg=270)
+    await runtime.run(seconds=2)
+    assert_pose(1, 0, deg=0)
+    assert runtime.world.time == pytest.approx(start + 4, abs=0.1)
 
-    # assert runtime.world.time == pytest.approx(start + 14, abs=0.1)
+    runtime.resume()
+    await runtime.run(seconds=2.0)
+    assert_pose(2, 0, deg=0)
+    assert runtime.world.time == pytest.approx(start + 6, abs=0.1)
 
 
 @pytest.mark.asyncio
 async def test_driving_a_spline(runtime: Runtime):
     assert_pose(0, 0, deg=0)
-    runtime.automator.add(spline(runtime.world, runtime.esp))
+    s = Spline(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0))
+    runtime.automator.add(spline(s, runtime.world, runtime.esp))
     await runtime.run(seconds=10)
     assert_pose(2, 1, deg=7)
 

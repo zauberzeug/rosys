@@ -50,6 +50,7 @@ class Runtime:
     async def repeat(self, actor, run_end_time):
 
         params = self.get_params(actor.step)
+
         while self.world.time < run_end_time:
 
             await actor.step(*params)

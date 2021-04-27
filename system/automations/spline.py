@@ -5,8 +5,7 @@ from navigation.spline import Spline
 from navigation.carrot import Carrot
 
 
-async def spline(world: World, esp: Esp):
-    spline = Spline(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0))
+async def spline(spline: Spline, world: World, esp: Esp):
     carrot = Carrot(spline)
 
     while carrot.move(world.robot.pose):
