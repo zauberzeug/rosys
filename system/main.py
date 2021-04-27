@@ -1,5 +1,3 @@
-from actors.spline_driver import SplineDriver
-from actors.square_driver import SquareDriver
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi_socketio import SocketManager
@@ -29,12 +27,12 @@ async def on_drive_power(_, data):
 
 @sio.on('task')
 async def on_task(_, data):
+    ...
+    # if data == "square":
+    #     runtime.add(SquareDriver)
 
-    if data == "square":
-        runtime.add(SquareDriver)
-
-    if data == "spline":
-        runtime.add(SplineDriver)
+    # if data == "spline":
+    #     runtime.add(SplineDriver)
 
 
 async def do_updates():

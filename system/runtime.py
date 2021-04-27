@@ -1,3 +1,4 @@
+from actors.automator import Automator
 import sys
 import time
 import asyncio
@@ -26,6 +27,7 @@ class Runtime:
 
         self.esp = self.add(SerialEsp if mode == Mode.REAL else MockedEsp)
         self.odometer = self.add(Odometer)
+        self.automator = self.add(Automator)
 
     def add(self, actor_type):
 

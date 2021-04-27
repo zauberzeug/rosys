@@ -18,6 +18,7 @@ class Actor:
         if self.world.mode == Mode.TEST:
             end_time = self.world.time + seconds
             while self.world.time < end_time and self.world.time < max_time:
+                await self.can_proceed()
                 await asyncio.sleep(0)
         else:
             await asyncio.sleep(seconds)

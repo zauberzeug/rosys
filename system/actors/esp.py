@@ -1,3 +1,4 @@
+import asyncio
 from asyncio.locks import Event
 from actors.odometer import Odometer
 import aioserial
@@ -107,3 +108,5 @@ class MockedEsp(Esp):
         if line.startswith("drive speed "):
             self._velocity.linear = float(line.split()[2].split(',')[0])
             self._velocity.angular = float(line.split()[2].split(',')[1])
+
+        await asyncio.sleep(0)
