@@ -44,7 +44,7 @@ async def test_driving_an_arc(runtime: Runtime):
 async def test_driving_a_square(runtime: Runtime):
     assert_pose(0, 0, deg=0)
 
-    runtime.automator.add(square(runtime.esp, runtime.world))
+    runtime.automator.add(square(runtime.world, runtime.esp))
     await runtime.run(seconds=5.1)
     assert_pose(2, 2, deg=90)
     await runtime.run(seconds=7.0)

@@ -8,6 +8,11 @@ import os
 from runtime import Runtime
 from world.mode import Mode
 from world.world import World
+from world.pose import Pose
+from navigation.spline import Spline
+from automations.square import square
+from automations.spline import spline
+
 
 app = FastAPI()
 sio = SocketManager(app=app)
@@ -23,12 +28,13 @@ async def on_drive_power(_, data):
 
 @sio.on('task')
 async def on_task(_, data):
-    ...
-    # if data == "square":
-    #     runtime.add(SquareDriver)
 
-    # if data == "spline":
-    #     runtime.add(SplineDriver)
+    if data == "square":
+        runtime.automator.add(square(runtime.world, runtime.esp))
+
+    if data == "spline":
+        s = Spline(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0))
+        runtime.automator.add(spline(s, runtime.world, runtime.esp))
 
 
 async def do_updates():
