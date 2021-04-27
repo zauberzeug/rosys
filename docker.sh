@@ -15,8 +15,9 @@ then
     echo "  `basename $0` rm            [<containers>]      Remove"
     echo "  `basename $0` stats                             Show statistics"
     echo
-    echo "  `basename $0` (l | log)  <container>            Show log tail (last 100 lines)"
-    echo "  `basename $0` (e | exec) <container> <command>  Execute command"
+    echo "  `basename $0` (l | log)    <container>            Show log tail (last 100 lines)"
+    echo "  `basename $0` (e | exec)   <container> <command>  Execute command"
+    echo "  `basename $0` (a | attach) <container>            Attach to container with shell"
     echo
     echo "Arguments:"
     echo
@@ -78,6 +79,9 @@ case $cmd in
         ;;
     e | exec)
         docker-compose $compose_args exec $cmd_args
+        ;;
+    a | attach)
+        docker-compose $compose_args exec $cmd_args /bin/bash
         ;;
     *)
         echo "Unsupported command \"$cmd\""
