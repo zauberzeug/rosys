@@ -10,6 +10,8 @@ from actors.odometer import Odometer
 
 class Esp(Actor):
 
+    interval: float = 0.01
+
     def __init__(self):
 
         super().__init__()
@@ -31,7 +33,7 @@ class SerialEsp(Esp):
         super().__init__()
         self.aioserial = aioserial.AioSerial('/dev/esp', baudrate=115200)
 
-    async def every_10_ms(self, world: World):
+    async def step(self, world: World):
 
         try:
             line = (await self.aioserial.readline_async()).decode().strip()
@@ -80,7 +82,7 @@ class MockedEsp(Esp):
     width: float = 0.5
     _velocity: Velocity = Velocity(linear=0, angular=0)
 
-    async def every_10_ms(self, world: World):
+    async def step(self, world: World):
 
         world.robot.velocity.linear = self._velocity.linear
         world.robot.velocity.angular = self._velocity.angular

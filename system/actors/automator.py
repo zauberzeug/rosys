@@ -6,13 +6,15 @@ from world.world import World
 
 class Automator(Actor):
 
+    interval: float = 0.1
+
     def __init__(self):
         self.routines = []
 
     def add(self, coro: Coroutine):
         self.routines.append(coro)
 
-    async def every_100_ms(self, world: World):
+    async def step(self, world: World):
 
         if world.state != State.RUNNING:
             return

@@ -43,27 +43,23 @@ class Runtime:
         tasks = [task_logger.create_task(self.advance_time(end_time))]
 
         for actor in self.actors:
-            tasks.append(task_logger.create_task(self.repeat(actor, 'every_10_ms', 0.01, end_time)))
-            tasks.append(task_logger.create_task(self.repeat(actor, 'every_100_ms', 0.1, end_time)))
+            tasks.append(task_logger.create_task(self.repeat(actor, end_time)))
 
         await asyncio.gather(*tasks)
 
-    async def repeat(self, actor, function_name, interval, run_end_time):
-        step = getattr(actor, function_name, None)
-        if step is None:
-            return
+    async def repeat(self, actor, run_end_time):
 
-        params = self.get_params(step)
+        params = self.get_params(actor.step)
         while self.world.time < run_end_time:
 
-            await step(*params)
+            await actor.step(*params)
 
             if self.world.mode == Mode.TEST:
-                sleep_end_time = self.world.time + interval
+                sleep_end_time = self.world.time + actor.interval
                 while self.world.time < min(run_end_time, sleep_end_time):
                     await asyncio.sleep(0)
             else:
-                await asyncio.sleep(interval)
+                await asyncio.sleep(actor.interval)
 
     async def advance_time(self, end_time):
 
