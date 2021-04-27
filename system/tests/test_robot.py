@@ -6,7 +6,7 @@ from automations.square import square
 from automations.spline import spline
 from tests.helper import assert_pose
 from world.pose import Pose
-from navigation.spline import Spline
+from automations.navigation.spline import Spline
 
 
 @pytest.mark.asyncio

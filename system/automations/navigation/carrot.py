@@ -1,5 +1,4 @@
 from world.pose import Pose
-from .geometry import dist1d, dist2d
 
 
 class Carrot:
@@ -24,14 +23,14 @@ class Carrot:
 
     def move(self, robot_pose, distance=1.0, move_threshold=0.01):
 
-        while dist2d(robot_pose.tuple(), self.pose.tuple()) < distance:
+        while robot_pose.distance(self.pose) < distance:
 
             self.t += 0.01
 
             if self.t < 1.0:
                 continue
 
-            if dist1d(robot_pose.tuple(), self.spline.end.tuple(), self.spline.yaw(1.0)) <= move_threshold:
+            if robot_pose.projected_distance(self.spline.end) <= move_threshold:
                 return False
 
         return True

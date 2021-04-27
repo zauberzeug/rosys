@@ -1,4 +1,5 @@
 import numpy as np
+from typing import List
 from world.pose import Pose
 
 
@@ -27,38 +28,39 @@ class Spline:
         self.q = self.g - 2 * self.f + self.e
         self.r = self.f - self.e
 
-    def x(self, t):
+    def x(self, t: float) -> float:
 
         return t**3 * self.d + 3 * t**2 * (1 - t) * self.c + 3 * t * (1 - t)**2 * self.b + (1 - t)**3 * self.a
 
-    def y(self, t):
+    def y(self, t: float) -> float:
 
         return t**3 * self.h + 3 * t**2 * (1 - t) * self.g + 3 * t * (1 - t)**2 * self.f + (1 - t)**3 * self.e
 
-    def gx(self, t):
+    def gx(self, t: float) -> float:
 
         return 3 * (self.m * t**2 + 2 * self.n * t + self.o)
 
-    def ggx(self, t):
+    def ggx(self, t: float) -> float:
 
         return 6 * (self.m * t + self.n)
 
-    def gy(self, t):
+    def gy(self, t: float) -> float:
+
         return 3 * (self.p * t**2 + 2 * self.q * t + self.r)
 
-    def ggy(self, t):
+    def ggy(self, t: float) -> float:
 
         return 6 * (self.p * t + self.q)
 
-    def yaw(self, t):
+    def yaw(self, t: float) -> float:
 
         return np.arctan2(self.gy(t), self.gx(t))
 
-    def pose(self, t) -> Pose:
+    def pose(self, t: float) -> Pose:
 
         return Pose(x=self.x(t), y=self.y(t), yaw=self.yaw(t))
 
-    def curvature(self, t):
+    def curvature(self, t: float) -> float:
 
         x_ = self.gx(t)
         y_ = self.gy(t)
@@ -66,7 +68,7 @@ class Spline:
         y__ = self.ggy(t)
         return (x_ * y__ - y_ * x__) / (x_**2 + y_**2)**(3/2)
 
-    def max_curvature(self, t_min=0.0, t_max=1.0):
+    def max_curvature(self, t_min: float = 0.0, t_max: float = 1.0) -> float:
 
         poly = [
             (1296 * self.m * self.p**2 + 1296 * self.m**3) * self.q -
@@ -90,7 +92,7 @@ class Spline:
         idx = np.argmax(np.abs(k))
         return k[idx]
 
-    def closest_point(self, x, y, t_min=0.0, t_max=1.0):
+    def closest_point(self, x: float, y: float, t_min: float = 0.0, t_max: float = 1.0) -> float:
 
         poly = [
             6 * self.h**2 + ((-36 * self.g) + 36 * self.f - 12 * self.e) * self.h + 54 * self.g**2 + (36 * self.e - 108 * self.f) * self.g + 54 * self.f**2 - 36 * self.e * self.f + 6 * self.e**2 +
@@ -119,7 +121,7 @@ class Spline:
 
         return np.real(t[np.argmin(sqr_d)])
 
-    def turning_points(self, t_min=0.0, t_max=1.0):
+    def turning_points(self, t_min: float = 0.0, t_max: float = 1.0) -> List[float]:
 
         t = [
             +(np.sqrt(self.m**2 * self.r**2 + ((4 * self.n**2 - 2 * self.m * self.o) * self.p - 4 * self.m * self.n * self.q) * self.r + 4 * self.m * self.o * self.q **

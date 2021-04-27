@@ -9,7 +9,7 @@ from runtime import Runtime
 from world.mode import Mode
 from world.world import World
 from world.pose import Pose
-from navigation.spline import Spline
+from automations.navigation.spline import Spline
 from automations.square import square
 from automations.spline import spline
 

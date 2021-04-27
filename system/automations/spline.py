@@ -1,7 +1,7 @@
 from actors.esp import Esp
 from world.world import World
-from navigation.spline import Spline
-from navigation.carrot import Carrot
+from automations.navigation.spline import Spline
+from automations.navigation.carrot import Carrot
 
 
 async def spline(spline: Spline, world: World, esp: Esp):
