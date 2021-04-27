@@ -50,19 +50,20 @@ class Runtime:
         tasks = [task_logger.create_task(self.advance_time(end_time))]
 
         for actor in self.actors:
-            if hasattr(actor, "every_10_ms"):
-                tasks.append(task_logger.create_task(self.repeat(actor.every_10_ms, 0.01, end_time)))
-            if hasattr(actor, "every_100_ms"):
-                tasks.append(task_logger.create_task(self.repeat(actor.every_100_ms, 0.1, end_time)))
+            tasks.append(task_logger.create_task(self.repeat(actor, 'every_10_ms', 0.01, end_time)))
+            tasks.append(task_logger.create_task(self.repeat(actor, 'every_100_ms', 0.1, end_time)))
 
         await asyncio.gather(*tasks)
 
-    async def repeat(self, step, interval, end_time):
+    async def repeat(self, actor, function_name, interval, end_time):
+        step = getattr(actor, function_name, None)
+        if step is None:
+            return
 
         params = self.get_params(step)
         while self.world.time < end_time:
             await step(*params)
-            await self.esp.time_increment(interval, max_time=end_time)
+            await actor.time_increment(interval, max_time=end_time)
 
     async def advance_time(self, end_time):
 
