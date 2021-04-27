@@ -1,3 +1,4 @@
+from world.state import State
 from actors.automator import Automator
 import sys
 import time
@@ -15,11 +16,9 @@ class Runtime:
 
     def __init__(self, mode: Mode):
 
-        self.allow_automation = asyncio.Event()
-        self.allow_automation.set()
-
         self.world = World(
             mode=mode,
+            state=State.RUNNING,
             time=time.time(),
             robot=Robot(),
         )
@@ -41,10 +40,11 @@ class Runtime:
         return actor
 
     def pause(self):
-        self.allow_automation.clear()
+        self.world.state = State.PAUSED
+        self.esp.drive(0, 0)
 
     def resume(self):
-        self.allow_automation.set()
+        self.world.state = State.RUNNING
 
     async def run(self, seconds: float = sys.maxsize):
 
@@ -84,9 +84,6 @@ class Runtime:
                     params.append(obj)
                     break
             else:
-                if name == 'allow_automation':
-                    params.append(self.allow_automation)
-                else:
-                    raise Exception(f'parameter "{name}" of type {type_} is unknown')
+                raise Exception(f'parameter "{name}" of type {type_} is unknown')
 
         return params

@@ -11,27 +11,13 @@ from actors.actor import Actor
 
 class Esp(Actor):
 
-    was_paused = False
-
     async def drive(self, linear: float, angular: float):
 
-        self.last_command = 'drive speed %.3f,%.3f' % (linear, angular)
-        await self.send(self.last_command)
+        await self.send('drive speed %.3f,%.3f' % (linear, angular))
 
     async def power(self, left: float, right: float):
 
-        self.last_command = 'drive pw %.3f,%.3f' % (left, right)
-        await self.send(self.last_command)
-
-    async def every_100_ms(self, allow_automation: Event):
-
-        if not allow_automation.is_set():
-            await self.send('drive speed 0,0')
-            self.was_paused = True
-        elif self.was_paused:
-            self.was_paused = False
-            # NOTE we need to send the last command again to resume esp exactly in the state which it was paused in
-            await self.send(self.last_command)
+        await self.send('drive pw %.3f,%.3f' % (left, right))
 
 
 class SerialEsp(Esp):
