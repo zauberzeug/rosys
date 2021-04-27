@@ -1,5 +1,3 @@
-from actors.guard import Guard
-from actors.actor import Actor
 import sys
 import time
 import asyncio
@@ -16,6 +14,9 @@ class Runtime:
 
     def __init__(self, mode: Mode):
 
+        self.allow_automation = asyncio.Event()
+        self.allow_automation.set()
+
         self.world = World(
             mode=mode,
             time=time.time(),
@@ -25,7 +26,6 @@ class Runtime:
 
         self.esp = self.add(SerialEsp if mode == Mode.REAL else MockedEsp)
         self.odometer = self.add(Odometer)
-        self.guard = self.add(Guard)
 
     def add(self, actor_type):
 
@@ -37,6 +37,12 @@ class Runtime:
             task_logger.create_task(actor.once(*self.get_params(actor.once)))
 
         return actor
+
+    def pause(self):
+        self.allow_automation.clear()
+
+    def resume(self):
+        self.allow_automation.set()
 
     async def run(self, seconds: float = sys.maxsize):
 
@@ -56,7 +62,7 @@ class Runtime:
         params = self.get_params(step)
         while self.world.time < end_time:
             await step(*params)
-            await self.guard.time_increment(interval)
+            await self.esp.time_increment(interval, max_time=end_time)
 
     async def advance_time(self, end_time):
 
@@ -75,6 +81,9 @@ class Runtime:
                     params.append(obj)
                     break
             else:
-                raise Exception(f'parameter "{name}" of type {type_} is unknown')
+                if name == 'allow_automation':
+                    params.append(self.allow_automation)
+                else:
+                    raise Exception(f'parameter "{name}" of type {type_} is unknown')
 
         return params

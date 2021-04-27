@@ -46,8 +46,6 @@ async def test_driving_an_arc(runtime: Runtime):
 @pytest.mark.asyncio
 async def test_driving_a_square(runtime: Runtime):
     assert_pose(0, 0, deg=0)
-    start = time.time()
-    assert runtime.world.time == pytest.approx(start, 0.01)
 
     runtime.add(SquareDriver)
     await runtime.run(seconds=5.1)
@@ -55,7 +53,25 @@ async def test_driving_a_square(runtime: Runtime):
     await runtime.run(seconds=7.0)
     assert_pose(0, 0, deg=270)
 
-    assert runtime.world.time == pytest.approx(start + 13, 0.1)
+
+@pytest.mark.asyncio
+async def test_pause_and_resume(runtime: Runtime):
+    start = time.time()
+    runtime.add(SquareDriver)
+
+    await runtime.run(seconds=5.01)
+    runtime.pause()
+    assert_pose(2, 2, deg=90)
+    assert runtime.world.time == pytest.approx(start + 5, abs=0.1)
+    await runtime.run(seconds=2)
+    assert_pose(2, 2, deg=90)
+    assert runtime.world.time == pytest.approx(start + 7, abs=0.1)
+
+    runtime.resume()
+    await runtime.run(seconds=7.0)
+    assert_pose(0, 0, deg=270)
+
+    assert runtime.world.time == pytest.approx(start + 14, abs=0.1)
 
 
 @pytest.mark.asyncio

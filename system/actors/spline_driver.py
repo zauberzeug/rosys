@@ -5,12 +5,11 @@ from actors.esp import Esp
 from world.world import World
 from world.pose import Pose
 from actors.actor import Actor
-from actors.guard import Guard
 
 
 class SplineDriver(Actor):
 
-    async def once(self, world: World, esp: Esp, guard: Guard):
+    async def once(self, world: World, esp: Esp):
         spline = Spline(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0))
         carrot = Carrot(spline)
 
@@ -20,5 +19,5 @@ class SplineDriver(Actor):
             linear = 0.5
             angular = linear * curvature
             await esp.drive(linear, angular)
-            await guard.time_increment(0.01)
+            await self.time_increment(0.01)
         await esp.drive(0, 0)
