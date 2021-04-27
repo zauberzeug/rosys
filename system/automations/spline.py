@@ -1,6 +1,5 @@
 from actors.esp import Esp
 from world.world import World
-from world.pose import Pose
 from navigation.spline import Spline
 from navigation.carrot import Carrot
 

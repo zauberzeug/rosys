@@ -1,4 +1,3 @@
-from icecream import ic
 from typing import Generator
 from runtime import Runtime, Mode
 import pytest
@@ -14,4 +13,3 @@ def runtime() -> Generator:
     set_global_runtime(runtime)
 
     yield runtime
-    ic(runtime.actors)

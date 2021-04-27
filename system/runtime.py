@@ -4,7 +4,6 @@ import asyncio
 import task_logger
 from typing import get_type_hints
 from actors.esp import SerialEsp, MockedEsp
-from actors.odometer import Odometer
 from actors.automator import Automator
 from world.world import World
 from world.robot import Robot
