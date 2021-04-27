@@ -29,9 +29,9 @@ class Runtime:
             self.automator,
         ]
 
-    def pause(self):
+    async def pause(self):
         self.world.state = State.PAUSED
-        self.esp.drive(0, 0)
+        await self.esp.drive(0, 0)
 
     def resume(self):
         self.world.state = State.RUNNING

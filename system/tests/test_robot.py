@@ -58,7 +58,7 @@ async def test_pause_and_resume(runtime: Runtime):
     runtime.automator.add(spline(s, runtime.world, runtime.esp))
 
     await runtime.run(seconds=2)
-    runtime.pause()
+    await runtime.pause()
     assert_pose(1, 0, deg=0)
     assert runtime.world.time == pytest.approx(start + 2, abs=0.1)
 
