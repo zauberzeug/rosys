@@ -1,13 +1,13 @@
 <p>Your robot:</p>
 <pre *ngIf="robotService.world">
-  mode  = {{ robotService.world.mode }}
-  state = {{ robotService.world.state }}
-  time  = {{ robotService.world.time | number: "0.3-3" }}
-  x     = {{ robotService.world.robot.pose.x | number: "0.3-3" }}
-  y     = {{ robotService.world.robot.pose.y | number: "0.3-3" }}
-  yaw   = {{ robotService.world.robot.pose.yawDeg | number: "0.3-3" }} deg
-  batt  = {{ robotService.world.robot.battery | number: "0.1-1" }} V
-  temp  = {{ robotService.world.robot.temperature | number: "0.1-1" }} C
+mode  = {{ robotService.world.mode }}
+state = {{ robotService.world.state }}
+time  = {{ robotService.world.time | number: "0.3-3" }}
+x     = {{ robotService.world.robot.pose.x | number: "0.3-3" }}
+y     = {{ robotService.world.robot.pose.y | number: "0.3-3" }}
+yaw   = {{ robotService.world.robot.pose.yawDeg | number: "0.3-3" }} deg
+batt  = {{ robotService.world.robot.battery | number: "0.1-1" }} V
+temp  = {{ robotService.world.robot.temperature | number: "0.1-1" }} C
 </pre>
 <ngx-joystick
   #dynamicJoystick
@@ -19,3 +19,7 @@
 <button (click)="robotService.sendPause()">Pause</button>
 <button (click)="robotService.sendResume()">Resume</button>
 <app-map-container></app-map-container>
+<p>Cameras:</p>
+<pre *ngFor="let camera of robotService.cameras"
+  >{{ camera | json }}
+</pre>

@@ -1,4 +1,5 @@
 import { Injectable } from "@angular/core";
+import { Camera } from "./data-classes/camera";
 import { World } from "./data-classes/world";
 import { WrappedSocket } from "./socket-io/socket-io.service";
 
@@ -7,6 +8,10 @@ import { WrappedSocket } from "./socket-io/socket-io.service";
 })
 export class RobotService {
   world?: World;
+
+  get cameras(): Array<Camera> {
+    return Object.values(this.world?.cameras || {});
+  }
 
   constructor(private socket: WrappedSocket) {
     socket.on("world", (data: any) => (this.world = World.fromDict(data)));
