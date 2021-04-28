@@ -21,6 +21,7 @@ class Runtime:
             state=State.RUNNING,
             time=time.time(),
             robot=Robot(),
+            cameras=[],
         )
         self.esp = SerialEsp() if mode == Mode.REAL else MockedEsp()
         self.automator = Automator()
