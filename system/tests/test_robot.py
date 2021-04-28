@@ -52,7 +52,7 @@ async def test_driving_a_square(runtime: Runtime):
 
 
 @pytest.mark.asyncio
-async def test_pause_and_resume(runtime: Runtime):
+async def test_pause_and_resume_spline(runtime: Runtime):
     start = runtime.world.time
     s = Spline(Pose(x=0, y=0, yaw=0), Pose(x=2, y=0, yaw=0))
     runtime.automator.add(spline(s, runtime.world, runtime.esp))
@@ -70,6 +70,22 @@ async def test_pause_and_resume(runtime: Runtime):
     await runtime.run(seconds=2.0)
     assert_pose(2, 0, deg=0)
     assert runtime.world.time == pytest.approx(start + 6, abs=0.1)
+
+
+@pytest.mark.asyncio
+async def test_pause_and_resume_square(runtime: Runtime):
+    runtime.automator.add(square(runtime.world, runtime.esp))
+
+    await runtime.run(seconds=8.3)
+    await runtime.pause()
+    assert_pose(0, 2, deg=180)
+
+    await runtime.run(seconds=2)
+    assert_pose(0, 2, deg=180)
+
+    runtime.resume()
+    await runtime.run(seconds=3.2)
+    assert_pose(0, 0, deg=270)
 
 
 @pytest.mark.asyncio
