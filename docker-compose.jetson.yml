@@ -8,3 +8,19 @@ services:
 
   frontend:
     restart: always
+
+  detector:
+    image: "zauberzeug/l4t-detection_node:nano-r32.4.4"
+    profiles:
+      - jetson
+    ports:
+      - "8004:80"
+    volumes:
+      - ./data/net:/model
+    command: "/app/start.sh"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu, utility]
