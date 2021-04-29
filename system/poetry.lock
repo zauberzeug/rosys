@@ -32,7 +32,7 @@ pyserial = "*"
 name = "appnope"
 version = "0.1.2"
 description = "Disable App Nap on macOS >= 10.9"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -96,7 +96,7 @@ toml = "*"
 name = "backcall"
 version = "0.2.0"
 description = "Specifications for callback functions passed in to an API"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -325,7 +325,7 @@ python-versions = "*"
 name = "ipython"
 version = "7.22.0"
 description = "IPython: Productive Interactive Computing"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -356,7 +356,7 @@ test = ["nose (>=0.10.1)", "requests", "testpath", "pygments", "nbformat", "ipyk
 name = "ipython-genutils"
 version = "0.2.0"
 description = "Vestigial utilities from IPython"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -364,7 +364,7 @@ python-versions = "*"
 name = "jedi"
 version = "0.18.0"
 description = "An autocompletion tool for Python that can be used for text editors."
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -379,7 +379,7 @@ testing = ["Django (<3.1)", "colorama", "docopt", "pytest (<6.0.0)"]
 name = "line-profiler"
 version = "3.1.0"
 description = "Line-by-line profiler."
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -430,7 +430,7 @@ pyparsing = ">=2.0.2"
 name = "parso"
 version = "0.8.2"
 description = "A Python Parser"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6"
 
@@ -442,7 +442,7 @@ testing = ["docopt", "pytest (<6.0.0)"]
 name = "pexpect"
 version = "4.8.0"
 description = "Pexpect allows easy control of interactive console applications."
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -453,7 +453,7 @@ ptyprocess = ">=0.5"
 name = "pickleshare"
 version = "0.7.5"
 description = "Tiny 'shelve'-like database with concurrency support"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -475,7 +475,7 @@ dev = ["pre-commit", "tox"]
 name = "prompt-toolkit"
 version = "3.0.18"
 description = "Library for building powerful interactive command lines in Python"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.6.1"
 
@@ -486,7 +486,7 @@ wcwidth = "*"
 name = "ptyprocess"
 version = "0.7.0"
 description = "Run a subprocess in a pseudo terminal"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -505,6 +505,14 @@ description = "Python style guide checker"
 category = "dev"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
+
+[[package]]
+name = "pycurl"
+version = "7.43.0.6"
+description = "PycURL -- A Python Interface To The cURL library"
+category = "main"
+optional = false
+python-versions = ">=3.5"
 
 [[package]]
 name = "pydantic"
@@ -705,6 +713,17 @@ decorator = ">=3.4.2"
 py = ">=1.4.26,<2.0.0"
 
 [[package]]
+name = "simplejpeg"
+version = "1.5.0"
+description = "A simple package for fast JPEG encoding and decoding."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+numpy = ">=1.15.0"
+
+[[package]]
 name = "simplejson"
 version = "3.17.2"
 description = "Simple, fast, extensible JSON encoder/decoder for Python"
@@ -775,7 +794,7 @@ python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 name = "traitlets"
 version = "5.0.5"
 description = "Traitlets Python configuration system"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -876,7 +895,7 @@ python-versions = ">=3.5"
 name = "wcwidth"
 version = "0.2.5"
 description = "Measures the displayed width of unicode strings in a terminal"
-category = "main"
+category = "dev"
 optional = false
 python-versions = "*"
 
@@ -927,7 +946,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "10cc2edc053e0d252ddb52320671d766ef5fb188c518149f18dca92d35a83a27"
+content-hash = "8dc5f50aa0e17e3dfdfa8205ecbf8da45ad0c340b621e2cad4c77b3f255d63d3"
 
 [metadata.files]
 aiohttp = [
@@ -1338,6 +1357,9 @@ pycodestyle = [
     {file = "pycodestyle-2.7.0-py2.py3-none-any.whl", hash = "sha256:514f76d918fcc0b55c6680472f0a37970994e07bbb80725808c17089be302068"},
     {file = "pycodestyle-2.7.0.tar.gz", hash = "sha256:c389c1d06bf7904078ca03399a4816f974a1d590090fecea0c63ec26ebaf1cef"},
 ]
+pycurl = [
+    {file = "pycurl-7.43.0.6.tar.gz", hash = "sha256:8301518689daefa53726b59ded6b48f33751c383cf987b0ccfbbc4ed40281325"},
+]
 pydantic = [
     {file = "pydantic-1.8.1-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:0c40162796fc8d0aa744875b60e4dc36834db9f2a25dbf9ba9664b1915a23850"},
     {file = "pydantic-1.8.1-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:fff29fe54ec419338c522b908154a2efabeee4f483e48990f87e189661f31ce3"},
@@ -1445,6 +1467,44 @@ requests = [
 retry = [
     {file = "retry-0.9.2-py2.py3-none-any.whl", hash = "sha256:ccddf89761fa2c726ab29391837d4327f819ea14d244c232a1d24c67a2f98606"},
     {file = "retry-0.9.2.tar.gz", hash = "sha256:f8bfa8b99b69c4506d6f5bd3b0aabf77f98cdb17f3c9fc3f5ca820033336fba4"},
+]
+simplejpeg = [
+    {file = "simplejpeg-1.5.0-cp35-cp35m-macosx_10_9_x86_64.whl", hash = "sha256:affff6c25b97c60efe845cd5512f38e2143eeb8af6e44452c0f1f492beaf4d79"},
+    {file = "simplejpeg-1.5.0-cp35-cp35m-manylinux1_i686.whl", hash = "sha256:ffb7c733779f32344d1bea2efc170e17a1e84675773caa3db9c2613183e7e414"},
+    {file = "simplejpeg-1.5.0-cp35-cp35m-manylinux1_x86_64.whl", hash = "sha256:1986876bdabd1645c4e0bcd5e420723689cb64f4952caffefb87748952e2f24e"},
+    {file = "simplejpeg-1.5.0-cp35-cp35m-manylinux2010_i686.whl", hash = "sha256:691cb8e7100e2e2b4fe8fd9a2c94691409a0e185c5f3edd447b95f1e2717497b"},
+    {file = "simplejpeg-1.5.0-cp35-cp35m-manylinux2010_x86_64.whl", hash = "sha256:e64e0448d3199553868ad3394c59ad6269f31629c26da7d1fc41384585932abb"},
+    {file = "simplejpeg-1.5.0-cp35-cp35m-win32.whl", hash = "sha256:49ba6877fd13e971d7a7ad9f8159c968a59fd294a430d6a637801f5c051ac3f2"},
+    {file = "simplejpeg-1.5.0-cp35-cp35m-win_amd64.whl", hash = "sha256:7c4aef0569b998eedb16037567cd37f6315bb30930f519fe357a4468bf1a30d5"},
+    {file = "simplejpeg-1.5.0-cp36-cp36m-macosx_10_9_x86_64.whl", hash = "sha256:b30b175928d88a07fb50ea1234e7efd80f56f818719a954eaf4472767c29554b"},
+    {file = "simplejpeg-1.5.0-cp36-cp36m-manylinux1_i686.whl", hash = "sha256:e5181139f15e2fe26926b05c1775524232f36679b45f0d153dcf329c66cc380e"},
+    {file = "simplejpeg-1.5.0-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:91764f896d0fb3623ad6ed9c8dc34fb526cf74579ff39e935e10b08526154f64"},
+    {file = "simplejpeg-1.5.0-cp36-cp36m-manylinux2010_i686.whl", hash = "sha256:2167091988fe52470ed985b0f6d1208a7213480b91ced9087fca745ccf2d84cc"},
+    {file = "simplejpeg-1.5.0-cp36-cp36m-manylinux2010_x86_64.whl", hash = "sha256:457311fe5860e609cda17f39eeaaefddab1ca66652f3b375bdbdc0505d032da5"},
+    {file = "simplejpeg-1.5.0-cp36-cp36m-win32.whl", hash = "sha256:a3c0aa076e9040ef60c3592f7bc4bcf1de5b677bb0b2ad88fa014668ca2e2281"},
+    {file = "simplejpeg-1.5.0-cp36-cp36m-win_amd64.whl", hash = "sha256:c66519d8af4191200782eb53b8b4a1b6b1cae8880fbe49968b00a2224c2ab663"},
+    {file = "simplejpeg-1.5.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:4287c0730dd4cc362f2658952510c6b38ff01f06a87cd485c726567b90b22362"},
+    {file = "simplejpeg-1.5.0-cp37-cp37m-manylinux1_i686.whl", hash = "sha256:7ae4a3d46c20c112a5d1d68bb7075f39edb8a9fd4c8a0c80c188944a0361b371"},
+    {file = "simplejpeg-1.5.0-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:a0b5bf7f072a3e1c728193131078d7c0e81b77e05716f392d78b02bb1d767f61"},
+    {file = "simplejpeg-1.5.0-cp37-cp37m-manylinux2010_i686.whl", hash = "sha256:6e2d82f561bb57718788db403e0ef4dce71e592a6b926fcda505ce89a0c793a4"},
+    {file = "simplejpeg-1.5.0-cp37-cp37m-manylinux2010_x86_64.whl", hash = "sha256:8e364755d3721ac82beef20121a6a3ac50ba54afcd092372e63b4fc745b442ce"},
+    {file = "simplejpeg-1.5.0-cp37-cp37m-win32.whl", hash = "sha256:da3a028a25d99b5d842827b8554210f100c165fc79ba566ccab6742cccdef717"},
+    {file = "simplejpeg-1.5.0-cp37-cp37m-win_amd64.whl", hash = "sha256:91dd86ab73c5cfc8f3a5ae805f0b4b598bf901561450b664f2f30dcf3844814b"},
+    {file = "simplejpeg-1.5.0-cp38-cp38-macosx_10_9_x86_64.whl", hash = "sha256:7b8f3a0a7956121e5a43933835c427c57db07c4b989526293f2ef71beea12093"},
+    {file = "simplejpeg-1.5.0-cp38-cp38-manylinux1_i686.whl", hash = "sha256:4e252fb93a73b946fd03a63254f8fe6876a664b6f4105bd36927cf43f9bb0d9d"},
+    {file = "simplejpeg-1.5.0-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:ecc148c2b7b7d88d84494c0256655f7d5399feee95d909444857f4387d4a513b"},
+    {file = "simplejpeg-1.5.0-cp38-cp38-manylinux2010_i686.whl", hash = "sha256:3a29b086b37c0036f34cfe220afeeeb2cff1bab1014dcd34f5bafba68e938776"},
+    {file = "simplejpeg-1.5.0-cp38-cp38-manylinux2010_x86_64.whl", hash = "sha256:e4f0c86acc5d2df0332138b27c69240a521735fdfc7a4f6fac04f923cc0e176b"},
+    {file = "simplejpeg-1.5.0-cp38-cp38-win32.whl", hash = "sha256:6ed9b0ce002508371d6c141d27f5b3271422e5cf24c8348d43d040dc93309519"},
+    {file = "simplejpeg-1.5.0-cp38-cp38-win_amd64.whl", hash = "sha256:b606cf5f44a24ce7c003a7173dc089ab478f51e46c817254ccd401428f2ffa52"},
+    {file = "simplejpeg-1.5.0-cp39-cp39-macosx_10_9_x86_64.whl", hash = "sha256:56fe4e0e8f2f9f272bcb7113a952c05d5e6dbe9be409c024910aba1d6919ad7b"},
+    {file = "simplejpeg-1.5.0-cp39-cp39-manylinux1_i686.whl", hash = "sha256:5ac03024b58815f0d99bb23570097b2e4d5231ea1b9dba6eff1cf598e8186d30"},
+    {file = "simplejpeg-1.5.0-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:f9a08f3f817cb2d902a018c8627326aeb16c2e85a5bb4141c37f3e0484d2f86c"},
+    {file = "simplejpeg-1.5.0-cp39-cp39-manylinux2010_i686.whl", hash = "sha256:31c5847e858c5061240a9c31efb13e74c34652527d42305994f990b4cd3c1251"},
+    {file = "simplejpeg-1.5.0-cp39-cp39-manylinux2010_x86_64.whl", hash = "sha256:b1f62578c17e5700d9329776733d365c02d8a12592a3c2b953d375bc68d2954e"},
+    {file = "simplejpeg-1.5.0-cp39-cp39-win32.whl", hash = "sha256:18e11904581df02bfa383946c1424518d309d90e4bbddfdaeeea201e196f2354"},
+    {file = "simplejpeg-1.5.0-cp39-cp39-win_amd64.whl", hash = "sha256:21973ee2168d813e0a9c3c334cfe5cfb92e4cdf183729acab938b4a3f5c8f0d4"},
+    {file = "simplejpeg-1.5.0.tar.gz", hash = "sha256:d9d2af0001e9f0b32f3fb80cdc0c7970343e22517ccd7df835d8207f1bed5d79"},
 ]
 simplejson = [
     {file = "simplejson-3.17.2-cp27-cp27m-macosx_10_13_x86_64.whl", hash = "sha256:2d3eab2c3fe52007d703a26f71cf649a8c771fcdd949a3ae73041ba6797cfcf8"},
