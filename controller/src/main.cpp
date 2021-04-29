@@ -93,7 +93,7 @@ void handleMsg(std::string multiMsg)
             else if (word == "pw")
             {
                 if (module == "wheels")
-                    word = "torque";
+                    word = "speed_lr";
                 handleMsg(module + " " + word + " " + msg);
             }
             else if (word == "ros")

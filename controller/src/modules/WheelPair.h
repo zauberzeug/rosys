@@ -35,6 +35,13 @@ public:
             this->leftAxis->torque(left * this->leftTorqueFactor);
             this->rightAxis->torque(right * this->rightTorqueFactor);
         }
+        else if (command == "speed_lr") // DEPRICATED
+        {
+            double left = atof(cut_first_word(parameters, ',').c_str());
+            double right = atof(cut_first_word(parameters, ',').c_str());
+            this->leftAxis->speed(left * this->leftSpeedFactor);
+            this->rightAxis->speed(right * this->rightSpeedFactor);
+        }
         else if (command == "speed")
         {
             double linear = atof(cut_first_word(parameters, ',').c_str());
