@@ -193,7 +193,7 @@ public:
         this->setMode(8, 3, 1); // AXIS_STATE_CLOSED_LOOP_CONTROL, CONTROL_MODE_POSITION_CONTROL, INPUT_MODE_PASSTHROUGH
 
         uint8_t vel_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-        float vel = speed / this->mPerTick;
+        float vel = fabs(speed / this->mPerTick);
         std::memcpy(vel_data, &vel, 4);
         this->can->send(this->can_id + 0x00f, vel_data); // "Set Velocity Limit"
 

@@ -35,6 +35,29 @@ public:
             this->leftAxis->torque(left * this->leftTorqueFactor);
             this->rightAxis->torque(right * this->rightTorqueFactor);
         }
+        else if (command == "speed_lr") // DEPRICATED
+        {
+            std::string left = cut_first_word(parameters, ',');
+            std::string right = cut_first_word(parameters, ',');
+            double speed_l = atof(left.c_str()) * this->leftSpeedFactor;
+            double speed_r = atof(right.c_str()) * this->rightSpeedFactor;
+            if (speed_l == 0) {
+                this->leftAxis->handleMsg("dmove", "0");
+            }
+            else {
+                char msg_l[16];
+                std::sprintf(msg_l, "%s,%.3f", speed_l < 0 ? "-1" : "1", speed_l);
+                this->leftAxis->handleMsg("dmove", msg_l);
+            }
+            if (speed_r == 0) {
+                this->rightAxis->handleMsg("dmove", "0");
+            }
+            else {
+                char msg_r[16];
+                std::sprintf(msg_r, "%s,%.3f", speed_r < 0 ? "-1" : "1", speed_r);
+                this->rightAxis->handleMsg("dmove", msg_r);
+            }
+        }
         else if (command == "speed")
         {
             double linear = atof(cut_first_word(parameters, ',').c_str());
