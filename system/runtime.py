@@ -6,6 +6,7 @@ from typing import get_type_hints
 from actors.esp import SerialEsp, MockedEsp
 from actors.automator import Automator
 from actors.camera_scanner import CameraScanner
+from actors.camera_downloader import CameraDownloader
 from world.world import World
 from world.robot import Robot
 from world.state import State
@@ -26,11 +27,13 @@ class Runtime:
         self.esp = SerialEsp() if mode == Mode.REAL else MockedEsp()
         self.automator = Automator()
         self.camera_scanner = CameraScanner()
+        self.camera_downloader = CameraDownloader()
 
         self.actors = [
             self.esp,
             self.automator,
             self.camera_scanner,
+            self.camera_downloader,
         ]
 
     async def pause(self):
