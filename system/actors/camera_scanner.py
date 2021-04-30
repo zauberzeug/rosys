@@ -5,7 +5,7 @@ from world.camera import Camera
 from world.world import World
 
 
-class CommandNotFound(Exception):
+class NotFound(Exception):
     pass
 
 
@@ -17,15 +17,17 @@ class CameraScanner(Actor):
         super().__init__()
         self.device = subprocess.run(
             'iw dev | awk \'$1=="Interface"{print $2}\' | sort | head -n 1',
-            shell=True, stdout=subprocess.PIPE,
+            shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
         ).stdout.decode('utf-8').rstrip()
+        if len(self.device) == 0:
+            raise NotFound()
 
     async def step(self, world: World):
 
         output = await self.subprocess(f'iw dev {self.device} station dump')
         for line in output.splitlines():
-            if "iw: not found" in line:
-                raise CommandNotFound('iw')
+            if "not found" in line:
+                raise NotFound(line)
             if line.startswith("Station"):
                 mac = line.split()[1]
                 world.cameras[mac] = world.cameras.get(mac) or Camera(mac=mac)
@@ -41,8 +43,8 @@ class CameraScanner(Actor):
 
         for mac, camera in world.cameras.items():
             output = await self.subprocess(f'ip neigh | grep {mac}')
-            if "ip: not found" in line:
-                raise CommandNotFound('ip')
+            if "not found" in line:
+                raise NotFound(line)
             try:
                 camera.network.ip = output.split()[0]
             except IndexError as e:
@@ -56,3 +58,13 @@ class CameraScanner(Actor):
             stderr=asyncio.subprocess.STDOUT)
         stdout, *_ = await proc.communicate()
         return stdout.decode()
+
+
+class MockedCameraScanner(Actor):
+
+    interval: float = 5.0
+
+    async def step(self, world: World):
+        mac = 'FF:FF'
+        camera = world.cameras[mac] = world.cameras.get(mac) or Camera(mac=mac)
+        camera.network.ip = 'mocked_cam'

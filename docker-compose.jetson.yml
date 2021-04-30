@@ -1,12 +1,15 @@
 version: "3.9"
 services:
   proxy:
+    network_mode: host
     restart: always
 
   system:
+    network_mode: host
     restart: always
 
   frontend:
+    network_mode: host
     restart: always
 
   detector:
