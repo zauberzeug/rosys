@@ -14,10 +14,14 @@ services:
 
   detector:
     image: "zauberzeug/l4t-detection_node:nano-r32.4.4"
-    profiles:
-      - jetson
     ports:
       - "8004:80"
+    environment:
+      - SERVER_BASE_URL=https://learning-loop.ai
+      - ORGANIZATION=zauberzeug
+      - PROJECT=drawingbot
+      - USERNAME=zauberzeug
+      - PASSWORD=7GE7GSryJY5eUw96
     volumes:
       - ./data/net:/model
     command: "/app/start.sh"
