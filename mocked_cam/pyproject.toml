@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "mocked_cam"
+version = "0.1.0"
+description = "Mocked Cam"
+authors = ["Rodja Trappe <rodja@zauberzeug.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+fastapi-utils = "^0.2.1"
+fastapi = "^0.63.0"
+icecream = "^2.1.0"
+uvicorn = {extras = ["standard"], version = "^0.13.4"}
+requests = "^2.25.1"
+pytest = "^6.2.3"
+autopep8 = "^1.5.7"
+debugpy = "^1.2.1"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

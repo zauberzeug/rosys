@@ -11,3 +11,13 @@ services:
 
   frontend:
     network_mode: bridge
+
+  mocked_cam:
+    image: "robot_brain_cam:${TAG-latest}"
+    volumes:
+      - ./mocked_cam:/app
+    build:
+      context: ./mocked_cam
+    #command: /app/start.sh debug
+      
+  
