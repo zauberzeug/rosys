@@ -18,7 +18,7 @@ RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-
 # Copy poetry.lock* in case it doesn't exist in the repo
 COPY ./system/pyproject.toml ./system/poetry.lock* /app/
 
-RUN apt-get -y install cmake
+RUN apt-get -y install cmake iproute2 iw
 
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
