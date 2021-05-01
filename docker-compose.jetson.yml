@@ -23,7 +23,7 @@ services:
       - USERNAME=zauberzeug
       - PASSWORD=7GE7GSryJY5eUw96
     volumes:
-      - ./data/net:/model
+      - ./detector:/model
     command: "/app/start.sh"
     deploy:
       resources:
