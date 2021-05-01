@@ -4,11 +4,3 @@ services:
     ports:
       - "80:80"
       - "8080:8080" # Treafik web ui (enabled by --api.insecure=true)
-
-  mocked_cam:
-    image: "robot_brain_cam:${TAG-latest}"
-    volumes:
-      - ./mocked_cam:/app
-    build:
-      context: ./mocked_cam
-    #command: /app/start.sh debug
