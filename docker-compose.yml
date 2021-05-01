@@ -23,7 +23,7 @@ services:
       dockerfile: system.dockerfile
       args:
         INSTALL_DEV: "true"
-    command: /app/start.sh dev
+    command: /app/start.sh debug
     labels:
       # remove prefixed path for internal consumption
       - traefik.http.middlewares.system-prefix.stripprefix.prefixes=/api

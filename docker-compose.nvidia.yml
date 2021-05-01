@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+  proxy:
+    network_mode: host
+
+  system:
+    network_mode: host
+
+  frontend:
+    network_mode: host
+

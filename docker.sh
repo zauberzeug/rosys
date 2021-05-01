@@ -32,6 +32,7 @@ os=`uname`
 case $os in
     Linux)
         [ -f /etc/nv_tegra_release ] && compose_args="$compose_args -f docker-compose.yml -f docker-compose.jetson.yml"
+        ( nvidia-smi > /dev/null 2>&1 ) && compose_args="$compose_args -f docker-compose.yml -f docker-compose.nvidia.yml"
         ;;
     Darwin)
         compose_args="$compose_args -f docker-compose.yml -f docker-compose.mac.yml"
