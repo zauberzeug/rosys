@@ -1,8 +1,8 @@
-from actors.camera_downloader import CameraDownloader
-from actors.actor import Actor
 import aiohttp
 from icecream import ic
 import helpers
+from actors.camera_downloader import CameraDownloader
+from actors.actor import Actor
 
 
 class Detector(Actor):
