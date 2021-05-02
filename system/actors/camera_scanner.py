@@ -58,13 +58,3 @@ class CameraScanner(Actor):
             stderr=asyncio.subprocess.STDOUT)
         stdout, *_ = await proc.communicate()
         return stdout.decode()
-
-
-class MockedCameraScanner(Actor):
-
-    interval: float = 5.0
-
-    async def step(self, world: World):
-        mac = 'FF:FF'
-        camera = world.cameras[mac] = world.cameras.get(mac) or Camera(mac=mac)
-        camera.network.ip = 'mocked_cam'

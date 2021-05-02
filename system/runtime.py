@@ -6,8 +6,9 @@ import task_logger
 from typing import get_type_hints
 from actors.esp import SerialEsp, MockedEsp
 from actors.automator import Automator
-from actors.camera_scanner import CameraScanner, MockedCameraScanner, NotFound
+from actors.camera_scanner import CameraScanner, NotFound
 from actors.camera_downloader import CameraDownloader
+from actors.cameras_mock import CamerasMock
 from world.world import World
 from world.robot import Robot
 from world.state import State
@@ -31,21 +32,20 @@ class Runtime:
         self.esp = SerialEsp() if mode == Mode.REAL else MockedEsp()
         self.automator = Automator()
 
-        try:
-            self.camera_scanner = MockedCameraScanner() if mode == Mode.TEST else CameraScanner()
-        except NotFound:
-            self.camera_scanner = MockedCameraScanner()
-
-        self.camera_downloader = CameraDownloader()
-        self.detector = Detector()
-
         self.actors = [
             self.esp,
             self.automator,
-            self.camera_scanner,
-            self.camera_downloader,
-            self.detector,
         ]
+
+        if mode == Mode.REAL:
+            self.camera_scanner = CameraScanner()
+            self.camera_downloader = CameraDownloader()
+            self.detector = Detector()
+
+            self.actors.append([self.camera_scanner, self.camera_downloader, self.detector])
+        else:
+            self.cameras_mock = CamerasMock()
+            self.actors.append(self.cameras_mock)
 
     async def pause(self):
         self.world.state = State.PAUSED
