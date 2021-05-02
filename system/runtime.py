@@ -1,4 +1,6 @@
+from actors.actor import Actor
 from actors.detector import Detector
+import icecream
 import sys
 import time
 import asyncio
@@ -61,20 +63,22 @@ class Runtime:
 
         await asyncio.gather(*tasks)
 
-    async def repeat(self, actor, run_end_time):
+    async def repeat(self, actor: Actor, run_end_time: float):
 
         params = self.get_params(actor.step)
 
         while self.world.time < run_end_time:
 
+            start = time.time()
             await actor.step(*params)
+            dt = time.time() - start
 
             if self.world.mode == Mode.TEST:
                 sleep_end_time = self.world.time + actor.interval
                 while self.world.time < min(run_end_time, sleep_end_time):
                     await asyncio.sleep(0)
             else:
-                await asyncio.sleep(actor.interval)
+                await asyncio.sleep(actor.interval - dt)
 
     async def advance_time(self, end_time):
 
