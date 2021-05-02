@@ -30,7 +30,7 @@ class Detector(Actor):
                 data = await response.json()
                 ic(data)
         except:
-            # helpers.print_stacktrace()
-            await self.sleep(0.1)
+            helpers.print_stacktrace()
+            # await self.sleep(0.1)
 
         helpers.measure()

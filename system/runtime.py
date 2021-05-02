@@ -42,7 +42,7 @@ class Runtime:
             self.camera_downloader = CameraDownloader()
             self.detector = Detector()
 
-            self.actors.append([self.camera_scanner, self.camera_downloader, self.detector])
+            self.actors.extend([self.camera_scanner, self.camera_downloader, self.detector])
         else:
             self.cameras_mock = CamerasMock()
             self.actors.append(self.cameras_mock)
@@ -77,10 +77,10 @@ class Runtime:
             interval = actor.interval
 
             if actor.interval == 0 and dt < 0.1:
-                logging.warning(f'{type(actor).__name__} is called to frequently; delaying loop for 100 ms')
-                interval = 100
-
-            elif dt > actor.interval:
+                logging.warning(
+                    f'{type(actor).__name__} would be called to frequently {dt} s; delaying this step for 100 ms')
+                interval = 0.1
+            elif dt > actor.interval > 0:
                 logging.warning(f'{type(actor).__name__} took {dt} s')
 
             if self.world.mode == Mode.TEST:

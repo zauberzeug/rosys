@@ -40,7 +40,6 @@ class CameraDownloader(Actor):
                 ic('img download error')
                 continue
             jpeg_header = simplejpeg.decode_jpeg_header(content)
-            helpers.measure()
             # ic(header)
             # ic(jpeg_header)
 
