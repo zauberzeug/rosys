@@ -5,6 +5,7 @@ import sys
 import time
 import asyncio
 import task_logger
+import logging
 from typing import get_type_hints
 from actors.esp import SerialEsp, MockedEsp
 from actors.automator import Automator
@@ -73,12 +74,21 @@ class Runtime:
             await actor.step(*params)
             dt = time.time() - start
 
+            interval = actor.interval
+
+            if actor.interval == 0 and dt < 0.1:
+                logging.warning(f'{type(actor).__name__} is called to frequently; delaying loop for 100 ms')
+                interval = 100
+
+            elif dt > actor.interval:
+                logging.warning(f'{type(actor).__name__} took {dt} s')
+
             if self.world.mode == Mode.TEST:
-                sleep_end_time = self.world.time + actor.interval
+                sleep_end_time = self.world.time + interval
                 while self.world.time < min(run_end_time, sleep_end_time):
                     await asyncio.sleep(0)
             else:
-                await asyncio.sleep(actor.interval - dt)
+                await asyncio.sleep(interval - dt)
 
     async def advance_time(self, end_time):
 

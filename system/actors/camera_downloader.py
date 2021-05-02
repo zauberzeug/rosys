@@ -18,7 +18,7 @@ class Img(BaseModel):
 
 class CameraDownloader(Actor):
 
-    interval: float = 5
+    interval: float = 0
 
     def __init__(self):
 

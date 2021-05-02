@@ -1,3 +1,4 @@
+from asyncio.tasks import sleep
 import aiohttp
 from icecream import ic
 import helpers
@@ -7,7 +8,7 @@ from actors.actor import Actor
 
 class Detector(Actor):
 
-    interval = 0.2
+    interval = 0
 
     def __init__(self):
 
@@ -29,5 +30,7 @@ class Detector(Actor):
                 data = await response.json()
                 ic(data)
         except:
-            helpers.print_stacktrace()
+            # helpers.print_stacktrace()
+            await self.sleep(0.1)
+
         helpers.measure()
