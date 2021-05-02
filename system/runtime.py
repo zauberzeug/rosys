@@ -1,3 +1,4 @@
+from actors.detector import Detector
 import sys
 import time
 import asyncio
@@ -33,12 +34,14 @@ class Runtime:
             self.camera_scanner = MockedCameraScanner()
 
         self.camera_downloader = CameraDownloader()
+        self.detector = Detector()
 
         self.actors = [
             self.esp,
             self.automator,
             self.camera_scanner,
             self.camera_downloader,
+            self.detector,
         ]
 
     async def pause(self):

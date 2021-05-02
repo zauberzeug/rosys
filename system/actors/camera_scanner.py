@@ -43,8 +43,8 @@ class CameraScanner(Actor):
 
         for mac, camera in world.cameras.items():
             output = await self.subprocess(f'ip neigh | grep {mac}')
-            if "not found" in line:
-                raise NotFound(line)
+            if "not found" in output:
+                raise NotFound(output)
             try:
                 camera.network.ip = output.split()[0]
             except IndexError as e:
