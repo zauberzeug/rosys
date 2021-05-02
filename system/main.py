@@ -13,6 +13,9 @@ from automations.navigation.spline import Spline
 from automations.square import square
 from automations.spline import spline
 
+import uvloop
+uvloop.install()
+
 
 app = FastAPI()
 sio = SocketManager(app=app)
@@ -60,6 +63,7 @@ tasks = []
 
 @app.on_event("startup")
 async def startup():
+
     loop = asyncio.get_event_loop()
     # loop.set_debug(True) # NOTE this makes execution slow -- use with care
 

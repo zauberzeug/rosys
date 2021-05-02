@@ -13,14 +13,11 @@ from world.world import World
 from world.robot import Robot
 from world.state import State
 from world.mode import Mode
-import uvloop
 
 
 class Runtime:
 
     def __init__(self, mode: Mode):
-
-        uvloop.install()
 
         self.world = World(
             mode=mode,
