@@ -70,15 +70,15 @@ class Runtime:
 
         while self.world.time < run_end_time:
 
-            start = time.time()
+            start = self.world.time
             await actor.step(*params)
-            dt = time.time() - start
+            dt = self.world.time - start
 
             interval = actor.interval
 
             if actor.interval == 0 and dt < 0.1:
                 logging.warning(
-                    f'{type(actor).__name__} would be called to frequently {dt} s; delaying this step for 100 ms')
+                    f'{type(actor).__name__} would be called to frequently because it only took {dt*1000:.0f} ms; delaying this step for 100 ms')
                 interval = 0.1
             elif dt > actor.interval > 0:
                 logging.warning(f'{type(actor).__name__} took {dt} s')

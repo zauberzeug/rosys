@@ -12,7 +12,7 @@ class Detector(Actor):
 
     def __init__(self):
 
-        self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=0.5))
+        self.session = aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=1))
 
     async def step(self, downloader: CameraDownloader):
 
