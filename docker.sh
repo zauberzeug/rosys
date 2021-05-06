@@ -6,7 +6,7 @@ then
     echo
     echo "  `basename $0` (b | build)   [<containers>]      Build or rebuild"
     echo "  `basename $0` (u | up)      [<containers>]      Create and start"
-    echo "  `basename $0` (U | ub)      [<containers>]      Create and start (force build)"
+    echo "  `basename $0` (U | upbuild) [<containers>]      Create and start (force build)"
     echo "  `basename $0` (d | down)    [<containers>]      Stop and remove"
     echo "  `basename $0` (s | start)   [<containers>]      Start"
     echo "  `basename $0` (r | restart) [<containers>]      Restart"
