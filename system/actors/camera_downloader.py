@@ -1,28 +1,17 @@
 import asyncio
-from typing import List
 import pycurl
 import io
 import logging
-from pydantic.main import BaseModel
+import uuid
 from actors.actor import Actor
 from world.world import World
+from world.image import Image
 import helpers
-
-
-class Image(BaseModel):
-
-    time: float
-    mac: str
-    data: bytes
 
 
 class CameraDownloader(Actor):
 
     interval: float = 0
-
-    def __init__(self):
-
-        self.images: List[Image] = []
 
     async def step(self, world: World):
 
@@ -45,10 +34,13 @@ class CameraDownloader(Actor):
             # ic(header)
             # ic(jpeg_header)
             time = (start_time + end_time) / 2.0  # TODO: improve accuracy via clock synchronization
-            self.images.append(Image(time=time, mac=header['mac'], data=content))
+            id = str(uuid.uuid4())
+            world.images.append(Image(id=id, time=time, mac=header['mac']))
+            world.image_data[id] = content
 
-        while self.images and self.images[0].time < world.time - 10.0:
-            self.images.pop(0)
+        while world.images and world.images[0].time < world.time - 10.0:
+            del world.image_data[world.images[0].id]
+            del world.images[0]
 
     def get(self, url, timeout=1):
 

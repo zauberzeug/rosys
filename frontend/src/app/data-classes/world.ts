@@ -1,4 +1,5 @@
 import { Camera } from "./camera";
+import { Image } from "./image";
 import { Mode } from "./mode";
 import { Robot } from "./robot";
 import { State } from "./state";
@@ -9,7 +10,8 @@ export class World {
     public state: State,
     public time: number,
     public robot: Robot,
-    public cameras: { [mac: string]: Camera }
+    public cameras: { [mac: string]: Camera },
+    public images: Image[]
   ) {}
 
   static fromDict(w: any): World {
@@ -17,7 +19,14 @@ export class World {
     Object.values(w.cameras).forEach(
       (c: any) => (cameras[c["mac"]] = Camera.fromDict(c))
     );
-    return new World(w.mode, w.state, w.time, Robot.fromDict(w.robot), cameras);
+    return new World(
+      w.mode,
+      w.state,
+      w.time,
+      Robot.fromDict(w.robot),
+      cameras,
+      w.images.map((i: any) => Image.fromDict(i))
+    );
   }
 
   updateFromDict(w: any) {
@@ -31,5 +40,6 @@ export class World {
         (c: any) => (cameras[c["mac"]] = Camera.fromDict(c))
       );
     }
+    if (w.images) this.images = w.images.map((i: any) => Image.fromDict(i));
   }
 }

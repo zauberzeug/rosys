@@ -2,6 +2,7 @@ from icecream import ic, install
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi_socketio import SocketManager
+from typing import Set
 import asyncio
 import task_logger
 import uvicorn
@@ -56,16 +57,10 @@ def resume(*_):
     runtime.resume()
 
 
-async def broadcast_10Hz():
+async def broadcast(interval: float, topic, *, exclude: Set[str]):
     while True:
-        await sio.emit('world_part', jsonable_encoder(runtime.world, exclude={'cameras', 'mode'}))
-        await asyncio.sleep(0.1)
-
-
-async def broadcast_1Hz():
-    while True:
-        await sio.emit('world', jsonable_encoder(runtime.world))
-        await asyncio.sleep(1.0)
+        await sio.emit(topic, jsonable_encoder(runtime.world, exclude=exclude))
+        await asyncio.sleep(interval)
 
 
 tasks = []
@@ -77,9 +72,13 @@ async def startup():
     loop = asyncio.get_event_loop()
     # loop.set_debug(True) # NOTE this makes execution slow -- use with care
 
+    broadcasts = [
+        broadcast(1.0, 'world', exclude={'image_data'}),
+        broadcast(0.1, 'world_part', exclude={'image_data', 'mode', 'cameras', 'images'}),
+    ]
+
     tasks.append(task_logger.create_task(runtime.run()))
-    tasks.append(task_logger.create_task(broadcast_10Hz()))
-    tasks.append(task_logger.create_task(broadcast_1Hz()))
+    tasks.extend([task_logger.create_task(b) for b in broadcasts])
 
 
 @app.on_event("shutdown")
