@@ -9,6 +9,8 @@ import { RobotService } from "../robot.service";
   styleUrls: ["./home.component.scss"],
 })
 export class HomeComponent {
+  currentImageId?: string;
+
   constructor(public robotService: RobotService) {}
 
   sendPower = throttle(100, (left: number, right: number) =>
@@ -24,5 +26,11 @@ export class HomeComponent {
 
   stop() {
     this.robotService.sendPower(0, 0);
+  }
+
+  loadImage() {
+    const images = this.robotService.world?.images;
+    if (!images) return;
+    this.currentImageId = images[images.length - 1].id;
   }
 }

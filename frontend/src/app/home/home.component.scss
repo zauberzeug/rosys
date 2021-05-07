@@ -8,9 +8,13 @@
     column-gap: 1em;
 
     * {
-      display: flex;
-      flex-direction: column;
-      row-gap: 1em;
+      flex: 1 0 1px;
+
+      img {
+        display: block;
+        height: 10em;
+        margin-top: 1em;
+      }
     }
   }
 

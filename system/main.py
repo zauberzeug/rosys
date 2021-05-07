@@ -1,5 +1,5 @@
 from icecream import ic, install
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi_socketio import SocketManager
 from typing import Set
@@ -95,6 +95,12 @@ def main():
 @app.get("/world", response_model=World)
 def get_world():
     return jsonable_encoder(runtime.world)
+
+
+@app.get("/image/{id}")
+def get_image(id):
+    print("IMAGE!")
+    return Response(content=runtime.world.image_data[id], media_type='image/jpeg')
 
 
 if __name__ == "__main__":

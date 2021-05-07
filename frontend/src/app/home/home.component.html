@@ -17,6 +17,11 @@ temp  = {{ robotService.world.robot.temperature | number: "0.1-1" }} C
     <span>Cameras:</span>
     <pre *ngFor="let camera of robotService.cameras">{{ camera | json }}</pre>
   </div>
+
+  <div class="image">
+    <button (click)="loadImage()">Refresh</button>
+    <img *ngIf="currentImageId" src="api/image/{{ currentImageId }}" />
+  </div>
 </div>
 
 <div class="actions">
