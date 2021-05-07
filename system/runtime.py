@@ -35,16 +35,16 @@ class Runtime:
             self.esp,
             self.automator,
         ]
-
         if mode == Mode.REAL:
-            self.camera_scanner = CameraScanner()
-            self.camera_downloader = CameraDownloader()
-            self.detector = Detector()
-
-            self.actors.extend([self.camera_scanner, self.camera_downloader, self.detector])
+            self.actors.extend([
+                CameraScanner(),
+                CameraDownloader(),
+                Detector(),
+            ])
         else:
-            self.cameras_mock = CamerasMock()
-            self.actors.append(self.cameras_mock)
+            self.actors.extend([
+                CamerasMock()
+            ])
 
     async def pause(self):
         self.world.state = State.PAUSED

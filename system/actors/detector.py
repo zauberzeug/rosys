@@ -19,18 +19,19 @@ class Detector(Actor):
         if not downloader.images:
             return
 
-        img = downloader.images.pop()
-        headers = {'mac': img.mac}
-        data = {'file': img.data}
+        image = downloader.images.pop()
+
+        url = 'http://localhost:8004/detect'
+        headers = {'mac': image.mac}
+        data = {'file': image.data}
 
         helpers.measure()
         try:
-            async with self.session.post('http://localhost:8004/detect', data=data, headers=headers) as response:
-
-                data = await response.json()
-                ic(data)
+            async with self.session.post(url, data=data, headers=headers) as response:
+                detections = await response.json()
+                ic(detections)
         except:
             helpers.print_stacktrace()
             # await self.sleep(0.1)
-
-        helpers.measure()
+        finally:
+            helpers.measure()
