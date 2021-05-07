@@ -1,0 +1,21 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  row-gap: 1em;
+
+  .top {
+    display: flex;
+    column-gap: 1em;
+
+    * {
+      display: flex;
+      flex-direction: column;
+      row-gap: 1em;
+    }
+  }
+
+  .actions {
+    display: flex;
+    column-gap: 1em;
+  }
+}
