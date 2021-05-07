@@ -39,13 +39,16 @@ class CameraDownloader(Actor):
                 end_time = world.time
                 helpers.measure()
             except pycurl.error:
-                logging.warning('image download error from {url}')
+                logging.warning(f'image download error from {url}')
                 continue
             # jpeg_header = simplejpeg.decode_jpeg_header(content)
             # ic(header)
             # ic(jpeg_header)
             time = (start_time + end_time) / 2.0  # TODO: improve accuracy via clock synchronization
             self.images.append(Image(time=time, mac=header['mac'], data=content))
+
+        while self.images and self.images[0].time < world.time - 10.0:
+            self.images.pop(0)
 
     def get(self, url, timeout=1):
 
