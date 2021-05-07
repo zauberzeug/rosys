@@ -19,6 +19,10 @@ then
     echo "  `basename $0` (e | exec)   <container> <command>  Execute command"
     echo "  `basename $0` (a | attach) <container>            Attach to container with shell"
     echo
+    echo "  `basename $0` prune      Remove all unused containers, networks and images"
+    echo "  `basename $0` stopall    Stop all running containers (system-wide!)"
+    echo "  `basename $0` killall    Kill all running containers (system-wide!)"
+    echo
     echo "Arguments:"
     echo
     echo "  containers    One or more containers (omit to affect all containers)"
@@ -83,6 +87,15 @@ case $cmd in
         ;;
     a | attach)
         docker-compose $compose_args exec $cmd_args /bin/bash
+        ;;
+    prune)
+        docker system prune
+        ;;
+    stopall)
+        docker stop $(docker ps -aq)
+        ;;
+    killall)
+        docker kill $(docker ps -aq)
         ;;
     *)
         echo "Unsupported command \"$cmd\""
