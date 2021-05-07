@@ -19,4 +19,17 @@ export class World {
     );
     return new World(w.mode, w.state, w.time, Robot.fromDict(w.robot), cameras);
   }
+
+  updateFromDict(w: any) {
+    if (w.mode) this.mode = w.mode;
+    if (w.state) this.state = w.state;
+    if (w.time) this.time = w.time;
+    if (w.robot) this.robot = Robot.fromDict(w.robot);
+    if (w.cameras) {
+      const cameras: { [mac: string]: Camera } = {};
+      Object.values(w.cameras).forEach(
+        (c: any) => (cameras[c["mac"]] = Camera.fromDict(c))
+      );
+    }
+  }
 }

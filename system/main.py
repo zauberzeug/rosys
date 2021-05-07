@@ -1,3 +1,4 @@
+from icecream import ic, install
 from fastapi import FastAPI
 from fastapi.encoders import jsonable_encoder
 from fastapi_socketio import SocketManager
@@ -15,6 +16,9 @@ from automations.spline import spline
 
 import uvloop
 uvloop.install()
+
+ic("Installing icecream...")
+install()
 
 
 app = FastAPI()
@@ -52,10 +56,16 @@ def resume(*_):
     runtime.resume()
 
 
-async def do_updates():
+async def broadcast_10Hz():
+    while True:
+        await sio.emit('world_part', jsonable_encoder(runtime.world, exclude={'cameras', 'mode'}))
+        await asyncio.sleep(0.1)
+
+
+async def broadcast_1Hz():
     while True:
         await sio.emit('world', jsonable_encoder(runtime.world))
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(1.0)
 
 
 tasks = []
@@ -68,7 +78,8 @@ async def startup():
     # loop.set_debug(True) # NOTE this makes execution slow -- use with care
 
     tasks.append(task_logger.create_task(runtime.run()))
-    tasks.append(task_logger.create_task(do_updates()))
+    tasks.append(task_logger.create_task(broadcast_10Hz()))
+    tasks.append(task_logger.create_task(broadcast_1Hz()))
 
 
 @app.on_event("shutdown")

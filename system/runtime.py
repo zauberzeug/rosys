@@ -1,15 +1,14 @@
-from actors.actor import Actor
-from actors.detector import Detector
-import icecream
 import sys
 import time
 import asyncio
 import task_logger
 import logging
 from typing import get_type_hints
+from actors.actor import Actor
+from actors.detector import Detector
 from actors.esp import SerialEsp, MockedEsp
 from actors.automator import Automator
-from actors.camera_scanner import CameraScanner, NotFound
+from actors.camera_scanner import CameraScanner
 from actors.camera_downloader import CameraDownloader
 from actors.cameras_mock import CamerasMock
 from world.world import World
@@ -77,9 +76,11 @@ class Runtime:
             interval = actor.interval
 
             if actor.interval == 0 and dt < 0.1:
-                logging.warning(
-                    f'{type(actor).__name__} would be called to frequently because it only took {dt*1000:.0f} ms; delaying this step for 100 ms')
                 interval = 0.1
+                logging.warning(
+                    f'{type(actor).__name__} would be called to frequently ' +
+                    f'because it only took {dt*1000:.0f} ms; ' +
+                    f'delaying this step for {(interval - dt)*1000:.0f} ms')
             elif dt > actor.interval > 0:
                 logging.warning(f'{type(actor).__name__} took {dt} s')
 

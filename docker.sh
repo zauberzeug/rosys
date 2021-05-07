@@ -6,7 +6,7 @@ then
     echo
     echo "  `basename $0` (b | build)   [<containers>]      Build or rebuild"
     echo "  `basename $0` (u | up)      [<containers>]      Create and start"
-    echo "  `basename $0` (U | ub)      [<containers>]      Create and start (force build)"
+    echo "  `basename $0` (U | upbuild) [<containers>]      Create and start (force build)"
     echo "  `basename $0` (d | down)    [<containers>]      Stop and remove"
     echo "  `basename $0` (s | start)   [<containers>]      Start"
     echo "  `basename $0` (r | restart) [<containers>]      Restart"
@@ -18,6 +18,10 @@ then
     echo "  `basename $0` (l | log)    <container>            Show log tail (last 100 lines)"
     echo "  `basename $0` (e | exec)   <container> <command>  Execute command"
     echo "  `basename $0` (a | attach) <container>            Attach to container with shell"
+    echo
+    echo "  `basename $0` prune      Remove all unused containers, networks and images"
+    echo "  `basename $0` stopall    Stop all running containers (system-wide!)"
+    echo "  `basename $0` killall    Kill all running containers (system-wide!)"
     echo
     echo "Arguments:"
     echo
@@ -83,6 +87,15 @@ case $cmd in
         ;;
     a | attach)
         docker-compose $compose_args exec $cmd_args /bin/bash
+        ;;
+    prune)
+        docker system prune
+        ;;
+    stopall)
+        docker stop $(docker ps -aq)
+        ;;
+    killall)
+        docker kill $(docker ps -aq)
         ;;
     *)
         echo "Unsupported command \"$cmd\""

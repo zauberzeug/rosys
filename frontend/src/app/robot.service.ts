@@ -15,6 +15,7 @@ export class RobotService {
 
   constructor(private socket: WrappedSocket) {
     socket.on("world", (data: any) => (this.world = World.fromDict(data)));
+    socket.on("world_part", (data: any) => this.world?.updateFromDict(data));
   }
 
   sendPower(left: number, right: number) {
