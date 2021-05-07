@@ -2,9 +2,8 @@ import asyncio
 from typing import List
 import pycurl
 import io
+import logging
 from pydantic.main import BaseModel
-import simplejpeg
-from icecream import ic
 from actors.actor import Actor
 from world.world import World
 import helpers
@@ -12,8 +11,9 @@ import helpers
 
 class Image(BaseModel):
 
-    data: bytes
+    time: float
     mac: str
+    data: bytes
 
 
 class CameraDownloader(Actor):
@@ -34,16 +34,18 @@ class CameraDownloader(Actor):
             loop = asyncio.get_event_loop()
             try:
                 helpers.measure()
+                start_time = world.time
                 header, content = await loop.run_in_executor(None, self.get, url, timeout)
+                end_time = world.time
                 helpers.measure()
             except pycurl.error:
-                ic('image download error from {url}')
+                logging.warning('image download error from {url}')
                 continue
-            jpeg_header = simplejpeg.decode_jpeg_header(content)
+            # jpeg_header = simplejpeg.decode_jpeg_header(content)
             # ic(header)
             # ic(jpeg_header)
-
-            self.images.append(Image(data=content, mac=header['mac']))
+            time = (start_time + end_time) / 2.0  # TODO: improve accuracy via clock synchronization
+            self.images.append(Image(time=time, mac=header['mac'], data=content))
 
     def get(self, url, timeout=1):
 
