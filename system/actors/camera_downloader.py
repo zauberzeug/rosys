@@ -37,7 +37,7 @@ class CameraDownloader(Actor):
                 header, content = await loop.run_in_executor(None, self.get, url, timeout)
                 helpers.measure()
             except pycurl.error:
-                ic('image download error')
+                ic('image download error from {url}')
                 continue
             jpeg_header = simplejpeg.decode_jpeg_header(content)
             # ic(header)

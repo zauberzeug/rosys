@@ -17,6 +17,7 @@ def measure(reset: bool = False):
 
 
 def print_stacktrace():
-    print("-"*60)
+
+    print("-" * 60)
     traceback.print_exc(file=sys.stdout)
-    print("-"*60, flush=True)
+    print("-" * 60, flush=True)
