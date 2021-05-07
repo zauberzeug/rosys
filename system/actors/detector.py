@@ -19,9 +19,9 @@ class Detector(Actor):
         if not downloader.images:
             return
 
-        img = downloader.images.pop()
-        headers = {'mac': img.mac}
-        data = {'file': img.data}
+        image = downloader.images.pop()
+        headers = {'mac': image.mac}
+        data = {'file': image.data}
 
         helpers.measure()
         try:

@@ -10,7 +10,7 @@ from world.world import World
 import helpers
 
 
-class Img(BaseModel):
+class Image(BaseModel):
 
     data: bytes
     mac: str
@@ -37,13 +37,13 @@ class CameraDownloader(Actor):
                 header, content = await loop.run_in_executor(None, self.get, url, timeout)
                 helpers.measure()
             except pycurl.error:
-                ic('img download error')
+                ic(f'img download error from {url}')
                 continue
             jpeg_header = simplejpeg.decode_jpeg_header(content)
             # ic(header)
             # ic(jpeg_header)
 
-            self.images.append(Img(data=content, mac=header['mac']))
+            self.images.append(Image(data=content, mac=header['mac']))
 
     def get(self, url, timeout=1):
 
