@@ -111,7 +111,7 @@ public:
         {
             this->torque(atof(parameters.c_str()));
         }
-        else if (command == "home")
+        else if (command == "home" and this->state != HOME)
         {
             this->home();
         }
