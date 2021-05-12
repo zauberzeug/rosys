@@ -54,7 +54,7 @@ public:
         }
 
         if (this->state == HOME and
-            std::abs(this->angle) < this->tolerance)
+            std::abs(this->angle) > this->tolerance)
         {
             this->state = STOP;
         }
