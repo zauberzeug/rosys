@@ -1,8 +1,8 @@
-# Robot Brain
+# Rosys - Zauberzeug Robot System
 
 ## Starting
 
-There are some specialities needed to start the robot brain code in different environments. To simplify the usage we wrapped this in a script `./docker.sh`. Highlevel overview
+There are some specialities needed to start the rosys code in different environments. To simplify the usage we wrapped this in a script `./docker.sh`. Highlevel overview
 
 - there is no host network on Mac so the conf is overwritten (on real robots it's necccessary to scan for cameras)
 - the services will start automatically on jetson when rebooting or crashing to simplify work with real robots
