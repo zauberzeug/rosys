@@ -31,11 +31,11 @@ then
     exit
 fi
 
-# sourcing .env file to get configuration
+# sourcing .env file to get configuration (see README.md)
 . .env
 
 compose_args="-p rosys"
-[[ $USE_CAMS ]] && compose_args="$compose_args --profile cams"
+[ "$USE_CAMS" = true ] && compose_args="$compose_args --profile cams"
 
 os=`uname`
 case $os in
