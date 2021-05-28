@@ -1,6 +1,7 @@
 import sys
 import time
 import asyncio
+import os
 import task_logger
 import logging
 from typing import get_type_hints
@@ -37,16 +38,18 @@ class Runtime:
             self.esp,
             self.automator,
         ]
-        if mode == Mode.REAL:
-            self.actors.extend([
-                CameraScanner(),
-                CameraDownloader(),
-                Detector(),
-            ])
-        else:
-            self.actors.extend([
-                CamerasMock()
-            ])
+
+        if os.getenv("USE_CAMS", 'False').lower() in ('true', '1', 't'):
+            if mode == Mode.REAL:
+                self.actors.extend([
+                    CameraScanner(),
+                    CameraDownloader(),
+                    Detector(),
+                ])
+            else:
+                self.actors.extend([
+                    CamerasMock()
+                ])
 
     async def pause(self):
         self.world.state = State.PAUSED

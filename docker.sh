@@ -31,7 +31,12 @@ then
     exit
 fi
 
-compose_args="-p robot-brain"
+# sourcing .env file to get configuration
+. .env
+
+compose_args="-p rosys"
+[[ $USE_CAMS ]] && compose_args="$compose_args --profile cams"
+
 os=`uname`
 case $os in
     Linux)
