@@ -14,7 +14,20 @@ sudo echo 1 > /sys/class/gpio/gpio$g0/value
 sudo echo 0 > /sys/class/gpio/gpio$en/value
 
 # flash ESP with zauberzeug-robot-brain.bin
-scripts/esptool.py --chip esp32 --port /dev/ttyTHS1 --baud 921600 --before default_reset --after hard_reset write_flash -z --flash_mode dio --flash_freq 40m --flash_size detect 0x10000 zauberzeug-robot-brain.bin
+~/scripts/esptool.py \
+	--chip esp32 \
+	--port /dev/ttyTHS1 \
+	--baud 921600 \
+	--before default_reset \
+	--after hard_reset \
+	write_flash \
+	-z \
+	--flash_mode dio \
+	--flash_freq 40m \
+	--flash_size detect \
+	0x1000 bootloader.bin \
+	0x8000 partitions_singleapp.bin \
+	0x10000 zauberzeug-robot-brain.bin
 
 # bring ESP back into normal operation mode
 sudo echo 0 > /sys/class/gpio/gpio$g0/value

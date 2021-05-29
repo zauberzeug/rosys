@@ -9,3 +9,4 @@ sdkconfig.old
 config.txt
 config.*.txt
 *.swp
+*.bin
