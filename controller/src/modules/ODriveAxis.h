@@ -206,15 +206,12 @@ public:
 
     void speed(float velocity)
     {
-        this->setMode(8, 2, 2); // AXIS_STATE_CLOSED_LOOP_CONTROL, CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_VEL_RAMP
+        this->setMode(8, 2, 1); // AXIS_STATE_CLOSED_LOOP_CONTROL, CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_PASSTHROUGH
 
         uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         float vel = velocity / this->mPerTick;
         std::memcpy(data, &vel, 4);
         this->can->send(this->can_id + 0x00d, data); // "Set Input Vel"
-        float limit = fabs(vel * 2);
-        std::memcpy(data, &limit, 4);
-        this->can->send(this->can_id + 0x00f, data); // "Set Velocity Limit"
         this->state = MOVE;
     }
 
@@ -236,9 +233,6 @@ public:
         float vel = this->homeSpeed / this->mPerTick;
         std::memcpy(data, &vel, 4);
         this->can->send(this->can_id + 0x00d, data); // "Set Input Vel"
-        float limit = fabs(vel * 2);
-        std::memcpy(data, &limit, 4);
-        this->can->send(this->can_id + 0x00f, data); // "Set Velocity Limit"
         this->state = HOMING;
     }
 
