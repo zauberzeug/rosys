@@ -1,6 +1,6 @@
 from pydantic import BaseModel
-from world.pose import Pose
-from world.velocity import Velocity
+from .pose import Pose
+from .velocity import Velocity
 
 
 class Robot(BaseModel):

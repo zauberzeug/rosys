@@ -1,5 +1,5 @@
 import pytest
-from runtime import Runtime
+from ..runtime import Runtime
 
 
 @pytest.mark.asyncio

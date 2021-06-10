@@ -2,20 +2,20 @@ import sys
 import time
 import asyncio
 import os
-import task_logger
+from . import task_logger
 import logging
 from typing import get_type_hints
-from actors.actor import Actor
-from actors.detector import Detector
-from actors.esp import SerialEsp, MockedEsp
-from actors.automator import Automator
-from actors.camera_scanner import CameraScanner
-from actors.camera_downloader import CameraDownloader
-from actors.cameras_mock import CamerasMock
-from world.world import World
-from world.robot import Robot
-from world.state import State
-from world.mode import Mode
+from .actors.actor import Actor
+from .actors.detector import Detector
+from .actors.esp import SerialEsp, MockedEsp
+from .actors.automator import Automator
+from .actors.camera_scanner import CameraScanner
+from .actors.camera_downloader import CameraDownloader
+from .actors.cameras_mock import CamerasMock
+from .world.world import World
+from .world.robot import Robot
+from .world.state import State
+from .world.mode import Mode
 
 
 class Runtime:

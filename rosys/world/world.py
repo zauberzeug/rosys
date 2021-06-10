@@ -1,10 +1,10 @@
 from pydantic import BaseModel
 from typing import List, Dict
-from world.state import State
-from world.mode import Mode
-from world.robot import Robot
-from world.camera import Camera
-from world.image import Image
+from .state import State
+from .mode import Mode
+from .robot import Robot
+from .camera import Camera
+from .image import Image
 
 
 class World(BaseModel):

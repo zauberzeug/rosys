@@ -2,10 +2,10 @@ import asyncio
 import aioserial
 import time
 import numpy as np
-from world.world import World
-from world.velocity import Velocity
-from actors.actor import Actor
-from actors.odometer import Odometer
+from ..world.world import World
+from ..world.velocity import Velocity
+from .actor import Actor
+from .odometer import Odometer
 
 
 class Esp(Actor):

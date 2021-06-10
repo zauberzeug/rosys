@@ -1,4 +1,4 @@
-from world.pose import Pose
+from ...world.pose import Pose
 
 
 class Carrot:
