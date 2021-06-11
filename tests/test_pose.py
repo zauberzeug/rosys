@@ -1,5 +1,5 @@
 import pytest
-from ..world.pose import Pose
+from rosys.world.pose import Pose
 
 
 def test_pose():

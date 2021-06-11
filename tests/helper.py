@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from ..runtime import Runtime
+from rosys.runtime import Runtime
 
 global_runtime: Runtime = None
 
