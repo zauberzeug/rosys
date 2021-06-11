@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from nicegui import ui
-import justpy as jp
 import os
 from rosys.runtime import Runtime
 from rosys.world.mode import Mode
@@ -22,7 +21,4 @@ Joystick(size=50, color='blue', steerer=runtime.steerer)
 three = Three(runtime.world.robot.pose)
 ui.timer(0.05, lambda: three.move_robot(runtime.world.robot.pose))
 
-
-@jp.app.on_event('startup')
-def startup():
-    jp.run_task(runtime.run())
+ui.on_startup(runtime.run())
