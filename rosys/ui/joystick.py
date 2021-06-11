@@ -16,11 +16,11 @@ class Joystick(NiceGuiJoystick):
 
     def handle_move(self, msg):
 
-        if msg.data.distance > 10:
+        if self.orientation is None and msg.data.distance > 10:
             self.orientation = -1 if msg.data.direction.angle == 'down' else 1
 
         if self.orientation is not None and self.on_drive is not None:
-            self.on_drive(msg.data.vector.y, msg.data.vector.x * self.orientation)
+            self.on_drive(msg.data.vector.y, -msg.data.vector.x * self.orientation)
 
     def handle_end(self, _):
 
