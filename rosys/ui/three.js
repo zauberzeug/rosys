@@ -40,7 +40,7 @@ Vue.component("three", {
     orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
 
     const render = function () {
-      requestAnimationFrame(render);
+      requestAnimationFrame(() => setTimeout(() => render(), 1000 / 20));
       renderer.render(scene, camera);
     };
     render();
