@@ -4,6 +4,7 @@ import justpy as jp
 import os
 from rosys.runtime import Runtime
 from rosys.world.mode import Mode
+from rosys.ui.joystick import Joystick
 
 has_esp = os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0
 runtime = Runtime(Mode.REAL if has_esp else Mode.SIMULATION)
@@ -15,8 +16,7 @@ ui.timer(0.1, lambda: state.set_text(f'''
     y={runtime.world.robot.pose.y:.3f})
 '''))
 
-ui.slider(min=-1, max=1, step=0.1, value=0,
-          on_change=lambda e: jp.run_task(runtime.esp.power(e.value, e.value)))
+Joystick(size=50, color='blue', on_drive=lambda linear, angular: jp.run_task(runtime.esp.drive(linear, angular)))
 
 
 @jp.app.on_event('startup')
