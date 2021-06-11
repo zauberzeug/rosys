@@ -17,7 +17,7 @@ ui.timer(0.1, lambda: state.set_text(f'''
     y={runtime.world.robot.pose.y:.3f})
 '''))
 
-Joystick(size=50, color='blue', on_drive=lambda linear, angular: jp.run_task(runtime.esp.drive(linear, angular)))
+Joystick(size=50, color='blue', steerer=runtime.steerer)
 
 three = Three(runtime.world.robot.pose)
 ui.timer(0.05, lambda: three.move_robot(runtime.world.robot.pose))

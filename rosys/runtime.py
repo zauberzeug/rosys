@@ -1,12 +1,13 @@
 import sys
 import time
 import asyncio
-from . import task_logger
 import logging
 from typing import get_type_hints
+from . import task_logger
 from .actors.actor import Actor
 from .actors.detector import Detector
 from .actors.esp import SerialEsp, MockedEsp
+from .actors.steerer import Steerer
 from .actors.automator import Automator
 from .actors.camera_scanner import CameraScanner
 from .actors.camera_downloader import CameraDownloader
@@ -31,10 +32,12 @@ class Runtime:
             image_data={},
         )
         self.esp = SerialEsp() if mode == Mode.REAL else MockedEsp()
+        self.steerer = Steerer()
         self.automator = Automator()
 
         self.actors = [
             self.esp,
+            self.steerer,
             self.automator,
         ]
 
@@ -46,7 +49,7 @@ class Runtime:
             ])
         else:
             self.actors.extend([
-                CamerasMock()
+                CamerasMock(),
             ])
 
     async def pause(self):
