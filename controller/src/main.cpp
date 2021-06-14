@@ -104,6 +104,12 @@ void handleMsg(std::string multiMsg)
     }
 }
 
+void handleBluetoothMsg(std::string multiMsg)
+{
+    handleMsg(multiMsg);
+    safety->keep_alive();
+}
+
 void setup()
 {
     serial = new Serial(115200);
@@ -170,7 +176,7 @@ void loop()
 Module *createModule(std::string type, std::string name, std::string parameters)
 {
     if (type == "bluetooth")
-        return new Bluetooth(name, parameters, handleMsg);
+        return new Bluetooth(name, parameters, handleBluetoothMsg);
     else if (type == "led")
         return new Led(name, parameters);
     else if (type == "button")
