@@ -1,12 +1,12 @@
 import pytest
 import numpy as np
-from runtime import Runtime
-from automations.arc import arc
-from automations.square import square
-from automations.spline import spline
+from rosys.runtime import Runtime
+from rosys.automations.arc import arc
+from rosys.automations.square import square
+from rosys.automations.spline import spline
+from rosys.automations.navigation.spline import Spline
+from rosys.world.pose import Pose
 from tests.helper import assert_pose
-from world.pose import Pose
-from automations.navigation.spline import Spline
 
 
 @pytest.mark.asyncio

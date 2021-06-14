@@ -1,6 +1,6 @@
 import numpy as np
-from actors.esp import Esp
-from world.world import World
+from ..actors.esp import Esp
+from ..world.world import World
 
 
 async def arc(world: World, esp: Esp):

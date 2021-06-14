@@ -1,6 +1,6 @@
-from world.camera import Camera
-from world.world import World
-from actors.actor import Actor
+from ..world.camera import Camera
+from ..world.world import World
+from .actor import Actor
 
 
 class CamerasMock(Actor):

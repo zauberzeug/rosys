@@ -1,5 +1,5 @@
 from typing import Generator
-from runtime import Runtime, Mode
+from rosys.runtime import Runtime, Mode
 import pytest
 pytest.register_assert_rewrite("tests.helper")
 
