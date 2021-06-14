@@ -43,6 +43,8 @@ private:
         int16_t current2;
         int32_t countsPerSecond1;
         int32_t countsPerSecond2;
+        uint16_t temperature;
+        uint16_t voltage;
     } values;
 
     RoboClaw *claw;
@@ -94,13 +96,21 @@ private:
         if (not valid)
             return false;
 
+        valid = claw->ReadTemp(values.temperature);
+        if (not valid)
+            return false;
+
+        values.voltage = claw->ReadMainBatteryVoltage(&valid);
+        if (not valid)
+            return false;
+
         return true;
     }
 
     std::string getOutput()
     {
         char buffer[256];
-        std::sprintf(buffer, "%7d %7d %7d %7d %3d %3d %4d %4d %6x %-12s",
+        std::sprintf(buffer, "%7d %7d %7d %7d %3d %3d %4d %4d %.1f %.1f %6x %-12s",
             values.position1,
             values.position2,
             values.countsPerSecond1,
@@ -109,6 +119,8 @@ private:
             values.depth2,
             values.current1,
             values.current2,
+            0.1 * values.temperature,
+            0.1 * values.voltage,
             values.statusBits,
             state_to_string(state).c_str());
         return buffer;
