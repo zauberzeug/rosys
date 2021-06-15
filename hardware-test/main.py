@@ -35,6 +35,8 @@ def configure():
         for o, output in enumerate(socket.outputs):
             send(f'+new led OUT_{s+1}_{o+1} {output}')
         time.sleep(0.1)
+    send(f'+new button EN_1 34')
+    send(f'+new button EN_2 35')
     send('+set esp.ready=1')
     send('+set esp.24v=1')
     send('+set esp.outputModules=' + ','.join(inputs.keys()))
@@ -64,6 +66,7 @@ async def read():
             if line.startswith('esp get '):
                 words = line.split()
                 for i, (name, icon) in enumerate(inputs.items()):
+                    print(i, name, icon, words[3+i])
                     icon.visible = words[3+i] == '0'
     
 with ui.row():
@@ -90,6 +93,12 @@ with ui.row():
                     ui.label(name)
                     inputs[name] = ui.icon('lens')
                     inputs[name].visible = False
+    with ui.card():
+        for name in ['EN_1', 'EN_2']:
+            with ui.row():
+                ui.label(name)
+                inputs[name] = ui.icon('lens')
+                inputs[name].visible = False
     def read_modules():
         send('esp get')
     timer = ui.timer(0.5, read_modules)
