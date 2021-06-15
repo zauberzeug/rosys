@@ -1,11 +1,4 @@
 version: "3.9"
 services:
-  proxy:
+  rosys:
     network_mode: host
-
-  system:
-    network_mode: host
-
-  frontend:
-    network_mode: host
-
