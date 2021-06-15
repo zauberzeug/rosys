@@ -1,19 +1,11 @@
 version: "3.9"
 services:
-  proxy:
-    network_mode: host
-    restart: always
-
-  system:
-    network_mode: host
-    restart: always
-
-  frontend:
+  rosys:
     network_mode: host
     restart: always
 
   detector:
-    image: "zauberzeug/l4t-detection_node:nano-r32.4.4"
+    image: "zauberzeug/tkdnn_detection_node:latest"
     profiles: ["cams"]
     restart: always
     ports:
@@ -22,10 +14,8 @@ services:
       - SERVER_BASE_URL=https://learning-loop.ai
       - ORGANIZATION=zauberzeug
       - PROJECT=drawingbot
-      - USERNAME=zauberzeug
-      - PASSWORD=7GE7GSryJY5eUw96
     volumes:
-      - ./detector:/model
+      - ./detector:/data
     command: "/app/start.sh"
     deploy:
       resources:
