@@ -3,8 +3,19 @@ from nicegui import ui
 import justpy as jp
 import aioserial
 import asyncio
+from collections import namedtuple
 
 port = aioserial.AioSerial('/dev/ttyTHS1', baudrate=115200)
+
+Socket = namedtuple('Socket', ['inputs', 'outputs'])
+sockets = [
+    Socket(['MCP_A0', '26'], ['MCP_B7', '27']),
+    Socket(['36', '13'], ['5', '4']),
+    Socket(['MCP_A1', 'MCP_B6'], []),
+    Socket(['MCP_A3', 'MCP_A2'], ['MCP_B4', 'MCP_B5']),
+    Socket(['MCP_A5', 'MCP_A4'], ['MCP_B2', 'MCP_B3']),
+    Socket(['MCP_A7', 'MCP_A6'], ['MCP_B0', 'MCP_B1']),
+]
 
 def send(text):
 
@@ -15,10 +26,11 @@ def send(text):
 def configure():
 
     send('esp erase')
-    send('+new led led 27')
+    for s, socket in enumerate(sockets):
+        for o, output in enumerate(socket.outputs):
+            send(f'+new led out_{s+1}_{o+1} {output}')
     send('+set esp.ready=1')
     send('+set esp.24v=1')
-    send('+led on')
     send('esp restart')
 
 async def read():
@@ -46,6 +58,16 @@ async def read():
 message_input = ui.input(placeholder="Send message...", on_change=lambda e: send(e.value))
 
 ui.button('Configure', on_click=configure)
+
+with ui.row():
+    for s, socket in enumerate(sockets):
+        with ui.card():
+            ui.label(f'Socket {s+1}')
+            for o, output in enumerate(socket.outputs):
+                name = f'out_{s+1}_{o+1}'
+                with ui.row():
+                    ui.label(name)
+                    ui.toggle(['on', 'off', 'pulse'], on_change=lambda e,name=name: send(f'{name} {e.value}'))
 
 with ui.card():
     lines = []
