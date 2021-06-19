@@ -10,6 +10,8 @@ ENTRYPOINT ["sh", "/docker-entrypoint.sh"]
 
 WORKDIR /app/
 
+RUN python3 -m pip install --upgrade pip
+
 # We use Poetry for dependency management
 RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_HOME=/opt/poetry python && \
     cd /usr/local/bin && \
@@ -25,7 +27,7 @@ ARG INSTALL_DEV=false
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install -vvv --no-root ; else poetry install -vvv --no-root --no-dev ; fi"
 
 # our demo in main.py requires NiceGui for visualization in the browser
-RUN python3 -m pip install nicegui
+RUN python3 -m pip install 'nicegui==0.3.2'
 
 ADD ./rosys /app/rosys
 COPY  main.py start.sh /app/
