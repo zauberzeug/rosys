@@ -13,17 +13,32 @@ private:
     Port *dir_port;
     Port *pwm_port;
 
+    enum State
+    {
+        STOP = 0,
+        MOVE_FORWARD = 1,
+        MOVE_BACKWARD = 2,
+    };
+
 public:
     Motor(std::string name, std::string parameters) : Module(name)
     {
         this->dir_port = Port::fromString(cut_first_word(parameters, ','));
         this->pwm_port = Port::fromString(cut_first_word(parameters, ','));
+        this->state = STOP;
     }
 
     void setup()
     {
         this->dir_port->setup(false);
         this->pwm_port->setup(false);
+    }
+
+    std::string getOutput()
+    {
+        char buffer[256];
+        std::sprintf(buffer, "%d", this->state);
+        return buffer;
     }
 
     void handleMsg(std::string command, std::string parameters)
@@ -33,19 +48,17 @@ public:
             double pw = atof(parameters.c_str());
             this->dir_port->set_level(pw > 0);
             this->pwm_port->set_level(fabs(pw));
-            cprintln("%s %s completed", name.c_str(), command.c_str());
+            this->state = pw > 0 ? MOVE_FORWARD : MOVE_BACKWARD;
         }
         else if (command == "up")
         {
             // NOTE: deprecated
             handleMsg("pw", "1");
-            cprintln("%s %s completed", name.c_str(), command.c_str());
         }
         else if (command == "down")
         {
             // NOTE: deprecated
             handleMsg("pw", "-1");
-            cprintln("%s %s completed", name.c_str(), command.c_str());
         }
         else if (command == "stop")
         {
@@ -60,5 +73,6 @@ public:
     void stop()
     {
         this->pwm_port->set_level(0);
+        this->state = STOP;
     }
 };

@@ -28,7 +28,7 @@ private:
 
     float position = 0.0;
     float tickOffset = 0.0;
-    uint8_t error = 0;
+    uint32_t error = 0;
 
     unsigned long int lastHeartbeat = 0;
 
@@ -137,7 +137,7 @@ public:
     {
         if (can_id == this->can_id + 0x001)
         {
-            this->error = data[0];
+            std::memcpy(&this->error, data, 4);
             this->lastHeartbeat = millis();
         }
         if (can_id == this->can_id + 0x009)
