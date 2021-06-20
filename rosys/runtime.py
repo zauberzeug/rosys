@@ -17,7 +17,6 @@ from .world.robot import Robot
 from .world.state import State
 from .world.mode import Mode
 
-
 class Runtime:
 
     def __init__(self, mode: Mode):
@@ -62,12 +61,17 @@ class Runtime:
     async def run(self, seconds: float = sys.maxsize):
 
         end_time = self.world.time + seconds
-        tasks = [task_logger.create_task(self.advance_time(end_time))]
+        self.tasks = [task_logger.create_task(self.advance_time(end_time))]
 
         for actor in self.actors:
-            tasks.append(task_logger.create_task(self.repeat(actor, end_time)))
+            self.tasks.append(task_logger.create_task(self.repeat(actor, end_time)))
 
-        await asyncio.gather(*tasks)
+        await asyncio.gather(*self.tasks)
+
+
+    async def stop(self):
+        [ t.cancel() for t in self.tasks]
+
 
     async def repeat(self, actor: Actor, run_end_time: float):
 
@@ -83,7 +87,7 @@ class Runtime:
 
             if actor.interval == 0 and dt < 0.1:
                 interval = 0.1
-                logging.warning(
+                logging.info(
                     f'{type(actor).__name__} would be called to frequently ' +
                     f'because it only took {dt*1000:.0f} ms; ' +
                     f'delaying this step for {(interval - dt)*1000:.0f} ms')

@@ -27,7 +27,7 @@ ARG INSTALL_DEV=false
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install -vvv --no-root ; else poetry install -vvv --no-root --no-dev ; fi"
 
 # our demo in main.py requires NiceGui for visualization in the browser
-RUN python3 -m pip install 'nicegui==0.3.2'
+RUN python3 -m pip install 'nicegui==0.3.3'
 
 ADD ./rosys /app/rosys
 COPY  main.py start.sh /app/

@@ -22,3 +22,4 @@ three = Three(runtime.world.robot.pose)
 ui.timer(0.05, lambda: three.move_robot(runtime.world.robot.pose))
 
 ui.on_startup(runtime.run())
+ui.on_shutdown(runtime.stop())
