@@ -16,6 +16,9 @@ ui.timer(0.1, lambda: state.set_text(f'''
     y={runtime.world.robot.pose.y:.3f})
 '''))
 
+cams = ui.label()
+ui.timer(1, lambda: cams.set_text(f'cams: {runtime.world.cameras}'))
+
 Joystick(size=50, color='blue', steerer=runtime.steerer)
 
 three = Three(runtime.world.robot.pose)
