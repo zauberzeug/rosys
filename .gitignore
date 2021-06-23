@@ -135,3 +135,6 @@ backend/app/prof
 *.swp
 PythonImportHelper-v2-Completion.json
 .drone.yml
+
+# detector
+detector/
