@@ -22,7 +22,7 @@ ui.timer(1, lambda: cams.set_text(f'cams: {runtime.world.cameras}'))
 Joystick(size=50, color='blue', steerer=runtime.steerer)
 
 three = Three(runtime.world.robot.pose)
-ui.timer(0.05, lambda: three.move_robot(runtime.world.robot.pose))
+ui.timer(0.05, lambda: three.set_robot_pose(runtime.world.robot.pose))
 
 ui.on_startup(runtime.run())
 ui.on_shutdown(runtime.stop())

@@ -23,6 +23,9 @@ private:
         PULSE = 2,
     };
 
+    int level = 0;
+    unsigned long int lastChange = 0;
+
 public:
     Led(std::string name, std::string port) : Module(name)
     {
@@ -35,20 +38,18 @@ public:
         port->setup(false);
     }
 
-    int level()
-    {
-        if (state == ON)
-            return 1;
-        if (state == OFF)
-            return 0;
-        if (state == PULSE)
-            return sin(esp_timer_get_time() / interval * 2e-6 * M_PI) > 0 ? 1 : 0;
-        return -1;
-    }
-
     void loop()
     {
-        port->set_level(level());
+        if (state == OFF)
+            level = 0;
+        if (state == ON)
+            level = 1;
+        if (state == PULSE and millisSince(lastChange) > interval / 2.0 * 1000.0) {
+            level = 1 - level;
+            lastChange = millis();
+        }
+
+        port->set_level(level);
 
         Module::loop();
     }
@@ -56,7 +57,7 @@ public:
     std::string getOutput()
     {
         char buffer[256];
-        std::sprintf(buffer, "%d", this->level());
+        std::sprintf(buffer, "%d", this->level);
         return buffer;
     }
 

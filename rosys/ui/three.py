@@ -29,6 +29,6 @@ class Three(Element):
 
         super().__init__(ThreeView(robot_pose=robot_pose, follow_robot=follow_robot, on_click=on_click))
 
-    def move_robot(self, pose: Pose):
+    def set_robot_pose(self, pose: Pose):
 
         self.view.options.robot_pose = pose.dict()
