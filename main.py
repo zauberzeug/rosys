@@ -5,6 +5,8 @@ from rosys.runtime import Runtime
 from rosys.world.mode import Mode
 from rosys.ui.joystick import Joystick
 from rosys.ui.three import Three
+import icecream
+icecream.install()
 
 has_esp = os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0
 runtime = Runtime(Mode.REAL if has_esp else Mode.SIMULATION)
