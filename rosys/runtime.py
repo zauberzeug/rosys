@@ -9,6 +9,7 @@ from .actors.detector import Detector
 from .actors.esp import SerialEsp, MockedEsp
 from .actors.odometer import Odometer
 from .actors.steerer import Steerer
+from .actors.robot_locator import RobotLocator
 from .actors.automator import Automator
 from .actors.camera_scanner import CameraScanner
 from .actors.camera_downloader import CameraDownloader
@@ -37,29 +38,33 @@ class Runtime:
         self.esp = SerialEsp() if mode == Mode.REAL else MockedEsp()
         self.odometer = Odometer()
         self.steerer = Steerer()
+        self.robot_locator = RobotLocator()
         self.automator = Automator()
 
         self.actors = [
             self.esp,
             self.odometer,
             self.steerer,
+            self.robot_locator,
             self.automator,
         ]
-
-        if mode == Mode.REAL:
-            self.actors.extend([
-                CameraScanner(),
-                CameraDownloader(),
-                Detector(),
-            ])
-        else:
-            self.actors.extend([
-                CamerasMock(),
-            ])
 
         self.follow_ups = {
             self.esp.step: [self.odometer.update_pose],
         }
+
+        if mode == Mode.REAL:
+            detector = Detector()
+            self.actors.extend([
+                CameraScanner(),
+                CameraDownloader(),
+                detector,
+            ])
+            self.follow_ups[detector.step] = [self.robot_locator.find_robot]
+        else:
+            self.actors.extend([
+                CamerasMock(),
+            ])
 
     async def pause(self):
         self.world.state = State.PAUSED
@@ -100,8 +105,8 @@ class Runtime:
             try:
                 await actor.step(*params)
                 await self.call_targets(actor.step)
-            except Exception as e:
-                print_stacktrace(e)
+            except:
+                print_stacktrace()
             dt = self.world.time - start
 
             interval = actor.interval
