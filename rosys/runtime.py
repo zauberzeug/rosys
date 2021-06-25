@@ -2,11 +2,12 @@ import sys
 import time
 import asyncio
 import logging
-from typing import get_type_hints
+from typing import Awaitable, Callable, Union, get_type_hints
 from . import task_logger
 from .actors.actor import Actor
 from .actors.detector import Detector
 from .actors.esp import SerialEsp, MockedEsp
+from .actors.odometer import Odometer
 from .actors.steerer import Steerer
 from .actors.automator import Automator
 from .actors.camera_scanner import CameraScanner
@@ -16,6 +17,7 @@ from .world.world import World
 from .world.robot import Robot
 from .world.state import State
 from .world.mode import Mode
+from .helpers import print_stacktrace
 
 
 class Runtime:
@@ -33,11 +35,13 @@ class Runtime:
             image_data={},
         )
         self.esp = SerialEsp() if mode == Mode.REAL else MockedEsp()
+        self.odometer = Odometer()
         self.steerer = Steerer()
         self.automator = Automator()
 
         self.actors = [
             self.esp,
+            self.odometer,
             self.steerer,
             self.automator,
         ]
@@ -53,6 +57,10 @@ class Runtime:
                 CamerasMock(),
             ])
 
+        self.follow_ups = {
+            self.esp.step: [self.odometer.update_pose],
+        }
+
     async def pause(self):
         self.world.state = State.PAUSED
         await self.esp.drive(0, 0)
@@ -66,12 +74,21 @@ class Runtime:
         self.tasks = [task_logger.create_task(self.advance_time(end_time))]
 
         for actor in self.actors:
-            self.tasks.append(task_logger.create_task(self.repeat(actor, end_time)))
+            if actor.interval is not None:
+                self.tasks.append(task_logger.create_task(self.repeat(actor, end_time)))
 
         await asyncio.gather(*self.tasks)
 
     async def stop(self):
+
         [t.cancel() for t in self.tasks]
+
+    async def call_targets(self, trigger: Union[Callable, Awaitable]):
+
+        for target in self.follow_ups.get(trigger, []):
+            params = self.get_params(target)
+            await target(*params) if asyncio.iscoroutine(target) else target(*params)
+            self.call_targets(target)
 
     async def repeat(self, actor: Actor, run_end_time: float):
 
@@ -80,7 +97,11 @@ class Runtime:
         while self.world.time < run_end_time:
 
             start = self.world.time
-            await actor.step(*params)
+            try:
+                await actor.step(*params)
+                await self.call_targets(actor.step)
+            except Exception as e:
+                print_stacktrace(e)
             dt = self.world.time - start
 
             interval = actor.interval
@@ -109,7 +130,7 @@ class Runtime:
                 break
             await asyncio.sleep(0 if self.world.mode == Mode.TEST else 0.01)
 
-    def get_params(self, func):
+    def get_params(self, func: Union[Callable, Awaitable]):
 
         params = []
         for name, type_ in get_type_hints(func).items():

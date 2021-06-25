@@ -5,7 +5,6 @@ import numpy as np
 from ..world.world import World
 from ..world.velocity import Velocity
 from .actor import Actor
-from .odometer import Odometer
 
 
 class Esp(Actor):
@@ -15,7 +14,9 @@ class Esp(Actor):
     def __init__(self):
 
         super().__init__()
-        self.odometer = Odometer()
+
+    async def step(self):
+        pass
 
     async def drive(self, linear: float, angular: float):
 
@@ -63,7 +64,6 @@ class SerialEsp(Esp):
 
         world.robot.velocity.linear = linear
         world.robot.velocity.angular = angular
-        self.odometer.update_pose(world)
 
         world.robot.battery = battery
         world.robot.temperature = temperature
@@ -86,7 +86,6 @@ class MockedEsp(Esp):
 
         world.robot.velocity.linear = self._velocity.linear
         world.robot.velocity.angular = self._velocity.angular
-        self.odometer.update_pose(world)
         world.robot.battery = 25.0 + np.sin(0.1 * time.time()) + 0.02 * np.random.randn()
         world.robot.temperature = np.random.uniform(34, 35)
 
