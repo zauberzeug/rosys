@@ -14,5 +14,6 @@ class World(BaseModel):
     time: float
     robot: Robot
     cameras: Dict[str, Camera]
+    download_queue: List[str]
     images: List[Image]
     image_data: Dict[str, bytes]

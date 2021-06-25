@@ -18,6 +18,8 @@ ui.timer(0.1, lambda: state.set_text(f'''
     y={runtime.world.robot.pose.y:.3f})
 '''))
 
+ui.button('Download images', on_click=lambda: runtime.world.download_queue.extend(runtime.world.cameras.keys()))
+
 cams = ui.label()
 ui.timer(1, lambda: cams.set_text(f'cams: {runtime.world.cameras}'))
 

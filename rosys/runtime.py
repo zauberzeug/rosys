@@ -17,6 +17,7 @@ from .world.robot import Robot
 from .world.state import State
 from .world.mode import Mode
 
+
 class Runtime:
 
     def __init__(self, mode: Mode):
@@ -26,6 +27,7 @@ class Runtime:
             state=State.RUNNING,
             time=time.time(),
             robot=Robot(),
+            download_queue=[],
             cameras=[],
             images=[],
             image_data={},
@@ -68,10 +70,8 @@ class Runtime:
 
         await asyncio.gather(*self.tasks)
 
-
     async def stop(self):
-        [ t.cancel() for t in self.tasks]
-
+        [t.cancel() for t in self.tasks]
 
     async def repeat(self, actor: Actor, run_end_time: float):
 
