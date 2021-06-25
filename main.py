@@ -23,6 +23,17 @@ ui.button('Download images', on_click=lambda: runtime.world.download_queue.exten
 cams = ui.label()
 ui.timer(1, lambda: cams.set_text(f'cams: {runtime.world.cameras}'))
 
+
+def set_height(height):
+    for camera in runtime.world.cameras.values():
+        try:
+            camera.calibration.extrinsics.translation[2] = height
+        except AttributeError:
+            pass
+
+
+ui.number('Height [m]', on_change=lambda e: set_height(e.value))
+
 detections = ui.label()
 ui.timer(1, lambda: detections.set_text(f'images: {runtime.world.images}'))
 
