@@ -1,6 +1,6 @@
 FROM python:3.9-buster
 
-RUN apt update && apt install sudo vim less ack-grep rsync wget curl cmake iproute2 iw -y && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt install sudo libcurl4-openssl-dev libssl-dev vim less ack-grep rsync wget curl cmake iproute2 iw -y && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m pip install --upgrade pip
 

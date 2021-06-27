@@ -93,7 +93,7 @@ class Runtime:
         for target in self.follow_ups.get(trigger, []):
             params = self.get_params(target)
             await target(*params) if asyncio.iscoroutine(target) else target(*params)
-            self.call_targets(target)
+            await self.call_targets(target)
 
     async def repeat(self, actor: Actor, run_end_time: float):
 
