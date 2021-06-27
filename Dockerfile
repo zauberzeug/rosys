@@ -1,14 +1,6 @@
-FROM mrnr91/uvicorn-gunicorn-fastapi:python3.8
+FROM python:3.9-buster
 
-RUN apt update && apt install openssh-server sudo vim less ack-grep rsync wget curl cmake iproute2 iw -y
-# we configure the ssh server so we can remotely login via vscode for development
-RUN sed -i 's/#Port 22/Port 5022/' /etc/ssh/sshd_config
-COPY authorized_keys /root/.ssh/
-
-COPY entrypoint.sh /docker-entrypoint.sh
-ENTRYPOINT ["sh", "/docker-entrypoint.sh"]
-
-WORKDIR /app/
+RUN apt update && apt install sudo libcurl4-openssl-dev libssl-dev vim less ack-grep rsync wget curl cmake iproute2 iw -y && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m pip install --upgrade pip
 
@@ -18,8 +10,10 @@ RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-
     ln -s /opt/poetry/bin/poetry && \
     poetry config virtualenvs.create false
 
+WORKDIR /app/
+
 # Copy poetry.lock* in case it doesn't exist in the repo
-COPY ./pyproject.toml ./poetry.lock* /app/
+COPY ./pyproject.toml ./poetry.lock* ./
 RUN poetry config experimental.new-installer false
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
@@ -32,6 +26,5 @@ RUN python3 -m pip install 'nicegui==0.3.3'
 ADD ./rosys /app/rosys
 COPY  main.py start.sh /app/
 
-ENV PYTHONPATH=/app
-
 EXPOSE 80
+
