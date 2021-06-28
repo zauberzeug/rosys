@@ -27,6 +27,7 @@ jobs:
   slack:
     needs:
       - pytest
+    if: always() # also execute when pytest fails
     runs-on: ubuntu-latest
     steps:
       - name: Determine if we need to notify
