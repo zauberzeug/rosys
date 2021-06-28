@@ -5,7 +5,6 @@ on: [push]
 jobs:
   pytest:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
       - name: set up Python
@@ -26,10 +25,8 @@ jobs:
         run: pytest
 
   slack:
-    name: Post workflow status To Slack
     needs:
       - pytest
-    if: always()
     runs-on: ubuntu-latest
     steps:
       - name: Determine if we need to notify
