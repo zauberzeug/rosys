@@ -16,6 +16,8 @@ jobs:
         uses: abatilo/actions-poetry@v2.0.0
         with:
           poetry-version: "1.1.6"
+      - name: Install curl ssl
+        run: sudo apt-get install libcurl4-openssl-dev libssl-dev
       - name: build
         run: poetry install
       - name: test
