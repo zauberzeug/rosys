@@ -20,7 +20,7 @@ jobs:
         run: sudo apt-get install libcurl4-openssl-dev libssl-dev
       - name: install dependencies
         run: |
-        poetry config virtualenvs.create false --local
-        poetry install
+          poetry config virtualenvs.create false --local
+          poetry install
       - name: test
         run: pytest
