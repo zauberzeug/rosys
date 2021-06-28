@@ -43,4 +43,4 @@ jobs:
           repo_token: ${{ secrets.GIT_HUB_TOKEN }}
           slack_webhook_url: ${{ secrets.SLACK_ROBOTICS_CI_WEBHOOK }}
           channel: "robotik-ci"
-          name: "GitHub build bot"
+          name: "RoSys"

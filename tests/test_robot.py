@@ -27,7 +27,7 @@ async def test_drive(runtime: Runtime):
 
     await runtime.esp.drive(1.0, 0.0)
     await runtime.run(seconds=np.sqrt(2))
-    assert_pose(2.0, 2.0, deg=45, linear_tolerance=0.1)
+    assert_pose(2.0, 1.0, deg=45, linear_tolerance=0.1)
 
 
 @pytest.mark.asyncio
