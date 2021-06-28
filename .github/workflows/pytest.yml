@@ -24,3 +24,25 @@ jobs:
           poetry install
       - name: test
         run: pytest
+
+  slack:
+    name: Post workflow status To Slack
+    needs:
+      - pytest
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine if we need to notify
+        uses: Jimdo/should-i-notify-action@main
+        id: should_notify
+        with:
+          needs_context: ${{ toJson(needs) }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Slack workflow notification
+        if: steps.should_notify.outputs.should_send_message == 'yes'
+        uses: Gamesight/slack-workflow-status@master
+        with:
+          repo_token: ${{ secrets.GIT_HUB_TOKEN }}
+          slack_webhook_url: ${{ secrets.SLACK_NOTIFICATION_TOKEN }}
+          channel: "robotik-ci"
+          name: "GitHub build bot"
