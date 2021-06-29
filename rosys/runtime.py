@@ -6,6 +6,7 @@ from typing import Awaitable, Callable, Union, get_type_hints
 from . import task_logger
 from .actors.actor import Actor
 from .actors.detector import Detector
+from .actors.detector_simulator import DetectorSimulator
 from .actors.esp import SerialEsp, MockedEsp
 from .actors.odometer import Odometer
 from .actors.steerer import Steerer
@@ -43,30 +44,26 @@ class Runtime:
         self.robot_locator = RobotLocator()
         self.automator = Automator()
 
+        if mode == Mode.REAL:
+            detector = Detector()
+            camera_actors = [CameraScanner(), CameraDownloader()]
+        else:
+            detector = DetectorSimulator()
+            camera_actors = [CameraSimulator(['ff:ff:ff:ff:ff:ff'])]
+
         self.actors = [
             self.esp,
             self.odometer,
             self.steerer,
             self.robot_locator,
             self.automator,
+            *camera_actors,
         ]
 
         self.follow_ups = {
             self.esp.step: [self.odometer.update_pose],
+            detector.step: [self.robot_locator.find_robot],
         }
-
-        if mode == Mode.REAL:
-            detector = Detector()
-            self.actors.extend([
-                CameraScanner(),
-                CameraDownloader(),
-                detector,
-            ])
-            self.follow_ups[detector.step] = [self.robot_locator.find_robot]
-        else:
-            self.actors.extend([
-                CameraSimulator(['ff:ff:ff:ff:ff:ff']),
-            ])
 
     async def pause(self):
         self.world.state = State.PAUSED
