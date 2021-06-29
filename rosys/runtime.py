@@ -16,6 +16,7 @@ from .actors.camera_downloader import CameraDownloader
 from .actors.camera_simulator import CameraSimulator
 from .world.world import World
 from .world.robot import Robot
+from .world.marker import Marker
 from .world.state import State
 from .world.mode import Mode
 from .helpers import print_stacktrace
@@ -30,6 +31,7 @@ class Runtime:
             state=State.RUNNING,
             time=time.time(),
             robot=Robot(),
+            marker=Marker.four_points(0.24, 0.26, 0.41),
             download_queue=[],
             cameras=[],
             images=[],

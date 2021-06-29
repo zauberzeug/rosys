@@ -3,6 +3,7 @@ from typing import List, Dict
 from .state import State
 from .mode import Mode
 from .robot import Robot
+from .marker import Marker
 from .camera import Camera
 from .image import Image
 
@@ -13,6 +14,7 @@ class World(BaseModel):
     state: State
     time: float
     robot: Robot
+    marker: Marker
     cameras: Dict[str, Camera]
     download_queue: List[str]
     images: List[Image]
