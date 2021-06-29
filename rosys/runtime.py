@@ -63,7 +63,7 @@ class Runtime:
             self.follow_ups[detector.step] = [self.robot_locator.find_robot]
         else:
             self.actors.extend([
-                CameraSimulator('ff:ff:ff:ff:ff:ff'),
+                CameraSimulator(['ff:ff:ff:ff:ff:ff']),
             ])
 
     async def pause(self):
