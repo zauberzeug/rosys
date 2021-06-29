@@ -43,12 +43,11 @@ class Runtime:
         self.steerer = Steerer()
         self.robot_locator = RobotLocator()
         self.automator = Automator()
+        self.detector = Detector() if mode == Mode.REAL else DetectorSimulator()
 
         if mode == Mode.REAL:
-            detector = Detector()
             camera_actors = [CameraScanner(), CameraDownloader()]
         else:
-            detector = DetectorSimulator()
             camera_actors = [CameraSimulator(['ff:ff:ff:ff:ff:ff'])]
 
         self.actors = [
@@ -58,11 +57,12 @@ class Runtime:
             self.robot_locator,
             self.automator,
             *camera_actors,
+            self.detector,
         ]
 
         self.follow_ups = {
             self.esp.step: [self.odometer.update_pose],
-            detector.step: [self.robot_locator.find_robot],
+            self.detector.step: [self.robot_locator.find_robot],
         }
 
     async def pause(self):
