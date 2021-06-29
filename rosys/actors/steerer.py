@@ -16,8 +16,6 @@ class Steerer(Actor):
 
     def __init__(self):
 
-        super().__init__()
-
         self.state = State.IDLE
         self.orientation = None
         self.linear_speed = 0

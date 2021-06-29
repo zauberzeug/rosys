@@ -8,8 +8,9 @@ from rosys.ui.three import Three
 import icecream
 icecream.install()
 
-has_esp = os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0
-runtime = Runtime(Mode.REAL if has_esp else Mode.SIMULATION)
+# has_esp = os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0
+# runtime = Runtime(Mode.REAL if has_esp else Mode.SIMULATION)
+runtime = Runtime(Mode.SIMULATION)
 
 state = ui.label()
 ui.timer(0.1, lambda: state.set_text(f'''

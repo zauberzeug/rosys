@@ -13,7 +13,7 @@ from .actors.robot_locator import RobotLocator
 from .actors.automator import Automator
 from .actors.camera_scanner import CameraScanner
 from .actors.camera_downloader import CameraDownloader
-from .actors.cameras_mock import CamerasMock
+from .actors.camera_simulator import CameraSimulator
 from .world.world import World
 from .world.robot import Robot
 from .world.state import State
@@ -63,7 +63,7 @@ class Runtime:
             self.follow_ups[detector.step] = [self.robot_locator.find_robot]
         else:
             self.actors.extend([
-                CamerasMock(),
+                CameraSimulator('ff:ff:ff:ff:ff:ff'),
             ])
 
     async def pause(self):

@@ -11,10 +11,6 @@ class Esp(Actor):
 
     interval: float = 0.01
 
-    def __init__(self):
-
-        super().__init__()
-
     async def step(self):
         pass
 
@@ -31,7 +27,6 @@ class SerialEsp(Esp):
 
     def __init__(self):
 
-        super().__init__()
         self.aioserial = aioserial.AioSerial('/dev/esp', baudrate=115200)
 
     async def step(self, world: World):
