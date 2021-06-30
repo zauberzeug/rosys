@@ -8,7 +8,8 @@ Currently RoSys is meant to be run on the Zauberzeug Robot Brain
 
 ```bash
 sudo apt-get install libcurl4-openssl-dev libssl-dev # required for pycurl
-
+python3 -m pip install rosys
+python3 -m pip install nicegui # web user interface
 ```
 
 ## Development
