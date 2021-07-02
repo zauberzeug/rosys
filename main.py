@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-from controller.esptool import run
 from nicegui import ui
 import os
+import base64
 from rosys.runtime import Runtime
 from rosys.world.mode import Mode
 from rosys.ui.joystick import Joystick
 from rosys.ui.three import Three
-import base64
 
 import icecream
 icecream.install()
@@ -42,7 +41,7 @@ def update_camera_images():
         cam_image.source = None
         cam_image.id = None
         return
-    data = runtime.world.image_data.get(image.id, None)
+    data = runtime.world.image_data.get(image.id)
     if data is not None:
         encoded = base64.b64encode(data).decode("utf-8")
         cam_image.source = 'data:image/jpeg;base64,' + encoded
