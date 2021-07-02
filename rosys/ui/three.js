@@ -85,9 +85,18 @@ Vue.component("three", {
     }
 
     const jp_images = this.$props.jp_props.options.images;
+    console.log(jp_images);
+    if (jp_images == "None") return;
+    images.forEach((_, id) => {
+      if (!jp_images.some((image) => image.id == id)) {
+        console.log("remove", id);
+        scene.remove(images.get(id));
+        images.delete(id);
+      }
+    });
     jp_images.forEach((image) => {
       if (!images.has(image.id)) {
-        console.log("add", image.id);
+        console.log("add", image.id, image.time);
         const projection = image.camera.projection;
         const geometry = new THREE.BufferGeometry();
         const nI = projection[0].length;
@@ -140,13 +149,15 @@ Vue.component("three", {
         images.set(image.id, mesh);
       }
     });
-    images.forEach((_, id) => {
-      if (!jp_images.some((image) => image.id == id)) {
-        console.log("remove", id);
-        scene.remove(images.get(id));
-        images.delete(id);
-      }
-    });
+    const event = {
+      event_type: "imagesUpdated",
+      vue_type: this.$props.jp_props.vue_type,
+      id: this.$props.jp_props.id,
+      page_id: page_id,
+      websocket_id: websocket_id,
+      image_ids: jp_images.map((image) => image.id),
+    };
+    send_to_server(event, "event");
   },
 
   props: {

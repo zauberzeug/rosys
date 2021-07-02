@@ -14,16 +14,23 @@ class ThreeView(CustomView):
         super().__init__('three', __file__, [
             'https://cdn.jsdelivr.net/npm/three@0.129.0/build/three.min.js',
             'https://cdn.jsdelivr.net/npm/three@0.129.0/examples/js/controls/OrbitControls.js',
-        ], robot_pose=robot_pose.dict(), follow_robot=follow_robot, images=[], cameras={})
+        ], robot_pose=robot_pose.dict(), follow_robot=follow_robot, images="None")
 
         self.on_click = on_click
-        self.allowed_events = ['onClick']
-        self.initialize(temp=False, onClick=self.handle_click)
+        self.allowed_events = ['onClick', 'imagesUpdated']
+        self.initialize(temp=False, onClick=self.handle_click, imagesUpdated=self.handle_images_updated)
+        self.images_in_threejs = []
 
     def handle_click(self, msg):
 
         if self.on_click is not None:
             self.on_click(msg)
+
+    def handle_images_updated(self, msg):
+
+        self.images_in_threejs = msg.image_ids
+        ic("SET IMAGES TO NONE")
+        self.view.options.images = "None"
 
 
 class Three(Element):
@@ -38,17 +45,22 @@ class Three(Element):
         if self.view.options.robot_pose == new_pose:
             return False
         self.view.options.robot_pose = new_pose
+        self.view.options.images = "None"
 
     def update_images(self, images: list[Image], image_data: dict[str, bytes], cameras: dict[str, Camera]):
 
-        new_images = [
+        latest_images = {image.mac: image for image in images}
+        latest_image_ids = [image.id for image in latest_images.values()]
+        if latest_image_ids == self.view.images_in_threejs:
+            self.view.options.images = "None"
+            return
+
+        ic("SETTING IMAGES:", latest_image_ids)
+        self.view.options.images = [
             image.dict() | {
                 'data': 'data:image/jpeg;base64,' + base64.b64encode(image_data[image.id]).decode("utf-8"),
                 'camera': cameras[image.mac].dict(),
             }
-            for image in images
+            for image in latest_images.values()
             if image.id in image_data and image.mac in cameras and cameras[image.mac].projection is not None
         ]
-
-        if self.view.options.images != new_images:
-            self.view.options.images = new_images
