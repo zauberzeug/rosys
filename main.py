@@ -47,27 +47,46 @@ with ui.card().style('width:600px'):
 
     ui.button('Download images', on_click=lambda: runtime.world.download_queue.extend(runtime.world.cameras.keys()))
 
-    cam_image = ui.image()
+    with ui.image() as ui_image:
+        ui_image.id = None
+        svg = ui.svg().style('background:transparent')
 
     def update_camera_images():
 
         if not any(runtime.world.images):
-            cam_image.source = None
-            cam_image.id = None
-            return
-
-        image = runtime.world.images[0]
-        if cam_image.id == image.id:
             return False
 
-        data = runtime.world.image_data.get(image.id, None)
+        image = runtime.world.images[0]
+
+        data = runtime.world.image_data.get(image.id)
         if data is None:
             return False
 
+        if image.detections is None:
+            return False
+
+        if ui_image.id == image.id:
+            return False
+
         encoded = base64.b64encode(data).decode("utf-8")
-        cam_image.source = 'data:image/jpeg;base64,' + encoded
-        cam_image.id = image.id
+        ui_image.source = 'data:image/jpeg;base64,' + encoded
+        ui_image.id = image.id
         ic(image.detections)
+        svg_content = '<svg viewBox="0 0 1600 1200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">'
+        for d in image.detections:
+            svg_content += f'<rect x="{d.x}" y="{d.y}" width="{d.width}" height="{d.height}" stroke="red" fill="red" fill-opacity="10%" />'
+            c = {
+                'dirt': 'D',
+                'robot': 'R',
+                'person': 'P',
+                'marker_vorne': 'v',
+                'marker_mitte': 'm',
+                'marker_hinten_links': 'l',
+                'marker_hinten_rechts': 'r',
+            }.get(d.category_name) or ''
+            svg_content += f'<text x="{d.x+2}" y="{d.y+d.height-2}" fill="red">{c}</text>'
+        svg_content += '</svg>'
+        svg.content = svg_content
 
     ui.timer(1, lambda: update_camera_images())
 
