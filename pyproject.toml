@@ -22,6 +22,7 @@ opencv-contrib-python-headless = "^4.5.2"
 pycurl = "^7.43.0"
 pydantic = "^1.8.2"
 asyncio = "^3.4.3"
+Pillow = "^8.3.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.1"
