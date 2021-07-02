@@ -1,4 +1,5 @@
 from typing import Callable
+import base64
 from nicegui.elements.custom_view import CustomView
 from nicegui.elements.element import Element
 from ..world.pose import Pose
@@ -38,7 +39,16 @@ class Three(Element):
             return False
         self.view.options.robot_pose = new_pose
 
-    def update_images(self, images: list[Image], cameras: dict[str, Camera]):
+    def update_images(self, images: list[Image], image_data: dict[str, bytes], cameras: dict[str, Camera]):
 
-        self.view.options.images = [image.dict() for image in images]
-        self.view.options.cameras = {mac: camera.dict() for mac, camera in cameras.items()}
+        new_images = [
+            image.dict() | {
+                'data': 'data:image/jpeg;base64,' + base64.b64encode(image_data[image.id]).decode("utf-8"),
+                'camera': cameras[image.mac].dict(),
+            }
+            for image in images
+            if image.id in image_data and image.mac in cameras and cameras[image.mac].projection is not None
+        ]
+
+        if self.view.options.images != new_images:
+            self.view.options.images = new_images
