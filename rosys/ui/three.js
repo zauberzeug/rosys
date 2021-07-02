@@ -85,7 +85,9 @@ Vue.component("three", {
     const jp_images = this.$props.jp_props.options.images;
     jp_images.forEach((jp_image) => {
       if (!images.has(jp_image.id)) {
-        console.log("add", jp_image.id);
+        const camera = this.$props.jp_props.options.cameras[jp_image.mac];
+        if (!camera.projection) return;
+        console.log("add", jp_image.id, camera);
         images.set(jp_image.id, {});
       }
     });

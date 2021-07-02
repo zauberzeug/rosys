@@ -38,6 +38,7 @@ with ui.card():
         for camera in runtime.world.cameras.values():
             try:
                 camera.calibration.extrinsics.translation[2] = height
+                camera.projection = None
             except AttributeError:
                 pass
 
@@ -53,7 +54,7 @@ with ui.card().style('width:600px'):
 
     def update_camera_images():
 
-        three.update_images(runtime.world.images)
+        three.update_images(runtime.world.images, runtime.world.cameras)
 
         if not any(runtime.world.images):
             return False

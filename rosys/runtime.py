@@ -15,6 +15,7 @@ from .actors.automator import Automator
 from .actors.camera_scanner import CameraScanner
 from .actors.camera_downloader import CameraDownloader
 from .actors.camera_simulator import CameraSimulator
+from .actors.camera_projector import CameraProjector
 from .world.world import World
 from .world.robot import Robot
 from .world.marker import Marker
@@ -44,6 +45,7 @@ class Runtime:
         self.robot_locator = RobotLocator()
         self.automator = Automator()
         self.detector = Detector() if mode == Mode.REAL else DetectorSimulator()
+        self.camera_projector = CameraProjector()
 
         if mode == Mode.REAL:
             camera_actors = [CameraScanner(), CameraDownloader()]
@@ -57,6 +59,7 @@ class Runtime:
             self.robot_locator,
             self.automator,
             *camera_actors,
+            self.camera_projector,
             self.detector,
         ]
 

@@ -1,8 +1,9 @@
-from typing import Callable, List
+from typing import Callable
 from nicegui.elements.custom_view import CustomView
 from nicegui.elements.element import Element
 from ..world.pose import Pose
 from ..world.image import Image
+from ..world.camera import Camera
 
 
 class ThreeView(CustomView):
@@ -12,7 +13,7 @@ class ThreeView(CustomView):
         super().__init__('three', __file__, [
             'https://cdn.jsdelivr.net/npm/three@0.129.0/build/three.min.js',
             'https://cdn.jsdelivr.net/npm/three@0.129.0/examples/js/controls/OrbitControls.js',
-        ], robot_pose=robot_pose.dict(), follow_robot=follow_robot, images=[])
+        ], robot_pose=robot_pose.dict(), follow_robot=follow_robot, images=[], cameras={})
 
         self.on_click = on_click
         self.allowed_events = ['onClick']
@@ -37,6 +38,7 @@ class Three(Element):
             return False
         self.view.options.robot_pose = new_pose
 
-    def update_images(self, images: List[Image]):
+    def update_images(self, images: list[Image], cameras: dict[str, Camera]):
 
         self.view.options.images = [image.dict() for image in images]
+        self.view.options.cameras = {mac: camera.dict() for mac, camera in cameras.items()}
