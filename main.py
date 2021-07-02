@@ -29,18 +29,25 @@ ui.label('Cameras')
 cams = ui.label()
 ui.timer(1, lambda: cams.set_text(f'cams: {runtime.world.cameras}'))
 
-cam_image = ui.image().style('width:300px;height:200px')
+with ui.card().style('width:600px'):
+    cam_image = ui.image()
 
 
 def update_camera_images():
     if len(runtime.world.images) > 0:
         image = runtime.world.images[0]
+        if hasattr(cam_image, 'id') and cam_image.id == image.id:
+            return  # we do not need to update the same image again
     else:
+        cam_image.source = None
+        cam_image.id = None
         return
     data = runtime.world.image_data.get(image.id, None)
     if data is not None:
         encoded = base64.b64encode(data).decode("utf-8")
         cam_image.source = 'data:image/jpeg;base64,' + encoded
+        cam_image.id = image.id
+        ic(image.detections)
 
 
 ui.timer(1, lambda: update_camera_images())

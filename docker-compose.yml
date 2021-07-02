@@ -4,6 +4,7 @@ services:
     image: "rosys-dev:${TAG-latest}"
     volumes:
       - ./:/app
+      - dummy:/app/detector # hide original folder to not trigger uvicorn reloads through active learning
     devices:
       - "${ESP_SERIAL:-/dev/null}:/dev/esp"
     environment:
@@ -13,3 +14,6 @@ services:
       args:
         INSTALL_DEV: "true"
     command: /app/start.sh debug
+
+volumes:
+  dummy: {}

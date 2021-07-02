@@ -11,7 +11,6 @@ services:
     ports:
       - "8004:80"
     environment:
-      - SERVER_BASE_URL=https://learning-loop.ai
       - ORGANIZATION=zauberzeug
       - PROJECT=drawingbot
     volumes:
