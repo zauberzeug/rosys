@@ -1,7 +1,8 @@
-from typing import Callable
+from typing import Callable, List
 from nicegui.elements.custom_view import CustomView
 from nicegui.elements.element import Element
-from rosys.world.pose import Pose
+from ..world.pose import Pose
+from ..world.image import Image
 
 
 class ThreeView(CustomView):
@@ -11,7 +12,7 @@ class ThreeView(CustomView):
         super().__init__('three', __file__, [
             'https://cdn.jsdelivr.net/npm/three@0.129.0/build/three.min.js',
             'https://cdn.jsdelivr.net/npm/three@0.129.0/examples/js/controls/OrbitControls.js',
-        ], robot_pose=robot_pose.dict(), follow_robot=follow_robot)
+        ], robot_pose=robot_pose.dict(), follow_robot=follow_robot, images=[])
 
         self.on_click = on_click
         self.allowed_events = ['onClick']
@@ -31,4 +32,11 @@ class Three(Element):
 
     def set_robot_pose(self, pose: Pose):
 
-        self.view.options.robot_pose = pose.dict()
+        new_pose = pose.dict()
+        if self.view.options.robot_pose == new_pose:
+            return False
+        self.view.options.robot_pose = new_pose
+
+    def update_images(self, images: List[Image]):
+
+        self.view.options.images = [image.dict() for image in images]

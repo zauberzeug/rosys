@@ -53,6 +53,8 @@ with ui.card().style('width:600px'):
 
     def update_camera_images():
 
+        three.update_images(runtime.world.images)
+
         if not any(runtime.world.images):
             return False
 

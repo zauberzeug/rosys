@@ -1,9 +1,11 @@
 var camera;
 var robot;
 var orbitControls;
+var images = new Map();
 
 Vue.component("three", {
   template: `<canvas v-bind:id="jp_props.id"></div>`,
+
   mounted() {
     const scene = new THREE.Scene();
 
@@ -61,6 +63,7 @@ Vue.component("three", {
       send_to_server(event, "event");
     };
   },
+
   updated() {
     robot.position.x = this.$props.jp_props.options.robot_pose.x;
     robot.position.y = this.$props.jp_props.options.robot_pose.y;
@@ -68,6 +71,7 @@ Vue.component("three", {
       new THREE.Vector3(0, 0, 1),
       this.$props.jp_props.options.robot_pose.yaw
     );
+
     if (this.$props.jp_props.options.follow_robot) {
       const target = new THREE.Vector3(robot.position.x, robot.position.y, 0);
       orbitControls.target = orbitControls.target
@@ -77,7 +81,22 @@ Vue.component("three", {
       camera.lookAt(orbitControls.target);
       camera.updateProjectionMatrix();
     }
+
+    const jp_images = this.$props.jp_props.options.images;
+    jp_images.forEach((jp_image) => {
+      if (!images.has(jp_image.id)) {
+        console.log("add", jp_image.id);
+        images.set(jp_image.id, {});
+      }
+    });
+    images.forEach((_, id) => {
+      if (!jp_images.some((jp_image) => jp_image.id == id)) {
+        console.log("remove", id);
+        images.delete(id);
+      }
+    });
   },
+
   props: {
     jp_props: Object,
   },
