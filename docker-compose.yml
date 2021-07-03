@@ -5,6 +5,9 @@ services:
     volumes:
       - ./:/app
       - dummy:/app/detector # hide original folder to not trigger uvicorn reloads through active learning
+      - ~/.ssh:/root/.ssh
+      - ~/.gitconfig:/root/.gitconfig
+      - ~/.git-credentials:/root/.git-credentials
     devices:
       - "${ESP_SERIAL:-/dev/null}:/dev/esp"
     environment:
