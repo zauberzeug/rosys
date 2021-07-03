@@ -40,11 +40,15 @@ class Three(Element):
 
     def set_robot_pose(self, pose: Pose):
 
+        if self.view.options.images is not None:
+            return False  # NOTE: avoid updates to view options while images are transmitted
+
         new_pose = pose.dict()
         if self.view.options.robot_pose == new_pose:
             return False
         self.view.options.robot_pose = new_pose
         self.view.options.images = None
+        return False
 
     def update_images(self, images: list[Image], image_data: dict[str, bytes], cameras: dict[str, Camera]):
 
@@ -52,7 +56,7 @@ class Three(Element):
         latest_image_ids = [image.id for image in latest_images.values()]
         if latest_image_ids == self.view.images_in_threejs:
             self.view.options.images = None
-            return
+            return False
 
         self.view.options.images = [
             image.dict() | {
@@ -62,3 +66,4 @@ class Three(Element):
             for image in latest_images.values()
             if image.id in image_data and image.mac in cameras and cameras[image.mac].projection is not None
         ]
+        return False
