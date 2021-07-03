@@ -84,80 +84,77 @@ Vue.component("three", {
       camera.updateProjectionMatrix();
     }
 
-    const jp_images = this.$props.jp_props.options.images;
-    console.log(jp_images);
-    if (jp_images == null) return;
-    images.forEach((_, id) => {
-      if (!jp_images.some((image) => image.id == id)) {
-        console.log("remove", id);
-        scene.remove(images.get(id));
-        images.delete(id);
-      }
+    const remove_images = this.$props.jp_props.options.remove_images;
+    remove_images.forEach((id) => {
+      console.log("remove", id);
+      scene.remove(images.get(id));
+      images.delete(id);
     });
-    jp_images.forEach((image) => {
-      if (!images.has(image.id)) {
-        console.log("add", image.id, image.time);
-        const projection = image.camera.projection;
-        const geometry = new THREE.BufferGeometry();
-        const nI = projection[0].length;
-        const nJ = projection.length;
-        const vertices = [];
-        const indices = [];
-        const uvs = [];
-        for (let j = 0; j < nJ; ++j) {
-          for (let i = 0; i < nI; ++i) {
-            const X = (projection[j][i] || [0, 0])[0];
-            const Y = (projection[j][i] || [0, 0])[1];
-            vertices.push(X, Y, 0);
-            uvs.push(i / (nI - 1), j / (nJ - 1));
+    const add_images = this.$props.jp_props.options.add_images;
+    add_images.forEach((image) => {
+      console.log("add", image.id);
+      const projection = image.camera.projection;
+      const geometry = new THREE.BufferGeometry();
+      const nI = projection[0].length;
+      const nJ = projection.length;
+      const vertices = [];
+      const indices = [];
+      const uvs = [];
+      for (let j = 0; j < nJ; ++j) {
+        for (let i = 0; i < nI; ++i) {
+          const X = (projection[j][i] || [0, 0])[0];
+          const Y = (projection[j][i] || [0, 0])[1];
+          vertices.push(X, Y, 0);
+          uvs.push(i / (nI - 1), j / (nJ - 1));
+        }
+      }
+      for (let j = 0; j < nJ - 1; ++j) {
+        for (let i = 0; i < nI - 1; ++i) {
+          if (
+            projection[j][i] &&
+            projection[j][i + 1] &&
+            projection[j + 1][i] &&
+            projection[j + 1][i + 1]
+          ) {
+            const idx00 = i + j * nI;
+            const idx10 = i + j * nI + 1;
+            const idx01 = i + j * nI + nI;
+            const idx11 = i + j * nI + 1 + nI;
+            indices.push(idx00, idx10, idx01);
+            indices.push(idx10, idx11, idx01);
           }
         }
-        for (let j = 0; j < nJ - 1; ++j) {
-          for (let i = 0; i < nI - 1; ++i) {
-            if (
-              projection[j][i] &&
-              projection[j][i + 1] &&
-              projection[j + 1][i] &&
-              projection[j + 1][i + 1]
-            ) {
-              const idx00 = i + j * nI;
-              const idx10 = i + j * nI + 1;
-              const idx01 = i + j * nI + nI;
-              const idx11 = i + j * nI + 1 + nI;
-              indices.push(idx00, idx10, idx01);
-              indices.push(idx10, idx11, idx01);
-            }
-          }
-        }
-        geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
-        geometry.setAttribute(
-          "position",
-          new THREE.Float32BufferAttribute(vertices, 3)
-        );
-        geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-        geometry.computeVertexNormals();
-        geometry.computeFaceNormals();
-        const texture = loader.load(image.data);
-        texture.flipY = false;
-        texture.minFilter = THREE.LinearFilter;
-        const material = new THREE.MeshLambertMaterial({
-          map: texture,
-          side: THREE.DoubleSide,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh);
-        images.set(image.id, mesh);
       }
+      geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
+      geometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(vertices, 3)
+      );
+      geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+      geometry.computeVertexNormals();
+      geometry.computeFaceNormals();
+      const texture = loader.load(image.data);
+      texture.flipY = false;
+      texture.minFilter = THREE.LinearFilter;
+      const material = new THREE.MeshLambertMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+      });
+      const mesh = new THREE.Mesh(geometry, material);
+      scene.add(mesh);
+      images.set(image.id, mesh);
     });
-    const event = {
-      event_type: "imagesUpdated",
-      vue_type: this.$props.jp_props.vue_type,
-      id: this.$props.jp_props.id,
-      page_id: page_id,
-      websocket_id: websocket_id,
-      image_ids: jp_images.map((image) => image.id),
-    };
-    send_to_server(event, "event");
+    if (add_images.length || remove_images.length) {
+      const event = {
+        event_type: "imagesUpdated",
+        vue_type: this.$props.jp_props.vue_type,
+        id: this.$props.jp_props.id,
+        page_id: page_id,
+        websocket_id: websocket_id,
+        image_ids: Array.from(images.keys()),
+      };
+      send_to_server(event, "event");
+    }
   },
 
   props: {
