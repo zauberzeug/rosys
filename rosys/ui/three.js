@@ -86,7 +86,7 @@ Vue.component("three", {
 
     const jp_images = this.$props.jp_props.options.images;
     console.log(jp_images);
-    if (jp_images == "None") return;
+    if (jp_images == null) return;
     images.forEach((_, id) => {
       if (!jp_images.some((image) => image.id == id)) {
         console.log("remove", id);
