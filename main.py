@@ -27,23 +27,6 @@ with ui.card():
     three = Three(runtime.world.robot.pose)
     ui.timer(0.05, lambda: three.set_robot_pose(runtime.world.robot.pose))
 
-with ui.card():
-
-    ui.label('Cameras')
-
-    cams = ui.label()
-    ui.timer(1, lambda: cams.set_text(f'cams: {runtime.world.cameras}'))
-
-    def set_height(height):
-        for camera in runtime.world.cameras.values():
-            try:
-                camera.calibration.extrinsics.translation[2] = height
-                camera.projection = None
-            except AttributeError:
-                pass
-
-    ui.number('Height [m]', on_change=lambda e: set_height(e.value))
-
 with ui.card().style('width:600px'):
 
     ui.button('Download images', on_click=lambda: runtime.world.download_queue.extend(runtime.world.cameras.keys()))
@@ -54,12 +37,12 @@ with ui.card().style('width:600px'):
 
     def update_camera_images():
 
-        three.update_images(runtime.world.images, runtime.world.cameras)
+        three.update_images(runtime.world.images, runtime.world.image_data, runtime.world.cameras)
 
         if not any(runtime.world.images):
             return False
 
-        image = runtime.world.images[0]
+        image = runtime.world.images[-1]
 
         data = runtime.world.image_data.get(image.id)
         if data is None:
@@ -91,7 +74,24 @@ with ui.card().style('width:600px'):
         svg_content += '</svg>'
         svg.content = svg_content
 
-    ui.timer(1, lambda: update_camera_images())
+    ui.timer(1.0, update_camera_images)
+
+with ui.card():
+
+    ui.label('Cameras')
+
+    cams = ui.label()
+    ui.timer(1, lambda: cams.set_text(f'cams: {runtime.world.cameras}'))
+
+    def set_height(height):
+        for camera in runtime.world.cameras.values():
+            try:
+                camera.calibration.extrinsics.translation[2] = height
+                camera.projection = None
+            except AttributeError:
+                pass
+
+    ui.number('Height [m]', on_change=lambda e: set_height(e.value))
 
 ui.on_startup(runtime.run())
 ui.on_shutdown(runtime.stop())

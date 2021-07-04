@@ -1,6 +1,6 @@
 # RoSys - Zauberzeug Robot System
 
-Currently RoSys is meant to be run on the Zauberzeug Robot Brain
+Currently RoSys is meant to be run on the Zauberzeug Robot Brain.
 
 ## Usage
 
