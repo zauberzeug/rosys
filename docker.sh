@@ -32,7 +32,7 @@ then
 fi
 
 # sourcing .env file to get configuration (see README.md)
-. .env
+. .env || echo "you can provide an .env file to configure RoSys"
 
 compose_args="-p rosys"
 [ "$USE_CAMS" = true ] && compose_args="$compose_args --profile cams"
@@ -50,6 +50,8 @@ case $os in
         echo "Unsupported OS: $os"
         exit 1
 esac
+
+set -x
 
 cmd=$1
 cmd_args=${@:2}
