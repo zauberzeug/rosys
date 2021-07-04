@@ -55,12 +55,14 @@ cmd=$1
 cmd_args=${@:2}
 case $cmd in
     b | build)
-        docker-compose $compose_args build $cmd_args
+        docker-compose $compose_args pull detector
+    	docker-compose $compose_args build $cmd_args
         ;;
     u | up)
         docker-compose $compose_args up -d $cmd_args
         ;;
     U | buildup | upbuild | upb | bup | ub)
+        docker-compose $compose_args pull detector
         docker-compose $compose_args up -d --build $cmd_args
         ;;
     d | down)
