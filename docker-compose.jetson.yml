@@ -5,7 +5,7 @@ services:
     restart: always
 
   detector:
-    image: "zauberzeug/tkdnn_detection_node:latest"
+    image: "zauberzeug/tkdnn-detection-node:nano-r32.5.0"
     profiles: ["cams"]
     restart: always
     ports:
