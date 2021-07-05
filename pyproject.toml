@@ -24,6 +24,7 @@ pydantic = "^1.8.2"
 asyncio = "^3.4.3"
 Pillow = "^8.3.0"
 nicegui = "^0.3.9"
+python-socketio = {extras = ["asyncio_client"], version = "^5.3.0"}
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.1"

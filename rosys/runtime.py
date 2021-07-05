@@ -81,10 +81,15 @@ class Runtime:
         self.tasks = [task_logger.create_task(self.advance_time(end_time))]
 
         for actor in self.actors:
+            if hasattr(actor, 'startup'):
+                await actor.startup()
             if actor.interval is not None:
                 self.tasks.append(task_logger.create_task(self.repeat(actor, end_time)))
 
         await asyncio.gather(*self.tasks)
+        for actor in self.actors:
+            if hasattr(actor, 'shutdown'):
+                await actor.shutdown()
 
     async def stop(self):
 
