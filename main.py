@@ -30,7 +30,7 @@ with ui.card():
 with ui.card().style('width:600px'):
 
     def download():
-        runtime.world.download_queue.extend(runtime.world.cameras.keys())
+        runtime.world.download_queue = runtime.world.cameras.keys()
     ui.button('Download images', on_click=download)
     download_timer = ui.timer(0.1, download)
     ui.checkbox('Track').bind_value_to(download_timer.active)
