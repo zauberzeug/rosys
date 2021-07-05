@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-from nicegui import ui
+from nicegui import app, ui
 import os
-import base64
+import starlette
 from rosys.runtime import Runtime
 from rosys.world.mode import Mode
 from rosys.ui.joystick import Joystick
@@ -12,7 +12,7 @@ icecream.install()
 
 has_esp = os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0
 runtime = Runtime(Mode.REAL if has_esp else Mode.SIMULATION)
-#runtime = Runtime(Mode.SIMULATION)
+# runtime = Runtime(Mode.SIMULATION)
 
 with ui.card():
 
@@ -37,7 +37,7 @@ with ui.card().style('width:600px'):
 
     def update_camera_images():
 
-        three.update_images(runtime.world.images, runtime.world.image_data, runtime.world.cameras)
+        three.update_images(runtime.world.images, runtime.world.cameras)
 
         if not any(runtime.world.images):
             return False
@@ -54,8 +54,7 @@ with ui.card().style('width:600px'):
         if ui_image.id == image.id:
             return False
 
-        encoded = base64.b64encode(data).decode("utf-8")
-        ui_image.source = 'data:image/jpeg;base64,' + encoded
+        ui_image.source = f'imagedata/{image.id}'
         ui_image.id = image.id
         ic(image.detections)
         svg_content = '<svg viewBox="0 0 1600 1200" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">'
@@ -95,3 +94,12 @@ with ui.card():
 
 ui.on_startup(runtime.run())
 ui.on_shutdown(runtime.stop())
+
+
+def get_image_data(request, **kwargs):
+
+    id = request.path_params['id']
+    return starlette.responses.Response(content=runtime.world.image_data[id], media_type='image/jpeg')
+
+
+app.routes.insert(0, starlette.routing.Route('/imagedata/{id}', get_image_data))
