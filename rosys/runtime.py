@@ -114,11 +114,12 @@ class Runtime:
             interval = actor.interval
 
             if actor.interval == 0 and dt < 0.1:
-                interval = 0.1
+                delay = 0.1 - dt
                 logging.info(
                     f'{type(actor).__name__} would be called to frequently ' +
                     f'because it only took {dt*1000:.0f} ms; ' +
-                    f'delaying this step for {(interval - dt)*1000:.0f} ms')
+                    f'delaying this step for {delay*1000:.0f} ms')
+                await asyncio.sleep(delay)
             elif dt > actor.interval > 0:
                 logging.warning(f'{type(actor).__name__} took {dt} s')
 
