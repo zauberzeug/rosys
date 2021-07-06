@@ -31,3 +31,6 @@ class Actor:
     def resume(self):
         if self.state == Actor.state.paused:
             self.state = Actor.State.active
+
+    def __str__(self) -> str:
+        return f'{type(self).__name__} ({self.state})'
