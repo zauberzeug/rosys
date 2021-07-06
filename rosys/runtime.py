@@ -90,8 +90,7 @@ class Runtime:
 
         [t.cancel() for t in self.tasks]
         for actor in self.actors:
-            if hasattr(actor, 'shutdown'):
-                await actor.shutdown()
+            await actor.deactivating()
 
     async def call_targets(self, trigger: Union[Callable, Awaitable]):
 
@@ -102,12 +101,17 @@ class Runtime:
 
     async def repeat(self, actor: Actor, run_end_time: float):
 
-        if actor.state != Actor.State.running and hasattr(actor, 'startup'):
-            await actor.startup()
+        if actor.state == Actor.State.inactive:
+            actor.state = Actor.State.activating
+            await actor.activating()
 
         params = self.get_params(actor.step)
 
         while self.world.time < run_end_time:
+
+            if actor.state != Actor.State.active:  # for example "paused"
+                await asyncio.sleep(0.01)
+                continue
 
             start = self.world.time
             try:
@@ -135,6 +139,9 @@ class Runtime:
                     await asyncio.sleep(0)
             else:
                 await asyncio.sleep(interval - dt)
+
+        actor.state = Actor.State.deactivating
+        await actor.deactivating()
 
     async def advance_time(self, end_time):
 
