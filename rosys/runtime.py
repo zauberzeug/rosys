@@ -81,19 +81,17 @@ class Runtime:
         self.tasks = [task_logger.create_task(self.advance_time(end_time))]
 
         for actor in self.actors:
-            if hasattr(actor, 'startup'):
-                await actor.startup()
             if actor.interval is not None:
                 self.tasks.append(task_logger.create_task(self.repeat(actor, end_time)))
 
         await asyncio.gather(*self.tasks)
-        for actor in self.actors:
-            if hasattr(actor, 'shutdown'):
-                await actor.shutdown()
 
     async def stop(self):
 
         [t.cancel() for t in self.tasks]
+        for actor in self.actors:
+            if hasattr(actor, 'shutdown'):
+                await actor.shutdown()
 
     async def call_targets(self, trigger: Union[Callable, Awaitable]):
 
@@ -103,6 +101,9 @@ class Runtime:
             await self.call_targets(target)
 
     async def repeat(self, actor: Actor, run_end_time: float):
+
+        if actor.state != Actor.State.running and hasattr(actor, 'startup'):
+            await actor.startup()
 
         params = self.get_params(actor.step)
 
