@@ -96,6 +96,13 @@ with ui.card():
 
     ui.number('Height [m]', on_change=lambda e: set_height(e.value))
 
+with ui.card():
+
+    ui.label('Actors')
+    actors = ui.label()
+    ui.timer(1.0, lambda: actors.set_text(", ".join(map(str, runtime.actors))))
+
+
 ui.on_startup(runtime.run())
 ui.on_shutdown(runtime.stop())
 
@@ -107,8 +114,3 @@ def get_image_data(request, **kwargs):
 
 
 app.routes.insert(0, starlette.routing.Route('/imagedata/{id}', get_image_data))
-
-with ui.card():
-    actors = ui.label('actors: ')
-
-    ui.timer(1.0, lambda: actors.set_text(f'actors: {", ".join([str(a) for a in runtime.actors])}'))

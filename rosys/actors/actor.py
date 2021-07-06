@@ -1,6 +1,4 @@
-
 from enum import Enum
-import logging
 
 
 class Actor:
@@ -25,11 +23,11 @@ class Actor:
         self.state = Actor.State.inactive
 
     def pause(self):
-        if self.state == Actor.state.active:
+        if self.state == Actor.State.active:
             self.state = Actor.State.paused
 
     def resume(self):
-        if self.state == Actor.state.paused:
+        if self.state == Actor.State.paused:
             self.state = Actor.State.active
 
     def __str__(self) -> str:
