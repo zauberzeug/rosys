@@ -8,7 +8,6 @@ class Odometer(Actor):
     def __init__(self):
 
         self.last_time: float = None
-        self.state = Actor.State.active
 
     def update_pose(self, world: World):
 
