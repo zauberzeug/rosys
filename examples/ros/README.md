@@ -15,10 +15,16 @@ We created a small helper script `docker.sh` for simplicity. Run
 ```
 
 to build and start the image in a new container.
-You can then also call `./docker.sh attach` to open a new bash session within the running container.
+You should then be able to open the user interface on http://localhost.
 
 ## ROS Nodes
 
 The example constists of two ROS nodes `esp` and `ui`.
 The first handles the communication with the ESP32 within the Robot Brain for sending speed commands to the wheels.
 The latter is just a demonstration of a seperate node which generates Twist messages through a web interface with [NiceGUI](https://nicegui.io/). You can replace this with any other node as needed.
+
+## Configure ESP32 Low Level API
+
+By sending the `/configure` message to the `esp`node the ESP32 will receive the configuration of the attached devices (two wheels thorugh a RoboClaw Controller) stored in the `config.txt`. The configuration is stored persitent on the ESP32. So you only need to save it once.
+
+In the example the web page provides a button to trigger the `/configure` message. In a real scenario you would do it when deploying the robot.
