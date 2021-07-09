@@ -96,6 +96,12 @@ with ui.card():
 
     ui.number('Height [m]', on_change=lambda e: set_height(e.value))
 
+    def clear_calibrations():
+        for camera in runtime.world.cameras.values():
+            camera.calibration = None
+
+    ui.button('Clear calibrations', on_click=clear_calibrations)
+
 with ui.card():
 
     ui.label('Actors')
