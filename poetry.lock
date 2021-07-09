@@ -543,7 +543,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "nicegui"
-version = "0.3.9"
+version = "0.4.1"
 description = "High-Level Abstraction Web-GUI Using Just Python"
 category = "main"
 optional = false
@@ -556,6 +556,7 @@ docutils = ">=0.17.1,<0.18.0"
 justpy = "0.1.5"
 markdown2 = ">=2.4.0,<3.0.0"
 matplotlib = ">=3.4.1,<4.0.0"
+pydantic = ">=1.8.2,<2.0.0"
 Pygments = ">=2.9.0,<3.0.0"
 typing-extensions = ">=3.10.0,<4.0.0"
 uvicorn = {version = ">=0.14.0,<0.15.0", extras = ["watchgodreloader"]}
@@ -1063,7 +1064,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "676bd59e98d5c550a0f16e945e4496f3caf3df71bb41023fb47ef43ce2df6bb8"
+content-hash = "b20722e173fac51fc22bfa5a6a6eb2ede79e8ddbe4791c7c689d4653ac140662"
 
 [metadata.files]
 addict = [
@@ -1469,8 +1470,8 @@ multidict = [
     {file = "multidict-5.1.0.tar.gz", hash = "sha256:25b4e5f22d3a37ddf3effc0710ba692cfc792c2b9edfb9c05aefe823256e84d5"},
 ]
 nicegui = [
-    {file = "nicegui-0.3.9-py3-none-any.whl", hash = "sha256:fe7a480e171c12fb4ae0d21284d6b0dfa08bbfd54903a0832daecbb2b947887b"},
-    {file = "nicegui-0.3.9.tar.gz", hash = "sha256:852d8db3d38fbddb26381bb1a7bfa60a6798a0bfc0b954ee2161db9de1b47d7e"},
+    {file = "nicegui-0.4.1-py3-none-any.whl", hash = "sha256:14501d7f45c6bc56e26a53f9d5eb81676796bd2f53adc6f9f17af500d7064766"},
+    {file = "nicegui-0.4.1.tar.gz", hash = "sha256:4ae831aa8e9d7638a9a31db2887d626443f22c1699e55d691d25001a107658f6"},
 ]
 numpy = [
     {file = "numpy-1.20.2-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:e9459f40244bb02b2f14f6af0cd0732791d72232bbb0dc4bab57ef88e75f6935"},

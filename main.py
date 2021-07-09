@@ -114,3 +114,5 @@ def get_image_data(request, **kwargs):
 
 
 app.routes.insert(0, starlette.routing.Route('/imagedata/{id}', get_image_data))
+
+ui.run(title="RoSys")
