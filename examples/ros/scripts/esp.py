@@ -1,17 +1,31 @@
 #!/usr/bin/env python3
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import Empty, String
 from geometry_msgs.msg import Twist, Vector3
 import serial
 from operator import ixor
 from functools import reduce
 import json
+import os.path
+
+def send(line):
+
+    line = f'{line}^{reduce(ixor, map(ord, line))}\n'
+    port.write(line.encode())
 
 def handle_command(data):
 
-    line = f'drive speed {data.linear.x:3f},{data.angular.z:.3f}'
-    line = f'{line}^{reduce(ixor, map(ord, line))}\n'
-    port.write(line.encode())
+    send(f'drive speed {data.linear.x:3f},{data.angular.z:.3f}')
+
+def handle_configure(data):
+
+    with open(os.path.dirname(__file__) + '/../config.txt') as f:
+        send('esp erase')
+        for line in f.read().splitlines():
+            line = line.strip()
+            if line and not line.startswith('#'):
+                send('+' + line)
+        send('esp restart')
 
 if __name__ == '__main__':
 
@@ -20,7 +34,8 @@ if __name__ == '__main__':
     publish_odometry = rospy.Publisher('/odometry', Twist, queue_size=1).publish
     publish_status = rospy.Publisher('/status', String, queue_size=1).publish
 
-    rospy.Subscriber('/command', Twist, handle_command, queue_size=1)
+    rospy.Subscriber('/steer', Twist, handle_command, queue_size=1)
+    rospy.Subscriber('/configure', Empty, handle_configure, queue_size=1)
 
     with serial.Serial('/dev/esp', 115200) as port:
 

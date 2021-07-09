@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import rospy
-from std_msgs.msg import String
+from std_msgs.msg import Empty, String
 from geometry_msgs.msg import Twist, Vector3
 from nicegui import ui
 import json
@@ -9,7 +9,7 @@ def send(x, y):
 
     linear = Vector3(y, 0, 0)
     angular = Vector3(0, 0, -x)
-    publish(Twist(linear, angular))
+    publish_twist(Twist(linear, angular))
 
 def handle_status(data):
 
@@ -24,7 +24,16 @@ def handle_odometry(data):
     linear.value = data.linear.x
     angular.value = data.angular.z
 
-with ui.row():
+rospy.init_node('ui')
+
+publish_twist = rospy.Publisher('/steer', Twist, queue_size=1).publish
+publish_configure = rospy.Publisher('/configure', Empty, queue_size=1).publish
+
+with ui.row().classes('items-stretch'):
+
+    with ui.card():
+        ui.markdown('### Setup')
+        ui.button('Configure ESP', on_click=publish_configure)
 
     with ui.card() as status:
         ui.markdown('### Status')
@@ -51,13 +60,7 @@ with ui.row():
 
     ui.timer(0.1, lambda: None) # NOTE: update ui
 
-
-rospy.init_node('ui')
-
-publish = rospy.Publisher('/command', Twist, queue_size=1).publish
-
 rospy.Subscriber('/status', String, handle_status, queue_size=1)
 rospy.Subscriber('/odometry', Twist, handle_odometry, queue_size=1)
-
 
 ui.run(reload=False, show=False)

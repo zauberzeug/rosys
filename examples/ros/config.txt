@@ -1,0 +1,9 @@
+new bluetooth bt ESP_Z3
+
+new drive drive roboclaw,128,38400
+set drive.mPerTick=0.00003768461
+set drive.width=0.55
+set drive.use300HzSpeedReadings=0
+
+set esp.outputModules=drive
+esp unmute
