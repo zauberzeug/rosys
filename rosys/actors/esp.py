@@ -9,11 +9,6 @@ from .actor import Actor
 
 class Esp(Actor):
 
-    interval: float = 0.01
-
-    async def step(self):
-        pass
-
     async def drive(self, linear: float, angular: float):
 
         await self.send('drive speed %.3f,%.3f' % (linear, angular))
@@ -24,6 +19,8 @@ class Esp(Actor):
 
 
 class SerialEsp(Esp):
+
+    interval: float = 0
 
     def __init__(self):
 
@@ -73,6 +70,8 @@ class SerialEsp(Esp):
 
 
 class MockedEsp(Esp):
+
+    interval: float = 0.01
 
     width: float = 0.5
     _velocity: Velocity = Velocity(linear=0, angular=0)
