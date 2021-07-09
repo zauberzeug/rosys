@@ -7,8 +7,8 @@ import json
 
 def send(x, y):
 
-    linear = Vector3(x, 0, 0)
-    angular = Vector3(0, 0, y)
+    linear = Vector3(y, 0, 0)
+    angular = Vector3(0, 0, -x)
     publish(Twist(linear, angular))
 
 def handle_status(data):

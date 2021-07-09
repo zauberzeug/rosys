@@ -9,8 +9,7 @@ import json
 
 def handle_command(data):
 
-    line = f'wheels drive {data.linear.x:3f},{data.angular.z:.3f}'
-    print('<', line)
+    line = f'drive speed {data.linear.x:3f},{data.angular.z:.3f}'
     line = f'{line}^{reduce(ixor, map(ord, line))}\n'
     port.write(line.encode())
 
@@ -23,7 +22,7 @@ if __name__ == '__main__':
 
     rospy.Subscriber('/command', Twist, handle_command, queue_size=1)
 
-    with serial.Serial('/dev/serial', 115200) as port:
+    with serial.Serial('/dev/esp', 115200) as port:
 
         while not rospy.is_shutdown():
             try:
@@ -41,7 +40,6 @@ if __name__ == '__main__':
                 continue
             if words.pop(0) != 'esp':
                 continue
-            print('>', line)
             time = int(words.pop(0))
             linear_speed = float(words.pop(0))
             angular_speed = float(words.pop(0))
