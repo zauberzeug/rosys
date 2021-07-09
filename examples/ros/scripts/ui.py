@@ -42,13 +42,6 @@ with ui.row().classes('items-stretch'):
         battery = ui.label()
         state = ui.label()
 
-    with ui.card() as odometry:
-        ui.markdown('### Odometry')
-        ui.label('linear')
-        linear = ui.slider(min=-1.0, max=1.0, step=0.01).props('label-always readonly')
-        ui.label('angular')
-        angular = ui.slider(min=-1.0, max=1.0, step=0.01).props('label-always readonly')
-
     with ui.card():
         ui.markdown('### Control')
         ui.joystick(
@@ -57,6 +50,13 @@ with ui.row().classes('items-stretch'):
             on_move=lambda msg: send(msg.data.vector.x, msg.data.vector.y),
             on_end=lambda _: send(0, 0),
         )
+
+    with ui.card() as odometry:
+        ui.markdown('### Odometry')
+        ui.label('linear')
+        linear = ui.slider(min=-1.0, max=1.0, step=0.01).props('label-always readonly')
+        ui.label('angular')
+        angular = ui.slider(min=-1.0, max=1.0, step=0.01).props('label-always readonly')
 
     ui.timer(0.1, lambda: None) # NOTE: update ui
 
