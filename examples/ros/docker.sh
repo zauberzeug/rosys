@@ -9,8 +9,13 @@ fi
 
 name=rosys
 
+serial="/dev/ttyTHS1"
+
 args=""
-args+=" -v $(pwd):/app"
+args+=" -v $(pwd)/scripts:/root/rosys/catkin_ws/src/robot/scripts"
+args+=" -v $(pwd)/launch:/root/rosys/catkin_ws/src/robot/launch"
+args+=" -v $serial:/dev/serial"
+args+=" --device=$serial"
 args+=" -p 80:80"
 
 for cmd in "$@"
