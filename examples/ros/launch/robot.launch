@@ -1,4 +1,4 @@
 <launch>
-    <node pkg="robot" name="serial" type="serial.py" output="screen" />
+    <node pkg="robot" name="esp" type="esp.py" output="screen" />
     <node pkg="robot" name="ui" type="ui.py" output="screen" />
 </launch>
