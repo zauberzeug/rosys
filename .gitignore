@@ -1,4 +1,7 @@
 __pycache__/
+*.egg-info/
+.cache/
+.pio/
 detector/
 *.env
 *.swp
