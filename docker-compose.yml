@@ -8,6 +8,9 @@ services:
       - ~/.ssh:/root/.ssh
       - ~/.gitconfig:/root/.gitconfig
       - ~/.git-credentials:/root/.git-credentials
+      - /app/.git # hide some unnecessary large folders...
+      - /app/.pio
+      - /app/controller
     devices:
       - "${ESP_SERIAL:-/dev/null}:/dev/esp"
     environment:
