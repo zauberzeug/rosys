@@ -543,7 +543,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "nicegui"
-version = "0.4.1"
+version = "0.4.3"
 description = "High-Level Abstraction Web-GUI Using Just Python"
 category = "main"
 optional = false
@@ -1470,8 +1470,8 @@ multidict = [
     {file = "multidict-5.1.0.tar.gz", hash = "sha256:25b4e5f22d3a37ddf3effc0710ba692cfc792c2b9edfb9c05aefe823256e84d5"},
 ]
 nicegui = [
-    {file = "nicegui-0.4.1-py3-none-any.whl", hash = "sha256:14501d7f45c6bc56e26a53f9d5eb81676796bd2f53adc6f9f17af500d7064766"},
-    {file = "nicegui-0.4.1.tar.gz", hash = "sha256:4ae831aa8e9d7638a9a31db2887d626443f22c1699e55d691d25001a107658f6"},
+    {file = "nicegui-0.4.3-py3-none-any.whl", hash = "sha256:c7817f56338ebdcdec0b1da87f880b7c9df11bcc5d5f385a5e26199bbadfe609"},
+    {file = "nicegui-0.4.3.tar.gz", hash = "sha256:59709e6e38ee3335f50c6f8afda7d03faa28c5125e183c1ffacffad429b025b9"},
 ]
 numpy = [
     {file = "numpy-1.20.2-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:e9459f40244bb02b2f14f6af0cd0732791d72232bbb0dc4bab57ef88e75f6935"},

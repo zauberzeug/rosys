@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from typing import List
 from nicegui import app, ui
 import os
 import starlette
@@ -6,6 +7,7 @@ from rosys.runtime import Runtime
 from rosys.world.mode import Mode
 from rosys.ui.joystick import Joystick
 from rosys.ui.three import Three
+import drawings
 
 import icecream
 icecream.install()
@@ -30,6 +32,14 @@ with ui.card():
         three.set_robot('detection', '#AEC0E2', runtime.world.robot.detection)
     three = Three()
     ui.timer(0.05, update_three)
+
+with ui.card() as svg_card:
+
+    def upload(files: List[bytearray]):
+        drawings.store(files[0])
+        image.set_source(f'/drawings/default?t={runtime.world.time}')
+    ui.upload(on_upload=upload)
+    image = ui.image(source=None)
 
 with ui.card().style('width:600px'):
 
@@ -88,7 +98,7 @@ with ui.card():
     ui.label('Cameras')
 
     cams = ui.label()
-    ui.timer(1, lambda: cams.set_text(f'cams: {runtime.world.cameras}'))
+    ui.timer(1, lambda: cams.set_text(f'cams: {list(runtime.world.cameras.keys())}'))
 
     def set_height(height):
         for camera in runtime.world.cameras.values():
@@ -123,6 +133,12 @@ def get_image_data(request, **kwargs):
     return starlette.responses.Response(content=runtime.world.image_data[id], media_type='image/jpeg')
 
 
+def get_drawing(request, **kwargs):
+
+    return starlette.responses.FileResponse(f'{drawings.path}/{request.path_params["id"]}.svg')
+
+
 app.routes.insert(0, starlette.routing.Route('/imagedata/{id}', get_image_data))
+app.routes.insert(0, starlette.routing.Route('/drawings/{id}', get_drawing))
 
 ui.run(title="RoSys")
