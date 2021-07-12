@@ -942,6 +942,26 @@ anyio = ">=3.0.0,<4"
 full = ["itsdangerous", "jinja2", "python-multipart", "pyyaml", "requests", "graphene"]
 
 [[package]]
+name = "svgpathtools"
+version = "1.4.1"
+description = "A collection of tools for manipulating and analyzing SVG Path objects and Bezier curves."
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+numpy = "*"
+svgwrite = "*"
+
+[[package]]
+name = "svgwrite"
+version = "1.4.1"
+description = "A Python library to create SVG drawings."
+category = "main"
+optional = false
+python-versions = ">=3.6"
+
+[[package]]
 name = "toml"
 version = "0.10.2"
 description = "Python Library for Tom's Obvious, Minimal Language"
@@ -1064,7 +1084,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "b20722e173fac51fc22bfa5a6a6eb2ede79e8ddbe4791c7c689d4653ac140662"
+content-hash = "433f559800582a54861f2fe5cac6396ab1a8aa7ac13800ad63b6987ec86477a0"
 
 [metadata.files]
 addict = [
@@ -1773,6 +1793,14 @@ sniffio = [
 starlette = [
     {file = "starlette-0.15.0-py3-none-any.whl", hash = "sha256:66dc8464dc4380f591f33248d23913830f501027ac26839329c99177cf119128"},
     {file = "starlette-0.15.0.tar.gz", hash = "sha256:5c6e71fe8a11f690f78ab13363b0993eb7e5446986d3549902a81505afdaa08b"},
+]
+svgpathtools = [
+    {file = "svgpathtools-1.4.1-py2.py3-none-any.whl", hash = "sha256:6bc0082099ae1d64ae9649e837ccb10ae302520114da60eabf7360e5e46a12ed"},
+    {file = "svgpathtools-1.4.1.tar.gz", hash = "sha256:7aaba07923ad85b6628301e92e5e72fd0d0a5057620e1423509b3a0b609b7485"},
+]
+svgwrite = [
+    {file = "svgwrite-1.4.1-py3-none-any.whl", hash = "sha256:4b21652a1d9c543a6bf4f9f2a54146b214519b7540ca60cb99968ad09ef631d0"},
+    {file = "svgwrite-1.4.1.zip", hash = "sha256:e220a4bf189e7e214a55e8a11421d152b5b6fb1dd660c86a8b6b61fe8cc2ac48"},
 ]
 toml = [
     {file = "toml-0.10.2-py2.py3-none-any.whl", hash = "sha256:806143ae5bfb6a3c6e736a764057db0e6a0e05e338b5630894a5f779cabb4f9b"},

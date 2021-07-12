@@ -1,23 +1,26 @@
-import numpy as np
+from __future__ import annotations
+from pydantic import BaseModel
 from typing import List
-from ...world.pose import Pose
+import numpy as np
+from .pose import Pose
+from .point import Point
 
 
 class Spline:
 
-    def __init__(self, start: Pose, end: Pose):
+    def __init__(self, start: Point, control1: Point, control2: Point, end: Point):
 
         self.start = start
+        self.control1 = control1
+        self.control2 = control2
         self.end = end
-
-        control_dist = np.sqrt((end.x - start.x)**2 + (end.y - start.y)**2) / 2
 
         self.a = self.start.x
         self.e = self.start.y
-        self.b = self.start.x + control_dist * np.cos(self.start.yaw)
-        self.f = self.start.y + control_dist * np.sin(self.start.yaw)
-        self.c = self.end.x - control_dist * np.cos(self.end.yaw)
-        self.g = self.end.y - control_dist * np.sin(self.end.yaw)
+        self.b = self.control1.x
+        self.f = self.control1.y
+        self.c = self.control2.x
+        self.g = self.control2.y
         self.d = self.end.x
         self.h = self.end.y
 
@@ -27,6 +30,25 @@ class Spline:
         self.p = self.h - 3 * self.g + 3 * self.f - self.e
         self.q = self.g - 2 * self.f + self.e
         self.r = self.f - self.e
+
+    def __repr__(self) -> str:
+
+        return f'{type(self).__qualname__}(' + ' ~ '.join([
+            f'{self.start.x:.3f},{self.start.y:.3f}',
+            f'{self.control1.x:.3f},{self.control1.y:.3f}',
+            f'{self.control2.x:.3f},{self.control2.y:.3f}',
+            f'{self.end.x:.3f},{self.end.y:.3f}',
+        ]) + ')'
+
+    @staticmethod
+    def from_poses(start: Pose, end: Pose) -> Spline:
+
+        return Spline(
+            start=start.point,
+            control1=start.point.polar(0.5 * start.distance(end), start.yaw),
+            control2=end.point.polar(-0.5 * start.distance(end), end.yaw),
+            end=end.point,
+        )
 
     def x(self, t: float) -> float:
 

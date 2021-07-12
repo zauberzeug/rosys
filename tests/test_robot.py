@@ -4,8 +4,8 @@ from rosys.runtime import Runtime
 from rosys.automations.arc import arc
 from rosys.automations.square import square
 from rosys.automations.spline import spline
-from rosys.automations.navigation.spline import Spline
 from rosys.world.pose import Pose
+from rosys.world.spline import Spline
 from tests.helper import assert_pose
 
 
@@ -54,7 +54,7 @@ async def test_driving_a_square(runtime: Runtime):
 @pytest.mark.asyncio
 async def test_pause_and_resume_spline(runtime: Runtime):
     start = runtime.world.time
-    s = Spline(Pose(x=0, y=0, yaw=0), Pose(x=2, y=0, yaw=0))
+    s = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=0, yaw=0))
     runtime.automator.add(spline(s, runtime.world, runtime.esp))
 
     await runtime.run(seconds=2)
@@ -91,7 +91,7 @@ async def test_pause_and_resume_square(runtime: Runtime):
 @pytest.mark.asyncio
 async def test_driving_a_spline(runtime: Runtime):
     assert_pose(0, 0, deg=0)
-    s = Spline(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0))
+    s = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0))
     runtime.automator.add(spline(s, runtime.world, runtime.esp))
     await runtime.run(seconds=10)
     assert_pose(2, 1, deg=7)

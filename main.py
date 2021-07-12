@@ -46,6 +46,8 @@ with ui.card() as svg_card:
     image = ui.image(source=None)
     set_image_source()
 
+    ui.button('Start', on_click=lambda: [ic(spline) for spline in drawings.load()])
+
 with ui.card().style('width:600px'):
 
     def download():

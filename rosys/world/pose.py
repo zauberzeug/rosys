@@ -1,6 +1,7 @@
 from __future__ import annotations  # NOTE: for PEP 563 (postponed evaluation of annotations)
 from pydantic import BaseModel
 import numpy as np
+from .point import Point
 
 
 class PoseStep(BaseModel):
@@ -17,12 +18,16 @@ class Pose(BaseModel):
     yaw: float = 0
     time: float = 0
 
+    @property
+    def point(self) -> Point:
+        return Point(x=self.x, y=self.y)
+
     def __str__(self):
         return '%.3f, %.3f, %.1f deg' % (self.x, self.y, np.rad2deg(self.yaw))
 
     def distance(self, other: Pose) -> float:
 
-        return np.sqrt((other.x - self.x)**2 + (other.y - self.y)**2)
+        return self.point.distance(other.point)
 
     def projected_distance(self, other: Pose) -> float:
         """Returnes the projected distance from `self` to `other` in direction of `other`."""

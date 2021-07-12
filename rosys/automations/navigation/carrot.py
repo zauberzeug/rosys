@@ -23,6 +23,8 @@ class Carrot:
 
     def move(self, robot_pose, distance=1.0, move_threshold=0.01):
 
+        end_pose = self.spline.pose(1.0)
+
         while robot_pose.distance(self.pose) < distance:
 
             self.t += 0.01
@@ -30,7 +32,7 @@ class Carrot:
             if self.t < 1.0:
                 continue
 
-            if robot_pose.projected_distance(self.spline.end) <= move_threshold:
+            if robot_pose.projected_distance(end_pose) <= move_threshold:
                 return False
 
         return True
