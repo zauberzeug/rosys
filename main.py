@@ -35,11 +35,16 @@ with ui.card():
 
 with ui.card() as svg_card:
 
+    def set_image_source():
+        image.set_source(f'/drawings/default?t={runtime.world.time}')
+
     def upload(files: List[bytearray]):
         drawings.store(files[0])
-        image.set_source(f'/drawings/default?t={runtime.world.time}')
+        set_image_source()
+
     ui.upload(on_upload=upload)
     image = ui.image(source=None)
+    set_image_source()
 
 with ui.card().style('width:600px'):
 
