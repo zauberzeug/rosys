@@ -69,7 +69,7 @@ class Runtime:
             ],
             self.detector.step: [
                 self.robot_locator.find_robot,
-                self.odometer.handle_camera_pose,
+                self.odometer.handle_detection,
             ],
         }
 

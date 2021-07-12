@@ -74,6 +74,8 @@ Vue.component("three", {
       if (!robots.has(id)) {
         console.log("add", id, robot);
         const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const scale = 1.0 - 0.001 * robots.size;
+        geometry.scale(scale, scale, scale);
         const material = new THREE.MeshPhongMaterial({ color: robot.color });
         const mesh = new THREE.Mesh(geometry, material);
         scene.add(mesh);

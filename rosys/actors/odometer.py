@@ -30,9 +30,17 @@ class Odometer(Actor):
 
         robot.prediction += step
 
-    def handle_camera_pose(self, world: World):
+    def handle_detection(self, world: World):
 
-        ...
+        if not any(self.steps) or world.robot.detection.time < self.steps[0].time:
+            return
+
+        while self.steps[0].time < world.robot.detection.time:
+            del self.steps[0]
+
+        world.robot.prediction = world.robot.detection.copy(deep=True)
+        for step in self.steps:
+            world.robot.prediction += step
 
     def prune_steps(self, cut_off_time: float):
 
