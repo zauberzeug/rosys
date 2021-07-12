@@ -1,7 +1,7 @@
 var scene;
 var camera;
-var robot;
 var orbitControls;
+var robots = new Map();
 var images = new Map();
 var loader = new THREE.TextureLoader();
 
@@ -36,11 +36,6 @@ Vue.component("three", {
     grid.rotateX(Math.PI / 2);
     scene.add(grid);
 
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshPhongMaterial({ color: "#433F81" });
-    robot = new THREE.Mesh(geometry, material);
-    scene.add(robot);
-
     orbitControls = new THREE.OrbitControls(camera, renderer.domElement);
 
     const render = function () {
@@ -67,14 +62,34 @@ Vue.component("three", {
   },
 
   updated() {
-    robot.position.x = this.$props.jp_props.options.robot_pose.x;
-    robot.position.y = this.$props.jp_props.options.robot_pose.y;
-    robot.setRotationFromAxisAngle(
-      new THREE.Vector3(0, 0, 1),
-      this.$props.jp_props.options.robot_pose.yaw
-    );
+    const jp_robots = this.$props.jp_props.options.robots;
+    robots.forEach((_, id) => {
+      if (!jp_robots[id]) {
+        console.log("remove", id);
+        scene.remove(robots.get(id));
+        robots.delete(id);
+      }
+    });
+    Object.entries(jp_robots).forEach(([id, robot]) => {
+      if (!robots.has(id)) {
+        console.log("add", id, robot);
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshPhongMaterial({ color: robot.color });
+        const mesh = new THREE.Mesh(geometry, material);
+        scene.add(mesh);
+        robots.set(id, mesh);
+      }
+      const robot_mesh = robots.get(id);
+      robot_mesh.position.x = robot.x;
+      robot_mesh.position.y = robot.y;
+      robot_mesh.setRotationFromAxisAngle(
+        new THREE.Vector3(0, 0, 1),
+        robot.yaw
+      );
+    });
 
-    if (this.$props.jp_props.options.follow_robot) {
+    if (this.$props.jp_props.options.follow_robot && robots.size > 0) {
+      const robot = robots.values().next().value;
       const target = new THREE.Vector3(robot.position.x, robot.position.y, 0);
       orbitControls.target = orbitControls.target
         .clone()

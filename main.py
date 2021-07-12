@@ -19,13 +19,17 @@ with ui.card():
     state = ui.label()
     ui.timer(0.1, lambda: state.set_text(f'''
         {runtime.world.time:.3f} s
-        (x={runtime.world.robot.pose.x:.3f},
-        y={runtime.world.robot.pose.y:.3f})
+        (x={runtime.world.robot.prediction.x:.3f},
+        y={runtime.world.robot.prediction.y:.3f})
     '''))
 
     Joystick(size=50, color='blue', steerer=runtime.steerer)
-    three = Three(runtime.world.robot.pose)
-    ui.timer(0.05, lambda: three.set_robot_pose(runtime.world.robot.pose))
+
+    def update_three():
+        three.set_robot('prediction', '#6E93D6', runtime.world.robot.prediction)
+        three.set_robot('detection', '#05A870', runtime.world.robot.detection)
+    three = Three()
+    ui.timer(0.05, update_three)
 
 with ui.card().style('width:600px'):
 

@@ -64,8 +64,13 @@ class Runtime:
         ]
 
         self.follow_ups = {
-            self.esp.step: [self.odometer.update_pose],
-            self.detector.step: [self.robot_locator.find_robot],
+            self.esp.step: [
+                self.odometer.handle_velocity,
+            ],
+            self.detector.step: [
+                self.robot_locator.find_robot,
+                self.odometer.handle_camera_pose,
+            ],
         }
 
     async def pause(self):

@@ -1,6 +1,13 @@
-from __future__ import annotations
+from __future__ import annotations  # NOTE: for PEP 563 (postponed evaluation of annotations)
 from pydantic import BaseModel
 import numpy as np
+
+
+class PoseStep(BaseModel):
+
+    linear: float
+    angular: float
+    time: float
 
 
 class Pose(BaseModel):
@@ -8,6 +15,7 @@ class Pose(BaseModel):
     x: float = 0
     y: float = 0
     yaw: float = 0
+    time: float = 0
 
     def __str__(self):
         return '%.3f, %.3f, %.1f deg' % (self.x, self.y, np.rad2deg(self.yaw))
@@ -21,3 +29,11 @@ class Pose(BaseModel):
 
         def d(p): return np.sqrt(p.x**2 + p.y**2) * np.cos(other.yaw - np.arctan2(p.y, p.x))
         return d(other) - d(self)
+
+    def __iadd__(self, step: PoseStep):
+
+        self.x += step.linear * np.cos(self.yaw)
+        self.y += step.linear * np.sin(self.yaw)
+        self.yaw += step.angular
+        self.time = step.time
+        return self

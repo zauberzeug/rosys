@@ -8,12 +8,12 @@ from ..world.camera import Camera
 
 class ThreeView(CustomView):
 
-    def __init__(self, *, robot_pose: Pose, follow_robot: bool, on_click: Callable):
+    def __init__(self, *, follow_robot: bool, on_click: Callable):
 
         super().__init__('three', __file__, [
             'https://cdn.jsdelivr.net/npm/three@0.129.0/build/three.min.js',
             'https://cdn.jsdelivr.net/npm/three@0.129.0/examples/js/controls/OrbitControls.js',
-        ], robot_pose=robot_pose.dict(), follow_robot=follow_robot, images=[])
+        ], robots={}, follow_robot=follow_robot, images=[])
 
         self.on_click = on_click
         self.allowed_events = ['onClick']
@@ -27,17 +27,17 @@ class ThreeView(CustomView):
 
 class Three(Element):
 
-    def __init__(self, robot_pose: Pose, *, follow_robot: bool = True, on_click: Callable = None):
+    def __init__(self, *, follow_robot: bool = True, on_click: Callable = None):
 
-        super().__init__(ThreeView(robot_pose=robot_pose, follow_robot=follow_robot, on_click=on_click))
+        super().__init__(ThreeView(follow_robot=follow_robot, on_click=on_click))
 
-    def set_robot_pose(self, pose: Pose):
+    def set_robot(self, id: str, color: str, pose: Pose):
 
-        new_pose = pose.dict()
-        if self.view.options.robot_pose == new_pose:
+        new_pose = pose.dict() | {'color': color}
+        del new_pose['time']
+        if self.view.options.robots.get(id) == new_pose:
             return False
-        self.view.options.robot_pose = new_pose
-        self.view.options.images = None
+        self.view.options.robots[id] = new_pose
 
     def update_images(self, images: list[Image], cameras: dict[str, Camera]):
 
