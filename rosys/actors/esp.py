@@ -1,6 +1,5 @@
 import asyncio
 import aioserial
-import time
 import numpy as np
 from ..world.world import World
 from ..world.velocity import Velocity
@@ -80,7 +79,7 @@ class MockedEsp(Esp):
 
         world.robot.velocity.linear = self._velocity.linear
         world.robot.velocity.angular = self._velocity.angular
-        world.robot.battery = 25.0 + np.sin(0.1 * time.time()) + 0.02 * np.random.randn()
+        world.robot.battery = 25.0 + np.sin(0.1 * world.time) + 0.02 * np.random.randn()
         world.robot.temperature = np.random.uniform(34, 35)
 
     async def send(self, line):
