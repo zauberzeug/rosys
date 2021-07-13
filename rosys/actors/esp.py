@@ -1,5 +1,7 @@
 import asyncio
 import aioserial
+from operator import ixor
+from functools import reduce
 import numpy as np
 from ..world.world import World
 from ..world.velocity import Velocity
@@ -36,11 +38,8 @@ class SerialEsp(Esp):
             return  # NOTE: ignore green log messages
 
         if '^' in line:
-            line, check = line.split('^')
-            checksum = 0
-            for c in line:
-                checksum ^= ord(c)
-            if checksum != int(check):
+            line, checksum = line.split('^')
+            if reduce(ixor, map(ord, line)) != int(checksum):
                 return
 
         try:
@@ -61,10 +60,7 @@ class SerialEsp(Esp):
 
     async def send(self, line):
 
-        checksum = 0
-        for c in line:
-            checksum ^= ord(c)
-        line += '^%d\n' % checksum
+        line = f'{line}^{reduce(ixor, map(ord, line))}\n'
         await self.aioserial.write_async(line.encode())
 
 
