@@ -31,7 +31,7 @@ class Pose(BaseModel):
 
     def projected_distance(self, other: Pose) -> float:
 
-        return self.point.projected_distance(other.distance, other.yaw)
+        return self.point.projected_distance(other.point, other.yaw)
 
     def __iadd__(self, step: PoseStep):
 
