@@ -9,9 +9,16 @@ class RobotShape(BaseModel):
     height: float = 0.5
 
 
+class RobotParameters(BaseModel):
+
+    linear_speed_limit: float = 0.5
+    angular_speed_limit: float = 0.5
+
+
 class Robot(BaseModel):
 
     shape: RobotShape = RobotShape()
+    parameters: RobotParameters = RobotParameters()
     prediction: Pose = Pose()
     detection: Pose = Pose()
     velocity: Velocity = Velocity()
