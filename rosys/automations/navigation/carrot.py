@@ -1,9 +1,11 @@
+from ...world.point import Point
 from ...world.pose import Pose
+from ...world.spline import Spline
 
 
 class Carrot:
 
-    def __init__(self, spline):
+    def __init__(self, spline: Spline):
 
         self.spline = spline
         self.t = 0
@@ -21,18 +23,20 @@ class Carrot:
                 yaw=self.spline.yaw(1.0),
             )
 
-    def move(self, robot_pose, distance=1.0, move_threshold=0.01):
+    def move(self, point_of_interest: Point, distance: float = 1.0, move_threshold: float = 0.01):
 
         end_pose = self.spline.pose(1.0)
+        end_point = end_pose.point
+        end_yaw = end_pose.yaw
 
-        while robot_pose.distance(self.pose) < distance:
+        while point_of_interest.distance(self.pose.point) < distance:
 
             self.t += 0.01
 
             if self.t < 1.0:
                 continue
 
-            if robot_pose.projected_distance(end_pose) <= move_threshold:
+            if point_of_interest.projected_distance(end_point, end_yaw) <= move_threshold:
                 return False
 
         return True

@@ -16,6 +16,7 @@ icecream.install()
 
 has_esp = os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0
 runtime = Runtime(Mode.REAL if has_esp else Mode.SIMULATION)
+runtime.world.robot.shape.point_of_interest.x = 0.75
 # runtime = Runtime(Mode.SIMULATION)
 
 with ui.card():
@@ -56,7 +57,7 @@ with ui.card() as svg_card:
     with ui.row():
 
         def start():
-            runtime.world.path = drawings.scale(drawings.load(), 2.0)
+            runtime.world.path = drawings.scale(drawings.load(), 3.0)
             runtime.automator.add(draw(runtime.world, runtime.esp))
             runtime.resume()
 

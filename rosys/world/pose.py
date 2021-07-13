@@ -30,10 +30,8 @@ class Pose(BaseModel):
         return self.point.distance(other.point)
 
     def projected_distance(self, other: Pose) -> float:
-        """Returnes the projected distance from `self` to `other` in direction of `other`."""
 
-        def d(p): return np.sqrt(p.x**2 + p.y**2) * np.cos(other.yaw - np.arctan2(p.y, p.x))
-        return d(other) - d(self)
+        return self.point.projected_distance(other.distance, other.yaw)
 
     def __iadd__(self, step: PoseStep):
 
@@ -42,3 +40,10 @@ class Pose(BaseModel):
         self.yaw += step.angular
         self.time = step.time
         return self
+
+    def transform(self, point: Point) -> Point:
+
+        return Point(
+            x=self.x + point.x * np.cos(self.yaw) - point.y * np.sin(self.yaw),
+            y=self.y + point.x * np.sin(self.yaw) + point.y * np.cos(self.yaw),
+        )

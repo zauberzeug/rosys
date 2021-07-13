@@ -1,7 +1,19 @@
+import numpy as np
 from ..actors.esp import Esp
 from ..world.world import World
+from ..world.point import Point
 from ..world.spline import Spline
 from .navigation.carrot import Carrot
+
+
+def eliminate_2pi(angle):
+
+    return (angle + np.pi) % (2 * np.pi) - np.pi
+
+
+def eliminate_pi(angle):
+
+    return (angle + np.pi / 2) % np.pi - np.pi / 2
 
 
 async def spline(spline: Spline, world: World, esp: Esp):
@@ -11,11 +23,31 @@ async def spline(spline: Spline, world: World, esp: Esp):
     linear_limit = world.robot.parameters.linear_speed_limit
     angular_limit = world.robot.parameters.angular_speed_limit
 
-    while carrot.move(world.robot.prediction):
+    is_offset = world.robot.shape.point_of_interest.distance(Point(x=0, y=0)) > 0
 
-        local_spline = Spline.from_poses(world.robot.prediction, carrot.pose)
-        curvature = local_spline.max_curvature(0.0, 0.25)
-        linear = 0.5
+    while True:
+
+        point_of_interest = world.robot.prediction.transform(world.robot.shape.point_of_interest)
+        if not carrot.move(point_of_interest):
+            break
+
+        if is_offset:
+            direction_poi_to_carrot = point_of_interest.direction(carrot.pose.point)
+            turn_angle = eliminate_2pi(direction_poi_to_carrot - world.robot.prediction.yaw)
+            backward = abs(turn_angle) > np.pi / 2
+            turn_angle = eliminate_pi(turn_angle)
+            # NOTE: rectangular triangle with heigth h and hypothenuse segments p, q
+            h = world.robot.shape.point_of_interest.x
+            p = np.tan(turn_angle) * h
+            q = h**2 / p
+            r = world.robot.shape.point_of_interest.y + q
+            curvature = 1 / r
+        else:
+            local_spline = Spline.from_poses(world.robot.prediction, carrot.pose)
+            curvature = local_spline.max_curvature(0.0, 0.25)
+            backward = False
+
+        linear = 0.5 * (-1 if backward else 1)
         angular = linear * curvature
 
         if abs(linear) > linear_limit:

@@ -20,6 +20,15 @@ class Point(BaseModel):
 
         return np.sqrt((other.x - self.x)**2 + (other.y - self.y)**2)
 
+    def direction(self, other: Point) -> float:
+
+        return np.arctan2(other.y - self.y, other.x - self.x)
+
+    def projected_distance(self, other: Point, direction: float) -> float:
+
+        def d(p): return np.sqrt(p.x**2 + p.y**2) * np.cos(direction - np.arctan2(p.y, p.x))
+        return d(other) - d(self)
+
     def polar(self, distance: float, yaw: float):
 
         return Point(
