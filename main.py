@@ -148,6 +148,20 @@ with ui.card():
     actors = ui.label()
     ui.timer(1.0, lambda: actors.set_text(", ".join(map(str, runtime.actors))))
 
+with ui.card():
+
+    ui.label('Controller')
+
+    def configure():
+        runtime.esp.send('esp erase')
+        runtime.esp.send('+new bluetooth bt ESP_Z18')
+        runtime.esp.send('+new drive drive roboclaw,128,38400')
+        runtime.esp.send('+set drive.mPerTick=0.0000326116817')
+        runtime.esp.send('+set drive.width=0.45')
+        runtime.esp.send('+set esp.outputModules=drive')
+        runtime.esp.send('+esp unmute')
+        runtime.esp.send('esp restart')
+    ui.button('Configure', on_click=configure)
 
 ui.on_startup(runtime.run())
 ui.on_shutdown(runtime.stop())
