@@ -40,7 +40,7 @@ def load() -> list[Spline]:
     return splines
 
 
-def normalize(path: list[Spline]) -> list[Spline]:
+def scale(path: list[Spline], target_size: float = 1.0) -> list[Spline]:
 
     min_x = np.inf
     min_y = np.inf
@@ -59,16 +59,17 @@ def normalize(path: list[Spline]) -> list[Spline]:
     range_x = max_x - min_x
     range_y = max_y - min_y
     range = (range_x + range_y) / 2
+    factor = target_size / range
     return [
         Spline(
-            start=Point(x=(spline.start.x - center_x) / range,
-                        y=(spline.start.y - center_y) / range),
-            control1=Point(x=(spline.control1.x - center_x) / range,
-                           y=(spline.control1.y - center_y) / range),
-            control2=Point(x=(spline.control2.x - center_x) / range,
-                           y=(spline.control2.y - center_y) / range),
-            end=Point(x=(spline.end.x - center_x) / range,
-                      y=(spline.end.y - center_y) / range),
+            start=Point(x=(spline.start.x - center_x) * factor,
+                        y=(spline.start.y - center_y) * factor),
+            control1=Point(x=(spline.control1.x - center_x) * factor,
+                           y=(spline.control1.y - center_y) * factor),
+            control2=Point(x=(spline.control2.x - center_x) * factor,
+                           y=(spline.control2.y - center_y) * factor),
+            end=Point(x=(spline.end.x - center_x) * factor,
+                      y=(spline.end.y - center_y) * factor),
         )
         for spline in path
     ]

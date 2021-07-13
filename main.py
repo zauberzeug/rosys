@@ -5,6 +5,7 @@ import os
 import starlette
 from rosys.runtime import Runtime
 from rosys.world.mode import Mode
+from rosys.automations.draw import draw
 from rosys.ui.joystick import Joystick
 from rosys.ui.three import Three
 import drawings
@@ -51,8 +52,8 @@ with ui.card() as svg_card:
     set_image_source()
 
     def start():
-        runtime.world.path = [spline for spline in drawings.normalize(drawings.load())]
-        ic(runtime.world.path)
+        runtime.world.path = drawings.scale(drawings.load(), 2.0)
+        runtime.automator.add(draw(runtime.world, runtime.esp))
     ui.button('Start', on_click=start)
 
 with ui.card().style('width:600px'):
