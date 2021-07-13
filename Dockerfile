@@ -23,7 +23,7 @@ RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install -vvv --no-root 
 ADD ./rosys /app/rosys
 COPY  main.py start.sh /app/
 
-RUN curl -sSL https://gist.githubusercontent.com/b01/0a16b6645ab7921b0910603dfb85e4fb/raw/5186ea07a06eac28937fd914a9c8f9ce077a978e/download-vs-code-server.sh | sed "s/server-linux-x64/server-linux-$(dpkg --print-architecture)/" | sh
+RUN curl -sSL https://gist.githubusercontent.com/b01/0a16b6645ab7921b0910603dfb85e4fb/raw/5186ea07a06eac28937fd914a9c8f9ce077a978e/download-vs-code-server.sh | sed "s/server-linux-x64/server-linux-$(dpkg --print-architecture)/" | sed "s/amd64/x64/" | sh
 
 ENV VSCODE_SERVER=/root/.vscode-server/bin/*/server.sh
 
