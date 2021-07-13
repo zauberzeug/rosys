@@ -28,8 +28,12 @@ with ui.card():
     Joystick(size=50, color='blue', steerer=runtime.steerer)
 
     def update_three():
-        three.set_robot('prediction', '#6E93D6', runtime.world.robot.prediction)
-        three.set_robot('detection', '#AEC0E2', runtime.world.robot.detection)
+        need_updates = [
+            three.set_robot('prediction', '#6E93D6', runtime.world.robot.prediction),
+            three.set_robot('detection', '#AEC0E2', runtime.world.robot.detection),
+            three.update_path(runtime.world.path),
+        ]
+        return not all(n == False for n in need_updates)
     three = Three()
     ui.timer(0.05, update_three)
 
@@ -46,7 +50,10 @@ with ui.card() as svg_card:
     image = ui.image(source=None)
     set_image_source()
 
-    ui.button('Start', on_click=lambda: [ic(spline) for spline in drawings.load()])
+    def start():
+        runtime.world.path = [spline for spline in drawings.normalize(drawings.load())]
+        ic(runtime.world.path)
+    ui.button('Start', on_click=start)
 
 with ui.card().style('width:600px'):
 

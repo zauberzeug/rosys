@@ -4,6 +4,8 @@ var orbitControls;
 var robots = new Map();
 var images = new Map();
 var loader = new THREE.TextureLoader();
+var path;
+var path_time = 0;
 
 Vue.component("three", {
   template: `<canvas v-bind:id="jp_props.id"></div>`,
@@ -164,6 +166,26 @@ Vue.component("three", {
         images.set(image.id, mesh);
       }
     });
+
+    if (path_time != this.$props.jp_props.options.path_time) {
+      path_time = this.$props.jp_props.options.path_time;
+      if (path) scene.remove(path);
+      let points = [];
+      this.$props.jp_props.options.path.forEach((spline) => {
+        const curve = new THREE.CubicBezierCurve3(
+          new THREE.Vector3(spline.start.x, spline.start.y, 0),
+          new THREE.Vector3(spline.control1.x, spline.control1.y, 0),
+          new THREE.Vector3(spline.control2.x, spline.control2.y, 0),
+          new THREE.Vector3(spline.end.x, spline.end.y, 0)
+        );
+        points.push(...curve.getPoints(10));
+      });
+      path = new THREE.Line(
+        new THREE.BufferGeometry().setFromPoints(points),
+        new THREE.LineBasicMaterial({ color: "orange" })
+      );
+      scene.add(path);
+    }
   },
 
   props: {

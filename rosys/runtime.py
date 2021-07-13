@@ -34,10 +34,6 @@ class Runtime:
             time=time.time(),
             robot=Robot(),
             marker=Marker.four_points(0.24, 0.26, 0.41),
-            download_queue=[],
-            cameras=[],
-            images=[],
-            image_data={},
         )
         self.esp = SerialEsp() if mode == Mode.REAL else MockedEsp()
         self.odometer = Odometer()

@@ -6,14 +6,32 @@ from .pose import Pose
 from .point import Point
 
 
-class Spline:
+class Spline(BaseModel):
 
-    def __init__(self, start: Point, control1: Point, control2: Point, end: Point):
+    start: Point
+    control1: Point
+    control2: Point
+    end: Point
 
-        self.start = start
-        self.control1 = control1
-        self.control2 = control2
-        self.end = end
+    a: float = 0
+    b: float = 0
+    c: float = 0
+    d: float = 0
+    e: float = 0
+    f: float = 0
+    g: float = 0
+    h: float = 0
+
+    m: float = 0
+    n: float = 0
+    o: float = 0
+    p: float = 0
+    q: float = 0
+    r: float = 0
+
+    def __init__(self, **kwargs):
+
+        super().__init__(**kwargs)
 
         self.a = self.start.x
         self.e = self.start.y
@@ -145,10 +163,17 @@ class Spline:
 
     def turning_points(self, t_min: float = 0.0, t_max: float = 1.0) -> List[float]:
 
+        inner = self.m**2 * self.r**2 + ((4 * self.n**2 - 2 * self.m * self.o) * self.p - 4 * self.m * self.n * self.q) * \
+            self.r + 4 * self.m * self.o * self.q**2 - 4 * self.n * self.o * self.p * self.q + self.o**2 * self.p**2
+        if inner < 0:
+            return np.array([])
+
+        denominator = 2 * self.m * self.q - 2 * self.n * self.p
+        if abs(denominator) < 1e-16:
+            return np.array([])
+
         t = [
-            +(np.sqrt(self.m**2 * self.r**2 + ((4 * self.n**2 - 2 * self.m * self.o) * self.p - 4 * self.m * self.n * self.q) * self.r + 4 * self.m * self.o * self.q **
-              2 - 4 * self.n * self.o * self.p * self.q + self.o**2 * self.p**2) - self.m * self.r + self.o * self.p) / (2 * self.m * self.q - 2 * self.n * self.p),
-            -(np.sqrt(self.m**2 * self.r**2 + ((4 * self.n**2 - 2 * self.m * self.o) * self.p - 4 * self.m * self.n * self.q) * self.r + 4 * self.m * self.o * self.q **
-              2 - 4 * self.n * self.o * self.p * self.q + self.o**2 * self.p**2) + self.m * self.r - self.o * self.p) / (2 * self.m * self.q - 2 * self.n * self.p),
+            +(np.sqrt(inner) - self.m * self.r + self.o * self.p) / denominator,
+            -(np.sqrt(inner) + self.m * self.r - self.o * self.p) / denominator,
         ]
         return np.array([t_ for t_ in t if t_min <= t_ <= t_max])

@@ -1,6 +1,6 @@
 import os
-from typing import List
 import svgpathtools
+import numpy as np
 from rosys.world.point import Point
 from rosys.world.spline import Spline
 
@@ -16,24 +16,59 @@ def store(content: bytearray):
         f.write(content)
 
 
-def load() -> List[Spline]:
+def load() -> list[Spline]:
 
-    paths, _ = svgpathtools.svg2paths(filepath)
-    for path in paths:
+    splines = []
+    for path in svgpathtools.svg2paths(filepath)[0]:
         for line in path:
             if type(line) == svgpathtools.path.Line:
                 start = Point.from_complex(line.start)
                 end = Point.from_complex(line.end)
-                yield Spline(
+                splines.append(Spline(
                     start=start,
                     control1=start.interpolate(end, 1/3),
                     control2=start.interpolate(end, 2/3),
                     end=end,
-                )
+                ))
             if type(line) == svgpathtools.path.CubicBezier:
-                yield Spline(
+                splines.append(Spline(
                     start=Point.from_complex(line.start),
                     control1=Point.from_complex(line.control1),
                     control2=Point.from_complex(line.control2),
                     end=Point.from_complex(line.end),
-                )
+                ))
+    return splines
+
+
+def normalize(path: list[Spline]) -> list[Spline]:
+
+    min_x = np.inf
+    min_y = np.inf
+    max_x = -np.inf
+    max_y = -np.inf
+    for spline in path:
+        turning_points = spline.turning_points()
+        turning_x = [spline.x(t) for t in turning_points]
+        turning_y = [spline.y(t) for t in turning_points]
+        min_x = min([min_x, spline.start.x, spline.end.x] + turning_x)
+        min_y = min([min_y, spline.start.y, spline.end.y] + turning_y)
+        max_x = max([max_x, spline.start.x, spline.end.x] + turning_x)
+        max_y = max([max_y, spline.start.y, spline.end.y] + turning_y)
+    center_x = (min_x + max_x) / 2
+    center_y = (min_y + max_y) / 2
+    range_x = max_x - min_x
+    range_y = max_y - min_y
+    range = (range_x + range_y) / 2
+    return [
+        Spline(
+            start=Point(x=(spline.start.x - center_x) / range,
+                        y=(spline.start.y - center_y) / range),
+            control1=Point(x=(spline.control1.x - center_x) / range,
+                           y=(spline.control1.y - center_y) / range),
+            control2=Point(x=(spline.control2.x - center_x) / range,
+                           y=(spline.control2.y - center_y) / range),
+            end=Point(x=(spline.end.x - center_x) / range,
+                      y=(spline.end.y - center_y) / range),
+        )
+        for spline in path
+    ]

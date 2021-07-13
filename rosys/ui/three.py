@@ -1,9 +1,11 @@
 from typing import Callable
+import time
 from nicegui.elements.custom_view import CustomView
 from nicegui.elements.element import Element
 from ..world.pose import Pose
 from ..world.image import Image
 from ..world.camera import Camera
+from ..world.spline import Spline
 
 
 class ThreeView(CustomView):
@@ -13,7 +15,7 @@ class ThreeView(CustomView):
         super().__init__('three', __file__, [
             'https://cdn.jsdelivr.net/npm/three@0.129.0/build/three.min.js',
             'https://cdn.jsdelivr.net/npm/three@0.129.0/examples/js/controls/OrbitControls.js',
-        ], robots={}, follow_robot=follow_robot, images=[])
+        ], robots={}, follow_robot=follow_robot, images=[], path=[], path_time=0)
 
         self.on_click = on_click
         self.allowed_events = ['onClick']
@@ -47,3 +49,11 @@ class Three(Element):
             for image in latest_images.values()
             if image.mac in cameras and cameras[image.mac].projection is not None
         ]
+
+    def update_path(self, path: list[Spline]):
+
+        new_path = [spline.dict() for spline in path]
+        if self.view.options.path == new_path:
+            return False
+        self.view.options.path = new_path
+        self.view.options.path_time = time.time()
