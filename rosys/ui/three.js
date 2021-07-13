@@ -75,7 +75,15 @@ Vue.component("three", {
     Object.entries(jp_robots).forEach(([id, robot]) => {
       if (!robots.has(id)) {
         console.log("add", id, robot);
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const robot_shape = this.$props.jp_props.options.robot_shape;
+        const shape = new THREE.Shape();
+        shape.autoClose = true;
+        shape.moveTo(robot_shape.outline[0][0], robot_shape.outline[0][1]);
+        robot_shape.outline.slice(1).forEach((p) => shape.lineTo(p[0], p[1]));
+        const geometry = new THREE.ExtrudeGeometry(shape, {
+          depth: robot_shape.height,
+          bevelEnabled: false,
+        });
         const scale = 1.0 - 0.001 * robots.size;
         geometry.scale(scale, scale, scale);
         const material = new THREE.MeshPhongMaterial({ color: robot.color });
@@ -168,6 +176,7 @@ Vue.component("three", {
     });
 
     if (path_time != this.$props.jp_props.options.path_time) {
+      console.log("Update path...");
       path_time = this.$props.jp_props.options.path_time;
       if (path) scene.remove(path);
       let points = [];

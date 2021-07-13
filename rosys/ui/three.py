@@ -1,3 +1,4 @@
+from rosys.world.robot import RobotShape
 from typing import Callable
 import time
 from nicegui.elements.custom_view import CustomView
@@ -10,12 +11,12 @@ from ..world.spline import Spline
 
 class ThreeView(CustomView):
 
-    def __init__(self, *, follow_robot: bool, on_click: Callable):
+    def __init__(self, *, follow_robot: bool, robot_shape: RobotShape, on_click: Callable):
 
         super().__init__('three', __file__, [
             'https://cdn.jsdelivr.net/npm/three@0.129.0/build/three.min.js',
             'https://cdn.jsdelivr.net/npm/three@0.129.0/examples/js/controls/OrbitControls.js',
-        ], robots={}, follow_robot=follow_robot, images=[], path=[], path_time=0)
+        ], robots={}, follow_robot=follow_robot, robot_shape=robot_shape.dict(), images=[], path=[], path_time=0)
 
         self.on_click = on_click
         self.allowed_events = ['onClick']
@@ -29,9 +30,9 @@ class ThreeView(CustomView):
 
 class Three(Element):
 
-    def __init__(self, *, follow_robot: bool = True, on_click: Callable = None):
+    def __init__(self, *, follow_robot: bool = True, robot_shape: RobotShape = None, on_click: Callable = None):
 
-        super().__init__(ThreeView(follow_robot=follow_robot, on_click=on_click))
+        super().__init__(ThreeView(follow_robot=follow_robot, robot_shape=robot_shape or RobotShape(), on_click=on_click))
 
     def set_robot(self, id: str, color: str, pose: Pose):
 
