@@ -16,9 +16,14 @@ def eliminate_pi(angle):
     return (angle + np.pi / 2) % np.pi - np.pi / 2
 
 
+def ramp(x: float, in_min: float, in_max: float, out_min: float, out_max: float):
+
+    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+
+
 async def spline(spline: Spline, world: World, esp: Esp):
 
-    carrot = Carrot(spline)
+    carrot = Carrot(spline=spline)
 
     linear_limit = world.robot.parameters.linear_speed_limit
     angular_limit = world.robot.parameters.angular_speed_limit
@@ -48,6 +53,8 @@ async def spline(spline: Spline, world: World, esp: Esp):
             backward = False
 
         linear = 0.5 * (-1 if backward else 1)
+        if carrot.t > 1.0:
+            linear *= ramp(carrot.target_distance, 0.5, 0.0, 1.0, 0.5)
         angular = linear * curvature
 
         if abs(linear) > linear_limit:

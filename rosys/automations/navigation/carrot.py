@@ -1,15 +1,15 @@
+from pydantic import BaseModel
+from typing import Optional
 from ...world.point import Point
 from ...world.pose import Pose
 from ...world.spline import Spline
 
 
-class Carrot:
+class Carrot(BaseModel):
 
-    def __init__(self, spline: Spline):
-
-        self.spline = spline
-        self.t = 0
-        self.is_end_reached = False
+    spline: Spline
+    t: float = 0
+    target_distance: Optional[float] = None
 
     @property
     def pose(self) -> Pose:
@@ -36,7 +36,8 @@ class Carrot:
             if self.t < 1.0:
                 continue
 
-            if point_of_interest.projected_distance(end_point, end_yaw) <= move_threshold:
+            self.target_distance = point_of_interest.projected_distance(end_point, end_yaw)
+            if self.target_distance <= move_threshold:
                 return False
 
         return True
