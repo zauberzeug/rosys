@@ -68,8 +68,10 @@ async def test_pause_and_resume_spline(runtime: Runtime):
 
     runtime.resume()
     await runtime.run(seconds=2.0)
-    assert_pose(2, 0, deg=0)
-    assert runtime.world.time == pytest.approx(start + 6, abs=0.1)
+    assert_pose(1.9, 0, deg=0)
+    await runtime.run(seconds=0.1)
+    assert_pose(2.0, 0, deg=0)
+    assert runtime.world.time == pytest.approx(start + 6.1, abs=0.1)
 
 
 @pytest.mark.asyncio
