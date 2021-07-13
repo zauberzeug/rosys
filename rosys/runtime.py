@@ -16,10 +16,9 @@ from .actors.camera_scanner import CameraScanner
 from .actors.camera_downloader import CameraDownloader
 from .actors.camera_simulator import CameraSimulator
 from .actors.camera_projector import CameraProjector
-from .world.world import World
+from .world.world import World, WorldState
 from .world.robot import Robot
 from .world.marker import Marker
-from .world.state import State
 from .world.mode import Mode
 from .helpers import print_stacktrace
 
@@ -30,7 +29,7 @@ class Runtime:
 
         self.world = World(
             mode=mode,
-            state=State.RUNNING,
+            state=WorldState.RUNNING,
             time=time.time(),
             robot=Robot(),
             marker=Marker.four_points(0.24, 0.26, 0.41),
@@ -70,11 +69,11 @@ class Runtime:
         }
 
     async def pause(self):
-        self.world.state = State.PAUSED
+        self.world.state = WorldState.PAUSED
         await self.esp.drive(0, 0)
 
     def resume(self):
-        self.world.state = State.RUNNING
+        self.world.state = WorldState.RUNNING
 
     async def run(self, seconds: float = sys.maxsize):
 

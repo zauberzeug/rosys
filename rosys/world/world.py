@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List, Dict
-from .state import State
+from enum import Enum
 from .mode import Mode
 from .robot import Robot
 from .marker import Marker
@@ -9,10 +9,16 @@ from .image import Image
 from .spline import Spline
 
 
+class WorldState(Enum):
+
+    RUNNING = 1
+    PAUSED = 2
+
+
 class World(BaseModel):
 
     mode: Mode
-    state: State
+    state: WorldState
     time: float
     robot: Robot
     marker: Marker

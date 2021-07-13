@@ -3,6 +3,7 @@ from typing import List
 from nicegui import app, ui
 import os
 import starlette
+from rosys import task_logger
 from rosys.runtime import Runtime
 from rosys.world.mode import Mode
 from rosys.automations.draw import draw
@@ -22,6 +23,7 @@ with ui.card():
     state = ui.label()
     ui.timer(0.1, lambda: state.set_text(f'''
         {runtime.world.time:.3f} s
+        {runtime.world.state.name}
         (x={runtime.world.robot.prediction.x:.3f},
         y={runtime.world.robot.prediction.y:.3f})
     '''))
@@ -51,10 +53,18 @@ with ui.card() as svg_card:
     image = ui.image(source=None)
     set_image_source()
 
-    def start():
-        runtime.world.path = drawings.scale(drawings.load(), 2.0)
-        runtime.automator.add(draw(runtime.world, runtime.esp))
-    ui.button('Start', on_click=start)
+    with ui.row():
+
+        def start():
+            runtime.world.path = drawings.scale(drawings.load(), 2.0)
+            runtime.automator.add(draw(runtime.world, runtime.esp))
+            runtime.resume()
+
+        def stop():
+            task_logger.create_task(runtime.pause())
+
+        ui.button('Start', on_click=start).props('icon=play_arrow')
+        ui.button('Stop', on_click=stop).props('icon=stop')
 
 with ui.card().style('width:600px'):
 
