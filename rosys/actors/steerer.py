@@ -12,7 +12,7 @@ class State(Enum):
 
 class Steerer(Actor):
 
-    interval = 0.05
+    interval: float = 0.05
 
     def __init__(self):
 

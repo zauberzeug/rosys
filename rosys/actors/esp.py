@@ -35,19 +35,24 @@ class SerialEsp(Esp):
             raise IOError('Error reading from serial')
 
         if line.startswith("\x1b[0;32m"):
+            ic(line)
             return  # NOTE: ignore green log messages
-
-        if not line.startswith("esp "):
-            return  # NOTE: ignore all messages but esp status
 
         if '^' in line:
             line, checksum = line.split('^')
             if reduce(ixor, map(ord, line)) != int(checksum):
+                ic('Checksum failed')
                 return
 
+        if not line.startswith("esp "):
+            ic(line)
+            return  # NOTE: ignore all messages but esp status
+
         try:
-            words = line.split()[2:]
-            # TODO: read millis and compare with world time
+            words = line.split()[1:]
+            millis = float(words.pop(0))
+            # TODO: compare millis with world time
+            # print(f'{world.time:.3f}, {millis / 1000:.3f}, {world.time - millis / 1000:.3f}', flush=True)
             linear = float(words.pop(0))
             angular = float(words.pop(0))
             temperature = float(words.pop(0))

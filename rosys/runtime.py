@@ -108,28 +108,27 @@ class Runtime:
             try:
                 await actor.step(*params)
                 await self.call_follow_ups(actor.step)
+                dt = self.world.time - start
             except:
+                dt = self.world.time - start
                 print_stacktrace()
-            dt = self.world.time - start
+                if actor.interval == 0 and dt < 0.1:
+                    delay = 0.1 - dt
+                    logging.warning(
+                        f'{type(actor).__name__} would be called to frequently ' +
+                        f'because it only took {dt*1000:.0f} ms; ' +
+                        f'delaying this step for {delay*1000:.0f} ms')
+                    await asyncio.sleep(delay)
 
-            interval = actor.interval
-
-            if actor.interval == 0 and dt < 0.1:
-                delay = 0.1 - dt
-                logging.info(
-                    f'{type(actor).__name__} would be called to frequently ' +
-                    f'because it only took {dt*1000:.0f} ms; ' +
-                    f'delaying this step for {delay*1000:.0f} ms')
-                await asyncio.sleep(delay)
-            elif dt > actor.interval > 0:
+            if dt > actor.interval > 0:
                 logging.warning(f'{type(actor).__name__} took {dt} s')
 
             if self.world.mode == Mode.TEST:
-                sleep_end_time = self.world.time + interval
+                sleep_end_time = self.world.time + actor.interval
                 while self.world.time < min(run_end_time, sleep_end_time):
                     await asyncio.sleep(0)
             else:
-                await asyncio.sleep(interval - dt)
+                await asyncio.sleep(actor.interval - dt)
 
     async def advance_time(self, end_time):
 
