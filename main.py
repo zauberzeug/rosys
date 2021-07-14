@@ -189,6 +189,7 @@ with controller_card:
             await runtime.esp.send(line)
             await asyncio.sleep(0.1)
     ui.button('Configure', on_click=lambda: task_logger.create_task(configure()))
+    ui.button('Restart', on_click=lambda: task_logger.create_task(runtime.esp.send('esp restart')))
 
 ui.on_startup(runtime.run())
 ui.on_shutdown(runtime.stop())
