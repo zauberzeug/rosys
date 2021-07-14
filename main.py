@@ -45,28 +45,34 @@ with ui.card():
 with ui.card() as svg_card:
 
     def set_image_source():
-        image.set_source(f'/drawings/default?t={runtime.world.time}')
+        image.set_source(f'drawings/default?t={runtime.world.time}')
+
+    def set_path():
+        runtime.world.path = drawings.scale(drawings.load(), size.value)
 
     def upload(files: List[bytearray]):
         drawings.store(files[0])
         set_image_source()
+        set_path()
 
     ui.upload(on_upload=upload)
     image = ui.image(source=None)
-    set_image_source()
 
-    with ui.row():
+    with ui.row().classes('items-end'):
 
         def start():
-            runtime.world.path = drawings.scale(drawings.load(), 3.0)
             runtime.automator.add(draw(runtime.world, runtime.esp))
             runtime.resume()
 
         def stop():
             task_logger.create_task(runtime.pause())
 
+        size = ui.number('Size [m]', value=2.0, on_change=set_path)
         ui.button('Start', on_click=start).props('icon=play_arrow')
         ui.button('Stop', on_click=stop).props('icon=stop')
+
+    set_image_source()
+    set_path()
 
 with ui.card().style('width:600px'):
 
