@@ -91,12 +91,12 @@ class Runtime:
         [t.cancel() for t in self.tasks]
         [await a.tear_down() for a in self.actors]
 
-    async def call_targets(self, trigger: Union[Callable, Awaitable]):
+    async def call_follow_ups(self, trigger: Union[Callable, Awaitable]):
 
-        for target in self.follow_ups.get(trigger, []):
-            params = self.get_params(target)
-            await target(*params) if asyncio.iscoroutine(target) else target(*params)
-            await self.call_targets(target)
+        for follow_up in self.follow_ups.get(trigger, []):
+            params = self.get_params(follow_up)
+            await follow_up(*params) if asyncio.iscoroutine(follow_up) else follow_up(*params)
+            await self.call_follow_ups(follow_up)
 
     async def repeat(self, actor: Actor, run_end_time: float):
 
@@ -107,7 +107,7 @@ class Runtime:
             start = self.world.time
             try:
                 await actor.step(*params)
-                await self.call_targets(actor.step)
+                await self.call_follow_ups(actor.step)
             except:
                 print_stacktrace()
             dt = self.world.time - start
