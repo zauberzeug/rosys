@@ -185,7 +185,13 @@ def get_drawing(request, **kwargs):
     return starlette.responses.FileResponse(f'{drawings.path}/{request.path_params["id"]}.svg')
 
 
+def get_world(request, **kwargs):
+
+    return starlette.responses.Response(content=runtime.world.json(exclude={'image_data'}), media_type='text/json')
+
+
 app.routes.insert(0, starlette.routing.Route('/imagedata/{id}', get_image_data))
 app.routes.insert(0, starlette.routing.Route('/drawings/{id}', get_drawing))
+app.routes.insert(0, starlette.routing.Route('/world', get_world))
 
 ui.run(title="RoSys")
