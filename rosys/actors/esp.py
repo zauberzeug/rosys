@@ -37,6 +37,9 @@ class SerialEsp(Esp):
         if line.startswith("\x1b[0;32m"):
             return  # NOTE: ignore green log messages
 
+        if not line.startswith("esp "):
+            return  # NOTE: ignore all messages but esp status
+
         if '^' in line:
             line, checksum = line.split('^')
             if reduce(ixor, map(ord, line)) != int(checksum):

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import asyncio
 from typing import List
 from nicegui import app, ui
 import os
@@ -153,14 +154,20 @@ with ui.card():
     ui.label('Controller')
 
     async def configure():
-        await runtime.esp.send('esp erase')
-        await runtime.esp.send('+new bluetooth bt ESP_Z18')
-        await runtime.esp.send('+new drive drive roboclaw,128,38400')
-        await runtime.esp.send('+set drive.mPerTick=0.0000326116817')
-        await runtime.esp.send('+set drive.width=0.45')
-        await runtime.esp.send('+set esp.outputModules=drive')
-        await runtime.esp.send('+esp unmute')
-        await runtime.esp.send('esp restart')
+        for line in [
+            'esp erase',
+            '+new bluetooth bt ESP_Z18',
+            '+new drive drive roboclaw,128,38400',
+            '+set drive.mPerTick=0.0000326116817',
+            '+set drive.width=0.45',
+            '+set esp.outputModules=drive',
+            '+esp unmute',
+            '+set esp.ready=1',
+            '+set esp.24v=1',
+            'esp restart',
+        ]:
+            await runtime.esp.send(line)
+            await asyncio.sleep(0.1)
     ui.button('Configure', on_click=lambda: task_logger.create_task(configure()))
 
 ui.on_startup(runtime.run())
