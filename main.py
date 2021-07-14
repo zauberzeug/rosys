@@ -20,7 +20,18 @@ runtime = Runtime(Mode.REAL if has_esp else Mode.SIMULATION)
 runtime.world.robot.shape.point_of_interest.x = 0.75
 # runtime = Runtime(Mode.SIMULATION)
 
-with ui.card():
+with ui.column().classes('w-full items-stretch'):
+    with ui.row().classes('items-stretch justify-items-stretch'):
+        svg_card = ui.card()
+        steering_card = ui.card()
+        with ui.column().classes('flex-grow items-stretch justify-items-stretch'):
+            image_card = ui.card().classes('flex-grow')
+            camera_card = ui.card()
+    with ui.row().classes('items-stretch justify-items-stretch'):
+        actor_card = ui.card().classes('flex-grow')
+        controller_card = ui.card()
+
+with steering_card:
 
     state = ui.label()
     ui.timer(0.1, lambda: state.set_text(f'''
@@ -42,7 +53,7 @@ with ui.card():
     three = Three()
     ui.timer(0.05, update_three)
 
-with ui.card() as svg_card:
+with svg_card:
 
     def set_image_source():
         image.set_source(f'drawings/default?t={runtime.world.time}')
@@ -74,13 +85,16 @@ with ui.card() as svg_card:
     set_image_source()
     set_path()
 
-with ui.card().style('width:600px'):
+with image_card:
 
-    def download():
-        runtime.world.download_queue = list(runtime.world.cameras.keys())
-    ui.button('Download images', on_click=download)
-    download_timer = ui.timer(0.1, download)
-    ui.checkbox('Track').bind_value_to(download_timer.active)
+    with ui.row():
+
+        def download():
+            runtime.world.download_queue = list(runtime.world.cameras.keys())
+
+        ui.button('Download images', on_click=download)
+        download_timer = ui.timer(0.1, download)
+        ui.checkbox('Track').bind_value_to(download_timer.active)
 
     with ui.image() as ui_image:
         ui_image.id = None
@@ -126,7 +140,7 @@ with ui.card().style('width:600px'):
 
     ui.timer(1.0, update_camera_images)
 
-with ui.card():
+with camera_card:
 
     ui.label('Cameras')
 
@@ -149,13 +163,13 @@ with ui.card():
 
     ui.button('Clear calibrations', on_click=clear_calibrations)
 
-with ui.card():
+with actor_card:
 
     ui.label('Actors')
     actors = ui.label()
     ui.timer(1.0, lambda: actors.set_text(", ".join(map(str, runtime.actors))))
 
-with ui.card():
+with controller_card:
 
     ui.label('Controller')
 
