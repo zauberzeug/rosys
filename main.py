@@ -191,6 +191,9 @@ with controller_card:
     ui.button('Configure', on_click=lambda: task_logger.create_task(configure()))
     ui.button('Restart', on_click=lambda: task_logger.create_task(runtime.esp.send('esp restart')))
 
+    offset = ui.label()
+    ui.timer(0.1, lambda: offset.set_text(f'Clock offset: {runtime.world.robot.clock_offset or 0:.3f} s'))
+
 ui.on_startup(runtime.run())
 ui.on_shutdown(runtime.stop())
 

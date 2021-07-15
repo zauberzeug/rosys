@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import aioserial
 from operator import ixor
 from functools import reduce
@@ -21,50 +22,55 @@ class Esp(Actor):
 
 class SerialEsp(Esp):
 
-    interval: float = 0
+    interval: float = 0.01
 
     def __init__(self):
 
         self.aioserial = aioserial.AioSerial('/dev/esp', baudrate=115200)
+        self.remainder = ''
 
     async def step(self, world: World):
 
         try:
-            line = (await self.aioserial.readline_async()).decode().strip()
+            self.remainder += self.aioserial.read_all().decode()
         except:
-            raise IOError('Error reading from serial')
+            logging.warning('Error reading from serial')
+            return
 
-        if line.startswith("\x1b[0;32m"):
-            ic(line)
-            return  # NOTE: ignore green log messages
+        millis = None
+        while '\n' in self.remainder:
 
-        if '^' in line:
-            line, checksum = line.split('^')
-            if reduce(ixor, map(ord, line)) != int(checksum):
-                ic('Checksum failed')
-                return
+            line, self.remainder = self.remainder.split('\n', 1)
 
-        if not line.startswith("esp "):
-            ic(line)
-            return  # NOTE: ignore all messages but esp status
+            if line.startswith("\x1b[0;32m"):
+                logging.warning(line)
+                continue  # NOTE: ignore green log messages
 
-        try:
-            words = line.split()[1:]
-            millis = float(words.pop(0))
-            # TODO: compare millis with world time
-            # print(f'{world.time:.3f}, {millis / 1000:.3f}, {world.time - millis / 1000:.3f}', flush=True)
-            linear = float(words.pop(0))
-            angular = float(words.pop(0))
-            temperature = float(words.pop(0))
-            battery = float(words.pop(0))
-        except (IndexError, ValueError):
-            raise IOError(f'Error parsing serial message "{line}"')
+            if '^' in line:
+                line, checksum = line.split('^')
+                if reduce(ixor, map(ord, line)) != int(checksum):
+                    logging.warning('Checksum failed')
+                    continue
 
-        world.robot.velocity.linear = linear
-        world.robot.velocity.angular = angular
+            if not line.startswith("esp "):
+                logging.warning(line)
+                continue  # NOTE: ignore all messages but esp status
 
-        world.robot.battery = battery
-        world.robot.temperature = temperature
+            try:
+                words = line.split()[1:]
+                millis = float(words.pop(0))
+                linear = float(words.pop(0))
+                angular = float(words.pop(0))
+                world.robot.temperature = float(words.pop(0))
+                world.robot.battery = float(words.pop(0))
+                if world.robot.clock_offset is not None:
+                    time = millis / 1000 + world.robot.clock_offset
+                    world.robot.odometry.append(Velocity(linear=linear, angular=angular, time=time))
+            except (IndexError, ValueError):
+                logging.warning(f'Error parsing serial message "{line}"')
+
+        if millis is not None:
+            world.robot.clock_offset = world.time - millis / 1000
 
     async def send(self, line):
 
@@ -76,13 +82,17 @@ class MockedEsp(Esp):
 
     interval: float = 0.01
 
-    width: float = 0.5
-    _velocity: Velocity = Velocity(linear=0, angular=0)
+    def __init__(self, world: World):
+
+        x = [point[0] for point in world.robot.shape.outline]
+        self.width = max(x) - min(x)
+        self.linear_velocity: 0
+        self.angular_velocity: 0
 
     async def step(self, world: World):
 
-        world.robot.velocity.linear = self._velocity.linear
-        world.robot.velocity.angular = self._velocity.angular
+        velocity = Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=world.time)
+        world.robot.odometry.append(velocity)
         world.robot.battery = 25.0 + np.sin(0.1 * world.time) + 0.02 * np.random.randn()
         world.robot.temperature = np.random.uniform(34, 35)
 
@@ -91,11 +101,11 @@ class MockedEsp(Esp):
         if line.startswith("drive pw "):
             left = float(line.split()[2].split(',')[0])
             right = float(line.split()[2].split(',')[1])
-            self._velocity.linear = (left + right) / 2.0
-            self._velocity.angular = (right - left) / self.width / 2.0
+            self.linear_velocity = (left + right) / 2.0
+            self.angular_velocity = (right - left) / self.width / 2.0
 
         if line.startswith("drive speed "):
-            self._velocity.linear = float(line.split()[2].split(',')[0])
-            self._velocity.angular = float(line.split()[2].split(',')[1])
+            self.linear_velocity = float(line.split()[2].split(',')[0])
+            self.angular_velocity = float(line.split()[2].split(',')[1])
 
         await asyncio.sleep(0)

@@ -12,23 +12,22 @@ class Odometer(Actor):
 
     def handle_velocity(self, world: World):
 
-        if self.last_time is None:
-            self.last_time = world.time
-            return
+        while any(world.robot.odometry):
 
-        dt = world.time - self.last_time
-        self.last_time = world.time
+            velocity = world.robot.odometry.pop(0)
 
-        robot = world.robot
-        step = PoseStep(
-            linear=dt * robot.velocity.linear,
-            angular=dt * robot.velocity.angular,
-            time=world.time,
-        )
-        self.steps.append(step)
+            if self.last_time is None:
+                self.last_time = velocity.time
+                continue
+
+            dt = velocity.time - self.last_time
+            self.last_time = velocity.time
+
+            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=world.time)
+            self.steps.append(step)
+            world.robot.prediction += step
+
         self.prune_steps(world.time - 10.0)
-
-        robot.prediction += step
 
     def handle_detection(self, world: World):
 

@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional
 from .pose import Pose
 from .point import Point
 from .velocity import Velocity
@@ -23,6 +24,7 @@ class Robot(BaseModel):
     parameters: RobotParameters = RobotParameters()
     prediction: Pose = Pose()
     detection: Pose = Pose()
-    velocity: Velocity = Velocity()
+    odometry: list[Velocity] = []
     battery: float = 0
     temperature: float = 0
+    clock_offset: Optional[float]

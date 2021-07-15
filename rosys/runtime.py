@@ -34,7 +34,7 @@ class Runtime:
             robot=Robot(),
             marker=Marker.four_points(0.24, 0.26, 0.41),
         )
-        self.esp = SerialEsp() if mode == Mode.REAL else MockedEsp()
+        self.esp = SerialEsp() if mode == Mode.REAL else MockedEsp(self.world)
         self.odometer = Odometer()
         self.steerer = Steerer()
         self.robot_locator = RobotLocator()
