@@ -86,8 +86,8 @@ class MockedEsp(Esp):
 
         x = [point[0] for point in world.robot.shape.outline]
         self.width = max(x) - min(x)
-        self.linear_velocity: 0
-        self.angular_velocity: 0
+        self.linear_velocity: float = 0
+        self.angular_velocity: float = 0
 
     async def step(self, world: World):
 
