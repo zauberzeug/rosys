@@ -52,7 +52,9 @@ async def spline(spline: Spline, world: World, esp: Esp):
             curvature = local_spline.max_curvature(0.0, 0.25)
             backward = False
 
-        linear = 0.5 * (-1 if backward else 1)
+        age = world.time - world.robot.detection.time
+        linear = 0.5 if age < 3 else 0.0 if age > 6 else ramp(age, 3, 6, 0.5, 0.0)
+        linear *= (-1 if backward else 1)
         if carrot.t > 1.0:
             linear *= ramp(carrot.target_distance, 0.5, 0.0, 1.0, 0.5)
         angular = linear * curvature
