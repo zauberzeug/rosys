@@ -173,7 +173,7 @@ test = ["hypothesis (<6)", "py (<2)", "pytest (<7)", "pytest-benchmark (>=3.2.0,
 
 [[package]]
 name = "binding"
-version = "0.1.3"
+version = "0.3"
 description = "Bindable properties for Python"
 category = "main"
 optional = false
@@ -543,7 +543,7 @@ python-versions = ">=3.6"
 
 [[package]]
 name = "nicegui"
-version = "0.4.3"
+version = "0.4.5"
 description = "High-Level Abstraction Web-GUI Using Just Python"
 category = "main"
 optional = false
@@ -551,7 +551,7 @@ python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
 asttokens = ">=2.0.5,<3.0.0"
-binding = ">=0.1.3,<0.2.0"
+binding = ">=0.3,<0.4"
 docutils = ">=0.17.1,<0.18.0"
 justpy = "0.1.5"
 markdown2 = ">=2.4.0,<3.0.0"
@@ -1084,7 +1084,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=1.2.3)", "pytest-flake8", "pyt
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "433f559800582a54861f2fe5cac6396ab1a8aa7ac13800ad63b6987ec86477a0"
+content-hash = "0396326fcbb780bfd932a492494e2c34e2accf88f5cb66fdabd054225a84a82e"
 
 [metadata.files]
 addict = [
@@ -1185,8 +1185,8 @@ bidict = [
     {file = "bidict-0.21.2.tar.gz", hash = "sha256:4fa46f7ff96dc244abfc437383d987404ae861df797e2fd5b190e233c302be09"},
 ]
 binding = [
-    {file = "binding-0.1.3-py3-none-any.whl", hash = "sha256:f1ae310b7b8a9d0026c223fef4264fa48edcdf52d3bfd6ab75c88e80cd8a6313"},
-    {file = "binding-0.1.3.tar.gz", hash = "sha256:83977c86f2ed6dda95885289be27a3dc2f943112eb02295cf0cd2c6d443d888c"},
+    {file = "binding-0.3-py3-none-any.whl", hash = "sha256:94d4cdbcaa39bda0ca9c3d415596cb8256db80babdfd7ba2a2e429cdd95f64ad"},
+    {file = "binding-0.3.tar.gz", hash = "sha256:403432c6bf5ed8988c535652e4990aa9aae253ac5c2bf86a1f2ea2d30196cac9"},
 ]
 certifi = [
     {file = "certifi-2020.12.5-py2.py3-none-any.whl", hash = "sha256:719a74fb9e33b9bd44cc7f3a8d94bc35e4049deebe19ba7d8e108280cfd59830"},
@@ -1490,8 +1490,8 @@ multidict = [
     {file = "multidict-5.1.0.tar.gz", hash = "sha256:25b4e5f22d3a37ddf3effc0710ba692cfc792c2b9edfb9c05aefe823256e84d5"},
 ]
 nicegui = [
-    {file = "nicegui-0.4.3-py3-none-any.whl", hash = "sha256:c7817f56338ebdcdec0b1da87f880b7c9df11bcc5d5f385a5e26199bbadfe609"},
-    {file = "nicegui-0.4.3.tar.gz", hash = "sha256:59709e6e38ee3335f50c6f8afda7d03faa28c5125e183c1ffacffad429b025b9"},
+    {file = "nicegui-0.4.5-py3-none-any.whl", hash = "sha256:6c8a2d853a62db231ac03aec05cfb69d2053fccfa44b5838c078fe5dee547659"},
+    {file = "nicegui-0.4.5.tar.gz", hash = "sha256:5a3a289ad31d21f465eda100b919e290076df2577e6693f42ed7791ba8cb881e"},
 ]
 numpy = [
     {file = "numpy-1.20.2-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:e9459f40244bb02b2f14f6af0cd0732791d72232bbb0dc4bab57ef88e75f6935"},

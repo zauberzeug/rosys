@@ -25,7 +25,8 @@ class ThreeView(CustomView):
     def handle_click(self, msg):
 
         if self.on_click is not None:
-            self.on_click(msg)
+            return self.on_click(msg)
+        return False
 
 
 class Three(Element):
