@@ -18,6 +18,9 @@ def store(content: bytearray):
 
 def load() -> list[Spline]:
 
+    if not os.path.exists(filepath):
+        return []
+
     splines = []
     for path in svgpathtools.svg2paths(filepath)[0]:
         for line in path:
