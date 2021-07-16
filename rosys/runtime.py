@@ -92,10 +92,9 @@ class Runtime:
 
     async def stop(self):
 
+        backup(self.world)
         [t.cancel() for t in self.tasks]
         [await a.tear_down() for a in self.actors]
-
-        backup(self.world)
 
     async def call_follow_ups(self, trigger: Union[Callable, Awaitable]):
 
