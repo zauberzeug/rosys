@@ -17,7 +17,8 @@ class Point(BaseModel):
         )
 
     def to_complex(self):
-        return self.x+1j*self.y
+
+        return self.x + 1j * self.y
 
     def distance(self, other: Point) -> float:
 
@@ -47,7 +48,9 @@ class Point(BaseModel):
         )
 
     def __mul__(self, factor):
-        return Point(x=self.x*factor, y=self.y*factor)
+
+        return Point(x=self.x * factor, y=self.y * factor)
 
     def __truediv__(self, factor):
-        return Point(x=self.x/factor, y=self.y/factor)
+
+        return Point(x=self.x / factor, y=self.y / factor)
