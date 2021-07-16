@@ -4,6 +4,8 @@ from typing import List
 from nicegui import app, ui
 import os
 import starlette
+import socket
+import logging
 from rosys import task_logger
 from rosys.runtime import Runtime
 from rosys.world.mode import Mode
@@ -12,8 +14,6 @@ from rosys.automations.draw import draw
 from rosys.ui.joystick import Joystick
 from rosys.ui.three import Three
 import drawings
-import socket
-import logging
 
 import icecream
 icecream.install()
@@ -174,6 +174,7 @@ with camera_card:
     def clear_calibrations():
         for camera in runtime.world.cameras.values():
             camera.calibration = None
+            camera.projection = None
 
     ui.button('Clear calibrations', on_click=clear_calibrations)
 
@@ -192,7 +193,7 @@ with controller_card:
             'esp erase',
             '+new bluetooth bt ESP_Z18',
             '+new drive drive roboclaw,128,38400',
-            '+set drive.mPerTick=0.0000326116817',
+            '+set drive.mPerTick=0.00001110',
             '+set drive.width=0.45',
             '+set esp.outputModules=drive',
             '+esp unmute',

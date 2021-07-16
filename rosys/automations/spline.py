@@ -43,15 +43,23 @@ async def spline(spline: Spline, world: World, esp: Esp):
 
         if is_offset:
             direction_poi_to_carrot = point_of_interest.direction(carrot.pose.point)
-            turn_angle = eliminate_2pi(direction_poi_to_carrot - world.robot.prediction.yaw)
-            backward = abs(turn_angle) > np.pi / 2
-            turn_angle = eliminate_pi(turn_angle)
+            turn_angle = eliminate_pi(direction_poi_to_carrot - world.robot.prediction.yaw)
             # NOTE: rectangular triangle with heigth h and hypothenuse segments p, q
             h = world.robot.shape.point_of_interest.x
             p = np.tan(turn_angle) * h
             q = h**2 / p
             r = world.robot.shape.point_of_interest.y + q
             curvature = 1 / r
+            rotation_center = world.robot.prediction.transform(Point(x=0, y=r))
+            carrot_sign = eliminate_2pi(
+                rotation_center.direction(point_of_interest) -
+                rotation_center.direction(carrot.pose.point)
+            ) > 0
+            robot_sign = eliminate_2pi(
+                rotation_center.direction(point_of_interest) -
+                rotation_center.direction(world.robot.prediction.point)
+            ) > 0
+            backward = bool(carrot_sign == robot_sign) != bool(h < 0)
         else:
             local_spline = Spline.from_poses(world.robot.prediction, carrot.pose)
             curvature = local_spline.max_curvature(0.0, 0.25)
