@@ -125,7 +125,7 @@ class Runtime:
 
             if self.world.mode == Mode.TEST:
                 sleep_end_time = self.world.time + actor.interval
-                while self.world.time < min(run_end_time, sleep_end_time):
+                while self.world.time <= min(run_end_time, sleep_end_time):
                     await asyncio.sleep(0)
             else:
                 await asyncio.sleep(actor.interval - dt)
