@@ -75,7 +75,8 @@ class SerialEsp(Esp):
     async def send(self, line):
 
         line = f'{line}^{reduce(ixor, map(ord, line))}\n'
-        await self.aioserial.write_async(line.encode())
+        self.aioserial.write(line.encode())
+        await asyncio.sleep(0)
 
 
 class MockedEsp(Esp):
