@@ -7,18 +7,32 @@ import starlette
 from rosys import task_logger
 from rosys.runtime import Runtime
 from rosys.world.mode import Mode
+from rosys.world.marker import Marker
 from rosys.automations.draw import draw
 from rosys.ui.joystick import Joystick
 from rosys.ui.three import Three
 import drawings
+import socket
+import logging
 
 import icecream
 icecream.install()
 
+logging.basicConfig(level=logging.INFO)
+
 has_esp = os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0
 runtime = Runtime(Mode.REAL if has_esp else Mode.SIMULATION)
-runtime.world.robot.shape.point_of_interest.x = 0.75
 # runtime = Runtime(Mode.SIMULATION)
+
+if socket.gethostname() in ['z18', 'docker']:
+    logging.warning(f'using config for z18')
+    runtime.world.robot.shape.outline = [(0.41, 0.205), (0.5, 0), (0.41, -0.205), (-0.115, -0.205), (-0.115, 0.205)]
+    runtime.world.robot.shape.point_of_interest.x = -0.115
+    runtime.world.robot.shape.height = 0.19
+    runtime.world.marker = Marker.four_points(0.15, 0.14, 0.19)
+else:
+    logging.warning(f'unknown robot host "{socket.gethostname()}" using default settings')
+
 
 with ui.column().classes('w-full items-stretch'):
     with ui.row().classes('items-stretch justify-items-stretch'):

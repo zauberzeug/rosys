@@ -19,6 +19,7 @@ services:
       context: ./
       args:
         INSTALL_DEV: "true"
+    hostname: docker
     command: /app/start.sh debug
 
 volumes:
