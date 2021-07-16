@@ -59,7 +59,7 @@ with svg_card:
         image.set_source(f'drawings/default?t={runtime.world.time}')
 
     def set_path():
-        runtime.world.path = drawings.scale(drawings.load(), size.value)
+        runtime.world.path = drawings.load(runtime.world.robot.prediction, size.value)
 
     def upload(files: List[bytearray]):
         drawings.store(files[0])

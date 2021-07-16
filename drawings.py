@@ -1,6 +1,8 @@
 import os
 import svgpathtools
+from svgpathtools.paths2svg import big_bounding_box
 import numpy as np
+from rosys.world.robot import Pose
 from rosys.world.point import Point
 from rosys.world.spline import Spline
 
@@ -16,13 +18,23 @@ def store(content: bytearray):
         f.write(content)
 
 
-def load() -> list[Spline]:
+def load(pose: Pose, target_size: float = 2.0) -> list[Spline]:
 
     if not os.path.exists(filepath):
         return []
-
+    paths = svgpathtools.svg2paths(filepath)[0]
+    xmin, xmax, ymin, ymax = big_bounding_box(paths)
+    xlen = xmax-xmin
+    ylen = ymax-ymin
+    center = Point(x=xlen/2, y=ylen/2)
     splines = []
-    for path in svgpathtools.svg2paths(filepath)[0]:
+    scale = target_size/max(xlen, ylen)
+    ic(center, scale, center*scale)
+    for path in paths:
+        path = path.translated((center*-1).to_complex())
+        path = path.scaled(scale, scale, origin=0)  # , origin=
+        path = path.rotated(np.rad2deg(pose.yaw), origin=0)
+        path = path.translated(Point(x=pose.x+1, y=pose.y-0.5).to_complex())
         for line in path:
             if type(line) == svgpathtools.path.Line:
                 start = Point.from_complex(line.start)

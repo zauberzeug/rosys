@@ -16,6 +16,9 @@ class Point(BaseModel):
             y=np.imag(number),
         )
 
+    def to_complex(self):
+        return self.x+1j*self.y
+
     def distance(self, other: Point) -> float:
 
         return np.sqrt((other.x - self.x)**2 + (other.y - self.y)**2)
@@ -42,3 +45,9 @@ class Point(BaseModel):
             x=(1 - t) * self.x + t * other.x,
             y=(1 - t) * self.y + t * other.y,
         )
+
+    def __mul__(self, factor):
+        return Point(x=self.x*factor, y=self.y*factor)
+
+    def __truediv__(self, factor):
+        return Point(x=self.x/factor, y=self.y/factor)
