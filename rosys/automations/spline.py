@@ -33,6 +33,8 @@ async def spline(spline: Spline, world: World, esp: Esp):
     linear_limit = world.robot.parameters.linear_speed_limit
     angular_limit = world.robot.parameters.angular_speed_limit
 
+    if world.robot.shape.point_of_interest.y:
+        raise NotImplementedError('point_of_interest.y != 0 is not supported')
     is_offset = world.robot.shape.point_of_interest.distance(Point(x=0, y=0)) > 0
 
     while True:
@@ -44,7 +46,7 @@ async def spline(spline: Spline, world: World, esp: Esp):
         if is_offset:
             direction_poi_to_carrot = point_of_interest.direction(carrot.pose.point)
             turn_angle = eliminate_2pi(direction_poi_to_carrot - world.robot.prediction.yaw)
-            backward = abs(turn_angle) > np.pi / 2
+            backward = abs(turn_angle) > np.pi / 2  # TODO: does not work for world.robot.shape.point_of_interest.y != 0
             turn_angle = eliminate_pi(turn_angle)
             # NOTE: rectangular triangle with heigth h and hypothenuse segments p, q
             h = world.robot.shape.point_of_interest.x
