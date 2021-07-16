@@ -133,7 +133,7 @@ class Runtime:
     async def advance_time(self, end_time):
 
         while True:
-            self.world.time = self.world.time + 0.01 if self.world.mode == Mode.TEST else time.time()
+            self.world.time = self.world.time + 0.001 if self.world.mode == Mode.TEST else time.time()
             if self.world.time > end_time:
                 break
             await asyncio.sleep(0 if self.world.mode == Mode.TEST else 0.01)
