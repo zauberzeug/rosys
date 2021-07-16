@@ -22,6 +22,7 @@ logging.basicConfig(level=logging.INFO)
 
 has_esp = os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0
 runtime = Runtime(Mode.REAL if has_esp else Mode.SIMULATION)
+# runtime = Runtime(Mode.SIMULATION)
 
 if socket.gethostname() in ['z18', 'docker']:
     logging.warning(f'using config for z18')
@@ -32,7 +33,6 @@ if socket.gethostname() in ['z18', 'docker']:
 else:
     logging.warning(f'unknown robot host "{socket.gethostname()}" using default settings')
 
-# runtime = Runtime(Mode.SIMULATION)
 
 with ui.column().classes('w-full items-stretch'):
     with ui.row().classes('items-stretch justify-items-stretch'):
