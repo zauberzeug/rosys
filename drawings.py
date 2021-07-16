@@ -28,7 +28,7 @@ def load(pose: Pose, target_size: float = 2.0) -> list[Spline]:
     splines = []
     for path in paths:
         path = path.translated(-center.to_complex())
-        path = path.scaled(scale, scale)
+        path = path.scaled(scale, -scale)
         path = path.rotated(np.rad2deg(pose.yaw), origin=0)
         path = path.translated(pose.point.to_complex())
         for line in path:
