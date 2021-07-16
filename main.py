@@ -174,6 +174,7 @@ with camera_card:
     def clear_calibrations():
         for camera in runtime.world.cameras.values():
             camera.calibration = None
+            camera.projection = None
 
     ui.button('Clear calibrations', on_click=clear_calibrations)
 
