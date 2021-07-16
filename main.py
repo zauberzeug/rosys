@@ -50,7 +50,7 @@ with steering_card:
             three.update_path(runtime.world.path),
         ]
         return not all(n == False for n in need_updates)
-    three = Three()
+    three = Three(robot_shape=runtime.world.robot.shape)
     ui.timer(0.05, update_three)
 
 with svg_card:

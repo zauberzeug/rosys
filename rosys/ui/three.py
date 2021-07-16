@@ -31,9 +31,9 @@ class ThreeView(CustomView):
 
 class Three(Element):
 
-    def __init__(self, *, follow_robot: bool = True, robot_shape: RobotShape = None, on_click: Callable = None):
+    def __init__(self, *, robot_shape: RobotShape, follow_robot: bool = True, on_click: Callable = None):
 
-        super().__init__(ThreeView(follow_robot=follow_robot, robot_shape=robot_shape or RobotShape(), on_click=on_click))
+        super().__init__(ThreeView(follow_robot=follow_robot, robot_shape=robot_shape, on_click=on_click))
 
     def set_robot(self, id: str, color: str, pose: Pose):
 
