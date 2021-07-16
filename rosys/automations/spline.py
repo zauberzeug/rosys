@@ -1,6 +1,7 @@
 import numpy as np
 from ..actors.esp import Esp
 from ..world.world import World
+from ..world.mode import Mode
 from ..world.point import Point
 from ..world.spline import Spline
 from .navigation.carrot import Carrot
@@ -16,8 +17,12 @@ def eliminate_pi(angle):
     return (angle + np.pi / 2) % np.pi - np.pi / 2
 
 
-def ramp(x: float, in_min: float, in_max: float, out_min: float, out_max: float):
+def ramp(x: float, in_min: float, in_max: float, out_min: float, out_max: float, clip: bool = False):
 
+    if clip and x < in_min:
+        return out_min
+    if clip and x > in_max:
+        return out_max
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 
@@ -53,8 +58,10 @@ async def spline(spline: Spline, world: World, esp: Esp):
             backward = False
 
         age = world.time - world.robot.detection.time
-        linear = 0.5 if age < 3 else 0.0 if age > 6 else ramp(age, 3, 6, 0.5, 0.0)
-        linear *= (-1 if backward else 1)
+        linear = 0.5
+        if world.mode != Mode.TEST:  # TODO: require camera tracking in tests as well
+            linear *= ramp(age, 3, 6, 1.0, 0.0, clip=True)
+        linear *= -1 if backward else 1
         if carrot.t > 1.0:
             linear *= ramp(carrot.target_distance, 0.5, 0.0, 1.0, 0.5)
         angular = linear * curvature
