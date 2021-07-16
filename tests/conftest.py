@@ -1,6 +1,9 @@
 from typing import Generator
 from rosys.runtime import Runtime, Mode
 import pytest
+import icecream
+icecream.install()
+
 pytest.register_assert_rewrite("tests.helper")
 
 
