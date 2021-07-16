@@ -4,6 +4,7 @@ import asyncio
 import logging
 from typing import Awaitable, Callable, Union, get_type_hints
 from . import task_logger
+from .persistence import backup, restore
 from .actors.actor import Actor
 from .actors.detector import Detector
 from .actors.detector_simulator import DetectorSimulator
@@ -34,6 +35,9 @@ class Runtime:
             robot=Robot(),
             marker=Marker.four_points(0.24, 0.26, 0.41),
         )
+
+        restore(self.world)
+
         self.esp = SerialEsp() if mode == Mode.REAL else MockedEsp(self.world)
         self.odometer = Odometer()
         self.steerer = Steerer()
@@ -90,6 +94,8 @@ class Runtime:
 
         [t.cancel() for t in self.tasks]
         [await a.tear_down() for a in self.actors]
+
+        backup(self.world)
 
     async def call_follow_ups(self, trigger: Union[Callable, Awaitable]):
 
