@@ -13,6 +13,7 @@ class Led : public Module
 {
 private:
     double interval = 1.0;
+    double duty = 0.5;
 
     Port *port;
 
@@ -44,8 +45,8 @@ public:
             level = 0;
         if (state == ON)
             level = 1;
-        if (state == PULSE and millisSince(lastChange) > interval / 2.0 * 1000.0) {
-            level = 1 - level;
+        if (state == PULSE and millisSince(lastChange) > (level == 0 ? 1 - duty : duty) * interval * 1000.0) {
+            level = duty <= 0.0 ? 0 : duty >= 1.0 ? 1 : 1 - level;
             lastChange = millis();
         }
 
@@ -86,6 +87,10 @@ public:
         if (key == "interval")
         {
             interval = atof(value.c_str());
+        }
+        else if (key == "duty")
+        {
+            duty = atof(value.c_str());
         }
         else
         {
