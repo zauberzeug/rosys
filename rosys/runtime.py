@@ -1,5 +1,4 @@
 import sys
-import time
 import asyncio
 import logging
 from typing import Awaitable, Callable, Union, get_type_hints
@@ -31,7 +30,6 @@ class Runtime:
         self.world = World(
             mode=mode,
             state=WorldState.RUNNING,
-            time=time.time(),
             robot=Robot(),
             marker=Marker.four_points(0.24, 0.26, 0.41),
         )
@@ -81,8 +79,11 @@ class Runtime:
 
     async def run(self, seconds: float = sys.maxsize):
 
+        self.tasks = []
         end_time = self.world.time + seconds
-        self.tasks = [task_logger.create_task(self.advance_time(end_time))]
+
+        if self.world.mode == Mode.TEST:
+            self.tasks.append(task_logger.create_task(self.advance_time(end_time)))
 
         for actor in self.actors:
             if actor.interval is not None:
@@ -137,11 +138,9 @@ class Runtime:
 
     async def advance_time(self, end_time):
 
-        while True:
-            self.world.time = self.world.time + 0.01 if self.world.mode == Mode.TEST else time.time()
-            if self.world.time > end_time:
-                break
-            await asyncio.sleep(0 if self.world.mode == Mode.TEST else 0.01)
+        while self.world.time <= end_time:
+            self.world.set_time(self.world.time + 0.01)
+            await asyncio.sleep(0)
 
     def get_params(self, func: Union[Callable, Awaitable]):
 

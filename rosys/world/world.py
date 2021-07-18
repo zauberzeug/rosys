@@ -1,6 +1,7 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 from typing import List, Dict
 from enum import Enum
+import time
 from .mode import Mode
 from .robot import Robot
 from .marker import Marker
@@ -19,7 +20,7 @@ class World(BaseModel):
 
     mode: Mode
     state: WorldState
-    time: float
+    _time: float = PrivateAttr(default_factory=time.time)
     robot: Robot
     marker: Marker
     cameras: Dict[str, Camera] = {}
@@ -27,3 +28,11 @@ class World(BaseModel):
     images: List[Image] = []
     image_data: Dict[str, bytes] = {}
     path: List[Spline] = []
+
+    @property
+    def time(self):
+        return self._time if self.mode == Mode.TEST else time.time()
+
+    def set_time(self, value):
+        assert self.mode == Mode.TEST
+        self._time = value
