@@ -177,7 +177,11 @@ with camera_card:
             camera.calibration = None
             camera.projection = None
 
+    def clear_cameras():
+        runtime.world.cameras = {}
+
     ui.button('Clear calibrations', on_click=clear_calibrations)
+    ui.button('Clear cameras', on_click=clear_cameras)
 
 with actor_card:
 
