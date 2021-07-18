@@ -7,7 +7,8 @@ from .world.camera import Camera
 
 def backup(world: World):
 
-    dict_ = {mac: camera.dict(exclude={'projection'}) for mac, camera in world.cameras.items()}
+    exclude = {'projection', 'synchronization'}
+    dict_ = {mac: camera.dict(exclude=exclude) for mac, camera in world.cameras.items()}
     os.makedirs('/data/backup', exist_ok=True)
     with open('/data/backup/world.json', 'w') as f:
         json.dump(dict_, f)

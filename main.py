@@ -159,8 +159,10 @@ with camera_card:
     ui.label('Cameras')
 
     cams = ui.label()
-    ui.timer(1, lambda: cams.set_text(
-        f'Clock offsets: { {k: v.synchronization_offset for k, v in runtime.world.cameras.items()} }'))
+    ui.timer(1, lambda: cams.set_text('Clock offsets: ' + str({
+        k: v.synchronization.offset if v.synchronization is not None else None
+        for k, v in runtime.world.cameras.items()
+    })))
 
     def set_height(height):
         for camera in runtime.world.cameras.values():
