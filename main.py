@@ -10,7 +10,7 @@ from rosys import task_logger
 from rosys.runtime import Runtime
 from rosys.world.mode import Mode
 from rosys.world.marker import Marker
-from rosys.automations.draw import draw
+from rosys.automations.draw import draw_path
 from rosys.ui.joystick import Joystick
 from rosys.ui.three import Three
 import drawings
@@ -86,7 +86,7 @@ with svg_card:
     with ui.row().classes('items-end'):
 
         def start():
-            runtime.automator.add(draw(runtime.world, runtime.esp))
+            runtime.automator.add(draw_path(runtime.world, runtime.esp))
             runtime.resume()
 
         def stop():

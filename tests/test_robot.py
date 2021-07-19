@@ -1,9 +1,9 @@
 import pytest
 import numpy as np
 from rosys.runtime import Runtime
-from rosys.automations.arc import arc
-from rosys.automations.square import square
-from rosys.automations.spline import spline
+from rosys.automations.arc import drive_arc
+from rosys.automations.square import drive_square
+from rosys.automations.spline import drive_spline
 from rosys.world.pose import Pose
 from rosys.world.spline import Spline
 from tests.helper import assert_pose
@@ -34,7 +34,7 @@ async def test_drive(runtime: Runtime):
 async def test_driving_an_arc(runtime: Runtime):
     assert_pose(0, 0, deg=0)
 
-    runtime.automator.add(arc(runtime.world, runtime.esp))
+    runtime.automator.add(drive_arc(runtime.world, runtime.esp))
 
     await runtime.run(seconds=5.0)
     assert_pose(2, 1.2, deg=60)
@@ -44,7 +44,7 @@ async def test_driving_an_arc(runtime: Runtime):
 async def test_driving_a_square(runtime: Runtime):
     assert_pose(0, 0, deg=0)
 
-    runtime.automator.add(square(runtime.world, runtime.esp))
+    runtime.automator.add(drive_square(runtime.world, runtime.esp))
     await runtime.run(seconds=5.1)
     assert_pose(2, 2, deg=90)
     await runtime.run(seconds=7.0)
@@ -55,7 +55,7 @@ async def test_driving_a_square(runtime: Runtime):
 async def test_pause_and_resume_spline(runtime: Runtime):
     start = runtime.world.time
     s = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=0, yaw=0))
-    runtime.automator.add(spline(s, runtime.world, runtime.esp))
+    runtime.automator.add(drive_spline(s, runtime.world, runtime.esp))
 
     await runtime.run(seconds=2)
     await runtime.pause()
@@ -76,7 +76,7 @@ async def test_pause_and_resume_spline(runtime: Runtime):
 
 @pytest.mark.asyncio
 async def test_pause_and_resume_square(runtime: Runtime):
-    runtime.automator.add(square(runtime.world, runtime.esp))
+    runtime.automator.add(drive_square(runtime.world, runtime.esp))
 
     await runtime.run(seconds=8.1)
     await runtime.pause()
@@ -94,7 +94,7 @@ async def test_pause_and_resume_square(runtime: Runtime):
 async def test_driving_a_spline(runtime: Runtime):
     assert_pose(0, 0, deg=0)
     s = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0))
-    runtime.automator.add(spline(s, runtime.world, runtime.esp))
+    runtime.automator.add(drive_spline(s, runtime.world, runtime.esp))
     await runtime.run(seconds=10)
     assert_pose(2, 1, deg=6)
 

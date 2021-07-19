@@ -3,7 +3,7 @@ from ..actors.esp import Esp
 from ..world.world import World
 
 
-async def square(world: World, esp: Esp):
+async def drive_square(world: World, esp: Esp):
 
     while world.robot.prediction.x < 2:
         await esp.drive(1, 0)

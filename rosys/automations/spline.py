@@ -26,7 +26,7 @@ def ramp(x: float, in_min: float, in_max: float, out_min: float, out_max: float,
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 
-async def spline(spline: Spline, world: World, esp: Esp):
+async def drive_spline(spline: Spline, world: World, esp: Esp):
 
     carrot = Carrot(spline=spline)
 
