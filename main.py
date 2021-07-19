@@ -35,7 +35,7 @@ else:
 
 
 with ui.column().classes('w-full items-stretch'):
-    with ui.row().classes('items-stretch justify-items-stretch'):
+    with ui.row().classes('items-stretch justify-items-stretch').style('flex-wrap:nowrap'):
         svg_card = ui.card()
         steering_card = ui.card()
         with ui.column().classes('flex-grow items-stretch justify-items-stretch'):
@@ -110,7 +110,7 @@ with image_card:
         download_timer = ui.timer(0.1, download)
         ui.checkbox('Track').bind_value_to(download_timer.active)
 
-    with ui.image() as ui_image:
+    with ui.image().style('width:20em') as ui_image:
         ui_image.id = None
         svg = ui.svg().style('background:transparent')
 
@@ -174,16 +174,16 @@ with camera_card:
 
     ui.number('Height [m]', on_change=lambda e: set_height(e.value))
 
-    def clear_calibrations():
-        for camera in runtime.world.cameras.values():
-            camera.calibration = None
-            camera.projection = None
+    with ui.row():
+        def clear_calibrations():
+            for camera in runtime.world.cameras.values():
+                camera.calibration = None
+                camera.projection = None
 
-    def clear_cameras():
-        runtime.world.cameras = {}
-
-    ui.button('Clear calibrations', on_click=clear_calibrations)
-    ui.button('Clear cameras', on_click=clear_cameras)
+        def clear_cameras():
+            runtime.world.cameras = {}
+        ui.button('Clear calibrations', on_click=clear_calibrations)
+        ui.button('Clear cameras', on_click=clear_cameras)
 
 with actor_card:
 
