@@ -218,6 +218,9 @@ with controller_card:
             '+set drive.mPerTick=0.00001110',
             '+set drive.width=0.45',
             '+new led nozzle MCP_B7',
+            '+set nozzle.interval=0.1',
+            '+set nozzle.duty=0.999',  # NOTE: repeat=0 does not really work for 100 % duty cycle
+            '+set nozzle.repeat=0',
             '+set esp.outputModules=drive',
             '+esp unmute',
             '+set esp.ready=1',
