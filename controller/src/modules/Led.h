@@ -14,6 +14,7 @@ class Led : public Module
 private:
     double interval = 1.0;
     double duty = 0.5;
+    bool repeat = true;
 
     Port *port;
 
@@ -48,6 +49,8 @@ public:
         if (state == PULSE and millisSince(lastChange) > (level == 0 ? 1 - duty : duty) * interval * 1000.0) {
             level = duty <= 0.0 ? 0 : duty >= 1.0 ? 1 : 1 - level;
             lastChange = millis();
+            if (level == 0 and not repeat)
+                state = OFF;
         }
 
         port->set_level(level);
@@ -91,6 +94,10 @@ public:
         else if (key == "duty")
         {
             duty = atof(value.c_str());
+        }
+        else if (key == "repeat")
+        {
+            repeat = value == "1";
         }
         else
         {
