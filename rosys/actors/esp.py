@@ -13,11 +13,16 @@ class Esp(Actor):
 
     async def drive(self, linear: float, angular: float):
 
-        await self.send('drive speed %.3f,%.3f' % (linear, angular))
+        await self.send_async('drive speed %.3f,%.3f' % (linear, angular))
 
     async def power(self, left: float, right: float):
 
-        await self.send('drive pw %.3f,%.3f' % (left, right))
+        await self.send_async('drive pw %.3f,%.3f' % (left, right))
+
+    async def send_async(self, line):
+
+        self.send(line)
+        await asyncio.sleep(0)
 
 
 class SerialEsp(Esp):
@@ -72,11 +77,10 @@ class SerialEsp(Esp):
         if millis is not None:
             world.robot.clock_offset = world.time - millis / 1000
 
-    async def send(self, line):
+    def send(self, line):
 
         line = f'{line}^{reduce(ixor, map(ord, line))}\n'
         self.aioserial.write(line.encode())
-        await asyncio.sleep(0)
 
 
 class MockedEsp(Esp):
@@ -97,7 +101,7 @@ class MockedEsp(Esp):
         world.robot.battery = 25.0 + np.sin(0.1 * world.time) + 0.02 * np.random.randn()
         world.robot.temperature = np.random.uniform(34, 35)
 
-    async def send(self, line):
+    def send(self, line):
 
         if line.startswith("drive pw "):
             left = float(line.split()[2].split(',')[0])
@@ -108,5 +112,3 @@ class MockedEsp(Esp):
         if line.startswith("drive speed "):
             self.linear_velocity = float(line.split()[2].split(',')[0])
             self.angular_velocity = float(line.split()[2].split(',')[1])
-
-        await asyncio.sleep(0)

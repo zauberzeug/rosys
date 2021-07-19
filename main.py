@@ -56,7 +56,9 @@ with steering_card:
         y={runtime.world.robot.prediction.y:.3f})
     '''))
 
-    Joystick(size=50, color='blue', steerer=runtime.steerer)
+    with ui.row():
+        Joystick(size=50, color='blue', steerer=runtime.steerer)
+        ui.switch('Nozzle', on_change=lambda e: runtime.esp.send(f'nozzle {"on" if e.value else "off"}'))
 
     def update_three():
         need_updates = [
@@ -213,16 +215,17 @@ with controller_card:
             '+new drive drive roboclaw,128,38400',
             '+set drive.mPerTick=0.00001110',
             '+set drive.width=0.45',
+            '+new led nozzle MCP_B7',
             '+set esp.outputModules=drive',
             '+esp unmute',
             '+set esp.ready=1',
             '+set esp.24v=1',
             'esp restart',
         ]:
-            await runtime.esp.send(line)
+            runtime.esp.send(line)
             await asyncio.sleep(0.1)
     ui.button('Configure', on_click=lambda: task_logger.create_task(configure()))
-    ui.button('Restart', on_click=lambda: task_logger.create_task(runtime.esp.send('esp restart')))
+    ui.button('Restart', on_click=lambda: runtime.esp.send('esp restart'))
 
     offset = ui.label()
     ui.timer(0.1, lambda: offset.set_text(f'Clock offset: {runtime.world.robot.clock_offset or 0:.3f} s'))
