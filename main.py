@@ -42,7 +42,8 @@ with ui.column().classes('w-full items-stretch'):
             image_card = ui.card().classes('flex-grow')
             camera_card = ui.card()
     with ui.row().classes('items-stretch justify-items-stretch'):
-        actor_card = ui.card().classes('flex-grow')
+        actor_card = ui.card()
+        parameter_card = ui.card().classes('flex-grow')
         controller_card = ui.card()
 
 with steering_card:
@@ -188,8 +189,18 @@ with camera_card:
 with actor_card:
 
     ui.label('Actors')
-    actors = ui.label()
-    ui.timer(1.0, lambda: actors.set_text(", ".join(map(str, runtime.actors))))
+
+    with ui.column().style('gap:0'):
+        actor_labels = {actor: ui.label()for actor in runtime.actors}
+        ui.timer(1.0, lambda: [label.set_text(str(actor)) for actor, label in actor_labels.items()])
+
+with parameter_card:
+
+    ui.label('Parameters')
+
+    ui.number('linear speed limit [m/s]').bind_value(runtime.world.robot.parameters.linear_speed_limit)
+    ui.number('angular speed limit [rad/s]').bind_value(runtime.world.robot.parameters.angular_speed_limit)
+    ui.number('carrot distance [m]').bind_value(runtime.world.robot.parameters.carrot_distance)
 
 with controller_card:
 

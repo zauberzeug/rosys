@@ -29,7 +29,7 @@ def ramp(x: float, in_min: float, in_max: float, out_min: float, out_max: float,
 async def drive_spline(spline: Spline, world: World, esp: Esp):
 
     if spline.start.distance(spline.end) < 0.01:
-        return # NOTE: skip tiny splines
+        return  # NOTE: skip tiny splines
 
     carrot = Carrot(spline=spline)
 
@@ -41,7 +41,7 @@ async def drive_spline(spline: Spline, world: World, esp: Esp):
     while True:
 
         point_of_interest = world.robot.prediction.transform(world.robot.shape.point_of_interest)
-        if not carrot.move(point_of_interest):
+        if not carrot.move(point_of_interest, distance=world.robot.parameters.carrot_distance):
             break
 
         if is_offset:

@@ -16,6 +16,7 @@ class RobotParameters(BaseModel):
 
     linear_speed_limit: float = 0.5
     angular_speed_limit: float = 0.5
+    carrot_distance: float = 1.0
 
 
 class Robot(BaseModel):
