@@ -10,6 +10,7 @@ from rosys import task_logger
 from rosys.runtime import Runtime
 from rosys.world.mode import Mode
 from rosys.world.marker import Marker
+from rosys.world.world import NozzleState
 from rosys.automations.draw import draw_path
 from rosys.ui.joystick import Joystick
 from rosys.ui.three import Three
@@ -58,7 +59,8 @@ with steering_card:
 
     with ui.row():
         Joystick(size=50, color='blue', steerer=runtime.steerer)
-        ui.switch('Nozzle', on_change=lambda e: runtime.esp.send(f'nozzle {"on" if e.value else "off"}'))
+        ui.toggle(['OFF', 'ON', 'PULSING']).bind_value(
+            runtime.world.nozzle, forward=lambda x: NozzleState[x], backward=lambda x: x.name)
 
     def update_three():
         need_updates = [

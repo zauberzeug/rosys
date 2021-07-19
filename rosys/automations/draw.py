@@ -1,4 +1,4 @@
-from ..world.world import World
+from ..world.world import World, NozzleState
 from ..world.spline import Spline
 from ..actors.esp import Esp
 from .spline import drive_spline
@@ -14,5 +14,8 @@ async def draw_path(world: World, esp: Esp):
             control2=robot_pose.point.interpolate(spline.start, 2/3),
             end=spline.start,
         )
+        world.nozzle = NozzleState.OFF
         await drive_spline(approach_spline, world, esp)
+        world.nozzle = NozzleState.PULSING
         await drive_spline(spline, world, esp)
+        world.nozzle = NozzleState.OFF

@@ -8,6 +8,7 @@ from .actors.actor import Actor
 from .actors.detector import Detector
 from .actors.detector_simulator import DetectorSimulator
 from .actors.esp import SerialEsp, MockedEsp
+from .actors.nozzle import Nozzle
 from .actors.odometer import Odometer
 from .actors.steerer import Steerer
 from .actors.robot_locator import RobotLocator
@@ -43,6 +44,7 @@ class Runtime:
         self.automator = Automator()
         self.detector = Detector() if mode == Mode.REAL else DetectorSimulator()
         self.camera_projector = CameraProjector()
+        self.nozzle = Nozzle()
 
         if mode == Mode.REAL:
             camera_actors = [CameraScanner(), CameraDownloader()]
@@ -58,6 +60,7 @@ class Runtime:
             *camera_actors,
             self.camera_projector,
             self.detector,
+            self.nozzle,
         ]
 
         self.follow_ups = {
