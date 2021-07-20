@@ -221,6 +221,10 @@ with controller_card:
             '+set nozzle.interval=0.1',
             '+set nozzle.duty=0.999',  # NOTE: repeat=0 does not really work for 100 % duty cycle
             '+set nozzle.repeat=0',
+            '+new button button MCP_A2',
+            '+new led manual MCP_B6',
+            '+if nozzle == 0 && button == 0 manual on;nozzle on',
+            '+if manual == 1 && button == 1 manual off;nozzle off',
             '+set esp.outputModules=drive',
             '+esp unmute',
             '+set esp.ready=1',
