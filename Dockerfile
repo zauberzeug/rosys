@@ -33,10 +33,9 @@ ADD ./rosys /rosys/rosys
 
 ENV PYTHONPATH "${PYTHONPATH}:/rosys"
 
-WORKDIR /app/
-
 EXPOSE 80
 
+WORKDIR /app/
 COPY ./start.sh /
-
+COPY ./main.py /app/
 CMD /start.sh
