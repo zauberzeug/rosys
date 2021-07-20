@@ -16,13 +16,6 @@ class WorldState(Enum):
     PAUSED = 2
 
 
-class NozzleState(Enum):
-
-    OFF = 0
-    ON = 1
-    PULSING = 2
-
-
 class World(BaseModel):
 
     mode: Mode
@@ -35,7 +28,6 @@ class World(BaseModel):
     images: List[Image] = []
     image_data: Dict[str, bytes] = {}
     path: List[Spline] = []
-    nozzle: NozzleState = NozzleState.OFF
 
     @property
     def time(self):
