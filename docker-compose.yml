@@ -1,16 +1,16 @@
 version: "3.9"
 services:
   rosys:
-    image: "rosys-dev:${TAG-latest}"
+    image: "rosys:${TAG-latest}"
     volumes:
-      - ./:/app
-      - dummy:/app/detector # hide original folder to not trigger uvicorn reloads through active learning
+      - ./:/rosys
+      - dummy:/rosys/detector # hide original folder to not trigger uvicorn reloads through active learning
       - ~/.ssh:/root/.ssh
       - ~/.gitconfig:/root/.gitconfig
       - ~/.git-credentials:/root/.git-credentials
-      - /app/.git # hide some unnecessary large folders...
-      - /app/.pio
-      - /app/controller
+      - /rosys/.git # hide some unnecessary large folders...
+      - /rosys/.pio
+      - /rosys/controller
     devices:
       - "${ESP_SERIAL:-/dev/null}:/dev/esp"
     environment:
@@ -20,7 +20,7 @@ services:
       args:
         INSTALL_DEV: "true"
     hostname: docker
-    command: /app/start.sh debug
+    command: /rosys/start.sh debug
 
 volumes:
   dummy: {}
