@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   rosys:
-    image: "rosys:${TAG-latest}"
+    image: "zauberzeug/rosys:${TAG-latest}"
     volumes:
       - ./:/rosys
       - dummy:/rosys/detector # hide original folder to not trigger uvicorn reloads through active learning
