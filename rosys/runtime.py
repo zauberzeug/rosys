@@ -8,7 +8,6 @@ from .actors.actor import Actor
 from .actors.detector import Detector
 from .actors.detector_simulator import DetectorSimulator
 from .actors.esp import SerialEsp, MockedEsp
-from .actors.nozzle import Nozzle
 from .actors.odometer import Odometer
 from .actors.steerer import Steerer
 from .actors.robot_locator import RobotLocator
@@ -18,35 +17,27 @@ from .actors.camera_downloader import CameraDownloader
 from .actors.camera_simulator import CameraSimulator
 from .actors.camera_projector import CameraProjector
 from .world.world import World, WorldState
-from .world.robot import Robot
-from .world.marker import Marker
 from .world.mode import Mode
 from .helpers import print_stacktrace
 
 
 class Runtime:
 
-    def __init__(self, mode: Mode):
+    def __init__(self, world: World, additional_actors: list[Actor] = []):
 
-        self.world = World(
-            mode=mode,
-            state=WorldState.RUNNING,
-            robot=Robot(),
-            marker=Marker.four_points(0.24, 0.26, 0.41),
-        )
+        self.world = world
 
         restore(self.world)
 
-        self.esp = SerialEsp() if mode == Mode.REAL else MockedEsp(self.world)
+        self.esp = SerialEsp() if world.mode == Mode.REAL else MockedEsp(self.world)
         self.odometer = Odometer()
         self.steerer = Steerer()
         self.robot_locator = RobotLocator()
         self.automator = Automator()
-        self.detector = Detector() if mode == Mode.REAL else DetectorSimulator()
+        self.detector = Detector() if world.mode == Mode.REAL else DetectorSimulator()
         self.camera_projector = CameraProjector()
-        self.nozzle = Nozzle()
 
-        if mode == Mode.REAL:
+        if world.mode == Mode.REAL:
             camera_actors = [CameraScanner(), CameraDownloader()]
         else:
             camera_actors = [CameraSimulator(['ff:ff:ff:ff:ff:ff'])]
@@ -60,8 +51,7 @@ class Runtime:
             *camera_actors,
             self.camera_projector,
             self.detector,
-            self.nozzle,
-        ]
+        ] + additional_actors
 
         self.follow_ups = {
             self.esp.step: [
