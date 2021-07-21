@@ -13,10 +13,9 @@ class ThreeView(CustomView):
 
     def __init__(self, *, follow_robot: bool, robot_shape: RobotShape, on_click: Callable):
 
-        super().__init__('three', __file__, [
-            'https://cdn.jsdelivr.net/npm/three@0.129.0/build/three.min.js',
-            'https://cdn.jsdelivr.net/npm/three@0.129.0/examples/js/controls/OrbitControls.js',
-        ], robots={}, follow_robot=follow_robot, robot_shape=robot_shape.dict(), images=[], path=[], path_time=0)
+        super().__init__('three', __file__, ['three.min.js', 'OrbitControls.js'],
+                         robots={}, robot_shape=robot_shape.dict(), follow_robot=follow_robot,
+                         images=[], path=[], path_time=0)
 
         self.on_click = on_click
         self.allowed_events = ['onClick']
