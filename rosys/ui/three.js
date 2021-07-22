@@ -1,11 +1,8 @@
 var scene;
 var camera;
 var orbitControls;
-var robots = new Map();
-var images = new Map();
 var loader = new THREE.TextureLoader();
-var path;
-var path_time = 0;
+var elements = new Map();
 
 Vue.component("three", {
   template: `<canvas v-bind:id="jp_props.id"></div>`,
@@ -64,136 +61,126 @@ Vue.component("three", {
   },
 
   updated() {
-    const jp_robots = this.$props.jp_props.options.robots;
-    robots.forEach((_, id) => {
-      if (!jp_robots[id]) {
+    const jp_elements = Object.values(this.$props.jp_props.options.elements);
+    const jp_element_ids = Object.keys(this.$props.jp_props.options.elements);
+
+    elements.forEach((element, id) => {
+      if (
+        !jp_element_ids.includes(id) ||
+        this.$props.jp_props.options.elements[id].modified > element.modified
+      ) {
         console.log("remove", id);
-        scene.remove(robots.get(id));
-        robots.delete(id);
+        scene.remove(element);
+        elements.delete(id);
       }
-    });
-    Object.entries(jp_robots).forEach(([id, robot]) => {
-      if (!robots.has(id)) {
-        console.log("add", id, robot);
-        const robot_shape = this.$props.jp_props.options.robot_shape;
-        const shape = new THREE.Shape();
-        shape.autoClose = true;
-        shape.moveTo(robot_shape.outline[0][0], robot_shape.outline[0][1]);
-        robot_shape.outline.slice(1).forEach((p) => shape.lineTo(p[0], p[1]));
-        const geometry = new THREE.ExtrudeGeometry(shape, {
-          depth: robot_shape.height,
-          bevelEnabled: false,
-        });
-        const scale = 1.0 - 0.001 * robots.size;
-        geometry.scale(scale, scale, scale);
-        const material = new THREE.MeshPhongMaterial({ color: robot.color });
-        const mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh);
-        robots.set(id, mesh);
-      }
-      const robot_mesh = robots.get(id);
-      robot_mesh.position.x = robot.x;
-      robot_mesh.position.y = robot.y;
-      robot_mesh.setRotationFromAxisAngle(
-        new THREE.Vector3(0, 0, 1),
-        robot.yaw
-      );
     });
 
-    if (this.$props.jp_props.options.follow_robot && robots.size > 0) {
-      const robot = robots.values().next().value;
-      const target = new THREE.Vector3(robot.position.x, robot.position.y, 0);
+    jp_elements.forEach((jp_element) => {
+      if (!elements.has(jp_element.id)) {
+        console.log("add", jp_element.id);
+        let element;
+        if (jp_element.type == "robot") {
+          const jp_shape = jp_element.properties.shape;
+          const shape = new THREE.Shape();
+          shape.autoClose = true;
+          shape.moveTo(jp_shape.outline[0][0], jp_shape.outline[0][1]);
+          jp_shape.outline.slice(1).forEach((p) => shape.lineTo(p[0], p[1]));
+          const settings = { depth: jp_shape.height, bevelEnabled: false };
+          const geometry = new THREE.ExtrudeGeometry(shape, settings);
+          if (jp_element.id == "detection") geometry.scale(0.999, 0.999, 0.999);
+          const color = jp_element.properties.color;
+          const material = new THREE.MeshPhongMaterial({ color: color });
+          element = new THREE.Mesh(geometry, material);
+        } else if (jp_element.type == "path") {
+          let points = [];
+          jp_element.properties.splines.forEach((spline) => {
+            const curve = new THREE.CubicBezierCurve3(
+              new THREE.Vector3(spline.start.x, spline.start.y, 0),
+              new THREE.Vector3(spline.control1.x, spline.control1.y, 0),
+              new THREE.Vector3(spline.control2.x, spline.control2.y, 0),
+              new THREE.Vector3(spline.end.x, spline.end.y, 0)
+            );
+            points.push(...curve.getPoints(10));
+          });
+          element = new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints(points),
+            new THREE.LineBasicMaterial({ color: "orange" })
+          );
+        } else if (jp_element.type == "image") {
+          const projection = jp_element.properties.camera.projection;
+          const geometry = new THREE.BufferGeometry();
+          const nI = projection[0].length;
+          const nJ = projection.length;
+          const vertices = [];
+          const indices = [];
+          const uvs = [];
+          for (let j = 0; j < nJ; ++j) {
+            for (let i = 0; i < nI; ++i) {
+              const X = (projection[j][i] || [0, 0])[0];
+              const Y = (projection[j][i] || [0, 0])[1];
+              vertices.push(X, Y, 0);
+              uvs.push(i / (nI - 1), j / (nJ - 1));
+            }
+          }
+          for (let j = 0; j < nJ - 1; ++j) {
+            for (let i = 0; i < nI - 1; ++i) {
+              if (
+                projection[j][i] &&
+                projection[j][i + 1] &&
+                projection[j + 1][i] &&
+                projection[j + 1][i + 1]
+              ) {
+                const idx00 = i + j * nI;
+                const idx10 = i + j * nI + 1;
+                const idx01 = i + j * nI + nI;
+                const idx11 = i + j * nI + 1 + nI;
+                indices.push(idx00, idx10, idx01);
+                indices.push(idx10, idx11, idx01);
+              }
+            }
+          }
+          geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
+          geometry.setAttribute(
+            "position",
+            new THREE.Float32BufferAttribute(vertices, 3)
+          );
+          geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
+          geometry.computeVertexNormals();
+          geometry.computeFaceNormals();
+          const texture = loader.load("imagedata/" + jp_element.id);
+          texture.flipY = false;
+          texture.minFilter = THREE.LinearFilter;
+          const material = new THREE.MeshLambertMaterial({
+            map: texture,
+            side: THREE.DoubleSide,
+          });
+          element = new THREE.Mesh(geometry, material);
+        } else {
+          console.error("Unknown type:", jp_element.type);
+          return;
+        }
+        element.modified = jp_element.modified;
+        scene.add(element);
+        elements.set(jp_element.id, element);
+      }
+      if (jp_element.pose) {
+        const element = elements.get(jp_element.id);
+        element.position.x = jp_element.pose.x;
+        element.position.y = jp_element.pose.y;
+        const z_axis = new THREE.Vector3(0, 0, 1);
+        element.setRotationFromAxisAngle(z_axis, jp_element.pose.yaw);
+      }
+    });
+
+    if (elements.has("prediction")) {
+      const position = elements.get("prediction").position;
+      const target = new THREE.Vector3(position.x, position.y, 0);
       orbitControls.target = orbitControls.target
         .clone()
         .multiplyScalar(0.9)
         .add(target.multiplyScalar(0.1));
       camera.lookAt(orbitControls.target);
       camera.updateProjectionMatrix();
-    }
-
-    const jp_images = this.$props.jp_props.options.images;
-    images.forEach((_, id) => {
-      if (!jp_images.some((image) => image.id == id)) {
-        console.log("remove", id);
-        scene.remove(images.get(id));
-        images.delete(id);
-      }
-    });
-    jp_images.forEach((image) => {
-      if (!images.has(image.id)) {
-        console.log("add", image.id);
-        const projection = image.camera.projection;
-        const geometry = new THREE.BufferGeometry();
-        const nI = projection[0].length;
-        const nJ = projection.length;
-        const vertices = [];
-        const indices = [];
-        const uvs = [];
-        for (let j = 0; j < nJ; ++j) {
-          for (let i = 0; i < nI; ++i) {
-            const X = (projection[j][i] || [0, 0])[0];
-            const Y = (projection[j][i] || [0, 0])[1];
-            vertices.push(X, Y, 0);
-            uvs.push(i / (nI - 1), j / (nJ - 1));
-          }
-        }
-        for (let j = 0; j < nJ - 1; ++j) {
-          for (let i = 0; i < nI - 1; ++i) {
-            if (
-              projection[j][i] &&
-              projection[j][i + 1] &&
-              projection[j + 1][i] &&
-              projection[j + 1][i + 1]
-            ) {
-              const idx00 = i + j * nI;
-              const idx10 = i + j * nI + 1;
-              const idx01 = i + j * nI + nI;
-              const idx11 = i + j * nI + 1 + nI;
-              indices.push(idx00, idx10, idx01);
-              indices.push(idx10, idx11, idx01);
-            }
-          }
-        }
-        geometry.setIndex(new THREE.Uint32BufferAttribute(indices, 1));
-        geometry.setAttribute(
-          "position",
-          new THREE.Float32BufferAttribute(vertices, 3)
-        );
-        geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
-        geometry.computeVertexNormals();
-        geometry.computeFaceNormals();
-        const texture = loader.load("imagedata/" + image.id);
-        texture.flipY = false;
-        texture.minFilter = THREE.LinearFilter;
-        const material = new THREE.MeshLambertMaterial({
-          map: texture,
-          side: THREE.DoubleSide,
-        });
-        const mesh = new THREE.Mesh(geometry, material);
-        scene.add(mesh);
-        images.set(image.id, mesh);
-      }
-    });
-
-    if (path_time != this.$props.jp_props.options.path_time) {
-      console.log("Update path...");
-      path_time = this.$props.jp_props.options.path_time;
-      if (path) scene.remove(path);
-      let points = [];
-      this.$props.jp_props.options.path.forEach((spline) => {
-        const curve = new THREE.CubicBezierCurve3(
-          new THREE.Vector3(spline.start.x, spline.start.y, 0),
-          new THREE.Vector3(spline.control1.x, spline.control1.y, 0),
-          new THREE.Vector3(spline.control2.x, spline.control2.y, 0),
-          new THREE.Vector3(spline.end.x, spline.end.y, 0)
-        );
-        points.push(...curve.getPoints(10));
-      });
-      path = new THREE.Line(
-        new THREE.BufferGeometry().setFromPoints(points),
-        new THREE.LineBasicMaterial({ color: "orange" })
-      );
-      scene.add(path);
     }
   },
 

@@ -1,9 +1,10 @@
-from rosys.world.robot import RobotShape
-from typing import Callable
+from pydantic import BaseModel
+from typing import Callable, Optional
 import time
 from nicegui.elements.custom_view import CustomView
 from nicegui.elements.element import Element
 from ..world.pose import Pose
+from ..world.robot import RobotShape
 from ..world.image import Image
 from ..world.camera import Camera
 from ..world.spline import Spline
@@ -11,11 +12,9 @@ from ..world.spline import Spline
 
 class ThreeView(CustomView):
 
-    def __init__(self, *, follow_robot: bool, robot_shape: RobotShape, on_click: Callable):
+    def __init__(self, *, on_click: Callable):
 
-        super().__init__('three', __file__, ['three.min.js', 'OrbitControls.js'],
-                         robots={}, robot_shape=robot_shape.dict(), follow_robot=follow_robot,
-                         images=[], path=[], path_time=0)
+        super().__init__('three', __file__, ['three.min.js', 'OrbitControls.js'], elements={})
 
         self.on_click = on_click
         self.allowed_events = ['onClick']
@@ -28,33 +27,63 @@ class ThreeView(CustomView):
         return False
 
 
+class ThreeElement(BaseModel):
+
+    id: str
+    type: str
+    pose: Optional[Pose]
+    modified: float = 0
+    properties: dict = {}
+
+
 class Three(Element):
 
-    def __init__(self, *, robot_shape: RobotShape, follow_robot: bool = True, on_click: Callable = None):
+    def __init__(self, *, on_click: Callable = None):
 
-        super().__init__(ThreeView(follow_robot=follow_robot, robot_shape=robot_shape, on_click=on_click))
+        super().__init__(ThreeView(on_click=on_click))
 
-    def set_robot(self, id: str, color: str, pose: Pose):
+    def set_robot(self, id: str, color: str, pose: Pose, shape: RobotShape):
 
-        new_pose = pose.dict() | {'color': color}
-        del new_pose['time']
-        if self.view.options.robots.get(id) == new_pose:
+        element = ThreeElement(id=id, type='robot', pose=pose, properties={'color': color, 'shape': shape.dict()})
+        element.pose.time = 0
+        element_dict = element.dict()
+        if self.view.options.elements.get(id) == element_dict:
             return False
-        self.view.options.robots[id] = new_pose
+        self.view.options.elements[id] = element_dict
 
     def update_images(self, images: list[Image], cameras: dict[str, Camera]):
 
         latest_images = {image.mac: image for image in images}
-        self.view.options.images = [
-            image.dict() | {'camera': cameras[image.mac].dict()}
-            for image in latest_images.values()
-            if image.mac in cameras and cameras[image.mac].projection is not None
-        ]
+        latest_image_ids = [image.id for image in latest_images.values()]
+        image_ids = [id for id, element in self.view.options.elements.items() if element['type'] == 'image']
+        for id in image_ids:
+            if id not in latest_image_ids:
+                del self.view.options.elements[id]
+        for image in latest_images.values():
+            if image.id not in self.view.options.elements:
+                camera = cameras.get(image.mac)
+                if camera is not None and camera.projection is not None:
+                    properties = image.dict() | {'camera': camera.dict()}
+                    jp_element = ThreeElement(id=image.id, type='image', properties=properties)
+                    self.view.options.elements[image.id] = jp_element.dict()
 
     def update_path(self, path: list[Spline]):
 
-        new_path = [spline.dict() for spline in path]
-        if self.view.options.path == new_path:
+        id = 'path'
+        properties = {'splines': [spline.dict() for spline in path]}
+        element = ThreeElement(id=id, type='path', properties=properties)
+        jp_element = self.view.options.elements.get(id)
+        if jp_element is not None and jp_element['properties'] == properties:
             return False
-        self.view.options.path = new_path
-        self.view.options.path_time = time.time()
+        element.modified = time.time()
+        self.view.options.elements[id] = element.dict()
+
+    def update_carrot(self, pose: Pose):
+
+        id = 'carrot'
+        element = ThreeElement(id=id, type='carrot', pose=pose)
+        element.pose.time = 0
+        element_dict = element.dict()
+        if self.view.options.elements.get(id) == element_dict:
+            return False
+        self.view.options.elements[id] = element_dict
