@@ -45,6 +45,8 @@ async def drive_spline(spline: Spline, world: World, esp: Esp):
             break
 
         if is_offset:
+            if world.robot.parameters.maximum_curvature is not None:
+                raise NotImplementedError('Curvature restriction is only supported for centered points-of-interest')
             direction_poi_to_carrot = point_of_interest.direction(carrot.pose.point)
             turn_angle = eliminate_pi(direction_poi_to_carrot - world.robot.prediction.yaw)
             # NOTE: rectangular triangle with heigth h and hypothenuse segments p, q
@@ -64,7 +66,18 @@ async def drive_spline(spline: Spline, world: World, esp: Esp):
             ) > 0
             backward = bool(carrot_sign == robot_sign) != bool(h < 0)
         else:
-            local_spline = Spline.from_poses(world.robot.prediction, carrot.pose)
+            try:
+                while True:
+                    local_spline = Spline.from_poses(world.robot.prediction, carrot.pose)
+                    if world.robot.parameters.maximum_curvature is None:
+                        break
+                    max_curvature = np.abs(local_spline.max_curvature(0.0, 0.25))
+                    if max_curvature < world.robot.parameters.maximum_curvature:
+                        break
+                    if not carrot.move(carrot.pose.point, distance=0.1):
+                        raise StopIteration()
+            except StopIteration:
+                break                
             curvature = local_spline.max_curvature(0.0, 0.25)
             backward = False
 
