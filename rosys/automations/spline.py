@@ -43,6 +43,7 @@ async def drive_spline(spline: Spline, world: World, esp: Esp):
         point_of_interest = world.robot.prediction.transform(world.robot.shape.point_of_interest)
         if not carrot.move(point_of_interest, distance=world.robot.parameters.carrot_distance):
             break
+        world.carrot = carrot.pose
 
         if is_offset:
             if world.robot.parameters.maximum_curvature is not None:
@@ -71,13 +72,14 @@ async def drive_spline(spline: Spline, world: World, esp: Esp):
                     local_spline = Spline.from_poses(world.robot.prediction, carrot.pose)
                     if world.robot.parameters.maximum_curvature is None:
                         break
-                    max_curvature = np.abs(local_spline.max_curvature(0.0, 0.25))
+                    max_curvature = np.abs(local_spline.max_curvature())
                     if max_curvature < world.robot.parameters.maximum_curvature:
                         break
                     if not carrot.move(carrot.pose.point, distance=0.1):
                         raise StopIteration()
+                    world.carrot = carrot.pose
             except StopIteration:
-                break                
+                break
             curvature = local_spline.max_curvature(0.0, 0.25)
             backward = False
 
@@ -101,4 +103,5 @@ async def drive_spline(spline: Spline, world: World, esp: Esp):
 
         await esp.drive(linear, angular)
 
+    world.carrot = None
     await esp.drive(0, 0)

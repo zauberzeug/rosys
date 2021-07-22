@@ -155,6 +155,15 @@ Vue.component("three", {
             side: THREE.DoubleSide,
           });
           element = new THREE.Mesh(geometry, material);
+        } else if (jp_element.type == "carrot") {
+          const cone = new THREE.Mesh(
+            new THREE.ConeGeometry(0.1, 0.5),
+            new THREE.MeshPhongMaterial({ color: "orange" })
+          );
+          const z_axis = new THREE.Vector3(0, 0, 1);
+          cone.setRotationFromAxisAngle(z_axis, -Math.PI / 2);
+          element = new THREE.Group();
+          element.add(cone);
         } else {
           console.error("Unknown type:", jp_element.type);
           return;

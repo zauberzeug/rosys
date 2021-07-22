@@ -1,5 +1,5 @@
 from pydantic import BaseModel, PrivateAttr
-from typing import List, Dict
+from typing import List, Dict, Optional
 from enum import Enum
 import time
 from .mode import Mode
@@ -8,6 +8,7 @@ from .marker import Marker
 from .camera import Camera
 from .image import Image
 from .spline import Spline
+from .pose import Pose
 
 
 class WorldState(Enum):
@@ -28,6 +29,7 @@ class World(BaseModel):
     images: List[Image] = []
     image_data: Dict[str, bytes] = {}
     path: List[Spline] = []
+    carrot: Optional[Pose]
 
     @property
     def time(self):

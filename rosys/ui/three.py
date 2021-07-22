@@ -82,7 +82,8 @@ class Three(Element):
 
         id = 'carrot'
         element = ThreeElement(id=id, type='carrot', pose=pose)
-        element.pose.time = 0
+        if element.pose is not None:
+            element.pose.time = 0
         element_dict = element.dict()
         if self.view.options.elements.get(id) == element_dict:
             return False
