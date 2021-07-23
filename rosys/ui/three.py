@@ -42,9 +42,9 @@ class Three(Element):
 
         super().__init__(ThreeView(on_click=on_click))
 
-    def set_robot(self, id: str, color: str, pose: Pose, shape: RobotShape):
+    def set_robot(self, id: str, pose: Pose, shape: RobotShape):
 
-        element = ThreeElement(id=id, type='robot', pose=pose, properties={'color': color, 'shape': shape.dict()})
+        element = ThreeElement(id=id, type='robot', pose=pose, properties=shape.dict())
         element.pose.time = 0
         element_dict = element.dict()
         if self.view.options.elements.get(id) == element_dict:

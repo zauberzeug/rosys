@@ -26,6 +26,7 @@ class Robot(BaseModel):
     parameters: RobotParameters = RobotParameters()
     prediction: Pose = Pose()
     detection: Pose = Pose()
+    simulation: Pose = Pose()
     odometry: list[Velocity] = []
     battery: float = 0
     temperature: float = 0

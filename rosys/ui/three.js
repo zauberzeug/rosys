@@ -81,17 +81,32 @@ Vue.component("three", {
         console.log("add", jp_element.id);
         let element;
         if (jp_element.type == "robot") {
-          const jp_shape = jp_element.properties.shape;
+          const jp_shape = jp_element.properties;
           const shape = new THREE.Shape();
           shape.autoClose = true;
           shape.moveTo(jp_shape.outline[0][0], jp_shape.outline[0][1]);
           jp_shape.outline.slice(1).forEach((p) => shape.lineTo(p[0], p[1]));
           const settings = { depth: jp_shape.height, bevelEnabled: false };
           const geometry = new THREE.ExtrudeGeometry(shape, settings);
-          if (jp_element.id == "detection") geometry.scale(0.999, 0.999, 0.999);
-          const color = jp_element.properties.color;
-          const material = new THREE.MeshPhongMaterial({ color: color });
-          element = new THREE.Mesh(geometry, material);
+          if (jp_element.id == "simulation")
+            geometry.scale(0.999, 0.999, 0.999);
+          if (jp_element.id == "detection") {
+            element = new THREE.LineSegments(
+              new THREE.EdgesGeometry(geometry),
+              new THREE.LineBasicMaterial({
+                color: "#6E93D6",
+                transparent: true,
+                opacity: 0.67,
+              })
+            );
+          } else {
+            const material = new THREE.MeshPhongMaterial({
+              color: "#6E93D6",
+              transparent: true,
+              opacity: jp_element.id == "simulation" ? 0.33 : 0.67,
+            });
+            element = new THREE.Mesh(geometry, material);
+          }
         } else if (jp_element.type == "path") {
           let points = [];
           jp_element.properties.splines.forEach((spline) => {

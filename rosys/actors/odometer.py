@@ -26,6 +26,7 @@ class Odometer(Actor):
             step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=world.time)
             self.steps.append(step)
             world.robot.prediction += step
+            world.robot.simulation += step
 
         self.prune_steps(world.time - 10.0)
 
