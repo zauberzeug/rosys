@@ -53,18 +53,23 @@ class Three(Element):
 
     def update_images(self, images: list[Image], cameras: dict[str, Camera]):
 
-        latest_images = {image.mac: image for image in images}
-        latest_image_ids = [image.id for image in latest_images.values()]
-        self.view.options.elements = {
-            id: e for id, e in self.view.options.elements.items() if e['type'] != 'image' or id in latest_image_ids
-        }
-        for image in latest_images.values():
+        dirty = False
+        new_images = {image.mac: image for image in images}
+        new_image_ids = [image.id for image in new_images.values()]
+        old_image_ids = [id for id, e in self.view.options.elements.items() if e['type'] == 'image']
+        for id in old_image_ids:
+            if id not in new_image_ids:
+                del self.view.options.elements[id]
+                dirty = True
+        for image in new_images.values():
             if image.id not in self.view.options.elements:
                 camera = cameras.get(image.mac)
                 if camera is not None and camera.projection is not None:
                     properties = image.dict() | {'camera': camera.dict()}
                     jp_element = ThreeElement(id=image.id, type='image', properties=properties)
                     self.view.options.elements[image.id] = jp_element.dict()
+                    dirty = True
+        return dirty
 
     def update_path(self, path: list[Spline]):
 
@@ -90,10 +95,15 @@ class Three(Element):
 
     def update_cameras(self, cameras: dict[str, Camera]):
 
-        self.view.options.elements = {
-            id: e for id, e in self.view.options.elements.items() if e['type'] != 'camera' or id in cameras
-        }
+        dirty = False
+        old_macs = [id for id, e in self.view.options.elements.items() if e['type'] == 'camera']
+        for mac in old_macs:
+            if mac not in cameras:
+                del self.view.options.elements[mac]
+                dirty = True
         for mac, camera in cameras.items():
             if mac not in self.view.options.elements and camera.calibration is not None:
                 jp_element = ThreeElement(id=mac, type='camera', properties=camera.calibration.dict())
                 self.view.options.elements[mac] = jp_element.dict()
+                dirty = True
+        return dirty
