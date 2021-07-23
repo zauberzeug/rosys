@@ -156,6 +156,8 @@ Vue.component("three", {
             side: THREE.DoubleSide,
           });
           element = new THREE.Mesh(geometry, material);
+          const mac = jp_element.properties.camera.mac;
+          element.position.z = 0.0001 * parseInt(mac.substring(0, 2), 16);
         } else if (jp_element.type == "carrot") {
           const cone = new THREE.Mesh(
             new THREE.ConeGeometry(0.1, 0.5),
@@ -165,7 +167,7 @@ Vue.component("three", {
           element = new THREE.Group();
           element.add(cone);
         } else if (jp_element.type == "camera") {
-          geometry = new THREE.ConeGeometry(Math.sqrt(0.5), 1, 4);
+          const geometry = new THREE.ConeGeometry(Math.sqrt(0.5), 1, 4);
           geometry.rotateX(-Math.PI / 2);
           geometry.rotateZ(-Math.PI / 4);
           geometry.scale(
@@ -173,8 +175,15 @@ Vue.component("three", {
             0.001 * jp_element.properties.intrinsics.size.height,
             0.001 * jp_element.properties.intrinsics.matrix[0][0]
           );
+          let r = parseInt(jp_element.id.substring(9, 11), 16) / 255;
+          let g = parseInt(jp_element.id.substring(12, 14), 16) / 255;
+          let b = parseInt(jp_element.id.substring(15, 17), 16) / 255;
+          const mean = (r + g + b) / 3;
+          r = 0.5 * (0.5 * (r - mean) + mean) + 0.5;
+          g = 0.5 * (0.5 * (g - mean) + mean) + 0.5;
+          b = 0.5 * (0.5 * (b - mean) + mean) + 0.5;
           const material = new THREE.MeshPhongMaterial({
-            color: "silver",
+            color: new THREE.Color(r, g, b),
             transparent: true,
             opacity: 0.5,
           });
