@@ -55,10 +55,9 @@ class Three(Element):
 
         latest_images = {image.mac: image for image in images}
         latest_image_ids = [image.id for image in latest_images.values()]
-        image_ids = [id for id, element in self.view.options.elements.items() if element['type'] == 'image']
-        for id in image_ids:
-            if id not in latest_image_ids:
-                del self.view.options.elements[id]
+        self.view.options.elements = {
+            id: e for id, e in self.view.options.elements.items() if e['type'] != 'image' or id in latest_image_ids
+        }
         for image in latest_images.values():
             if image.id not in self.view.options.elements:
                 camera = cameras.get(image.mac)
@@ -88,3 +87,13 @@ class Three(Element):
         if self.view.options.elements.get(id) == element_dict:
             return False
         self.view.options.elements[id] = element_dict
+
+    def update_cameras(self, cameras: dict[str, Camera]):
+
+        self.view.options.elements = {
+            id: e for id, e in self.view.options.elements.items() if e['type'] != 'camera' or id in cameras
+        }
+        for mac, camera in cameras.items():
+            if mac not in self.view.options.elements and camera.calibration is not None:
+                jp_element = ThreeElement(id=mac, type='camera', properties=camera.calibration.dict())
+                self.view.options.elements[mac] = jp_element.dict()

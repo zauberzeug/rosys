@@ -24,6 +24,7 @@ Vue.component("three", {
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
+      alpha: true,
       canvas: document.getElementById(this.$props.jp_props.id),
     });
     renderer.setClearColor("#eee");
@@ -160,10 +161,34 @@ Vue.component("three", {
             new THREE.ConeGeometry(0.1, 0.5),
             new THREE.MeshPhongMaterial({ color: "orange" })
           );
-          const z_axis = new THREE.Vector3(0, 0, 1);
-          cone.setRotationFromAxisAngle(z_axis, -Math.PI / 2);
+          cone.rotateZ(-Math.PI / 2);
           element = new THREE.Group();
           element.add(cone);
+        } else if (jp_element.type == "camera") {
+          geometry = new THREE.ConeGeometry(Math.sqrt(0.5), 1, 4);
+          geometry.rotateX(-Math.PI / 2);
+          geometry.rotateZ(-Math.PI / 4);
+          geometry.scale(
+            0.001 * jp_element.properties.intrinsics.size.width,
+            0.001 * jp_element.properties.intrinsics.size.height,
+            0.001 * jp_element.properties.intrinsics.matrix[0][0]
+          );
+          const material = new THREE.MeshPhongMaterial({
+            color: "silver",
+            transparent: true,
+            opacity: 0.5,
+          });
+          const pyramid = new THREE.Mesh(geometry, material);
+          pyramid.position.z = 0.5;
+          element = new THREE.Group();
+          element.add(pyramid);
+          element.position.set(...jp_element.properties.extrinsics.translation);
+          const R = new THREE.Matrix4().makeBasis(
+            new THREE.Vector3(...jp_element.properties.extrinsics.rotation[0]),
+            new THREE.Vector3(...jp_element.properties.extrinsics.rotation[1]),
+            new THREE.Vector3(...jp_element.properties.extrinsics.rotation[2])
+          );
+          element.rotation.setFromRotationMatrix(R.transpose());
         } else {
           console.error("Unknown type:", jp_element.type);
           return;
