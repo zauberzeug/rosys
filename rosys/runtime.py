@@ -40,7 +40,7 @@ class Runtime:
         if world.mode == Mode.REAL:
             camera_actors = [CameraScanner(), CameraDownloader()]
         else:
-            camera_actors = [CameraSimulator(['ff:ff:ff:ff:ff:ff'])]
+            camera_actors = [CameraSimulator()]
 
         self.actors = [
             self.esp,
