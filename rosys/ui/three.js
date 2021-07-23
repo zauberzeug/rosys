@@ -182,37 +182,34 @@ Vue.component("three", {
           element = new THREE.Group();
           element.add(cone);
         } else if (jp_element.type == "camera") {
-          const geometry = new THREE.ConeGeometry(Math.sqrt(0.5), 1, 4);
-          geometry.rotateX(-Math.PI / 2);
-          geometry.rotateZ(-Math.PI / 4);
-          geometry.translate(0, 0, 0.5);
-          geometry.scale(
-            0.001 * jp_element.properties.intrinsics.size.width,
-            0.001 * jp_element.properties.intrinsics.size.height,
-            0.001 * jp_element.properties.intrinsics.matrix[0][0]
-          );
-          let r = parseInt(jp_element.id.substring(9, 11), 16) / 255;
-          let g = parseInt(jp_element.id.substring(12, 14), 16) / 255;
-          let b = parseInt(jp_element.id.substring(15, 17), 16) / 255;
-          const mean = (r + g + b) / 3;
-          r = 0.5 * (0.5 * (r - mean) + mean) + 0.5;
-          g = 0.5 * (0.5 * (g - mean) + mean) + 0.5;
-          b = 0.5 * (0.5 * (b - mean) + mean) + 0.5;
-          const material = new THREE.MeshPhongMaterial({
-            color: new THREE.Color(r, g, b),
-            transparent: true,
-            opacity: jp_element.id.endsWith("_") ? 0.33 : 0.67,
-          });
-          const pyramid = new THREE.Mesh(geometry, material);
           element = new THREE.Group();
-          element.add(pyramid);
-          element.position.set(...jp_element.properties.extrinsics.translation);
-          const R = new THREE.Matrix4().makeBasis(
-            new THREE.Vector3(...jp_element.properties.extrinsics.rotation[0]),
-            new THREE.Vector3(...jp_element.properties.extrinsics.rotation[1]),
-            new THREE.Vector3(...jp_element.properties.extrinsics.rotation[2])
-          );
-          element.rotation.setFromRotationMatrix(R.transpose());
+          const intrinsics = jp_element.properties.intrinsics;
+          const extrinsics = jp_element.properties.extrinsics;
+          if (intrinsics && extrinsics?.rotation) {
+            const geometry = new THREE.ConeGeometry(Math.sqrt(0.5), 1, 4);
+            geometry.rotateX(-Math.PI / 2);
+            geometry.rotateZ(-Math.PI / 4);
+            geometry.translate(0, 0, 0.5);
+            geometry.scale(
+              0.001 * intrinsics.size.width,
+              0.001 * intrinsics.size.height,
+              0.001 * intrinsics.matrix[0][0]
+            );
+            const material = new THREE.MeshPhongMaterial({
+              color: new THREE.Color(...jp_element.properties.color),
+              transparent: true,
+              opacity: jp_element.id.endsWith("_") ? 0.33 : 0.67,
+            });
+            const pyramid = new THREE.Mesh(geometry, material);
+            element.add(pyramid);
+            element.position.set(...extrinsics.translation);
+            const R = new THREE.Matrix4().makeBasis(
+              new THREE.Vector3(...extrinsics.rotation[0]),
+              new THREE.Vector3(...extrinsics.rotation[1]),
+              new THREE.Vector3(...extrinsics.rotation[2])
+            );
+            element.rotation.setFromRotationMatrix(R.transpose());
+          }
         } else {
           console.error("Unknown type:", jp_element.type);
           return;

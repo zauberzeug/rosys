@@ -102,12 +102,13 @@ class Three(Element):
                 del self.view.options.elements[id]
                 dirty = True
         for mac, camera in cameras.items():
-            if mac not in self.view.options.elements and camera.calibration is not None:
-                jp_element = ThreeElement(id=mac, type='camera', properties=camera.calibration.dict())
-                self.view.options.elements[jp_element.id] = jp_element.dict()
-                dirty = True
-            if mac + '_' not in self.view.options.elements and camera.calibration_simulation is not None:
-                jp_element = ThreeElement(id=mac+'_', type='camera', properties=camera.calibration_simulation.dict())
-                self.view.options.elements[jp_element.id] = jp_element.dict()
+            for id, calibration in [(mac, camera.calibration), (mac + '_', camera.calibration_simulation)]:
+                jp_element = self.view.options.elements.get(id)
+                properties = calibration.dict() if calibration is not None else {}
+                properties['color'] = [c / 255 for c in camera.color]
+                if jp_element is not None and jp_element['properties'] == properties:
+                    continue
+                element = ThreeElement(id=id, type='camera', modified=time.time(), properties=properties)
+                self.view.options.elements[id] = element.dict()
                 dirty = True
         return dirty
