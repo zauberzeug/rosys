@@ -170,6 +170,7 @@ Vue.component("three", {
           const geometry = new THREE.ConeGeometry(Math.sqrt(0.5), 1, 4);
           geometry.rotateX(-Math.PI / 2);
           geometry.rotateZ(-Math.PI / 4);
+          geometry.translate(0, 0, 0.5);
           geometry.scale(
             0.001 * jp_element.properties.intrinsics.size.width,
             0.001 * jp_element.properties.intrinsics.size.height,
@@ -188,7 +189,6 @@ Vue.component("three", {
             opacity: 0.5,
           });
           const pyramid = new THREE.Mesh(geometry, material);
-          pyramid.position.z = 0.5;
           element = new THREE.Group();
           element.add(pyramid);
           element.position.set(...jp_element.properties.extrinsics.translation);
