@@ -186,7 +186,7 @@ Vue.component("three", {
           const material = new THREE.MeshPhongMaterial({
             color: new THREE.Color(r, g, b),
             transparent: true,
-            opacity: 0.5,
+            opacity: jp_element.id.endsWith("_") ? 0.33 : 0.67,
           });
           const pyramid = new THREE.Mesh(geometry, material);
           element = new THREE.Group();

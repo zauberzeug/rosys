@@ -96,14 +96,18 @@ class Three(Element):
     def update_cameras(self, cameras: dict[str, Camera]):
 
         dirty = False
-        old_macs = [id for id, e in self.view.options.elements.items() if e['type'] == 'camera']
-        for mac in old_macs:
-            if mac not in cameras:
-                del self.view.options.elements[mac]
+        old_ids = [id for id, e in self.view.options.elements.items() if e['type'] == 'camera']
+        for id in old_ids:
+            if id.replace('_', '') not in cameras:
+                del self.view.options.elements[id]
                 dirty = True
         for mac, camera in cameras.items():
             if mac not in self.view.options.elements and camera.calibration is not None:
                 jp_element = ThreeElement(id=mac, type='camera', properties=camera.calibration.dict())
-                self.view.options.elements[mac] = jp_element.dict()
+                self.view.options.elements[jp_element.id] = jp_element.dict()
+                dirty = True
+            if mac + '_' not in self.view.options.elements and camera.calibration_simulation is not None:
+                jp_element = ThreeElement(id=mac+'_', type='camera', properties=camera.calibration_simulation.dict())
+                self.view.options.elements[jp_element.id] = jp_element.dict()
                 dirty = True
         return dirty
