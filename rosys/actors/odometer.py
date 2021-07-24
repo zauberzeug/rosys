@@ -28,6 +28,9 @@ class Odometer(Actor):
             world.robot.prediction += step
             world.robot.simulation += step
 
+            if step.linear or step.angular:
+                world.robot.last_movement = step.time
+
         self.prune_steps(world.time - 10.0)
 
     def handle_detection(self, world: World):
