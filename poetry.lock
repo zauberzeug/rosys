@@ -566,8 +566,23 @@ optional = false
 python-versions = ">=3.6"
 
 [[package]]
+name = "networkx"
+version = "2.6.2"
+description = "Python package for creating and manipulating graphs and networks"
+category = "main"
+optional = false
+python-versions = ">=3.7"
+
+[package.extras]
+default = ["numpy (>=1.19)", "scipy (>=1.5,!=1.6.1)", "matplotlib (>=3.3)", "pandas (>=1.1)"]
+developer = ["black (==21.5b1)", "pre-commit (>=2.12)"]
+doc = ["sphinx (>=4.0,<5.0)", "pydata-sphinx-theme (>=0.6,<1.0)", "sphinx-gallery (>=0.9,<1.0)", "numpydoc (>=1.1)", "pillow (>=8.2)", "nb2plots (>=0.6)", "texext (>=0.6.6)"]
+extra = ["lxml (>=4.5)", "pygraphviz (>=1.7)", "pydot (>=1.4.1)"]
+test = ["pytest (>=6.2)", "pytest-cov (>=2.12)", "codecov (>=2.1)"]
+
+[[package]]
 name = "nicegui"
-version = "0.4.11"
+version = "0.4.13"
 description = "High-Level Abstraction Web-GUI Using Just Python"
 category = "main"
 optional = false
@@ -585,6 +600,7 @@ Pygments = ">=2.9.0,<3.0.0"
 typing-extensions = ">=3.10.0,<4.0.0"
 uvicorn = {version = ">=0.14.0,<0.15.0", extras = ["watchgodreloader"]}
 watchgod = ">=0.7,<0.8"
+websockets = ">=9.1,<10.0"
 
 [[package]]
 name = "numpy"
@@ -1108,7 +1124,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "42a53473c94950ab5ec48ed3e89ded4db73573fab587738a6c3bbdb1232d837a"
+content-hash = "c9500527d1525fa15d9e30d59353fec34d0e087ea8b97d0099fe44c2cb252835"
 
 [metadata.files]
 addict = [
@@ -1523,9 +1539,13 @@ multidict = [
     {file = "multidict-5.1.0-cp39-cp39-win_amd64.whl", hash = "sha256:7df80d07818b385f3129180369079bd6934cf70469f99daaebfac89dca288359"},
     {file = "multidict-5.1.0.tar.gz", hash = "sha256:25b4e5f22d3a37ddf3effc0710ba692cfc792c2b9edfb9c05aefe823256e84d5"},
 ]
+networkx = [
+    {file = "networkx-2.6.2-py3-none-any.whl", hash = "sha256:5fcb7004be69e8fbdf07dcb502efa5c77cadcaad6982164134eeb9721f826c2e"},
+    {file = "networkx-2.6.2.tar.gz", hash = "sha256:2306f1950ce772c5a59a57f5486d59bb9cab98497c45fc49cbc45ac0dec119bb"},
+]
 nicegui = [
-    {file = "nicegui-0.4.11-py3-none-any.whl", hash = "sha256:c763a8aca26c291335af39fb13c4d6dae1666f15038d881be35bc151eb94899c"},
-    {file = "nicegui-0.4.11.tar.gz", hash = "sha256:2c5654036138969d9beb7d87d44a60c4959e856ae0957b9aec581c301be34bc4"},
+    {file = "nicegui-0.4.13-py3-none-any.whl", hash = "sha256:1e825e37d4ea210df0b9b6af053b46e24cb6e853f70bb96f84df4a73d7c0bb04"},
+    {file = "nicegui-0.4.13.tar.gz", hash = "sha256:be14a2422dc15f1f288016945048a3fb2a6d4d9c1aada78bb3acf4868f6a6ed1"},
 ]
 numpy = [
     {file = "numpy-1.21.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:d5caa946a9f55511e76446e170bdad1d12d6b54e17a2afe7b189112ed4412bb8"},
