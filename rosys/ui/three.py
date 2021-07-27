@@ -104,8 +104,11 @@ class Three(Element):
         for mac, camera in cameras.items():
             for id, calibration in [(mac, camera.calibration), (mac + '_', camera.calibration_simulation)]:
                 jp_element = self.view.options.elements.get(id)
-                properties = calibration.dict() if calibration is not None else {}
-                properties['color'] = [c / 255 for c in camera.color]
+                properties = {'color': [c / 255 for c in camera.color]}
+                if calibration:
+                    properties |= calibration.dict()
+                    if calibration.is_complete:
+                        properties['extrinsics']['rotation'] = calibration.rotation.R
                 if jp_element is not None and jp_element['properties'] == properties:
                     continue
                 element = ThreeElement(id=id, type='camera', modified=time.time(), properties=properties)

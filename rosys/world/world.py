@@ -29,7 +29,7 @@ class World(BaseModel):
     download_queue: List[str] = []
     images: List[Image] = []
     image_data: Dict[str, bytes] = {}
-    link_queue: List[Dict[str, List[Image]]] = []
+    link_queue: List[List[str]] = []
     links: List[Link] = []
     path: List[Spline] = []
     carrot: Optional[Pose]
