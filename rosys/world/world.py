@@ -7,6 +7,7 @@ from .robot import Robot
 from .marker import Marker
 from .camera import Camera
 from .image import Image
+from .link import Link
 from .spline import Spline
 from .pose import Pose
 
@@ -28,6 +29,8 @@ class World(BaseModel):
     download_queue: List[str] = []
     images: List[Image] = []
     image_data: Dict[str, bytes] = {}
+    link_queue: List[Dict[str, List[Image]]] = []
+    links: List[Link] = []
     path: List[Spline] = []
     carrot: Optional[Pose]
 
