@@ -10,8 +10,8 @@ Vue.component("three", {
   mounted() {
     scene = new THREE.Scene();
 
-    const width = 400;
-    const height = 300;
+    const width = this.$props.jp_props.options.width;
+    const height = this.$props.jp_props.options.height;
 
     camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     camera.up = new THREE.Vector3(0, 0, 1);
@@ -227,7 +227,10 @@ Vue.component("three", {
       }
     });
 
-    if (elements.has("prediction")) {
+    if (
+      elements.has("prediction") &&
+      this.$props.jp_props.options.follow_robot
+    ) {
       const position = elements.get("prediction").position;
       const target = new THREE.Vector3(position.x, position.y, 0);
       orbitControls.target = orbitControls.target

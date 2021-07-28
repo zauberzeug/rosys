@@ -12,9 +12,10 @@ from ..world.spline import Spline
 
 class ThreeView(CustomView):
 
-    def __init__(self, *, on_click: Callable):
+    def __init__(self, *, on_click: Callable, width: int, height: int):
 
-        super().__init__('three', __file__, ['three.min.js', 'OrbitControls.js'], elements={})
+        super().__init__('three', __file__, ['three.min.js', 'OrbitControls.js'],
+                         elements={}, width=width, height=height, follow_robot=True)
 
         self.on_click = on_click
         self.allowed_events = ['onClick']
@@ -38,9 +39,15 @@ class ThreeElement(BaseModel):
 
 class Three(Element):
 
-    def __init__(self, *, on_click: Callable = None):
+    def __init__(self, *, on_click: Callable = None, width: int = 400, height: int = 300):
 
-        super().__init__(ThreeView(on_click=on_click))
+        super().__init__(ThreeView(on_click=on_click, width=width, height=height))
+
+    def update_follow_robot(self, value: bool):
+
+        if self.view.options.follow_robot == value:
+            return False
+        self.view.options.follow_robot = value
 
     def set_robot(self, id: str, pose: Pose, shape: RobotShape):
 
