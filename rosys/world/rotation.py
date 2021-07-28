@@ -20,13 +20,6 @@ class Rotation(BaseModel):
         Rz = np.array([[np.cos(kappa), -np.sin(kappa), 0], [np.sin(kappa), np.cos(kappa), 0], [0, 0, 1]])
         return Rotation(R=(Rz @ Ry @ Rx).tolist())
 
-    def to_euler(self) -> tuple[float, float, float]:
-
-        omega = np.arctan2(self.R[2, 1], self.R[2, 2])
-        phi = np.arctan2(-self.R[2, 0], np.sqrt(self.R[2, 1]**2 + self.R[2, 2]**2))
-        kappa = np.arctan2(self.R[1, 0], self.R[0, 0])
-        return omega, phi, kappa
-
     def __mul__(self, other) -> Rotation:
 
         return Rotation(R=np.dot(self.R, other.R).tolist())
