@@ -30,6 +30,14 @@ Vue.component("three", {
     renderer.setClearColor("#eee");
     renderer.setSize(width, height);
 
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(100, 100),
+      new THREE.MeshPhongMaterial({ color: "#eee" })
+    );
+    ground.translateZ(-0.01);
+    ground.name = "ground";
+    scene.add(ground);
+
     const grid = new THREE.GridHelper(100, 100);
     grid.material.transparent = true;
     grid.material.opacity = 0.2;
