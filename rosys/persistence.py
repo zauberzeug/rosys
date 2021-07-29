@@ -10,18 +10,30 @@ from .world.link import Link
 filepath = '/data/backup/world.json'
 
 
-def backup(world: World):
+def dump(world: World) -> dict:
 
     exclude = {'projection', 'synchronization'}
-    dict_ = {
+    return {
         'cameras': {mac: camera.dict(exclude=exclude) for mac, camera in world.cameras.items()},
         'path': [spline.dict() for spline in world.path],
         'robot': {'parameters': world.robot.parameters.dict()},
         'links': [link.dict() for link in world.links],
     }
+
+
+def load(world: World, dict: dict):
+
+    world.cameras = {mac: Camera.parse_obj(camera) for mac, camera in dict['cameras'].items()}
+    world.path = [Spline.parse_obj(spline) for spline in dict['path']]
+    world.robot.parameters = RobotParameters.parse_obj(dict['robot']['parameters'])
+    world.links = [Link.parse_obj(link) for link in dict['links']]
+
+
+def backup(world: World):
+
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     with open(filepath, 'w') as f:
-        json.dump(dict_, f)
+        json.dump(dump(world), f)
 
 
 def restore(world: World):
@@ -32,10 +44,6 @@ def restore(world: World):
 
     try:
         with open(filepath, 'r') as f:
-            dict_ = json.load(f)
-        world.cameras = {mac: Camera.parse_obj(camera) for mac, camera in dict_['cameras'].items()}
-        world.path = [Spline.parse_obj(spline) for spline in dict_['path']]
-        world.robot.parameters = RobotParameters.parse_obj(dict_['robot']['parameters'])
-        world.links = [Link.parse_obj(link) for link in dict_['links']]
+            load(world, json.load(f))
     except:
         logging.exception('Could not load from backup')
