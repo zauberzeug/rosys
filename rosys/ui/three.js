@@ -221,6 +221,10 @@ Vue.component("three", {
             );
             element.rotation.setFromRotationMatrix(R.transpose());
           }
+        } else if (jp_element.type == "link") {
+          const geometry = new THREE.SphereGeometry(0.05);
+          const material = new THREE.MeshPhongMaterial({ color: "#6E93D6" });
+          element = new THREE.Mesh(geometry, material);
         } else {
           console.error("Unknown type:", jp_element.type);
           return;

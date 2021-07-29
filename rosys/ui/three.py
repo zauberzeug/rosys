@@ -8,6 +8,7 @@ from ..world.robot import RobotShape
 from ..world.image import Image
 from ..world.camera import Camera
 from ..world.spline import Spline
+from ..world.link import Link
 
 
 class ThreeView(CustomView):
@@ -121,4 +122,26 @@ class Three(Element):
                 element = ThreeElement(id=id, type='camera', modified=time.time(), properties=properties)
                 self.view.options.elements[id] = element.dict()
                 dirty = True
+        return dirty
+
+    def update_links(self, links: list[Link]):
+
+        dirty = False
+        old_ids = [id for id, e in self.view.options.elements.items() if e['type'] == 'link']
+        new_ids = [f'{link.id}_{link.mac}' for link in links]
+        for id in old_ids:
+            if id not in new_ids:
+                del self.view.options.elements[id]
+                dirty = True
+        for link in links:
+            if link.world_point is None:
+                continue
+            id = f'{link.id}_{link.mac}'
+            pose = Pose(x=link.world_point.x, y=link.world_point.y, yaw=0)
+            jp_element = self.view.options.elements.get(id)
+            if jp_element is not None and jp_element['pose']['x'] == pose.x and jp_element['pose']['y'] == pose.y:
+                continue
+            element = ThreeElement(id=id, type='link', pose=pose)
+            self.view.options.elements[id] = element.dict()
+            dirty = True
         return dirty
