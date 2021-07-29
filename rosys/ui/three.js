@@ -183,7 +183,7 @@ Vue.component("three", {
           });
           element = new THREE.Mesh(geometry, material);
           const mac = jp_element.properties.camera.mac;
-          element.position.z = 0.0001 * parseInt(mac.substring(0, 2), 16);
+          element.position.z = 0.0001 * parseInt(mac.substring(15, 17), 16);
         } else if (jp_element.type == "carrot") {
           const cone = new THREE.Mesh(
             new THREE.ConeGeometry(0.1, 0.5),
