@@ -53,7 +53,7 @@ Vue.component("three", {
     render();
 
     const raycaster = new THREE.Raycaster();
-    document.getElementById(this.$props.jp_props.id).onclick = (mouseEvent) => {
+    const click_handler = (mouseEvent) => {
       let x = (mouseEvent.offsetX / renderer.domElement.width) * 2 - 1;
       let y = -(mouseEvent.offsetY / renderer.domElement.height) * 2 + 1;
       raycaster.setFromCamera({ x: x, y: y }, camera);
@@ -64,9 +64,12 @@ Vue.component("three", {
         page_id: page_id,
         websocket_id: websocket_id,
         objects: raycaster.intersectObjects(scene.children, true),
+        click_type: mouseEvent.type,
       };
       send_to_server(event, "event");
     };
+    document.getElementById(this.$props.jp_props.id).onclick = click_handler;
+    document.getElementById(this.$props.jp_props.id).ondblclick = click_handler;
   },
 
   updated() {
