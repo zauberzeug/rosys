@@ -5,6 +5,7 @@ from .world.world import World
 from .world.camera import Camera
 from .world.robot import RobotParameters
 from .world.spline import Spline
+from .world.link import Link
 
 filepath = '/data/backup/world.json'
 
@@ -15,7 +16,8 @@ def backup(world: World):
     dict_ = {
         'cameras': {mac: camera.dict(exclude=exclude) for mac, camera in world.cameras.items()},
         'path': [spline.dict() for spline in world.path],
-        'robot': {'parameters': world.robot.parameters.dict()}
+        'robot': {'parameters': world.robot.parameters.dict()},
+        'links': [link.dict() for link in world.links],
     }
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     with open(filepath, 'w') as f:
@@ -34,5 +36,6 @@ def restore(world: World):
         world.cameras = {mac: Camera.parse_obj(camera) for mac, camera in dict_['cameras'].items()}
         world.path = [Spline.parse_obj(spline) for spline in dict_['path']]
         world.robot.parameters = RobotParameters.parse_obj(dict_['robot']['parameters'])
+        world.links = [Link.parse_obj(link) for link in dict_['links']]
     except:
         logging.exception('Could not load from backup')
