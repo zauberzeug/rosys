@@ -27,6 +27,7 @@ class Runtime:
     def __init__(self, world: World, additional_actors: list[Actor] = []):
 
         self.world = world
+        self.log = logging.getLogger(__name__)
 
         restore(self.world)
 
@@ -116,14 +117,14 @@ class Runtime:
                 print_stacktrace()
                 if actor.interval == 0 and dt < 0.1:
                     delay = 0.1 - dt
-                    logging.warning(
+                    self.log.warning(
                         f'{type(actor).__name__} would be called to frequently ' +
                         f'because it only took {dt*1000:.0f} ms; ' +
                         f'delaying this step for {delay*1000:.0f} ms')
                     await asyncio.sleep(delay)
 
             if dt > actor.interval > 0:
-                logging.warning(f'{type(actor).__name__} took {dt} s')
+                self.log.warning(f'{type(actor).__name__} took {dt} s')
 
             if self.world.mode == Mode.TEST:
                 sleep_end_time = self.world.time + actor.interval

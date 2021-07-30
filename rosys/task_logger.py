@@ -22,7 +22,7 @@ def create_task(
     ``message_args``.
     '''
 
-    logger = logging.getLogger('task_logger')
+    logger = logging.getLogger(__name__)
     message = 'Task raised an exception'
     message_args = ()
     if loop is None:
