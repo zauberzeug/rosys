@@ -229,6 +229,7 @@ Vue.component("three", {
           console.error("Unknown type:", jp_element.type);
           return;
         }
+        element.name = jp_element.type + "_" + jp_element.id;
         element.modified = jp_element.modified;
         scene.add(element);
         elements.set(jp_element.id, element);
