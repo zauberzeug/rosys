@@ -16,7 +16,7 @@ class ThreeView(CustomView):
     def __init__(self, *, on_click: Callable, width: int, height: int):
 
         super().__init__('three', __file__, ['three.min.js', 'OrbitControls.js'],
-                         elements={}, width=width, height=height, follow_robot=True)
+                         elements={}, width=width, height=height, follow_robot=True, selected_camera=None)
 
         self.on_click = on_click
         self.allowed_events = ['onClick']
@@ -144,4 +144,10 @@ class Three(Element):
             element = ThreeElement(id=id, type='link', pose=pose)
             self.view.options.elements[id] = element.dict()
             dirty = True
+        return dirty
+
+    def select_camera(self, mac: str):
+
+        dirty = self.view.options.selected_camera != mac
+        self.view.options.selected_camera = mac
         return dirty

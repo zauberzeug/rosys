@@ -3,6 +3,7 @@ var camera;
 var orbitControls;
 var loader = new THREE.TextureLoader();
 var elements = new Map();
+var selected_camera;
 
 Vue.component("three", {
   template: `<canvas v-bind:id="jp_props.id"></div>`,
@@ -182,8 +183,9 @@ Vue.component("three", {
             side: THREE.DoubleSide,
           });
           element = new THREE.Mesh(geometry, material);
-          const mac = jp_element.properties.camera.mac;
-          element.position.z = 0.0001 * parseInt(mac.substring(15, 17), 16);
+          element.mac = jp_element.properties.camera.mac;
+          element.position.z =
+            0.0001 * parseInt(element.mac.substring(15, 17), 16);
         } else if (jp_element.type == "carrot") {
           const cone = new THREE.Mesh(
             new THREE.ConeGeometry(0.1, 0.5),
@@ -255,6 +257,18 @@ Vue.component("three", {
         .add(target.multiplyScalar(0.1));
       camera.lookAt(orbitControls.target);
       camera.updateProjectionMatrix();
+    }
+
+    if (selected_camera != this.$props.jp_props.options.selected_camera) {
+      selected_camera = this.$props.jp_props.options.selected_camera;
+      console.log(selected_camera);
+      elements.forEach((element) => {
+        if (element.mac === undefined) return;
+        if (element.mac == selected_camera) element.position.z = 0.03;
+        else
+          element.position.z =
+            0.0001 * parseInt(element.mac.substring(15, 17), 16);
+      });
     }
   },
 
