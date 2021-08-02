@@ -582,7 +582,7 @@ test = ["pytest (>=6.2)", "pytest-cov (>=2.12)", "codecov (>=2.1)"]
 
 [[package]]
 name = "nicegui"
-version = "0.4.13"
+version = "0.4.14"
 description = "High-Level Abstraction Web-GUI Using Just Python"
 category = "main"
 optional = false
@@ -872,20 +872,19 @@ client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
 
 [[package]]
 name = "python-socketio"
-version = "5.3.0"
-description = "Socket.IO server"
+version = "5.4.0"
+description = "Socket.IO server and client for Python"
 category = "main"
 optional = false
-python-versions = "*"
+python-versions = ">=3.6"
 
 [package.dependencies]
 aiohttp = {version = ">=3.4", optional = true, markers = "extra == \"asyncio_client\""}
 bidict = ">=0.21.0"
 python-engineio = ">=4.1.0"
-websockets = {version = ">=7.0", optional = true, markers = "extra == \"asyncio_client\""}
 
 [package.extras]
-asyncio_client = ["aiohttp (>=3.4)", "websockets (>=7.0)"]
+asyncio_client = ["aiohttp (>=3.4)"]
 client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
 
 [[package]]
@@ -1124,7 +1123,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "c9500527d1525fa15d9e30d59353fec34d0e087ea8b97d0099fe44c2cb252835"
+content-hash = "1d0ee469c04260cd79a3216eb89a33047ddb8a08c30f1dea46eb297a5eba9187"
 
 [metadata.files]
 addict = [
@@ -1544,8 +1543,8 @@ networkx = [
     {file = "networkx-2.6.2.tar.gz", hash = "sha256:2306f1950ce772c5a59a57f5486d59bb9cab98497c45fc49cbc45ac0dec119bb"},
 ]
 nicegui = [
-    {file = "nicegui-0.4.13-py3-none-any.whl", hash = "sha256:1e825e37d4ea210df0b9b6af053b46e24cb6e853f70bb96f84df4a73d7c0bb04"},
-    {file = "nicegui-0.4.13.tar.gz", hash = "sha256:be14a2422dc15f1f288016945048a3fb2a6d4d9c1aada78bb3acf4868f6a6ed1"},
+    {file = "nicegui-0.4.14-py3-none-any.whl", hash = "sha256:93f54c00fb43863e1c4c4bd7d045745cdac6de53dd30edc386fdbab6a712daeb"},
+    {file = "nicegui-0.4.14.tar.gz", hash = "sha256:5db63e138b3d11ed07d4fc38a354270f1e24737e7c07e597f0555cb5c9a6772f"},
 ]
 numpy = [
     {file = "numpy-1.21.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:d5caa946a9f55511e76446e170bdad1d12d6b54e17a2afe7b189112ed4412bb8"},
@@ -1749,8 +1748,8 @@ python-engineio = [
     {file = "python_engineio-4.2.0-py2.py3-none-any.whl", hash = "sha256:c6c119c2039fcb6f64d260211ca92c0c61b2b888a28678732a961f2aaebcc848"},
 ]
 python-socketio = [
-    {file = "python-socketio-5.3.0.tar.gz", hash = "sha256:3dcc9785aaeef3a9eeb36c3818095662342744bdcdabd050fe697cdb826a1c2b"},
-    {file = "python_socketio-5.3.0-py2.py3-none-any.whl", hash = "sha256:d74314fd4241342c8a55c4f66d5cfea8f1a8fffd157af216c67e1c3a649a2444"},
+    {file = "python-socketio-5.4.0.tar.gz", hash = "sha256:ca807c9e1f168e96dea412d64dd834fb47c470d27fd83da0504aa4b248ba2544"},
+    {file = "python_socketio-5.4.0-py3-none-any.whl", hash = "sha256:7ed57f6c024abdfeb9b25c74c0c00ffc18da47d903e8d72deecb87584370d1fc"},
 ]
 requests = [
     {file = "requests-2.26.0-py2.py3-none-any.whl", hash = "sha256:6c1246513ecd5ecd4528a0906f910e8f0f9c6b8ec72030dc9fd154dc1a6efd24"},
