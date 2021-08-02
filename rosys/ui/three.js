@@ -66,6 +66,7 @@ Vue.component("three", {
         websocket_id: websocket_id,
         objects: raycaster.intersectObjects(scene.children, true),
         click_type: mouseEvent.type,
+        shift_key: mouseEvent.shiftKey,
       };
       send_to_server(event, "event");
     };

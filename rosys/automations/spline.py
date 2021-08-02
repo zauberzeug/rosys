@@ -33,9 +33,6 @@ async def drive_spline(spline: Spline, world: World, esp: Esp):
 
     carrot = Carrot(spline=spline)
 
-    linear_limit = world.robot.parameters.linear_speed_limit
-    angular_limit = world.robot.parameters.angular_speed_limit
-
     is_offset = world.robot.shape.point_of_interest.distance(Point(x=0, y=0)) > 0
 
     while True:
@@ -46,7 +43,7 @@ async def drive_spline(spline: Spline, world: World, esp: Esp):
         world.carrot = carrot.pose
 
         if is_offset:
-            if world.robot.parameters.maximum_curvature is not None:
+            if world.robot.parameters.minimum_turning_radius:
                 raise NotImplementedError('Curvature restriction is only supported for centered points-of-interest')
             direction_poi_to_carrot = point_of_interest.direction(carrot.pose.point)
             turn_angle = eliminate_pi(direction_poi_to_carrot - world.robot.prediction.yaw)
@@ -70,10 +67,10 @@ async def drive_spline(spline: Spline, world: World, esp: Esp):
             try:
                 while True:
                     local_spline = Spline.from_poses(world.robot.prediction, carrot.pose)
-                    if world.robot.parameters.maximum_curvature is None:
+                    if world.robot.parameters.minimum_turning_radius:
                         break
                     max_curvature = np.abs(local_spline.max_curvature())
-                    if max_curvature < world.robot.parameters.maximum_curvature:
+                    if 1 / max_curvature >= world.robot.parameters.minimum_turning_radius:
                         break
                     if not carrot.move(carrot.pose.point, distance=0.1):
                         raise StopIteration()
@@ -83,25 +80,36 @@ async def drive_spline(spline: Spline, world: World, esp: Esp):
             curvature = local_spline.max_curvature(0.0, 0.25)
             backward = False
 
-        age = world.time - world.robot.detection.time
         linear = 0.5
-        if world.mode != Mode.TEST:  # TODO: require camera tracking in tests as well
-            linear *= ramp(age, 3, 6, 1.0, 0.0, clip=True)
         linear *= -1 if backward else 1
         if carrot.t > 1.0:
             linear *= ramp(carrot.target_distance, 0.5, 0.0, 1.0, 0.5)
         angular = linear * curvature
 
-        if abs(linear) > linear_limit:
-            factor = linear_limit / abs(linear)
-            angular *= factor
-            linear *= factor
-        if abs(angular) > angular_limit:
-            factor = angular_limit / abs(angular)
-            linear *= factor
-            angular *= factor
-
-        await esp.drive(linear, angular)
+        await esp.drive(*throttle(world, linear, angular))
 
     world.carrot = None
     await esp.drive(0, 0)
+
+
+def throttle(world: World, linear: float, angular: float):
+
+    if world.mode != Mode.TEST:  # TODO: require camera tracking in tests as well
+        age = world.time - world.robot.detection.time
+        factor = ramp(age, 3, 6, 1.0, 0.0, clip=True)
+        linear *= factor
+        angular *= factor
+
+    linear_limit = world.robot.parameters.linear_speed_limit
+    angular_limit = world.robot.parameters.angular_speed_limit
+
+    if abs(linear) > linear_limit:
+        factor = linear_limit / abs(linear)
+        angular *= factor
+        linear *= factor
+    if abs(angular) > angular_limit:
+        factor = angular_limit / abs(angular)
+        linear *= factor
+        angular *= factor
+
+    return linear, angular
