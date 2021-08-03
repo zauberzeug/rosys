@@ -8,8 +8,9 @@ from .spline import drive_spline, throttle, eliminate_2pi
 
 async def drive_path(world: World, esp: Esp):
 
-    for spline in world.path:
-        await drive_to(world, esp, spline.start)
+    for s, spline in enumerate(world.path):
+        if s == 0 or spline.start.distance(world.path[s-1].end) > 0.01:
+            await drive_to(world, esp, spline.start)
         await drive_spline(spline, world, esp)
 
 
