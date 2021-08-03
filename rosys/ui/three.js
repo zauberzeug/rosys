@@ -64,7 +64,10 @@ Vue.component("three", {
         id: this.$props.jp_props.id,
         page_id: page_id,
         websocket_id: websocket_id,
-        objects: raycaster.intersectObjects(scene.children, true),
+        objects: raycaster
+          .intersectObjects(scene.children, true)
+          .filter((o) => o.object.name)
+          .map((o) => ({ name: o.object.name, point: o.point })),
         click_type: mouseEvent.type,
         shift_key: mouseEvent.shiftKey,
       };
