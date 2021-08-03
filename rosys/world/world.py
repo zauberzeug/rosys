@@ -1,5 +1,5 @@
 from pydantic import BaseModel, PrivateAttr
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 from enum import Enum
 import time
 from .mode import Mode
@@ -26,6 +26,7 @@ class World(BaseModel):
     robot: Robot
     marker: Marker
     cameras: Dict[str, Camera] = {}
+    tracking: Union[bool, list[str]] = False
     download_queue: List[str] = []
     images: List[Image] = []
     image_data: Dict[str, bytes] = {}

@@ -17,6 +17,7 @@ from .actors.camera_downloader import CameraDownloader
 from .actors.camera_linker import CameraLinker
 from .actors.camera_simulator import CameraSimulator
 from .actors.camera_projector import CameraProjector
+from .actors.tracker import Tracker
 from .world.world import World, WorldState
 from .world.mode import Mode
 from .helpers import print_stacktrace
@@ -39,6 +40,7 @@ class Runtime:
         self.detector = Detector() if world.mode == Mode.REAL else DetectorSimulator()
         self.camera_projector = CameraProjector()
         self.camera_linker = CameraLinker()
+        self.tracker = Tracker()
 
         if world.mode == Mode.REAL:
             camera_actors = [CameraScanner(), CameraDownloader()]
@@ -54,6 +56,7 @@ class Runtime:
             *camera_actors,
             self.camera_projector,
             self.camera_linker,
+            self.tracker,
             self.detector,
         ] + additional_actors
 
