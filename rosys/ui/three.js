@@ -124,10 +124,10 @@ Vue.component("three", {
           let points = [];
           jp_element.properties.splines.forEach((spline) => {
             const curve = new THREE.CubicBezierCurve3(
-              new THREE.Vector3(spline.start.x, spline.start.y, 0),
-              new THREE.Vector3(spline.control1.x, spline.control1.y, 0),
-              new THREE.Vector3(spline.control2.x, spline.control2.y, 0),
-              new THREE.Vector3(spline.end.x, spline.end.y, 0)
+              new THREE.Vector3(spline.start.x, spline.start.y, 0.06),
+              new THREE.Vector3(spline.control1.x, spline.control1.y, 0.06),
+              new THREE.Vector3(spline.control2.x, spline.control2.y, 0.06),
+              new THREE.Vector3(spline.end.x, spline.end.y, 0.06)
             );
             points.push(...curve.getPoints(10));
           });
@@ -186,7 +186,7 @@ Vue.component("three", {
           element = new THREE.Mesh(geometry, material);
           element.mac = jp_element.properties.camera.mac;
           element.position.z =
-            0.0001 * parseInt(element.mac.substring(15, 17), 16);
+            0.02 + 0.0001 * parseInt(element.mac.substring(15, 17), 16);
         } else if (jp_element.type == "carrot") {
           const cone = new THREE.Mesh(
             new THREE.ConeGeometry(0.1, 0.5),
@@ -265,10 +265,10 @@ Vue.component("three", {
       console.log(selected_camera);
       elements.forEach((element) => {
         if (element.mac === undefined) return;
-        if (element.mac == selected_camera) element.position.z = 0.03;
+        if (element.mac == selected_camera) element.position.z = 0.05;
         else
           element.position.z =
-            0.0001 * parseInt(element.mac.substring(15, 17), 16);
+            0.02 + 0.0001 * parseInt(element.mac.substring(15, 17), 16);
       });
     }
   },
