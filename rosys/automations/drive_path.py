@@ -3,7 +3,8 @@ from ..world.point import Point
 from ..world.spline import Spline
 from ..world.world import World
 from ..actors.esp import Esp
-from .spline import drive_spline, throttle, eliminate_2pi
+from ..helpers import eliminate_2pi
+from .spline import drive_spline, throttle
 
 
 async def drive_path(world: World, esp: Esp):

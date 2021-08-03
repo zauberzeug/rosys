@@ -4,17 +4,8 @@ from ..world.world import World
 from ..world.mode import Mode
 from ..world.point import Point
 from ..world.spline import Spline
+from ..helpers import eliminate_pi, eliminate_2pi
 from .navigation.carrot import Carrot
-
-
-def eliminate_2pi(angle):
-
-    return (angle + np.pi) % (2 * np.pi) - np.pi
-
-
-def eliminate_pi(angle):
-
-    return (angle + np.pi / 2) % np.pi - np.pi / 2
 
 
 def ramp(x: float, in_min: float, in_max: float, out_min: float, out_max: float, clip: bool = False):
