@@ -1,3 +1,4 @@
+import asyncio
 from pydantic import BaseModel
 from typing import Callable, Optional
 import time
@@ -79,10 +80,16 @@ class Three(Element):
                     dirty = True
         return dirty
 
-    def update_path(self, path: list[Spline]):
+    async def update_path(self, path: list[Spline]):
 
         id = 'path'
-        properties = {'splines': [spline.dict() for spline in path]}
+        path_copy = path.copy()  # NOTE: a shallow copy is enough
+
+        def extract_splines():
+            includes = {'start', 'control1', 'control2', 'end'}
+            return [spline.dict(include=includes) for spline in path_copy]
+        properties = {'splines': await asyncio.get_event_loop().run_in_executor(None, extract_splines)}
+
         element = ThreeElement(id=id, type='path', properties=properties)
         jp_element = self.view.options.elements.get(id)
         if jp_element is not None and jp_element['properties'] == properties:
