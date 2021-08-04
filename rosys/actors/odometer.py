@@ -52,6 +52,9 @@ class Odometer(Actor):
             dYaw = sum(step.angular for step in self.steps)
             if abs(angle(world.robot.prediction.yaw - dYaw, world.robot.detection.yaw)) > np.deg2rad(90):
                 self.flips += 1
+                for image in world.images:
+                    if image.time == world.robot.detection.time:
+                        world.upload_queue.append(image.id)
                 if self.flips < 3:
                     self.log.warn('Avoiding flip')
                     return

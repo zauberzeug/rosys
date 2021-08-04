@@ -28,6 +28,7 @@ class World(BaseModel):
     cameras: Dict[str, Camera] = {}
     tracking: Union[bool, list[str]] = False
     download_queue: List[str] = []
+    upload_queue: List[str] = []
     images: List[Image] = []
     image_data: Dict[str, bytes] = {}
     link_queue: List[List[str]] = []
