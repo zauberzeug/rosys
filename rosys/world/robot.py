@@ -25,7 +25,7 @@ class Robot(BaseModel):
     shape: RobotShape = RobotShape()
     parameters: RobotParameters = RobotParameters()
     prediction: Pose = Pose()
-    detection: Pose = Pose()
+    detection: Optional[Pose]
     simulation: Pose = Pose()
     odometry: list[Velocity] = []
     last_movement: float = 0

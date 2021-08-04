@@ -53,6 +53,12 @@ class Three(Element):
 
     def set_robot(self, id: str, pose: Pose, shape: RobotShape):
 
+        if pose is None:
+            exists = id in self.view.options.elements
+            if exists:
+                del self.view.options.elements[id]
+            return exists
+
         element = ThreeElement(id=id, type='robot', pose=pose, properties=shape.dict())
         element.pose.time = 0
         element_dict = element.dict()
