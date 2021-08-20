@@ -2,9 +2,7 @@
 import asyncio
 import logging
 import os
-import socket
 import starlette
-from typing import List
 
 from rosys import task_logger
 from rosys.runtime import Runtime

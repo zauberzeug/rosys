@@ -1,10 +1,10 @@
 import logging
-# import icecream
+import icecream
 
 
 def setup():
 
-    # icecream.install()
+    icecream.install()
 
     config = {
         'version': 1,
