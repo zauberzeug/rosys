@@ -3,7 +3,7 @@ services:
   rosys:
     image: "zauberzeug/rosys:0.1.6"
     ports:
-      - "80:80"
+      - "8080:80"
     volumes:
       - ./:/app
     devices:
