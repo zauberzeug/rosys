@@ -582,7 +582,7 @@ test = ["pytest (>=6.2)", "pytest-cov (>=2.12)", "codecov (>=2.1)"]
 
 [[package]]
 name = "nicegui"
-version = "0.4.14"
+version = "0.4.15"
 description = "High-Level Abstraction Web-GUI Using Just Python"
 category = "main"
 optional = false
@@ -1543,8 +1543,8 @@ networkx = [
     {file = "networkx-2.6.2.tar.gz", hash = "sha256:2306f1950ce772c5a59a57f5486d59bb9cab98497c45fc49cbc45ac0dec119bb"},
 ]
 nicegui = [
-    {file = "nicegui-0.4.14-py3-none-any.whl", hash = "sha256:93f54c00fb43863e1c4c4bd7d045745cdac6de53dd30edc386fdbab6a712daeb"},
-    {file = "nicegui-0.4.14.tar.gz", hash = "sha256:5db63e138b3d11ed07d4fc38a354270f1e24737e7c07e597f0555cb5c9a6772f"},
+    {file = "nicegui-0.4.15-py3-none-any.whl", hash = "sha256:5768d149856d6be3a9e20432c34689e302896ec9e26980478f0c3cc91595803e"},
+    {file = "nicegui-0.4.15.tar.gz", hash = "sha256:ec84e4bca81243f530f445c861862d1c3a902bbf49ec492184edd92f64a0456b"},
 ]
 numpy = [
     {file = "numpy-1.21.0-cp37-cp37m-macosx_10_9_x86_64.whl", hash = "sha256:d5caa946a9f55511e76446e170bdad1d12d6b54e17a2afe7b189112ed4412bb8"},
