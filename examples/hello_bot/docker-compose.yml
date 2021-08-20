@@ -1,0 +1,11 @@
+version: "3.9"
+services:
+  rosys:
+    image: "zauberzeug/rosys:latest"
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/app
+    devices:
+      - "${ESP_SERIAL:-/dev/null}:/dev/esp"
+    hostname: docker
