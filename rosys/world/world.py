@@ -24,7 +24,7 @@ class World(BaseModel):
     state: WorldState
     _time: float = PrivateAttr(default_factory=time.time)
     robot: Robot
-    marker: Marker
+    marker: Optional[Marker]
     cameras: Dict[str, Camera] = {}
     tracking: Union[bool, list[str]] = False
     download_queue: List[str] = []
