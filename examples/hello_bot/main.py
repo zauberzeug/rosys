@@ -23,7 +23,6 @@ world = World(
     mode=Mode.REAL if os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0 else Mode.SIMULATION,
     state=WorldState.PAUSED,
     robot=Robot(),
-    marker=Marker.four_points(0.24, 0.26, 0.41),
 )
 
 runtime = Runtime(world)
