@@ -3,6 +3,7 @@ var camera;
 var orbitControls;
 var loader = new THREE.TextureLoader();
 var elements = new Map();
+var selected_camera;
 
 Vue.component("three", {
   template: `<canvas v-bind:id="jp_props.id"></div>`,
@@ -10,8 +11,8 @@ Vue.component("three", {
   mounted() {
     scene = new THREE.Scene();
 
-    const width = 400;
-    const height = 300;
+    const width = this.$props.jp_props.options.width;
+    const height = this.$props.jp_props.options.height;
 
     camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
     camera.up = new THREE.Vector3(0, 0, 1);
@@ -24,10 +25,19 @@ Vue.component("three", {
 
     const renderer = new THREE.WebGLRenderer({
       antialias: true,
+      alpha: true,
       canvas: document.getElementById(this.$props.jp_props.id),
     });
     renderer.setClearColor("#eee");
     renderer.setSize(width, height);
+
+    const ground = new THREE.Mesh(
+      new THREE.PlaneGeometry(100, 100),
+      new THREE.MeshPhongMaterial({ color: "#eee" })
+    );
+    ground.translateZ(-0.01);
+    ground.name = "ground";
+    scene.add(ground);
 
     const grid = new THREE.GridHelper(100, 100);
     grid.material.transparent = true;
@@ -44,7 +54,7 @@ Vue.component("three", {
     render();
 
     const raycaster = new THREE.Raycaster();
-    document.getElementById(this.$props.jp_props.id).onclick = (mouseEvent) => {
+    const click_handler = (mouseEvent) => {
       let x = (mouseEvent.offsetX / renderer.domElement.width) * 2 - 1;
       let y = -(mouseEvent.offsetY / renderer.domElement.height) * 2 + 1;
       raycaster.setFromCamera({ x: x, y: y }, camera);
@@ -54,10 +64,17 @@ Vue.component("three", {
         id: this.$props.jp_props.id,
         page_id: page_id,
         websocket_id: websocket_id,
-        objects: raycaster.intersectObjects(scene.children, true),
+        objects: raycaster
+          .intersectObjects(scene.children, true)
+          .filter((o) => o.object.name)
+          .map((o) => ({ name: o.object.name, point: o.point })),
+        click_type: mouseEvent.type,
+        shift_key: mouseEvent.shiftKey,
       };
       send_to_server(event, "event");
     };
+    document.getElementById(this.$props.jp_props.id).onclick = click_handler;
+    document.getElementById(this.$props.jp_props.id).ondblclick = click_handler;
   },
 
   updated() {
@@ -80,25 +97,40 @@ Vue.component("three", {
         console.log("add", jp_element.id);
         let element;
         if (jp_element.type == "robot") {
-          const jp_shape = jp_element.properties.shape;
+          const jp_shape = jp_element.properties;
           const shape = new THREE.Shape();
           shape.autoClose = true;
           shape.moveTo(jp_shape.outline[0][0], jp_shape.outline[0][1]);
           jp_shape.outline.slice(1).forEach((p) => shape.lineTo(p[0], p[1]));
           const settings = { depth: jp_shape.height, bevelEnabled: false };
           const geometry = new THREE.ExtrudeGeometry(shape, settings);
-          if (jp_element.id == "detection") geometry.scale(0.999, 0.999, 0.999);
-          const color = jp_element.properties.color;
-          const material = new THREE.MeshPhongMaterial({ color: color });
-          element = new THREE.Mesh(geometry, material);
+          if (jp_element.id == "simulation")
+            geometry.scale(0.999, 0.999, 0.999);
+          if (jp_element.id == "detection") {
+            element = new THREE.LineSegments(
+              new THREE.EdgesGeometry(geometry),
+              new THREE.LineBasicMaterial({
+                color: "#6E93D6",
+                transparent: true,
+                opacity: 0.67,
+              })
+            );
+          } else {
+            const material = new THREE.MeshPhongMaterial({
+              color: "#6E93D6",
+              transparent: true,
+              opacity: jp_element.id == "simulation" ? 0.33 : 0.67,
+            });
+            element = new THREE.Mesh(geometry, material);
+          }
         } else if (jp_element.type == "path") {
           let points = [];
           jp_element.properties.splines.forEach((spline) => {
             const curve = new THREE.CubicBezierCurve3(
-              new THREE.Vector3(spline.start.x, spline.start.y, 0),
-              new THREE.Vector3(spline.control1.x, spline.control1.y, 0),
-              new THREE.Vector3(spline.control2.x, spline.control2.y, 0),
-              new THREE.Vector3(spline.end.x, spline.end.y, 0)
+              new THREE.Vector3(spline.start.x, spline.start.y, 0.06),
+              new THREE.Vector3(spline.control1.x, spline.control1.y, 0.06),
+              new THREE.Vector3(spline.control2.x, spline.control2.y, 0.06),
+              new THREE.Vector3(spline.end.x, spline.end.y, 0.06)
             );
             points.push(...curve.getPoints(10));
           });
@@ -155,19 +187,56 @@ Vue.component("three", {
             side: THREE.DoubleSide,
           });
           element = new THREE.Mesh(geometry, material);
+          element.mac = jp_element.properties.camera.mac;
+          element.position.z =
+            0.02 + 0.0001 * parseInt(element.mac.substring(15, 17), 16);
         } else if (jp_element.type == "carrot") {
           const cone = new THREE.Mesh(
             new THREE.ConeGeometry(0.1, 0.5),
             new THREE.MeshPhongMaterial({ color: "orange" })
           );
-          const z_axis = new THREE.Vector3(0, 0, 1);
-          cone.setRotationFromAxisAngle(z_axis, -Math.PI / 2);
+          cone.rotateZ(-Math.PI / 2);
           element = new THREE.Group();
           element.add(cone);
+        } else if (jp_element.type == "camera") {
+          element = new THREE.Group();
+          const intrinsics = jp_element.properties.intrinsics;
+          const extrinsics = jp_element.properties.extrinsics;
+          if (intrinsics && extrinsics?.rotation) {
+            const geometry = new THREE.ConeGeometry(Math.sqrt(0.5), 1, 4);
+            geometry.rotateX(-Math.PI / 2);
+            geometry.rotateZ(-Math.PI / 4);
+            geometry.translate(0, 0, 0.5);
+            geometry.scale(
+              0.001 * intrinsics.size.width,
+              0.001 * intrinsics.size.height,
+              0.001 * intrinsics.matrix[0][0]
+            );
+            const material = new THREE.MeshPhongMaterial({
+              color: new THREE.Color(...jp_element.properties.color),
+              transparent: true,
+              opacity: jp_element.id.endsWith("_") ? 0.33 : 0.67,
+            });
+            const pyramid = new THREE.Mesh(geometry, material);
+            element.add(pyramid);
+            element.position.set(...extrinsics.translation);
+            const R = new THREE.Matrix4().makeBasis(
+              new THREE.Vector3(...extrinsics.rotation[0]),
+              new THREE.Vector3(...extrinsics.rotation[1]),
+              new THREE.Vector3(...extrinsics.rotation[2])
+            );
+            element.rotation.setFromRotationMatrix(R.transpose());
+          }
+        } else if (jp_element.type == "link") {
+          const geometry = new THREE.SphereGeometry(0.025);
+          geometry.scale(1, 1, 5);
+          const material = new THREE.MeshPhongMaterial({ color: "#FB4D46" });
+          element = new THREE.Mesh(geometry, material);
         } else {
           console.error("Unknown type:", jp_element.type);
           return;
         }
+        element.name = jp_element.type + "_" + jp_element.id;
         element.modified = jp_element.modified;
         scene.add(element);
         elements.set(jp_element.id, element);
@@ -181,7 +250,10 @@ Vue.component("three", {
       }
     });
 
-    if (elements.has("prediction")) {
+    if (
+      elements.has("prediction") &&
+      this.$props.jp_props.options.follow_robot
+    ) {
       const position = elements.get("prediction").position;
       const target = new THREE.Vector3(position.x, position.y, 0);
       orbitControls.target = orbitControls.target
@@ -190,6 +262,18 @@ Vue.component("three", {
         .add(target.multiplyScalar(0.1));
       camera.lookAt(orbitControls.target);
       camera.updateProjectionMatrix();
+    }
+
+    if (selected_camera != this.$props.jp_props.options.selected_camera) {
+      selected_camera = this.$props.jp_props.options.selected_camera;
+      console.log(selected_camera);
+      elements.forEach((element) => {
+        if (element.mac === undefined) return;
+        if (element.mac == selected_camera) element.position.z = 0.05;
+        else
+          element.position.z =
+            0.02 + 0.0001 * parseInt(element.mac.substring(15, 17), 16);
+      });
     }
   },
 

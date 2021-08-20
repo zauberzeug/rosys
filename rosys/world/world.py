@@ -1,5 +1,5 @@
 from pydantic import BaseModel, PrivateAttr
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 from enum import Enum
 import time
 from .mode import Mode
@@ -7,6 +7,7 @@ from .robot import Robot
 from .marker import Marker
 from .camera import Camera
 from .image import Image
+from .link import Link
 from .spline import Spline
 from .pose import Pose
 
@@ -25,9 +26,13 @@ class World(BaseModel):
     robot: Robot
     marker: Marker
     cameras: Dict[str, Camera] = {}
+    tracking: Union[bool, list[str]] = False
     download_queue: List[str] = []
+    upload_queue: List[str] = []
     images: List[Image] = []
     image_data: Dict[str, bytes] = {}
+    link_queue: List[List[str]] = []
+    links: List[Link] = []
     path: List[Spline] = []
     carrot: Optional[Pose]
 

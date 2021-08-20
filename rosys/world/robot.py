@@ -17,7 +17,7 @@ class RobotParameters(BaseModel):
     linear_speed_limit: float = 0.5
     angular_speed_limit: float = 0.5
     carrot_distance: float = 1.0
-    maximum_curvature: Optional[float]
+    minimum_turning_radius: float = 0.0
 
 
 class Robot(BaseModel):
@@ -25,8 +25,10 @@ class Robot(BaseModel):
     shape: RobotShape = RobotShape()
     parameters: RobotParameters = RobotParameters()
     prediction: Pose = Pose()
-    detection: Pose = Pose()
+    detection: Optional[Pose]
+    simulation: Pose = Pose()
     odometry: list[Velocity] = []
+    last_movement: float = 0
     battery: float = 0
     temperature: float = 0
     clock_offset: Optional[float]

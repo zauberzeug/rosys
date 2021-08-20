@@ -14,8 +14,10 @@ from .actors.robot_locator import RobotLocator
 from .actors.automator import Automator
 from .actors.camera_scanner import CameraScanner
 from .actors.camera_downloader import CameraDownloader
+from .actors.camera_linker import CameraLinker
 from .actors.camera_simulator import CameraSimulator
 from .actors.camera_projector import CameraProjector
+from .actors.tracker import Tracker
 from .world.world import World, WorldState
 from .world.mode import Mode
 from .helpers import print_stacktrace
@@ -26,6 +28,7 @@ class Runtime:
     def __init__(self, world: World, additional_actors: list[Actor] = []):
 
         self.world = world
+        self.log = logging.getLogger(__name__)
 
         restore(self.world)
 
@@ -36,11 +39,13 @@ class Runtime:
         self.automator = Automator()
         self.detector = Detector() if world.mode == Mode.REAL else DetectorSimulator()
         self.camera_projector = CameraProjector()
+        self.camera_linker = CameraLinker()
+        self.tracker = Tracker()
 
         if world.mode == Mode.REAL:
             camera_actors = [CameraScanner(), CameraDownloader()]
         else:
-            camera_actors = [CameraSimulator(['ff:ff:ff:ff:ff:ff'])]
+            camera_actors = [CameraSimulator()]
 
         self.actors = [
             self.esp,
@@ -50,6 +55,8 @@ class Runtime:
             self.automator,
             *camera_actors,
             self.camera_projector,
+            self.camera_linker,
+            self.tracker,
             self.detector,
         ] + additional_actors
 
@@ -113,14 +120,14 @@ class Runtime:
                 print_stacktrace()
                 if actor.interval == 0 and dt < 0.1:
                     delay = 0.1 - dt
-                    logging.warning(
+                    self.log.warning(
                         f'{type(actor).__name__} would be called to frequently ' +
                         f'because it only took {dt*1000:.0f} ms; ' +
                         f'delaying this step for {delay*1000:.0f} ms')
                     await asyncio.sleep(delay)
 
             if dt > actor.interval > 0:
-                logging.warning(f'{type(actor).__name__} took {dt} s')
+                self.log.warning(f'{type(actor).__name__} took {dt} s')
 
             if self.world.mode == Mode.TEST:
                 sleep_end_time = self.world.time + actor.interval

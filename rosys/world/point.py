@@ -16,7 +16,13 @@ class Point(BaseModel):
             y=np.imag(number),
         )
 
-    def to_complex(self):
+    @property
+    def tuple(self):
+
+        return (self.x, self.y)
+
+    @property
+    def complex(self):
 
         return self.x + 1j * self.y
 

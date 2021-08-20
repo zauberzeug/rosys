@@ -1,5 +1,4 @@
 import asyncio
-import logging
 import aioserial
 from operator import ixor
 from functools import reduce
@@ -31,6 +30,8 @@ class SerialEsp(Esp):
 
     def __init__(self):
 
+        super().__init__()
+
         self.aioserial = aioserial.AioSerial('/dev/esp', baudrate=115200)
         self.remainder = ''
 
@@ -39,7 +40,7 @@ class SerialEsp(Esp):
         try:
             self.remainder += self.aioserial.read_all().decode()
         except:
-            logging.warning('Error reading from serial')
+            self.log.warning('Error reading from serial')
             return
 
         millis = None
@@ -48,17 +49,17 @@ class SerialEsp(Esp):
             line, self.remainder = self.remainder.split('\n', 1)
 
             if line.startswith("\x1b[0;32m"):
-                logging.warning(line)
+                self.log.warning(line)
                 continue  # NOTE: ignore green log messages
 
             if '^' in line:
                 line, checksum = line.split('^')
                 if reduce(ixor, map(ord, line)) != int(checksum):
-                    logging.warning('Checksum failed')
+                    self.log.warning('Checksum failed')
                     continue
 
             if not line.startswith("esp "):
-                logging.warning(line)
+                self.log.warning(line)
                 continue  # NOTE: ignore all messages but esp status
 
             try:
@@ -72,7 +73,7 @@ class SerialEsp(Esp):
                     time = millis / 1000 + world.robot.clock_offset
                     world.robot.odometry.append(Velocity(linear=linear, angular=angular, time=time))
             except (IndexError, ValueError):
-                logging.warning(f'Error parsing serial message "{line}"')
+                self.log.warning(f'Error parsing serial message "{line}"')
 
         if millis is not None:
             world.robot.clock_offset = world.time - millis / 1000
@@ -88,6 +89,8 @@ class MockedEsp(Esp):
     interval: float = 0.01
 
     def __init__(self, world: World):
+
+        super().__init__()
 
         x = [point[0] for point in world.robot.shape.outline]
         self.width = max(x) - min(x)
