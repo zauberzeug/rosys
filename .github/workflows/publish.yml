@@ -77,6 +77,6 @@ jobs:
         with:
           context: .
           platforms: linux/amd64,linux/arm64
-          build-args: NSTALL_DEV=true
+          build-args: INSTALL_DEV=true
           push: true
           tags: ${{ steps.prep.outputs.tags }}
