@@ -4,7 +4,6 @@ import logging
 import os
 import socket
 import starlette
-from nicegui import app, ui
 from typing import List
 
 from rosys import task_logger
@@ -15,8 +14,12 @@ from rosys.world.marker import Marker
 from rosys.world.mode import Mode
 from rosys.world.robot import Robot
 from rosys.world.world import WorldState, World
+from rosys.automations.square import drive_square
+from nicegui import app, ui
+import log_configuration
 
-logging.basicConfig(level=logging.INFO)
+log_configuration.setup()
+logger = logging.getLogger('hello_bot')
 
 world = World(
     mode=Mode.REAL if os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0 else Mode.SIMULATION,
@@ -44,9 +47,13 @@ with steering_card:
         {world.robot.battery:.1f}V,
         {world.robot.temperature:.1f}C)
     '''))
-
     with ui.row():
         Joystick(size=50, color='blue', steerer=runtime.steerer)
+
+        def start():
+            runtime.automator.add(drive_square(runtime.world, runtime.esp))
+            runtime.resume()
+        ui.button('drive square', on_click=start)
 
     def update_three():
         need_updates = [
@@ -109,6 +116,7 @@ ui.on_shutdown(runtime.stop())
 def get_world(request, **kwargs):
 
     return starlette.responses.Response(content=world.json(exclude={'image_data'}), media_type='text/json')
+
 
 app.routes.insert(0, starlette.routing.Route('/world', get_world))
 
