@@ -76,6 +76,7 @@ async def send():
 for usb_path in [
     "/dev/tty.SLAB_USBtoUART",
     "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0",
+    "/dev/ttyUSB0",
     "/dev/ttyTHS1"]:
     if os.path.exists(usb_path):
         break
