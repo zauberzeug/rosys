@@ -14,8 +14,7 @@ services:
       - ORGANIZATION=zauberzeug
       - PROJECT=drawingbot
     volumes:
-      - ./detector:/data
-    command: "/app/start.sh"
+      - ~/data:/data
     deploy:
       resources:
         reservations:
