@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from rosys.world.hardware import HardwareGroup
 from .pose import Pose
 from .point import Point
 from .velocity import Velocity
@@ -24,6 +25,7 @@ class Robot(BaseModel):
 
     shape: RobotShape = RobotShape()
     parameters: RobotParameters = RobotParameters()
+    hardware: list[HardwareGroup]
     prediction: Pose = Pose()
     detection: Optional[Pose]
     simulation: Pose = Pose()

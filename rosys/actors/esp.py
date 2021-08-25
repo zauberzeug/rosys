@@ -1,4 +1,5 @@
 import asyncio
+from rosys.world.hardware import HardwareGroup
 import aioserial
 from operator import ixor
 from functools import reduce
@@ -22,6 +23,12 @@ class Esp(Actor):
 
         self.send(line)
         await asyncio.sleep(0)
+
+    def configure(self, hardware: list[HardwareGroup]):
+
+        for group in hardware:
+            for command in group.commands:
+                self.send(command)
 
 
 class SerialEsp(Esp):

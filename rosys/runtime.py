@@ -26,7 +26,7 @@ from .helpers import print_stacktrace
 
 class Runtime:
 
-    def __init__(self, world: World, additional_actors: list[Actor] = []):
+    def __init__(self, world: World):
 
         self.world = world
         self.log = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ class Runtime:
             self.odometer,
             self.steerer,
             self.automator,
-        ] + additional_actors
+        ]
 
         self.follow_ups = {
             self.esp.step: [
@@ -75,6 +75,12 @@ class Runtime:
             self.robot_locator.find_robot,
             self.odometer.handle_detection,
         ]
+
+        return self
+
+    def with_actors(self, actors: list[Actor]):
+
+        self.actors += actors
 
         return self
 

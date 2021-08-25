@@ -7,9 +7,10 @@ from rosys.ui.three import Three
 from rosys.world.mode import Mode
 from rosys.world.robot import Robot
 from rosys.world.world import World
+from hardware import hardware
 
 mode = Mode.REAL if os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0 else Mode.SIMULATION
-world = World(mode=mode, robot=Robot())
+world = World(mode=mode, robot=Robot(hardware=hardware))
 
 runtime = Runtime(world)
 
@@ -35,6 +36,7 @@ with ui.card():
 
         Joystick(size=50, color='blue', steerer=runtime.steerer)
 
+    ui.button('configure esp', on_click=lambda: runtime.esp.configure(world.robot.hardware))
     ui.button('restart rosys', on_click=lambda: os.utime('main.py'))
 
 ui.on_startup(runtime.run())
