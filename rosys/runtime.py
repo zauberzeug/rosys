@@ -1,3 +1,4 @@
+from __future__ import annotations
 import sys
 import asyncio
 import logging
@@ -35,40 +36,47 @@ class Runtime:
         self.esp = SerialEsp() if world.mode == Mode.REAL else MockedEsp(self.world)
         self.odometer = Odometer()
         self.steerer = Steerer()
-        self.robot_locator = RobotLocator()
         self.automator = Automator()
-        self.detector = Detector() if world.mode == Mode.REAL else DetectorSimulator()
-        self.camera_projector = CameraProjector()
-        self.camera_linker = CameraLinker()
-        self.tracker = Tracker()
-
-        if world.mode == Mode.REAL:
-            camera_actors = [CameraScanner(), CameraDownloader()]
-        else:
-            camera_actors = [CameraSimulator()]
 
         self.actors = [
             self.esp,
             self.odometer,
             self.steerer,
-            self.robot_locator,
             self.automator,
-            *camera_actors,
-            self.camera_projector,
-            self.camera_linker,
-            self.tracker,
-            self.detector,
         ] + additional_actors
 
         self.follow_ups = {
             self.esp.step: [
                 self.odometer.handle_velocity,
             ],
-            self.detector.step: [
-                self.robot_locator.find_robot,
-                self.odometer.handle_detection,
-            ],
         }
+
+    def with_cameras(self) -> Runtime:
+
+        if self.world.mode == Mode.REAL:
+            self.actors += [CameraScanner(), CameraDownloader()]
+        else:
+            self.actors += [CameraSimulator()]
+
+        self.camera_projector = CameraProjector()
+        self.camera_linker = CameraLinker()
+        self.tracker = Tracker()
+        self.detector = Detector() if self.world.mode == Mode.REAL else DetectorSimulator()
+        self.robot_locator = RobotLocator()
+        self.actors += [
+            self.camera_projector,
+            self.camera_linker,
+            self.tracker,
+            self.detector,
+            self.robot_locator,
+        ]
+
+        self.follow_ups[self.detector.step] = [
+            self.robot_locator.find_robot,
+            self.odometer.handle_detection,
+        ]
+
+        return self
 
     async def pause(self):
         self.world.state = WorldState.PAUSED

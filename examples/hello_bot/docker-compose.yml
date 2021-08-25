@@ -6,6 +6,7 @@ services:
       - "8080:80"
     volumes:
       - ./:/app
+      - ./../../rosys:/rosys/rosys # to directly modify rosys code and have it reflected in the container
     devices:
       - "${ESP_SERIAL:-/dev/null}:/dev/esp"
     hostname: docker
