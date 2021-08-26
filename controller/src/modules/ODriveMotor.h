@@ -26,7 +26,6 @@ private:
     uint16_t can_id;
     Button *home_switch;
 
-    float position = 0.0;
     float tickOffset = 0.0;
     uint32_t error = 0;
 
@@ -48,6 +47,8 @@ private:
     };
 
 public:
+    float position = 0.0;
+
     ODriveMotor(std::string name, Button *home_switch, Can *can, std::string parameters) : Module(name)
     {
         this->can = can;
