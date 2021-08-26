@@ -10,7 +10,7 @@
 #include "../utils/defines.h"
 #include "../utils/timing.h"
 
-class Drive : public Module
+class RoboClawWheels : public Module
 {
 private:
     bool use300HzSpeedReadings = true;
@@ -185,7 +185,7 @@ private:
     }
 
 public:
-    Drive(std::string name, std::string parameters) : Module(name)
+    RoboClawWheels(std::string name, std::string parameters) : Module(name)
     {
         std::string type = cut_first_word(parameters, ',');
         int address = parameters.empty() ? 128 : atoi(cut_first_word(parameters, ',').c_str());

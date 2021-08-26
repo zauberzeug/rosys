@@ -9,7 +9,7 @@
 #include "../utils/checksum.h"
 #include "../utils/timing.h"
 
-class DualMotor : public Module
+class RoboClawMotors : public Module
 {
 private:
     uint32_t accel1 = 1e5;
@@ -142,7 +142,7 @@ private:
     }
 
 public:
-    DualMotor(std::string name, std::string parameters) : Module(name)
+    RoboClawMotors(std::string name, std::string parameters) : Module(name)
     {
         std::string type = cut_first_word(parameters, ',');
         int address = parameters.empty() ? 128 : atoi(cut_first_word(parameters, ',').c_str());

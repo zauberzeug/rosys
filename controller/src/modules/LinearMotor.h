@@ -5,7 +5,7 @@
 #include "../utils/strings.h"
 #include "../utils/checksum.h"
 
-class Linear : public Module
+class LinearMotor : public Module
 {
 private:
     Port *portMoveIn;
@@ -23,7 +23,7 @@ private:
     };
 
 public:
-    Linear(std::string name, std::string parameters) : Module(name)
+    LinearMotor(std::string name, std::string parameters) : Module(name)
     {
         this->portMoveIn = Port::fromString(cut_first_word(parameters, ','));
         this->portMoveOut = Port::fromString(cut_first_word(parameters, ','));

@@ -27,7 +27,7 @@ then
         make -j4 flash
     fi
 else
-    docker run --rm -v $PWD:/project -w /project espressif/idf:v4.2 make -j4
+    docker run --rm -v $PWD:/project -w /project espressif/idf:v4.2 make -j4 || exit 1
     ./esptool.py \
         --chip esp32 \
         --port /dev/tty.SLAB_USBtoUART \
