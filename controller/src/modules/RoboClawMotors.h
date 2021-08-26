@@ -144,14 +144,9 @@ private:
 public:
     RoboClawMotors(std::string name, std::string parameters) : Module(name)
     {
-        std::string type = cut_first_word(parameters, ',');
         int address = parameters.empty() ? 128 : atoi(cut_first_word(parameters, ',').c_str());
         int baud = parameters.empty() ? 38400 : atoi(cut_first_word(parameters, ',').c_str());
 
-        if (type != "roboclaw" and not type.empty())
-        {
-            cprintln("Invalid type: %s", type.c_str());
-        }
         claw = new RoboClaw(UART_NUM_1, GPIO_NUM_26, GPIO_NUM_27, baud, address);
     }
 
