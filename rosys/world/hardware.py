@@ -5,16 +5,27 @@ import abc
 
 class HardwareGroup(BaseModel, abc.ABC):
 
+    name: str
+    output: bool = False
+
     @abc.abstractproperty
     def commands(self) -> list[str]:
 
         pass
 
+    def with_output(self):
+
+        self.output = True
+        return self
+
 
 class Bluetooth(HardwareGroup):
 
-    name: str = 'bluetooth'
     device_name: str
+
+    def __init__(self, **data):
+
+        super().__init__(name='bluetooth', **data)
 
     @property
     def commands(self) -> list[str]:
@@ -26,9 +37,12 @@ class Bluetooth(HardwareGroup):
 
 class Can(HardwareGroup):
 
-    name: str = 'can'
     rxPin: int
     txPin: int
+
+    def __init__(self, **data):
+
+        super().__init__(name='can', **data)
 
     @property
     def commands(self) -> list[str]:
@@ -40,7 +54,6 @@ class Can(HardwareGroup):
 
 class ODriveAxis(HardwareGroup):
 
-    name: str
     can: Can
     device_id: int
     m_per_tick: float
@@ -56,7 +69,6 @@ class ODriveAxis(HardwareGroup):
 
 class WheelPair(HardwareGroup):
 
-    name: str
     left: ODriveAxis
     right: ODriveAxis
     width: float

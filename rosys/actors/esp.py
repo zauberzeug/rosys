@@ -4,6 +4,7 @@ import aioserial
 from operator import ixor
 from functools import reduce
 import numpy as np
+import time
 from ..world.world import World
 from ..world.velocity import Velocity
 from .actor import Actor
@@ -26,9 +27,19 @@ class Esp(Actor):
 
     def configure(self, hardware: list[HardwareGroup]):
 
+        self.send('esp erase')
+
         for group in hardware:
             for command in group.commands:
-                self.send(command)
+                self.send('+' + command)
+                time.sleep(0.1)
+
+        output_modules = ','.join(group.name for group in hardware if group.output)
+        self.send(f'+set esp.outputModules={output_modules}')
+        self.send('+esp unmute')
+        self.send('+set esp.ready=1')
+        self.send('+set esp.24v=1')
+        self.send('esp restart')
 
 
 class SerialEsp(Esp):
