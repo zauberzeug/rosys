@@ -1,12 +1,12 @@
 import asyncio
-from rosys.world.hardware import HardwareGroup
 import aioserial
 from operator import ixor
 from functools import reduce
 import numpy as np
 import time
-from ..world.world import World
+from ..world.hardware import HardwareGroup, ODriveWheels, RoboClawWheels
 from ..world.velocity import Velocity
+from ..world.world import World
 from .actor import Actor
 
 
@@ -14,11 +14,11 @@ class Esp(Actor):
 
     async def drive(self, linear: float, angular: float):
 
-        await self.send_async('drive speed %.3f,%.3f' % (linear, angular))
+        await self.send_async('wheels speed %.3f,%.3f' % (linear, angular))
 
     async def power(self, left: float, right: float):
 
-        await self.send_async('drive pw %.3f,%.3f' % (left, right))
+        await self.send_async('wheels pw %.3f,%.3f' % (left, right))
 
     async def send_async(self, line):
 
@@ -83,10 +83,17 @@ class SerialEsp(Esp):
             try:
                 words = line.split()[1:]
                 millis = float(words.pop(0))
-                linear = float(words.pop(0))
-                angular = float(words.pop(0))
-                world.robot.temperature = float(words.pop(0))
-                world.robot.battery = float(words.pop(0))
+                for group in world.robot.hardware:
+                    if not group.output:
+                        continue
+                    if isinstance(group, ODriveWheels):
+                        linear = float(words.pop(0))
+                        angular = float(words.pop(0))
+                    elif isinstance(group, RoboClawWheels):
+                        linear = float(words.pop(0))
+                        angular = float(words.pop(0))
+                        world.robot.temperature = float(words.pop(0))
+                        world.robot.battery = float(words.pop(0))
                 if world.robot.clock_offset is not None:
                     time = millis / 1000 + world.robot.clock_offset
                     world.robot.odometry.append(Velocity(linear=linear, angular=angular, time=time))
@@ -124,12 +131,12 @@ class MockedEsp(Esp):
 
     def send(self, line):
 
-        if line.startswith("drive pw "):
+        if line.startswith("wheels pw "):
             left = float(line.split()[2].split(',')[0])
             right = float(line.split()[2].split(',')[1])
             self.linear_velocity = (left + right) / 2.0
             self.angular_velocity = (right - left) / self.width / 2.0
 
-        if line.startswith("drive speed "):
+        if line.startswith("wheels speed "):
             self.linear_velocity = float(line.split()[2].split(',')[0])
             self.angular_velocity = float(line.split()[2].split(',')[1])

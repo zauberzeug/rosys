@@ -52,7 +52,24 @@ class Can(HardwareGroup):
         ]
 
 
-class ODriveAxis(HardwareGroup):
+class RoboClawWheels(HardwareGroup):
+
+    address: int = 128
+    baud: int = 38400
+    m_per_tick: float
+    width: float
+
+    @property
+    def commands(self) -> list[str]:
+
+        return [
+            f'new roboclawwheels {self.name} {self.address},{self.baud}',
+            f'set {self.name}.mPerTick={self.m_per_tick}',
+            f'set {self.name}.width={self.width}',
+        ]
+
+
+class ODriveMotor(HardwareGroup):
 
     can: Can
     device_id: int
@@ -62,15 +79,15 @@ class ODriveAxis(HardwareGroup):
     def commands(self) -> list[str]:
 
         return [
-            f'new odriveaxis {self.name} 0,{self.can.name},{hex(self.device_id)[2:]}',
+            f'new odrivemotor {self.name} 0,{self.can.name},{hex(self.device_id)[2:]}',
             f'set {self.name}.mPerTick={self.m_per_tick}',
         ]
 
 
-class WheelPair(HardwareGroup):
+class ODriveWheels(HardwareGroup):
 
-    left: ODriveAxis
-    right: ODriveAxis
+    left: ODriveMotor
+    right: ODriveMotor
     width: float
     left_torque_factor: float = 1.0
     right_torque_factor: float = 1.0
@@ -79,7 +96,7 @@ class WheelPair(HardwareGroup):
     def commands(self) -> list[str]:
 
         return self.left.commands + self.right.commands + [
-            f'new wheelpair {self.name} {self.left.name},{self.right.name}',
+            f'new odrivewheels {self.name} {self.left.name},{self.right.name}',
             f'set {self.name}.width={self.width}',
             f'set {self.name}.leftTorqueFactor={self.left_torque_factor}',
             f'set {self.name}.rightTorqueFactor={self.right_torque_factor}',
