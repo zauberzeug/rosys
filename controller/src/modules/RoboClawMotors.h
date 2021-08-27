@@ -241,7 +241,7 @@ public:
 
     void handleMsg(std::string command, std::string parameters)
     {
-        if (command == "pw")
+        if (command == "power")
         {
             double pw1 = atof(cut_first_word(parameters, ',').c_str());
             double pw2 = atof(cut_first_word(parameters, ',').c_str());

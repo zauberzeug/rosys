@@ -18,7 +18,7 @@ class Esp(Actor):
 
     async def power(self, left: float, right: float):
 
-        await self.send_async('wheels pw %.3f,%.3f' % (left, right))
+        await self.send_async('wheels power %.3f,%.3f' % (left, right))
 
     async def send_async(self, line):
 
@@ -137,7 +137,7 @@ class MockedEsp(Esp):
 
     def send(self, line):
 
-        if line.startswith("wheels pw "):
+        if line.startswith("wheels power "):
             left = float(line.split()[2].split(',')[0])
             right = float(line.split()[2].split(',')[1])
             self.linear_velocity = (left + right) / 2.0

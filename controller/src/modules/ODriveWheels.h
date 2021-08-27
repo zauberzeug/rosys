@@ -10,8 +10,8 @@
 class ODriveWheels : public Module
 {
 private:
-    double leftTorqueFactor = 1.0;
-    double rightTorqueFactor = 1.0;
+    double leftPowerFactor = 1.0;
+    double rightPowerFactor = 1.0;
     double leftSpeedFactor = 1.0;
     double rightSpeedFactor = 1.0;
     double width = 1.0;
@@ -58,12 +58,12 @@ public:
 
     void handleMsg(std::string command, std::string parameters)
     {
-        if (command == "torque")
+        if (command == "power")
         {
             double left = atof(cut_first_word(parameters, ',').c_str());
             double right = atof(cut_first_word(parameters, ',').c_str());
-            this->leftMotor->torque(left * this->leftTorqueFactor);
-            this->rightMotor->torque(right * this->rightTorqueFactor);
+            this->leftMotor->power(left * this->leftPowerFactor);
+            this->rightMotor->power(right * this->rightPowerFactor);
         }
         else if (command == "speed_lr") // DEPRICATED
         {
@@ -97,13 +97,13 @@ public:
         {
             width = atof(value.c_str());
         }
-        else if (key == "leftTorqueFactor")
+        else if (key == "leftPowerFactor")
         {
-            leftTorqueFactor = atof(value.c_str());
+            leftPowerFactor = atof(value.c_str());
         }
-        else if (key == "rightTorqueFactor")
+        else if (key == "rightPowerFactor")
         {
-            rightTorqueFactor = atof(value.c_str());
+            rightPowerFactor = atof(value.c_str());
         }
         else if (key == "leftSpeedFactor")
         {

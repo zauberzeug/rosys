@@ -44,22 +44,12 @@ public:
 
     void handleMsg(std::string command, std::string parameters)
     {
-        if (command == "pw")
+        if (command == "power")
         {
-            double pw = atof(parameters.c_str());
-            this->dir_port->set_level(pw > 0);
-            this->pwm_port->set_level(fabs(pw));
-            this->state = pw > 0 ? MOVE_FORWARD : MOVE_BACKWARD;
-        }
-        else if (command == "up")
-        {
-            // NOTE: deprecated
-            handleMsg("pw", "1");
-        }
-        else if (command == "down")
-        {
-            // NOTE: deprecated
-            handleMsg("pw", "-1");
+            double power = atof(parameters.c_str());
+            this->dir_port->set_level(power > 0);
+            this->pwm_port->set_level(fabs(power));
+            this->state = power > 0 ? MOVE_FORWARD : MOVE_BACKWARD;
         }
         else if (command == "stop")
         {

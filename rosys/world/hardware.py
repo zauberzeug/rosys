@@ -120,8 +120,8 @@ class ODriveWheels(HardwareGroup):
     left: ODriveMotor
     right: ODriveMotor
     width: float
-    left_torque_factor: float = 1.0
-    right_torque_factor: float = 1.0
+    left_power_factor: float = 1.0
+    right_power_factor: float = 1.0
 
     @property
     def commands(self) -> list[str]:
@@ -129,8 +129,8 @@ class ODriveWheels(HardwareGroup):
         return self.left.commands + self.right.commands + [
             f'new odrivewheels {self.name} {self.left.name},{self.right.name}',
             f'set {self.name}.width={self.width}',
-            f'set {self.name}.leftTorqueFactor={self.left_torque_factor}',
-            f'set {self.name}.rightTorqueFactor={self.right_torque_factor}',
+            f'set {self.name}.leftPowerFactor={self.left_power_factor}',
+            f'set {self.name}.rightPowerFactor={self.right_power_factor}',
         ]
 
     def parse(self, words: list[str], world: World):

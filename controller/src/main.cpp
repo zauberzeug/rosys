@@ -88,9 +88,9 @@ void handleMsg(std::string multiMsg)
         {
             esp->stopAll();
         }
-        else if (word == "pw") // DEPRICATED
+        else if (word == "pw") // DEPRICATED (still used by mobile app)
         {
-            handleMsg("wheels " + word + " " + msg);
+            handleMsg("wheels power " + msg);
         }
         else
         {

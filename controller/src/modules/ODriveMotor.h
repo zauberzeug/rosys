@@ -108,9 +108,9 @@ public:
         {
             this->speed(atof(parameters.c_str()));
         }
-        else if (command == "torque")
+        else if (command == "power")
         {
-            this->torque(atof(parameters.c_str()));
+            this->power(atof(parameters.c_str()));
         }
         else if (command == "home" and this->state != HOME)
         {
@@ -216,13 +216,13 @@ public:
         this->state = MOVE;
     }
 
-    void torque(float power)
+    void power(float power)
     {
         this->setMode(8, 1, 1); // AXIS_STATE_CLOSED_LOOP_CONTROL, CONTROL_MODE_TORQUE_CONTROL, INPUT_MODE_PASSTHROUGH
 
         uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         std::memcpy(data, &power, 4);
-        this->can->send(this->can_id + 0x00e, data); // "Set Velocity Torque"
+        this->can->send(this->can_id + 0x00e, data); // "Set Input Torque"
         this->state = MOVE;
     }
 

@@ -287,7 +287,7 @@ public:
 
     void handleMsg(std::string command, std::string parameters)
     {
-        if (command == "pw")
+        if (command == "power")
         {
             double left = atof(cut_first_word(parameters, ',').c_str());
             double right = atof(cut_first_word(parameters, ',').c_str());
