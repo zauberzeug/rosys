@@ -34,6 +34,8 @@ class Odometer(Actor):
             world.robot.prediction += step
             world.robot.simulation += step
 
+            world.robot.current_velocity = velocity
+
             if step.linear or step.angular:
                 world.robot.last_movement = step.time
 

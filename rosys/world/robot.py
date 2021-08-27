@@ -30,6 +30,7 @@ class Robot(BaseModel):
     detection: Optional[Pose]
     simulation: Pose = Pose()
     odometry: list[Velocity] = []
+    current_velocity: Optional[Velocity]
     last_movement: float = 0
     hardware_time: Optional[float]
     battery: float = 0
