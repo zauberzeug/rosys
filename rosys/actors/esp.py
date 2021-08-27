@@ -53,7 +53,18 @@ class SerialEsp(Esp):
         self.aioserial = aioserial.AioSerial('/dev/esp', baudrate=115200)
         self.remainder = ''
 
+    def pause(self):
+
+        self.aioserial.close()
+
+    def resume(self):
+
+        self.aioserial.open()
+
     async def step(self, world: World):
+
+        if not self.aioserial.isOpen():
+            return
 
         try:
             self.remainder += self.aioserial.read_all().decode()
@@ -96,6 +107,9 @@ class SerialEsp(Esp):
             world.robot.clock_offset = world.time - millis / 1000
 
     def send(self, line):
+
+        if not self.aioserial.isOpen():
+            return
 
         line = f'{line}^{reduce(ixor, map(ord, line))}\n'
         self.aioserial.write(line.encode())
