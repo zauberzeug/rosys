@@ -37,8 +37,8 @@ class Bluetooth(HardwareGroup):
 
 class Can(HardwareGroup):
 
-    rxPin: int
-    txPin: int
+    rxPin: str
+    txPin: str
 
     def __init__(self, **data):
 
@@ -49,6 +49,18 @@ class Can(HardwareGroup):
 
         return [
             f'new can {self.name} {self.rxPin},{self.txPin}',
+        ]
+
+
+class Button(HardwareGroup):
+
+    pin: str
+
+    @property
+    def commands(self) -> list[str]:
+
+        return [
+            f'new button {self.name} {self.pin}',
         ]
 
 

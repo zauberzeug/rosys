@@ -2,7 +2,7 @@ from rosys.world.hardware import Bluetooth, Can, ODriveMotor, ODriveWheels
 
 bluetooth = Bluetooth(device_name='hello_bot')
 
-can = Can(rxPin=32, txPin=33)
+can = Can(rxPin='32', txPin='33')
 
 wheels = ODriveWheels(
     name='wheels',
