@@ -61,7 +61,7 @@ async def drive_spline(spline: Spline, world: World, esp: Esp):
                     if world.robot.parameters.minimum_turning_radius:
                         break
                     max_curvature = np.abs(local_spline.max_curvature())
-                    if 1 / max_curvature >= world.robot.parameters.minimum_turning_radius:
+                    if max_curvature == 0 or 1 / max_curvature >= world.robot.parameters.minimum_turning_radius:
                         break
                     if not carrot.move(carrot.pose.point, distance=0.1):
                         raise StopIteration()
