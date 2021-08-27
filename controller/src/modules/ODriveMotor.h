@@ -11,7 +11,7 @@
 #include "../utils/checksum.h"
 #include "../utils/timing.h"
 
-class ODriveAxis : public Module
+class ODriveMotor : public Module
 {
 private:
     float minPos = -INFINITY;
@@ -26,7 +26,6 @@ private:
     uint16_t can_id;
     Button *home_switch;
 
-    float position = 0.0;
     float tickOffset = 0.0;
     uint32_t error = 0;
 
@@ -48,7 +47,9 @@ private:
     };
 
 public:
-    ODriveAxis(std::string name, Button *home_switch, Can *can, std::string parameters) : Module(name)
+    float position = 0.0;
+
+    ODriveMotor(std::string name, Button *home_switch, Can *can, std::string parameters) : Module(name)
     {
         this->can = can;
         this->can_id = std::stoi(parameters, nullptr, 16);

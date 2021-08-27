@@ -1,13 +1,14 @@
 #pragma once
 
 #include <string>
+#include <math.h>
 
 #include "Module.h"
 #include "../ports/Port.h"
 #include "../utils/strings.h"
 #include "../utils/checksum.h"
 
-class Motor : public Module
+class DcMotor : public Module
 {
 private:
     Port *dir_port;
@@ -21,7 +22,7 @@ private:
     };
 
 public:
-    Motor(std::string name, std::string parameters) : Module(name)
+    DcMotor(std::string name, std::string parameters) : Module(name)
     {
         this->dir_port = Port::fromString(cut_first_word(parameters, ','));
         this->pwm_port = Port::fromString(cut_first_word(parameters, ','));

@@ -5,25 +5,25 @@
 
 #include "storage.h"
 #include "mcp.h"
-#include "modules/Module.h"
-#include "modules/Esp.h"
-#include "modules/Safety.h"
 #include "modules/Bluetooth.h"
-#include "modules/Led.h"
 #include "modules/Button.h"
-#include "modules/Drive.h"
-#include "modules/Linear.h"
-#include "modules/Motor.h"
-#include "modules/DualMotor.h"
-#include "modules/Imu.h"
 #include "modules/Can.h"
+#include "modules/DcMotor.h"
+#include "modules/Esp.h"
+#include "modules/Imu.h"
+#include "modules/Led.h"
+#include "modules/LinearMotor.h"
+#include "modules/Module.h"
+#include "modules/ODriveMotor.h"
+#include "modules/ODriveWheels.h"
 #include "modules/RmdMotor.h"
-#include "modules/ODriveAxis.h"
-#include "modules/WheelPair.h"
-#include "utils/Serial.h"
-#include "utils/timing.h"
-#include "utils/strings.h"
+#include "modules/RoboClawMotors.h"
+#include "modules/RoboClawWheels.h"
+#include "modules/Safety.h"
 #include "utils/checksum.h"
+#include "utils/timing.h"
+#include "utils/Serial.h"
+#include "utils/strings.h"
 
 std::map<std::string, Module *> modules;
 
@@ -84,22 +84,17 @@ void handleMsg(std::string multiMsg)
             modules[word]->handleMsg(command, msg);
             safety->applyShadow(word, command, msg);
         }
+        else if (word == "stop")
+        {
+            esp->stopAll();
+        }
+        else if (word == "pw") // DEPRICATED
+        {
+            handleMsg("wheels " + word + " " + msg);
+        }
         else
         {
-            // DEPRICATED
-            std::string module = modules.count("drive") > 0 ? "drive" : "wheels";
-            if (word == "stop")
-                esp->stopAll();
-            else if (word == "pw")
-            {
-                if (module == "wheels")
-                    word = "speed_lr";
-                handleMsg(module + " " + word + " " + msg);
-            }
-            else if (word == "ros")
-                handleMsg(std::string("esp print ") + msg);
-            else
-                cprintln("Unknown module name: %s", word.c_str());
+            cprintln("Unknown module name: %s", word.c_str());
         }
     }
 }
@@ -115,7 +110,7 @@ void setup()
     serial = new Serial(115200);
     delay(500);
 
-    mcp::init(); // TODO
+    mcp::init();
 
     storage::init();
 
@@ -177,37 +172,37 @@ Module *createModule(std::string type, std::string name, std::string parameters)
 {
     if (type == "bluetooth")
         return new Bluetooth(name, parameters, handleBluetoothMsg);
-    else if (type == "led")
-        return new Led(name, parameters);
     else if (type == "button")
         return new Button(name, parameters);
-    else if (type == "drive")
-        return new Drive(name, parameters);
-    else if (type == "linear")
-        return new Linear(name, parameters);
-    else if (type == "motor")
-        return new Motor(name, parameters);
-    else if (type == "dualmotor")
-        return new DualMotor(name, parameters);
-    else if (type == "imu")
-        return new Imu(name);
     else if (type == "can")
         return new Can(name, parameters);
-    else if (type == "rmdmotor")
-        return new RmdMotor(name, (Can *)modules[parameters]);
-    else if (type == "odriveaxis")
+    else if (type == "dcmotor")
+        return new DcMotor(name, parameters);
+    else if (type == "imu")
+        return new Imu(name);
+    else if (type == "led")
+        return new Led(name, parameters);
+    else if (type == "linearmotor")
+        return new LinearMotor(name, parameters);
+    else if (type == "odrivemotor")
     {
         std::string switch_name = cut_first_word(parameters, ',');
         std::string can_name = cut_first_word(parameters, ',');
         Button *home_switch = switch_name == "0" ? nullptr : (Button *)modules[switch_name];
-        return new ODriveAxis(name, home_switch, (Can *)modules[can_name], parameters);
+        return new ODriveMotor(name, home_switch, (Can *)modules[can_name], parameters);
     }
-    else if (type == "wheelpair")
+    else if (type == "odrivewheels")
     {
-        ODriveAxis *left = (ODriveAxis *)modules[cut_first_word(parameters, ',').c_str()];
-        ODriveAxis *right = (ODriveAxis *)modules[cut_first_word(parameters, ',').c_str()];
-        return new WheelPair(name, left, right);
+        ODriveMotor *left = (ODriveMotor *)modules[cut_first_word(parameters, ',').c_str()];
+        ODriveMotor *right = (ODriveMotor *)modules[cut_first_word(parameters, ',').c_str()];
+        return new ODriveWheels(name, left, right);
     }
+    else if (type == "rmdmotor")
+        return new RmdMotor(name, (Can *)modules[parameters]);
+    else if (type == "roboclawmotors")
+        return new RoboClawMotors(name, parameters);
+    else if (type == "roboclawwheels")
+        return new RoboClawWheels(name, parameters);
     else
     {
         cprintln("Unknown module type: %s", type.c_str());

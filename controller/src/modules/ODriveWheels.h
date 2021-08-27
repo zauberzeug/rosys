@@ -3,11 +3,11 @@
 #include <string>
 
 #include "Module.h"
-#include "../modules/ODriveAxis.h"
+#include "../modules/ODriveMotor.h"
 #include "../utils/strings.h"
 #include "../utils/checksum.h"
 
-class WheelPair : public Module
+class ODriveWheels : public Module
 {
 private:
     double leftTorqueFactor = 1.0;
@@ -16,14 +16,44 @@ private:
     double rightSpeedFactor = 1.0;
     double width = 1.0;
 
-    ODriveAxis *leftAxis;
-    ODriveAxis *rightAxis;
+    ODriveMotor *leftMotor;
+    ODriveMotor *rightMotor;
+
+    double linear_speed = 0.0;
+    double angular_speed = 0.0;
 
 public:
-    WheelPair(std::string name, ODriveAxis *left, ODriveAxis *right) : Module(name)
+    ODriveWheels(std::string name, ODriveMotor *left, ODriveMotor *right) : Module(name)
     {
-        this->leftAxis = left;
-        this->rightAxis = right;
+        this->leftMotor = left;
+        this->rightMotor = right;
+    }
+
+    void loop()
+    {
+        static unsigned long int last_millis = 0;
+        static double last_left_position;
+        static double last_right_position;
+
+        if (last_millis != 0)
+        {
+            unsigned long int dMillis = millis() - last_millis;
+            double left_speed = (this->leftMotor->position - last_left_position) / dMillis * 1000;
+            double right_speed = (this->rightMotor->position - last_right_position) / dMillis * 1000;
+            this->linear_speed = (left_speed + right_speed) / 2;
+            this->angular_speed = (right_speed - left_speed) / this->width;
+        }
+
+        last_millis = millis();
+        last_left_position = this->leftMotor->position;
+        last_right_position = this->rightMotor->position;
+    }
+
+    std::string getOutput()
+    {
+        char buffer[256];
+        std::sprintf(buffer, "%7.4f %7.4f", this->linear_speed, this->angular_speed);
+        return buffer;
     }
 
     void handleMsg(std::string command, std::string parameters)
@@ -32,15 +62,15 @@ public:
         {
             double left = atof(cut_first_word(parameters, ',').c_str());
             double right = atof(cut_first_word(parameters, ',').c_str());
-            this->leftAxis->torque(left * this->leftTorqueFactor);
-            this->rightAxis->torque(right * this->rightTorqueFactor);
+            this->leftMotor->torque(left * this->leftTorqueFactor);
+            this->rightMotor->torque(right * this->rightTorqueFactor);
         }
         else if (command == "speed_lr") // DEPRICATED
         {
             double left = atof(cut_first_word(parameters, ',').c_str());
             double right = atof(cut_first_word(parameters, ',').c_str());
-            this->leftAxis->speed(left * this->leftSpeedFactor);
-            this->rightAxis->speed(right * this->rightSpeedFactor);
+            this->leftMotor->speed(left * this->leftSpeedFactor);
+            this->rightMotor->speed(right * this->rightSpeedFactor);
         }
         else if (command == "speed")
         {
@@ -48,8 +78,8 @@ public:
             double angular = atof(cut_first_word(parameters, ',').c_str());
             double left = linear - angular * width / 2.0;
             double right = linear + angular * width / 2.0;
-            this->leftAxis->speed(left * this->leftSpeedFactor);
-            this->rightAxis->speed(right * this->rightSpeedFactor);
+            this->leftMotor->speed(left * this->leftSpeedFactor);
+            this->rightMotor->speed(right * this->rightSpeedFactor);
         }
         else if (command == "stop")
         {
@@ -91,7 +121,7 @@ public:
 
     void stop()
     {
-        this->leftAxis->stop();
-        this->rightAxis->stop();
+        this->leftMotor->stop();
+        this->rightMotor->stop();
     }
 };
