@@ -1,6 +1,11 @@
 from __future__ import annotations
 from pydantic import BaseModel
 import abc
+from .velocity import Velocity
+
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:  # NOTE: avoid cyclic import
+    from .world import World
 
 
 class HardwareGroup(BaseModel, abc.ABC):
@@ -18,6 +23,10 @@ class HardwareGroup(BaseModel, abc.ABC):
         self.output = True
         return self
 
+    def parse(self, words: list[str], world: World):
+
+        pass
+
 
 class Bluetooth(HardwareGroup):
 
@@ -31,7 +40,7 @@ class Bluetooth(HardwareGroup):
     def commands(self) -> list[str]:
 
         return [
-            f'new bluetooth {self.name} ESP_{self.device_name}'
+            f'new bluetooth {self.name} ESP_{self.device_name}',
         ]
 
 
@@ -80,6 +89,16 @@ class RoboClawWheels(HardwareGroup):
             f'set {self.name}.width={self.width}',
         ]
 
+    def parse(self, words: list[str], world: World):
+
+        world.robot.odometry.append(Velocity(
+            linear=float(words.pop(0)),
+            angular=float(words.pop(0)),
+            time=world.robot.hardware_time,
+        ))
+        world.robot.temperature = float(words.pop(0))
+        world.robot.battery = float(words.pop(0))
+
 
 class ODriveMotor(HardwareGroup):
 
@@ -113,3 +132,11 @@ class ODriveWheels(HardwareGroup):
             f'set {self.name}.leftTorqueFactor={self.left_torque_factor}',
             f'set {self.name}.rightTorqueFactor={self.right_torque_factor}',
         ]
+
+    def parse(self, words: list[str], world: World):
+
+        world.robot.odometry.append(Velocity(
+            linear=float(words.pop(0)),
+            angular=float(words.pop(0)),
+            time=world.robot.hardware_time,
+        ))

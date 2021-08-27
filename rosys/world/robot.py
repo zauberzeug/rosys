@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from rosys.world.hardware import HardwareGroup
+from .hardware import HardwareGroup
 from .pose import Pose
 from .point import Point
 from .velocity import Velocity
@@ -31,6 +31,7 @@ class Robot(BaseModel):
     simulation: Pose = Pose()
     odometry: list[Velocity] = []
     last_movement: float = 0
+    hardware_time: Optional[float]
     battery: float = 0
     temperature: float = 0
     clock_offset: Optional[float]

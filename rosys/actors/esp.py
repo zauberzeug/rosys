@@ -4,7 +4,7 @@ from operator import ixor
 from functools import reduce
 import numpy as np
 import time
-from ..world.hardware import HardwareGroup, ODriveWheels, RoboClawWheels
+from ..world.hardware import HardwareGroup
 from ..world.velocity import Velocity
 from ..world.world import World
 from .actor import Actor
@@ -83,23 +83,12 @@ class SerialEsp(Esp):
             try:
                 words = line.split()[1:]
                 millis = float(words.pop(0))
+                if world.robot.clock_offset is None:
+                    continue
+                world.robot.hardware_time = millis / 1000 + world.robot.clock_offset
                 for group in world.robot.hardware:
-                    if not group.output:
-                        continue
-                    if isinstance(group, ODriveWheels):
-                        linear = float(words.pop(0))
-                        angular = float(words.pop(0))
-                    elif isinstance(group, RoboClawWheels):
-                        linear = float(words.pop(0))
-                        angular = float(words.pop(0))
-                        world.robot.temperature = float(words.pop(0))
-                        world.robot.battery = float(words.pop(0))
-                    else:
-                        continue
-                    if world.robot.clock_offset is not None:
-                        time = millis / 1000 + world.robot.clock_offset
-                        velocity = Velocity(linear=linear, angular=angular, time=time)
-                        world.robot.odometry.append(velocity)
+                    if group.output:
+                        group.parse(words, world)
             except (IndexError, ValueError):
                 self.log.warning(f'Error parsing serial message "{line}"')
 
