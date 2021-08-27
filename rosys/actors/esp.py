@@ -94,9 +94,12 @@ class SerialEsp(Esp):
                         angular = float(words.pop(0))
                         world.robot.temperature = float(words.pop(0))
                         world.robot.battery = float(words.pop(0))
-                if world.robot.clock_offset is not None:
-                    time = millis / 1000 + world.robot.clock_offset
-                    world.robot.odometry.append(Velocity(linear=linear, angular=angular, time=time))
+                    else:
+                        continue
+                    if world.robot.clock_offset is not None:
+                        time = millis / 1000 + world.robot.clock_offset
+                        velocity = Velocity(linear=linear, angular=angular, time=time)
+                        world.robot.odometry.append(velocity)
             except (IndexError, ValueError):
                 self.log.warning(f'Error parsing serial message "{line}"')
 
