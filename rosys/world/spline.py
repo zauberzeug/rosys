@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pydantic import BaseModel
-from typing import List
+from typing import List, Optional
 import numpy as np
 from .pose import Pose
 from .point import Point
@@ -59,12 +59,13 @@ class Spline(BaseModel):
         ]) + ')'
 
     @staticmethod
-    def from_poses(start: Pose, end: Pose) -> Spline:
+    def from_poses(start: Pose, end: Pose, *, control_dist: Optional[float] = None, backward: bool = False) -> Spline:
 
+        distance = 0.5 * (start.distance(end) if control_dist is None else control_dist) * (-1 if backward else 1)
         return Spline(
             start=start.point,
-            control1=start.point.polar(0.5 * start.distance(end), start.yaw),
-            control2=end.point.polar(-0.5 * start.distance(end), end.yaw),
+            control1=start.point.polar(distance, start.yaw),
+            control2=end.point.polar(-distance, end.yaw),
             end=end.point,
         )
 
