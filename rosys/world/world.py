@@ -1,5 +1,6 @@
+from rosys.world.point import Point
 from pydantic import BaseModel, PrivateAttr
-from typing import List, Dict, Optional, Union
+from typing import Optional, Union
 from enum import Enum
 import time
 from .mode import Mode
@@ -25,16 +26,17 @@ class World(BaseModel):
     _time: float = PrivateAttr(default_factory=time.time)
     robot: Robot
     marker: Optional[Marker]
-    cameras: Dict[str, Camera] = {}
+    cameras: dict[str, Camera] = {}
     tracking: Union[bool, list[str]] = False
-    download_queue: List[str] = []
-    upload_queue: List[str] = []
-    images: List[Image] = []
-    image_data: Dict[str, bytes] = {}
-    link_queue: List[List[str]] = []
-    links: List[Link] = []
-    path: List[Spline] = []
+    download_queue: list[str] = []
+    upload_queue: list[str] = []
+    images: list[Image] = []
+    image_data: dict[str, bytes] = {}
+    link_queue: list[list[str]] = []
+    links: list[Link] = []
+    path: list[Spline] = []
     carrot: Optional[Pose]
+    obstacles: list[list[Point]] = []
 
     @property
     def time(self):
