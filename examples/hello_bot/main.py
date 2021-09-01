@@ -15,7 +15,6 @@ world = World(mode=mode, robot=Robot(hardware=hardware))
 runtime = Runtime(world)
 
 with ui.card():
-
     state = ui.label()
     ui.timer(0.1, lambda: state.set_text(f'''
         {world.time:.3f} s
@@ -24,7 +23,6 @@ with ui.card():
     '''))
 
     with ui.row():
-
         def update_three():
             need_updates = [
                 three.set_robot('prediction', world.robot.prediction, world.robot.shape),
