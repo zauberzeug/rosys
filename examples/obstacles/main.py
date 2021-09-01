@@ -3,12 +3,13 @@ import asyncio
 import os
 import starlette
 from nicegui import app, ui
-from rosys.automations.drive_path import drive_to
+from rosys.automations.drive_path import drive_path
 from rosys.runtime import Runtime
 from rosys.ui.joystick import Joystick
 from rosys.world.mode import Mode
 from rosys.world.point import Point
 from rosys.world.robot import Robot
+from rosys.world.spline import Spline
 from rosys.world.world import World, WorldState
 
 import icecream
@@ -30,12 +31,21 @@ with ui.card():
         for hit in msg.objects:
             if hit.name == 'ground' and click_mode.value == 'drive':
                 target = Point(x=hit.point.x, y=hit.point.y)
-                runtime.automator.add(drive_to(world, runtime.esp, target))
+                start = world.robot.prediction.point
+                world.path = [Spline(
+                    start=start,
+                    control1=start.interpolate(target, 1/3),
+                    control2=start.interpolate(target, 2/3),
+                    end=hit.point,
+                )]
+                [obj.delete() for obj in scene.view.objects if obj.type == 'line']
+                scene.line([start.x, start.y, 0], [target.x, target.y, 0]).material('#ff8800')
+                runtime.automator.add(drive_path(world, runtime.esp))
                 runtime.resume()
     with ui.row():
         with ui.scene(640, 480, on_click=handle_click) as scene:
             outline = list(map(list, world.robot.shape.outline))
-            robot = scene.extrusion(outline, world.robot.shape.height).material('#4488ff')
+            robot = scene.extrusion(outline, world.robot.shape.height).material('#4488ff', 0.5)
             ui.timer(0.05, lambda: robot
                      .move(world.robot.prediction.x, world.robot.prediction.y)
                      .rotate(0, 0, world.robot.prediction.yaw) and False)
