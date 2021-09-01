@@ -7,8 +7,6 @@ from .world.robot import RobotParameters
 from .world.spline import Spline
 from .world.link import Link
 
-filepath = '/data/backup/world.json'
-
 
 def dump(world: World) -> dict:
 
@@ -29,14 +27,14 @@ def load(world: World, dict: dict):
     world.links = [Link.parse_obj(link) for link in dict['links']]
 
 
-def backup(world: World):
+def backup(world: World, filepath):
 
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     with open(filepath, 'w') as f:
         json.dump(dump(world), f)
 
 
-def restore(world: World):
+def restore(world: World, filepath: str):
 
     if not os.path.exists(filepath):
         logging.warning('No backup file found.')
