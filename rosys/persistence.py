@@ -1,7 +1,7 @@
 import logging
 import json
 import os
-from rosys.world.point import Point
+from .world.obstacle import Obstacle
 from .world.world import World
 from .world.camera import Camera
 from .world.robot import RobotParameters
@@ -17,7 +17,7 @@ def dump(world: World) -> dict:
         'path': [spline.dict() for spline in world.path],
         'robot': {'parameters': world.robot.parameters.dict()},
         'links': [link.dict() for link in world.links],
-        'obstacles': [[point.dict() for point in obstacle] for obstacle in world.obstacles],
+        'obstacles': {id: obstacle.dict() for id, obstacle in world.obstacles.items()},
     }
 
 
@@ -27,7 +27,7 @@ def load(world: World, dict: dict):
     world.path = [Spline.parse_obj(spline) for spline in dict['path']]
     world.robot.parameters = RobotParameters.parse_obj(dict['robot']['parameters'])
     world.links = [Link.parse_obj(link) for link in dict['links']]
-    world.obstacles = [[Point.parse_obj(point) for point in obstacle] for obstacle in dict['obstacles']]
+    world.obstacles = {id: Obstacle.parse_obj(obstacle) for id, obstacle in dict['obstacles'].items()}
 
 
 def backup(world: World, filepath):
