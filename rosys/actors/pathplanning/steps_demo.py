@@ -4,8 +4,8 @@ import numpy as np
 import pylab as pl
 import time
 from grid import Grid
-from ObstacleMap import ObstacleMap
-from robot_shape import RobotShape
+from obstacle_map import ObstacleMap
+from robot_renderer import RobotRenderer
 import plot_tools as pt
 from steps import Path, Step
 
@@ -14,8 +14,8 @@ obstacles = [
     [0.0, 1.0, 2.5, 0.2],
     [1.5, 2.0, 2.5, 0.2],
 ]
-robot_shape = RobotShape.from_size(0.77, 1.21, 0.445)
-obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_shape)
+robot_renderer = RobotRenderer.from_size(0.77, 1.21, 0.445)
+obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_renderer)
 
 path = Path.from_poses([
     [0.7, 0.4, np.deg2rad(5)],
@@ -26,13 +26,13 @@ path = Path.from_poses([
     [3.2, 1.0, np.deg2rad(0)],
 ])
 
-robot_shape = RobotShape.from_size(0.77, 1.21, 0.445)
+robot_renderer = RobotRenderer.from_size(0.77, 1.21, 0.445)
 
 with ui.plot():
     pt.show_obstacle_map(obstacle_map)
     pl.autoscale(False)
     for step in path:
-        pt.plot_robot(robot_shape, step.target)
+        pt.plot_robot(robot_renderer, step.target)
     pt.plot_path(path, 'C0', lw=3)
 
     t = time.time()

@@ -1,7 +1,7 @@
 import numpy as np
 from rosys.actors.pathplanning.grid import Grid
 from rosys.actors.pathplanning.obstacle_map import ObstacleMap
-from rosys.actors.pathplanning.robot_shape import RobotShape
+from rosys.actors.pathplanning.robot_renderer import RobotRenderer
 
 
 def generate_experiment(id_):
@@ -11,7 +11,7 @@ def generate_experiment(id_):
 
     grid = Grid((60, 80, 36), (0.0, 0.0, 8.0, 6.0))
 
-    robot_shape = RobotShape.from_size(0.77, 1.21, 0.445)
+    robot_renderer = RobotRenderer.from_size(0.77, 1.21, 0.445)
 
     if group == 1:
         obstacles = [
@@ -23,7 +23,7 @@ def generate_experiment(id_):
         ]
         pose = (0.2, 0.75, 0)
         goal = (3.0, 3.5, 0) if variant == 0 else (0.75, 4.0, -np.pi / 2)
-        obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_shape)
+        obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_renderer)
         small_obstacle_map = None
 
     if group == 2:
@@ -33,7 +33,7 @@ def generate_experiment(id_):
         ]
         pose = (0.5, 1.0, 0)
         goal = (3.6, 3.5, np.pi / 2)
-        obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_shape)
+        obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_renderer)
         small_obstacle_map = None
 
     if group == 4:
@@ -43,7 +43,7 @@ def generate_experiment(id_):
         ]
         pose = (1.0, 3.1, 0)
         goal = (7.0, 3.1, np.pi)
-        obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_shape)
+        obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_renderer)
         small_obstacle_map = None
 
     if group == 5:
@@ -53,9 +53,9 @@ def generate_experiment(id_):
         ]
         pose = (1.0, 1.0, 0 if variant == 0 else np.pi)
         goal = (6.0, 3.5, 0 if variant == 0 else np.pi)
-        obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_shape)
+        obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_renderer)
         small_obstacle_map = None
 
     backward_to_goal = sign == -1
 
-    return robot_shape, pose, goal, obstacle_map, small_obstacle_map, backward_to_goal
+    return robot_renderer, pose, goal, obstacle_map, small_obstacle_map, backward_to_goal
