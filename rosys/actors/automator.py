@@ -13,6 +13,10 @@ class Automator(Actor):
     def add(self, coro: Coroutine):
         self.routines.append(coro)
 
+    def replace(self, coro: Coroutine):
+        self.routines.clear()
+        self.add(coro)
+
     async def step(self, world: World):
 
         if world.state != WorldState.RUNNING:

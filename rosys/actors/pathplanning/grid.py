@@ -1,4 +1,5 @@
 import numpy as np
+from rosys.world.point import Point
 
 
 class Grid:
@@ -6,6 +7,20 @@ class Grid:
     def __init__(self, size, bbox):
         self.size = size
         self.bbox = bbox
+
+    @staticmethod
+    def from_points(points: list[Point], pixel_size: float, num_layers: int):
+        min_x = min_y = np.inf
+        max_x = max_y = -np.inf
+        for point in points:
+            min_x = min(min_x, point.x - 2.0 * pixel_size)
+            min_y = min(min_y, point.y - 2.0 * pixel_size)
+            max_x = max(max_x, point.x + 2.0 * pixel_size)
+            max_y = max(max_y, point.y + 2.0 * pixel_size)
+
+        width = int((max_x - min_x) / pixel_size) + 1
+        height = int((max_y - min_y) / pixel_size) + 1
+        return Grid((height, width, num_layers), (min_x, min_y, max_x - min_x, max_y - min_y))
 
     @property
     def pixel_size(self):

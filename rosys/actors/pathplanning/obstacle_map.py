@@ -1,6 +1,10 @@
 import numpy as np
 from scipy import ndimage
 import cv2
+from rosys.actors.pathplanning.binary_renderer import BinaryRenderer
+from rosys.actors.pathplanning.grid import Grid
+from rosys.actors.pathplanning.robot_renderer import RobotRenderer
+from rosys.world.world import World
 
 
 class ObstacleMap:
@@ -30,6 +34,16 @@ class ObstacleMap:
             map_[int(np.round(r0)):int(np.round(r1))+1,
                  int(np.round(c0)):int(np.round(c1))+1] = True
         return ObstacleMap(grid, map_, robot_renderer)
+
+    @staticmethod
+    def from_world(world: World):
+        points = [p for obstacle in world.obstacles.values() for p in obstacle.outline]
+        grid = Grid.from_points(points, 0.1, 36)
+        robot_renderer = RobotRenderer(world.robot.shape.outline)
+        binary_renderer = BinaryRenderer(grid.size[:2])
+        for obstacle in world.obstacles.values():
+            binary_renderer.polygon(np.array([grid.to_grid(p.x, p.y)[::-1] for p in obstacle.outline]))
+        return ObstacleMap(grid, binary_renderer.map, robot_renderer)
 
     def test(self, x, y, yaw):
         row, col, layer = self.grid.to_grid(x, y, yaw)
