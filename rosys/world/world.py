@@ -1,4 +1,4 @@
-from rosys.world.point import Point
+from rosys.world.obstacle import Obstacle
 from pydantic import BaseModel, PrivateAttr
 from typing import Optional, Union
 from enum import Enum
@@ -36,7 +36,7 @@ class World(BaseModel):
     links: list[Link] = []
     path: list[Spline] = []
     carrot: Optional[Pose]
-    obstacles: list[list[Point]] = []
+    obstacles: dict[str, Obstacle] = {}
 
     @property
     def time(self):

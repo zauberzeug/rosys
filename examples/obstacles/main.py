@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import asyncio
 import os
+from rosys.world.obstacle import Obstacle
+from uuid import uuid4
 import starlette
 from nicegui import app, ui
 from rosys.automations.drive_path import drive_path
@@ -23,27 +25,28 @@ with ui.card():
     state = ui.label()
     ui.timer(0.1, lambda: state.set_text(f'{world.time:.3f} s ({world.robot.prediction})'))
 
-    click_mode = ui.toggle({'drive': 'Drive to', 'obstacle': 'Add obstacle'}).props('outline clearable')
+    click_mode = ui.toggle({'drive': 'Drive', 'obstacles': 'Obstacles'}).props('outline clearable')
 
     def update_path_in_scene():
-        [obj.delete() for obj in scene.view.objects if obj.type == 'curve']
+        [obj.delete() for obj in scene.view.objects.values() if obj.name == 'curve']
         for spline in world.path:
             scene.curve(
                 [spline.start.x, spline.start.y, 0],
                 [spline.control1.x, spline.control1.y, 0],
                 [spline.control2.x, spline.control2.y, 0],
-                [spline.end.x, spline.end.y, 0]).material('#ff8800')
+                [spline.end.x, spline.end.y, 0]).material('#ff8800').with_name('curve')
 
     def update_obstacles_in_scene():
-        [obj.delete() for obj in scene.view.objects if obj.type == 'extrusion' and obj != robot]
-        for obstacle in world.obstacles:
-            scene.extrusion([[point.x, point.y] for point in obstacle], 0.1)
+        [obj.delete() for obj in list(scene.view.objects.values()) if (obj.name or '').startswith('obstacle_')]
+        for obstacle in world.obstacles.values():
+            outline = [[point.x, point.y] for point in obstacle.outline]
+            scene.extrusion(outline, 0.1).with_name(f'obstacle_{obstacle.id}')
 
     def handle_click(msg):
         if msg.click_type != 'dblclick':
             return
-        for hit in msg.objects:
-            if hit.name == 'ground' and click_mode.value == 'drive':
+        for hit in msg.hits:
+            if hit.object_id == 'ground' and click_mode.value == 'drive':
                 start = world.robot.prediction.point
                 target = Point(x=hit.point.x, y=hit.point.y)
                 world.path = [Spline(
@@ -55,14 +58,21 @@ with ui.card():
                 update_path_in_scene()
                 runtime.automator.add(drive_path(world, runtime.esp))
                 runtime.resume()
-            if hit.name == 'ground' and click_mode.value == 'obstacle':
-                world.obstacles.append([
+                return
+            if hit.object_id == 'ground' and click_mode.value == 'obstacles':
+                id = str(uuid4())
+                world.obstacles[id] = Obstacle(id=id, outline=[
                     Point(x=hit.point.x-0.5, y=hit.point.y-0.5),
                     Point(x=hit.point.x+0.5, y=hit.point.y-0.5),
                     Point(x=hit.point.x+0.5, y=hit.point.y+0.5),
                     Point(x=hit.point.x-0.5, y=hit.point.y+0.5),
                 ])
                 update_obstacles_in_scene()
+                return
+            if (hit.object.name or '').startswith('obstacle_') and click_mode.value == 'obstacles':
+                del world.obstacles[hit.object.name.split('_')[1]]
+                hit.object.delete()
+                return
     with ui.row():
         with ui.scene(640, 480, on_click=handle_click) as scene:
             outline = list(map(list, world.robot.shape.outline))
