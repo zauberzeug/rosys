@@ -86,11 +86,14 @@ async def drive_spline(spline: Spline, world: World, esp: Esp):
 def throttle(world: World, linear: float, angular: float):
 
     if world.mode != Mode.TEST:  # TODO: require camera tracking in tests as well
-        if world.robot.detection is None:
+        if world.robot.parameters.max_detection_age_ramp is None:
+            factor = 1
+        elif world.robot.detection is None:
             factor = 0
         else:
+            age_ramp = world.robot.parameters.max_detection_age_ramp
             age = world.time - world.robot.detection.time
-            factor = ramp(age, 3, 6, 1.0, 0.0, clip=True)
+            factor = ramp(age, age_ramp[0], age_ramp[1], 1.0, 0.0, clip=True)
         linear *= factor
         angular *= factor
 

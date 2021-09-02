@@ -26,12 +26,13 @@ from .helpers import print_stacktrace
 
 class Runtime:
 
-    def __init__(self, world: World):
+    def __init__(self, world: World, backup_filepath: str = '/data/backup/world.json'):
 
         self.world = world
         self.log = logging.getLogger(__name__)
 
-        restore(self.world)
+        self.backup_filepath = backup_filepath
+        restore(self.world, backup_filepath)
 
         self.esp = SerialEsp() if world.mode == Mode.REAL else MockedEsp(self.world)
         self.odometer = Odometer()
@@ -107,7 +108,7 @@ class Runtime:
 
     async def stop(self):
 
-        backup(self.world)
+        backup(self.world, self.backup_filepath)
         [t.cancel() for t in self.tasks]
         [await a.tear_down() for a in self.actors]
 

@@ -19,6 +19,7 @@ class RobotParameters(BaseModel):
     angular_speed_limit: float = 0.5
     carrot_distance: float = 1.0
     minimum_turning_radius: float = 0.0
+    max_detection_age_ramp: Optional[tuple[float, float]]
 
 
 class Robot(BaseModel):
