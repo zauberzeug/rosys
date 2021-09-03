@@ -1,10 +1,12 @@
 import numpy as np
 import scipy.interpolate
+from rosys.world.point import Point
+from rosys.actors.pathplanning.obstacle_map import ObstacleMap
 
 
 class DistanceMap:
 
-    def __init__(self, obstacle_map, target):
+    def __init__(self, obstacle_map: ObstacleMap, target: Point):
         self.grid = obstacle_map.grid
         scaled_obstacle_map = obstacle_map.map
 
@@ -20,7 +22,7 @@ class DistanceMap:
 
         d = np.zeros(self.grid.size[:2], dtype=np.int)
         d.fill(scaled_inf)
-        row, col = self.grid.to_grid(target[0], target[1])
+        row, col = self.grid.to_grid(target.x, target.y)
         for r in [np.floor(row), np.ceil(row)]:
             for c in [np.floor(col), np.ceil(col)]:
                 d[int(r), int(c)] = np.sqrt((row - r)**2 + (col - c)**2)

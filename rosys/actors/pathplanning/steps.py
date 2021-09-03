@@ -1,4 +1,5 @@
-#!/usr/bin/env python3
+from __future__ import annotations
+from typing import Optional
 import numpy as np
 from rosys.world.pose import Pose
 from rosys.world.spline import Spline
@@ -41,7 +42,11 @@ class Path(list):
 
 class Step:
 
-    def __init__(self, target, previous_step=None, control_dist=None, backward=False):
+    def __init__(self,
+                 target: tuple[float, float, float],
+                 previous_step: Optional[Step] = None,
+                 control_dist: Optional[float] = None,
+                 backward: bool = False):
         self.previous_step = previous_step
         self.target = target
         self.backward = backward

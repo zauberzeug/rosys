@@ -36,9 +36,7 @@ class ObstacleMap:
         return ObstacleMap(grid, map_, robot_renderer)
 
     @staticmethod
-    def from_world(world: World):
-        points = [p for obstacle in world.obstacles.values() for p in obstacle.outline]
-        grid = Grid.from_points(points, 0.1, 36)
+    def from_world(world: World, grid: Grid):
         robot_renderer = RobotRenderer(world.robot.shape.outline)
         binary_renderer = BinaryRenderer(grid.size[:2])
         for obstacle in world.obstacles.values():

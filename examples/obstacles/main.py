@@ -4,14 +4,14 @@ import os
 from uuid import uuid4
 import starlette
 from nicegui import app, ui
-from rosys.actors.pathplanning.obstacle_map import ObstacleMap
 from rosys.actors.pathplanning.planner import Planner
-from rosys.world.obstacle import Obstacle
 from rosys.automations.drive_path import drive_path
 from rosys.runtime import Runtime
 from rosys.ui.joystick import Joystick
 from rosys.world.mode import Mode
+from rosys.world.obstacle import Obstacle
 from rosys.world.point import Point
+from rosys.world.pose import Pose
 from rosys.world.robot import Robot
 from rosys.world.spline import Spline
 from rosys.world.world import World, WorldState
@@ -24,6 +24,8 @@ icecream.install()
 mode = Mode.REAL if os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0 else Mode.SIMULATION
 logging.warning(f'we are using {mode}')
 world = World(mode=mode, robot=Robot(hardware=hardware))
+
+planner = Planner(world)
 
 runtime = Runtime(world, backup_filepath='/tmp/world.json')
 
@@ -67,11 +69,8 @@ with ui.card():
                 runtime.resume()
                 return
             if object_type == 'ground' and click_mode.value == 'plan':
-                obstacle_map = ObstacleMap.from_world(world)
-                planner = Planner(obstacle_map)
                 target_yaw = world.robot.prediction.point.direction(hit.point)
-                planner.set_goal([hit.point.x, hit.point.y, target_yaw])
-                planner.search([world.robot.prediction.x, world.robot.prediction.y, world.robot.prediction.yaw])
+                planner.search(goal=Pose(x=hit.point.x, y=hit.point.y, yaw=target_yaw), timeout=3.0)
                 world.path = [step.spline for step in planner.path]
                 update_path_in_scene()
                 runtime.automator.replace(drive_path(world, runtime.esp))
