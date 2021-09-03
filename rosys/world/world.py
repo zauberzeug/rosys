@@ -3,14 +3,14 @@ from pydantic import BaseModel, PrivateAttr
 from typing import Optional, Union
 from enum import Enum
 import time
-from .mode import Mode
-from .robot import Robot
-from .marker import Marker
 from .camera import Camera
 from .image import Image
 from .link import Link
-from .spline import Spline
+from .marker import Marker
+from .mode import Mode
+from .path_segment import PathSegment
 from .pose import Pose
+from .robot import Robot
 
 
 class WorldState(Enum):
@@ -34,7 +34,7 @@ class World(BaseModel):
     image_data: dict[str, bytes] = {}
     link_queue: list[list[str]] = []
     links: list[Link] = []
-    path: list[Spline] = []
+    path: list[PathSegment] = []
     carrot: Optional[Pose]
     obstacles: dict[str, Obstacle] = {}
 

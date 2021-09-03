@@ -9,11 +9,12 @@ from .spline import drive_spline, throttle
 
 async def drive_path(world: World, esp: Esp):
 
-    for s, spline in enumerate(world.path):
-        if s == 0 or spline.start.distance(world.path[s-1].end) > 0.01:
+    for s, path_segment in enumerate(world.path):
+        spline = path_segment.spline
+        if s == 0 or spline.start.distance(world.path[s-1].spline.end) > 0.01:
             await drive_to(world, esp, spline.start)
-        is_last_spline = spline == world.path[-1]
-        await drive_spline(spline, world, esp, throttle_at_end=is_last_spline)
+        is_last_segment = path_segment == world.path[-1]
+        await drive_spline(spline, world, esp, throttle_at_end=is_last_segment, backward=path_segment.backward)
 
 
 async def drive_to(world: World, esp: Esp, target: Point):

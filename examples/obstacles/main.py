@@ -10,9 +10,10 @@ from rosys.runtime import Runtime
 from rosys.ui.joystick import Joystick
 from rosys.world.mode import Mode
 from rosys.world.obstacle import Obstacle
+from rosys.world.path_segment import PathSegment
 from rosys.world.point import Point
 from rosys.world.pose import Pose
-from rosys.world.robot import Robot
+from rosys.world.robot import Robot, RobotShape
 from rosys.world.spline import Spline
 from rosys.world.world import World, WorldState
 from hardware import hardware
@@ -23,7 +24,8 @@ icecream.install()
 
 mode = Mode.REAL if os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0 else Mode.SIMULATION
 logging.warning(f'we are using {mode}')
-world = World(mode=mode, robot=Robot(hardware=hardware))
+world = World(mode=mode, robot=Robot(hardware=hardware, shape=RobotShape(
+    outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])))
 
 planner = Planner(world)
 
@@ -37,7 +39,8 @@ with ui.card():
 
     def update_path_in_scene():
         [obj.delete() for obj in list(scene.view.objects.values()) if obj.name == 'curve']
-        for spline in world.path:
+        for path_segment in world.path:
+            spline = path_segment.spline
             scene.curve(
                 [spline.start.x, spline.start.y, 0],
                 [spline.control1.x, spline.control1.y, 0],
@@ -58,12 +61,12 @@ with ui.card():
             if object_type == 'ground' and click_mode.value == 'drive':
                 start = world.robot.prediction.point
                 target = Point(x=hit.point.x, y=hit.point.y)
-                world.path = [Spline(
+                world.path = [PathSegment(spline=Spline(
                     start=start,
                     control1=start.interpolate(target, 1/3),
                     control2=start.interpolate(target, 2/3),
                     end=hit.point,
-                )]
+                ))]
                 update_path_in_scene()
                 runtime.automator.replace(drive_path(world, runtime.esp))
                 runtime.resume()
@@ -71,7 +74,7 @@ with ui.card():
             if object_type == 'ground' and click_mode.value == 'plan':
                 target_yaw = world.robot.prediction.point.direction(hit.point)
                 planner.search(goal=Pose(x=hit.point.x, y=hit.point.y, yaw=target_yaw), timeout=3.0)
-                world.path = [step.spline for step in planner.path]
+                world.path = [PathSegment(spline=step.spline, backward=step.backward) for step in planner.path]
                 update_path_in_scene()
                 runtime.automator.replace(drive_path(world, runtime.esp))
                 return

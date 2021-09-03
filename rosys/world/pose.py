@@ -47,3 +47,6 @@ class Pose(BaseModel):
             x=self.x + point.x * np.cos(self.yaw) - point.y * np.sin(self.yaw),
             y=self.y + point.x * np.sin(self.yaw) + point.y * np.cos(self.yaw),
         )
+
+    def rotate(self, angle: float) -> Pose:
+        return Pose(x=self.x, y=self.y, yaw=self.yaw+angle)

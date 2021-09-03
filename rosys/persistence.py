@@ -1,12 +1,12 @@
 import logging
 import json
 import os
-from .world.obstacle import Obstacle
-from .world.world import World
 from .world.camera import Camera
+from .world.obstacle import Obstacle
+from .world.path_segment import PathSegment
 from .world.robot import RobotParameters
-from .world.spline import Spline
 from .world.link import Link
+from .world.world import World
 
 
 def dump(world: World) -> dict:
@@ -14,7 +14,7 @@ def dump(world: World) -> dict:
     exclude = {'projection', 'synchronization'}
     return {
         'cameras': {mac: camera.dict(exclude=exclude) for mac, camera in world.cameras.items()},
-        'path': [spline.dict() for spline in world.path],
+        'path': [path_segment.dict() for path_segment in world.path],
         'robot': {'parameters': world.robot.parameters.dict()},
         'links': [link.dict() for link in world.links],
         'obstacles': {id: obstacle.dict() for id, obstacle in world.obstacles.items()},
@@ -24,7 +24,7 @@ def dump(world: World) -> dict:
 def load(world: World, dict: dict):
 
     world.cameras = {mac: Camera.parse_obj(camera) for mac, camera in dict['cameras'].items()}
-    world.path = [Spline.parse_obj(spline) for spline in dict['path']]
+    world.path = [PathSegment.parse_obj(path_segment) for path_segment in dict['path']]
     world.robot.parameters = RobotParameters.parse_obj(dict['robot']['parameters'])
     world.links = [Link.parse_obj(link) for link in dict['links']]
     world.obstacles = {id: Obstacle.parse_obj(obstacle) for id, obstacle in dict['obstacles'].items()}
