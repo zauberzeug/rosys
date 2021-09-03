@@ -69,7 +69,8 @@ with ui.card():
             if object_type == 'ground' and click_mode.value == 'plan':
                 obstacle_map = ObstacleMap.from_world(world)
                 planner = Planner(obstacle_map)
-                planner.set_goal([hit.point.x, hit.point.y, 0])
+                target_yaw = world.robot.prediction.point.direction(hit.point)
+                planner.set_goal([hit.point.x, hit.point.y, target_yaw])
                 planner.search([world.robot.prediction.x, world.robot.prediction.y, world.robot.prediction.yaw])
                 world.path = [step.spline for step in planner.path]
                 update_path_in_scene()
