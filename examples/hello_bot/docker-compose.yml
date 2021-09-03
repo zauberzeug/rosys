@@ -7,7 +7,7 @@ services:
     volumes:
       - ./:/app
       - ./../..:/rosys # to directly modify rosys code and have it reflected in the container
-      - ./:/rosys/examples/obstacles # for developing the example within rosys workspace
+      - ./:/rosys/examples/hello_bot # for developing the example within rosys workspace
     devices:
       - "${ESP_SERIAL:-/dev/null}:/dev/esp"
     hostname: docker
