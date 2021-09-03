@@ -3,7 +3,7 @@ services:
   rosys:
     image: "zauberzeug/rosys:0.1.8"
     ports:
-      - "8080:80"
+      - "80:80"
     volumes:
       - ./:/app
       - ./../..:/rosys # to directly modify rosys code and have it reflected in the container
