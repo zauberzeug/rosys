@@ -9,7 +9,7 @@ repository = "https://github.com/zauberzeug/rosys"
 keywords = ["robot", "framework", "automation", "control", "steer"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.7 <3.10"
 requests = "^2.25.1"
 simplejson = "^3.17.2"
 pyserial = "^3.5"
