@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   rosys:
-    image: "zauberzeug/rosys:0.1.8"
+    image: "zauberzeug/rosys:0.1.10"
     ports:
       - "8080:80"
     volumes:
