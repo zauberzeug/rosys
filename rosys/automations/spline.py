@@ -17,7 +17,7 @@ def ramp(x: float, in_min: float, in_max: float, out_min: float, out_max: float,
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 
-async def drive_spline(spline: Spline, world: World, esp: Esp):
+async def drive_spline(spline: Spline, world: World, esp: Esp, *, throttle_at_end: bool = True):
 
     if spline.start.distance(spline.end) < 0.01:
         return  # NOTE: skip tiny splines
@@ -73,7 +73,7 @@ async def drive_spline(spline: Spline, world: World, esp: Esp):
 
         linear = 0.5
         linear *= -1 if backward else 1
-        if carrot.t > 1.0:
+        if carrot.t > 1.0 and throttle_at_end:
             linear *= ramp(carrot.target_distance, 0.5, 0.0, 1.0, 0.5)
         angular = linear * curvature
 
