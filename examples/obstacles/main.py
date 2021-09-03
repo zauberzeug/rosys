@@ -105,6 +105,8 @@ with ui.card():
         ui.button(on_click=lambda: asyncio.create_task(runtime.pause())).props('outline icon=pause') \
             .bind_visibility_from(world.state, value=WorldState.RUNNING)
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
+        ui.button('clear odrive', on_click=lambda: runtime.esp.send('can request 018')).props('outline')
+        ui.button('restart odrive', on_click=lambda: runtime.esp.send('can request 016')).props('outline')
 
 ui.on_startup(runtime.run())
 ui.on_shutdown(runtime.stop())
