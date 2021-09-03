@@ -3,14 +3,14 @@ import numpy as np
 from rosys.actors.pathplanning.binary_renderer import BinaryRenderer
 
 
-class RobotShape:
+class RobotRenderer:
 
     def __init__(self, outline):
         self.outline = outline
 
     @staticmethod
     def from_size(width, length, x_shift=0):
-        return RobotShape([
+        return RobotRenderer([
             [-length / 2 + x_shift, -width / 2],
             [+length / 2 + x_shift, -width / 2],
             [+length / 2 + x_shift, +width / 2],
