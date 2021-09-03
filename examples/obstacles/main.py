@@ -15,11 +15,15 @@ from rosys.world.point import Point
 from rosys.world.robot import Robot
 from rosys.world.spline import Spline
 from rosys.world.world import World, WorldState
+from hardware import hardware
+import logging
 
 import icecream
 icecream.install()
 
-world = World(mode=Mode.SIMULATION, robot=Robot())
+mode = Mode.REAL if os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0 else Mode.SIMULATION
+logging.warning(f'we are using {mode}')
+world = World(mode=mode, robot=Robot(hardware=hardware))
 
 runtime = Runtime(world, backup_filepath='/tmp/world.json')
 
