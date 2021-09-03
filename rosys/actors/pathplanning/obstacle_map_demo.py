@@ -6,7 +6,7 @@ import time
 from rosys.world.pose import Pose
 from rosys.world.spline import Spline
 from grid import Grid
-from robot_shape import RobotShape
+from robot_renderer import RobotRenderer
 from obstacle_map import ObstacleMap
 import plot_tools as pt
 
@@ -15,10 +15,10 @@ obstacles = [
     [0.5, 1.5, 1.4, 0.1],
     [2.7, 1.5, 1.8, 0.1],
 ]
-robot_shape = RobotShape.from_size(0.77, 1.21, 0.445)
+robot_renderer = RobotRenderer.from_size(0.77, 1.21, 0.445)
 
 t = time.time()
-obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_shape)
+obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_renderer)
 ui.label("%.3f ms" % ((time.time() - t) * 1000))
 
 start = [1.0, 0.5, 0]
@@ -31,8 +31,8 @@ spline = Spline.from_poses(
 with ui.plot():
     pt.show_obstacle_map(obstacle_map)
     pl.autoscale(False)
-    pt.plot_robot(robot_shape, start, 'C3' if obstacle_map.test(*start) else 'C2')
-    pt.plot_robot(robot_shape, end, 'C3' if obstacle_map.test(*end) else 'C2')
+    pt.plot_robot(robot_renderer, start, 'C3' if obstacle_map.test(*start) else 'C2')
+    pt.plot_robot(robot_renderer, end, 'C3' if obstacle_map.test(*end) else 'C2')
     pt.plot_spline(spline, 'C3' if obstacle_map.test_spline(spline) else 'C2')
 
 with ui.plot():

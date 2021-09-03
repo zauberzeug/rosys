@@ -2,8 +2,8 @@ import pylab as pl
 import numpy as np
 
 
-def plot_robot(robot_shape, pose, color='C0', **kwargs):
-    poly = pl.matplotlib.patches.Polygon(robot_shape.outline, color='none', ec=color, joinstyle='round', **kwargs)
+def plot_robot(robot_renderer, pose, color='C0', **kwargs):
+    poly = pl.matplotlib.patches.Polygon(robot_renderer.outline, color='none', ec=color, joinstyle='round', **kwargs)
     triangle = pl.matplotlib.patches.Polygon(
         [[0, 0], [-0.1, -0.05], [-0.1, 0.05]], color='none', ec=color, joinstyle='round', **kwargs)
     pl.gca().add_patch(poly)

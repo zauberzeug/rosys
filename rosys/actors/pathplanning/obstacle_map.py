@@ -1,18 +1,22 @@
 import numpy as np
 from scipy import ndimage
 import cv2
+from rosys.actors.pathplanning.binary_renderer import BinaryRenderer
+from rosys.actors.pathplanning.grid import Grid
+from rosys.actors.pathplanning.robot_renderer import RobotRenderer
+from rosys.world.world import World
 
 
 class ObstacleMap:
 
-    def __init__(self, grid, map_, robot_shape):
+    def __init__(self, grid, map_, robot_renderer):
         self.grid = grid
         self.map = map_
         self.stack = np.zeros(grid.size, dtype=bool)
         self.dist_stack = np.zeros(self.stack.shape)
         for layer in range(grid.size[2]):
             _, _, yaw = grid.from_grid(0, 0, layer)
-            kernel = robot_shape.render(grid.pixel_size, yaw).astype(np.uint8)
+            kernel = robot_renderer.render(grid.pixel_size, yaw).astype(np.uint8)
             self.stack[:, :, layer] = cv2.dilate(self.map.astype(np.uint8), kernel)
             self.dist_stack[:, :, layer] = \
                 ndimage.distance_transform_edt(~self.stack[:, :, layer]) * grid.pixel_size
@@ -22,14 +26,24 @@ class ObstacleMap:
         self.dist_stack = np.dstack((self.dist_stack, self.dist_stack[:, :, :1]))
 
     @staticmethod
-    def from_list(grid, obstacles, robot_shape):
+    def from_list(grid, obstacles, robot_renderer):
         map_ = np.zeros(grid.size[:2], dtype=bool)
         for x, y, w, h in obstacles:
             r0, c0 = grid.to_grid(x, y)
             r1, c1 = grid.to_grid(x + w, y + h)
             map_[int(np.round(r0)):int(np.round(r1))+1,
                  int(np.round(c0)):int(np.round(c1))+1] = True
-        return ObstacleMap(grid, map_, robot_shape)
+        return ObstacleMap(grid, map_, robot_renderer)
+
+    @staticmethod
+    def from_world(world: World):
+        points = [p for obstacle in world.obstacles.values() for p in obstacle.outline]
+        grid = Grid.from_points(points, 0.1, 36)
+        robot_renderer = RobotRenderer(world.robot.shape.outline)
+        binary_renderer = BinaryRenderer(grid.size[:2])
+        for obstacle in world.obstacles.values():
+            binary_renderer.polygon(np.array([grid.to_grid(p.x, p.y)[::-1] for p in obstacle.outline]))
+        return ObstacleMap(grid, binary_renderer.map, robot_renderer)
 
     def test(self, x, y, yaw):
         row, col, layer = self.grid.to_grid(x, y, yaw)

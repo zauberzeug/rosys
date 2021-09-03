@@ -4,7 +4,7 @@ import pylab as pl
 import numpy as np
 import time
 from grid import Grid
-from robot_shape import RobotShape
+from robot_renderer import RobotRenderer
 from obstacle_map import ObstacleMap
 from distance_map import DistanceMap
 import plot_tools as pt
@@ -14,8 +14,8 @@ obstacles = [
     [0.0, 6.0, 5.6, 0.4],
     [10.8, 6.0, 7.2, 0.4],
 ]
-robot_shape = RobotShape.from_size(0.77, 1.21, 0.445)
-obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_shape)
+robot_renderer = RobotRenderer.from_size(0.77, 1.21, 0.445)
+obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_renderer)
 
 target = 4.0, 2.0
 

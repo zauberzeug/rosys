@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import asyncio
 import os
-from rosys.world.obstacle import Obstacle
 from uuid import uuid4
 import starlette
 from nicegui import app, ui
+from rosys.actors.pathplanning.obstacle_map import ObstacleMap
+from rosys.actors.pathplanning.planner import Planner
+from rosys.world.obstacle import Obstacle
 from rosys.automations.drive_path import drive_path
 from rosys.runtime import Runtime
 from rosys.ui.joystick import Joystick
@@ -25,10 +27,10 @@ with ui.card():
     state = ui.label()
     ui.timer(0.1, lambda: state.set_text(f'{world.time:.3f} s ({world.robot.prediction})'))
 
-    click_mode = ui.toggle({'drive': 'Drive', 'obstacles': 'Obstacles'}).props('outline clearable')
+    click_mode = ui.toggle({'drive': 'Drive', 'plan': 'Plan', 'obstacles': 'Obstacles'}).props('outline clearable')
 
     def update_path_in_scene():
-        [obj.delete() for obj in scene.view.objects.values() if obj.name == 'curve']
+        [obj.delete() for obj in list(scene.view.objects.values()) if obj.name == 'curve']
         for spline in world.path:
             scene.curve(
                 [spline.start.x, spline.start.y, 0],
@@ -46,7 +48,8 @@ with ui.card():
         if msg.click_type != 'dblclick':
             return
         for hit in msg.hits:
-            if hit.object_id == 'ground' and click_mode.value == 'drive':
+            object_type = hit.object_id if hit.object is None else (hit.object.name or '').split('_')[0]
+            if object_type == 'ground' and click_mode.value == 'drive':
                 start = world.robot.prediction.point
                 target = Point(x=hit.point.x, y=hit.point.y)
                 world.path = [Spline(
@@ -56,10 +59,19 @@ with ui.card():
                     end=hit.point,
                 )]
                 update_path_in_scene()
-                runtime.automator.add(drive_path(world, runtime.esp))
+                runtime.automator.replace(drive_path(world, runtime.esp))
                 runtime.resume()
                 return
-            if hit.object_id == 'ground' and click_mode.value == 'obstacles':
+            if object_type == 'ground' and click_mode.value == 'plan':
+                obstacle_map = ObstacleMap.from_world(world)
+                planner = Planner(obstacle_map)
+                planner.set_goal([hit.point.x, hit.point.y, 0])
+                planner.search([world.robot.prediction.x, world.robot.prediction.y, world.robot.prediction.yaw])
+                world.path = [step.spline for step in planner.path]
+                update_path_in_scene()
+                runtime.automator.replace(drive_path(world, runtime.esp))
+                return
+            if object_type == 'ground' and click_mode.value == 'obstacles':
                 id = str(uuid4())
                 world.obstacles[id] = Obstacle(id=id, outline=[
                     Point(x=hit.point.x-0.5, y=hit.point.y-0.5),
@@ -69,7 +81,7 @@ with ui.card():
                 ])
                 update_obstacles_in_scene()
                 return
-            if (hit.object.name or '').startswith('obstacle_') and click_mode.value == 'obstacles':
+            if object_type == 'obstacle' and click_mode.value == 'obstacles':
                 del world.obstacles[hit.object.name.split('_')[1]]
                 hit.object.delete()
                 return
