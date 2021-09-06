@@ -61,7 +61,7 @@ async def drive_spline(spline: Spline, world: World, esp: Esp, *, backward: bool
                 start = world.robot.prediction.rotate(np.pi if backward else 0)
                 while True:
                     local_spline = Spline.from_poses(start, carrot.pose)
-                    if world.robot.parameters.minimum_turning_radius:
+                    if not world.robot.parameters.minimum_turning_radius:
                         break
                     max_curvature = np.abs(local_spline.max_curvature())
                     if max_curvature == 0 or 1 / max_curvature >= world.robot.parameters.minimum_turning_radius:
