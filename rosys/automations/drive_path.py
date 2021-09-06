@@ -14,7 +14,7 @@ async def drive_path(world: World, esp: Esp):
         if s == 0 or spline.start.distance(world.path[s-1].spline.end) > 0.01:
             await drive_to(world, esp, spline.start)
         is_last_segment = path_segment == world.path[-1]
-        await drive_spline(spline, world, esp, throttle_at_end=is_last_segment, backward=path_segment.backward)
+        await drive_spline(spline, world, esp, throttle_at_end=is_last_segment, flip_hook=path_segment.backward)
 
 
 async def drive_to(world: World, esp: Esp, target: Point):

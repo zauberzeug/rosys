@@ -10,16 +10,17 @@ class RobotShape(BaseModel):
 
     outline: list[tuple[float, float]] = [(-0.5, -0.5), (0.5, -0.5), (0.75, 0), (0.5, 0.5), (-0.5, 0.5)]
     height: float = 0.5
-    point_of_interest: Point = Point(x=0, y=0)
 
 
 class RobotParameters(BaseModel):
 
     linear_speed_limit: float = 0.5
     angular_speed_limit: float = 0.5
-    carrot_distance: float = 1.0
     minimum_turning_radius: float = 0.0
     max_detection_age_ramp: Optional[tuple[float, float]]
+    hook_offset: float = 0.5
+    carrot_offset: float = 0.5
+    carrot_distance: float = 0.1
 
 
 class Robot(BaseModel):

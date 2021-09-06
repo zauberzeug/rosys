@@ -17,15 +17,13 @@ from rosys.world.robot import Robot, RobotShape
 from rosys.world.spline import Spline
 from rosys.world.world import World, WorldState
 from hardware import hardware
-import logging
 
 import icecream
 icecream.install()
 
 mode = Mode.REAL if os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0 else Mode.SIMULATION
-logging.warning(f'we are using {mode}')
-world = World(mode=mode, robot=Robot(hardware=hardware, shape=RobotShape(
-    outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])))
+shape = RobotShape(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])
+world = World(mode=mode, robot=Robot(hardware=hardware, shape=shape))
 
 planner = Planner(world)
 
