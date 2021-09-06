@@ -43,7 +43,7 @@ class Planner:
         step_dist = 0.5
         num_candidates = 16
 
-        pose = [start.x, start.y, start.yaw]
+        pose = (start.x, start.y, start.yaw)
         heap = [(self.distance_map.interpolate(start.x, start.y), 0, Step(pose))]
         visited = set()
 
