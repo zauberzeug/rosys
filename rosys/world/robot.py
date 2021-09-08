@@ -37,3 +37,4 @@ class Robot(BaseModel):
     battery: float = 0
     temperature: float = 0
     clock_offset: Optional[float]
+    carrot: Optional[Pose]

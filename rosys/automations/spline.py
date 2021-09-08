@@ -28,7 +28,7 @@ async def drive_spline(spline: Spline, world: World, esp: Esp, *, flip_hook: boo
         hook = world.robot.prediction.transform(hook_offset)
         if not carrot.move(hook, distance=world.robot.parameters.carrot_distance):
             break
-        world.carrot = carrot.pose
+        world.robot.carrot = carrot.pose
 
         turn_angle = eliminate_pi(hook.direction(carrot.offset_point) - world.robot.prediction.yaw)
         curvature = np.tan(turn_angle) / hook_offset.x
@@ -43,7 +43,7 @@ async def drive_spline(spline: Spline, world: World, esp: Esp, *, flip_hook: boo
 
         await esp.drive(*throttle(world, linear, angular))
 
-    world.carrot = None
+    world.robot.carrot = None
     await esp.drive(0, 0)
 
 

@@ -9,7 +9,6 @@ from .link import Link
 from .marker import Marker
 from .mode import Mode
 from .path_segment import PathSegment
-from .pose import Pose
 from .robot import Robot
 
 
@@ -35,7 +34,6 @@ class World(BaseModel):
     link_queue: list[list[str]] = []
     links: list[Link] = []
     path: list[PathSegment] = []
-    carrot: Optional[Pose]
     obstacles: dict[str, Obstacle] = {}
 
     @property
