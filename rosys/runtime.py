@@ -1,4 +1,5 @@
 from __future__ import annotations
+import os
 import sys
 import asyncio
 import logging
@@ -26,7 +27,7 @@ from .helpers import print_stacktrace
 
 class Runtime:
 
-    def __init__(self, world: World, backup_filepath: str = '/data/backup/world.json'):
+    def __init__(self, world: World, backup_filepath: str = os.path.expanduser('~/.rosys/world.json')):
 
         self.world = world
         self.log = logging.getLogger(__name__)
@@ -79,7 +80,7 @@ class Runtime:
 
         return self
 
-    def with_actors(self, actors: list[Actor]):
+    def with_actors(self, *actors: list[Actor]):
 
         self.actors += actors
 

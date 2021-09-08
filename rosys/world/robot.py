@@ -2,7 +2,6 @@ from pydantic import BaseModel
 from typing import Optional
 from .hardware import HardwareGroup
 from .pose import Pose
-from .point import Point
 from .velocity import Velocity
 
 

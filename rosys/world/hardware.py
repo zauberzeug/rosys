@@ -61,6 +61,24 @@ class Can(HardwareGroup):
         ]
 
 
+class Led(HardwareGroup):
+
+    pin: str
+    interval: float = 0.1
+    duty: float = 0.5
+    repeat: bool = True
+
+    @property
+    def commands(self) -> list[str]:
+
+        return [
+            f'new led {self.name} {self.pin}',
+            f'set {self.name}.interval={self.interval}',
+            f'set {self.name}.duty={self.duty}',
+            f'set {self.name}.repeat={"1" if self.repeat else "0"}',
+        ]
+
+
 class Button(HardwareGroup):
 
     pin: str
