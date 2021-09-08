@@ -79,7 +79,7 @@ with ui.card():
                 return
     with ui.row():
         with ui.scene(640, 480, on_click=handle_click) as scene:
-            robot = RobotObject(world.robot)
+            robot = RobotObject(world.robot, debug=True)
             obstacles = ObstaclesObject(world.obstacles)
             path = PathObject(world.path)
             ui.timer(0.05, robot.update)
