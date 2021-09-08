@@ -56,6 +56,7 @@ class Odometer(Actor):
                 self.flips += 1
                 for image in world.images:
                     if image.time == world.robot.detection.time:
+                        self.log.warning(f'adding {image.id} to upload queue because our position has flipped')
                         world.upload_queue.append(image.id)
                 if self.flips < 3:
                     self.log.warn('Avoiding flip')
