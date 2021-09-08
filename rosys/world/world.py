@@ -1,3 +1,4 @@
+from rosys.world.upload import Upload
 from rosys.world.obstacle import Obstacle
 from pydantic import BaseModel, PrivateAttr
 from typing import Optional, Union
@@ -29,7 +30,7 @@ class World(BaseModel):
     cameras: dict[str, Camera] = {}
     tracking: Union[bool, list[str]] = False
     download_queue: list[str] = []
-    upload_queue: list[str] = []
+    upload: Upload = Upload()
     images: list[Image] = []
     image_data: dict[str, bytes] = {}
     link_queue: list[list[str]] = []
