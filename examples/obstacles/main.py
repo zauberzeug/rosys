@@ -8,6 +8,9 @@ from rosys.actors.pathplanning.planner import Planner
 from rosys.automations.drive_path import drive_path
 from rosys.runtime import Runtime
 from rosys.ui.joystick import Joystick
+from rosys.ui.obstacles_object import ObstaclesObject
+from rosys.ui.robot_object import RobotObject
+from rosys.ui.path_object import PathObject
 from rosys.world.mode import Mode
 from rosys.world.obstacle import Obstacle
 from rosys.world.path_segment import PathSegment
@@ -35,22 +38,6 @@ with ui.card():
 
     click_mode = ui.toggle({'drive': 'Drive', 'plan': 'Plan', 'obstacles': 'Obstacles'}).props('outline clearable')
 
-    def update_path_in_scene():
-        [obj.delete() for obj in list(scene.view.objects.values()) if obj.name == 'curve']
-        for path_segment in world.path:
-            spline = path_segment.spline
-            scene.curve(
-                [spline.start.x, spline.start.y, 0],
-                [spline.control1.x, spline.control1.y, 0],
-                [spline.control2.x, spline.control2.y, 0],
-                [spline.end.x, spline.end.y, 0]).material('#ff8800').with_name('curve')
-
-    def update_obstacles_in_scene():
-        [obj.delete() for obj in list(scene.view.objects.values()) if (obj.name or '').startswith('obstacle_')]
-        for obstacle in world.obstacles.values():
-            outline = [[point.x, point.y] for point in obstacle.outline]
-            scene.extrusion(outline, 0.1).with_name(f'obstacle_{obstacle.id}')
-
     def handle_click(msg):
         if msg.click_type != 'dblclick':
             return
@@ -59,21 +46,21 @@ with ui.card():
             if object_type == 'ground' and click_mode.value == 'drive':
                 start = world.robot.prediction.point
                 target = Point(x=hit.point.x, y=hit.point.y)
-                world.path = [PathSegment(spline=Spline(
+                world.path[:] = [PathSegment(spline=Spline(
                     start=start,
                     control1=start.interpolate(target, 1/3),
                     control2=start.interpolate(target, 2/3),
                     end=hit.point,
                 ))]
-                update_path_in_scene()
+                path.update()
                 runtime.automator.replace(drive_path(world, runtime.esp))
                 runtime.resume()
                 return
             if object_type == 'ground' and click_mode.value == 'plan':
                 target_yaw = world.robot.prediction.point.direction(hit.point)
                 planner.search(goal=Pose(x=hit.point.x, y=hit.point.y, yaw=target_yaw), timeout=3.0)
-                world.path = [PathSegment(spline=step.spline, backward=step.backward) for step in planner.path]
-                update_path_in_scene()
+                world.path[:] = [PathSegment(spline=step.spline, backward=step.backward) for step in planner.path]
+                path.update()
                 runtime.automator.replace(drive_path(world, runtime.esp))
                 return
             if object_type == 'ground' and click_mode.value == 'obstacles':
@@ -84,7 +71,7 @@ with ui.card():
                     Point(x=hit.point.x+0.5, y=hit.point.y+0.5),
                     Point(x=hit.point.x-0.5, y=hit.point.y+0.5),
                 ])
-                update_obstacles_in_scene()
+                obstacles.update()
                 return
             if object_type == 'obstacle' and click_mode.value == 'obstacles':
                 del world.obstacles[hit.object.name.split('_')[1]]
@@ -92,12 +79,10 @@ with ui.card():
                 return
     with ui.row():
         with ui.scene(640, 480, on_click=handle_click) as scene:
-            outline = list(map(list, world.robot.shape.outline))
-            robot = scene.extrusion(outline, world.robot.shape.height).material('#4488ff', 0.5)
-            update_obstacles_in_scene()
-            ui.timer(0.05, lambda: robot
-                     .move(world.robot.prediction.x, world.robot.prediction.y)
-                     .rotate(0, 0, world.robot.prediction.yaw) and False)
+            robot = RobotObject(world.robot)
+            obstacles = ObstaclesObject(world.obstacles)
+            path = PathObject(world.path)
+            ui.timer(0.05, robot.update)
         Joystick(size=50, color='blue', steerer=runtime.steerer)
 
     with ui.row():
