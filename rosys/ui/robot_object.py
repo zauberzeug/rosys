@@ -1,4 +1,4 @@
-from nicegui.elements.scene_objects import Extrusion, Group, Sphere
+from nicegui.elements.scene_objects import Extrusion, Group, Sphere, Stl
 from nicegui.elements.scene_object3d import Object3D
 from rosys.world.robot import Robot
 
@@ -11,7 +11,7 @@ class RobotObject(Object3D):
         with self:
             with Group() as self.robot_group:
                 outline = list(map(list, robot.shape.outline))
-                Extrusion(outline, robot.shape.height, wireframe=debug).material('#4488ff', 0.5)
+                self.robot_object = Extrusion(outline, robot.shape.height, wireframe=debug).material('#4488ff', 0.5)
                 if debug:
                     Sphere(0.03).material('#4488ff')
                     Sphere(0.05).material('#4488ff').move(robot.parameters.hook_offset)
@@ -19,6 +19,16 @@ class RobotObject(Object3D):
                 Sphere(0.03).material('#ff8800')
                 Sphere(0.05).material('#ff8800').move(robot.parameters.carrot_offset)
         self.update()
+
+    def with_stl(self, url: str, *,
+                 x: float = 0, y: float = 0, z: float = 0,
+                 omega: float = 0, phi: float = 0, kappa: float = 0,
+                 scale: float = 1.0,
+                 color: str = '#ffffff', opacity: float = 1.0):
+        self.robot_object.delete()
+        with self.robot_group:
+            self.robot_object = Stl(url).move(x, y, z).rotate(omega, phi, kappa).scale(scale).material(color, opacity)
+        return self
 
     def update(self):
         self.robot_group.move(self.robot.prediction.x, self.robot.prediction.y)
