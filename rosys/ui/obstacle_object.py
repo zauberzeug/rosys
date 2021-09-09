@@ -3,7 +3,7 @@ from nicegui.elements.scene_objects import Extrusion
 from rosys.world.obstacle import Obstacle
 
 
-class ObstaclesObject(Object3D):
+class ObstacleObject(Object3D):
 
     def __init__(self, obstacles: dict[str, Obstacle]):
         super().__init__('group')

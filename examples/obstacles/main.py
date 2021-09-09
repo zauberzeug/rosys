@@ -8,7 +8,7 @@ from rosys.actors.pathplanning.planner import Planner
 from rosys.automations.drive_path import drive_path
 from rosys.runtime import Runtime
 from rosys.ui.joystick import Joystick
-from rosys.ui.obstacles_object import ObstaclesObject
+from rosys.ui.obstacle_object import ObstacleObject
 from rosys.ui.robot_object import RobotObject
 from rosys.ui.path_object import PathObject
 from rosys.world.mode import Mode
@@ -80,7 +80,7 @@ with ui.card():
     with ui.row():
         with ui.scene(640, 480, on_click=handle_click) as scene:
             robot = RobotObject(world.robot, debug=True)
-            obstacles = ObstaclesObject(world.obstacles)
+            obstacles = ObstacleObject(world.obstacles)
             path = PathObject(world.path)
             ui.timer(0.05, robot.update)
         Joystick(size=50, color='blue', steerer=runtime.steerer)
