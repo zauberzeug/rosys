@@ -1,13 +1,12 @@
 from rosys.world.upload import Upload
 from rosys.world.obstacle import Obstacle
 from pydantic import BaseModel, PrivateAttr
-from typing import Optional, Union
+from typing import Union
 from enum import Enum
 import time
 from .camera import Camera
 from .image import Image
 from .link import Link
-from .marker import Marker
 from .mode import Mode
 from .path_segment import PathSegment
 from .robot import Robot
@@ -25,7 +24,6 @@ class World(BaseModel):
     state: WorldState = WorldState.PAUSED
     _time: float = PrivateAttr(default_factory=time.time)
     robot: Robot
-    marker: Optional[Marker]
     cameras: dict[str, Camera] = {}
     tracking: Union[bool, list[str]] = False
     download_queue: list[str] = []
