@@ -31,6 +31,9 @@ RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install -vvv --no-root 
 
 ADD ./rosys /rosys/rosys
 
+# Copy z_cam_biniaries folder if it exsits (hence the *)
+ADD ./z_cam_binaries* /root/.rosys/z_cam_binaries
+
 ENV PYTHONPATH "${PYTHONPATH}:/rosys"
 
 EXPOSE 80
