@@ -95,8 +95,8 @@ async def test_driving_a_spline(runtime: Runtime):
     assert_pose(0, 0, deg=0)
     s = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0))
     runtime.automator.add(drive_spline(s, runtime.world, runtime.esp))
-    await runtime.run(seconds=10)
-    assert_pose(2, 1, deg=6)
+    await runtime.run(seconds=20)
+    assert_pose(2, 1, deg=2.6)
 
 
 @pytest.mark.asyncio
