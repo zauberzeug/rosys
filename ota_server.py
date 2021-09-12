@@ -6,7 +6,7 @@ import os
 
 
 app = Flask(__name__)
-camera_bins = os.path.expanduser('~/z_cam_binaries')
+camera_bins = os.path.expanduser('~/.rosys/z_cam_binaries')
 
 
 def get_binary():
