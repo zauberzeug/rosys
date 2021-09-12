@@ -62,6 +62,7 @@ jobs:
           mkdir z_cam_binaries
           pushd "$_"
           curl -u "${{ secrets.CURL_GITHUB_CREDENTIALS }}" -s https://api.github.com/repos/zauberzeug/m5camera/releases/latest | jq -r '.assets[].browser_download_url' | xargs -n 1 curl -O -u "${{ secrets.CURL_GITHUB_CREDENTIALS }}"
+          ls
           popd
       - name: Set up QEMU
         uses: docker/setup-qemu-action@master
