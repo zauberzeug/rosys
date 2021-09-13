@@ -3,7 +3,7 @@
 if [ $# -eq 0 ]
 then
     echo "Usage:"
-    echo "`basename $0` [build|run|shell|attach|b|r|s|a]"
+    echo "`basename $0` [build|run|log|shell|attach|b|r|l|s|a]"
     exit
 fi
 
@@ -28,8 +28,16 @@ do
             docker run -it $args $name || exit ;;
         s | shell)                     
             docker run -it $args $name /bin/bash || exit ;;
+        l | log | logs)
+            docker logs -f --tail 100 $name || exit ;;
         a | attach)
             docker exec -it $(docker ps -lq) /ros_entrypoint.sh /bin/bash || exit ;;
+        i | install)
+            echo "disabing restart for any containers which may have been configured before"
+            docker update --restart=no $(docker ps -a -q) > /dev/null
+            echo "configuring running containers to always restart"
+            docker update --restart=always $(docker ps -q)
+            ;;
         *)
             echo "Unknown command \"$cmd\"" ;;
     esac
