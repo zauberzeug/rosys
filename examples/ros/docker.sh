@@ -32,6 +32,12 @@ do
             docker logs -f --tail 100 $name || exit ;;
         a | attach)
             docker exec -it $(docker ps -lq) /ros_entrypoint.sh /bin/bash || exit ;;
+        i | install)
+            echo "disabing restart for any containers which may have been configured before"
+            docker update --restart=no $(docker ps -a -q) > /dev/null
+            echo "configuring running containers to always restart"
+            docker update --restart=always $(docker ps -q)
+            ;;
         *)
             echo "Unknown command \"$cmd\"" ;;
     esac
