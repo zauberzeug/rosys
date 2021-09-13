@@ -29,7 +29,13 @@ RUN poetry config experimental.new-installer false
 ARG INSTALL_DEV=false
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install -vvv --no-root ; else poetry install -vvv --no-root --no-dev ; fi"
 
+# for legacy ota server
+RUN python3 -m pip install flask 
+
 ADD ./rosys /rosys/rosys
+
+# Copy z_cam_biniaries folder if it exsits (hence the *)
+ADD ./z_cam_binaries* /root/.rosys/z_cam_binaries
 
 ENV PYTHONPATH "${PYTHONPATH}:/rosys"
 
