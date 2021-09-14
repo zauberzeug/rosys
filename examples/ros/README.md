@@ -28,3 +28,11 @@ The latter is just a demonstration of a seperate node which generates Twist mess
 By sending the `/configure` message to the `esp`node the ESP32 will receive the configuration of the attached devices (two wheels thorugh a RoboClaw Controller) stored in the `config.txt`. The configuration is stored persitent on the ESP32. So you only need to save it once.
 
 In the example the web page provides a button to trigger the `/configure` message. In a real scenario you would do it when deploying the robot.
+
+## Starting on Reboot
+
+You can configure the example to directly start on reboot or crash by running
+
+```bash
+./docker.sh install
+```
