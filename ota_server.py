@@ -11,6 +11,7 @@ camera_bins = os.path.expanduser('~/.rosys/z_cam_binaries')
 
 def get_binary():
     bins = glob(f'{camera_bins}/z_cam_*bin')
+    bins.sort(key=os.path.getmtime)
     print("bins:", bins)
     return os.path.basename(bins[-1])
 

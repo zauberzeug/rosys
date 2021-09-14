@@ -4,7 +4,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     python3-pip \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m pip install nicegui pyserial
+RUN python3 -m pip install nicegui==0.5.10 pyserial
 
 SHELL ["/bin/bash", "-c"]
 
