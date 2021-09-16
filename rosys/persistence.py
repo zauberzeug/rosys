@@ -9,42 +9,40 @@ from .world.link import Link
 from .world.world import World
 
 
-def dump(world: World) -> dict:
+class Persistence:
 
-    exclude = {'projection', 'synchronization'}
-    return {
-        'cameras': {mac: camera.dict(exclude=exclude) for mac, camera in world.cameras.items()},
-        'path': [path_segment.dict() for path_segment in world.path],
-        'robot': {'parameters': world.robot.parameters.dict()},
-        'links': [link.dict() for link in world.links],
-        'obstacles': {id: obstacle.dict() for id, obstacle in world.obstacles.items()},
-    }
+    def __init__(self, world: World, filepath: str = '~/.rosys/world.json'):
+        self.world = world
+        self.filepath = os.path.expanduser(filepath)
 
+    def dump(self) -> dict:
+        exclude = {'projection', 'synchronization'}
+        return {
+            'cameras': {mac: camera.dict(exclude=exclude) for mac, camera in self.world.cameras.items()},
+            'path': [path_segment.dict() for path_segment in self.world.path],
+            'robot': {'parameters': self.world.robot.parameters.dict()},
+            'links': [link.dict() for link in self.world.links],
+            'obstacles': {id: obstacle.dict() for id, obstacle in self.world.obstacles.items()},
+        }
 
-def load(world: World, dict: dict):
+    def load(self, dict: dict):
+        self.world.cameras = {mac: Camera.parse_obj(camera) for mac, camera in dict['cameras'].items()}
+        self.world.path = [PathSegment.parse_obj(path_segment) for path_segment in dict['path']]
+        self.world.robot.parameters = RobotParameters.parse_obj(dict['robot']['parameters'])
+        self.world.links = [Link.parse_obj(link) for link in dict['links']]
+        self.world.obstacles = {id: Obstacle.parse_obj(obstacle) for id, obstacle in dict['obstacles'].items()}
 
-    world.cameras = {mac: Camera.parse_obj(camera) for mac, camera in dict['cameras'].items()}
-    world.path = [PathSegment.parse_obj(path_segment) for path_segment in dict['path']]
-    world.robot.parameters = RobotParameters.parse_obj(dict['robot']['parameters'])
-    world.links = [Link.parse_obj(link) for link in dict['links']]
-    world.obstacles = {id: Obstacle.parse_obj(obstacle) for id, obstacle in dict['obstacles'].items()}
+    def backup(self):
+        os.makedirs(os.path.dirname(self.filepath), exist_ok=True)
+        with open(self.filepath, 'w') as f:
+            json.dump(self.dump(), f)
 
-
-def backup(world: World, filepath):
-
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    with open(filepath, 'w') as f:
-        json.dump(dump(world), f)
-
-
-def restore(world: World, filepath: str):
-
-    if not os.path.exists(filepath):
-        logging.warning('No backup file found.')
-        return
-
-    try:
-        with open(filepath, 'r') as f:
-            load(world, json.load(f))
-    except:
-        logging.exception('Could not load from backup')
+    def restore(self):
+        if not os.path.exists(self.filepath):
+            logging.warning('No backup file found.')
+            return
+        try:
+            with open(self.filepath, 'r') as f:
+                self.load(json.load(f))
+        except:
+            logging.exception('Could not load from backup')

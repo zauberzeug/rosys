@@ -1,11 +1,10 @@
 from __future__ import annotations
-import os
 import sys
 import asyncio
 import logging
-from typing import Awaitable, Callable, Union, get_type_hints
+from typing import Awaitable, Callable, Optional, Union, get_type_hints
 from . import task_logger
-from .persistence import backup, restore
+from .persistence import Persistence
 from .actors.actor import Actor
 from .actors.detector import Detector
 from .actors.detector_simulator import DetectorSimulator
@@ -27,13 +26,13 @@ from .helpers import print_stacktrace
 
 class Runtime:
 
-    def __init__(self, world: World, backup_filepath: str = os.path.expanduser('~/.rosys/world.json')):
+    def __init__(self, world: World, persistence: Optional[Persistence] = None):
 
         self.world = world
         self.log = logging.getLogger(__name__)
 
-        self.backup_filepath = backup_filepath
-        restore(self.world, backup_filepath)
+        self.persistence = persistence or Persistence(world)
+        self.persistence.restore()
 
         self.esp = SerialEsp() if world.mode == Mode.REAL else MockedEsp(self.world)
         self.odometer = Odometer()
@@ -109,7 +108,7 @@ class Runtime:
 
     async def stop(self):
 
-        backup(self.world, self.backup_filepath)
+        self.persistence.backup()
         [t.cancel() for t in self.tasks]
         [await a.tear_down() for a in self.actors]
 

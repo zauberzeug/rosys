@@ -6,6 +6,7 @@ import starlette
 from nicegui import app, ui
 from rosys.actors.pathplanning.planner import Planner
 from rosys.automations.drive_path import drive_path
+from rosys.persistence import Persistence
 from rosys.runtime import Runtime
 from rosys.ui.joystick import Joystick
 from rosys.ui.obstacle_object import ObstacleObject
@@ -30,7 +31,7 @@ world = World(mode=mode, robot=Robot(hardware=hardware, shape=shape))
 
 planner = Planner(world)
 
-runtime = Runtime(world, backup_filepath='/tmp/world.json')
+runtime = Runtime(world, Persistence(world, '~/.rosys/obstacles/world.json'))
 
 with ui.card():
     state = ui.label()
@@ -98,6 +99,7 @@ ui.on_startup(runtime.run())
 ui.on_shutdown(runtime.stop())
 
 app.routes.insert(0, starlette.routing.Route(
-    '/world', lambda *_: starlette.responses.Response(content=world.json(exclude={'image_data'}), media_type='text/json')))
+    '/world', lambda *_:
+    starlette.responses.Response(content=world.json(exclude={'image_data'}), media_type='text/json')))
 
 ui.run(title="obstacles")
