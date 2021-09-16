@@ -13,9 +13,9 @@ RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-
 # for legacy ota server
 RUN python3 -m pip install flask 
 
-WORKDIR /rosys/
 ADD ./rosys /rosys/rosys
-
+WORKDIR /rosys
+COPY pyproject.toml poetry.lock ota_server.py LICENSE README.md rosys.code-workspace ./
 RUN poetry config experimental.new-installer false
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
