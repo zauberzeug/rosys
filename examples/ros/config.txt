@@ -7,3 +7,6 @@ set drive.use300HzSpeedReadings=0
 
 set esp.outputModules=drive
 esp unmute
+
+set esp.ready=1
+set esp.24v=1
