@@ -6,6 +6,7 @@ from rosys.ui.joystick import Joystick
 from rosys.world.mode import Mode
 from rosys.world.robot import Robot
 from rosys.world.world import World
+from rosys.automations.square import drive_square
 from hardware import hardware
 
 mode = Mode.REAL if os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0 else Mode.SIMULATION
@@ -32,6 +33,13 @@ with ui.card():
 
     ui.button('configure esp', on_click=lambda: runtime.esp.configure(world.robot.hardware))
     ui.button('restart rosys', on_click=lambda: os.utime('main.py'))
+
+    def play(r):
+        runtime.automator.add(drive_square(world, runtime.esp))
+        runtime.resume()
+
+    ui.button('drive square', on_click=play)
+
 
 ui.on_startup(runtime.run())
 ui.on_shutdown(runtime.stop())
