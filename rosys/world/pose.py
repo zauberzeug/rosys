@@ -22,6 +22,18 @@ class Pose(BaseModel):
     def point(self) -> Point:
         return Point(x=self.x, y=self.y)
 
+    @property
+    def matrix(self):
+        return np.array([
+            [np.cos(self.yaw), -np.sin(self.yaw), self.x],
+            [np.sin(self.yaw), np.cos(self.yaw), self.y],
+            [0, 0, 1],
+        ])
+
+    @staticmethod
+    def from_matrix(M, time: float = 0):
+        return Pose(x=M[0, -1], y=M[1, -1], yaw=np.arctan2(M[1, 0], M[0, 0]), time=time)
+
     def __str__(self):
         return '%.3f, %.3f, %.1f deg' % (self.x, self.y, np.rad2deg(self.yaw))
 
@@ -49,4 +61,4 @@ class Pose(BaseModel):
         )
 
     def rotate(self, angle: float) -> Pose:
-        return Pose(x=self.x, y=self.y, yaw=self.yaw+angle)
+        return Pose(x=self.x, y=self.y, yaw=self.yaw+angle, time=self.time)
