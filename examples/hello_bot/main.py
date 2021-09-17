@@ -34,7 +34,7 @@ with ui.card():
     ui.button('configure esp', on_click=lambda: runtime.esp.configure(world.robot.hardware))
     ui.button('restart rosys', on_click=lambda: os.utime('main.py'))
 
-    def play(r):
+    def play(_):
         runtime.automator.add(drive_square(world, runtime.esp))
         runtime.resume()
 
