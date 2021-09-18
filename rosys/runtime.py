@@ -141,9 +141,6 @@ class Runtime:
                         f'delaying this step for {delay*1000:.0f} ms')
                     await asyncio.sleep(delay)
 
-            if dt > actor.interval > 0:
-                self.log.warning(f'{type(actor).__name__} took {dt} s')
-
             if self.world.mode == Mode.TEST:
                 sleep_end_time = self.world.time + actor.interval
                 while self.world.time <= min(run_end_time, sleep_end_time):
