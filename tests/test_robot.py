@@ -45,9 +45,11 @@ async def test_driving_a_square(runtime: Runtime):
     assert_pose(0, 0, deg=0)
 
     runtime.automator.add(drive_square(runtime.world, runtime.esp))
-    await runtime.run(seconds=5.1)
-    assert_pose(2, 2, deg=90)
+    await runtime.run(seconds=2.0)
+    assert_pose(0.92, 0, deg=0)
     await runtime.run(seconds=7.0)
+    assert_pose(0.8, 0.8, deg=160)
+    await runtime.run(seconds=14.0)
     assert_pose(0, 0, deg=270, linear_tolerance=0.15, deg_tolerance=10.0)
 
 
@@ -80,13 +82,13 @@ async def test_pause_and_resume_square(runtime: Runtime):
 
     await runtime.run(seconds=8.1)
     await runtime.pause()
-    assert_pose(0, 2, deg=180, linear_tolerance=0.2)
+    assert_pose(1, 0.7, deg=136, linear_tolerance=0.2)
 
     await runtime.run(seconds=2)
-    assert_pose(0, 2, deg=180, linear_tolerance=0.2)
+    assert_pose(1, 0.7, deg=136, linear_tolerance=0.2)
 
     runtime.resume()
-    await runtime.run(seconds=3)
+    await runtime.run(seconds=10)
     assert_pose(0, 0, deg=270, linear_tolerance=0.5, deg_tolerance=10.0)
 
 
