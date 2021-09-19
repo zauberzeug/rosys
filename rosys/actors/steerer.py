@@ -11,22 +11,18 @@ class State(Enum):
 
 
 class Steerer(Actor):
-
     interval: float = 0.05
 
     def __init__(self):
-
         self.state = State.IDLE
         self.orientation = None
         self.linear_speed = 0
         self.angular_speed = 0
 
     def start(self):
-
         self.state = State.INITIALIZING
 
     def update(self, x: float, y: float):
-
         if self.state == State.INITIALIZING:
             squared_distance = x**2 + y**2
             dead_zone = 0.1
@@ -40,12 +36,10 @@ class Steerer(Actor):
             self.angular_speed = -x * self.orientation
 
     def stop(self):
-
         self.orientation = None
         self.state = State.STOPPING
 
     async def step(self, esp: Esp):
-
         if self.state == State.STEERING:
             await esp.drive(self.linear_speed, self.angular_speed)
 

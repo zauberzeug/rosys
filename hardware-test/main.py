@@ -20,14 +20,14 @@ sockets = [
 ]
 inputs = {}
 
-def send(text):
 
+def send(text):
     print(text)
     message_input.value = ''
     port.write((text + '\n').encode())
 
-def configure():
 
+def configure():
     send('esp erase')
     for s, socket in enumerate(sockets):
         for i, input_ in enumerate(socket.inputs):
@@ -42,8 +42,8 @@ def configure():
     send('+set esp.outputModules=' + ','.join(inputs.keys()))
     send('esp restart')
 
-async def read():
 
+async def read():
     global lines
 
     while is_running:
@@ -67,7 +67,7 @@ async def read():
                 words = line.split()
                 for i, (name, icon) in enumerate(inputs.items()):
                     icon.visible = words[3+i] == '0'
-    
+
 with ui.row():
     with ui.card():
         ui.markdown('#### READY')
@@ -85,7 +85,7 @@ with ui.row():
                 name = f'OUT_{s+1}_{o+1}'
                 with ui.row().style('align-items:center'):
                     ui.label(name)
-                    ui.toggle(['on', 'off', 'pulse'], on_change=lambda e,name=name: send(f'{name} {e.value}'))
+                    ui.toggle(['on', 'off', 'pulse'], on_change=lambda e, name=name: send(f'{name} {e.value}'))
             for i, input_ in enumerate(socket.inputs):
                 name = f'IN_{s+1}_{i+1}'
                 with ui.row():
@@ -98,6 +98,7 @@ with ui.row():
                 ui.label(name)
                 inputs[name] = ui.icon('lens')
                 inputs[name].visible = False
+
     def reload_inputs():
         send('esp get')
     timer = ui.timer(0.5, reload_inputs)
@@ -110,15 +111,18 @@ message_input = ui.input(placeholder="Send message...", on_change=lambda e: send
 with ui.card():
     lines = []
     output = ui.label().style('white-space:pre;font-family:monospace')
+
     def update_output():
         output.view.inner_html = '\n'.join(lines)
     ui.timer(0.1, update_output)
+
 
 @jp.app.on_event('startup')
 def startup():
     jp.run_task(read())
 
+
 @jp.app.on_event('shutdown')
 def shutdown():
     is_running = False
-    send('Bye!') # NOTE: trigger response from ESP to terminate port.readline_async()
+    send('Bye!')  # NOTE: trigger response from ESP to terminate port.readline_async()

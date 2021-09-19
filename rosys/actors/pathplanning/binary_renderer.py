@@ -3,16 +3,13 @@ from matplotlib.path import Path
 
 
 class BinaryRenderer:
-
     def __init__(self, size):
-
         self.map = np.zeros(size, dtype=bool)
 
         self.xx, self.yy = np.meshgrid(range(size[1]), range(size[0]))
         self.xy = np.vstack((self.xx.flatten(), self.yy.flatten())).T
 
     def circle(self, x, y, radius, value=True):
-
         x0 = max(int(x - radius), 0)
         y0 = max(int(y - radius), 0)
         x1 = min(int(x + radius) + 2, self.map.shape[1] - 1)
@@ -23,7 +20,6 @@ class BinaryRenderer:
         self.map[y0:y1, x0:x1] = roi
 
     def polygon(self, points, value=True):
-
         x0 = max(int(points[:, 0].min()), 0)
         y0 = max(int(points[:, 1].min()), 0)
         x1 = min(int(points[:, 0].max()) + 2, self.map.shape[1] - 1)

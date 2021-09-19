@@ -10,7 +10,6 @@ from .world.world import World
 
 
 class Persistence:
-
     def __init__(self, world: World, filepath: str = '~/.rosys/world.json'):
         self.world = world
         self.filepath = os.path.expanduser(filepath)

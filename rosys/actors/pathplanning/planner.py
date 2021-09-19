@@ -12,7 +12,6 @@ from rosys.world.world import World
 
 
 class Planner:
-
     def __init__(self, world: World):
         self.world = world
         self.obstacle_map = None

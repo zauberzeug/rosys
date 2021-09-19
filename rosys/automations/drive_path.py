@@ -8,7 +8,6 @@ from .spline import drive_spline, throttle
 
 
 async def drive_path(world: World, esp: Esp):
-
     for s, path_segment in enumerate(world.path):
         spline = path_segment.spline
         if s == 0 or spline.start.distance(world.path[s-1].spline.end) > 0.01:
@@ -18,7 +17,6 @@ async def drive_path(world: World, esp: Esp):
 
 
 async def drive_to(world: World, esp: Esp, target: Point):
-
     if world.robot.parameters.minimum_turning_radius:
         await drive_circle(world, esp, target)
 
@@ -33,7 +31,6 @@ async def drive_to(world: World, esp: Esp, target: Point):
 
 
 async def drive_circle(world: World, esp: Esp, target: Point):
-
     while True:
         direction = world.robot.prediction.point.direction(target)
         angle = eliminate_2pi(direction - world.robot.prediction.yaw)

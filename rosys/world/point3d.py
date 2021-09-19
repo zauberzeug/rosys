@@ -2,7 +2,6 @@ from pydantic import BaseModel
 
 
 class Point3d(BaseModel):
-
     x: float
     y: float
     z: float

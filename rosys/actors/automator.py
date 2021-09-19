@@ -4,7 +4,6 @@ from ..world.world import World, WorldState
 
 
 class Automator(Actor):
-
     interval: float = 0.1
 
     def __init__(self):
@@ -18,7 +17,6 @@ class Automator(Actor):
         self.add(coro)
 
     async def step(self, world: World):
-
         if world.state != WorldState.RUNNING:
             return
 

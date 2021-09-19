@@ -7,7 +7,6 @@ from rosys.helpers import angle
 
 
 class Path(list):
-
     @staticmethod
     def from_poses(poses):
         steps = [Step(poses[0])]
@@ -16,7 +15,6 @@ class Path(list):
         return Path(steps)
 
     def smooth(self, obstacle_map, control_dist=None):
-
         while True:
             for s in range(1, len(self) - 1):
                 if self[s].backward != self[s+1].backward:
@@ -41,7 +39,6 @@ class Path(list):
 
 
 class Step:
-
     def __init__(self,
                  target: tuple[float, float, float],
                  previous_step: Optional[Step] = None,

@@ -5,7 +5,6 @@ from rosys.actors.pathplanning.obstacle_map import ObstacleMap
 
 
 class DistanceMap:
-
     def __init__(self, obstacle_map: ObstacleMap, target: Point):
         self.grid = obstacle_map.grid
         scaled_obstacle_map = obstacle_map.map

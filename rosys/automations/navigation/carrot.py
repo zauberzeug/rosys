@@ -6,7 +6,6 @@ from ...world.spline import Spline
 
 
 class Carrot(BaseModel):
-
     spline: Spline
     offset: Point = Point(x=0, y=0)
     t: float = 0

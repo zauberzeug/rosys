@@ -11,7 +11,6 @@ from tests.helper import assert_pose
 
 @pytest.mark.asyncio
 async def test_drive(runtime: Runtime):
-
     assert_pose(0, 0, deg=0)
 
     await runtime.run(seconds=1.0)
