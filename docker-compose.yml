@@ -4,11 +4,12 @@ services:
     image: "zauberzeug/rosys:${TAG-latest}"
     volumes:
       - ./:/rosys
-      - dummy:/rosys/detector # hide original folder to not trigger uvicorn reloads through active learning
+      - ./:/app
       - ~/.ssh:/root/.ssh
       - ~/.gitconfig:/root/.gitconfig
       - ~/.git-credentials:/root/.git-credentials
-      - /rosys/.git # hide some unnecessary large folders...
+      # hide some unnecessary large folders...
+      - /rosys/.git
       - /rosys/.pio
       - /rosys/controller
     devices:
@@ -21,6 +22,3 @@ services:
         INSTALL_DEV: "true"
     hostname: docker
     command: /rosys/start.sh debug
-
-volumes:
-  dummy: {}
