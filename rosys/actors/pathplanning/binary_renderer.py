@@ -3,6 +3,7 @@ from matplotlib.path import Path
 
 
 class BinaryRenderer:
+
     def __init__(self, size):
         self.map = np.zeros(size, dtype=bool)
 

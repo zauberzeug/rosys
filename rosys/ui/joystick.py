@@ -3,6 +3,7 @@ from nicegui.elements.joystick import Joystick as NiceGuiJoystick
 
 
 class Joystick(NiceGuiJoystick):
+
     def __init__(self, *, steerer: Steerer, **options):
         self.steerer = steerer
 

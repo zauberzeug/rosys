@@ -3,6 +3,7 @@ from rosys.world.point import Point
 
 
 class Grid:
+
     def __init__(self, size, bbox):
         self.size = size
         self.bbox = bbox

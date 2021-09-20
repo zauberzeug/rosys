@@ -8,6 +8,7 @@ from rosys.world.world import World
 
 
 class ObstacleMap:
+
     def __init__(self, grid, map_, robot_renderer):
         self.grid = grid
         self.map = map_

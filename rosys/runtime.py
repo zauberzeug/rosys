@@ -25,6 +25,7 @@ from .helpers import print_stacktrace
 
 
 class Runtime:
+
     def __init__(self, world: World, persistence: Optional[Persistence] = None):
         self.world = world
         self.log = logging.getLogger(__name__)

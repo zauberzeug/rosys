@@ -7,6 +7,7 @@ from rosys.helpers import angle
 
 
 class Path(list):
+
     @staticmethod
     def from_poses(poses):
         steps = [Step(poses[0])]
@@ -39,6 +40,7 @@ class Path(list):
 
 
 class Step:
+
     def __init__(self,
                  target: tuple[float, float, float],
                  previous_step: Optional[Step] = None,

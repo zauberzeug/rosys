@@ -4,6 +4,7 @@ from rosys.world.path_segment import PathSegment
 
 
 class PathObject(Object3D):
+
     def __init__(self, path: list[PathSegment]):
         super().__init__('group')
         self.path = path

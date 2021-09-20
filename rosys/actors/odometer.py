@@ -6,6 +6,7 @@ from ..helpers import angle
 
 
 class Odometer(Actor):
+
     def __init__(self):
         super().__init__()
 
