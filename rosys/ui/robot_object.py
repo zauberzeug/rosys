@@ -29,7 +29,7 @@ class RobotObject(Object3D):
             self.robot_object = Stl(url).move(x, y, z).rotate(omega, phi, kappa).scale(scale).material(color, opacity)
         return self
 
-    def update(self):
+    def update(self) -> bool:
         self.robot_group.move(self.robot.prediction.x, self.robot.prediction.y)
         self.robot_group.rotate(0, 0, self.robot.prediction.yaw)
         if self.robot.carrot is None:
@@ -38,3 +38,4 @@ class RobotObject(Object3D):
             self.carrot_group.scale(1)
             self.carrot_group.move(self.robot.carrot.x, self.robot.carrot.y)
             self.carrot_group.rotate(0, 0, self.robot.carrot.yaw)
+        return False  # NOTE: avoid JustPy page_update

@@ -9,7 +9,7 @@ class PathObject(Object3D):
         self.path = path
         self.update()
 
-    def update(self):
+    def update(self) -> bool:
         [obj.delete() for obj in list(self.view.objects.values()) if obj.name == 'path']
         for segment in self.path:
             Curve(
@@ -18,3 +18,4 @@ class PathObject(Object3D):
                 [segment.spline.control2.x, segment.spline.control2.y, 0],
                 [segment.spline.end.x, segment.spline.end.y, 0],
             ).material('#ff8800').with_name('path')
+        return False  # NOTE: avoid JustPy page_update

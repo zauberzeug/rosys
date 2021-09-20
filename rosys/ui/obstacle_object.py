@@ -10,8 +10,9 @@ class ObstacleObject(Object3D):
 
         self.update()
 
-    def update(self):
+    def update(self) -> bool:
         [obj.delete() for obj in list(self.view.objects.values()) if (obj.name or '').startswith('obstacle_')]
         for obstacle in self.obstacles.values():
             outline = [[point.x, point.y] for point in obstacle.outline]
             Extrusion(outline, 0.1).with_name(f'obstacle_{obstacle.id}')
+        return False  # NOTE: avoid JustPy page_update
