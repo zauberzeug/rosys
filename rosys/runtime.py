@@ -105,7 +105,7 @@ class Runtime:
     async def stop(self):
         self.persistence.backup()
         [t.cancel() for t in self.tasks]
-        [await a.tear_down() for a in self.actors]
+        await asyncio.gather(*[task_logger.create_task(a.tear_down()) for a in self.actors])
 
     async def call_follow_ups(self, trigger: Union[Callable, Awaitable]):
         for follow_up in self.follow_ups.get(trigger, []):
