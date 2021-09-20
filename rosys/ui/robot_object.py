@@ -4,7 +4,6 @@ from rosys.world.robot import Robot
 
 
 class RobotObject(Object3D):
-
     def __init__(self, robot: Robot, *, debug: bool = False):
         super().__init__('group')
         self.robot = robot

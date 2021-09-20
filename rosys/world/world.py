@@ -13,13 +13,11 @@ from .robot import Robot
 
 
 class WorldState(Enum):
-
     RUNNING = 1
     PAUSED = 2
 
 
 class World(BaseModel):
-
     mode: Mode
     state: WorldState = WorldState.PAUSED
     _time: float = PrivateAttr(default_factory=time.time)

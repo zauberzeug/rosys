@@ -6,9 +6,7 @@ from ..helpers import angle
 
 
 class Odometer(Actor):
-
     def __init__(self):
-
         super().__init__()
 
         self.last_time: float = None
@@ -17,9 +15,7 @@ class Odometer(Actor):
         self.flip_detection_initialized: bool = False
 
     def handle_velocity(self, world: World):
-
         while any(world.robot.odometry):
-
             velocity = world.robot.odometry.pop(0)
 
             if self.last_time is None:
@@ -42,7 +38,6 @@ class Odometer(Actor):
         self.prune_steps(world.time - 10.0)
 
     def handle_detection(self, world: World):
-
         if world.robot.detection is None or not any(self.steps) or world.robot.detection.time < self.steps[0].time:
             return
 
@@ -71,6 +66,5 @@ class Odometer(Actor):
         self.flip_detection_initialized = True
 
     def prune_steps(self, cut_off_time: float):
-
         while any(self.steps) and self.steps[0].time < cut_off_time:
             del self.steps[0]

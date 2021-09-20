@@ -4,7 +4,6 @@ from rosys.actors.pathplanning.binary_renderer import BinaryRenderer
 
 
 class RobotRenderer:
-
     def __init__(self, outline):
         self.outline = outline
 

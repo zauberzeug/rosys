@@ -7,13 +7,11 @@ from .velocity import Velocity
 
 
 class RobotShape(BaseModel):
-
     outline: list[tuple[float, float]] = [(-0.5, -0.5), (0.5, -0.5), (0.75, 0), (0.5, 0.5), (-0.5, 0.5)]
     height: float = 0.5
 
 
 class RobotParameters(BaseModel):
-
     linear_speed_limit: float = 0.5
     angular_speed_limit: float = 0.5
     minimum_turning_radius: float = 0.0
@@ -24,7 +22,6 @@ class RobotParameters(BaseModel):
 
 
 class Robot(BaseModel):
-
     shape: RobotShape = RobotShape()
     marker: Optional[Marker]
     parameters: RobotParameters = RobotParameters()

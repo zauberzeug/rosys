@@ -2,7 +2,6 @@ import logging
 
 
 class Actor:
-
     interval: float = None
 
     def __init__(self) -> None:

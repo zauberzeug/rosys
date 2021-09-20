@@ -4,7 +4,6 @@ from rosys.world.obstacle import Obstacle
 
 
 class ObstacleObject(Object3D):
-
     def __init__(self, obstacles: dict[str, Obstacle]):
         super().__init__('group')
         self.obstacles = obstacles

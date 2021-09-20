@@ -13,7 +13,6 @@ pytest.register_assert_rewrite("tests.helper")
 
 @pytest.fixture
 def runtime() -> Generator:
-
     runtime = Runtime(World(
         mode=Mode.TEST,
         state=WorldState.RUNNING,

@@ -25,9 +25,7 @@ from .helpers import print_stacktrace
 
 
 class Runtime:
-
     def __init__(self, world: World, persistence: Optional[Persistence] = None):
-
         self.world = world
         self.log = logging.getLogger(__name__)
 
@@ -53,7 +51,6 @@ class Runtime:
         }
 
     def with_cameras(self) -> Runtime:
-
         if self.world.mode == Mode.REAL:
             self.actors += [CameraScanner(), CameraDownloader()]
         else:
@@ -80,7 +77,6 @@ class Runtime:
         return self
 
     def with_actors(self, *actors: list[Actor]):
-
         self.actors += actors
 
         return self
@@ -93,7 +89,6 @@ class Runtime:
         self.world.state = WorldState.RUNNING
 
     async def run(self, seconds: float = sys.maxsize):
-
         self.tasks = []
         end_time = self.world.time + seconds
 
@@ -107,24 +102,20 @@ class Runtime:
         await asyncio.gather(*self.tasks)
 
     async def stop(self):
-
         self.persistence.backup()
         [t.cancel() for t in self.tasks]
         [await a.tear_down() for a in self.actors]
 
     async def call_follow_ups(self, trigger: Union[Callable, Awaitable]):
-
         for follow_up in self.follow_ups.get(trigger, []):
             params = self.get_params(follow_up)
             await follow_up(*params) if asyncio.iscoroutine(follow_up) else follow_up(*params)
             await self.call_follow_ups(follow_up)
 
     async def repeat(self, actor: Actor, run_end_time: float):
-
         params = self.get_params(actor.step)
 
         while self.world.time < run_end_time:
-
             start = self.world.time
             try:
                 await actor.step(*params)
@@ -141,9 +132,6 @@ class Runtime:
                         f'delaying this step for {delay*1000:.0f} ms')
                     await asyncio.sleep(delay)
 
-            if dt > actor.interval > 0:
-                self.log.warning(f'{type(actor).__name__} took {dt} s')
-
             if self.world.mode == Mode.TEST:
                 sleep_end_time = self.world.time + actor.interval
                 while self.world.time <= min(run_end_time, sleep_end_time):
@@ -152,13 +140,11 @@ class Runtime:
                 await asyncio.sleep(actor.interval - dt)
 
     async def advance_time(self, end_time):
-
         while self.world.time <= end_time:
             self.world.set_time(self.world.time + 0.01)
             await asyncio.sleep(0)
 
     def get_params(self, func: Union[Callable, Awaitable]):
-
         params = []
         for name, type_ in get_type_hints(func).items():
             for obj in [self.world] + self.actors:

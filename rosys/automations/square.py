@@ -1,23 +1,11 @@
 import numpy as np
 from ..actors.esp import Esp
 from ..world.world import World
+from ..world.point import Point
+from .drive_path import drive_to
 
 
 async def drive_square(world: World, esp: Esp):
-
-    while world.robot.prediction.x < 2:
-        await esp.drive(1, 0)
-    while world.robot.prediction.yaw < np.deg2rad(90):
-        await esp.drive(0, np.deg2rad(90))
-    while world.robot.prediction.y < 2:
-        await esp.drive(1, 0)
-    while world.robot.prediction.yaw < np.deg2rad(180):
-        await esp.drive(0, np.deg2rad(90))
-    while world.robot.prediction.x > 0:
-        await esp.drive(1, 0)
-    while world.robot.prediction.yaw < np.deg2rad(270):
-        await esp.drive(0, np.deg2rad(90))
-    while world.robot.prediction.y > 0:
-        await esp.drive(1, 0)
-
-    await esp.drive(0, 0)
+    origin = world.robot.prediction.copy()
+    for point in [Point(x=1, y=0), Point(x=1, y=1), Point(x=0, y=1), Point(x=0, y=0)]:
+        await drive_to(world, esp, origin.transform(point))
