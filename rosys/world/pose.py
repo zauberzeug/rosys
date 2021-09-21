@@ -54,5 +54,12 @@ class Pose(BaseModel):
             y=self.y + point.x * np.sin(self.yaw) + point.y * np.cos(self.yaw),
         )
 
+    def transform_pose(self, pose: Pose) -> Pose:
+        return Pose(
+            x=self.x + pose.x * np.cos(self.yaw) - pose.y * np.sin(self.yaw),
+            y=self.y + pose.x * np.sin(self.yaw) + pose.y * np.cos(self.yaw),
+            yaw=self.yaw + pose.yaw,
+        )
+
     def rotate(self, angle: float) -> Pose:
         return Pose(x=self.x, y=self.y, yaw=self.yaw+angle, time=self.time)
