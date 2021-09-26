@@ -1,4 +1,5 @@
 from __future__ import annotations
+from rosys import factory
 import sys
 import asyncio
 import logging
@@ -8,7 +9,6 @@ from .persistence import Persistence
 from .actors.actor import Actor
 from .actors.detector import Detector
 from .actors.detector_simulator import DetectorSimulator
-from .actors.esp import SerialEsp, MockedEsp
 from .actors.odometer import Odometer
 from .actors.steerer import Steerer
 from .actors.robot_locator import RobotLocator
@@ -33,7 +33,8 @@ class Runtime:
         self.persistence = persistence or Persistence(world)
         self.persistence.restore()
 
-        self.esp = SerialEsp() if world.mode == Mode.REAL else MockedEsp(self.world)
+        self.esp = factory.create_esp(world)
+        self.log.info(f'selected {type(self.esp).__name__}')
         self.odometer = Odometer()
         self.steerer = Steerer()
         self.automator = Automator()
@@ -79,7 +80,6 @@ class Runtime:
 
     def with_actors(self, *actors: list[Actor]):
         self.actors += actors
-
         return self
 
     async def pause(self):

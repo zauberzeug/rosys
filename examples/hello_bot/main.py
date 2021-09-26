@@ -9,10 +9,13 @@ from rosys.world.mode import Mode
 from rosys.world.robot import Robot
 from rosys.world.world import World
 from hardware import hardware
+import log_configuration
+
+log_configuration.setup()
+
 
 mode = Mode.REAL if os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0 else Mode.SIMULATION
 world = World(mode=mode, robot=Robot(hardware=hardware))
-
 runtime = Runtime(world)
 
 with ui.card():
