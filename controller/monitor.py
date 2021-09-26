@@ -10,12 +10,10 @@ class LineReader:
     # https://github.com/pyserial/pyserial/issues/216#issuecomment-369414522
 
     def __init__(self, s):
-
         self.buf = bytearray()
         self.s = s
 
     def readline(self):
-
         i = self.buf.find(b"\n")
         if i >= 0:
             r = self.buf[:i+1]
@@ -34,9 +32,7 @@ class LineReader:
 
 
 def receive():
-
     line_reader = LineReader(port)
-
     while True:
         try:
             line = line_reader.readline().decode('utf-8').strip('\n')
@@ -56,9 +52,7 @@ def receive():
 
 
 async def send():
-
     session = PromptSession()
-
     while True:
         try:
             with patch_stdout():
@@ -77,7 +71,8 @@ for usb_path in [
     "/dev/tty.SLAB_USBtoUART",
     "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0",
     "/dev/ttyUSB0",
-    "/dev/ttyTHS1"]:
+    "/dev/ttyTHS1"
+]:
     if os.path.exists(usb_path):
         break
 else:
