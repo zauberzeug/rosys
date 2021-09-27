@@ -69,7 +69,8 @@ public:
 
         if (this->state == HOMING and this->is_home_active())
         {
-            this->stop();
+            this->move(0, this->moveSpeed);
+            this->state = HOME;
         }
 
         Module::loop();
