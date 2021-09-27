@@ -9,7 +9,7 @@ import os.path
 class LineReader:
     # https://github.com/pyserial/pyserial/issues/216#issuecomment-369414522
 
-    def __init__(self, s):
+    def __init__(self, s: serial.Serial):
         self.buf = bytearray()
         self.s = s
 
@@ -67,20 +67,25 @@ async def send():
             loop.stop()
             return
 
-for usb_path in [
-    "/dev/tty.SLAB_USBtoUART",
-    "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0",
-    "/dev/ttyUSB0",
-    "/dev/ttyTHS1"
-]:
-    if os.path.exists(usb_path):
-        break
-else:
-    raise Exception("No serial port found")
 
-with serial.Serial(usb_path, baudrate=115200, timeout=0.1) as port:
+def serial_connection() -> serial.Serial:
+    for usb_path in [
+        "/dev/tty.SLAB_USBtoUART",
+        "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0",
+        "/dev/ttyUSB0",
+        "/dev/ttyTHS1"
+    ]:
+        if os.path.exists(usb_path):
+            break
+    else:
+        raise Exception("No serial port found")
 
-    loop = asyncio.get_event_loop()
-    loop.create_task(send())
-    loop.run_in_executor(None, receive)
-    loop.run_forever()
+    return serial.Serial(usb_path, baudrate=115200, timeout=0.1)
+
+
+if __name__ == '__main__':
+    with serial_connection() as port:
+        loop = asyncio.get_event_loop()
+        loop.create_task(send())
+        loop.run_in_executor(None, receive)
+        loop.run_forever()

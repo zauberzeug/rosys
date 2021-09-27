@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
+from typing import Awaitable
 import socketio
 import uvicorn
+import asyncio
+import logging
+import serial
+from monitor import serial_connection, LineReader
+
 
 sio = socketio.AsyncServer(async_mode='asgi')
 
@@ -18,18 +24,36 @@ def disconnect(sid):
 @sio.event
 def write(sid, data):
     print(f'writing "{data}" to serial')
-    pass
 
 
-async def read():
-    count = 0
-    while True:
-        await sio.emit('read', f'step #{count}')
-        print(f'count {count}')
-        count += 1
-        await sio.sleep(5)
+async def receive(port: serial.Serial, coro: Awaitable):
+    try:
+        await sio.sleep(1)
+        line_reader = LineReader(port)
+        while True:
+            try:
+                line = line_reader.readline().decode('utf-8').strip('\n')
+                if '^' in line:
+                    line, check = line.split('^')
+                    checksum = 0
+                    for c in line:
+                        checksum ^= ord(c)
+                    if checksum != int(check):
+                        logging.error('ERROR: CHECKSUM MISSMATCH ("%s")' % line)
+                    else:
+                        await coro(line)
+                else:
+                    await coro(line)
+            except UnicodeDecodeError:
+                logging.exception('could not decode')
+    except:
+        logging.exception('could not read')
 
-app = socketio.ASGIApp(sio, on_startup=lambda: sio.start_background_task(read))
+
+async def read(data):
+    await sio.emit('read', data)
 
 if __name__ == '__main__':
-    uvicorn.run(app, host='0.0.0.0', port=80)
+    with serial_connection() as port:
+        app = socketio.ASGIApp(sio, on_startup=lambda: sio.start_background_task(receive, port, read))
+        uvicorn.run(app, host='0.0.0.0', port=80)
