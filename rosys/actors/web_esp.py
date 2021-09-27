@@ -8,10 +8,9 @@ class WebEsp(Esp):
 
     def __init__(self):
         super().__init__()
-        self.host = 'ws://localhost:80'
+        self.host = 'ws://192.168.43.1:80'
         # let's try to establish a connection to the esp proxy synchronously...
-        socketio.Client(reconnection=False).connect(self.host)
-
+        self._try_socketio()
         # ... ok, we passed without exception -> creating async client
         self.sio = socketio.AsyncClient()
 
@@ -33,3 +32,12 @@ class WebEsp(Esp):
 
     async def tear_down(self):
         await self.sio.disconnect()
+
+    def _try_socketio(self):
+        sio = socketio.Client(reconnection=False)
+
+        @sio.event
+        def connect():
+            sio.disconnect()
+
+        sio.connect(self.host)
