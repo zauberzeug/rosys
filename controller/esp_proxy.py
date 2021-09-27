@@ -9,16 +9,17 @@ from monitor import serial_connection, LineReader
 
 
 sio = socketio.AsyncServer(async_mode='asgi')
+sio.connected = False
 
 
 @sio.event
 def connect(sid, environ, auth):
-    print('connect ', sid)
+    sio.connected = True
 
 
 @sio.event
 def disconnect(sid):
-    print('disconnect ', sid)
+    sio.connected = False
 
 
 @sio.event
@@ -28,9 +29,11 @@ def write(sid, data):
 
 async def receive(port: serial.Serial, coro: Awaitable):
     try:
-        await sio.sleep(1)
         line_reader = LineReader(port)
         while True:
+            if not sio.connected:
+                await sio.sleep(0.1)
+                continue
             try:
                 line = line_reader.readline().decode('utf-8').strip('\n')
                 if '^' in line:
