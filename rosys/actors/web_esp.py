@@ -4,6 +4,11 @@ from ..world.world import World
 
 
 class WebEsp(Esp):
+    '''Remote connection to the Robot Brains Esp.
+
+    This makes it possible to keep developing on your fast computer 
+    while communicating with the hardware componens connected to a physical Robot Brain.
+    '''
     interval: float = 0.01
 
     def __init__(self, world: World):
