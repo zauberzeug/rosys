@@ -69,6 +69,12 @@ public:
 
         if (this->state == HOMING and this->is_home_active())
         {
+            this->move(0, this->moveSpeed);
+            this->state = HOME;
+        }
+
+        if (this->state == HOME and !this->is_home_active())
+        {
             this->stop();
         }
 
