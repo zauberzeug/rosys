@@ -15,7 +15,7 @@ def create_esp(world: World) -> Esp:
     except:
         pass
     try:
-        return WebEsp()
+        return WebEsp(world)
     except:
         log.exception('could not create web esp')
         pass

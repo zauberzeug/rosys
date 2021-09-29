@@ -6,7 +6,7 @@ from ..world.world import World
 class WebEsp(Esp):
     interval: float = 0.01
 
-    def __init__(self):
+    def __init__(self, world: World):
         super().__init__()
         self.host = 'ws://192.168.43.1:80'
         # let's try to establish a connection to the esp proxy synchronously...
@@ -21,7 +21,7 @@ class WebEsp(Esp):
 
         @self.sio.event
         def read(data):
-            self.log.info(f'received "{data}"')
+            self.parse(data + '\n', world)
 
     async def step(self, world: World):
         if not self.sio.connected:

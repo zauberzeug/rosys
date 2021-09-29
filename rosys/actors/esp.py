@@ -1,8 +1,8 @@
-import asyncio
-
-from justpy.justpy import create_component_file_list
-from rosys import task_logger
 import time
+from operator import ixor
+from functools import reduce
+from rosys import task_logger
+from rosys.world.world import World
 from ..world.hardware import HardwareGroup
 from .actor import Actor
 
@@ -32,3 +32,38 @@ class Esp(Actor):
         await self.send_async('+set esp.ready=1')
         await self.send_async('+set esp.24v=1')
         await self.send_async('esp restart')
+
+    def parse(self, messages: str, world: World):
+        '''Parses the messages received from esp messages and writes the data into the world.
+        Note: an incomplete message at the end is not parsed but returend to be completed later.'''
+
+        millis = None
+        while '\n' in messages:
+            line, messages = messages.split('\n', 1)
+            if line.startswith("\x1b[0;32m"):
+                self.log.warning(line)
+                continue  # NOTE: ignore green log messages
+            if '^' in line:
+                line, checksum = line.split('^')
+                if reduce(ixor, map(ord, line)) != int(checksum):
+                    self.log.warning('Checksum failed')
+                    continue
+            if not line.startswith("esp "):
+                self.log.warning(line)
+                continue  # NOTE: ignore all messages but esp status
+            try:
+                words = line.split()[1:]
+                millis = float(words.pop(0))
+                if world.robot.clock_offset is None:
+                    continue
+                world.robot.hardware_time = millis / 1000 + world.robot.clock_offset
+                for group in world.robot.hardware:
+                    if group.output:
+                        group.parse(words, world)
+            except (IndexError, ValueError):
+                self.log.warning(f'Error parsing esp message "{line}"')
+
+        if millis is not None:
+            world.robot.clock_offset = world.time - millis / 1000
+
+        return messages
