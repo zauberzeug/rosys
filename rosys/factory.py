@@ -13,10 +13,11 @@ def create_esp(world: World) -> Esp:
     try:
         return SerialEsp()
     except:
+        log.warning('could not create serial esp')
         pass
     try:
         return WebEsp(world)
     except:
-        log.exception('could not create web esp')
+        log.warning('could not create web esp')
         pass
     return MockedEsp(world)

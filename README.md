@@ -31,7 +31,7 @@ By using VS Code Remote Containers you can continue development as if you are us
 Unfortunately the Jetson hardware is much much slower than your own machine.
 With large code base this can result in long restart times after you change some code (30 sec or more).
 
-By launching the [esp_proxy.py](https://github.com/zauberzeug/rosys/blob/main/controller/esp_proxy.py) on the robot you can keep developing on your computer but sending and receiving hardware commands from the Robot Brain through the network.
+By launching [`sudo ./controller/esp_proxy.py`](https://github.com/zauberzeug/rosys/blob/main/controller/esp_proxy.py) on the Robot Brain you can keep developing on your computer while beeing connected to the hardware via WiFi.
 When the runtime is initalized it will first try to find the ESP32 of the Robot Brain locally.
 If this does not work, it tries to reach the Robot Brain via the local WiFi connection.
 Only if this also fails it will fallback on a simulated hardware system.
