@@ -73,6 +73,11 @@ public:
             this->state = HOME;
         }
 
+        if (this->state == HOME and !this->is_home_active())
+        {
+            this->stop();
+        }
+
         Module::loop();
     }
 
