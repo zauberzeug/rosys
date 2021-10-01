@@ -19,6 +19,8 @@ private:
     float tolerance = 0.005;
     float moveSpeed = INFINITY;
     float homeSpeed = -0.1;
+    float homePos = 0.0;
+    float currentLimit = 10.0;
     float mPerTick = 0.01;
     float heartbeatTimeout = 0.0;
 
@@ -66,17 +68,6 @@ public:
         }
 
         this->can->send(this->can_id + 0x009, 0, 0, 0, 0, 0, 0, 0, 0, true);
-
-        if (this->state == HOMING and this->is_home_active())
-        {
-            this->move(0, this->moveSpeed);
-            this->state = HOME;
-        }
-
-        if (this->state == HOME and !this->is_home_active())
-        {
-            this->stop();
-        }
 
         Module::loop();
     }
@@ -151,9 +142,15 @@ public:
         {
             float tick;
             std::memcpy(&tick, data, 4);
-            if (this->is_home_active())
+            if (this->is_home_active() and this->state == HOMING)
             {
                 this->tickOffset = tick;
+                this->move(homePos, this->moveSpeed);
+                this->state = HOME;
+            }
+            else if (this->state == HOME and !this->is_home_active())
+            {
+                this->stop();
             }
             this->position = (tick - this->tickOffset) * this->mPerTick;
         }
@@ -181,6 +178,14 @@ public:
         {
             homeSpeed = atof(value.c_str());
         }
+        else if (key == "homePos")
+        {
+            homePos = atof(value.c_str());
+        }
+        else if (key == "currentLimit")
+        {
+            currentLimit = atof(value.c_str());
+        }
         else if (key == "mPerTick")
         {
             mPerTick = atof(value.c_str());
@@ -202,7 +207,8 @@ public:
         uint8_t vel_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         float vel = fabs(speed / this->mPerTick);
         std::memcpy(vel_data, &vel, 4);
-        this->can->send(this->can_id + 0x00f, vel_data); // "Set Velocity Limit"
+        std::memcpy(vel_data + 4, &this->currentLimit, 4);
+        this->can->send(this->can_id + 0x00f, vel_data); // "Set Limits"
 
         uint8_t pos_data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
         float tick = std::max(std::min(target, maxPos), minPos) / this->mPerTick + this->tickOffset;
@@ -234,6 +240,8 @@ public:
 
     void home()
     {
+        if (this->is_home_active()) return;
+
         this->setMode(8, 2, 1); // AXIS_STATE_CLOSED_LOOP_CONTROL, CONTROL_MODE_VELOCITY_CONTROL, INPUT_MODE_PASSTHROUGH
 
         uint8_t data[8] = {0, 0, 0, 0, 0, 0, 0, 0};
