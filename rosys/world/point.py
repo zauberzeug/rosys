@@ -49,9 +49,3 @@ class Point(BaseModel):
 
     def __truediv__(self, factor):
         return Point(x=self.x / factor, y=self.y / factor)
-
-    def __sub__(self, other: Point):
-        return Point(x=self.x - other.x, y=self.y - other.y)
-
-    def __add__(self, other: Point):
-        return Point(x=self.x + other.x, y=self.y + other.y)
