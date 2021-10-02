@@ -1,9 +1,8 @@
 import asyncio
-from .esp import Esp
-from ..world.world import World
 import numpy as np
 from ..world.velocity import Velocity
 from ..world.world import World
+from .esp import Esp
 
 
 class MockedEsp(Esp):
