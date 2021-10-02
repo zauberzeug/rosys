@@ -1,6 +1,7 @@
 import socketio
 from .esp import Esp
 from ..world.world import World
+import socket
 
 
 class WebEsp(Esp):
@@ -39,7 +40,13 @@ class WebEsp(Esp):
         await self.sio.disconnect()
 
     def _try_socketio(self):
-        sio = socketio.Client(reconnection=False)
+
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        host = self.host.replace('ws://', '',).split(':')
+        s.connect(host)
+        s.shutdown(2)
+
+        sio = socketio.Client(reconnection=False,)
 
         @sio.event
         def connect():
