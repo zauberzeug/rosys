@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pydantic import BaseModel
-import numpy as np
+import math
 
 
 class Point3d(BaseModel):
@@ -13,5 +13,4 @@ class Point3d(BaseModel):
         return (self.x, self.y, self.z)
 
     def distance(self, other: Point3d):
-        squared_dist = np.sum((np.array(self.tuple) - np.array(other.tuple))**2, axis=0)
-        return np.sqrt(squared_dist)
+        return math.sqrt((other.x - self.x)**2 + (other.y - self.y)**2 + (other.z - self.z)**2)
