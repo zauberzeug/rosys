@@ -55,13 +55,14 @@ class Runtime:
     def with_cameras(self) -> Runtime:
         if self.world.mode == Mode.REAL:
             self.actors += [CameraScanner(), CameraDownloader()]
+            self.detector = Detector()
         else:
             self.actors += [CameraSimulator()]
+            self.detector = DetectorSimulator()
 
         self.camera_projector = CameraProjector()
         self.camera_linker = CameraLinker()
         self.tracker = Tracker()
-        self.detector = Detector() if self.world.mode == Mode.REAL else DetectorSimulator()
         self.robot_locator = RobotLocator()
         self.actors += [
             self.camera_projector,
