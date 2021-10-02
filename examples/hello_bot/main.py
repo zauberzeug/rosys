@@ -29,14 +29,14 @@ with ui.card():
             ui.timer(0.05, robot.update)
         Joystick(size=50, color='blue', steerer=runtime.steerer)
 
-    ui.button('configure esp', on_click=lambda: runtime.esp.configure(world.robot.hardware))
-    ui.button('restart rosys', on_click=lambda: os.utime('main.py'))
+    with ui.row():
+        def play(_):
+            runtime.automator.replace(drive_square(world, runtime.esp))
+            runtime.resume()
 
-    def play(_):
-        runtime.automator.replace(drive_square(world, runtime.esp))
-        runtime.resume()
-
-    ui.button('drive square', on_click=play)
+        ui.button('drive square', on_click=play).props('icon=play_arrow')
+        ui.button('configure esp', on_click=lambda: runtime.esp.configure(world.robot.hardware)).props('outline')
+        ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
 ui.on_startup(runtime.run())
 ui.on_shutdown(runtime.stop())
