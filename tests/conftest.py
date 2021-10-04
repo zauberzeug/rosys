@@ -16,8 +16,7 @@ def runtime() -> Generator:
     runtime = Runtime(World(
         mode=Mode.TEST,
         state=WorldState.RUNNING,
-        robot=Robot(),
-        marker=Marker.four_points(0.24, 0.26, 0.41),
+        robot=Robot(marker=Marker.four_points(0.24, 0.26, 0.41)),
     ))
 
     from tests.helper import set_global_runtime
