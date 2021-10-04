@@ -97,6 +97,14 @@ class Runtime:
         if self.world.mode == Mode.TEST:
             self.tasks.append(task_logger.create_task(self.advance_time(end_time)))
 
+            async def sleep(seconds: float):
+                sleep_end_time = self.world.time + seconds
+                while self.world.time <= min(end_time, sleep_end_time):
+                    await asyncio.sleep(0)
+
+            for a in self.actors:
+                a.sleep = sleep
+
         for actor in self.actors:
             if actor.interval is not None:
                 self.tasks.append(task_logger.create_task(self.repeat(actor, end_time)))
@@ -132,14 +140,9 @@ class Runtime:
                         f'{type(actor).__name__} would be called to frequently ' +
                         f'because it only took {dt*1000:.0f} ms; ' +
                         f'delaying this step for {delay*1000:.0f} ms')
-                    await asyncio.sleep(delay)
+                    await actor.sleep(delay)
 
-            if self.world.mode == Mode.TEST:
-                sleep_end_time = self.world.time + actor.interval
-                while self.world.time <= min(run_end_time, sleep_end_time):
-                    await asyncio.sleep(0)
-            else:
-                await asyncio.sleep(actor.interval - dt)
+            await actor.sleep(actor.interval - dt)
 
     async def advance_time(self, end_time):
         while self.world.time <= end_time:
