@@ -1,8 +1,8 @@
 import time
 from operator import ixor
 from functools import reduce
-from rosys import task_logger
-from rosys.world.world import World
+from .. import task_logger
+from ..world.world import World
 from ..world.hardware import HardwareGroup
 from .actor import Actor
 
