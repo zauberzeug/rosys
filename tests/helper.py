@@ -1,6 +1,9 @@
+from typing import Union
 import pytest
 import numpy as np
 from rosys.runtime import Runtime
+from rosys.world.point import Point
+from rosys.world.point3d import Point3d
 
 global_runtime: Runtime = None
 
@@ -20,3 +23,13 @@ def assert_pose(
 
     if deg is not None:
         assert np.rad2deg(pose.yaw) == pytest.approx(deg, abs=deg_tolerance)
+
+
+def assert_point(actual: Union[Point, Point3d], expected: Union[Point, Point3d]):
+    assert type(actual) == type(expected)
+
+    assert actual.x == pytest.approx(expected.x, abs=0.1)
+    assert actual.y == pytest.approx(expected.y, abs=0.1)
+
+    if type(actual) == Point3d:
+        assert actual.z == pytest.approx(expected.z, abs=0.1)
