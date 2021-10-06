@@ -5,14 +5,15 @@ import time
 import sys
 
 devs = [
+    "/dev/ttyTHS1",
+    "/dev/ttyUSB0",
     "/dev/tty.SLAB_USBtoUART",
     "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0",
-    "/dev/ttyUSB0",
-    "/dev/ttyTHS1",
 ]
 for dev in devs:
     if os.path.exists(dev):
         usb_path = dev
+        print(f"Connecting to {usb_path}")
         break
 else:
     raise Exception("No device found.")

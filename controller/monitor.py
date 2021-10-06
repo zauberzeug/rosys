@@ -70,12 +70,13 @@ async def send():
 
 def serial_connection() -> serial.Serial:
     for usb_path in [
+        "/dev/ttyTHS1",
+        "/dev/ttyUSB0",
         "/dev/tty.SLAB_USBtoUART",
         "/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0",
-        "/dev/ttyUSB0",
-        "/dev/ttyTHS1"
     ]:
         if os.path.exists(usb_path):
+            print(f"Connecting to {usb_path}")
             break
     else:
         raise Exception("No serial port found")
