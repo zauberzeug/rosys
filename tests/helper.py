@@ -31,5 +31,5 @@ def assert_point(actual: Union[Point, Point3d], expected: Union[Point, Point3d])
     assert actual.x == pytest.approx(expected.x, abs=0.1)
     assert actual.y == pytest.approx(expected.y, abs=0.1)
 
-    if type(actual) == Point3d:
+    if type(actual) is Point3d:
         assert actual.z == pytest.approx(expected.z, abs=0.1)
