@@ -41,8 +41,12 @@ class World(BaseModel):
         assert self.mode == Mode.TEST
         self._time = value
 
-    def get_captured_images(self, camera: Camera):
+    def get_captured_images(self, camera: Camera) -> Image:
         return [i for i in self.images if i.mac == camera.mac and i.id in self.image_data]
 
     def get_camera(self, image: Image):
         return self.cameras.get(image.mac)
+
+    def sees_robot(self, camera: Camera):
+        latest = [i for i in self.get_captured_images(camera) if i.time > self.time - 1]
+        return any([i.marker_points for i in latest])
