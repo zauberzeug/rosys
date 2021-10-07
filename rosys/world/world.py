@@ -46,7 +46,3 @@ class World(BaseModel):
 
     def get_camera(self, image: Image):
         return self.cameras.get(image.mac)
-
-    def sees_robot(self, camera: Camera):
-        latest = [i for i in self.get_captured_images(camera) if i.time > self.time - 1]
-        return any([i.marker_points for i in latest])
