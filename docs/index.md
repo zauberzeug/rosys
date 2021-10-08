@@ -5,13 +5,23 @@ RoSys is an easy to use robot system based on modern web technologies. The purpo
 ## Features
 
 **All Python**
-: business logic is wired in Python while computation heavy tasks are encapsulated through websockets or bindings
+: Business logic is wired in Python while computation heavy tasks are encapsulated through websockets or bindings
 
 **Shared State**
-: all code can access and manipulate the global state -- this does not mean it should. Good software design is still neccessary but much easier if you do not have to perform serialization all the time.
+: All code can access and manipulate the global state -- this does not mean it should. Good software design is still neccessary but much easier if you do not have to perform serialization all the time.
 
 **No Thrading**
 : Thanks to [asyncio](https://docs.python.org/3/library/asyncio.html) parallel code is executed with the guarantee that the state is not modified until reaching the next `await`.
+
+**Web-UI**
+: Most machines need some kind of human interaction. Especially mobile robots benefit from a web based user interface. We made sure it can be operated fully off the grid but can also be proxied through a gateway for remote operation.
+
+**Simulation**
+: Robot hardware often is slower than your development computer.
+Therefore RoSys supports a simulation mode. To get maximal performance the current implementation does not use a physics engine.
+
+**Testing**
+: You can use pytest to write full integration tests. It is based on the above described simulation mode and accelerates the time for fast execution.
 
 !!! note
 
