@@ -5,3 +5,4 @@ __pycache__/
 detector/
 *.env
 *.swp
+site/
