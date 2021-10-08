@@ -17,8 +17,9 @@ RoSys is an easy to use robot system based on modern web technologies. The purpo
 : Most machines need some kind of human interaction. Especially mobile robots benefit from a web based user interface. We made sure it can be operated fully off the grid but can also be proxied through a gateway for remote operation.
 
 **Simulation**
-: Robot hardware often is slower than your development computer.
-Therefore RoSys supports a simulation mode. To get maximal performance the current implementation does not use a physics engine.
+: Robot hardware is often slower than your development computer.
+Therefore RoSys supports a simulation mode.
+To get maximal performance the current implementation does not use a physics engine.
 
 **Testing**
 : You can use pytest to write full integration tests. It is based on the above described simulation mode and accelerates the time for fast execution.
