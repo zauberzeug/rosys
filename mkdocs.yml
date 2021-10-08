@@ -1,0 +1,17 @@
+site_name: RoSys
+site_url: https://rosys.io/
+nav:
+  - Home: index.md
+  - Development: development.md
+repo_url: https://github.com/zauberzeug/rosys
+edit_uri: edit/main/docs/
+theme:
+  name: material
+  font:
+    text: Source Sans Pro
+extra_css:
+  - stylesheets/extra.css
+markdown_extensions:
+  - toc:
+      permalink: True
+  - admonition
