@@ -23,7 +23,7 @@ class World(BaseModel):
     _time: float = PrivateAttr(default_factory=time.time)
     robot: Robot
     cameras: dict[str, Camera] = {}
-    tracking: Union[bool, list[str]] = False
+    tracking: bool = False
     download_queue: list[str] = []
     upload: Upload = Upload()
     images: list[Image] = []
