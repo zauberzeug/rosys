@@ -142,16 +142,6 @@ class Runtime:
             except (CancelledError, GeneratorExit):
                 return
 
-    async def advance_time(self, seconds, dt=0.01):
-
-        if not self.tasks:
-            await self.run()
-
-        end_time = self.world.time + seconds
-        while self.world.time <= end_time:
-            self.world.set_time(self.world.time + dt)
-            await asyncio.sleep(0)
-
     def get_params(self, func: Union[Callable, Awaitable]):
         params = []
         for name, type_ in get_type_hints(func).items():

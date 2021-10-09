@@ -22,7 +22,20 @@ async def runtime() -> Generator:
 
     from tests.helper import set_global_runtime
     set_global_runtime(runtime)
+
     runtime.world.set_time(0)  # NOTE in tests we start at zero for better reading
+
+    async def forward(seconds, dt=0.01):
+        # NOTE we start runtime here because this makes it easy in the tests to prepare it beforehand
+        if not runtime.tasks:
+            await runtime.run()
+
+        end_time = runtime.world.time + seconds
+        while runtime.world.time <= end_time:
+            runtime.world.set_time(runtime.world.time + dt)
+            await asyncio.sleep(0)
+
+    runtime.forward = forward
 
     async def sleep(seconds: float):
         sleep_end_time = runtime.world.time + seconds
