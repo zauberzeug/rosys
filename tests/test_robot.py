@@ -19,7 +19,7 @@ async def test_drive(runtime: Runtime):
     await runtime.advance_time(seconds=1.0)
     assert_pose(1.0, 0, deg=0)
     await runtime.esp.drive(0.0, np.deg2rad(90))
-    await runtime.advance_time(seconds=0.5)
+    await runtime.advance_time(seconds=0.5, step_length=0.005)
     assert_pose(1.0, 0, deg=45)
 
     await runtime.esp.drive(1.0, 0.0)
