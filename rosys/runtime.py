@@ -1,4 +1,5 @@
 from __future__ import annotations
+from asyncio.exceptions import CancelledError
 from rosys import factory
 import sys
 import asyncio
@@ -28,10 +29,12 @@ class Runtime:
 
     def __init__(self, world: World, persistence: Optional[Persistence] = None):
         self.world = world
+        self.tasks = []
         self.log = logging.getLogger(__name__)
 
-        self.persistence = persistence or Persistence(world)
-        self.persistence.restore()
+        if self.world.mode != Mode.TEST:
+            self.persistence = persistence or Persistence(world)
+            self.persistence.restore()
 
         self.esp = factory.create_esp(world)
         self.log.info(f'selected {type(self.esp).__name__}')
@@ -91,28 +94,18 @@ class Runtime:
         self.world.state = WorldState.RUNNING
 
     async def run(self, seconds: float = sys.maxsize):
-        self.tasks = []
+        if self.tasks:
+            raise Exception('run should be only executed once')
+
         end_time = self.world.time + seconds
-
-        if self.world.mode == Mode.TEST:
-            self.tasks.append(task_logger.create_task(self.advance_time(end_time)))
-
-            async def sleep(seconds: float):
-                sleep_end_time = self.world.time + seconds
-                while self.world.time <= min(end_time, sleep_end_time):
-                    await asyncio.sleep(0)
-
-            for a in self.actors:
-                a.sleep = sleep
 
         for actor in self.actors:
             if actor.interval is not None:
                 self.tasks.append(task_logger.create_task(self.repeat(actor, end_time)))
 
-        await asyncio.gather(*self.tasks)
-
     async def stop(self):
-        self.persistence.backup()
+        if self.world.mode != Mode.TEST:
+            self.persistence.backup()
         [t.cancel() for t in self.tasks]
         await asyncio.gather(*[task_logger.create_task(a.tear_down()) for a in self.actors])
 
@@ -131,22 +124,32 @@ class Runtime:
                 await actor.step(*params)
                 await self.call_follow_ups(actor.step)
                 dt = self.world.time - start
+            except (CancelledError, GeneratorExit):
+                return
             except:
                 dt = self.world.time - start
-                print_stacktrace()
+                self.log.exception(f'error in {actor}')
                 if actor.interval == 0 and dt < 0.1:
                     delay = 0.1 - dt
                     self.log.warning(
-                        f'{type(actor).__name__} would be called to frequently ' +
+                        f'{actor} would be called to frequently ' +
                         f'because it only took {dt*1000:.0f} ms; ' +
                         f'delaying this step for {delay*1000:.0f} ms')
                     await actor.sleep(delay)
 
-            await actor.sleep(actor.interval - dt)
+            try:
+                await actor.sleep(actor.interval - dt)
+            except (CancelledError, GeneratorExit):
+                return
 
-    async def advance_time(self, end_time):
+    async def advance_time(self, seconds):
+
+        if not self.tasks:
+            await self.run()
+
+        end_time = self.world.time + seconds
         while self.world.time <= end_time:
-            self.world.set_time(self.world.time + 0.01)
+            self.world.set_time(self.world.time + 0.005)
             await asyncio.sleep(0)
 
     def get_params(self, func: Union[Callable, Awaitable]):
