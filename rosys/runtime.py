@@ -65,7 +65,7 @@ class Runtime:
 
         self.camera_projector = CameraProjector()
         self.camera_linker = CameraLinker()
-        self.tracker = Tracker()
+        self.tracker = Tracker(self.world)
         self.robot_locator = RobotLocator()
         self.actors += [
             self.camera_projector,

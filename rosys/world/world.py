@@ -24,6 +24,7 @@ class World(BaseModel):
     robot: Robot
     cameras: dict[str, Camera] = {}
     tracking: bool = False
+    robot_locator_cam: str = None
     download_queue: list[str] = []
     upload: Upload = Upload()
     images: list[Image] = []
