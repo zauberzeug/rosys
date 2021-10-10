@@ -35,12 +35,12 @@ def add_camera(x: int = 0, y: int = 0, z: int = 0):
 
 def block_sight(camera: Camera) -> None:
     detector = global_runtime.get_actor(DetectorSimulator)
-    detector.simulate_sight(global_runtime.world, camera.mac, blocked=True)
+    detector.simulate_sight(camera.mac, blocked=True)
 
 
 def unblock_sight(camera: Camera) -> None:
     detector = global_runtime.get_actor(DetectorSimulator)
-    detector.simulate_sight(global_runtime.world, camera.mac, blocked=False)
+    detector.simulate_sight(camera.mac, blocked=False)
 
 
 def assert_pose(
