@@ -42,7 +42,7 @@ class World(BaseModel):
         assert self.mode == Mode.TEST
         self._time = value
 
-    def get_captured_images(self, camera: Camera) -> Image:
+    def get_captured_images(self, camera: Camera) -> list[Image]:
         return [i for i in self.images if i.mac == camera.mac and i.id in self.image_data]
 
     def get_camera(self, image: Image):
