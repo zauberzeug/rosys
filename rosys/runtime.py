@@ -4,7 +4,7 @@ from rosys import factory
 import sys
 import asyncio
 import logging
-from typing import Awaitable, Callable, Optional, Union, get_type_hints
+from typing import Awaitable, Callable, Optional, Type, Union, get_type_hints
 from . import task_logger
 from .persistence import Persistence
 from .actors.actor import Actor
@@ -141,6 +141,9 @@ class Runtime:
                 await actor.sleep(actor.interval - dt)
             except (CancelledError, GeneratorExit):
                 return
+
+    def get_actor(self, _type: Type):
+        return next((a for a in self.actors if type(a) is _type), None)
 
     def get_params(self, func: Union[Callable, Awaitable]):
         params = []

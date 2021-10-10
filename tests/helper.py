@@ -2,8 +2,10 @@ from typing import Union
 import pytest
 import numpy as np
 from rosys.actors.camera_simulator import CameraSimulator
+from rosys.actors.detector_simulator import DetectorSimulator
 from rosys.runtime import Runtime
 from rosys.automations.drive_path import drive_to
+from rosys.world.camera import Camera
 from rosys.world.point import Point
 from rosys.world.point3d import Point3d
 
@@ -29,6 +31,16 @@ def add_camera(x: int = 0, y: int = 0, z: int = 0):
     camera_count += 1
     global_runtime.world.cameras[camera.mac] = camera
     return camera
+
+
+def block_sight(camera: Camera) -> None:
+    detector = global_runtime.get_actor(DetectorSimulator)
+    detector.simulate_sight(global_runtime.world, camera.mac, blocked=True)
+
+
+def unblock_sight(camera: Camera) -> None:
+    detector = global_runtime.get_actor(DetectorSimulator)
+    detector.simulate_sight(global_runtime.world, camera.mac, blocked=False)
 
 
 def assert_pose(
