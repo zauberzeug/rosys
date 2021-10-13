@@ -1,15 +1,14 @@
-from rosys.world.upload import Upload
-from rosys.world.obstacle import Obstacle
 from pydantic import BaseModel, PrivateAttr
-from typing import Union
 from enum import Enum
 import time
 from .camera import Camera
 from .image import Image
 from .link import Link
 from .mode import Mode
+from .obstacle import Obstacle
 from .path_segment import PathSegment
 from .robot import Robot
+from .upload import Upload
 
 
 class WorldState(Enum):
@@ -45,5 +44,5 @@ class World(BaseModel):
     def get_captured_images(self, camera: Camera) -> list[Image]:
         return [i for i in self.images if i.mac == camera.mac and i.id in self.image_data]
 
-    def get_camera(self, image: Image):
+    def get_camera(self, image: Image) -> Camera:
         return self.cameras.get(image.mac)

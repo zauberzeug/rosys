@@ -51,4 +51,4 @@ class Point(BaseModel):
         return Point(x=self.x / factor, y=self.y / factor)
 
     def __str__(self) -> str:
-        return f'Point({round(self.x,2)}, {round(self.y,2)})'
+        return f'Point({round(self.x, 2)}, {round(self.y, 2)})'

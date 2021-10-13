@@ -16,4 +16,4 @@ class Point3d(BaseModel):
         return math.sqrt((other.x - self.x)**2 + (other.y - self.y)**2 + (other.z - self.z)**2)
 
     def __str__(self) -> str:
-        return f'Point({round(self.x,2)}, {round(self.y,2)}, {round(self.z,2)})'
+        return f'Point({round(self.x, 2)}, {round(self.y, 2)}, {round(self.z, 2)})'
