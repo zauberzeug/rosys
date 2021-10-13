@@ -66,4 +66,4 @@ def assert_point(actual: Union[Point, Point3d], expected: Union[Point, Point3d])
 
 
 def automate_drive_to(point: Point):
-    global_runtime.automator.add(drive_to(global_runtime.world, global_runtime.esp, point))
+    global_runtime.automator.replace(drive_to(global_runtime.world, global_runtime.esp, point))
