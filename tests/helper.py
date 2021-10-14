@@ -22,10 +22,10 @@ def set_global_runtime(runtime: Runtime):
 
 def enable_tracking():
     global_runtime.world.tracking = True
-    return add_camera(z=2)
+    return add_camera()
 
 
-def add_camera(x: int = 0, y: int = 0, z: int = 0):
+def add_camera(x: float = 0, y: float = 0, z: float = 2):
     global camera_count
     camera = CameraSimulator.create_perfect_camera(x=x, y=y, z=z, mac=f'00:0{camera_count}')
     camera_count += 1
@@ -65,5 +65,5 @@ def assert_point(actual: Union[Point, Point3d], expected: Union[Point, Point3d])
         assert actual.z == pytest.approx(expected.z, abs=0.1)
 
 
-def automate_drive_to(point: Point):
-    global_runtime.automator.replace(drive_to(global_runtime.world, global_runtime.esp, point))
+def automate_drive_to(x: float, y: float):
+    global_runtime.automator.replace(drive_to(global_runtime.world, global_runtime.esp, Point(x=x, y=y)))
