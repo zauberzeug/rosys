@@ -5,27 +5,28 @@ The purpose is simlar to [ROS](https://www.ros.org/).
 
 ## Features
 
-**All Python:**
-Business logic is wired in Python while computation-heavy tasks are encapsulated through websockets or bindings.
+**All Python**
+: Business logic is wired in Python while computation-heavy tasks are encapsulated through websockets or bindings.
 
-**Shared State:**
-All code can access and manipulate the global state -- this does not mean it should. Good software design is still neccessary but much easier if you do not have to perform serialization all the time.
+**Shared State**
+: All code can access and manipulate the global state -- this does not mean it should.
+Good software design is still neccessary but much easier if you do not have to perform serialization all the time.
 
-**No Threading:**
-Thanks to [asyncio](https://docs.python.org/3/library/asyncio.html) parallel code is executed with the guarantee that the state is not modified until reaching the next `await`.
+**No Threading**
+: Thanks to [asyncio](https://docs.python.org/3/library/asyncio.html) parallel code is executed with the guarantee that the state is not modified until reaching the next `await`.
 
-**Web-UI:**
-Most machines need some kind of human interaction.
+**Web-UI**
+: Most machines need some kind of human interaction.
 Especially mobile robots benefit from a web-based user interface.
 We made sure it can be operated fully off the grid but can also be proxied through a gateway for remote operation.
 
-**Simulation:**
-Robot hardware is often slower than your development computer.
+**Simulation**
+: Robot hardware is often slower than your development computer.
 Therefore RoSys supports a simulation mode.
 To get maximum performance the current implementation does not use a physics engine.
 
-**Testing:**
-You can use pytest to write full integration tests.
+**Testing**
+: You can use pytest to write full integration tests.
 They are based on the above-described simulation mode and accelerate the time for fast execution.
 
 !!! note
