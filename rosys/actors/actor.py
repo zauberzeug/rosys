@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from typing import Callable
 
 
 class Actor:
@@ -18,6 +19,10 @@ class Actor:
     async def sleep(self, seconds: float):
         '''delay execution; in tests this method will be replaced'''
         await asyncio.sleep(seconds)
+
+    async def run_in_executor(self, callback: Callable):
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, callback)
 
     def __str__(self) -> str:
         return type(self).__name__
