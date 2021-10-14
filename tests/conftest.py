@@ -55,15 +55,18 @@ config = {
     'loggers': {
         '': {  # root logger
             'handlers': ['console'],
-            'level': 'WARN'
+            'level': 'WARN',
+            'propagate': False,
         },
         'rosys': {
             'handlers': ['console'],
-            'level': 'DEBUG'
+            'level': 'DEBUG',
+            'propagate': False,
         },
         'rosys.ota': {
             'handlers': ['console'],
-            'level': 'WARN'
+            'level': 'WARN',
+            'propagate': False,
         }
     },
 }
