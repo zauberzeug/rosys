@@ -104,7 +104,7 @@ with ui.row():
     timer = ui.timer(0.5, reload_inputs)
     with ui.column():
         ui.button('Reload inputs', on_click=reload_inputs)
-        ui.checkbox('Auto-reload').bind_value_to(timer.active)
+        ui.checkbox('Auto-reload').bind_value_to(timer, 'active')
 
 message_input = ui.input(placeholder="Send message...", on_change=lambda e: send(e.value))
 
