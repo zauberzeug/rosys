@@ -20,9 +20,9 @@ class Actor:
         '''delay execution; in tests this method will be replaced'''
         await asyncio.sleep(seconds)
 
-    async def run_in_executor(self, callback: Callable):
+    async def run_in_executor(self, callback: Callable, *args: any):
         loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(None, callback)
+        return await loop.run_in_executor(None, callback, *args)
 
     def __str__(self) -> str:
         return type(self).__name__
