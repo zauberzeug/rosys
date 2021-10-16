@@ -30,12 +30,14 @@ class TestRuntime(Runtime):
             await self.run()
 
         end_time = self.world.time + seconds
+        self.log.info(f'-------------------> forwarding to {round(end_time,2)}')
         while self.world.time <= end_time:
             if self.is_time_running:
                 self.world.set_time(self.world.time + dt)
                 await asyncio.sleep(0)
             else:
                 await asyncio.sleep(0.01)
+        self.log.info(f'-------------------> now it\'s {round(self.world.time,2)}')
 
     async def sleep(self, seconds: float):
         sleep_end_time = self.world.time + seconds
