@@ -29,6 +29,8 @@ svgpathtools = "^1.4.1"
 networkx = "^2.6.2"
 scipy = "^1.7.1"
 bacs = "^0.1.0"
+Shapely = "^1.7.1"
+more-itertools = "^8.10.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.1"
