@@ -25,25 +25,39 @@ class PackagePathFilter(logging.Filter):
         return True
 
 
+class WorldTimeFilter(logging.Filter):
+    def filter(self, record):
+        from .helper import global_runtime
+        if global_runtime:
+            #record.worldtime = str(round(global_runtime.world.time, 2))
+            record.worldtime = global_runtime.world.time
+        else:
+            record.worldtime = 0
+        return True
+
+
 config = {
     'version': 1,
     'disable_existing_loggers': True,
     'formatters': {
         'default': {
-            'format': '%(asctime)s.%(msecs)03d [%(levelname)s] %(relativepath)s:%(lineno)d: %(message)s',
+            'format': '%(worldtime).2f [%(levelname)s] %(relativepath)s:%(lineno)d: %(message)s',
             'datefmt': '%Y-%m-%d %H:%M:%S',
         },
     },
     'filters': {
         'package_path_filter': {
             '()': PackagePathFilter,
+        },
+        'world_time_filter': {
+            '()': WorldTimeFilter,
         }
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'default',
-            'filters': ['package_path_filter'],
+            'filters': ['package_path_filter', 'world_time_filter'],
             'level': 'INFO',
             'stream': 'ext://sys.stdout'
         },
