@@ -28,12 +28,16 @@ class Pose(BaseModel):
             [0, 0, 1],
         ])
 
+    @property
+    def yaw_deg(self):
+        return np.rad2deg(self.yaw)
+
     @staticmethod
     def from_matrix(M, time: float = 0):
         return Pose(x=M[0, -1], y=M[1, -1], yaw=np.arctan2(M[1, 0], M[0, 0]), time=time)
 
     def __str__(self):
-        return '%.3f, %.3f, %.1f deg' % (self.x, self.y, np.rad2deg(self.yaw))
+        return '%.3f, %.3f, %.1f deg' % (self.x, self.y, self.yaw_deg)
 
     def distance(self, other: Pose) -> float:
         return self.point.distance(other.point)

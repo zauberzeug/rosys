@@ -25,14 +25,16 @@ class PackagePathFilter(logging.Filter):
         return True
 
 
-class WorldTimeFilter(logging.Filter):
+class RuntimeFilter(logging.Filter):
     def filter(self, record):
         from .helper import global_runtime
         if global_runtime:
-            #record.worldtime = str(round(global_runtime.world.time, 2))
             record.worldtime = global_runtime.world.time
+            pose = global_runtime.world.robot.prediction
+            record.robotpose = '% 1.2f, % 1.2f, % 1.2f' % (pose.x, pose.y, pose.yaw_deg)
         else:
             record.worldtime = 0
+            record.robotpose = 'no robot pose yet'
         return True
 
 
@@ -41,7 +43,7 @@ config = {
     'disable_existing_loggers': True,
     'formatters': {
         'default': {
-            'format': '%(worldtime).2f [%(levelname)s] %(relativepath)s:%(lineno)d: %(message)s',
+            'format': '%(worldtime).2f [%(levelname)s] %(robotpose)s %(relativepath)s:%(lineno)d: %(message)s',
             'datefmt': '%Y-%m-%d %H:%M:%S',
         },
     },
@@ -49,15 +51,15 @@ config = {
         'package_path_filter': {
             '()': PackagePathFilter,
         },
-        'world_time_filter': {
-            '()': WorldTimeFilter,
+        'runtime_filter': {
+            '()': RuntimeFilter,
         }
     },
     'handlers': {
         'console': {
             'class': 'logging.StreamHandler',
             'formatter': 'default',
-            'filters': ['package_path_filter', 'world_time_filter'],
+            'filters': ['package_path_filter', 'runtime_filter'],
             'level': 'INFO',
             'stream': 'ext://sys.stdout'
         },
@@ -65,7 +67,7 @@ config = {
     'loggers': {
         '': {  # root logger
             'handlers': ['console'],
-            'level': 'WARN',
+            'level': 'INFO',
             'propagate': False,
         },
         'rosys': {
