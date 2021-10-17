@@ -2,7 +2,7 @@
 
 RoSys is an easy-to-use robot system based on modern web technologies.
 The purpose is very simlar to [ROS](https://www.ros.org/).
-But RoSys is completely built on existing web technologies and always uses the latest version of Python.
+RoSys is completely built on existing web technologies and focus on mobile robotics.
 
 ## Features
 
@@ -10,16 +10,19 @@ But RoSys is completely built on existing web technologies and always uses the l
 : Business logic is wired in Python while computation-heavy tasks are encapsulated through websockets or bindings.
 
 **Shared State**
-: All code can access and manipulate the global state -- this does not mean it should.
+: All code can access and manipulate a shared, typesafe global state -- this does not mean it should.
 Good software design is still neccessary.
 But it is much easier to do if you do not have to perform serialization all the time.
 
 **No Threading**
-: Thanks to [asyncio](https://docs.python.org/3/library/asyncio.html) you can execute parallel code without locks and mutex mechanisms.
+: Thanks to [asyncio](https://docs.python.org/3/library/asyncio.html) you can write the business logic without locks and mutex mechanisms.
+The running system feels like everything is happening in parallel. But each code block is executed one after another through an event queue and yields execution as soon as it waits for I/O or heavy computation.
+Which is still executed in threads to not block the rest of the business logic.
 
 **Web UI**
 : Most machines need some kind of human interaction.
-We made sure they can be operated fully off the grid but can also be proxied through a gateway for remote operation.
+We made sure your robot can be operated fully off the grid with any web browser by incororporating [NiceGUI](https://nicegui.io/).
+It's also possible to proxy the user interface through a gateway for remote operation.
 
 **Simulation**
 : Robot hardware is often slower than your own computer.
@@ -44,9 +47,15 @@ python3 -m pip install rosys
 
 ## Docker
 
-While the above commands may work for you, it is often easier to run RoSys inside a docker container.
-There are some specialities needed to start RoSys in different environments.
-To simplify the usage we wrapped this in a script `./docker.sh`.
+While the above installation commands work in a well setup environment, it is often easier to run RoSys inside a docker container.
+Especially on NVidia Jetson devices with their old 18.04 LTS Ubuntu.
+
+### Launching
+
+There are some specialities needed to start RoSys in different environments (Mac, Linux, Jetson, ...).
+To simplify the usage we wrapped this in a script called `./docker.sh`.
+
+### Hardware access
 
 You can configure the dockerized system by putting these variables into the `/.env` file:
 
