@@ -27,7 +27,7 @@ class TestRuntime(Runtime):
     async def forward(self, seconds, dt=0.01):
         # NOTE we start runtime here because this makes it easy in the tests to prepare it beforehand
         if not self.tasks:
-            await self.run()
+            await self.start()
 
         end_time = self.world.time + seconds
         self.log.info(f'-------------------> forwarding to {round(end_time,2)}')

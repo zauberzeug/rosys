@@ -95,7 +95,7 @@ with ui.card():
         ui.button('clear odrive', on_click=lambda: runtime.esp.send('can request 018')).props('outline')
         ui.button('restart odrive', on_click=lambda: runtime.esp.send('can request 016')).props('outline')
 
-ui.on_startup(runtime.run())
+ui.on_startup(runtime.start())
 ui.on_shutdown(runtime.stop())
 
 app.routes.insert(0, starlette.routing.Route(

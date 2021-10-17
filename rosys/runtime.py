@@ -93,15 +93,13 @@ class Runtime:
     def resume(self):
         self.world.state = WorldState.RUNNING
 
-    async def run(self, seconds: float = sys.maxsize):
+    async def start(self):
         if self.tasks:
             raise Exception('run should be only executed once')
 
-        end_time = self.world.time + seconds
-
         for actor in self.actors:
             if actor.interval is not None:
-                self.tasks.append(task_logger.create_task(self.repeat(actor, end_time)))
+                self.tasks.append(task_logger.create_task(self.repeat(actor)))
 
     async def stop(self):
         if self.world.mode != Mode.TEST:
@@ -115,10 +113,10 @@ class Runtime:
             await follow_up(*params) if asyncio.iscoroutine(follow_up) else follow_up(*params)
             await self.call_follow_ups(follow_up)
 
-    async def repeat(self, actor: Actor, run_end_time: float):
+    async def repeat(self, actor: Actor):
         params = self.get_params(actor.step)
 
-        while self.world.time < run_end_time:
+        while True:
             start = self.world.time
             try:
                 await actor.step(*params)

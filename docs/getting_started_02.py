@@ -15,7 +15,7 @@ with ui.scene() as scene:
     robot = RobotObject(world.robot)
     ui.timer(0.05, robot.update)
 
-ui.on_startup(runtime.run())
+ui.on_startup(runtime.start())
 ui.on_shutdown(runtime.stop())
 
 ui.run(title="RoSys", port=8080)
