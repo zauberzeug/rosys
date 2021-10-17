@@ -4,6 +4,7 @@ nav:
   - index.md
   - installation.md
   - getting_started.md
+  - basic_concepts.md
   - development.md
 repo_url: https://github.com/zauberzeug/rosys
 edit_uri: edit/main/docs/
