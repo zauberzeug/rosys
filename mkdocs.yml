@@ -1,10 +1,12 @@
 site_name: RoSys
 site_url: https://rosys.io/
 nav:
-  - index.md
+  - Features: "index.md"
   - installation.md
   - getting_started.md
   - basic_concepts.md
+  - user_interface.md
+  - safety.md
   - development.md
 repo_url: https://github.com/zauberzeug/rosys
 edit_uri: edit/main/docs/

@@ -10,7 +10,7 @@ RoSys is completely built on existing web technologies and focus on mobile robot
 : Business logic is wired in Python while computation-heavy tasks are encapsulated through websockets or bindings.
 
 **Shared State**
-: All code can access and manipulate a shared, typesafe global state -- this does not mean it should.
+: All code can access and manipulate a shared and typesafe state -- this does not mean it should.
 Good software design is still neccessary.
 But it is much easier to do if you do not have to perform serialization all the time.
 
