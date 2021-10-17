@@ -1,25 +1,16 @@
 # Development
 
-## Remote Development
-
-You can develop quite a lot of functionality with a simulated robot on your own computer.
-But there comes a time when you want to run your code on a real robot.
-Normally you will therefore start the container on the Robot Brain and connect via Wifi to the web interface.
-By using VS Code Remote Containers you can continue development as if you are using your own computer.
-Unfortunately robot hardware (for example NVidia Jetson) is much much slower than your own machine.
-With a large code base this can result in long restart times after you change some code (30 seconds or more).
-
-By launching [`sudo ./controller/esp_proxy.py`](https://github.com/zauberzeug/rosys/blob/main/controller/esp_proxy.py) on the Robot Brain you can keep developing on your computer while beeing connected to the hardware via WiFi.
-When the runtime is initalized it will first try to find the ESP32 of the Robot Brain locally.
-If this does not work, it tries to reach the Robot Brain via the local WiFi connection.
-Only if this also fails, it will fallback on a simulated hardware system.
-
 ## Continuous Build
 
-We build with Drone.
-Run it locally with
+We run our continous integration with GitHub Actions.
+For each commit the pytests are executed.
 
-    drone starlark .drone.star && drone exec --trusted --exclude slack  .drone.yml
+## Releases
+
+To release a new version create a new version on GitHub and describe the changes.
+A GitHub Action performs the following steps:
+If the pytests are successful a poetry build and deployment to [pypi](https://pypi.org/project/rosys/) is issued.
+Also a multi-arch docker image is build and pushed to [Docker Hub](https://hub.docker.com/r/zauberzeug/rosys).
 
 ## Profiling
 

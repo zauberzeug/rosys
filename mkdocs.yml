@@ -1,8 +1,10 @@
 site_name: RoSys
 site_url: https://rosys.io/
 nav:
-  - Home: index.md
-  - Development: development.md
+  - index.md
+  - installation.md
+  - getting_started.md
+  - development.md
 repo_url: https://github.com/zauberzeug/rosys
 edit_uri: edit/main/docs/
 theme:
@@ -16,3 +18,9 @@ markdown_extensions:
       permalink: True
   - admonition
   - def_list
+  - mdx_include:
+      base_path: docs
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.snippets

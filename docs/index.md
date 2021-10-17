@@ -37,27 +37,3 @@ It is based on the above-described simulation mode and accelerates the robot's t
 
     Currently RoSys is mostly tested and developed on the [Zauberzeug Robot Brain](https://www.zauberzeug.com/product-robot-brain.html) which uses [Lizard](https://lizard.dev/) for communication with motors, sensors and other peripherals.
     But the software architecture of RoSys also allows you to write your own actors if you prefer another industrial PC or setup.
-
-## Installation
-
-```bash
-sudo apt-get install libcurl4-openssl-dev libssl-dev # required for pycurl
-python3 -m pip install rosys
-```
-
-## Docker
-
-While the above installation commands work in a well setup environment, it is often easier to run RoSys inside a docker container.
-Especially on NVidia Jetson devices with their old 18.04 LTS Ubuntu.
-
-### Launching
-
-There are some specialities needed to start RoSys in different environments (Mac, Linux, Jetson, ...).
-To simplify the usage we wrapped this in a script called `./docker.sh`.
-
-### Hardware access
-
-You can configure the dockerized system by putting these variables into the `/.env` file:
-
-- `ESP_SERIAL=/dev/ttyTHS1`: path to the ESP device; default is /dev/null to be able to start RoSys anywhere
-- ...
