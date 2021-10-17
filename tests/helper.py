@@ -56,14 +56,14 @@ def assert_pose(
         assert np.rad2deg(pose.yaw) == pytest.approx(deg, abs=deg_tolerance)
 
 
-def assert_point(actual: Union[Point, Point3d], expected: Union[Point, Point3d]):
+def assert_point(actual: Union[Point, Point3d], expected: Union[Point, Point3d], tolerance=0.1):
     assert type(actual) == type(expected)
 
-    assert actual.x == pytest.approx(expected.x, abs=0.1)
-    assert actual.y == pytest.approx(expected.y, abs=0.1)
+    assert actual.x == pytest.approx(expected.x, abs=tolerance)
+    assert actual.y == pytest.approx(expected.y, abs=tolerance)
 
     if type(actual) is Point3d:
-        assert actual.z == pytest.approx(expected.z, abs=0.1)
+        assert actual.z == pytest.approx(expected.z, abs=tolerance)
 
 
 def automate_drive_to(x: float, y: float):
