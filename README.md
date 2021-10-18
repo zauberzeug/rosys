@@ -1,10 +1,10 @@
 # RoSys - The Robot System
 
-RoSys provides an easy to use robot system.
-It's purpose is simlar to [ROS](https://www.ros.org/).
-But RoSys is fully based on modern web technologies and focus on mobile robotics.
+RoSys provides an easy-to-use robot system.
+Its purpose is simlar to [ROS](https://www.ros.org/).
+But RoSys is fully based on modern web technologies and focusses on mobile robotics.
 
-See full documentation at https://rosys.io/
+See full documentation at https://rosys.io/.
 
 ## Features
 
@@ -18,13 +18,14 @@ But it is much easier to do if you do not have to perform serialization all the 
 
 **No Threading**
 : Thanks to [asyncio](https://docs.python.org/3/library/asyncio.html) you can write the business logic without locks and mutex mechanisms.
-The running system feels like everything is happening in parallel. But each code block is executed one after another through an event queue and yields execution as soon as it waits for I/O or heavy computation.
-Which is still executed in threads to not block the rest of the business logic.
+The running system feels like everything is happening in parallel.
+But each code block is executed one after another through an event queue and yields execution as soon as it waits for I/O or heavy computation.
+The latter is still executed in threads to not block the rest of the business logic.
 
 **Web UI**
 : Most machines need some kind of human interaction.
-We made sure your robot can be operated fully off the grid with any web browser by incororporating [NiceGUI](https://nicegui.io/).
-It's also possible to proxy the user interface through a gateway for remote operation.
+We made sure your robot can be operated fully off the grid with any web browser by incorporating [NiceGUI](https://nicegui.io/).
+It is also possible to proxy the user interface through a gateway for remote operation.
 
 **Simulation**
 : Robot hardware is often slower than your own computer.
