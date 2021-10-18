@@ -1,7 +1,7 @@
 site_name: RoSys
 site_url: https://rosys.io/
 nav:
-  - Features: "../README.md"
+  - Features: "features.md"
   - installation.md
   - getting_started.md
   - basic_concepts.md
