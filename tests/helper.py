@@ -1,3 +1,4 @@
+import logging
 from typing import Union
 import pytest
 import numpy as np
@@ -35,11 +36,13 @@ def add_camera(x: float = 0, y: float = 0, z: float = 2):
 
 
 def block_sight(camera: Camera) -> None:
+    logging.info(f'blocking sight to {camera}')
     detector = global_runtime.get_actor(DetectorSimulator)
     detector.simulate_sight(camera.mac, blocked=True)
 
 
 def unblock_sight(camera: Camera) -> None:
+    logging.info(f'unblocking sight to {camera}')
     detector = global_runtime.get_actor(DetectorSimulator)
     detector.simulate_sight(camera.mac, blocked=False)
 
