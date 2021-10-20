@@ -31,3 +31,14 @@ class Rotation(BaseModel):
             np.arctan2(-self.R[2][0], np.sqrt(self.R[2][1]**2 + self.R[2][2]**2)),
             np.arctan2(self.R[1][0], self.R[0][0]),
         )
+
+    @property
+    def total_angle(self) -> float:
+        # https://en.wikipedia.org/wiki/Rotation_matrix#Determining_the_angle
+        return np.arccos((np.trace(self.R) - 1) / 2)
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
+    def __str__(self) -> str:
+        return '%6.1f %6.1f %6.1f' % tuple(np.round(np.rad2deg(self.euler), 2))
