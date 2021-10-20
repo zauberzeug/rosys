@@ -154,7 +154,7 @@ python-versions = "*"
 
 [[package]]
 name = "bacs"
-version = "0.1.0"
+version = "0.1.3"
 description = "Bundle Adjustment For Camera Systems"
 category = "main"
 optional = false
@@ -1127,7 +1127,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9 <3.10"
-content-hash = "49460d1db9dd496b010d160e7ede67406db0918ba6662743dbe6c3dd4aecb8a0"
+content-hash = "dbdf9eb788a072398e115e1cfd310f7448934126301988c4bf22be1b28e87764"
 
 [metadata.files]
 addict = [
@@ -1224,8 +1224,8 @@ backcall = [
     {file = "backcall-0.2.0.tar.gz", hash = "sha256:5cbdbf27be5e7cfadb448baf0aa95508f91f2bbc6c6437cd9cd06e2a4c215e1e"},
 ]
 bacs = [
-    {file = "bacs-0.1.0-py3-none-any.whl", hash = "sha256:358cd560045452ed4a28fd4fdf7dea3c06844158ec484a64ee9c972c2a3b214f"},
-    {file = "bacs-0.1.0.tar.gz", hash = "sha256:d519c7e265b623f729c54b6c06d1db6a9ce3d93ffd36811eeb71d713be173a89"},
+    {file = "bacs-0.1.3-py3-none-any.whl", hash = "sha256:8458118a3c05648fd17de20d18dd6b50dc4b5122ccd1b5278f82c8655456722b"},
+    {file = "bacs-0.1.3.tar.gz", hash = "sha256:654a9c8ee4a047da483c41c117b776ec899577cc48bbe8db53e6e56ad507d529"},
 ]
 bidict = [
     {file = "bidict-0.21.2-py2.py3-none-any.whl", hash = "sha256:929d056e8d0d9b17ceda20ba5b24ac388e2a4d39802b87f9f4d3f45ecba070bf"},
