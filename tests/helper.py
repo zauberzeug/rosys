@@ -21,7 +21,7 @@ def set_global_runtime(runtime: Runtime):
     camera_count = 0
 
 
-def enable_tracking():
+def configure_tracking_with_one_camera():
     global_runtime.world.tracking = True
     DetectorSimulator.noisy_image_points = False
     return add_camera()
