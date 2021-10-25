@@ -27,3 +27,7 @@ class Automator(Actor):
                 coro.send(None)
             except StopIteration:
                 self.routines.remove(coro)
+            except:
+                self.log.exception(f'paused and cleared automations due to exception in {coro}')
+                world.state = WorldState.PAUSED
+                self.routines.clear()

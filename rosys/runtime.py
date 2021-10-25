@@ -39,7 +39,7 @@ class Runtime:
         self.esp = factory.create_esp(world)
         self.log.info(f'selected {type(self.esp).__name__}')
         self.odometer = Odometer()
-        self.steerer = Steerer()
+        self.steerer = Steerer(world)
         self.automator = Automator()
 
         self.actors = [

@@ -15,16 +15,6 @@ class SerialEsp(Esp):
         self.aioserial = None
         self.remainder = ''
 
-    def pause(self):
-        if not self.is_open():
-            return
-        self.aioserial.close()
-
-    def resume(self):
-        if not self.is_open():
-            return
-        self.aioserial.open()
-
     async def step(self, world: World):
         if not self.is_open():
             return
@@ -40,9 +30,12 @@ class SerialEsp(Esp):
     async def send_async(self, line):
         if not self.is_open():
             return
-
         line = f'{line}^{reduce(ixor, map(ord, line))}\n'
-        await self.aioserial.write_async(line.encode())
+        try:
+            # HACK writing synchronous because the async way contains a lock which does not work with our pause/resume of automations
+            self.aioserial.write(line.encode())
+        finally:
+            await self.sleep(0)  # make sure we let other coroutines do their work on the event loop
 
     def is_open(self):
         if self.aioserial is None:
