@@ -1,3 +1,4 @@
+import asyncio
 from enum import Enum
 from rosys.actors.esp import Esp
 from rosys.actors.actor import Actor
@@ -14,6 +15,7 @@ class Steerer(Actor):
     interval: float = 0.05
 
     def __init__(self):
+        super().__init__()
         self.state = State.IDLE
         self.orientation = None
         self.linear_speed = 0
@@ -40,6 +42,7 @@ class Steerer(Actor):
         self.state = State.STOPPING
 
     async def step(self, esp: Esp):
+        loop = asyncio.get_running_loop()
         if self.state == State.STEERING:
             await esp.drive(self.linear_speed, self.angular_speed)
 
