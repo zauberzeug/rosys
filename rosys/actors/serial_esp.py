@@ -11,7 +11,7 @@ class SerialEsp(Esp):
 
     def __init__(self):
         super().__init__()
-
+        aioserial.AioSerial('/dev/esp', baudrate=115200)  # NOTE try to open serial port (factory needs this)
         self.aioserial = None
         self.remainder = ''
 
