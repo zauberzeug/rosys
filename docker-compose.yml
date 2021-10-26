@@ -6,6 +6,7 @@ services:
       - ./:/rosys
       - ./:/app
       - ~/.ssh:/root/.ssh
+      - ~/.rosys:/root/.rosys
       - ~/.gitconfig:/root/.gitconfig
       - ~/.git-credentials:/root/.git-credentials
       # hide some unnecessary large folders...
