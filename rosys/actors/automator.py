@@ -1,3 +1,4 @@
+import asyncio
 from typing import Coroutine
 from .actor import Actor
 from ..world.world import World, WorldState
@@ -6,7 +7,8 @@ from ..world.world import World, WorldState
 class Automator(Actor):
     interval: float = 0.1
 
-    def __init__(self):
+    def __init__(self) -> None:
+        super().__init__()
         self.routines = []
 
     def add(self, coro: Coroutine):
@@ -25,3 +27,7 @@ class Automator(Actor):
                 coro.send(None)
             except StopIteration:
                 self.routines.remove(coro)
+            except:
+                self.log.exception(f'paused and cleared automations due to exception in {coro}')
+                world.state = WorldState.PAUSED
+                self.routines.clear()

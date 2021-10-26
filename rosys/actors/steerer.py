@@ -1,6 +1,8 @@
+import asyncio
 from enum import Enum
 from rosys.actors.esp import Esp
 from rosys.actors.actor import Actor
+from rosys.world.world import World, WorldState
 
 
 class State(Enum):
@@ -13,14 +15,22 @@ class State(Enum):
 class Steerer(Actor):
     interval: float = 0.05
 
-    def __init__(self):
+    def __init__(self, world: World):
+        super().__init__()
+        self.world = world
+        self.world_state = None
         self.state = State.IDLE
         self.orientation = None
         self.linear_speed = 0
         self.angular_speed = 0
 
     def start(self):
+        self.log.info('start steering')
         self.state = State.INITIALIZING
+        if self.world.state == WorldState.RUNNING:
+            self.log.info('pausing automations')
+            self.world_state = self.world.state
+            self.world.state = WorldState.PAUSED
 
     def update(self, x: float, y: float):
         if self.state == State.INITIALIZING:
@@ -36,6 +46,7 @@ class Steerer(Actor):
             self.angular_speed = -x * self.orientation
 
     def stop(self):
+        self.log.info('stop steering')
         self.orientation = None
         self.state = State.STOPPING
 
@@ -45,6 +56,9 @@ class Steerer(Actor):
 
         if self.state == State.STOPPING:
             await esp.drive(0, 0)
+            if self.world_state is not None:
+                self.world.state = self.world_state
+                self.world_state = None
             self.state = State.IDLE
 
     def __str__(self) -> str:
