@@ -6,11 +6,12 @@ from os.path import expanduser
 import subprocess
 import platform
 from pathlib import Path
+from random import randrange
 
 log = logging.getLogger('rosys.wifi')
 
 
-def check_internet_connection():
+def has_internet():
     """ Returns True if there's a connection """
 
     IP_ADDRESS_LIST = [
@@ -39,33 +40,28 @@ def check_internet_connection():
 
 def nmcli(cmd: str) -> None:
     cmd = 'sudo nmcli connection' + cmd
-    if platform.system() == 'Linux':
-        subprocess.Popen(cmd, shell=True)
-    else:
-        log.info(cmd)
+    subprocess.Popen(cmd, shell=True)
 
 
 def apply_wifi_configurations(dir: str, interface: str = 'wlan0') -> None:
     for network in os.scandir(dir):
+        with open(network.path) as f:
+            password = f.read()
+
+        if platform.system() != 'Linux':
+            log.info(f'configured network: {network.name}:{password}')
+            continue
+
         ssid = network.name
         nmcli(f'down "{ssid}"')
         nmcli(f'del "{ssid}"')
-        with open(network.path) as f:
-            password = f.read()
-            if password:
-                password = f'wifi-sec.key-mgmt wpa-psk wifi-sec.psk "{password}"'
+        if password:
+            password = f'wifi-sec.key-mgmt wpa-psk wifi-sec.psk "{password}"'
         nmcli(f'add type wifi ifname {interface} con-name "{ssid}" ssid "{ssid}" {password}')
         nmcli(f'modify "{ssid}" connection.interface-name {interface} ipv6.method "ignore" wifi.mac-address ""')
 
 
 def create_wifi(ui: Ui):
-
-    def show_wifi():
-        connected = check_internet_connection()
-        message = f'Robot is {"" if connected else "not "}connected to the internet.'
-        status.set_text(message)
-        log.info(message)
-        dialog.open()
 
     def add(ssid: str, password: str):
         log.info(f'adding {ssid}, {password}')
@@ -77,6 +73,15 @@ def create_wifi(ui: Ui):
         dialog.close()
         apply_wifi_configurations(wifi_configs)
 
+    def update_wifi_status():
+        if has_internet():
+            wifi_button.style('color:green', remove='color')
+            status.set_text(f'Robot is connected to the internet.')
+        else:
+            wifi_button.style('color:red', remove='color')
+            status.set_text(f'Robot is not connected to the internet.')
+        return False  # do not refresh UI
+
     with ui.dialog() as dialog:
         with ui.card():
             status = ui.label('status label')
@@ -86,4 +91,5 @@ def create_wifi(ui: Ui):
                 ui.button('Add', on_click=lambda: add(ssid.value, password.value))
                 ui.button('Close', on_click=dialog.close)
 
-    ui.button(on_click=show_wifi).props('icon=network_wifi')
+    wifi_button = ui.button(on_click=dialog.open).props('icon=network_wifi')
+    ui.timer(5, callback=update_wifi_status)
