@@ -1,12 +1,8 @@
 from nicegui.ui import Ui
 import logging
 import socket
-import os
 from os.path import expanduser
-import subprocess
-import platform
 from pathlib import Path
-from random import randrange
 
 log = logging.getLogger('rosys.wifi')
 
@@ -38,40 +34,16 @@ def has_internet():
         return False
 
 
-def nmcli(cmd: str) -> None:
-    cmd = 'sudo nmcli connection' + cmd
-    subprocess.Popen(cmd, shell=True)
-
-
-def apply_wifi_configurations(dir: str, interface: str = 'wlan0') -> None:
-    for network in os.scandir(dir):
-        with open(network.path) as f:
-            password = f.read()
-
-        if platform.system() != 'Linux':
-            log.info(f'configured network: {network.name}:{password}')
-            continue
-
-        ssid = network.name
-        nmcli(f'down "{ssid}"')
-        nmcli(f'del "{ssid}"')
-        if password:
-            password = f'wifi-sec.key-mgmt wpa-psk wifi-sec.psk "{password}"'
-        nmcli(f'add type wifi ifname {interface} con-name "{ssid}" ssid "{ssid}" {password}')
-        nmcli(f'modify "{ssid}" connection.interface-name {interface} ipv6.method "ignore" wifi.mac-address ""')
-
-
 def create_wifi(ui: Ui):
 
     def add(ssid: str, password: str):
         log.info(f'adding {ssid}, {password}')
         wifi_configs = expanduser(f'~/.rosys/wifi')
         Path(wifi_configs).mkdir(parents=True, exist_ok=True)
-
+        # NOTE a deamon on the host system must watch the .rosys/wifi dir and reload the configuration with nmcli or similar
         with open(f'{wifi_configs}/{ssid}', 'w') as f:
             f.write(password)
         dialog.close()
-        apply_wifi_configurations(wifi_configs)
 
     def update_wifi_status():
         if has_internet():
