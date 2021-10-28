@@ -8,18 +8,9 @@ from typing import Awaitable, Callable, Optional, Type, Union, get_type_hints
 from . import task_logger
 from .persistence import Persistence
 from .actors.actor import Actor
-from .actors.detector import Detector
-from .actors.detector_simulator import DetectorSimulator
 from .actors.odometer import Odometer
 from .actors.steerer import Steerer
-from .actors.robot_locator import RobotLocator
 from .actors.automator import Automator
-from .actors.camera_scanner import CameraScanner
-from .actors.camera_downloader import CameraDownloader
-from .actors.camera_linker import CameraLinker
-from .actors.camera_simulator import CameraSimulator
-from .actors.camera_projector import CameraProjector
-from .actors.tracker import Tracker
 from .world.world import World, WorldState
 from .world.mode import Mode
 from .helpers import print_stacktrace
@@ -54,33 +45,6 @@ class Runtime:
                 self.odometer.handle_velocity,
             ],
         }
-
-    def with_cameras(self) -> Runtime:
-        if self.world.mode == Mode.REAL:
-            self.actors += [CameraScanner(), CameraDownloader()]
-            self.detector = Detector()
-        else:
-            self.actors += [CameraSimulator()]
-            self.detector = DetectorSimulator()
-
-        self.camera_projector = CameraProjector()
-        self.camera_linker = CameraLinker()
-        self.tracker = Tracker(self.world)
-        self.robot_locator = RobotLocator()
-        self.actors += [
-            self.camera_projector,
-            self.camera_linker,
-            self.tracker,
-            self.detector,
-            self.robot_locator,
-        ]
-
-        self.follow_ups[self.detector.step] = [
-            self.robot_locator.find_robot,
-            self.odometer.handle_detection,
-        ]
-
-        return self
 
     def with_actors(self, *actors: list[Actor]):
         self.actors += actors

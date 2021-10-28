@@ -15,8 +15,6 @@ services:
       - /rosys/controller
     devices:
       - "${ESP_SERIAL:-/dev/null}:/dev/esp"
-    environment:
-      - USE_CAMS=${USE_CAMS:-false}
     build:
       context: ./
       args:

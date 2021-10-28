@@ -31,17 +31,12 @@ then
     exit
 fi
 
-# sourcing .env file to get configuration (see README.md)
-. .env || echo "you can provide an .env file to configure RoSys"
-
 compose_args="-p rosys"
-[ "$USE_CAMS" = true ] && compose_args="$compose_args --profile cams"
 
 os=`uname`
 case $os in
     Linux)
-        [ -f /etc/nv_tegra_release ] && compose_args="$compose_args -f docker-compose.yml -f docker-compose.jetson.yml"
-        ( nvidia-smi > /dev/null 2>&1 ) && compose_args="$compose_args -f docker-compose.yml -f docker-compose.nvidia.yml"
+        compose_args="$compose_args -f docker-compose.yml -f docker-compose.linux.yml"
         ;;
     Darwin)
         compose_args="$compose_args -f docker-compose.yml -f docker-compose.mac.yml"
@@ -57,14 +52,12 @@ cmd=$1
 cmd_args=${@:2}
 case $cmd in
     b | build)
-        docker-compose $compose_args pull detector
     	docker-compose $compose_args build $cmd_args
         ;;
     u | up)
         docker-compose $compose_args up -d $cmd_args
         ;;
     U | buildup | upbuild | upb | bup | ub)
-        docker-compose $compose_args pull detector
         docker-compose $compose_args up -d --build $cmd_args
         ;;
     d | down)

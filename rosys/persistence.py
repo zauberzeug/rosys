@@ -1,11 +1,9 @@
 import logging
 import json
 import os
-from .world.camera import Camera
 from .world.obstacle import Obstacle
 from .world.path_segment import PathSegment
 from .world.robot import RobotParameters
-from .world.link import Link
 from .world.world import World
 
 
@@ -16,20 +14,15 @@ class Persistence:
         self.filepath = os.path.expanduser(filepath)
 
     def dump(self) -> dict:
-        exclude = {'projection', 'synchronization'}
         return {
-            'cameras': {mac: camera.dict(exclude=exclude) for mac, camera in self.world.cameras.items()},
             'path': [path_segment.dict() for path_segment in self.world.path],
             'robot': {'parameters': self.world.robot.parameters.dict()},
-            'links': [link.dict() for link in self.world.links],
             'obstacles': {id: obstacle.dict() for id, obstacle in self.world.obstacles.items()},
         }
 
     def load(self, dict: dict):
-        self.world.cameras = {mac: Camera.parse_obj(camera) for mac, camera in dict['cameras'].items()}
         self.world.path = [PathSegment.parse_obj(path_segment) for path_segment in dict['path']]
         self.world.robot.parameters = RobotParameters.parse_obj(dict['robot']['parameters'])
-        self.world.links = [Link.parse_obj(link) for link in dict['links']]
         self.world.obstacles = {id: Obstacle.parse_obj(obstacle) for id, obstacle in dict['obstacles'].items()}
 
     def backup(self):
