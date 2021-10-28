@@ -42,7 +42,7 @@ jobs:
         if: steps.should_notify.outputs.should_send_message == 'yes'
         uses: Gamesight/slack-workflow-status@master
         with:
-          repo_token: ${{ secrets.GIT_HUB_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
           slack_webhook_url: ${{ secrets.SLACK_ROBOTICS_CI_WEBHOOK }}
           channel: "robotik-ci"
           name: "RoSys"
