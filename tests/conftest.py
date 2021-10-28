@@ -4,7 +4,7 @@ import logging
 import logging.config
 import os
 import sys
-from .runtime import TestRuntime
+from rosys.test.runtime import TestRuntime
 
 import icecream
 icecream.install()

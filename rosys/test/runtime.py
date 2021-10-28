@@ -9,14 +9,14 @@ from rosys.world.world import World, WorldState
 class TestRuntime(Runtime):
     is_time_running: bool = True
 
-    def __init__(self, robot: Robot = None):
-        if robot is None:
-            robot = Robot()
-        world = World(mode=Mode.TEST, state=WorldState.RUNNING, robot=robot)
+    def __init__(self, world: World = None):
+        if world is None:
+            world = World(mode=Mode.TEST, state=WorldState.RUNNING, robot=Robot())
         super().__init__(world)
+        ic('rosys test runtime', id(world))
         self.world.set_time(0)  # NOTE in tests we start at zero for better reading
 
-        from tests.helper import set_global_runtime  # NOTE import here to avoid PytestAssertRewriteWarning
+        from .helper import set_global_runtime  # NOTE import here to avoid PytestAssertRewriteWarning
         set_global_runtime(self)
 
         for actor in self.actors:

@@ -8,7 +8,6 @@ from rosys.world.point import Point
 from rosys.world.point3d import Point3d
 
 global_runtime: Runtime = None
-camera_count = 0
 
 
 def set_global_runtime(runtime: Runtime):
