@@ -10,9 +10,6 @@ RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-
     ln -s /opt/poetry/bin/poetry && \
     poetry config virtualenvs.create false
 
-# for legacy ota server
-RUN python3 -m pip install flask 
-
 ADD ./rosys /rosys/rosys
 WORKDIR /rosys
 COPY pyproject.toml poetry.lock ota_server.py LICENSE README.md rosys.code-workspace ./
@@ -20,9 +17,6 @@ RUN poetry config experimental.new-installer false
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install -vvv --no-root ; else poetry install -vvv --no-root --no-dev ; fi"
-
-# Copy z_cam_biniaries folder if it exsits (hence the *)
-ADD ./z_cam_binaries* /root/.rosys/z_cam_binaries
 
 ENV PYTHONPATH "${PYTHONPATH}:/rosys"
 
