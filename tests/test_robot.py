@@ -6,7 +6,7 @@ from rosys.automations.square import drive_square
 from rosys.automations.spline import drive_spline
 from rosys.world.pose import Pose
 from rosys.world.spline import Spline
-from tests.helper import assert_pose
+from rosys.test.helper import assert_pose
 
 
 @pytest.mark.asyncio

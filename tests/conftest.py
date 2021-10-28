@@ -27,7 +27,7 @@ class PackagePathFilter(logging.Filter):
 
 class RuntimeFilter(logging.Filter):
     def filter(self, record):
-        from .helper import global_runtime
+        from rosys.test.helper import global_runtime
         if global_runtime:
             record.worldtime = global_runtime.world.time
             pose = global_runtime.world.robot.prediction
