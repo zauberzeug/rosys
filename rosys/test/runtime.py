@@ -13,19 +13,17 @@ class TestRuntime(Runtime):
         if world is None:
             world = World(mode=Mode.TEST, state=WorldState.RUNNING, robot=Robot())
         super().__init__(world)
-        ic('rosys test runtime', id(world))
         self.world.set_time(0)  # NOTE in tests we start at zero for better reading
 
         from .helper import set_global_runtime  # NOTE import here to avoid PytestAssertRewriteWarning
         set_global_runtime(self)
 
-        for actor in self.actors:
-            actor.sleep = self.sleep
-            actor.run_in_executor = self.run_in_executor
-
     async def forward(self, seconds, dt=0.01):
         # NOTE we start runtime here because this makes it easy in the tests to prepare it beforehand
         if not self.tasks:
+            for actor in self.actors:
+                actor.sleep = self.sleep
+                actor.run_in_executor = self.run_in_executor
             await self.start()
 
         end_time = self.world.time + seconds
