@@ -1,9 +1,8 @@
 import aioserial
 from functools import reduce
 from operator import ixor
-from ..world.world import World
+from ..world.world import World, WorldState
 from .esp import Esp
-import asyncio
 
 
 class SerialEsp(Esp):
@@ -14,13 +13,23 @@ class SerialEsp(Esp):
         aioserial.AioSerial('/dev/esp', baudrate=115200)  # NOTE try to open serial port (factory needs this)
         self.aioserial = None
         self.remainder = ''
+        self.last_step = 0
 
     async def step(self, world: World):
+        dt = world.time - self.last_step
+        if dt > 0.1:
+            self.log.error('esp serial communication can not be guaranteed')
+            world.state = WorldState.PAUSED
+        elif dt > 0.05:
+            self.log.warn('esp serial communication is slow')
+        self.last_step = world.time
+
         if not self.is_open():
             return
 
         try:
             self.remainder += self.aioserial.read_all().decode()
+
         except:
             self.log.warning('Error reading from serial')
             return
