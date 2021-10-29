@@ -3,6 +3,7 @@ from datetime import datetime
 from nicegui import ui
 from rosys import Runtime, World, Robot, Mode
 from rosys.ui import Joystick, RobotObject
+from rosys.ui.keyboard_control import KeyboardControl
 
 world = World(mode=Mode.SIMULATION, robot=Robot())
 runtime = Runtime(world)
@@ -14,6 +15,8 @@ Joystick(size=50, color='blue', steerer=runtime.steerer)
 with ui.scene() as scene:
     robot = RobotObject(world.robot)
     ui.timer(0.05, robot.update)
+
+KeyboardControl(ui, runtime.steerer)
 
 ui.on_startup(runtime.start())
 ui.on_shutdown(runtime.stop())
