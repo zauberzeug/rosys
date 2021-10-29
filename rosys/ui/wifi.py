@@ -3,6 +3,7 @@ import logging
 import socket
 from os.path import expanduser
 from pathlib import Path
+import asyncio
 
 log = logging.getLogger('rosys.wifi')
 
@@ -45,8 +46,8 @@ def create_wifi(ui: Ui):
             f.write(password)
         dialog.close()
 
-    def update_wifi_status():
-        if has_internet():
+    async def update_wifi_status():
+        if await asyncio.get_event_loop().run_in_executor(None, has_internet):
             wifi_button.style('color:green', remove='color')
             status.set_text(f'Robot is connected to the internet.')
         else:
