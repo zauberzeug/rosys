@@ -17,11 +17,11 @@ class SerialEsp(Esp):
 
     async def step(self, world: World):
         dt = world.time - self.last_step
-        if dt > 0.1:
-            self.log.error('esp serial communication can not be guaranteed')
+        if dt > 1:
+            self.log.error('esp serial communication can not be guaranteed (>= 1 sec); aborting automations')
             world.state = WorldState.PAUSED
-        elif dt > 0.05:
-            self.log.warn('esp serial communication is slow')
+        elif dt > 0.1:
+            self.log.warn('esp serial communication is slow (>= 100 ms)')
         self.last_step = world.time
 
         if not self.is_open():
