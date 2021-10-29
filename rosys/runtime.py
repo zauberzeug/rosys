@@ -66,6 +66,7 @@ class Runtime:
                 self.tasks.append(task_logger.create_task(self.repeat(actor)))
 
     async def stop(self):
+        await self.esp.drive(0, 0)
         if self.world.mode != Mode.TEST:
             self.persistence.backup()
         [t.cancel() for t in self.tasks]
