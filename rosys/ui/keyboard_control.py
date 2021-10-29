@@ -7,7 +7,7 @@ class KeyboardControl():
     def __init__(self, ui, steerer: Steerer) -> None:
         self.steerer = steerer
         self.ui = ui
-        self.ui.hotkey(self.handle_keys)
+        self.ui.keyboard(self.handle_keys)
         self.direction = Point(x=0, y=0)
         self.speed = 2
 
