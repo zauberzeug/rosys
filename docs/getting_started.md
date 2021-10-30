@@ -30,9 +30,9 @@ There are also other possibilities of steering the robot like a [Joystick](user_
 
 ### 3D Scene
 
-As it is common for groups of UI elements in NiceGUI, a 3d scene is created by using the `with` context.
-Every command "inside" is applied to this scene. First a 3d reperesentation of the robot is created (`rosys.ui.robot_object()`). Second an `ui.timer` ensures the position is updated every 50 ms.
-An `ui.label` is used to explain the possible user interaction. Note: the lable is on the same intendation level as the `ui.scene` object, not within. See [NiceGUI](https://nicegui.io) for an complete API reference.
+As it is common for groups of UI elements in NiceGUI, a 3d scene is created by using context through Python's `with`-Statement.
+Every command "inside" is applied the created scene. Here a 3d reperesentation of the robot is created (`rosys.ui.robot_object()`). Then the `ui.timer` ensures it's position is updated every 50 ms.
+An `ui.label` is used afterwards to explain the keyboard interaction. Note: the lable is on the same intendation level as the `ui.scene` object, not within. See [NiceGUI](https://nicegui.io) for an complete API reference.
 
 ### Start
 
