@@ -3,7 +3,7 @@ from nicegui import ui
 import rosys
 import rosys.ui
 
-# wireing
+# setup
 runtime = rosys.Runtime()
 rosys.ui.configure(ui, runtime)
 
