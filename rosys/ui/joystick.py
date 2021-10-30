@@ -4,9 +4,10 @@ from nicegui.elements.joystick import Joystick as NiceGuiJoystick
 
 class Joystick(NiceGuiJoystick):
 
-    def __init__(self, *, steerer: Steerer, **options):
-        self.steerer = steerer
+    # these will be set by rosys.ui.configure
+    steerer = None
 
+    def __init__(self, **options):
         super().__init__(on_start=self.handle_start, on_move=self.handle_move, on_end=self.handle_end, **options)
 
     def handle_start(self, _):

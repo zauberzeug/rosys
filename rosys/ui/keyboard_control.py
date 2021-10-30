@@ -5,9 +5,11 @@ from rosys.actors.steerer import Steerer
 
 class KeyboardControl():
 
-    def __init__(self, ui: Ui, *, steerer: Steerer) -> None:
-        self.steerer = steerer
-        self.ui = ui
+    # these will be set by rosys.ui.configure
+    steerer = None
+    ui = None
+
+    def __init__(self) -> None:
         self.ui.keyboard(self.handle_keys)
         self.direction = Point(x=0, y=0)
         self.speed = 2
