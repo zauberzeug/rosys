@@ -29,7 +29,7 @@ class Automator(Actor):
                 self.routines.remove(coro)
             except:
                 self.log.exception(f'paused and cleared automations due to exception in {coro}')
-                world.state = WorldState.PAUSED
                 self.routines.clear()
+                await self.pause_automations(because='an exception occured in an automation')
         if not self.routines:
-            world.state = WorldState.PAUSED
+            await self.pause_automations(because='all automations have completed')

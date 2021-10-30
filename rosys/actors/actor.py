@@ -24,5 +24,8 @@ class Actor:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, callback, *args)
 
+    async def pause_automations(self, *, because: str):
+        pass  # NOTE the runtime implements this
+
     def __str__(self) -> str:
         return type(self).__name__

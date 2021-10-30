@@ -49,7 +49,9 @@ class Runtime:
         self.actors += actors
         return self
 
-    async def pause(self):
+    async def pause(self, because: str = None):
+        if because:
+            self.log.info(f'pausing automations because {because}')
         self.world.state = WorldState.PAUSED
         await self.esp.drive(0, 0)
 
@@ -79,6 +81,7 @@ class Runtime:
 
     async def repeat(self, actor: Actor):
         params = self.get_params(actor.step)
+        actor.pause_automations = self.pause  # NOTE injecting the correct implementation
 
         while True:
             start = self.world.time

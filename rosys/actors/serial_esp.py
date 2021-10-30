@@ -18,8 +18,9 @@ class SerialEsp(Esp):
     async def step(self, world: World):
         dt = world.time - self.last_step
         if dt > 1:
-            self.log.error('esp serial communication can not be guaranteed (>= 1 sec); aborting automations')
-            world.state = WorldState.PAUSED
+            msg = 'esp serial communication can not be guaranteed (>= 1 sec)'
+            self.log.error(msg + '; aborting automations')
+            await self.pause_automations(because=msg)
         elif dt > 0.1:
             self.log.warn('esp serial communication is slow (>= 100 ms)')
         self.last_step = world.time
