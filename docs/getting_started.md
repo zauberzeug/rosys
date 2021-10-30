@@ -26,7 +26,7 @@ As you can read up in the ["Basic Concepts" section](basic_concepts.md) RoSys pr
 ### Keyboard Control
 
 By calling `rosys.ui.keyboard_control()` you create a keyboard event listener which will steer the robot.
-There are also other possibilities of steering the robot like a [Joystick](user_interface.md#joystick).
+There are also other possibilities of steering the robot like a [Joystick](user_interface.md#joystick) or [clicking in the 3d scene](user_interface.md#click-handler).
 
 ### 3D Scene
 

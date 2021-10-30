@@ -38,6 +38,8 @@ You can drive the robot by dragging the mouse inside the top left square:
 
 ## 3D Scene
 
+### Robot and Shape
+
 It's often desired to visualize all the informations which the robot has about the world.
 To do so you can create a 3d scene with [NiceGUI](https://nicegui.io).
 RoSys provides an `robot_object` to render and update the robot:
@@ -59,10 +61,13 @@ with ui.scene() as scene:
     ui.timer(0.05, robot.update)
 ```
 
-You can also add a click handler to the 3d scene. Here is a full example example for driving to a point on the ground:
+### Click Handler
+
+You can also pass a click handler to the 3d scene.
+Here is a full example example for driving to a point on the ground by starting the build in automation called `drive_to`:
 
 ```python hl_lines="11 18"
 {!scene_on_click.py!}
 ```
 
-You simply pass a click handler to `ui.scene` and start an Automation which drives to the hit point.
+![Joystick](scene_on_click.png){: style="width:60%"}
