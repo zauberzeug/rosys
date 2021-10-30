@@ -29,3 +29,12 @@ async def test_power(runtime: Runtime):
     await runtime.esp.power(1, 1)
     await runtime.forward(seconds=1.0)
     assert_pose(1, 0, deg=0)
+
+
+@pytest.mark.asyncio
+async def test_stopping_robot_when_runime_stops(runtime: Runtime):
+    await runtime.esp.power(1, 1)
+    await runtime.forward(seconds=1.0)
+    await runtime.stop()
+    assert runtime.esp.linear_velocity == 0
+    assert runtime.esp.angular_velocity == 0
