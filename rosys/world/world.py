@@ -13,7 +13,7 @@ class WorldState(Enum):
 
 
 class World(BaseModel):
-    robot: Robot
+    robot: Robot = Robot()
     mode: Mode = Mode.REAL
     state: WorldState = WorldState.PAUSED
     _time: float = PrivateAttr(default_factory=time.time)

@@ -17,19 +17,19 @@ from .world.mode import Mode
 
 class Runtime:
 
-    def __init__(self, world: World, persistence: Optional[Persistence] = None):
-        self.world = world
+    def __init__(self, world: World = None, persistence: Optional[Persistence] = None):
+        self.world = world or World()
         self.tasks = []
         self.log = logging.getLogger(__name__)
 
         if self.world.mode != Mode.TEST:
-            self.persistence = persistence or Persistence(world)
+            self.persistence = persistence or Persistence(self.world)
             self.persistence.restore()
 
-        self.esp = factory.create_esp(world)
+        self.esp = factory.create_esp(self.world)
         self.log.info(f'selected {type(self.esp).__name__}')
         self.odometer = Odometer()
-        self.steerer = Steerer(world)
+        self.steerer = Steerer(self.world)
         self.automator = Automator()
 
         self.actors = [

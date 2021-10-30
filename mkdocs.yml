@@ -1,7 +1,7 @@
 site_name: RoSys
 site_url: https://rosys.io/
 nav:
-  - Features: "features.md"
+  - Features: "index.md"
   - installation.md
   - getting_started.md
   - basic_concepts.md
@@ -27,3 +27,4 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.superfences
   - pymdownx.snippets
+  - attr_list

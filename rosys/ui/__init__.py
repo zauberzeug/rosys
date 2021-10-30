@@ -11,3 +11,4 @@ def configure(ui: Ui, runtime: Runtime):
     joystick.steerer = runtime.steerer
     keyboard_control.ui = ui
     keyboard_control.steerer = runtime.steerer
+    robot_object.robot = runtime.world.robot

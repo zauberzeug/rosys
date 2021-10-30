@@ -5,19 +5,22 @@ from rosys.world.robot import Robot
 
 class RobotObject(Object3D):
 
-    def __init__(self, robot: Robot, *, debug: bool = False):
+    # these will be set by rosys.ui.configure
+    robot = None
+
+    def __init__(self, *, debug: bool = False):
         super().__init__('group')
-        self.robot = robot
         with self:
             with Group() as self.robot_group:
-                outline = list(map(list, robot.shape.outline))
-                self.robot_object = Extrusion(outline, robot.shape.height, wireframe=debug).material('#4488ff', 0.5)
+                outline = list(map(list, self.robot.shape.outline))
+                self.robot_object = Extrusion(outline, self.robot.shape.height, wireframe=debug)
+                self.robot_object.material('#4488ff', 0.5)
                 if debug:
                     Sphere(0.03).material('#4488ff')
-                    Sphere(0.05).material('#4488ff').move(robot.parameters.hook_offset)
+                    Sphere(0.05).material('#4488ff').move(self.robot.parameters.hook_offset)
             with Group() as self.carrot_group:
                 Sphere(0.03).material('#ff8800')
-                Sphere(0.05).material('#ff8800').move(robot.parameters.carrot_offset)
+                Sphere(0.05).material('#ff8800').move(self.robot.parameters.carrot_offset)
         self.update()
 
     def with_stl(self, url: str, *,

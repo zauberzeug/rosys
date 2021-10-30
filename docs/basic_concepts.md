@@ -9,13 +9,25 @@ This makes it easy to persist and restore the full state and simplifies the modu
 ## Actors
 
 Actors encapsulate behavior.
-Each actor should perform a specific task by reading and manipulating the world, for example: communication with a sensor, AI inference, monitoring battery level or similar.
+Each actor performs a specific task by reading and manipulating the world, for example:
+communication with a sensor, AI inference, monitoring battery level or similar.
 Actors can specify a frequency at which they want to get called.
 Alternatively, actors can be chained through `follow_ups`.
-These are helpful for example if one actor fetches an image and another one should process it as soon as it is available.
+This is helpful for example if one actor fetches an image and another one should process it as soon as it is available.
+
+!!! note
+
+    The "robot" is not an Actor but rather represented by an object in the world.
+    Actors like the Odometer or Steerer use and transform these data to update this representation regulary.
+
+## Runtime
+
+The runtime manages the world and all actors.
+It also provides safety functionallity like starting/stopping automations (see below), logging and error handling.
 
 ## Automations
 
-RoSys provides an actor called `runtime.automator` which receives instruction sequences.
-These automations normally contain machine commands followed by conditions which can be awaited.
-For example, there are already built-in automations like steering the robot along a spline.
+RoSys provides an actor which is accessed through `runtime.automator`.
+The Automator can receive instruction sequences which are called automations.
+Normally they contain machine commands followed by conditions which can be awaited before proceeding with the next commands.
+For example, there are already built-in automations for steering the robot along a spline.
