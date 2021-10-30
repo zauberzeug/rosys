@@ -4,21 +4,16 @@ import os
 from uuid import uuid4
 import starlette
 from nicegui import app, ui
+import rosys
 import rosys.ui
 from rosys.actors.pathplanning.planner import Planner
-from rosys.automations.drive_path import drive_path
-from rosys.persistence import Persistence
-from rosys.runtime import Runtime
-from rosys.ui.joystick import Joystick
+from rosys.automations import drive_path
 from rosys.ui.obstacle_object import ObstacleObject
-from rosys.ui.robot_object import RobotObject
 from rosys.ui.path_object import PathObject
-from rosys.world.mode import Mode
 from rosys.world.obstacle import Obstacle
 from rosys.world.path_segment import PathSegment
 from rosys.world.point import Point
 from rosys.world.pose import Pose
-from rosys.world.robot import Robot, RobotShape
 from rosys.world.spline import Spline
 from rosys.world.world import World, WorldState
 from hardware import hardware
@@ -26,10 +21,10 @@ from hardware import hardware
 import icecream
 icecream.install()
 
-shape = RobotShape(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])
-world = World(robot=Robot(hardware=hardware, shape=shape))
+shape = rosys.RobotShape(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])
+world = World(robot=rosys.Robot(hardware=hardware, shape=shape))
 planner = Planner(world)
-runtime = Runtime(world, Persistence(world, '~/.rosys/obstacles/world.json'))
+runtime = rosys.Runtime(world, rosys.Persistence(world, '~/.rosys/obstacles/world.json'))
 rosys.ui.configure(ui, runtime)
 
 rosys.ui.keyboard_control()
@@ -82,7 +77,7 @@ with ui.card():
     with ui.scene(640, 480, on_click=handle_click) as scene:
         robot = rosys.ui.robot_object(debug=True)
         obstacles = ObstacleObject(world.obstacles)
-        path = PathObject(world.path)
+        path = rosys.ui.path_object()
         ui.timer(0.05, robot.update)
 
     with ui.row():

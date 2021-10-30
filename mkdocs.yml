@@ -14,6 +14,8 @@ theme:
   name: material
   font:
     text: Source Sans Pro
+  features:
+    - content.code.annotate
 extra_css:
   - stylesheets/extra.css
 markdown_extensions:

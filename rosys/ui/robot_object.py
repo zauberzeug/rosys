@@ -6,7 +6,7 @@ from rosys.world.robot import Robot
 class RobotObject(Object3D):
 
     # these will be set by rosys.ui.configure
-    robot = None
+    robot: Robot = None
 
     def __init__(self, *, debug: bool = False):
         super().__init__('group')

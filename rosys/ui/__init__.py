@@ -2,6 +2,7 @@ from nicegui.ui import Ui
 from rosys.runtime import Runtime
 from .joystick import Joystick as joystick
 from .robot_object import RobotObject as robot_object
+from .path_object import PathObject as path_object
 from .keyboard_control import KeyboardControl as keyboard_control
 
 
@@ -14,3 +15,4 @@ def configure(ui: Ui, runtime: Runtime):
     keyboard_control.ui = ui
     keyboard_control.steerer = runtime.steerer
     robot_object.robot = runtime.world.robot
+    path_object.world = runtime.world
