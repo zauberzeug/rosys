@@ -27,9 +27,9 @@ class Automator(Actor):
                 coro.send(None)
             except StopIteration:
                 self.routines.remove(coro)
+                if not self.routines:
+                    await self.pause_automations(because='all have completed')
             except:
-                self.log.exception(f'paused and cleared automations due to exception in {coro}')
-                self.routines.clear()
                 await self.pause_automations(because='an exception occured in an automation')
-        if not self.routines:
-            await self.pause_automations(because='all have completed')
+                self.routines.clear()
+                self.log.exception(f'paused and cleared automations due to exception in {coro}')
