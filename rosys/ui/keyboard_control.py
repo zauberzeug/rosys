@@ -42,17 +42,18 @@ class KeyboardControl():
             self.adjust_speed(self.speed)
             self.steerer.update(self.direction.y, self.direction.x)
 
-        if e.key.shift:
-            if e.action.keydown:
-                self.steerer.start()
-            else:
-                self.direction.x = self.direction.y = 0
-                self.steerer.stop()
+        if e.key.shift and e.action.keyup:
+            self.direction.x = self.direction.y = 0
+            self.steerer.stop()
 
         elif e.modifiers.shiftkey and e.key.is_cursorkey:
             if e.action.keydown:
+                if self.direction.x == 0 and self.direction.y == 0:
+                    self.steerer.start()
                 self.adapt_direction(e, self.speed)
             elif e.action.keyup:
                 self.adapt_direction(e, 0)
 
             self.steerer.update(self.direction.y, self.direction.x)
+            if self.direction.x == 0 and self.direction.y == 0:
+                self.steerer.stop()
