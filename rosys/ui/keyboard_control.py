@@ -16,9 +16,9 @@ class KeyboardControl():
 
     def adapt_direction(self, e, modifier):
         if e.key.left:
-            self.direction.y = - modifier/2
+            self.direction.y = - modifier
         elif e.key.right:
-            self.direction.y = + modifier/2
+            self.direction.y = + modifier
         elif e.key.up:
             self.direction.x = + modifier
         elif e.key.down:
