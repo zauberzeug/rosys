@@ -4,6 +4,10 @@
   --md-accent-fg-color: #53b689;
 }
 
+:root > * {
+  --md-code-hl-color: #d8e5fa;
+}
+
 img {
   width: 70%;
   display: block;
