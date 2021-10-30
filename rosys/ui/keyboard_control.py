@@ -9,10 +9,10 @@ class KeyboardControl():
     steerer = None
     ui = None
 
-    def __init__(self) -> None:
+    def __init__(self, *, default_speed=2) -> None:
         self.ui.keyboard(self.handle_keys)
         self.direction = Point(x=0, y=0)
-        self.speed = 2
+        self.speed = default_speed
 
     def adapt_direction(self, e, modifier):
         if e.key.left:
