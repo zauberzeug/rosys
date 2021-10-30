@@ -8,6 +8,8 @@ from .keyboard_control import KeyboardControl as keyboard_control
 def configure(ui: Ui, runtime: Runtime):
     ui.on_startup(runtime.start())
     ui.on_shutdown(runtime.stop())
+    runtime.notify = lambda m: ui.notify(m)
+
     joystick.steerer = runtime.steerer
     keyboard_control.ui = ui
     keyboard_control.steerer = runtime.steerer

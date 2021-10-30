@@ -32,4 +32,4 @@ class Automator(Actor):
                 self.routines.clear()
                 await self.pause_automations(because='an exception occured in an automation')
         if not self.routines:
-            await self.pause_automations(because='all automations have completed')
+            await self.pause_automations(because='all have completed')

@@ -51,7 +51,7 @@ class Runtime:
 
     async def pause(self, because: str = None):
         if because:
-            self.log.info(f'pausing automations because {because}')
+            self.notify(f'pausing automations because {because}')
         self.world.state = WorldState.PAUSED
         await self.esp.drive(0, 0)
 
@@ -121,3 +121,10 @@ class Runtime:
                 raise Exception(f'parameter "{name}" of type {type_} is unknown')
 
         return params
+
+    def notify(self, message: str):
+        '''Notify the user.
+
+        Should be replaced and implemented by the user interface (as it's done in rosys.ui.configure).
+        '''
+        self.log.info(message)
