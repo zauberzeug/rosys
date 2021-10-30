@@ -13,10 +13,10 @@ class WorldState(Enum):
 
 
 class World(BaseModel):
-    mode: Mode
+    robot: Robot
+    mode: Mode = Mode.REAL
     state: WorldState = WorldState.PAUSED
     _time: float = PrivateAttr(default_factory=time.time)
-    robot: Robot
     tracking: bool = False
     robot_locator_cam: str = None
     download_queue: list[str] = []

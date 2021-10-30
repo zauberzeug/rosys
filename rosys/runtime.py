@@ -13,7 +13,6 @@ from .actors.steerer import Steerer
 from .actors.automator import Automator
 from .world.world import World, WorldState
 from .world.mode import Mode
-from .helpers import print_stacktrace
 
 
 class Runtime:

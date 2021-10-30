@@ -1,10 +1,11 @@
+from nicegui.ui import Ui
 from rosys.world.point import Point
 from rosys.actors.steerer import Steerer
 
 
 class KeyboardControl():
 
-    def __init__(self, ui, steerer: Steerer) -> None:
+    def __init__(self, ui: Ui, *, steerer: Steerer) -> None:
         self.steerer = steerer
         self.ui = ui
         self.ui.keyboard(self.handle_keys)

@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
-from datetime import datetime
 from nicegui import ui
-from rosys import Runtime, World, Robot, Mode
-from rosys.ui import Joystick, RobotObject
-from rosys.ui.keyboard_control import KeyboardControl
+import rosys
+import rosys.ui
 
-world = World(mode=Mode.SIMULATION, robot=Robot())
-runtime = Runtime(world)
+world = rosys.World(robot=rosys.Robot())
+runtime = rosys.Runtime(world)
 
 status = ui.label()
-ui.timer(0.1, lambda: status.set_text(f'''{datetime.utcfromtimestamp(world.time)} s'''))
+ui.timer(0.1, lambda: status.set_text(f'''{world.robot.prediction}'''))
 
-Joystick(size=50, color='blue', steerer=runtime.steerer)
+rosys.ui.joystick(size=50, color='blue', steerer=runtime.steerer)
 with ui.scene() as scene:
-    robot = RobotObject(world.robot)
+    robot = rosys.ui.robot_object(world.robot)
     ui.timer(0.05, robot.update)
 
-KeyboardControl(ui, runtime.steerer)
+rosys.ui.keyboard_control(ui, steerer=runtime.steerer)
 
 ui.on_startup(runtime.start())
 ui.on_shutdown(runtime.stop())
