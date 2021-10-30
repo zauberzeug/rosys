@@ -4,6 +4,7 @@ import os
 from uuid import uuid4
 import starlette
 from nicegui import app, ui
+import rosys.ui
 from rosys.actors.pathplanning.planner import Planner
 from rosys.automations.drive_path import drive_path
 from rosys.persistence import Persistence
@@ -25,14 +26,13 @@ from hardware import hardware
 import icecream
 icecream.install()
 
-mode = Mode.REAL if os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0 else Mode.SIMULATION
 shape = RobotShape(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])
-world = World(mode=mode, robot=Robot(hardware=hardware, shape=shape))
-
+world = World(robot=Robot(hardware=hardware, shape=shape))
 planner = Planner(world)
-
 runtime = Runtime(world, Persistence(world, '~/.rosys/obstacles/world.json'))
+rosys.ui.configure(ui, runtime)
 
+rosys.ui.keyboard_control()
 with ui.card():
     state = ui.label()
     ui.timer(0.1, lambda: state.set_text(f'{world.time:.3f} s ({world.robot.prediction})'))
@@ -78,26 +78,23 @@ with ui.card():
                 del world.obstacles[hit.object.name.split('_')[1]]
                 hit.object.delete()
                 return
-    with ui.row():
-        with ui.scene(640, 480, on_click=handle_click) as scene:
-            robot = RobotObject(world.robot, debug=True)
-            obstacles = ObstacleObject(world.obstacles)
-            path = PathObject(world.path)
-            ui.timer(0.05, robot.update)
-        Joystick(size=50, color='blue', steerer=runtime.steerer)
+
+    with ui.scene(640, 480, on_click=handle_click) as scene:
+        robot = rosys.ui.robot_object(debug=True)
+        obstacles = ObstacleObject(world.obstacles)
+        path = PathObject(world.path)
+        ui.timer(0.05, robot.update)
 
     with ui.row():
         ui.button(on_click=runtime.resume).props('outline icon=play_arrow') \
-            .bind_visibility_from(world.state, value=WorldState.PAUSED)
+            .bind_visibility_from(world, 'state', value=WorldState.PAUSED)
         ui.button(on_click=lambda: asyncio.create_task(runtime.pause())).props('outline icon=pause') \
-            .bind_visibility_from(world.state, value=WorldState.RUNNING)
+            .bind_visibility_from(world, 'state', value=WorldState.RUNNING)
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
         ui.button('clear odrive', on_click=lambda: runtime.esp.send('can request 018')).props('outline')
         ui.button('restart odrive', on_click=lambda: runtime.esp.send('can request 016')).props('outline')
 
-ui.on_startup(runtime.start())
-ui.on_shutdown(runtime.stop())
-
+# TODO replace with new NiceGUI api
 app.routes.insert(0, starlette.routing.Route(
     '/world', lambda *_:
     starlette.responses.Response(content=world.json(exclude={'image_data'}), media_type='text/json')))

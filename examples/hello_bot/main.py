@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os
 from nicegui import ui
+import rosys
+import rosys.ui
 from rosys.automations.square import drive_square
 from rosys.runtime import Runtime
 from rosys.ui.joystick import Joystick
@@ -14,10 +16,11 @@ import log_configuration
 log_configuration.setup()
 
 
-mode = Mode.REAL if os.path.exists('/dev/esp') and os.stat('/dev/esp').st_gid > 0 else Mode.SIMULATION
-world = World(mode=mode, robot=Robot(hardware=hardware))
+world = World(robot=Robot(hardware=hardware))
 runtime = Runtime(world)
+rosys.ui.configure(ui, runtime)
 
+rosys.ui.keyboard_control()
 with ui.card():
     with ui.row():
         state = ui.label()
@@ -25,7 +28,7 @@ with ui.card():
 
     with ui.row():
         with ui.scene() as scene:
-            robot = RobotObject(world.robot)
+            robot = rosys.ui.robot_object()
             ui.timer(0.05, robot.update)
         Joystick(size=50, color='blue', steerer=runtime.steerer)
 
@@ -37,8 +40,5 @@ with ui.card():
         ui.button('drive square', on_click=play).props('icon=play_arrow')
         ui.button('configure esp', on_click=lambda: runtime.esp.configure(world.robot.hardware)).props('outline')
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
-
-ui.on_startup(runtime.start())
-ui.on_shutdown(runtime.stop())
 
 ui.run(title="hello_bot")
