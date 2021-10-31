@@ -18,6 +18,6 @@ def handle_click(msg):
 with ui.scene(on_click=handle_click) as scene:
     robot = rosys.ui.robot_object(debug=True)
     ui.timer(0.05, robot.update)
-ui.label('klick into the scene to drive the robot')
+ui.label('click into the scene to drive the robot')
 
 ui.run(title="RoSys", port=8080)

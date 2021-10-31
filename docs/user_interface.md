@@ -70,4 +70,4 @@ Here is a full example example for driving to a point on the ground by starting 
 {!scene_on_click.py!}
 ```
 
-![Joystick](scene_on_click.png){: style="width:60%"}
+![Click Handler](scene_on_click.webp){: style="width:60%"}
