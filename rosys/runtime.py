@@ -62,6 +62,7 @@ class Runtime:
         if self.tasks:
             raise Exception('run should be only executed once')
 
+        self.activate_async_debugging()
         for actor in self.actors:
             if actor.interval is not None:
                 self.tasks.append(task_logger.create_task(self.repeat(actor)))
@@ -128,3 +129,12 @@ class Runtime:
         Should be replaced and implemented by the user interface (as it's done in rosys.ui.configure).
         '''
         self.log.info(message)
+
+    def activate_async_debugging(self):
+        '''Produce warnings for coroutines which take to long on the main loop and hence clog the event loop'''
+        try:
+            loop = asyncio.get_running_loop()
+            loop.set_debug(True)
+            loop.slow_callback_duration = 0.05
+        except:
+            self.log.exception('could not activete async debugging')
