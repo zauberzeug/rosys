@@ -62,10 +62,12 @@ class Runtime:
         if self.tasks:
             raise Exception('run should be only executed once')
 
-        self.activate_async_debugging()
         for actor in self.actors:
             if actor.interval is not None:
                 self.tasks.append(task_logger.create_task(self.repeat(actor)))
+
+        await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyizing async debugging
+        self.activate_async_debugging()
 
     async def stop(self):
         await self.esp.drive(0, 0)
