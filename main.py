@@ -13,7 +13,6 @@ rosys.ui.keyboard_control()
 # 3d scene
 with ui.scene() as scene:
     robot = rosys.ui.robot_object()
-    ui.timer(0.05, robot.update)
 ui.label('hold SHIFT to steer with the keyboard arrow keys')
 
 # start

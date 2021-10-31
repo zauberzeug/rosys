@@ -14,7 +14,5 @@ rosys.ui.configure(ui, runtime)
 with ui.scene() as scene:
     # By passing `debug=True` to the robot 3d object you will see the wireframe, axis-center and follow-the-line target
     robot = rosys.ui.robot_object(debug=True)
-    # every 50 ms refresh the robots position
-    ui.timer(0.05, robot.update)
 
 ui.run(port=8080)

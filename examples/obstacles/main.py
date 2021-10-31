@@ -78,7 +78,6 @@ with ui.card():
         robot = rosys.ui.robot_object(debug=True)
         obstacles = ObstacleObject(world.obstacles)
         path = rosys.ui.path_object()
-        ui.timer(0.05, robot.update)
 
     with ui.row():
         ui.button(on_click=runtime.resume).props('outline icon=play_arrow') \

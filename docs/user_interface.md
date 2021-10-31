@@ -44,8 +44,8 @@ It's often desired to visualize all the informations which the robot has about t
 To do so you can create a 3d scene with [NiceGUI](https://nicegui.io).
 RoSys provides an `robot_object` to render and update the robot:
 
-```python hl_lines="10 12"
-{!robot_shape.py [ln:5-18] !}
+```python hl_lines="10-12"
+{!robot_shape.py [ln:5-16] !}
 ```
 
 ### Click Handler

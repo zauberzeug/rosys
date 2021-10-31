@@ -29,7 +29,6 @@ with ui.card():
     with ui.row():
         with ui.scene() as scene:
             robot = rosys.ui.robot_object()
-            ui.timer(0.05, robot.update)
         Joystick(size=50, color='blue', steerer=runtime.steerer)
 
     with ui.row():
