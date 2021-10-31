@@ -94,4 +94,4 @@ app.routes.insert(0, starlette.routing.Route(
     '/world', lambda *_:
     starlette.responses.Response(content=world.json(exclude={'image_data'}), media_type='text/json')))
 
-ui.run(title="obstacles")
+ui.run(title="obstacles", port=8080)

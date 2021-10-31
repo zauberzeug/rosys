@@ -41,4 +41,4 @@ with ui.card():
         ui.button('configure esp', on_click=lambda: runtime.esp.configure(world.robot.hardware)).props('outline')
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
-ui.run(title="hello_bot")
+ui.run(title="hello_bot", port=8080)
