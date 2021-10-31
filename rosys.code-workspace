@@ -2,6 +2,9 @@
   "folders": [
     {
       "path": "."
+    },
+    {
+      "path": "../nicegui"
     }
   ],
   "settings": {},
@@ -17,6 +20,13 @@
   "launch": {
     "version": "0.2.0",
     "configurations": [
+      {
+        "name": "current file",
+        "type": "python",
+        "request": "launch",
+        "program": "${file}",
+        "console": "integratedTerminal"
+      },
       {
         "name": "RoSys",
         "type": "python",
