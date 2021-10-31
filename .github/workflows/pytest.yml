@@ -25,6 +25,8 @@ jobs:
           poetry install
       - name: test
         run: pytest
+      - name: examples
+        run: cd tests && ./test_examples.sh
 
   slack:
     needs:
