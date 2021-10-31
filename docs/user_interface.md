@@ -45,20 +45,7 @@ To do so you can create a 3d scene with [NiceGUI](https://nicegui.io).
 RoSys provides an `robot_object` to render and update the robot:
 
 ```python hl_lines="10 12"
-shape = rosys.RobotShape(outline=[
-    (0, 0), (-0.5, -0.5),
-    (1.5, -0.5), (1.75, 0),
-    (1.5, 0.5), (-0.5, 0.5)]
-    ) # the shape for the robot will be used in 3d rendering
-world = World(robot=rosys.Robot(shape=shape))
-runtime = rosys.Runtime(world)
-rosys.ui.configure(ui, runtime)
-
-with ui.scene() as scene:
-    # By passing `debug=True` to the robot 3d object you will see the wireframe, axis-center and follow-the-line target
-    robot = rosys.ui.robot_object(debug=True)
-    # every 50 ms refresh the robots position
-    ui.timer(0.05, robot.update)
+{!robot_shape.py [ln:5-18] !}
 ```
 
 ### Click Handler
