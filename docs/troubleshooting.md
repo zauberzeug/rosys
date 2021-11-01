@@ -8,7 +8,7 @@ You may see warnings similar to this one
 2021-10-31 15:08:04.040 [WARNING] asyncio: Executing <Task pending name='Task-255' coro=<handle_event() running at /usr/local/lib/python3.9/site-packages/justpy/justpy.py:344> wait_for=<_GatheringFuture pending cb=[<TaskWakeupMethWrapper object at 0x7f7001f8e0>()] created at /usr/local/lib/python3.9/asyncio/tasks.py:705> created at /usr/local/lib/python3.9/site-packages/justpy/justpy.py:261> took 0.238 seconds
 ```
 
-when running RoSys.
+while running RoSys.
 This means some coroutine is clogging the event loop for too long.
 In the above example it's a whopping 238 ms in which no other actor can do anything.
 This is an eternaty when machine communication is expected to happen about every 10 ms.
