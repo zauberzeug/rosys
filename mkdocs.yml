@@ -7,6 +7,7 @@ nav:
   - basic_concepts.md
   - user_interface.md
   - safety.md
+  - troubleshooting.md
   - development.md
 repo_url: https://github.com/zauberzeug/rosys
 edit_uri: edit/main/docs/
