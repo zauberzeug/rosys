@@ -6,10 +6,8 @@ from rosys.actors.steerer import Steerer
 
 
 class KeyboardControl:
-
-    # these will be set by rosys.ui.configure
-    steerer: Steerer = None
-    ui: Ui = None
+    steerer: Steerer = None  # will be set by rosys.ui.configure
+    ui: Ui = None  # will be set by rosys.ui.configure
 
     def __init__(self, *, default_speed: float = 2.0):
         self.ui.keyboard(on_key=self.handle_keys)

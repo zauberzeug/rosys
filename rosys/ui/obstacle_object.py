@@ -8,7 +8,6 @@ class ObstacleObject(Object3D):
     def __init__(self, obstacles: dict[str, Obstacle]):
         super().__init__('group')
         self.obstacles = obstacles
-
         self.update()
 
     def update(self) -> bool:

@@ -1,10 +1,6 @@
-import asyncio
 from typing import Coroutine
-from .actor import Actor
 from ..world.world import World, WorldState
-import contextlib
-import warnings
-import gc
+from .actor import Actor
 
 
 class Automator(Actor):

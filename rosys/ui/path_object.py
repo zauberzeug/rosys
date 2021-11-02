@@ -4,9 +4,7 @@ from rosys.world.world import World
 
 
 class PathObject(Object3D):
-
-    # these will be set by rosys.ui.configure
-    world: World = None
+    world: World = None  # will be set by rosys.ui.configure
 
     def __init__(self):
         super().__init__('group')

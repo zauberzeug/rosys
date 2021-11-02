@@ -1,7 +1,6 @@
 from __future__ import annotations
 from asyncio.exceptions import CancelledError
 from rosys import factory
-import sys
 import asyncio
 import logging
 from typing import Awaitable, Callable, Optional, Type, Union, get_type_hints
@@ -17,7 +16,7 @@ from .world.mode import Mode
 
 class Runtime:
 
-    def __init__(self, world: World = None, persistence: Optional[Persistence] = None):
+    def __init__(self, world: Optional[World] = None, persistence: Optional[Persistence] = None):
         self.world = world or World()
         self.tasks = []
         self.log = logging.getLogger(__name__)
@@ -49,7 +48,7 @@ class Runtime:
         self.actors += actors
         return self
 
-    async def pause(self, because: str = None):
+    async def pause(self, because: Optional[str] = None):
         if because:
             self.notify(f'pausing automations because {because}')
         self.world.state = WorldState.PAUSED
@@ -133,10 +132,10 @@ class Runtime:
         self.log.info(message)
 
     def activate_async_debugging(self):
-        '''Produce warnings for coroutines which take to long on the main loop and hence clog the event loop'''
+        '''Produce warnings for coroutines which take too long on the main loop and hence clog the event loop'''
         try:
             loop = asyncio.get_running_loop()
             loop.set_debug(True)
             loop.slow_callback_duration = 0.05
         except:
-            self.log.exception('could not activete async debugging')
+            self.log.exception('could not activate async debugging')

@@ -1,4 +1,3 @@
-import asyncio
 from enum import Enum
 from rosys.actors.esp import Esp
 from rosys.actors.actor import Actor

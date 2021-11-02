@@ -5,10 +5,8 @@ from rosys.world.robot import Robot
 
 
 class RobotObject(Object3D):
-
-    # these will be set by rosys.ui.configure
-    robot: Robot = None
-    ui: Ui = None
+    robot: Robot = None  # will be set by rosys.ui.configure
+    ui: Ui = None  # will be set by rosys.ui.configure
 
     def __init__(self, *, debug: bool = False):
         super().__init__('group')
@@ -23,7 +21,6 @@ class RobotObject(Object3D):
             with Group() as self.carrot_group:
                 Sphere(0.03).material('#ff8800')
                 Sphere(0.05).material('#ff8800').move(self.robot.parameters.carrot_offset)
-        self.update()
         self.ui.timer(0.05, self.update)
 
     def with_stl(self, url: str, *,

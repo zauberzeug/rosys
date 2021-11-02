@@ -1,15 +1,15 @@
 from nicegui.ui import Ui
 import logging
 import socket
-from os.path import expanduser
+import os.path
 from pathlib import Path
 import asyncio
 
 log = logging.getLogger('rosys.wifi')
 
 
-def has_internet():
-    """ Returns True if there's a connection """
+def has_internet() -> bool:
+    """Returns True if there's a connection"""
 
     IP_ADDRESS_LIST = [
         "1.1.1.1",  # Cloudflare
@@ -17,7 +17,7 @@ def has_internet():
         "8.8.8.8",  # Google DNS
         "8.8.4.4",
         "208.67.222.222",  # Open DNS
-        "208.67.220.220"
+        "208.67.220.220",
     ]
 
     port = 53
@@ -39,30 +39,29 @@ def create_wifi(ui: Ui):
 
     def add(ssid: str, password: str):
         log.info(f'adding {ssid}, {password}')
-        wifi_configs = expanduser(f'~/.rosys/wifi')
+        wifi_configs = os.path.expanduser(f'~/.rosys/wifi')
         Path(wifi_configs).mkdir(parents=True, exist_ok=True)
-        # NOTE a deamon on the host system must watch the .rosys/wifi dir and reload the configuration with nmcli or similar
+        # NOTE a daemon on the host system must watch the .rosys/wifi dir and reload the configuration with nmcli or similar
         with open(f'{wifi_configs}/{ssid}', 'w') as f:
             f.write(password)
         dialog.close()
 
     async def update_wifi_status():
         if await asyncio.get_event_loop().run_in_executor(None, has_internet):
-            wifi_button.style('color:green', remove='color')
+            wifi_button.props(replace='color=green')
             status.set_text(f'Robot is connected to the internet.')
         else:
-            wifi_button.style('color:red', remove='color')
+            wifi_button.props(replace='color=red')
             status.set_text(f'Robot is not connected to the internet.')
         return False  # do not refresh UI
 
-    with ui.dialog() as dialog:
-        with ui.card():
-            status = ui.label('status label')
-            ssid = ui.input('ssid')
-            password = ui.input('password')
-            with ui.row():
-                ui.button('Add', on_click=lambda: add(ssid.value, password.value))
-                ui.button('Close', on_click=dialog.close)
+    with ui.dialog() as dialog, ui.card():
+        status = ui.label()
+        ssid = ui.input('ssid')
+        password = ui.input('password')
+        with ui.row():
+            ui.button('Add', on_click=lambda: add(ssid.value, password.value))
+            ui.button('Close', on_click=dialog.close)
 
     wifi_button = ui.button(on_click=dialog.open).props('icon=network_wifi')
     ui.timer(5, callback=update_wifi_status)

@@ -1,4 +1,3 @@
-import logging
 from typing import Union
 import pytest
 import numpy as np
@@ -17,10 +16,7 @@ def set_global_runtime(runtime: Runtime):
     camera_count = 0
 
 
-def assert_pose(
-    x: float, y: float, *, deg: float = None,
-    linear_tolerance: float = 0.1, deg_tolerance: float = 1.0
-):
+def assert_pose(x: float, y: float, *, deg: float = None, linear_tolerance: float = 0.1, deg_tolerance: float = 1.0):
     pose = global_runtime.world.robot.prediction
     assert pose.x == pytest.approx(x, abs=linear_tolerance)
     assert pose.y == pytest.approx(y, abs=linear_tolerance)

@@ -1,18 +1,12 @@
 #!/usr/bin/env python3
-import os
 from nicegui import ui
-import rosys
-import rosys.ui
+import os
+from rosys import Runtime, Robot, World
 from rosys.automations.square import drive_square
-from rosys.runtime import Runtime
-from rosys.ui.joystick import Joystick
-from rosys.ui.robot_object import RobotObject
-from rosys.world.mode import Mode
-from rosys.world.robot import Robot
-from rosys.world.world import World
+import rosys.ui
 from hardware import hardware
-import log_configuration
 
+import log_configuration
 log_configuration.setup()
 
 
@@ -24,12 +18,12 @@ rosys.ui.keyboard_control()
 with ui.card():
     with ui.row():
         state = ui.label()
-        ui.timer(0.1, lambda: state.set_text(f'''{world.time:.3f} s, {world.robot.prediction}'''))
+        ui.timer(0.1, lambda: state.set_text(f'{world.time:.3f} s, {world.robot.prediction}'))
 
     with ui.row():
         with ui.scene() as scene:
-            robot = rosys.ui.robot_object()
-        Joystick(size=50, color='blue', steerer=runtime.steerer)
+            rosys.ui.robot_object()
+        rosys.ui.joystick(size=50, color='blue', steerer=runtime.steerer)
 
     with ui.row():
         def play(_):

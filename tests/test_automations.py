@@ -1,5 +1,4 @@
 import pytest
-import numpy as np
 from rosys.runtime import Runtime
 from rosys.automations.arc import drive_arc
 from rosys.automations.square import drive_square

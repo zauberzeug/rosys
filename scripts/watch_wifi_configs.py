@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-
-import os
+import os.path
 import subprocess
 import time
 from watchdog.observers import Observer
@@ -35,7 +34,7 @@ class WifiChangedEventHandler(FileSystemEventHandler):
 if __name__ == '__main__':
 
     observer = Observer()
-    observer.schedule(WifiChangedEventHandler(), '/home/zauberzeug/.rosys/wifi', recursive=False)
+    observer.schedule(WifiChangedEventHandler(), os.path.expanduser('~/.rosys/wifi'), recursive=False)
     observer.start()
     try:
         while True:
