@@ -17,17 +17,17 @@ This is helpful for example if one actor fetches an image and another one should
 
 !!! note
 
-    The "robot" is not an Actor but rather represented by an object in the world.
-    Actors like the Odometer or Steerer use and transform these data to update this representation regulary.
+    The "robot" is not an actor but rather represented by an object in the world.
+    Actors like the odometer or steerer use and transform these data to update this representation regulary.
 
 ## Runtime
 
 The runtime manages the world and all actors.
-It also provides safety functionallity like starting/stopping automations (see below), logging and error handling.
+It also provides safety functionality like starting/stopping automations (see below), logging and error handling.
 
 ## Automations
 
 RoSys provides an actor which is accessed through `runtime.automator`.
-The Automator can receive instruction sequences which are called automations.
+The automator can receive instruction sequences which are called automations.
 Normally they contain machine commands followed by conditions which can be awaited before proceeding with the next commands.
 For example, there are already built-in automations for steering the robot along a spline.

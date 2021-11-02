@@ -12,16 +12,17 @@ If you launch the program, your browser will open the url <http://0.0.0.0:8080/>
 
 ![Screenshot](getting_started_01.png){: style="width:60%"}
 
-## Explenations
+## Explanations
 
 ### Imports
 
-The [User Interface](user_interface.md) is build with [NiceGUI](https://nicegui.io).
+The [User Interface](user_interface.md) is built with [NiceGUI](https://nicegui.io).
 The imports must be stated seperately to make it possible to run RoSys without it.
 
 ### Setup
 
-As you can read up in the ["Basic Concepts" section](basic_concepts.md) RoSys provides a runtime to manage the actors which operate on the world. The command `rosys.ui.configure(ui, runtime)` connects the user interface with the runtime.
+As you can read up in the ["Basic Concepts" section](basic_concepts.md) RoSys provides a runtime to manage the actors which operate on the world.
+The command `rosys.ui.configure(ui, runtime)` connects the user interface with the runtime.
 
 ### Keyboard Control
 
@@ -30,11 +31,16 @@ There are also other possibilities of steering the robot like a [Joystick](user_
 
 ### 3D Scene
 
-As it is common for groups of UI elements in NiceGUI, a 3d scene is created by using context through Python's `with`-Statement.
-Every command "inside" is applied the created scene. Here a 3d reperesentation of the robot is created (`rosys.ui.robot_object()`). Then the `ui.timer` ensures it's position is updated every 50 ms.
-An `ui.label` is used afterwards to explain the keyboard ∫∫interaction. Note: the lable is on the same intendation level as the `ui.scene` object, not within. See [NiceGUI](https://nicegui.io) for an complete API reference.
+As it is common for groups of UI elements in NiceGUI, a 3d scene is created by using context through Python's `with` statement.
+Every command "inside" is applied to the created scene.
+Here a 3d representation of the robot is created (`rosys.ui.robot_object()`).
+Then the `ui.timer` ensures its position is updated every 50 ms.
+A `ui.label` is used afterwards to explain the keyboard interaction.
+Note: The label is on the same intendation level as the `ui.scene` object, not within.
+See [NiceGUI](https://nicegui.io) for a complete API reference.
 
 ### Start
 
-NiceGUI provids an `ui.run` command which launches the webserver and presents the interface as configured above.
-If you modify the code and automatic reload is triggered. Very convinient.
+NiceGUI provides a `ui.run` command which launches the webserver and presents the interface as configured above.
+If you modify the code, an automatic reload is triggered.
+Very convinient.

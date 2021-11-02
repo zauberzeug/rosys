@@ -4,8 +4,7 @@ RoSys plays very well with [NiceGUI](https://nicegui.io/) and provides additiona
 NiceGUI is a high-level web UI framework on top of [JustPy](https://justpy.io/).
 This means you can write all UI code in Python.
 The state is automatically reflected in the browser through websockets.
-RoSys can also be used with other user interfaces or interaction models if required.
-For example a completely app-based control through Bluetooth LE with Flutter.
+RoSys can also be used with other user interfaces or interaction models if required, for example a completely app-based control through Bluetooth LE with Flutter.
 
 ## Configure
 
@@ -26,12 +25,12 @@ Afterwards you can use the UI elements provided by RoSys (see below).
 
 By calling `rosys.ui.keyboard_control()` you enable steering the robot with the keyboard (see [Getting Started](getting_started.md) for a full example).
 Press the arrow keys to steer the robot while holding the SHIFT key down.
-You can also modify the speed of the robot by pressing the keys 1-4.
-Use the optional parameter `default_speed` to change the initally chosen value.
+You can also modify the speed of the robot by pressing the a number key.
+Use the optional parameter `default_speed` to change the inital value.
 
 ## Joystick
 
-When operating from a mobile phone, you can use `rosys.ui.joystick()` to create an UI element with touch control.
+When operating from a mobile phone, you can use `rosys.ui.joystick()` to create a UI element with touch control.
 You can drive the robot by dragging the mouse inside the top left square:
 
 ![Joystick](joystick.png){: style="width:50%"}
@@ -40,9 +39,9 @@ You can drive the robot by dragging the mouse inside the top left square:
 
 ### Robot and Shape
 
-It's often desired to visualize all the informations which the robot has about the world.
+It is often desired to visualize all the robot's information about the world.
 To do so you can create a 3d scene with [NiceGUI](https://nicegui.io).
-RoSys provides an `robot_object` to render and update the robot:
+RoSys provides a `robot_object` to render and update the robot:
 
 ```python hl_lines="10-12"
 {!robot_shape.py [ln:5-16] !}
@@ -51,7 +50,7 @@ RoSys provides an `robot_object` to render and update the robot:
 ### Click Handler
 
 You can also pass a click handler to the 3d scene.
-Here is a full example example for driving to a point on the ground by starting the build in automation called `drive_to`:
+Here is a full example example for driving to a point on the ground by starting the built-in automation called `drive_to`:
 
 ```python hl_lines="11 18"
 {!scene_on_click.py!}
