@@ -19,5 +19,7 @@ services:
       context: ./
       args:
         INSTALL_DEV: "true"
+    cap_add:
+      - SYS_NICE # allow container to set process priorities
     hostname: docker
     command: /rosys/start.sh debug
