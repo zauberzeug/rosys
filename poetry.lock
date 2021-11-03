@@ -560,7 +560,7 @@ test = ["pytest (>=6.2)", "pytest-cov (>=2.12)", "codecov (>=2.1)"]
 
 [[package]]
 name = "nicegui"
-version = "0.6.2"
+version = "0.6.3"
 description = "Web User Interface with Buttons, Dialogs, Markdown, 3D Scences and Plots"
 category = "main"
 optional = false
@@ -1106,7 +1106,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9 <3.10"
-content-hash = "e25bb012e87b11957bf9f035bcd596c0804035fae74acc14e5f9cdd1a136e583"
+content-hash = "0802619d9dff8c28e52a4cb1e428f10e360c1af74ce0ff7918ee38c577bb40e3"
 
 [metadata.files]
 addict = [
@@ -1563,8 +1563,8 @@ networkx = [
     {file = "networkx-2.6.2.tar.gz", hash = "sha256:2306f1950ce772c5a59a57f5486d59bb9cab98497c45fc49cbc45ac0dec119bb"},
 ]
 nicegui = [
-    {file = "nicegui-0.6.2-py3-none-any.whl", hash = "sha256:247485acf000392f0869c6e21ab0af57d98e2c28dc0db7998aeff5de31476f8d"},
-    {file = "nicegui-0.6.2.tar.gz", hash = "sha256:ea685231ea4611e9b468c831d101c8dbcf474ce434251e163205e6e56fb0d052"},
+    {file = "nicegui-0.6.3-py3-none-any.whl", hash = "sha256:9de24d4766c6cec770a49835873e5c1337e2360e6e00c361e545f5bd3290cc86"},
+    {file = "nicegui-0.6.3.tar.gz", hash = "sha256:e6dfa3e12fa6e03d5a45adc874918317c1ea1caa09af67890f468b0a18b69516"},
 ]
 numpy = [
     {file = "numpy-1.21.2-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:52a664323273c08f3b473548bf87c8145b7513afd63e4ebba8496ecd3853df13"},
