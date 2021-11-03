@@ -7,7 +7,7 @@ from watchdog.events import FileSystemEvent, FileSystemEventHandler
 
 
 def nmcli(cmd: str) -> None:
-    cmd = 'sudo nmcli connection' + cmd
+    cmd = 'sudo nmcli connection ' + cmd
     subprocess.Popen(cmd, shell=True)
 
 
