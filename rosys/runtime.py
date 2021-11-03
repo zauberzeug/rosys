@@ -49,6 +49,8 @@ class Runtime:
         return self
 
     async def pause(self, because: Optional[str] = None):
+        if self.world.state == WorldState.PAUSED:
+            return
         if because:
             self.notify(f'pausing automations because {because}')
         self.world.state = WorldState.PAUSED
