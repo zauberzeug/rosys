@@ -1,8 +1,9 @@
 import numpy as np
-from .actor import Actor
+from ..exceptions import NothingToDo
+from ..helpers import angle
 from ..world.pose import PoseStep
 from ..world.world import World
-from ..helpers import angle
+from .actor import Actor
 
 
 class Odometer(Actor):
@@ -16,7 +17,10 @@ class Odometer(Actor):
         self.flip_detection_initialized: bool = False
 
     def handle_velocity(self, world: World):
-        while any(world.robot.odometry):
+        if not world.robot.odometry:
+            raise NothingToDo()
+
+        while world.robot.odometry:
             velocity = world.robot.odometry.pop(0)
 
             if self.last_time is None:
@@ -40,7 +44,7 @@ class Odometer(Actor):
 
     def handle_detection(self, world: World):
         if world.robot.detection is None or not any(self.steps) or world.robot.detection.time < self.steps[0].time:
-            return
+            raise NothingToDo()
 
         while self.steps[0].time < world.robot.detection.time:
             del self.steps[0]
@@ -56,7 +60,7 @@ class Odometer(Actor):
                         world.upload.mark(image)
                 if self.flips < 3:
                     self.log.warn('Avoiding flip')
-                    return
+                    raise NothingToDo()
             else:
                 self.flips = 0
 

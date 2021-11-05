@@ -1,0 +1,2 @@
+class NothingToDo(Exception):
+    pass

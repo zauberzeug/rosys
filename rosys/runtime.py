@@ -10,6 +10,7 @@ from .actors.actor import Actor
 from .actors.odometer import Odometer
 from .actors.steerer import Steerer
 from .actors.automator import Automator
+from .exceptions import NothingToDo
 from .world.world import World, WorldState
 from .world.mode import Mode
 
@@ -90,8 +91,11 @@ class Runtime:
         while True:
             start = self.world.time
             try:
-                await actor.step(*params)
-                await self.call_follow_ups(actor.step)
+                try:
+                    await actor.step(*params)
+                    await self.call_follow_ups(actor.step)
+                except NothingToDo:
+                    pass
                 dt = self.world.time - start
             except (CancelledError, GeneratorExit):
                 return
