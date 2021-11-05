@@ -65,5 +65,8 @@ class Pose(BaseModel):
             yaw=self.yaw + pose.yaw,
         )
 
+    def relative_pose(self, other: Pose) -> Pose:
+        return Pose.from_matrix(np.linalg.inv(self.matrix) @ other.matrix)
+
     def rotate(self, angle: float) -> Pose:
         return Pose(x=self.x, y=self.y, yaw=self.yaw+angle, time=self.time)
