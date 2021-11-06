@@ -1,10 +1,12 @@
 import asyncio
 import logging
 from typing import Callable
+from concurrent.futures import ProcessPoolExecutor
 
 
 class Actor:
     interval: float = None
+    process_pool = ProcessPoolExecutor()
 
     def __init__(self) -> None:
         name = __name__[:-5] + self.__class__.__name__
@@ -20,9 +22,15 @@ class Actor:
         '''delay execution; in tests this method will be replaced'''
         await asyncio.sleep(seconds)
 
-    async def run_in_executor(self, callback: Callable, *args: any):
+    @staticmethod
+    async def run_io_bound(callback: Callable, *args: any):
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, callback, *args)
+
+    @staticmethod
+    async def run_cpu_bound(callback: Callable, *args: any):
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(Actor.process_pool, callback, *args)
 
     async def pause_automations(self, *, because: str):
         pass  # NOTE the runtime implements this
