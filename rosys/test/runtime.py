@@ -24,7 +24,7 @@ class TestRuntime(Runtime):
         if not self.tasks:
             for actor in self.actors:
                 actor.sleep = self.sleep
-                actor.run_in_executor = self.run_in_executor
+                actor.run_cpu_bound = self.run_cpu_bound
             await self.start()
 
         end_time = self.world.time + seconds
@@ -42,7 +42,7 @@ class TestRuntime(Runtime):
         while self.world.time <= sleep_end_time:
             await asyncio.sleep(0)
 
-    async def run_in_executor(self, callback: Callable):
+    async def run_cpu_bound(self, callback: Callable):
         try:
             self.is_time_running = False
             loop = asyncio.get_running_loop()

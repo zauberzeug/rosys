@@ -76,6 +76,7 @@ class Runtime:
         if self.world.mode != Mode.TEST:
             self.persistence.backup()
         [t.cancel() for t in self.tasks]
+        Actor.process_pool.shutdown()
         await asyncio.gather(*[task_logger.create_task(a.tear_down()) for a in self.actors])
 
     async def call_follow_ups(self, trigger: Union[Callable, Awaitable]):
