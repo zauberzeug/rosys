@@ -3,7 +3,6 @@
 ## On Your Desktop
 
 ```bash
-sudo apt-get install libcurl4-openssl-dev libssl-dev # required for pycurl
 python3 -m pip install rosys
 ```
 
