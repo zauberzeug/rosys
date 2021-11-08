@@ -2,6 +2,7 @@ from enum import Enum
 from rosys.actors.esp import Esp
 from rosys.actors.actor import Actor
 from rosys.world.world import World, WorldState
+from rosys.exceptions import NothingToDo
 
 
 class State(Enum):
@@ -52,13 +53,14 @@ class Steerer(Actor):
     async def step(self, esp: Esp):
         if self.state == State.STEERING:
             await esp.drive(self.linear_speed, self.angular_speed)
-
-        if self.state == State.STOPPING:
+        elif self.state == State.STOPPING:
             await esp.drive(0, 0)
             if self.world_state is not None:
                 self.world.state = self.world_state
                 self.world_state = None
             self.state = State.IDLE
+        else:
+            raise NothingToDo
 
     def __str__(self) -> str:
         return f'{type(self).__name__} ({self.state})'
