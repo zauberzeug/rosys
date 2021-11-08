@@ -21,5 +21,11 @@ services:
         INSTALL_DEV: "true"
     cap_add:
       - SYS_NICE # allow container to set process priorities
+      - SYS_PTRACE # allow profiling with py-spy
     hostname: docker
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "200m"
+        max-file: "100"
     command: /rosys/start.sh debug
