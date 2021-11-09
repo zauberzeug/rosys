@@ -14,11 +14,15 @@ Also a multi-arch docker image is built and pushed to [Docker Hub](https://hub.d
 
 ## Profiling
 
-In the system container run
+You can add an profiler button to your UI:
 
-    kernprof profiling.py
+```python
+from rosys.ui.profiler import create_profiler
 
-to generate the profiling data.
-View it with the interactive tool
+...
 
-    python -m pstats profiling.py.prof
+create_profiler(ui)
+```
+
+If the button is clicked, the profilier [yappi](https://github.com/sumerc/yappi) will start recording data.
+When stopped you will see its output on the console.
