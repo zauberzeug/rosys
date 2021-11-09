@@ -1,15 +1,14 @@
 from multiprocessing import Event, Process, Queue
 from queue import Empty
-import time
 
 
 class CpuIntensiveProcess(Process):
-    '''Example code which uses a lot of cpu and hence should be run in a seperate process.
+    '''Example code which uses a lot of CPU and hence should be run in a separate process.
 
-    The computation happens in the run() function.
-    Through the _send() function the latest data point is send back to the main process.
+    The computation happens in the `run()` function.
+    Through the _send() function the latest data point is sent back to the main process.
     This is done by first removing all existing elements from the queue and then adding back the latest.
-    Therefore the main process is sure to always receive the latest computed value and none of he obsolete ones.
+    Therefore the main process is sure to always receive the latest computed value and none of the obsolete ones.
     '''
 
     def __init__(self, queue: Queue):
@@ -18,14 +17,13 @@ class CpuIntensiveProcess(Process):
         self.stop_requested = Event()
 
     def run(self):
-        x = 1
+        x = 0
         try:
             while not self.stop_requested.is_set():
                 x += 1
                 self._send(x)
         except KeyboardInterrupt:
             self.stop()
-            pass
 
     def _send(self, value: int):
         try:
@@ -36,5 +34,4 @@ class CpuIntensiveProcess(Process):
         self.queue.put_nowait(value)
 
     def stop(self):
-        '''Stop the process.'''
         self.stop_requested.set()

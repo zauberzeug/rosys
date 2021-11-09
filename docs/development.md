@@ -14,7 +14,7 @@ Also a multi-arch docker image is built and pushed to [Docker Hub](https://hub.d
 
 ## Profiling
 
-You can add an profiler button to your UI:
+You can add a profiler button to your UI:
 
 ```python
 from rosys.ui.profiler import create_profiler
@@ -24,5 +24,5 @@ from rosys.ui.profiler import create_profiler
 create_profiler(ui)
 ```
 
-If the button is clicked, the profilier [yappi](https://github.com/sumerc/yappi) will start recording data.
+When the button is clicked, the profiler [yappi](https://github.com/sumerc/yappi) will start recording data.
 When stopped you will see its output on the console.
