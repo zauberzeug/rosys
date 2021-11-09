@@ -904,6 +904,14 @@ python-versions = ">=3.7,<3.11"
 numpy = ">=1.16.5,<1.23.0"
 
 [[package]]
+name = "sh"
+version = "1.14.2"
+description = "Python subprocess replacement"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "simplejson"
 version = "3.17.3"
 description = "Simple, fast, extensible JSON encoder/decoder for Python"
@@ -1072,7 +1080,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9 <3.10"
-content-hash = "96f604d2cffb1dfaa7621000f4701a72cff9a68fe2ab19177902024a79c31d9e"
+content-hash = "2da43b85c77fb16c0268b1db96dee29f6b139bd6f91050f551fbfe02ea40cb79"
 
 [metadata.files]
 addict = [
@@ -1786,6 +1794,10 @@ scipy = [
     {file = "scipy-1.7.2-cp39-cp39-win32.whl", hash = "sha256:87cf3964db0f1cce17aeed5bfc1b89a6b4b07dbfc48e50d21fa3549e00456803"},
     {file = "scipy-1.7.2-cp39-cp39-win_amd64.whl", hash = "sha256:a80eb01c43fd98257ec7a49ff5cec0edba32031b5f86503f55399a48cb2c5379"},
     {file = "scipy-1.7.2.tar.gz", hash = "sha256:fa2dbabaaecdb502641b0b3c00dec05fb475ae48655c66da16c9ed24eda1e711"},
+]
+sh = [
+    {file = "sh-1.14.2-py2.py3-none-any.whl", hash = "sha256:4921ac9c1a77ec8084bdfaf152fe14138e2b3557cc740002c1a97076321fce8a"},
+    {file = "sh-1.14.2.tar.gz", hash = "sha256:9d7bd0334d494b2a4609fe521b2107438cdb21c0e469ffeeb191489883d6fe0d"},
 ]
 simplejson = [
     {file = "simplejson-3.17.3-cp27-cp27m-macosx_10_9_x86_64.whl", hash = "sha256:18302970ce341c3626433d4ffbdac19c7cca3d6e2d54b12778bcb8095f695473"},
