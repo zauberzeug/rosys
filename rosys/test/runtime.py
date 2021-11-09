@@ -42,11 +42,11 @@ class TestRuntime(Runtime):
         while self.world.time <= sleep_end_time:
             await asyncio.sleep(0)
 
-    async def run_cpu_bound(self, callback: Callable):
+    async def run_cpu_bound(self, callback: Callable, *args: any):
         try:
             self.is_time_running = False
             loop = asyncio.get_running_loop()
-            return await loop.run_in_executor(None, callback)
+            return await loop.run_in_executor(None, callback, *args)
         finally:
             self.is_time_running = True
 
