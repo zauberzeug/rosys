@@ -18,7 +18,12 @@ def create_profiler(ui: Ui):
                 for stat in yappi.get_func_stats()
                 if 'python' not in stat.module
             ]
-            print(tabulate(table, headers=['function', 'total', 'excl. sub', 'avg', 'ncall']), flush=True)
+            output = tabulate(
+                table,
+                headers=['function', 'total', 'excl. sub', 'avg', 'ncall'],
+                floatfmt=".4f"
+            )
+            print(output, flush=True)
             yappi.get_thread_stats().print_all()
         else:
             ui.notify('start profiling')
