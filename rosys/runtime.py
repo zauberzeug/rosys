@@ -2,6 +2,7 @@ from __future__ import annotations
 from asyncio.exceptions import CancelledError
 from rosys import factory
 import asyncio
+import inspect
 import logging
 from typing import Awaitable, Callable, Optional, Type, Union, get_type_hints
 from . import task_logger
@@ -82,7 +83,10 @@ class Runtime:
     async def call_follow_ups(self, trigger: Union[Callable, Awaitable]):
         for follow_up in self.follow_ups.get(trigger, []):
             params = self.get_params(follow_up)
-            await follow_up(*params) if asyncio.iscoroutine(follow_up) else follow_up(*params)
+            if inspect.iscoroutinefunction(follow_up):
+                await follow_up(*params)
+            else:
+                follow_up(*params)
             await self.call_follow_ups(follow_up)
 
     async def repeat(self, actor: Actor):
