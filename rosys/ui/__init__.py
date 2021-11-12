@@ -9,9 +9,16 @@ from .automation_controls import AutomationControls as automation_controls
 
 
 def configure(ui: Ui, runtime: Runtime):
+
+    runtime_notify = runtime.notify
+
+    def notify(msg: str):
+        ui.notify(msg)
+        runtime_notify(msg)
+
     ui.on_startup(runtime.start())
     ui.on_shutdown(runtime.stop())
-    runtime.notify = lambda m: ui.notify(m)
+    runtime.notify = notify
 
     joystick.steerer = runtime.steerer
     keyboard_control.ui = ui

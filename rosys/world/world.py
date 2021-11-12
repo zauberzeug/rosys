@@ -24,6 +24,7 @@ class World(BaseModel):
     link_queue: list[list[str]] = []
     path: list[PathSegment] = []
     obstacles: dict[str, Obstacle] = {}
+    notifications: list[(float, str)] = []
 
     @property
     def time(self):

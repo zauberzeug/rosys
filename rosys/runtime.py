@@ -138,9 +138,10 @@ class Runtime:
     def notify(self, message: str):
         '''Notify the user.
 
-        Should be replaced and implemented by the user interface (as it's done in rosys.ui.configure).
+        Can be augmented by the user interface (as it's done in rosys.ui.configure).
         '''
         self.log.info(message)
+        self.world.notifications.append((self.world.time, message))
 
     def activate_async_debugging(self):
         '''Produce warnings for coroutines which take too long on the main loop and hence clog the event loop'''
