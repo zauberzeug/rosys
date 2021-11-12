@@ -5,6 +5,7 @@ from .keyboard_control import KeyboardControl as keyboard_control
 from .obstacle_object import ObstacleObject as obstacle_object
 from .path_object import PathObject as path_object
 from .robot_object import RobotObject as robot_object
+from .automation_controls import AutomationControls as automation_controls
 
 
 def configure(ui: Ui, runtime: Runtime):
@@ -18,3 +19,5 @@ def configure(ui: Ui, runtime: Runtime):
     path_object.world = runtime.world
     robot_object.robot = runtime.world.robot
     robot_object.ui = ui
+    automation_controls.runtime = runtime
+    automation_controls.ui = ui
