@@ -1,11 +1,11 @@
 new bluetooth bt ESP_ROBOT
 
-new drive drive roboclaw,128,38400
-set drive.mPerTick=0.00003768461
-set drive.width=0.55
-set drive.use300HzSpeedReadings=0
+new roboclawwheels wheels 128,38400
+set wheels.mPerTick=0.00003768461
+set wheels.width=0.55
+set wheels.use300HzSpeedReadings=0
 
-set esp.outputModules=drive
+set esp.outputModules=wheels
 esp unmute
 
 set esp.ready=1

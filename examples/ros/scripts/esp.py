@@ -15,7 +15,7 @@ def send(line):
 
 
 def handle_command(data):
-    send(f'drive speed {data.linear.x:3f},{data.angular.z:.3f}')
+    send(f'wheels speed {data.linear.x:3f},{data.angular.z:.3f}')
 
 
 def handle_configure(data):
