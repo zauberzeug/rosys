@@ -35,6 +35,7 @@ It can only be activated if homing was sucessful.
 
 This state indicates the fully autonomous operation of the robot.
 Activation must happen through a user interaction and requires a successful homing.
+See [UI Automation Controls](user_interface.md#automation-controls) for an build in solution to start/stop and pause/resume such automations.
 
 ### hold
 
