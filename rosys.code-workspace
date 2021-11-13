@@ -21,6 +21,13 @@
     "version": "0.2.0",
     "configurations": [
       {
+        "name": "main.py",
+        "type": "python",
+        "request": "launch",
+        "program": "main.py",
+        "console": "integratedTerminal"
+      },
+      {
         "name": "current file",
         "type": "python",
         "request": "launch",
@@ -28,7 +35,7 @@
         "console": "integratedTerminal"
       },
       {
-        "name": "RoSys",
+        "name": "Docker",
         "type": "python",
         "request": "attach",
 

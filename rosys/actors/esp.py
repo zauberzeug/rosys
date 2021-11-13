@@ -33,9 +33,9 @@ class Esp(Actor):
         await self.send_async('+set esp.24v=1')
         await self.send_async('esp restart')
 
-    def parse(self, messages: str, world: World):
-        '''Parses the messages received from esp messages and writes the data into the world.
-        Note: an incomplete message at the end is not parsed but returend to be completed later.'''
+    def parse(self, messages: str, world: World) -> str:
+        '''Parses the messages received from esp and writes the data into the world.
+        Note: an incomplete message at the end is not parsed but returned to be completed later.'''
 
         millis = None
         while '\n' in messages:
