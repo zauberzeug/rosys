@@ -6,6 +6,7 @@ nav:
   - getting_started.md
   - basic_concepts.md
   - user_interface.md
+  - world.md
   - actors.md
   - safety.md
   - troubleshooting.md

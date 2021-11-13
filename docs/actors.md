@@ -1,6 +1,6 @@
 # Actors
 
-## Continous Invocation
+## Continuos Invocation
 
 The runtime will invoke the actor's `step` method in the interval defined in the class variable `interval`.
 
@@ -21,3 +21,9 @@ If you need to read from an external device or use a non-async HTTP library like
 ### CPU Bound
 
 If you need to do some heavy computation, you should wrap the code in a function and await it with `Actor.run_cpu_bound(...)`.
+
+## Notifications
+
+Actors can notify the user through `self.notify('message to the user')`.
+When using [NiceGUI](user_interface.md), the notifications will show as snackbar messages.
+The history of notifications is stored in the [world](world.md#notifications).
