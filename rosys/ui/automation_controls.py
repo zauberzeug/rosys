@@ -1,9 +1,10 @@
 from nicegui.ui import Ui
 
-from rosys.world.world import WorldState
 from .. import Runtime
 from .. import task_logger
-from rosys.automations import drive_path
+from ..automations import drive_path
+from ..world.world import WorldState
+
 
 class AutomationControls:
     ui: Ui
@@ -28,7 +29,7 @@ class AutomationControls:
             self.runtime.automator.routines.clear()
 
         automation_button = self.ui.button(on_click=toggle_automation).props('icon=play_arrow')
-        self.ui.button(on_click=stop).props('icon=stop')        
+        self.ui.button(on_click=stop).props('icon=stop')
 
         def refresh_steering():
             if self.runtime.world.state == WorldState.RUNNING:
