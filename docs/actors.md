@@ -6,7 +6,7 @@
 
 The runtime will invoke the actor's `step` method in the interval defined in the class variable `interval`.
 
-### Delay Execution
+### Delayed Execution
 
 If an actor wants to delay execution it should invoke `await self.sleep(delay_in_ms: float)`.
 Using `time.sleep` would result in blocking the whole runtime and `await asyncio.sleep` would delay execution of tests.

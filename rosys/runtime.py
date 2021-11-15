@@ -138,7 +138,7 @@ class Runtime:
     def notify(self, message: str):
         '''Notify the user.
 
-        Can be augmented by the user interface (as it's done in rosys.ui.configure).
+        Can be augmented by the user interface (as it is done in rosys.ui.configure).
         '''
         self.log.info(message)
         self.world.notifications.append((self.world.time, message))
