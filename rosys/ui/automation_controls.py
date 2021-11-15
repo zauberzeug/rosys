@@ -28,8 +28,8 @@ class AutomationControls:
             pause()
             self.runtime.automator.routines.clear()
 
-        automation_button = self.ui.button(on_click=toggle_automation).props('icon=play_arrow')
-        self.ui.button(on_click=stop).props('icon=stop')
+        automation_button = self.ui.button(on_click=toggle_automation).props('icon=play_arrow outline')
+        self.ui.button(on_click=stop).props('icon=stop outline')
 
         def refresh_steering():
             if self.runtime.world.state == WorldState.RUNNING:
