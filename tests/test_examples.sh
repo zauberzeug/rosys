@@ -35,7 +35,7 @@ check docs/path_planning.py || exitcode=1
 check docs/robot_shape.py || exitcode=1
 check examples/hello_bot/main.py || exitcode=1
 check examples/obstacles/main.py || exitcode=1
-check examples/multiprocess/main.py || exitcode=1
+#check examples/multiprocess/main.py || exitcode=1
 popd
 echo exit $exitcode
 test $exitcode -eq 0
