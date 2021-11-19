@@ -40,8 +40,6 @@ class Runtime:
             self.automator,
         ]
 
-        self.follow_ups = {}
-
     def with_actors(self, *actors: list[Actor]):
         self.actors += actors
         return self
@@ -77,26 +75,13 @@ class Runtime:
         Actor.process_pool.shutdown()
         await asyncio.gather(*[task_logger.create_task(a.tear_down()) for a in self.actors])
 
-    async def call_follow_ups(self, trigger: Union[Callable, Awaitable]):
-        for follow_up in self.follow_ups.get(trigger, []):
-            params = self.get_params(follow_up)
-            if inspect.iscoroutinefunction(follow_up):
-                await follow_up(*params)
-            else:
-                follow_up(*params)
-            await self.call_follow_ups(follow_up)
-
     async def repeat(self, actor: Actor):
         params = self.get_params(actor.step)
 
         while True:
             start = self.world.time
             try:
-                try:
-                    await actor.step(*params)
-                    await self.call_follow_ups(actor.step)
-                except NothingToDo:
-                    pass
+                await actor.step(*params)
                 dt = self.world.time - start
             except (CancelledError, GeneratorExit):
                 return
