@@ -11,7 +11,6 @@ from .actors.actor import Actor
 from .actors.odometer import Odometer
 from .actors.steerer import Steerer
 from .actors.automator import Automator
-from .exceptions import NothingToDo
 from .world.world import World, WorldState
 from .world.mode import Mode
 from . import event

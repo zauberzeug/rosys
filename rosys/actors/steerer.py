@@ -2,7 +2,6 @@ from enum import Enum
 from rosys.actors.esp import Esp
 from rosys.actors.actor import Actor
 from rosys.world.world import World, WorldState
-from rosys.exceptions import NothingToDo
 
 
 class State(Enum):
@@ -59,8 +58,6 @@ class Steerer(Actor):
                 self.world.state = self.world_state
                 self.world_state = None
             self.state = State.IDLE
-        else:
-            raise NothingToDo
 
     def __str__(self) -> str:
         return f'{type(self).__name__} ({self.state})'

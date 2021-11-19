@@ -1,5 +1,4 @@
 import numpy as np
-from ..exceptions import NothingToDo
 from ..helpers import angle
 from ..world.pose import PoseStep
 from ..world.world import World
@@ -20,8 +19,7 @@ class Odometer(Actor):
 
     def handle_velocity(self, world: World):
         if not world.robot.odometry:
-            raise NothingToDo()
-
+            return
         while world.robot.odometry:
             velocity = world.robot.odometry.pop(0)
 

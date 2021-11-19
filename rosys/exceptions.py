@@ -1,2 +1,0 @@
-class NothingToDo(Exception):
-    pass
