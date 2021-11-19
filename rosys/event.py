@@ -26,12 +26,12 @@ def unregister(event: Id, listener: Union[Callable, Awaitable]):
     listeners[event].remove(listener)
 
 
-async def call(event: Id, data=None):
+async def call(event: Id, *args):
     for listener in listeners.get(event, {}):
         try:
             if inspect.iscoroutinefunction(listener):
-                await listener(data)
+                await listener(*args)
             else:
-                listener(data)
+                listener(*args)
         except:
             log.exception(f'could not execute {listener=} for {event=}')

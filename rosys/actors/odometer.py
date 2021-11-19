@@ -46,7 +46,7 @@ class Odometer(Actor):
 
     def handle_detection(self, world: World):
         if world.robot.detection is None or not any(self.steps) or world.robot.detection.time < self.steps[0].time:
-            raise NothingToDo()
+            return
 
         while self.steps[0].time < world.robot.detection.time:
             del self.steps[0]
