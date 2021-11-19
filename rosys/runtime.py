@@ -41,11 +41,7 @@ class Runtime:
             self.automator,
         ]
 
-        self.follow_ups = {
-            self.esp.step: [
-                self.odometer.handle_velocity,
-            ],
-        }
+        self.follow_ups = {}
 
     def with_actors(self, *actors: list[Actor]):
         self.actors += actors
