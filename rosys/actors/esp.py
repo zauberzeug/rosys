@@ -5,6 +5,7 @@ from .. import task_logger
 from ..world.world import World
 from ..world.hardware import HardwareGroup
 from .actor import Actor
+from . import event
 
 
 class Esp(Actor):
@@ -33,7 +34,7 @@ class Esp(Actor):
         await self.send_async('+set esp.24v=1')
         await self.send_async('esp restart')
 
-    def parse(self, messages: str, world: World) -> str:
+    async def parse(self, messages: str, world: World) -> str:
         '''Parses the messages received from the ESP microcontroller and writes the data into the world.
         Note: An incomplete message at the end is not parsed but returned to be completed later.'''
 
@@ -66,4 +67,5 @@ class Esp(Actor):
         if millis is not None:
             world.robot.clock_offset = world.time - millis / 1000
 
+        await event.call(event.Id.NEW_MACHINE_DATA, world)
         return messages

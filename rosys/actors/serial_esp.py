@@ -34,7 +34,7 @@ class SerialEsp(Esp):
             self.log.warning('Error reading from serial')
             return
 
-        self.remainder = self.parse(self.remainder, world)
+        self.remainder = await self.parse(self.remainder, world)
 
     async def send_async(self, line):
         if not self.is_open():

@@ -8,7 +8,7 @@ class WebEsp(Esp):
     '''Remote connection to the Robot Brains Esp.
 
     This makes it possible to keep developing on your fast computer 
-    while communicating with the hardware componens connected to a physical Robot Brain.
+    while communicating with the hardware components connected to a physical Robot Brain.
     '''
     interval: float = 0.01
 
@@ -26,8 +26,8 @@ class WebEsp(Esp):
             self.log.info('connected to esp proxy')
 
         @self.sio.event
-        def read(data):
-            self.parse(data + '\n', world)
+        async def read(data):
+            await self.parse(data + '\n', world)
 
     async def step(self, world: World):
         if not self.sio.connected:
