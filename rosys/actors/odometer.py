@@ -4,6 +4,7 @@ from ..helpers import angle
 from ..world.pose import PoseStep
 from ..world.world import World
 from .actor import Actor
+from .. import event
 
 
 class Odometer(Actor):
@@ -15,6 +16,7 @@ class Odometer(Actor):
         self.steps: list[PoseStep] = []
         self.flips: int = 0
         self.flip_detection_initialized: bool = False
+        event.register(event.Id.NEW_MACHINE_DATA, self.handle_velocity)
 
     def handle_velocity(self, world: World):
         if not world.robot.odometry:

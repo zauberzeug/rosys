@@ -3,6 +3,7 @@ import numpy as np
 from ..world.velocity import Velocity
 from ..world.world import World
 from .esp import Esp
+from .. import event
 
 
 class MockedEsp(Esp):
@@ -21,6 +22,7 @@ class MockedEsp(Esp):
         world.robot.odometry.append(velocity)
         world.robot.battery = 25.0 + np.sin(0.1 * world.time) + 0.02 * np.random.randn()
         world.robot.temperature = np.random.uniform(34, 35)
+        await event.call(event.Id.NEW_MACHINE_DATA, world)
 
     async def send_async(self, line):
         if line.startswith("wheels power "):
