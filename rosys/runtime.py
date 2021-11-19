@@ -14,6 +14,7 @@ from .actors.automator import Automator
 from .exceptions import NothingToDo
 from .world.world import World, WorldState
 from .world.mode import Mode
+from . import event
 
 
 class Runtime:
@@ -65,6 +66,7 @@ class Runtime:
         if self.tasks:
             raise Exception('run should be only executed once')
 
+        event.register(event.Id.PAUSE_AUTOMATIONS, self.pause)
         for actor in self.actors:
             if actor.interval is not None:
                 self.tasks.append(task_logger.create_task(self.repeat(actor)))
@@ -91,7 +93,6 @@ class Runtime:
 
     async def repeat(self, actor: Actor):
         params = self.get_params(actor.step)
-        actor.pause_automations = self.pause  # NOTE injecting the correct implementation
 
         while True:
             start = self.world.time

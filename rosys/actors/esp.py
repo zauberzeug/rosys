@@ -5,7 +5,7 @@ from .. import task_logger
 from ..world.world import World
 from ..world.hardware import HardwareGroup
 from .actor import Actor
-from . import event
+from .. import event
 
 
 class Esp(Actor):

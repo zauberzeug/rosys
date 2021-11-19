@@ -14,6 +14,7 @@ class Id(Enum):
         return name
 
     NEW_MACHINE_DATA = auto()
+    PAUSE_AUTOMATIONS = auto()
 
 
 def register(event: id, listener: Union[Callable, Awaitable]):
