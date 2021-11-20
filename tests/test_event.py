@@ -53,3 +53,11 @@ async def test_automatic_deregistering_if_reference_is_unused():
     await event.call('test', 2)
     assert len(calls) == 2
     assert calls[1] == 2
+
+
+@pytest.mark.asyncio
+async def test_registering_lambdas():
+    calls = []
+    event.register('test', lambda x: calls.append(x))
+    await event.call('test', 1)
+    assert len(calls) == 1

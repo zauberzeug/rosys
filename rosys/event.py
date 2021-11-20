@@ -20,7 +20,14 @@ class Id(Enum):
 
 
 def register(event: Id, listener: Union[Callable, Awaitable]):
-    ref = weakref.WeakMethod(listener) if hasattr(listener, '__self__') else weakref.ref(listener)
+    if not callable(listener):
+        raise Exception('non-callable listener')
+    if listener.__name__ == "<lambda>":  # NOTE lambda functions must be stored without weakref because they will be collected otherwise
+        ref = listener
+    elif inspect.ismethod(listener):
+        ref = weakref.WeakMethod(listener)
+    else:
+        ref = weakref.ref(listener)
     listeners[event].add(ref)
 
 
@@ -31,6 +38,9 @@ def unregister(event: Id, listener: Union[Callable, Awaitable]):
 async def call(event: Id, *args):
     for listener in list(listeners.get(event, {})):
         try:
+            if hasattr(listener, '__name__') and listener.__name__ == '<lambda>':
+                listener(*args)
+                continue
             if listener() is None:
                 unregister(event, listener)
                 continue
