@@ -7,6 +7,14 @@ optional = false
 python-versions = "*"
 
 [[package]]
+name = "aenum"
+version = "3.1.5"
+description = "Advanced Enumerations (compatible with Python's stdlib Enum), NamedTuples, and NamedConstants"
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "aiofiles"
 version = "0.7.0"
 description = "File support for asyncio."
@@ -833,7 +841,7 @@ client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
 
 [[package]]
 name = "python-socketio"
-version = "5.4.1"
+version = "5.5.0"
 description = "Socket.IO server and client for Python"
 category = "main"
 optional = false
@@ -842,7 +850,7 @@ python-versions = ">=3.6"
 [package.dependencies]
 aiohttp = {version = ">=3.4", optional = true, markers = "extra == \"asyncio_client\""}
 bidict = ">=0.21.0"
-python-engineio = ">=4.1.0"
+python-engineio = ">=4.3.0"
 
 [package.extras]
 asyncio_client = ["aiohttp (>=3.4)"]
@@ -1077,12 +1085,17 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9 <3.10"
-content-hash = "eaff646d31ac2a8401c23cdb5e65e89270a5624493ad2d2998ec2c98a4f5006b"
+content-hash = "a18b6f875057b885076aa6d111be25792e3c80eb4395fd69b1f46b9ec7f0dfd8"
 
 [metadata.files]
 addict = [
     {file = "addict-2.4.0-py3-none-any.whl", hash = "sha256:249bb56bbfd3cdc2a004ea0ff4c2b6ddc84d53bc2194761636eb314d5cfa5dfc"},
     {file = "addict-2.4.0.tar.gz", hash = "sha256:b3b2210e0e067a281f5646c8c5db92e99b7231ea8b0eb5f74dbdf9e259d4e494"},
+]
+aenum = [
+    {file = "aenum-3.1.5-py2-none-any.whl", hash = "sha256:d50b9f8aa3e75c179056182820227eb09485e0bd07f968983744dfbd11958350"},
+    {file = "aenum-3.1.5-py3-none-any.whl", hash = "sha256:7db6e790434baece9e14a97da69118edc89ade821f36590ce32a295f1e500e89"},
+    {file = "aenum-3.1.5.tar.gz", hash = "sha256:2ebad8590b6a0183c0d9893523b458edce987ae4533339c5ac185cfac32daf1a"},
 ]
 aiofiles = [
     {file = "aiofiles-0.7.0-py3-none-any.whl", hash = "sha256:c67a6823b5f23fcab0a2595a289cec7d8c863ffcb4322fb8cd6b90400aedfdbc"},
@@ -1866,8 +1879,8 @@ python-engineio = [
     {file = "python_engineio-4.3.0-py3-none-any.whl", hash = "sha256:ad06a975f7e14cb3bb7137cbf70fd883804484d29acd58004d1db1e2a7fc0ad3"},
 ]
 python-socketio = [
-    {file = "python-socketio-5.4.1.tar.gz", hash = "sha256:ef4e273ddfebb421144a228cbab1e7e27ffe8d372514fa561e57d590ea6627b0"},
-    {file = "python_socketio-5.4.1-py3-none-any.whl", hash = "sha256:d84fa319e943aa18328280c8fbc4e2ba03cf9e96ff905b294b8b482af64532c9"},
+    {file = "python-socketio-5.5.0.tar.gz", hash = "sha256:ce972ea1b82aa1811fa10d30cf0d5c251b9a1558c3d66829b6fe70854bcccf0b"},
+    {file = "python_socketio-5.5.0-py3-none-any.whl", hash = "sha256:ca28a0ff0ca5dd05ec5ba4ee2572fe06b96d6f0bc7df384d8b50fbbc06986134"},
 ]
 requests = [
     {file = "requests-2.26.0-py2.py3-none-any.whl", hash = "sha256:6c1246513ecd5ecd4528a0906f910e8f0f9c6b8ec72030dc9fd154dc1a6efd24"},
