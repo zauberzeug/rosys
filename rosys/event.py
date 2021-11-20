@@ -10,9 +10,11 @@ listeners = collections.defaultdict(set)
 log = logging.getLogger('rosys.event')
 
 
-class Id(Enum):
+class Id(Enum, init='value __doc__'):
     '''Event Identifier. Every event has its own set of parameters.'''
+
     def _generate_next_value_(name, start, count, last_values):
+        '''uses enum name as value when calling auto()'''
         return name
 
     NEW_MACHINE_DATA = auto(), 'triggered in high frequency whenever machine data had been read; provides world object where the data has been written to.'
