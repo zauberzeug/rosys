@@ -42,6 +42,16 @@
         "connect": {
           "port": 5678
         }
+      },
+      {
+        "name": "Python: Current File",
+        "type": "python",
+        "request": "launch",
+        "program": "${file}",
+        "purpose": ["debug-test"],
+        "console": "integratedTerminal",
+        "justMyCode": false,
+        "version": "6.2"
       }
     ]
   }
