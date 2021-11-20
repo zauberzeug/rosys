@@ -5,7 +5,7 @@ import logging.config
 import os
 import sys
 from rosys.test.runtime import TestRuntime
-
+from rosys import event
 import icecream
 icecream.install()
 
@@ -91,6 +91,7 @@ pytest.register_assert_rewrite("tests.helper")
 
 @pytest.fixture
 async def runtime() -> Generator:
+    event.listeners.clear()
     runtime = TestRuntime()
     yield runtime
     await runtime.stop()
