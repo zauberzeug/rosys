@@ -11,11 +11,6 @@ The runtime will invoke the actor's `step` method in the interval defined in the
 If an actor wants to delay execution it should invoke `await self.sleep(delay_in_ms: float)`.
 Using `time.sleep` would result in blocking the whole runtime and `await asyncio.sleep` would delay execution of tests.
 
-### Nothing To Do
-
-If an actor decides it has nothing to do in its step, it should raise the `NothingToDo` exception.
-This makes sure follow-up actors and derived implementations are not executed.
-
 ## Threading and Multiprocessing
 
 Not every piece of code is already using asyncio.

@@ -60,7 +60,7 @@ class Odometer(Actor):
                         world.upload.mark(image)
                 if self.flips < 3:
                     self.log.warn('Avoiding flip')
-                    raise NothingToDo()
+                    return
             else:
                 self.flips = 0
 
