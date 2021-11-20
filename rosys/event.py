@@ -4,6 +4,7 @@ import inspect
 from aenum import Enum, auto
 from typing import Awaitable, Callable, Union
 import logging
+import weakref
 
 listeners = collections.defaultdict(set)
 log = logging.getLogger('rosys.event')
@@ -19,7 +20,8 @@ class Id(Enum):
 
 
 def register(event: Id, listener: Union[Callable, Awaitable]):
-    listeners[event].add(listener)
+    ref = weakref.WeakMethod(listener) if hasattr(listener, '__self__') else weakref.ref(listener)
+    listeners[event].add(ref)
 
 
 def unregister(event: Id, listener: Union[Callable, Awaitable]):
@@ -27,11 +29,14 @@ def unregister(event: Id, listener: Union[Callable, Awaitable]):
 
 
 async def call(event: Id, *args):
-    for listener in listeners.get(event, {}):
+    for listener in list(listeners.get(event, {})):
         try:
-            if inspect.iscoroutinefunction(listener):
-                await listener(*args)
+            if listener() is None:
+                unregister(event, listener)
+                continue
+            if inspect.iscoroutinefunction(listener()):
+                await listener()(*args)
             else:
-                listener(*args)
+                listener()(*args)
         except:
             log.exception(f'could not execute {listener=} for {event=}')
