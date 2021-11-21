@@ -7,6 +7,7 @@ from rosys.world.world import World, WorldState
 
 
 class TestRuntime(Runtime):
+    __test__ = False
     is_time_running: bool = True
 
     def __init__(self, world: World = None):
@@ -18,6 +19,7 @@ class TestRuntime(Runtime):
         from .helper import set_global_runtime  # NOTE import here to avoid PytestAssertRewriteWarning
         set_global_runtime(self)
         self.notifications = []
+        self.exception = None
 
     async def forward(self, seconds, dt=0.01):
         # NOTE we start runtime here because this makes it easy in the tests to prepare it beforehand
@@ -35,6 +37,9 @@ class TestRuntime(Runtime):
                 await asyncio.sleep(0)
             else:
                 await asyncio.sleep(0.01)
+            if self.exception is not None:
+                raise RuntimeError(f'error while forwarding time {dt} s') from self.exception
+
         self.log.info(f'-------------------> now it\'s {round(self.world.time,2)}')
 
     async def sleep(self, seconds: float):
@@ -57,3 +62,7 @@ class TestRuntime(Runtime):
         '''
         self.log.info(message)
         self.notifications.append(message)
+
+    def handle_exception(self, ex: Exception):
+        super().handle_exception(ex)
+        self.exception = ex

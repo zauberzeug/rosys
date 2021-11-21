@@ -57,14 +57,15 @@ class Runtime:
 
     async def start(self):
         if self.tasks:
-            raise Exception('run should be only executed once')
+            raise Exception('should be only executed once')
 
         event.register(event.Id.PAUSE_AUTOMATIONS, self.pause)
         for actor in self.actors:
             if actor.interval is not None:
                 self.tasks.append(task_logger.create_task(self.repeat(actor)))
+        self.tasks.append(asyncio.create_task(self.watch_emitted_events()))
 
-        await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyizing async debugging
+        await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
         self.activate_async_debugging()
 
     async def stop(self):
@@ -132,3 +133,19 @@ class Runtime:
             loop.slow_callback_duration = 0.05
         except:
             self.log.exception('could not activate async debugging')
+
+    async def watch_emitted_events(self):
+        while True:
+            try:
+                for task in event.tasks:
+                    if task.done() and task.exception():
+                        self.log.error('sjsdjd')
+                        self.handle_exception(task.exception())
+                # cleanup finished tasks
+                event.tasks = [t for t in event.tasks if not t.done()]
+            except:
+                pass
+            await asyncio.sleep(0 if self.world.mode == Mode.TEST else 0.1)
+
+    def handle_exception(self, ex: Exception):
+        self.log.exception(ex)

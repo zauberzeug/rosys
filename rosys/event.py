@@ -1,4 +1,5 @@
 import asyncio
+from asyncio.tasks import Task
 import collections
 import inspect
 from aenum import Enum, auto
@@ -6,6 +7,7 @@ from typing import Awaitable, Callable, Union
 import logging
 import weakref
 
+tasks: list[Task] = []
 listeners = collections.defaultdict(set)
 log = logging.getLogger('rosys.event')
 
@@ -51,4 +53,22 @@ async def call(event: Id, *args):
             else:
                 listener()(*args)
         except:
-            log.exception(f'could not execute {listener=} for {event=}')
+            log.exception(f'could not call {listener=} for {event=}')
+
+
+def emit(event: Id, *args):
+    loop = asyncio.get_event_loop()
+    for listener in list(listeners.get(event, {})):
+        try:
+            if hasattr(listener, '__name__') and listener.__name__ == '<lambda>':
+                tasks.append(loop.run_in_executor(None, listener, *args))
+                continue
+            if listener() is None:
+                unregister(event, listener)
+                continue
+            if inspect.iscoroutinefunction(listener()):
+                tasks.append(loop.create_task(listener()(*args)))
+            else:
+                tasks.append(loop.run_in_executor(None, listener, *args))
+        except:
+            log.exception(f'could not call {listener=} for {event=}')

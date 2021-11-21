@@ -1,6 +1,8 @@
 import pytest
 from rosys import event
 from aenum import Enum, auto
+from rosys.actors import Actor
+from rosys.test import TestRuntime
 
 
 @pytest.mark.asyncio
@@ -79,3 +81,30 @@ def test_extending_id_enum():
 
     assert NewId.TEST.value == 'TEST'
     assert NewId.TEST.__doc__ == 'docs'
+
+
+@pytest.mark.asyncio
+async def test_fire_and_forget_with_emit(runtime: TestRuntime):
+
+    class TestActor(Actor):
+
+        async def handle_event(self, param):
+            await self.sleep(1)
+            calls.append(param)
+            await self.sleep(1)
+            raise Exception('some failure which should be detected even when using "fire and forget"')
+
+    calls = []
+
+    actor = TestActor()
+    runtime.with_actors(actor)
+    event.register('some event', actor.handle_event)
+    event.emit('some event', 42)
+    await runtime.forward(0.5)
+    assert len(calls) == 0
+    await runtime.forward(0.5)
+    assert calls[0] == 42
+    with pytest.raises(RuntimeError) as ex_info:
+        await runtime.forward(1)
+    assert ex_info.value.__cause__ is not None
+    assert 'some failure' in str(ex_info.value.__cause__)
