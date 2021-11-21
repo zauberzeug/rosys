@@ -6,19 +6,14 @@ from .obstacle_object import ObstacleObject as obstacle_object
 from .path_object import PathObject as path_object
 from .robot_object import RobotObject as robot_object
 from .automation_controls import AutomationControls as automation_controls
+from .. import event
 
 
 def configure(ui: Ui, runtime: Runtime):
 
-    runtime_notify = runtime.notify
-
-    def notify(msg: str):
-        ui.notify(msg)
-        runtime_notify(msg)
-
     ui.on_startup(runtime.start())
     ui.on_shutdown(runtime.stop())
-    runtime.notify = notify
+    event.register(event.Id.NEW_NOTIFICATION, ui.notify)
 
     joystick.steerer = runtime.steerer
     keyboard_control.ui = ui

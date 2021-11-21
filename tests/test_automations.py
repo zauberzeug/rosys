@@ -14,8 +14,8 @@ async def test_driving_an_arc(runtime: Runtime):
     runtime.automator.add(drive_arc(runtime.world, runtime.esp))
     await runtime.forward(seconds=5.0)
     assert_pose(2, 1.2, deg=62)
-    assert len(runtime.notifications) == 1
-    assert runtime.notifications[0] == 'pausing automations because the last one has completed'
+    assert len(runtime.world.notifications) == 1
+    assert runtime.world.notifications[0][1] == 'pausing automations because the last one has completed'
 
 
 @pytest.mark.asyncio

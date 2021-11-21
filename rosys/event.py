@@ -21,6 +21,7 @@ class Id(Enum, init='value __doc__'):
 
     NEW_MACHINE_DATA = auto(), 'triggered in high frequency whenever machine data had been read; provides world object where the data has been written to.'
     PAUSE_AUTOMATIONS = auto(), 'call this event to pause any running automations; provide a description of the cause as string parameter.'
+    NEW_NOTIFICATION = auto(), 'call this event to notify the user; provide the message as string parameter'
 
 
 def register(event: Id, listener: Union[Callable, Awaitable]):

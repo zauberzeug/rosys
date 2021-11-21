@@ -18,7 +18,6 @@ class TestRuntime(Runtime):
 
         from .helper import set_global_runtime  # NOTE import here to avoid PytestAssertRewriteWarning
         set_global_runtime(self)
-        self.notifications = []
         self.exception = None
 
     async def forward(self, seconds, dt=0.01):
@@ -54,14 +53,6 @@ class TestRuntime(Runtime):
             return await loop.run_in_executor(None, callback, *args)
         finally:
             self.is_time_running = True
-
-    def notify(self, message: str):
-        '''Notify the user.
-
-        Should be replaced and implemented by the user interface (as it's done in rosys.ui.configure).
-        '''
-        self.log.info(message)
-        self.notifications.append(message)
 
     def handle_exception(self, ex: Exception):
         super().handle_exception(ex)

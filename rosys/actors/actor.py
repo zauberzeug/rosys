@@ -34,5 +34,8 @@ class Actor:
     async def pause_automations(self, *, because: str):
         await event.call(event.Id.PAUSE_AUTOMATIONS, because)
 
+    async def notify(self, message: str):
+        await event.call(event.Id.NEW_NOTIFICATION, message)
+
     def __str__(self) -> str:
         return type(self).__name__

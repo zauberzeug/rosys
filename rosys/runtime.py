@@ -48,7 +48,7 @@ class Runtime:
         if self.world.state == WorldState.PAUSED:
             return
         if because:
-            self.notify(f'pausing automations because {because}')
+            await event.call(event.Id.NEW_NOTIFICATION, f'pausing automations because {because}')
         self.world.state = WorldState.PAUSED
         await self.esp.drive(0, 0)
 
@@ -59,6 +59,7 @@ class Runtime:
         if self.tasks:
             raise Exception('should be only executed once')
 
+        event.register(event.Id.NEW_NOTIFICATION, self.store_notification)
         event.register(event.Id.PAUSE_AUTOMATIONS, self.pause)
         for actor in self.actors:
             if actor.interval is not None:
@@ -117,11 +118,7 @@ class Runtime:
 
         return params
 
-    def notify(self, message: str):
-        '''Notify the user.
-
-        Can be augmented by the user interface (as it is done in rosys.ui.configure).
-        '''
+    def store_notification(self, message: str):
         self.log.info(message)
         self.world.notifications.append((self.world.time, message))
 
@@ -139,13 +136,13 @@ class Runtime:
             try:
                 for task in event.tasks:
                     if task.done() and task.exception():
-                        self.log.error('sjsdjd')
                         self.handle_exception(task.exception())
                 # cleanup finished tasks
                 event.tasks = [t for t in event.tasks if not t.done()]
             except:
-                pass
+                self.log.exception('failing to watch emitted events')
             await asyncio.sleep(0 if self.world.mode == Mode.TEST else 0.1)
 
     def handle_exception(self, ex: Exception):
         self.log.exception(ex)
+#        self.log.exception('task failed to execute', exec_info=ex)
