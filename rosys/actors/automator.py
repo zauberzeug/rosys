@@ -17,8 +17,8 @@ class Automator(Actor):
         self.routines.clear()
         self.add(coro)
 
-    async def step(self, world: World):
-        if world.state != WorldState.RUNNING:
+    async def step(self):
+        if self.world.state != WorldState.RUNNING:
             return
 
         for coro in self.routines:
@@ -29,6 +29,6 @@ class Automator(Actor):
                 if not self.routines:
                     await self.pause_automations(because='the last one has completed')
             except:
-                await self.pause_automations(because='an exception occured in an automation')
+                await self.pause_automations(because='an exception occurred in an automation')
                 self.routines.clear()
                 self.log.exception(f'paused and cleared automations due to exception in {coro}')

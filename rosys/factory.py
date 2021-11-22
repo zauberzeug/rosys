@@ -8,15 +8,15 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def create_esp(world: World) -> Esp:
+def create_esp() -> Esp:
     try:
         return SerialEsp()
     except:
         log.warning('could not create serial esp')
         pass
     try:
-        return WebEsp(world)
+        return WebEsp()
     except:
         log.warning('could not create web esp')
         pass
-    return MockedEsp(world)
+    return MockedEsp()

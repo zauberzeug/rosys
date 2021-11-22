@@ -15,15 +15,15 @@ class SerialEsp(Esp):
         self.remainder = ''
         self.last_step = None
 
-    async def step(self, world: World):
-        dt = world.time - self.last_step if self.last_step is not None else 0
+    async def step(self):
+        dt = self.world.time - self.last_step if self.last_step is not None else 0
         if dt > 1:
             msg = 'esp serial communication can not be guaranteed (>= 1 sec)'
             self.log.error(msg + '; aborting automations')
             await self.pause_automations(because=msg)
         elif dt > 0.1:
             self.log.warn('esp serial communication is slow (>= 100 ms)')
-        self.last_step = world.time
+        self.last_step = self.world.time
 
         if not self.is_open():
             return
@@ -34,7 +34,7 @@ class SerialEsp(Esp):
             self.log.warning('Error reading from serial')
             return
 
-        self.remainder = await self.parse(self.remainder, world)
+        self.remainder = await self.parse(self.remainder, self.world)
 
     async def send_async(self, line):
         if not self.is_open():

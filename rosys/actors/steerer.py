@@ -14,9 +14,9 @@ class State(Enum):
 class Steerer(Actor):
     interval: float = 0.05
 
-    def __init__(self, world: World):
+    def __init__(self, esp: Esp):
         super().__init__()
-        self.world = world
+        self.esp = esp
         self.world_state = None
         self.state = State.IDLE
         self.orientation = None
@@ -49,11 +49,11 @@ class Steerer(Actor):
         self.orientation = None
         self.state = State.STOPPING
 
-    async def step(self, esp: Esp):
+    async def step(self):
         if self.state == State.STEERING:
-            await esp.drive(self.linear_speed, self.angular_speed)
+            await self.esp.drive(self.linear_speed, self.angular_speed)
         elif self.state == State.STOPPING:
-            await esp.drive(0, 0)
+            await self.esp.drive(0, 0)
             if self.world_state is not None:
                 self.world.state = self.world_state
                 self.world_state = None

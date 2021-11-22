@@ -20,6 +20,7 @@ class Runtime:
 
     def __init__(self, world: Optional[World] = None, persistence: Optional[Persistence] = None):
         self.world = world or World()
+        Actor.world = self.world
         self.tasks = []
         self.log = logging.getLogger(__name__)
 
@@ -27,10 +28,10 @@ class Runtime:
             self.persistence = persistence or Persistence(self.world)
             self.persistence.restore()
 
-        self.esp = factory.create_esp(self.world)
+        self.esp = factory.create_esp()
         self.log.info(f'selected {type(self.esp).__name__}')
         self.odometer = Odometer()
-        self.steerer = Steerer(self.world)
+        self.steerer = Steerer(self.esp)
         self.automator = Automator()
 
         self.actors = [
@@ -61,7 +62,6 @@ class Runtime:
 
         event.register(event.Id.NEW_NOTIFICATION, self.store_notification)
         event.register(event.Id.PAUSE_AUTOMATIONS, self.pause)
-        Actor.world = self.world
         for actor in self.actors:
             if actor.interval is not None:
                 self.tasks.append(task_logger.create_task(self.repeat(actor)))
@@ -79,12 +79,10 @@ class Runtime:
         await asyncio.gather(*[task_logger.create_task(a.tear_down()) for a in self.actors])
 
     async def repeat(self, actor: Actor):
-        params = self.get_params(actor.step)
-
         while True:
             start = self.world.time
             try:
-                await actor.step(*params)
+                await actor.step()
                 dt = self.world.time - start
             except (CancelledError, GeneratorExit):
                 return
@@ -106,18 +104,6 @@ class Runtime:
 
     def get_actor(self, _type: Type):
         return next((a for a in self.actors if type(a) is _type), None)
-
-    def get_params(self, func: Union[Callable, Awaitable]):
-        params = []
-        for name, type_ in get_type_hints(func).items():
-            for obj in [self.world] + self.actors:
-                if isinstance(obj, type_):
-                    params.append(obj)
-                    break
-            else:
-                raise Exception(f'parameter "{name}" of type {type_} is unknown')
-
-        return params
 
     def store_notification(self, message: str):
         self.log.info(message)

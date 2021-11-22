@@ -67,5 +67,5 @@ class Esp(Actor):
         if millis is not None:
             world.robot.clock_offset = world.time - millis / 1000
 
-        await event.call(event.Id.NEW_MACHINE_DATA, world)
+        await event.call(event.Id.NEW_MACHINE_DATA)
         return messages
