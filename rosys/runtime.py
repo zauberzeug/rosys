@@ -61,6 +61,7 @@ class Runtime:
 
         event.register(event.Id.NEW_NOTIFICATION, self.store_notification)
         event.register(event.Id.PAUSE_AUTOMATIONS, self.pause)
+        Actor.world = self.world
         for actor in self.actors:
             if actor.interval is not None:
                 self.tasks.append(task_logger.create_task(self.repeat(actor)))

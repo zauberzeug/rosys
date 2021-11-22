@@ -22,7 +22,7 @@ class MockedEsp(Esp):
         world.robot.odometry.append(velocity)
         world.robot.battery = 25.0 + np.sin(0.1 * world.time) + 0.02 * np.random.randn()
         world.robot.temperature = np.random.uniform(34, 35)
-        await event.call(event.Id.NEW_MACHINE_DATA, world)
+        await event.call(event.Id.NEW_MACHINE_DATA)
 
     async def send_async(self, line):
         if line.startswith("wheels power "):

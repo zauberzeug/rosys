@@ -2,10 +2,13 @@ import asyncio
 import logging
 from typing import Callable
 from concurrent.futures import ProcessPoolExecutor
+
+from rosys.world.world import World
 from .. import event
 
 
 class Actor:
+    world: World
     interval: float = None
     process_pool = ProcessPoolExecutor()
 

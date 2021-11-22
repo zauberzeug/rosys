@@ -17,11 +17,11 @@ class Odometer(Actor):
         self.flip_detection_initialized: bool = False
         event.register(event.Id.NEW_MACHINE_DATA, self.handle_velocity)
 
-    def handle_velocity(self, world: World):
-        if not world.robot.odometry:
+    def handle_velocity(self):
+        if not self.world.robot.odometry:
             return
-        while world.robot.odometry:
-            velocity = world.robot.odometry.pop(0)
+        while self.world.robot.odometry:
+            velocity = self.world.robot.odometry.pop(0)
 
             if self.last_time is None:
                 self.last_time = velocity.time
@@ -30,43 +30,43 @@ class Odometer(Actor):
             dt = velocity.time - self.last_time
             self.last_time = velocity.time
 
-            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=world.time)
+            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=self.world.time)
             self.steps.append(step)
-            world.robot.prediction += step
-            world.robot.simulation += step
+            self.world.robot.prediction += step
+            self.world.robot.simulation += step
 
-            world.robot.current_velocity = velocity
+            self.world.robot.current_velocity = velocity
 
             if step.linear or step.angular:
-                world.robot.last_movement = step.time
+                self.world.robot.last_movement = step.time
 
-        self.prune_steps(world.time - 10.0)
+        self.prune_steps(self.world.time - 10.0)
 
-    def handle_detection(self, world: World):
-        if world.robot.detection is None or not any(self.steps) or world.robot.detection.time < self.steps[0].time:
+    def handle_detection(self):
+        if self.world.robot.detection is None or not any(self.steps) or self.world.robot.detection.time < self.steps[0].time:
             return
 
-        while self.steps[0].time < world.robot.detection.time:
+        while self.steps[0].time < self.world.robot.detection.time:
             del self.steps[0]
 
         # NOTE: attempt to avoid 180-degree flips due to swapped marker points
         if self.flip_detection_initialized:
             dYaw = sum(step.angular for step in self.steps)
-            if abs(angle(world.robot.prediction.yaw - dYaw, world.robot.detection.yaw)) > np.deg2rad(90):
+            if abs(angle(self.world.robot.prediction.yaw - dYaw, self.world.robot.detection.yaw)) > np.deg2rad(90):
                 self.flips += 1
-                for image in world.images:
-                    if image.time == world.robot.detection.time:
+                for image in self.world.images:
+                    if image.time == self.world.robot.detection.time:
                         self.log.warning(f'adding {image.id} to upload queue because our position has flipped')
-                        world.upload.mark(image)
+                        self.world.upload.mark(image)
                 if self.flips < 3:
                     self.log.warn('Avoiding flip')
                     return
             else:
                 self.flips = 0
 
-        world.robot.prediction = world.robot.detection.copy(deep=True)
+        self.world.robot.prediction = self.world.robot.detection.copy(deep=True)
         for step in self.steps:
-            world.robot.prediction += step
+            self.world.robot.prediction += step
 
         self.flip_detection_initialized = True
 
