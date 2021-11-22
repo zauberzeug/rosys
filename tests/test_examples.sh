@@ -31,6 +31,7 @@ pushd ../
 check main.py || exitcode=1
 check docs/scene_on_click.py || exitcode=1
 check docs/scene_on_click_with_automation_controls.py || exitcode=1
+check docs/watch_battery_level.py || exitcode=1
 check docs/path_planning.py || exitcode=1
 check docs/robot_shape.py || exitcode=1
 check examples/hello_bot/main.py || exitcode=1

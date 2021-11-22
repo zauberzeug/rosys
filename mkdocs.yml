@@ -8,6 +8,7 @@ nav:
   - user_interface.md
   - world.md
   - actors.md
+  - events.md
   - safety.md
   - troubleshooting.md
   - development.md

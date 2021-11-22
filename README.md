@@ -4,7 +4,7 @@ RoSys provides an easy-to-use robot system.
 Its purpose is simlar to [ROS](https://www.ros.org/).
 But RoSys is fully based on modern web technologies and focusses on mobile robotics.
 
-See full documentation at https://rosys.io/.
+See full documentation at [rosys.io](https://rosys.io/).
 
 ## Features
 

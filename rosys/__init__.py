@@ -10,3 +10,4 @@ from .world.pose import Pose
 from .world.robot import Robot, RobotShape
 from .world.spline import Spline
 from .world.world import World, WorldState
+from . import event
