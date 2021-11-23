@@ -41,6 +41,8 @@ def unregister(event: Id, listener: Union[Callable, Awaitable]):
 
 
 async def call(event: Id, *args):
+    '''Fires event and waits async until all registered listeners are completed'''
+
     for listener in list(listeners.get(event, {})):
         try:
             if hasattr(listener, '__name__') and listener.__name__ == '<lambda>':
@@ -58,6 +60,8 @@ async def call(event: Id, *args):
 
 
 def emit(event: Id, *args):
+    '''Fires event without waiting for the result.'''
+
     loop = asyncio.get_event_loop()
     for listener in list(listeners.get(event, {})):
         try:
