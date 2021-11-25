@@ -72,8 +72,8 @@ def emit(event: Id, *args):
                 unregister(event, listener)
                 continue
             if inspect.iscoroutinefunction(listener()):
-                tasks.append(loop.create_task(listener()(*args)))
+                tasks.append(loop.create_task(listener()(*args), name=f'handle {event=}'))
             else:
-                tasks.append(loop.run_in_executor(None, listener, *args))
+                tasks.append(loop.run_in_executor(None, listener,  *args))
         except:
             log.exception(f'could not call {listener=} for {event=}')

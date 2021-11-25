@@ -64,7 +64,7 @@ class Runtime:
         event.register(event.Id.PAUSE_AUTOMATIONS, self.pause)
         for actor in self.actors:
             if actor.interval is not None:
-                self.tasks.append(task_logger.create_task(self.repeat(actor)))
+                self.tasks.append(task_logger.create_task(self.repeat(actor), name=actor.name))
         self.tasks.append(asyncio.create_task(self.watch_emitted_events()))
 
         await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
@@ -96,7 +96,6 @@ class Runtime:
                         f'because it only took {dt*1000:.0f} ms; ' +
                         f'delaying this step for {delay*1000:.0f} ms')
                     await actor.sleep(delay)
-
             try:
                 await actor.sleep(actor.interval - dt)
             except (CancelledError, GeneratorExit):
@@ -114,7 +113,7 @@ class Runtime:
         try:
             loop = asyncio.get_running_loop()
             loop.set_debug(True)
-            loop.slow_callback_duration = 0.05
+            loop.slow_callback_duration = 0.05 if self.world.mode == Mode.REAL else 0.05
         except:
             self.log.exception('could not activate async debugging')
 
