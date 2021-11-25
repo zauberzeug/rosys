@@ -29,6 +29,7 @@ class SerialEsp(Esp):
             return
 
         try:
+            # NOTE we just read the existing bytes from buffer... no need to go async
             self.remainder += self.aioserial.read_all().decode()
         except:
             self.log.warning('Error reading from serial')
