@@ -9,7 +9,6 @@ class LizardSerialDebug():
     lizard: Esp = None  # will be set by rosys.ui.configure
 
     def __init__(self) -> None:
-        ic(type(self.lizard))
         if type(self.lizard) is not SerialEsp:
             return
         self.ui.switch('Lizard', value=self.lizard.is_open(), on_change=self.change)
