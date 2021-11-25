@@ -14,6 +14,7 @@ def create_task(
     coroutine: Awaitable[T],
     *,
     loop: Optional[asyncio.AbstractEventLoop] = None,
+    name: str = 'unnamed task',
 ) -> 'asyncio.Task[T]':  # This type annotation has to be quoted for Python < 3.9, see https://www.python.org/dev/peps/pep-0585/
     '''
     This helper function wraps a ``loop.create_task(coroutine())`` call and ensures there is
@@ -27,7 +28,7 @@ def create_task(
     message_args = ()
     if loop is None:
         loop = asyncio.get_running_loop()
-    task = loop.create_task(coroutine)
+    task = loop.create_task(coroutine, name=name)
     task.add_done_callback(
         functools.partial(_handle_task_result, logger=logger, message=message, message_args=message_args)
     )
