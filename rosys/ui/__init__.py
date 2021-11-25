@@ -6,6 +6,7 @@ from .obstacle_object import ObstacleObject as obstacle_object
 from .path_object import PathObject as path_object
 from .robot_object import RobotObject as robot_object
 from .automation_controls import AutomationControls as automation_controls
+from .lizard_serial_debug import LizardSerialDebug as lizard_serial_debug
 from .. import event
 
 
@@ -23,3 +24,5 @@ def configure(ui: Ui, runtime: Runtime):
     robot_object.ui = ui
     automation_controls.runtime = runtime
     automation_controls.ui = ui
+    lizard_serial_debug.ui = ui
+    lizard_serial_debug.lizard = runtime.esp

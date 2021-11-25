@@ -51,3 +51,16 @@ class SerialEsp(Esp):
         if self.aioserial is None:
             self.aioserial = aioserial.AioSerial('/dev/esp', baudrate=115200)
         return self.aioserial.isOpen()
+
+    def connect(self):
+        if not self.is_open():
+            return
+        self.aioserial.open()
+
+    def disconnect(self):
+        if not self.is_open():
+            return
+        self.aioserial.close()
+
+    def __str__(self) -> str:
+        return f'{type(self).__name__} ({"connected" if self.is_open else "disconnected"})'
