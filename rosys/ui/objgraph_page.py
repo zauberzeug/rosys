@@ -10,11 +10,11 @@ import random
 import base64
 
 
-class MemoryPage:
+class ObjgraphPage:
     ui: Ui = None  # will be set by rosys.ui.configure
 
     def __init__(self) -> None:
-        with self.ui.page('/memory'):
+        with self.ui.page('/objgraph'):
             self.ui.label('Analyze Memory')
             self.ui.button('log most common types', on_click=lambda: objgraph.show_most_common_types(limit=20))
             self.ui.button('log growth', on_click=lambda: objgraph.show_growth(limit=20))

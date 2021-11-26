@@ -8,7 +8,7 @@ from .path_object import PathObject as path_object
 from .robot_object import RobotObject as robot_object
 from .automation_controls import AutomationControls as automation_controls
 from .lizard_serial_debug import LizardSerialDebug as lizard_serial_debug
-from .memory_page import MemoryPage as memory_page
+from .objgraph_page import ObjgraphPage as objgraph_page
 from .pyloot_page import PylootPage as pyloot_page
 from .. import event
 
@@ -28,6 +28,6 @@ def configure(ui: Ui, runtime: Runtime):
     automation_controls.ui = ui
     lizard_serial_debug.ui = ui
     lizard_serial_debug.lizard = runtime.esp
-    memory_page.ui = ui
+    objgraph_page.ui = ui
     pyloot_page.ui = ui
     pyloot_page.app = app
