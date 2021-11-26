@@ -1,4 +1,5 @@
 from nicegui.ui import Ui
+from nicegui import app
 from ..runtime import Runtime
 from .joystick import Joystick as joystick
 from .keyboard_control import KeyboardControl as keyboard_control
@@ -8,6 +9,7 @@ from .robot_object import RobotObject as robot_object
 from .automation_controls import AutomationControls as automation_controls
 from .lizard_serial_debug import LizardSerialDebug as lizard_serial_debug
 from .memory_page import MemoryPage as memory_page
+from .pyloot_page import PylootPage as pyloot_page
 from .. import event
 
 
@@ -27,3 +29,5 @@ def configure(ui: Ui, runtime: Runtime):
     lizard_serial_debug.ui = ui
     lizard_serial_debug.lizard = runtime.esp
     memory_page.ui = ui
+    pyloot_page.ui = ui
+    pyloot_page.app = app
