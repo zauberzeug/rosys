@@ -2,7 +2,7 @@ from nicegui.elements.log import Log
 from nicegui.ui import Ui
 import rosys
 import rosys.ui
-from outside_in_tracking import World
+from rosys import World
 from rosys import event
 from datetime import datetime
 import objgraph
