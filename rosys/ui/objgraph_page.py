@@ -8,6 +8,7 @@ from datetime import datetime
 import objgraph
 import random
 import base64
+import asyncio
 
 
 class ObjgraphPage:
@@ -15,9 +16,12 @@ class ObjgraphPage:
 
     def __init__(self) -> None:
         with self.ui.page('/objgraph'):
-            self.ui.label('Analyze Memory')
-            self.ui.button('log most common types', on_click=lambda: objgraph.show_most_common_types(limit=20))
-            self.ui.button('log growth', on_click=lambda: objgraph.show_growth(limit=20))
+            t = self.ui.timer(10, self.refresh_stats, active=False)
+            self.ui.switch('track objects (every 10 s)').bind_value_to(t, 'active')
+            with self.ui.column():
+                self.growth = self.ui.label()
+                self.leaking = self.ui.label()
+                self.overall = self.ui.label()
 
             self.ui.input('Search Object', on_change=self.update_graph)
             self.graph = self.ui.row().style('width:40%')
@@ -34,3 +38,26 @@ class ObjgraphPage:
         self.graph.visible = True
         with self.graph:
             self.ui.image('data:image/png;base64,'+str(image))
+
+    @staticmethod
+    def get_objgraph_stats():
+        growth = 'object growth every 10 sec: '
+        for obj in objgraph.growth(4):
+            growth += f'{obj[0]}: +{obj[2]}  '
+
+        leaking = 'obj without refs: '
+        for o, c in list(objgraph.typestats(objgraph.get_leaking_objects()).items())[:4]:
+            leaking += f'{o}: {c}  '
+
+        overall = 'overall obj count: '
+        for o, c in list(objgraph.typestats().items())[:4]:
+            overall += f'{o}: {c}  '
+
+        return growth, leaking, overall
+
+    async def refresh_stats(self):
+        loop = asyncio.get_running_loop()
+        growth, leaking, overall = await loop.run_in_executor(None, self.get_objgraph_stats)
+        self.growth.set_text(growth)
+        self.leaking.set_text(leaking)
+        self.overall.set_text(overall)
