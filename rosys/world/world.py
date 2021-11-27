@@ -13,6 +13,8 @@ class WorldState(Enum):
 
 
 class World(BaseModel):
+    __slots__ = ['__weakref__']  # required for nicegui binding with weakrefs
+
     robot: Robot = Robot()
     mode: Mode = Mode.REAL
     state: WorldState = WorldState.PAUSED
