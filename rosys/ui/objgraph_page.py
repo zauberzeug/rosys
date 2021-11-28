@@ -59,24 +59,25 @@ class ObjgraphPage:
         growth = 'object growth every 10 sec: '
         for obj in growth_objs:
             growth += f'{obj[0]}: +{obj[2]}  '
-        biggest_growth = growth_objs[0][0]
         leaking = 'obj without refs: '
         for o, c in list(objgraph.typestats(objgraph.get_leaking_objects()).items())[:4]:
             leaking += f'{o}: {c}  '
         overall = 'overall obj count: '
         for o, c in list(objgraph.typestats().items())[:4]:
             overall += f'{o}: {c}  '
-        new = objgraph.at_addrs(objgraph.get_new_ids()[biggest_growth])
-        counts = Counter([str(i) for i in new])
-        if counts:
-            most_common = counts.most_common()[0][0]
-            unique = {str(i): i for i in new}
-            # build chain for most common object
-            objgraph.show_chain(objgraph.find_backref_chain(
-                unique[most_common],
-                objgraph.is_proper_module),
-                filename='/tmp/rosys_objgraph_most_common.png'
-            )
+        if growth_objs:
+            biggest_growth = growth_objs[0][0]
+            new = objgraph.at_addrs(objgraph.get_new_ids()[biggest_growth])
+            counts = Counter([str(i) for i in new])
+            if counts:
+                most_common = counts.most_common()[0][0]
+                unique = {str(i): i for i in new}
+                # build chain for most common object
+                objgraph.show_chain(objgraph.find_backref_chain(
+                    unique[most_common],
+                    objgraph.is_proper_module),
+                    filename='/tmp/rosys_objgraph_most_common.png'
+                )
 
         return growth, leaking, overall, counts
 
