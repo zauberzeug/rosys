@@ -21,7 +21,7 @@ Actors can specify a frequency at which they want to get called.
 ## Events
 
 [Events](events.md) allow actors to signal a notable new state (most of the time written to the world).
-Other actors or ui components can register for these events to act upon them.
+Other actors or UI components can register for these events to act upon them.
 This is helpful for example if one actor fetches an image and another one should process it as soon as it is available.
 
 ## Runtime

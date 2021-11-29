@@ -15,8 +15,8 @@ class BatteryGuard(Actor):
         rosys.event.register(rosys.event.Id.NEW_MACHINE_DATA, self.check_battery)
 
     async def check_battery(self):
-        if self.world.robot.battery <= 24:
-            await rosys.event.call(rosys.event.Id.PAUSE_AUTOMATIONS, 'battery level just 24 V')
+        if self.world.robot.battery < 24:
+            await rosys.event.call(rosys.event.Id.PAUSE_AUTOMATIONS, 'battery level is below 24 V')
 
 
 runtime.with_actors(BatteryGuard())

@@ -28,15 +28,15 @@ When stopped you will see its output on the console.
 
 ## Memory Leaks
 
-To analyze memory leaks rosys allows the integration of [pyloot](https://github.com/reallistic/pyloot) as a separate page:
+To analyze memory leaks RoSys allows the integration of [pyloot](https://github.com/reallistic/pyloot) as a separate page:
 
 ```python hl_lines="6"
-    from nicegui import ui
-    import rosys.ui
+from nicegui import ui
+import rosys.ui
 
-    runtime = rosys.Runtime()
-    rosys.ui.configure(ui, runtime)
-    rosys.ui.pyloot_page()
+runtime = rosys.Runtime()
+rosys.ui.configure(ui, runtime)
+rosys.ui.pyloot_page()
 ```
 
 This will add a route `/pyloot` to your app.

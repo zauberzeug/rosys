@@ -113,7 +113,7 @@ class Runtime:
         try:
             loop = asyncio.get_running_loop()
             loop.set_debug(True)
-            loop.slow_callback_duration = 0.05 if self.world.mode == Mode.REAL else 0.05
+            loop.slow_callback_duration = 0.05
         except:
             self.log.exception('could not activate async debugging')
 

@@ -1,12 +1,12 @@
 from __future__ import annotations  # NOTE: for PEP 563 (postponed evaluation of annotations)
 from pydantic import BaseModel
+from dataclasses import dataclass
 import numpy as np
 from .point import Point
-from dataclasses import dataclass
 
 
 @dataclass
-class PoseStep():
+class PoseStep:
     linear: float
     angular: float
     time: float
