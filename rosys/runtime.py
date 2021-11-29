@@ -130,5 +130,4 @@ class Runtime:
             await asyncio.sleep(0 if self.world.mode == Mode.TEST else 0.1)
 
     def handle_exception(self, ex: Exception):
-        self.log.exception(ex)
-#        self.log.exception('task failed to execute', exec_info=ex)
+        self.log.exception('task failed to execute', exc_info=ex)
