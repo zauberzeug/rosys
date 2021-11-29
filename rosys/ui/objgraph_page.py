@@ -12,6 +12,7 @@ import random
 import base64
 import asyncio
 import logging
+import gc
 
 log = logging.getLogger('rosys.objgraph_page')
 
@@ -55,6 +56,7 @@ class ObjgraphPage:
             log.exception('could not load image ' + file)
 
     def get_objgraph_stats(self):
+        gc.collect()
         growth_objs = objgraph.growth(4)
         growth = 'object growth every 10 sec: '
         for obj in growth_objs:
