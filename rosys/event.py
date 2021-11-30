@@ -42,7 +42,8 @@ def unregister(event: Id, listener: Union[Callable, Awaitable]):
 
 async def call(event: Id, *args):
     '''Fires event and waits async until all registered listeners are completed'''
-
+    # if event != Id.NEW_MACHINE_DATA:
+    #     log.info(f'calling {event=}')
     for listener in list(listeners.get(event, {})):
         try:
             if hasattr(listener, '__name__') and listener.__name__ == '<lambda>':
@@ -62,8 +63,10 @@ async def call(event: Id, *args):
 def emit(event: Id, *args):
     '''Fires event without waiting for the result.'''
 
+    # log.info(f'emitting {event=}')
     loop = asyncio.get_event_loop()
     for listener in list(listeners.get(event, {})):
+        #log.info(f'emitting {event=} with {listener=}')
         try:
             if hasattr(listener, '__name__') and listener.__name__ == '<lambda>':
                 tasks.append(loop.run_in_executor(None, listener, *args))
