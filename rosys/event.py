@@ -19,6 +19,7 @@ class Id(Enum, init='value __doc__'):
         '''uses enum name as value when calling auto()'''
         return name
 
+    ROBOT_MOVED = auto(), 'triggered whenever a robot movement is detected'
     NEW_MACHINE_DATA = auto(), 'triggered in high frequency whenever machine data has been read'
     PAUSE_AUTOMATIONS = auto(), 'call this event to pause any running automations; provide a description of the cause as string parameter.'
     NEW_NOTIFICATION = auto(), 'call this event to notify the user; provide the message as string parameter'
@@ -63,7 +64,7 @@ async def call(event: Id, *args):
 def emit(event: Id, *args):
     '''Fires event without waiting for the result.'''
 
-    # log.info(f'emitting {event=}')
+    #log.info(f'emitting {event=}')
     loop = asyncio.get_event_loop()
     for listener in list(listeners.get(event, {})):
         #log.info(f'emitting {event=} with {listener=}')
@@ -77,6 +78,6 @@ def emit(event: Id, *args):
             if inspect.iscoroutinefunction(listener()):
                 tasks.append(loop.create_task(listener()(*args), name=f'handle {event=}'))
             else:
-                tasks.append(loop.run_in_executor(None, listener,  *args))
+                tasks.append(loop.run_in_executor(None, listener(),  *args))
         except:
             log.exception(f'could not call {listener=} for {event=}')

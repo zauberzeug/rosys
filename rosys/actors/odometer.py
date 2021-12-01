@@ -39,6 +39,7 @@ class Odometer(Actor):
 
             if step.linear or step.angular:
                 self.world.robot.last_movement = step.time
+                event.emit(event.Id.ROBOT_MOVED)
 
         self.prune_steps(self.world.time - 10.0)
 
