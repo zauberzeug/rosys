@@ -26,7 +26,7 @@ class TestRuntime(Runtime):
             for actor in self.actors:
                 actor.sleep = self.sleep
                 actor.run_cpu_bound = self.run_cpu_bound
-            await self.start()
+            await self.startup()
 
         end_time = self.world.time + seconds
         self.log.info(f'-------------------> forwarding to {round(end_time,2)}')

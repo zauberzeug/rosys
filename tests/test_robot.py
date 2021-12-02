@@ -35,6 +35,6 @@ async def test_power(runtime: Runtime):
 async def test_stopping_robot_when_runime_stops(runtime: Runtime):
     await runtime.esp.power(1, 1)
     await runtime.forward(seconds=1.0)
-    await runtime.stop()
+    await runtime.shutdown()
     assert runtime.esp.linear_velocity == 0
     assert runtime.esp.angular_velocity == 0

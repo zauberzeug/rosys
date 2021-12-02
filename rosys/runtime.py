@@ -56,7 +56,7 @@ class Runtime:
     def resume(self):
         self.world.state = WorldState.RUNNING
 
-    async def start(self):
+    async def startup(self):
         if self.tasks:
             raise Exception('should be only executed once')
 
@@ -70,7 +70,7 @@ class Runtime:
         await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
         self.activate_async_debugging()
 
-    async def stop(self):
+    async def shutdown(self):
         await self.esp.drive(0, 0)
         if self.world.mode != Mode.TEST:
             self.persistence.backup()

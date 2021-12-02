@@ -94,4 +94,4 @@ async def runtime() -> Generator:
     event.listeners.clear()
     runtime = TestRuntime()
     yield runtime
-    await runtime.stop()
+    await runtime.shutdown()

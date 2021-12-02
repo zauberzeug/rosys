@@ -14,8 +14,8 @@ from .. import event
 
 
 def configure(ui: Ui, runtime: Runtime):
-    ui.on_startup(runtime.start())
-    ui.on_shutdown(runtime.stop())
+    ui.on_startup(runtime.startup())
+    ui.on_shutdown(runtime.shutdown())
     event.register(event.Id.NEW_NOTIFICATION, ui.notify)
 
     joystick.steerer = runtime.steerer
