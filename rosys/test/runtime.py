@@ -3,7 +3,7 @@ from typing import Callable
 from rosys.runtime import Runtime
 from rosys.world.mode import Mode
 from rosys.world.robot import Robot
-from rosys.world.world import World, WorldState
+from rosys.world.world import World, AutomationState
 
 
 class TestRuntime(Runtime):
@@ -12,7 +12,7 @@ class TestRuntime(Runtime):
 
     def __init__(self, world: World = None):
         if world is None:
-            world = World(mode=Mode.TEST, state=WorldState.RUNNING, robot=Robot())
+            world = World(mode=Mode.TEST, automation_state=AutomationState.RUNNING, robot=Robot())
         super().__init__(world)
         self.world.set_time(0)  # NOTE in tests we start at zero for better reading
 

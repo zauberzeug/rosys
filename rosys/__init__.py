@@ -9,5 +9,5 @@ from .world.point3d import Point3d
 from .world.pose import Pose
 from .world.robot import Robot, RobotShape
 from .world.spline import Spline
-from .world.world import World, WorldState
+from .world.world import World, AutomationState
 from . import event

@@ -1,5 +1,5 @@
 from typing import Coroutine
-from ..world.world import World, WorldState
+from ..world.world import World, AutomationState
 from .actor import Actor
 
 
@@ -18,7 +18,7 @@ class Automator(Actor):
         self.add(coro)
 
     async def step(self):
-        if self.world.state != WorldState.RUNNING:
+        if self.world.automation_state != AutomationState.RUNNING:
             return
 
         for coro in self.routines:

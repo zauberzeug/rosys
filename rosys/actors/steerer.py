@@ -1,7 +1,7 @@
 from enum import Enum
 from rosys.actors.esp import Esp
 from rosys.actors.actor import Actor
-from rosys.world.world import World, WorldState
+from rosys.world.world import World, AutomationState
 
 
 class State(Enum):
@@ -26,10 +26,10 @@ class Steerer(Actor):
     def start(self):
         self.log.info('start steering')
         self.state = State.INITIALIZING
-        if self.world.state == WorldState.RUNNING:
+        if self.world.automation_state == AutomationState.RUNNING:
             self.log.info('pausing automations')
-            self.world_state = self.world.state
-            self.world.state = WorldState.PAUSED
+            self.world_state = self.world.automation_state
+            self.world.automation_state = AutomationState.PAUSED
 
     def update(self, x: float, y: float):
         if self.state == State.INITIALIZING:
@@ -55,7 +55,7 @@ class Steerer(Actor):
         elif self.state == State.STOPPING:
             await self.esp.drive(0, 0)
             if self.world_state is not None:
-                self.world.state = self.world_state
+                self.world.automation_state = self.world_state
                 self.world_state = None
             self.state = State.IDLE
 

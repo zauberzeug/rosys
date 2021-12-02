@@ -3,7 +3,7 @@ from nicegui.ui import Ui
 from .. import Runtime
 from .. import task_logger
 from ..automations import drive_path
-from ..world.world import WorldState
+from ..world.world import AutomationState
 
 
 class AutomationControls:
@@ -16,12 +16,12 @@ class AutomationControls:
             self.runtime.world.tracking = False
 
         def toggle_automation():
-            if self.runtime.world.state == WorldState.PAUSED:
+            if self.runtime.world.automation_state == AutomationState.PAUSED:
                 if not self.runtime.automator.routines:
                     self.runtime.automator.add(drive_path(self.runtime.world, self.runtime.esp))
                 self.runtime.resume()
                 self.runtime.world.tracking = True
-            elif self.runtime.world.state == WorldState.RUNNING:
+            elif self.runtime.world.automation_state == AutomationState.RUNNING:
                 pause()
 
         def stop():
@@ -32,8 +32,8 @@ class AutomationControls:
         self.ui.button(on_click=stop).props('icon=stop outline')
 
         def refresh_steering():
-            if self.runtime.world.state == WorldState.RUNNING:
+            if self.runtime.world.automation_state == AutomationState.RUNNING:
                 automation_button.props(replace='icon=pause')
-            if self.runtime.world.state == WorldState.PAUSED:
+            if self.runtime.world.automation_state == AutomationState.PAUSED:
                 automation_button.props(replace='icon=play_arrow')
         self.ui.timer(0.1, refresh_steering)

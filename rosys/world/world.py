@@ -7,7 +7,7 @@ from .path_segment import PathSegment
 from .robot import Robot
 
 
-class WorldState(Enum):
+class AutomationState(Enum):
     RUNNING = 1
     PAUSED = 2
 
@@ -17,7 +17,7 @@ class World(BaseModel):
 
     robot: Robot = Robot()
     mode: Mode = Mode.REAL
-    state: WorldState = WorldState.PAUSED
+    automation_state: AutomationState = AutomationState.PAUSED
     _time: float = PrivateAttr(default_factory=time.time)
     tracking: bool = False
     robot_locator_cam: str = None

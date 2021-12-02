@@ -11,7 +11,7 @@ from .actors.actor import Actor
 from .actors.odometer import Odometer
 from .actors.steerer import Steerer
 from .actors.automator import Automator
-from .world.world import World, WorldState
+from .world.world import World, AutomationState
 from .world.mode import Mode
 from . import event
 
@@ -46,15 +46,15 @@ class Runtime:
         return self
 
     async def pause(self, because: Optional[str] = None):
-        if self.world.state == WorldState.PAUSED:
+        if self.world.automation_state == AutomationState.PAUSED:
             return
         if because:
             await event.call(event.Id.NEW_NOTIFICATION, f'pausing automations because {because}')
-        self.world.state = WorldState.PAUSED
+        self.world.automation_state = AutomationState.PAUSED
         await self.esp.drive(0, 0)
 
     def resume(self):
-        self.world.state = WorldState.RUNNING
+        self.world.automation_state = AutomationState.RUNNING
 
     async def startup(self):
         if self.tasks:
