@@ -68,10 +68,7 @@ with ui.card():
         path = rosys.ui.path_object()
 
     with ui.row():
-        ui.button(on_click=runtime.resume).props('outline icon=play_arrow') \
-            .bind_visibility_from(world, 'automation_state', value=rosys.AutomationState.PAUSED)
-        ui.button(on_click=lambda: asyncio.create_task(runtime.pause())).props('outline icon=pause') \
-            .bind_visibility_from(world, 'automation_state', value=rosys.AutomationState.RUNNING)
+        rosys.ui.automation_controls()
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
 

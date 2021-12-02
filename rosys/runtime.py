@@ -46,12 +46,7 @@ class Runtime:
         return self
 
     async def pause(self, because: Optional[str] = None):
-        if self.world.automation_state == AutomationState.PAUSED:
-            return
-        if because:
-            await event.call(event.Id.NEW_NOTIFICATION, f'pausing automations because {because}')
-        self.world.automation_state = AutomationState.PAUSED
-        await self.esp.drive(0, 0)
+        await event.call(event.Id.PAUSE_AUTOMATIONS, because)
 
     def resume(self):
         self.world.automation_state = AutomationState.RUNNING
@@ -61,7 +56,6 @@ class Runtime:
             raise Exception('should be only executed once')
 
         event.register(event.Id.NEW_NOTIFICATION, self.store_notification)
-        event.register(event.Id.PAUSE_AUTOMATIONS, self.pause)
         for actor in self.actors:
             if actor.interval is not None:
                 self.tasks.append(task_logger.create_task(self.repeat(actor), name=actor.name))

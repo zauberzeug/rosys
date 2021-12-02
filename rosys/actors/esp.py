@@ -10,6 +10,10 @@ from .. import event
 
 class Esp(Actor):
 
+    def __init__(self) -> None:
+        super().__init__()
+        event.register(event.Id.PAUSE_AUTOMATIONS, self.stop)
+
     async def drive(self, linear: float, angular: float):
         await self.send_async('wheels speed %.3f,%.3f' % (linear, angular))
 
@@ -18,6 +22,9 @@ class Esp(Actor):
 
     def configure(self, hardware: list[HardwareGroup]):
         task_logger.create_task(self.configure_async(hardware))
+
+    async def stop(self, _):
+        await self.drive(0, 0)
 
     async def configure_async(self, hardware: list[HardwareGroup]):
         await self.send_async('esp erase')

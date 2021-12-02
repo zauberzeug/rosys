@@ -11,8 +11,9 @@ class AutomationControls:
     runtime: Runtime
 
     def __init__(self) -> None:
+
         def pause():
-            task_logger.create_task(self.runtime.pause())
+            task_logger.create_task(self.runtime.pause(because='pause button was pressed'))
             self.runtime.world.tracking = False
 
         def toggle_automation():
@@ -31,9 +32,9 @@ class AutomationControls:
         automation_button = self.ui.button(on_click=toggle_automation).props('icon=play_arrow outline')
         self.ui.button(on_click=stop).props('icon=stop outline')
 
-        def refresh_steering():
+        def refresh():
             if self.runtime.world.automation_state == AutomationState.RUNNING:
                 automation_button.props(replace='icon=pause')
             if self.runtime.world.automation_state == AutomationState.PAUSED:
                 automation_button.props(replace='icon=play_arrow')
-        self.ui.timer(0.1, refresh_steering)
+        self.ui.timer(0.1, refresh)
