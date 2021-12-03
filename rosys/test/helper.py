@@ -35,5 +35,7 @@ def assert_point(actual: Union[Point, Point3d], expected: Union[Point, Point3d],
         assert actual.z == pytest.approx(expected.z, abs=tolerance)
 
 
-def automate_drive_to(x: float, y: float):
+async def automate_drive_to(x: float, y: float):
     global_runtime.automator.replace(drive_to(global_runtime.world, global_runtime.esp, Point(x=x, y=y)))
+    await global_runtime.automator.step()  # NOTE the step will update the automation_state so we can "resume"
+    await global_runtime.resume()
