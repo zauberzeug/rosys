@@ -8,11 +8,11 @@ runtime = rosys.Runtime()
 rosys.ui.configure(ui, runtime)
 
 
-def handle_click(msg):
+async def handle_click(msg):
     for hit in msg.hits:
         target = rosys.Point(x=hit.point.x, y=hit.point.y)
         runtime.automator.replace(drive_to(runtime.world, runtime.esp, target))
-        runtime.resume()
+        await runtime.resume()
 
 
 with ui.scene(on_click=handle_click) as scene:

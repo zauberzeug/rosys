@@ -32,7 +32,7 @@ class Runtime:
         self.log.info(f'selected {type(self.esp).__name__}')
         self.odometer = Odometer()
         self.steerer = Steerer(self.esp)
-        self.automator = Automator()
+        self.automator = Automator(self.esp)
 
         self.actors = [
             self.esp,
@@ -48,8 +48,14 @@ class Runtime:
     async def pause(self, because: Optional[str] = None):
         await event.call(event.Id.PAUSE_AUTOMATIONS, because)
 
-    def resume(self):
-        self.world.automation_state = AutomationState.RUNNING
+    async def stop(self, because: Optional[str] = None):
+        await event.call(event.Id.PAUSE_AUTOMATIONS, because)
+        self.automator.routines.clear()
+        self.world.automation_state = AutomationState.STOPPED
+
+    async def resume(self):
+        if self.world.automation_state != AutomationState.DISABLED:
+            self.world.automation_state = AutomationState.RUNNING
 
     async def startup(self):
         if self.tasks:

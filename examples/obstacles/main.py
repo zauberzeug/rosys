@@ -22,7 +22,7 @@ with ui.card():
 
     click_mode = ui.toggle({'drive': 'Drive', 'plan': 'Plan', 'obstacles': 'Obstacles'}).props('outline clearable')
 
-    def handle_click(msg):
+    async def handle_click(msg):
         if msg.click_type != 'dblclick':
             return
         for hit in msg.hits:
@@ -38,7 +38,7 @@ with ui.card():
                 ))]
                 path.update()
                 runtime.automator.replace(drive_path(world, runtime.esp))
-                runtime.resume()
+                await runtime.resume()
                 return
             if object_type == 'ground' and click_mode.value == 'plan':
                 target_yaw = world.robot.prediction.point.direction(hit.point)

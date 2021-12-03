@@ -1,5 +1,5 @@
 from pydantic import BaseModel, PrivateAttr
-from enum import Enum
+from aenum import Enum, auto
 import time
 from .mode import Mode
 from .obstacle import Obstacle
@@ -7,9 +7,16 @@ from .path_segment import PathSegment
 from .robot import Robot
 
 
-class AutomationState(Enum):
-    RUNNING = 1
-    PAUSED = 2
+class AutomationState(Enum, init='value __doc__'):
+
+    def _generate_next_value_(name, start, count, last_values):
+        '''uses enum name as value when calling auto()'''
+        return name
+
+    DISABLED = auto(), 'no automations available or execution not allowed'
+    STOPPED = auto(), 'there is an automation which could be started'
+    RUNNING = auto(), 'automations are beeing processed'
+    PAUSED = auto(), 'an ongoing automation can be resumed'
 
 
 class World(BaseModel):
@@ -17,7 +24,7 @@ class World(BaseModel):
 
     robot: Robot = Robot()
     mode: Mode = Mode.REAL
-    automation_state: AutomationState = AutomationState.PAUSED
+    automation_state: AutomationState = AutomationState.DISABLED
     _time: float = PrivateAttr(default_factory=time.time)
     tracking: bool = False
     robot_locator_cam: str = None

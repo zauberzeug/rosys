@@ -1,5 +1,9 @@
+from enum import auto
 from typing import Coroutine, Optional
+
+from rosys.actors.esp import Esp
 from ..world.world import World, AutomationState
+from ..automations import drive_path
 from .actor import Actor
 from .. import event
 
@@ -7,10 +11,10 @@ from .. import event
 class Automator(Actor):
     interval: float = 0.1
 
-    def __init__(self) -> None:
+    def __init__(self, esp: Esp) -> None:
         super().__init__()
         self.routines = []
-
+        self.esp = esp
         event.register(event.Id.PAUSE_AUTOMATIONS, self._pause)
 
     def add(self, coro: Coroutine):
@@ -21,6 +25,15 @@ class Automator(Actor):
         self.add(coro)
 
     async def step(self):
+        if not self.routines and not self.world.path:
+            self.world.automation_state = AutomationState.DISABLED
+
+        if self.world.automation_state == AutomationState.DISABLED:
+            if not self.routines and self.world.path:
+                self.add(drive_path(self.world, self.esp))
+            if self.routines:
+                self.world.automation_state = AutomationState.STOPPED
+
         if self.world.automation_state != AutomationState.RUNNING:
             return
 

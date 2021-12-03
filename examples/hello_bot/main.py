@@ -26,9 +26,9 @@ with ui.card():
         rosys.ui.joystick(size=50, color='blue', steerer=runtime.steerer)
 
     with ui.row():
-        def play(_):
+        async def play(_):
             runtime.automator.replace(drive_square(world, runtime.esp))
-            runtime.resume()
+            await runtime.resume()
 
         ui.button('drive square', on_click=play).props('icon=play_arrow')
         ui.button('configure esp', on_click=lambda: runtime.esp.configure(world.robot.hardware)).props('outline')
