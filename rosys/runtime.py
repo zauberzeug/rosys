@@ -76,7 +76,7 @@ class Runtime:
             self.persistence.backup()
         [t.cancel() for t in self.tasks]
         Actor.process_pool.shutdown()
-        await asyncio.gather(*[task_logger.create_task(a.tear_down()) for a in self.actors])
+        await asyncio.gather(*[task_logger.create_task(a.tear_down(), name=f'{a.name}.tear_down()') for a in self.actors])
 
     async def repeat(self, actor: Actor):
         while True:
