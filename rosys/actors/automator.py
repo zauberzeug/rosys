@@ -1,5 +1,5 @@
 from enum import auto
-from typing import Coroutine, Optional
+from typing import Coroutine, List, Optional
 
 from rosys.actors.esp import Esp
 from ..world.world import World, AutomationState
@@ -13,7 +13,7 @@ class Automator(Actor):
 
     def __init__(self, esp: Esp) -> None:
         super().__init__()
-        self.routines = []
+        self.routines: List[Coroutine] = []
         self.esp = esp
         event.register(event.Id.PAUSE_AUTOMATIONS, self._pause)
 
@@ -21,6 +21,7 @@ class Automator(Actor):
         self.routines.append(coro)
 
     def replace(self, coro: Coroutine):
+        [r.close() for r in self.routines]  # NOTE: this ensures we do not get warnings about missing await for our routines
         self.routines.clear()
         self.add(coro)
 
