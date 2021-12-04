@@ -50,8 +50,7 @@ class Runtime:
 
     async def stop(self, because: Optional[str] = None):
         await event.call(event.Id.PAUSE_AUTOMATIONS, because)
-        self.automator.routines.clear()
-        self.world.automation_state = AutomationState.STOPPED
+        self.automator.clear()
 
     async def resume(self):
         previous = self.world.automation_state

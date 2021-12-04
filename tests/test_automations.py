@@ -1,3 +1,4 @@
+import logging
 import pytest
 from rosys.automations.drive_path import drive_to
 from rosys.runtime import Runtime
@@ -117,6 +118,7 @@ async def test_automation_gets_enabled_when_adding_a_path(runtime: Runtime):
     await runtime.stop()
     await runtime.forward(seconds=0.5, dt=0.1)
     assert runtime.world.automation_state == AutomationState.STOPPED, 'stop switches from paused to stopped'
+    runtime.automator.routines.clear()
     runtime.world.path.clear()
     await runtime.forward(seconds=0.5, dt=0.1)
     assert runtime.world.automation_state == AutomationState.DISABLED, 'removing path disables automation'

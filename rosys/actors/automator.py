@@ -22,9 +22,13 @@ class Automator(Actor):
         self.routines.append(coro)
 
     def replace(self, coro: Coroutine):
+        self.clear()
+        self.add(coro)
+
+    def clear(self):
+        '''clears all automations'''
         [r.close() for r in self.routines]  # NOTE: this ensures we do not get warnings about missing await for our routines
         self.routines.clear()
-        self.add(coro)
 
     async def step(self):
         if not self.routines or self.world.automation_state == AutomationState.DISABLED:
@@ -35,6 +39,8 @@ class Automator(Actor):
                 elif self.world.path:
                     self.log.info('automations where disabled, now using world.path')
                     self.add(drive_path(self.world, self.esp))
+                else:
+                    self.world.automation_state = AutomationState.DISABLED
             if self.routines:
                 self.world.automation_state = AutomationState.STOPPED
 

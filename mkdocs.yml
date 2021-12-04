@@ -35,3 +35,4 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.snippets
   - attr_list
+  - footnotes
