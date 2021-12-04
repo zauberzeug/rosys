@@ -1,9 +1,11 @@
 import pytest
+from rosys.automations.drive_path import drive_to
 from rosys.runtime import Runtime
 from rosys.automations.arc import drive_arc
 from rosys.automations.square import drive_square
 from rosys.automations.spline import drive_spline
 from rosys.world.path_segment import PathSegment
+from rosys.world.point import Point
 from rosys.world.pose import Pose
 from rosys.world.world import AutomationState
 from rosys.world.spline import Spline
@@ -118,3 +120,31 @@ async def test_automation_gets_enabled_when_adding_a_path(runtime: Runtime):
     runtime.world.path.clear()
     await runtime.forward(seconds=0.5, dt=0.1)
     assert runtime.world.automation_state == AutomationState.DISABLED, 'removing path disables automation'
+
+
+@pytest.mark.asyncio
+async def test_default_automation_is_prepared_to_be_started_after_startup(runtime: Runtime):
+    runtime.world.automation_state = AutomationState.DISABLED
+    runtime.automator.default_automation = drive_arc(runtime.world, runtime.esp)
+    assert len(runtime.automator.routines) == 0
+    await runtime.automator.step()
+    assert runtime.world.automation_state == AutomationState.STOPPED
+    assert len(runtime.automator.routines) == 1
+    await runtime.resume()
+    await runtime.forward(seconds=5.0)
+    assert_pose(2, 1.2, deg=62)
+
+
+@pytest.mark.asyncio
+async def test_default_automation_is_prepared_to_be_started_after_all_automations_have_completed(runtime: Runtime):
+    runtime.automator.default_automation = drive_to(runtime.world, runtime.esp, Point(x=0, y=0))
+    runtime.automator.add(drive_to(runtime.world, runtime.esp, Point(x=1, y=0)))
+    assert len(runtime.automator.routines) == 1
+    await runtime.resume()
+    await runtime.forward(seconds=3.0)
+    assert_pose(0.9, 0, deg=0)
+
+    assert runtime.world.automation_state == AutomationState.STOPPED
+    await runtime.resume()  # now the default automation is run
+    await runtime.forward(seconds=4)
+    assert_pose(-0.9, 0, deg=0)
