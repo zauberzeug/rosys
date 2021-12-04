@@ -11,15 +11,11 @@ class AutomationControls:
 
     def __init__(self) -> None:
 
-        def pause():
-            task_logger.create_task(self.runtime.pause(because='pause button was pressed'))
-
         async def toggle_automation():
             if self.runtime.world.automation_state != AutomationState.RUNNING:
                 await self.runtime.resume()
-                self.runtime.world.tracking = True
             else:
-                pause()
+                await self.runtime.pause(because='pause button was pressed')
 
         async def stop():
             await self.runtime.stop(because='stop button was pressed')

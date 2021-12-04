@@ -54,8 +54,11 @@ class Runtime:
         self.world.automation_state = AutomationState.STOPPED
 
     async def resume(self):
-        if self.world.automation_state != AutomationState.DISABLED:
+        previous = self.world.automation_state
+        if previous != AutomationState.DISABLED:
             self.world.automation_state = AutomationState.RUNNING
+            if previous == AutomationState.STOPPED:
+                event.emit(event.Id.AUTOMATIONS_STARTED)
 
     async def startup(self):
         if self.tasks:
