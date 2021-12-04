@@ -36,9 +36,6 @@ class Automator(Actor):
                 if self.default_automation:
                     self.log.info('automations where disabled, now using default automation')
                     self.add(self.default_automation)
-                elif self.world.path:
-                    self.log.info('automations where disabled, now using world.path')
-                    self.add(drive_path(self.world, self.esp))
                 else:
                     self.world.automation_state = AutomationState.DISABLED
             if self.routines:

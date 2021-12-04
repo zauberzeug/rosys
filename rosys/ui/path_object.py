@@ -1,18 +1,18 @@
+from typing import List
 from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Curve
+from rosys.world.path_segment import PathSegment
 from rosys.world.world import World
 
 
 class PathObject(Object3D):
-    world: World = None  # will be set by rosys.ui.configure
 
     def __init__(self):
         super().__init__('group')
-        self.update()
 
-    def update(self) -> bool:
+    def update(self, path: List[PathSegment]) -> bool:
         [obj.delete() for obj in list(self.view.objects.values()) if obj.name == 'path']
-        for segment in self.world.path:
+        for segment in path:
             Curve(
                 [segment.spline.start.x, segment.spline.start.y, 0],
                 [segment.spline.control1.x, segment.spline.control1.y, 0],

@@ -31,7 +31,6 @@ class World(BaseModel):
     download_queue: list[str] = []
     image_data: dict[str, bytes] = {}
     link_queue: list[list[str]] = []
-    path: list[PathSegment] = []
     obstacles: dict[str, Obstacle] = {}
     notifications: list[tuple[float, str]] = []
 

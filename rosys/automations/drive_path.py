@@ -1,18 +1,20 @@
+from typing import List
 import numpy as np
 from ..world.point import Point
 from ..world.spline import Spline
+from ..world.path_segment import PathSegment
 from ..world.world import World
 from ..actors.esp import Esp
 from ..helpers import eliminate_2pi
 from .spline import drive_spline, throttle
 
 
-async def drive_path(world: World, esp: Esp):
-    for s, path_segment in enumerate(world.path):
+async def drive_path(world: World, esp: Esp, path: List[PathSegment]):
+    for s, path_segment in enumerate(path):
         spline = path_segment.spline
-        if s == 0 or spline.start.distance(world.path[s-1].spline.end) > 0.01:
+        if s == 0 or spline.start.distance(path[s-1].spline.end) > 0.01:
             await drive_to(world, esp, spline.start)
-        is_last_segment = path_segment == world.path[-1]
+        is_last_segment = path_segment == path[-1]
         await drive_spline(spline, world, esp, throttle_at_end=is_last_segment, flip_hook=path_segment.backward)
 
 

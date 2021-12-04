@@ -21,7 +21,6 @@ def configure(ui: Ui, runtime: Runtime):
     joystick.steerer = runtime.steerer
     keyboard_control.ui = ui
     keyboard_control.steerer = runtime.steerer
-    path_object.world = runtime.world
     robot_object.robot = runtime.world.robot
     robot_object.ui = ui
     automation_controls.runtime = runtime

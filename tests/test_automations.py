@@ -1,6 +1,6 @@
 import logging
 import pytest
-from rosys.automations.drive_path import drive_to
+from rosys.automations.drive_path import drive_path, drive_to
 from rosys.runtime import Runtime
 from rosys.automations.arc import drive_arc
 from rosys.automations.square import drive_square
@@ -94,9 +94,13 @@ async def test_disabled_automation_can_not_resume(runtime: Runtime):
 
 
 @pytest.mark.asyncio
-async def test_automation_gets_enabled_when_adding_a_path(runtime: Runtime):
+async def test_automation_gets_enabled_setting_default_automation(runtime: Runtime):
     runtime.world.automation_state = AutomationState.DISABLED
-    runtime.world.path = [PathSegment(spline=Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0)))]
+    runtime.automator.default_automation = drive_path(
+        runtime.world,
+        runtime.esp,
+        [PathSegment(spline=Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0)))]
+    )
     await runtime.forward(seconds=0.5, dt=0.1)
     assert runtime.world.automation_state == AutomationState.STOPPED, 'still disabled'
     await runtime.resume()
@@ -119,9 +123,9 @@ async def test_automation_gets_enabled_when_adding_a_path(runtime: Runtime):
     await runtime.forward(seconds=0.5, dt=0.1)
     assert runtime.world.automation_state == AutomationState.STOPPED, 'stop switches from paused to stopped'
     runtime.automator.routines.clear()
-    runtime.world.path.clear()
+    runtime.automator.default_automation = None
     await runtime.forward(seconds=0.5, dt=0.1)
-    assert runtime.world.automation_state == AutomationState.DISABLED, 'removing path disables automation'
+    assert runtime.world.automation_state == AutomationState.DISABLED, 'automations should be disabled'
 
 
 @pytest.mark.asyncio

@@ -15,9 +15,9 @@ async def handle_click(msg):
     for hit in msg.hits:
         target_yaw = runtime.world.robot.prediction.point.direction(hit.point)
         planner.search(goal=rosys.Pose(x=hit.point.x, y=hit.point.y, yaw=target_yaw), timeout=3.0)
-        runtime.world.path[:] = [rosys.PathSegment(spline=step.spline, backward=step.backward) for step in planner.path]
-        path_3d.update()
-        runtime.automator.replace(drive_path(runtime.world, runtime.esp))
+        path = [rosys.PathSegment(spline=step.spline, backward=step.backward) for step in planner.path]
+        path_3d.update(path)
+        runtime.automator.replace(drive_path(runtime.world, runtime.esp, path))
         await runtime.resume()
 
 
