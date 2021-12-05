@@ -35,7 +35,7 @@ class Automator(Actor):
             if not self.routines:
                 if self.default_automation:
                     self.log.info('automations where disabled, now using default automation')
-                    self.add(self.default_automation)
+                    self.add(self.default_automation())
                 else:
                     self.world.automation_state = AutomationState.DISABLED
             if self.routines:

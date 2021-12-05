@@ -96,7 +96,7 @@ async def test_disabled_automation_can_not_resume(runtime: Runtime):
 @pytest.mark.asyncio
 async def test_automation_gets_enabled_setting_default_automation(runtime: Runtime):
     runtime.world.automation_state = AutomationState.DISABLED
-    runtime.automator.default_automation = drive_path(
+    runtime.automator.default_automation = lambda: drive_path(
         runtime.world,
         runtime.esp,
         [PathSegment(spline=Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0)))]
@@ -122,7 +122,7 @@ async def test_automation_gets_enabled_setting_default_automation(runtime: Runti
     await runtime.stop()
     await runtime.forward(seconds=0.5, dt=0.1)
     assert runtime.world.automation_state == AutomationState.STOPPED, 'stop switches from paused to stopped'
-    runtime.automator.routines.clear()
+    runtime.automator.clear()
     runtime.automator.default_automation = None
     await runtime.forward(seconds=0.5, dt=0.1)
     assert runtime.world.automation_state == AutomationState.DISABLED, 'automations should be disabled'
@@ -131,7 +131,7 @@ async def test_automation_gets_enabled_setting_default_automation(runtime: Runti
 @pytest.mark.asyncio
 async def test_default_automation_is_prepared_to_be_started_after_startup(runtime: Runtime):
     runtime.world.automation_state = AutomationState.DISABLED
-    runtime.automator.default_automation = drive_arc(runtime.world, runtime.esp)
+    runtime.automator.default_automation = lambda: drive_arc(runtime.world, runtime.esp)
     assert len(runtime.automator.routines) == 0
     await runtime.automator.step()
     assert runtime.world.automation_state == AutomationState.STOPPED
@@ -143,7 +143,7 @@ async def test_default_automation_is_prepared_to_be_started_after_startup(runtim
 
 @pytest.mark.asyncio
 async def test_default_automation_is_prepared_to_be_started_after_all_automations_have_completed(runtime: Runtime):
-    runtime.automator.default_automation = drive_to(runtime.world, runtime.esp, Point(x=0, y=0))
+    runtime.automator.default_automation = lambda: drive_to(runtime.world, runtime.esp, Point(x=0, y=0))
     runtime.automator.add(drive_to(runtime.world, runtime.esp, Point(x=1, y=0)))
     assert len(runtime.automator.routines) == 1
     await runtime.resume()
