@@ -68,3 +68,7 @@ class Automator(Actor):
         self.world.automation_state = AutomationState.PAUSED
         if because:
             await event.call(event.Id.NEW_NOTIFICATION, f'pausing automations because {because}')
+
+    async def tear_down(self):
+        await super().tear_down()
+        self.clear()
