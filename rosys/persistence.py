@@ -15,13 +15,11 @@ class Persistence:
 
     def dump(self) -> dict:
         return {
-            'path': [path_segment.dict() for path_segment in self.world.path],
             'robot': {'parameters': self.world.robot.parameters.dict()},
             'obstacles': {id: obstacle.dict() for id, obstacle in self.world.obstacles.items()},
         }
 
     def load(self, dict: dict):
-        self.world.path = [PathSegment.parse_obj(path_segment) for path_segment in dict['path']]
         self.world.robot.parameters = RobotParameters.parse_obj(dict['robot']['parameters'])
         self.world.obstacles = {id: Obstacle.parse_obj(obstacle) for id, obstacle in dict['obstacles'].items()}
 
@@ -38,4 +36,4 @@ class Persistence:
             with open(self.filepath, 'r') as f:
                 self.load(json.load(f))
         except:
-            logging.exception('Could not load from backup')
+            logging.exception(f'Could not load from backup at {self.filepath}')
