@@ -24,22 +24,12 @@ class Planner:
         if start is None:
             start = self.world.robot.prediction
 
-        if self.obstacles != self.world.obstacles or \
-                not self.obstacle_map.grid.contains(start.point, padding=1.0) or \
-                not self.obstacle_map.grid.contains(goal.point, padding=1.0):
-            points = [p for obstacle in self.world.obstacles.values() for p in obstacle.outline]
-            grid = Grid.from_points(points + [start.point, goal.point], 0.1, 36, padding=1.0)
-            self.obstacle_map = ObstacleMap.from_world(self.world, grid)
-            self.small_obstacle_map = self.obstacle_map  # TODO?
-            self.obstacles = copy.deepcopy(self.world.obstacles)
-            self.goal = None
-
+        self.update_obstacle_map(goal, start)
         if self.goal != goal:
             self.distance_map = DistanceMap(self.small_obstacle_map, goal)
             self.goal = copy.deepcopy(goal)
 
         start_time = time.time()
-
         step_dist = 0.5
         num_candidates = 16
 
@@ -121,3 +111,14 @@ class Planner:
         self.path = copy.deepcopy(self.raw_path)
         self.path.smooth(self.obstacle_map, control_dist=0.5)
         del self.path[0]
+
+    def update_obstacle_map(self, goal: Pose, start: Pose) -> None:
+        if self.obstacles != self.world.obstacles or \
+                not self.obstacle_map.grid.contains(start.point, padding=1.0) or \
+                not self.obstacle_map.grid.contains(goal.point, padding=1.0):
+            points = [p for obstacle in self.world.obstacles.values() for p in obstacle.outline]
+            grid = Grid.from_points(points + [start.point, goal.point], 0.1, 36, padding=1.0)
+            self.obstacle_map = ObstacleMap.from_world(self.world, grid)
+            self.small_obstacle_map = self.obstacle_map  # TODO?
+            self.obstacles = copy.deepcopy(self.world.obstacles)
+            self.goal = None
