@@ -67,7 +67,8 @@ async def call(event: Id, *args):
 def emit(event: Id, *args):
     '''Fires event without waiting for the result.'''
 
-    #log.info(f'emitting {event=}')
+    # if event != Id.ROBOT_MOVED:
+    #     log.info(f'emitting {event=}')
     loop = asyncio.get_event_loop()
     for listener in list(listeners.get(event, {})):
         # if event != Id.ROBOT_MOVED:
