@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from dataclasses import dataclass
 import numpy as np
 from .point import Point
+from .point3d import Point3d
 
 
 @dataclass
@@ -21,6 +22,9 @@ class Pose(BaseModel):
     @property
     def point(self) -> Point:
         return Point(x=self.x, y=self.y)
+
+    def point_3d(self):
+        return Point3d(x=self.x, y=self.y, z=0)
 
     @property
     def matrix(self):
