@@ -19,10 +19,10 @@ class Id(Enum, init='value __doc__'):
         '''uses enum name as value when calling auto()'''
         return name
 
-    ROBOT_MOVED = auto(), 'triggered whenever a robot movement is detected'
-    NEW_MACHINE_DATA = auto(), 'triggered in high frequency whenever machine data has been read'
-    PAUSE_AUTOMATIONS = auto(), 'call this event to pause any running automations; provide a description of the cause as string parameter.'
-    AUTOMATIONS_STARTED = auto(), 'triggered when automations where stoppend and are now running'
+    ROBOT_MOVED = auto(), 'triggered when a robot movement is detected'
+    NEW_MACHINE_DATA = auto(), 'triggered in high frequency when machine data has been read'
+    PAUSE_AUTOMATIONS = auto(), 'call this event to pause any running automations; provide a description of the cause as string parameter'
+    AUTOMATIONS_STARTED = auto(), 'triggered when automations were stopped and are now running'
     NEW_NOTIFICATION = auto(), 'call this event to notify the user; provide the message as string parameter'
 
 

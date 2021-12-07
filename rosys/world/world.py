@@ -3,7 +3,6 @@ from aenum import Enum, auto
 import time
 from .mode import Mode
 from .obstacle import Obstacle
-from .path_segment import PathSegment
 from .robot import Robot
 
 

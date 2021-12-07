@@ -1,11 +1,8 @@
-from enum import auto
 from typing import Coroutine, List, Optional
-
-from rosys.actors.esp import Esp
-from ..world.world import World, AutomationState
-from ..automations import drive_path
-from .actor import Actor
+from ..actors.esp import Esp
+from ..world.world import AutomationState
 from .. import event
+from .actor import Actor
 
 
 class Automator(Actor):
@@ -34,7 +31,7 @@ class Automator(Actor):
         if not self.routines or self.world.automation_state == AutomationState.DISABLED:
             if not self.routines:
                 if self.default_automation:
-                    self.log.info('automations where disabled, now using default automation')
+                    self.log.info('automations were disabled, now using default automation')
                     self.add(self.default_automation())
                 else:
                     self.world.automation_state = AutomationState.DISABLED
@@ -59,9 +56,11 @@ class Automator(Actor):
                 self.world.automation_state = AutomationState.DISABLED
 
     async def _pause(self, because: Optional[str] = None):
-        '''Pauses the automation. 
+        '''Pauses the automation.
 
-        Only to be used internally. The proper way is to use runtime.pause(...) or fire event.Id.PAUSE_AUTOMATION. See rosys.io/automations.
+        Only to be used internally.
+        The proper way is to use runtime.pause(...) or fire event.Id.PAUSE_AUTOMATION.
+        See rosys.io/automations.
         '''
         if self.world.automation_state == AutomationState.PAUSED:
             return

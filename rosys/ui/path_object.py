@@ -2,7 +2,6 @@ from typing import List
 from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Curve
 from rosys.world.path_segment import PathSegment
-from rosys.world.world import World
 
 
 class PathObject(Object3D):

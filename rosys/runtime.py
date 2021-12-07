@@ -2,9 +2,8 @@ from __future__ import annotations
 from asyncio.exceptions import CancelledError
 from rosys import factory
 import asyncio
-import inspect
 import logging
-from typing import Awaitable, Callable, Optional, Type, Union, get_type_hints
+from typing import Optional, Type
 from . import task_logger
 from .persistence import Persistence
 from .actors.actor import Actor
