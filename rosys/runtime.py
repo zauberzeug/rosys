@@ -1,23 +1,27 @@
 from __future__ import annotations
 from asyncio.exceptions import CancelledError
-from rosys import factory
 import asyncio
 import logging
 from typing import Optional, Type
 from . import task_logger
-from .persistence import Persistence
 from .actors.actor import Actor
+from .actors.automator import Automator
+from .actors.lizard import Lizard
 from .actors.odometer import Odometer
 from .actors.steerer import Steerer
-from .actors.automator import Automator
-from .world.world import World, AutomationState
+from .hardware import Hardware
+from .persistence import Persistence
 from .world.mode import Mode
+from .world.world import World, AutomationState
 from . import event
 
 
 class Runtime:
 
-    def __init__(self, world: Optional[World] = None, persistence: Optional[Persistence] = None):
+    def __init__(self,
+                 world: Optional[World] = None,
+                 persistence: Optional[Persistence] = None,
+                 hardware: Optional[Hardware] = None):
         self.world = world or World()
         Actor.world = self.world
         self.tasks = []
@@ -27,14 +31,14 @@ class Runtime:
             self.persistence = persistence or Persistence(self.world)
             self.persistence.restore()
 
-        self.esp = factory.create_esp()
-        self.log.info(f'selected {type(self.esp).__name__}')
+        self.hardware = hardware or Hardware(self.world)
+        self.lizard = Lizard(self.hardware)
         self.odometer = Odometer()
-        self.steerer = Steerer(self.esp)
-        self.automator = Automator(self.esp)
+        self.steerer = Steerer(self.hardware)
+        self.automator = Automator()
 
         self.actors = [
-            self.esp,
+            self.lizard,
             self.odometer,
             self.steerer,
             self.automator,
@@ -73,7 +77,7 @@ class Runtime:
         self.activate_async_debugging()
 
     async def shutdown(self):
-        await self.esp.drive(0, 0)
+        await self.hardware.drive(0, 0)
         if self.world.mode != Mode.TEST:
             self.persistence.backup()
         [t.cancel() for t in self.tasks]

@@ -1,23 +1,24 @@
 from nicegui.ui import Ui
-from rosys.actors.esp import Esp
-from rosys.actors.serial_esp import SerialEsp
-from rosys import event
+from ..communication.communication import Communication
+from ..communication.serial_communication import SerialCommunication
+from .. import event
 
 
-class LizardSerialDebug():
+class LizardSerialDebug:
     ui: Ui = None  # will be set by rosys.ui.configure
-    lizard: Esp = None  # will be set by rosys.ui.configure
+    communication: Communication = None  # will be set by rosys.ui.configure
 
     def __init__(self) -> None:
-        if type(self.lizard) is not SerialEsp:
+        if not isinstance(self.communication, SerialCommunication):
             return
-        self.ui.switch('Lizard', value=self.lizard.is_open(), on_change=self.change)
+        self.ui.switch('Lizard', value=self.communication.aioserial.isOpen(), on_change=self.change)
 
     async def change(self, status):
+        assert isinstance(self.communication, SerialCommunication)
         if status.value:
-            self.lizard.connect()
+            self.communication.connect()
             await event.call(event.Id.NEW_NOTIFICATION, 'connected to Lizard')
         else:
-            await event.call(event.Id.PAUSE_AUTOMATIONS, 'lizard is deactivated')
-            self.lizard.disconnect()
-            await event.call(event.Id.NEW_NOTIFICATION, 'disconnected from to Lizard')
+            await event.call(event.Id.PAUSE_AUTOMATIONS, 'communication is deactivated')
+            self.communication.disconnect()
+            await event.call(event.Id.NEW_NOTIFICATION, 'disconnected from Lizard')

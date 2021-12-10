@@ -1,7 +1,7 @@
 from enum import Enum
-from rosys.actors.esp import Esp
-from rosys.actors.actor import Actor
-from rosys.world.world import World, AutomationState
+from ..actors.actor import Actor
+from ..hardware import Hardware
+from ..world.world import AutomationState
 
 
 class State(Enum):
@@ -14,9 +14,9 @@ class State(Enum):
 class Steerer(Actor):
     interval: float = 0.05
 
-    def __init__(self, esp: Esp):
+    def __init__(self, hardware: Hardware):
         super().__init__()
-        self.esp = esp
+        self.hardware = hardware
         self.world_state = None
         self.state = State.IDLE
         self.orientation = None
@@ -51,9 +51,9 @@ class Steerer(Actor):
 
     async def step(self):
         if self.state == State.STEERING:
-            await self.esp.drive(self.linear_speed, self.angular_speed)
+            await self.hardware.drive(self.linear_speed, self.angular_speed)
         elif self.state == State.STOPPING:
-            await self.esp.drive(0, 0)
+            await self.hardware.drive(0, 0)
             if self.world_state is not None:
                 self.world.automation_state = self.world_state
                 self.world_state = None

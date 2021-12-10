@@ -1,5 +1,4 @@
 from typing import Coroutine, List, Optional
-from ..actors.esp import Esp
 from ..world.world import AutomationState
 from .. import event
 from .actor import Actor
@@ -8,10 +7,9 @@ from .actor import Actor
 class Automator(Actor):
     interval: float = 0.1
 
-    def __init__(self, esp: Esp, default_automation: Coroutine = None) -> None:
+    def __init__(self, default_automation: Coroutine = None) -> None:
         super().__init__()
         self.routines: List[Coroutine] = []
-        self.esp = esp
         self.default_automation = default_automation
         event.register(event.Id.PAUSE_AUTOMATIONS, self._pause)
 

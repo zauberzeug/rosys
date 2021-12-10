@@ -26,7 +26,7 @@ def configure(ui: Ui, runtime: Runtime):
     automation_controls.runtime = runtime
     automation_controls.ui = ui
     lizard_serial_debug.ui = ui
-    lizard_serial_debug.lizard = runtime.esp
+    lizard_serial_debug.communication = runtime.hardware.communication
     objgraph_page.ui = ui
     pyloot_page.ui = ui
     pyloot_page.app = app

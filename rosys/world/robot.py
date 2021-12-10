@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 from typing import Optional
-from .hardware import HardwareGroup
 from .pose import Pose
 from .velocity import Velocity
 
@@ -25,7 +24,6 @@ class RobotParameters(BaseModel):
 class Robot(BaseModel):
     shape: RobotShape = RobotShape()
     parameters: RobotParameters = RobotParameters()
-    hardware: list[HardwareGroup] = []
     prediction: Pose = Pose()
     detection: Optional[Pose]
     simulation: Pose = Pose()
