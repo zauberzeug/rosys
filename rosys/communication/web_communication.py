@@ -1,6 +1,5 @@
 from typing import Optional
 import socketio
-import socket
 from collections import deque
 from .communication import Communication
 
@@ -31,26 +30,12 @@ class WebCommunication(Communication):
     @classmethod
     def is_possible(cls) -> bool:
         try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((cls.ip, cls.port))
-            s.shutdown(2)
-        except Exception as e:
-            print(40, e)
-            return False
-
-        try:
             sio = socketio.Client(reconnection=False)
-
-            @sio.event
-            def connect():
-                sio.disconnect()
-
+            sio.on('connect', sio.disconnect)
             sio.connect(cls.host)
-        except Exception as e:
-            print(51, e)
+            return True
+        except:
             return False
-
-        return True
 
     async def read(self) -> Optional[str]:
         if not self.sio.connected:
