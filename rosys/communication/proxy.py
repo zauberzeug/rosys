@@ -2,34 +2,10 @@
 import socketio
 import uvicorn
 import logging
-import serial
-from .checksum import augment, check
+from serial_communication import SerialCommunication
 
-
-class LineReader:
-    # https://github.com/pyserial/pyserial/issues/216#issuecomment-369414522
-
-    def __init__(self, s: serial.Serial):
-        self.buf = bytearray()
-        self.s = s
-
-    def readline(self):
-        i = self.buf.find(b"\n")
-        if i >= 0:
-            r = self.buf[:i+1]
-            self.buf = self.buf[i+1:]
-            return r
-        while True:
-            i = max(1, min(2048, self.s.in_waiting))
-            data = self.s.read(i)
-            i = data.find(b"\n")
-            if i >= 0:
-                r = self.buf + data[:i+1]
-                self.buf[0:] = data[i+1:]
-                return r
-            else:
-                self.buf.extend(data)
-
+SerialCommunication.device_path = '/dev/ttyTHS1'
+serial = SerialCommunication()
 
 sio = socketio.AsyncServer(async_mode='asgi')
 sio.connected = False
@@ -46,19 +22,18 @@ def disconnect(sid):
 
 
 @sio.event
-def write(sid, line):
-    port.write((f'{augment(line)}\n').encode('utf-8'))
+async def write(sid, line):
+    await serial.send_async(line)
 
 
 async def receive(port):
     try:
-        line_reader = LineReader(port)
         while True:
             if not sio.connected:
                 await sio.sleep(0.1)
                 continue
             try:
-                line = check(line_reader.readline().decode('utf-8').strip('\r\n'))
+                line = serial.read()
                 if line is not None:
                     await sio.emit('read', line)
             except UnicodeDecodeError:
@@ -70,4 +45,4 @@ async def receive(port):
 if __name__ == '__main__':
     with serial.Serial('/dev/ttyTHS1', baudrate=115200, timeout=0.1) as port:
         app = socketio.ASGIApp(sio, on_startup=lambda: sio.start_background_task(receive, port))
-        uvicorn.run(app, host='0.0.0.0', port=80)
+        uvicorn.run(app, host='0.0.0.0', port=8081)
