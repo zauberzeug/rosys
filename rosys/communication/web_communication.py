@@ -12,16 +12,17 @@ class WebCommunication(Communication):
     while communicating with the hardware components connected to a physical Robot Brain.
     '''
 
-    host: str = 'ws://192.168.43.1:80'
+    ip: str = '192.168.43.1'
+    port: int = 8081
+    host: str = f'ws://{ip}:{port}'
 
     def __init__(self):
-        self.sio = socketio.AsyncClient()
         self.buffer: deque[str] = deque()
+        self.sio = socketio.AsyncClient()
 
         @self.sio.event
         def connect():
             assert self.sio.transport() == 'websocket'
-            self.log.info('connected to esp proxy')
 
         @self.sio.event
         def read(msg):
@@ -31,23 +32,34 @@ class WebCommunication(Communication):
     def is_possible(cls) -> bool:
         try:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect(cls.host.replace('ws://', '',).split(':'))
+            s.connect((cls.ip, cls.port))
             s.shutdown(2)
+        except Exception as e:
+            print(40, e)
+            return False
 
-            sio = socketio.Client(reconnection=False,)
+        try:
+            sio = socketio.Client(reconnection=False)
 
             @sio.event
             def connect():
                 sio.disconnect()
 
             sio.connect(cls.host)
-            return True
-        except:
+        except Exception as e:
+            print(51, e)
             return False
 
-    def read(self) -> Optional[str]:
+        return True
+
+    async def read(self) -> Optional[str]:
+        if not self.sio.connected:
+            await self.sio.connect(self.host)
         if self.buffer:
             return self.buffer.pop()
 
     async def send_async(self, line: str):
         await self.sio.emit('write', line)
+
+    async def tear_down(self):
+        await self.sio.disconnect()

@@ -51,9 +51,9 @@ class Hardware:
             self.linear_velocity = 0
             self.angular_velocity = 0
 
-    def update(self):
+    async def update(self):
         if self.communication:
-            line = self.communication.read()
+            line = await self.communication.read()
             if line is not None:
                 self.parse(line.split())
         else:

@@ -16,4 +16,4 @@ class Lizard(Actor):
         event.register(event.Id.PAUSE_AUTOMATIONS, handle_pause)
 
     async def step(self):
-        self.hardware.update()
+        await self.hardware.update()

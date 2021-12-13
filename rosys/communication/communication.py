@@ -14,5 +14,5 @@ class Communication(abc.ABC):
         pass
 
     @abc.abstractmethod
-    def read(self) -> Optional[str]:
+    async def read(self) -> Optional[str]:
         pass
