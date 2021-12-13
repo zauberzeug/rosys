@@ -13,8 +13,9 @@ class Hardware:
         self.world = world
         if communication is None and world.mode == Mode.REAL:
             self.communication = CommunicationFactory.create()
-            x = [point[0] for point in self.world.robot.shape.outline]
-            self.width = max(x) - min(x)
+        else:
+            self.communication = communication
+        if communication is None:
             self.linear_velocity: float = 0
             self.angular_velocity: float = 0
         else:

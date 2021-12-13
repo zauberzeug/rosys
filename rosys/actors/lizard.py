@@ -17,3 +17,4 @@ class Lizard(Actor):
 
     async def step(self):
         await self.hardware.update()
+        await event.call(event.Id.NEW_MACHINE_DATA)
