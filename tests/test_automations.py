@@ -1,10 +1,9 @@
-import logging
 import pytest
 from rosys.automations.drive_path import drive_path, drive_to
-from rosys.runtime import Runtime
 from rosys.automations.arc import drive_arc
 from rosys.automations.square import drive_square
 from rosys.automations.spline import drive_spline
+from rosys.test.runtime import TestRuntime
 from rosys.world.path_segment import PathSegment
 from rosys.world.point import Point
 from rosys.world.pose import Pose
@@ -14,7 +13,7 @@ from rosys.test.helper import assert_pose
 
 
 @pytest.mark.asyncio
-async def test_driving_an_arc(runtime: Runtime):
+async def test_driving_an_arc(runtime: TestRuntime):
     assert_pose(0, 0, deg=0)
     runtime.automator.add(drive_arc(runtime.world, runtime.hardware))
     await runtime.forward(seconds=5.0)
@@ -24,7 +23,7 @@ async def test_driving_an_arc(runtime: Runtime):
 
 
 @pytest.mark.asyncio
-async def test_driving_a_square(runtime: Runtime):
+async def test_driving_a_square(runtime: TestRuntime):
     assert_pose(0, 0, deg=0)
     runtime.automator.add(drive_square(runtime.world, runtime.hardware))
     await runtime.forward(seconds=1.0)
@@ -36,7 +35,7 @@ async def test_driving_a_square(runtime: Runtime):
 
 
 @pytest.mark.asyncio
-async def test_pause_and_resume_spline(runtime: Runtime):
+async def test_pause_and_resume_spline(runtime: TestRuntime):
     start = runtime.world.time
     s = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=0, yaw=0))
     runtime.automator.add(drive_spline(s, runtime.world, runtime.hardware))
@@ -59,7 +58,7 @@ async def test_pause_and_resume_spline(runtime: Runtime):
 
 
 @pytest.mark.asyncio
-async def test_pause_and_resume_square(runtime: Runtime):
+async def test_pause_and_resume_square(runtime: TestRuntime):
     runtime.automator.add(drive_square(runtime.world, runtime.hardware))
 
     await runtime.forward(seconds=8.1)
@@ -75,7 +74,7 @@ async def test_pause_and_resume_square(runtime: Runtime):
 
 
 @pytest.mark.asyncio
-async def test_driving_a_spline(runtime: Runtime):
+async def test_driving_a_spline(runtime: TestRuntime):
     assert_pose(0, 0, deg=0)
     s = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0))
     runtime.automator.add(drive_spline(s, runtime.world, runtime.hardware))
@@ -84,7 +83,7 @@ async def test_driving_a_spline(runtime: Runtime):
 
 
 @pytest.mark.asyncio
-async def test_disabled_automation_can_not_resume(runtime: Runtime):
+async def test_disabled_automation_can_not_resume(runtime: TestRuntime):
     runtime.world.automation_state = AutomationState.DISABLED
     await runtime.forward(seconds=0.5, dt=0.1)
     assert runtime.world.automation_state == AutomationState.DISABLED, 'should not change state'
@@ -94,7 +93,7 @@ async def test_disabled_automation_can_not_resume(runtime: Runtime):
 
 
 @pytest.mark.asyncio
-async def test_automation_gets_enabled_setting_default_automation(runtime: Runtime):
+async def test_automation_gets_enabled_setting_default_automation(runtime: TestRuntime):
     runtime.world.automation_state = AutomationState.DISABLED
     runtime.automator.default_automation = lambda: drive_path(
         runtime.world,
@@ -129,7 +128,7 @@ async def test_automation_gets_enabled_setting_default_automation(runtime: Runti
 
 
 @pytest.mark.asyncio
-async def test_default_automation_is_prepared_to_be_started_after_startup(runtime: Runtime):
+async def test_default_automation_is_prepared_to_be_started_after_startup(runtime: TestRuntime):
     runtime.world.automation_state = AutomationState.DISABLED
     runtime.automator.default_automation = lambda: drive_arc(runtime.world, runtime.hardware)
     assert len(runtime.automator.routines) == 0
@@ -142,7 +141,7 @@ async def test_default_automation_is_prepared_to_be_started_after_startup(runtim
 
 
 @pytest.mark.asyncio
-async def test_default_automation_is_prepared_to_be_started_after_all_automations_have_completed(runtime: Runtime):
+async def test_default_automation_is_prepared_to_be_started_after_all_automations_have_completed(runtime: TestRuntime):
     runtime.automator.default_automation = lambda: drive_to(runtime.world, runtime.hardware, Point(x=0, y=0))
     runtime.automator.add(drive_to(runtime.world, runtime.hardware, Point(x=1, y=0)))
     assert len(runtime.automator.routines) == 1

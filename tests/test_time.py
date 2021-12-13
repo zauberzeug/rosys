@@ -1,9 +1,9 @@
 import pytest
-from rosys.runtime import Runtime
+from rosys.test.runtime import TestRuntime
 
 
 @pytest.mark.asyncio
-async def test_time(runtime: Runtime):
+async def test_time(runtime: TestRuntime):
     start = runtime.world.time
 
     await runtime.forward(seconds=1.0)

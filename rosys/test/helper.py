@@ -1,15 +1,15 @@
 from typing import Union
 import pytest
 import numpy as np
-from rosys.runtime import Runtime
 from rosys.automations.drive_path import drive_to
+from rosys.test.runtime import TestRuntime
 from rosys.world.point import Point
 from rosys.world.point3d import Point3d
 
-global_runtime: Runtime = None
+global_runtime: TestRuntime = None
 
 
-def set_global_runtime(runtime: Runtime):
+def set_global_runtime(runtime: TestRuntime):
     global global_runtime
     global camera_count
     global_runtime = runtime

@@ -1,4 +1,3 @@
-from rosys.runtime import Runtime
 from rosys.test import TestRuntime
 from rosys import Persistence
 import json
@@ -11,7 +10,7 @@ def test_dumping(runtime: TestRuntime):
     assert 'automation_state' not in data.keys()
 
 
-def test_json_view(runtime: Runtime):
+def test_json_view(runtime: TestRuntime):
     '''exporting whole world as json is needed for example for logging/inspection'''
     data = json.loads(runtime.world.json())
     assert 'robot' in data.keys()
