@@ -28,7 +28,7 @@ class SerialCommunication(Communication):
     async def read(self) -> Optional[str]:
         self.buffer += self.aioserial.read_all().decode()
         if '\n' in self.buffer:
-            line, self.buffer = self.buffer.split('\n', 1)
+            line, self.buffer = self.buffer.split('\r\n', 1)
             return check(line)
 
     async def send_async(self, line: str):

@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from typing import Optional
 import numpy as np
 from .communication.communication import Communication
@@ -5,6 +6,11 @@ from .communication.communication_factory import CommunicationFactory
 from .world.mode import Mode
 from .world.velocity import Velocity
 from .world.world import World
+
+
+class Simulation(BaseModel):
+    linear_velocity: float = 0
+    angular_velocity: float = 0
 
 
 class Hardware:
@@ -16,8 +22,7 @@ class Hardware:
         else:
             self.communication = communication
         if communication is None:
-            self.linear_velocity: float = 0
-            self.angular_velocity: float = 0
+            self.simulation = Simulation()
         else:
             self.communication = communication
 
@@ -25,7 +30,7 @@ class Hardware:
         if self.communication:
             with open(filepath) as f:
                 await self.communication.send_async(f'!-')
-                for line in f.readlines():
+                for line in f.read().splitlines():
                     await self.communication.send_async(f'!+{line}')
                 await self.communication.send_async(f'!.')
                 await self.restart()
@@ -42,27 +47,51 @@ class Hardware:
         if self.communication:
             await self.communication.send_async(f'wheels.speed({linear}, {angular})')
         else:
-            self.linear_velocity = linear
-            self.angular_velocity = angular
+            self.simulation.linear_velocity = linear
+            self.simulation.angular_velocity = angular
 
     async def stop(self):
         if self.communication:
             await self.communication.send_async(f'wheels.stop()')
         else:
-            self.linear_velocity = 0
-            self.angular_velocity = 0
+            self.simulation.linear_velocity = 0
+            self.simulation.angular_velocity = 0
 
     async def update(self):
         if self.communication:
-            line = await self.communication.read()
-            if line is not None:
-                self.parse(line.split())
+            millis = None
+            while True:
+                line = await self.communication.read()
+                if line is None:
+                    break
+                words = line.split()
+                if not words:
+                    continue
+                first = words.pop(0)
+                if first not in ['core', '!"core']:
+                    continue
+                millis = float(words.pop(0))
+                if self.world.robot.clock_offset is None:
+                    continue
+                self.world.robot.hardware_time = millis / 1000 + self.world.robot.clock_offset
+                self.parse(words)
+            if millis is not None:
+                self.world.robot.clock_offset = self.world.time - millis / 1000
         else:
-            velocity = Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=self.world.time)
-            self.world.robot.odometry.append(velocity)
-            self.world.robot.battery = 25.0 + np.sin(0.1 * self.world.time) + 0.02 * np.random.randn()
-            self.world.robot.temperature = np.random.uniform(34, 35)
+            self.simulate()
 
     def parse(self, words: list[str]):
-        self.linear_velocity = float(words.pop(0))
-        self.angular_velocity = float(words.pop(1))
+        self.world.robot.odometry.append(Velocity(
+            linear=float(words.pop(0)),
+            angular=float(words.pop(0)),
+            time=self.world.robot.hardware_time,
+        ))
+
+    def simulate(self):
+        self.world.robot.odometry.append(Velocity(
+            linear=self.simulation.linear_velocity,
+            angular=self.simulation.angular_velocity,
+            time=self.world.time,
+        ))
+        self.world.robot.battery = 25.0 + np.sin(0.1 * self.world.time) + 0.02 * np.random.randn()
+        self.world.robot.temperature = np.random.uniform(34, 35)
