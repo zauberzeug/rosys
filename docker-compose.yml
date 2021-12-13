@@ -5,13 +5,8 @@ services:
     volumes:
       - ./:/rosys
       - ./:/app
-      - ~/.ssh:/root/.ssh
       - ~/.rosys:/root/.rosys
-      - ~/.gitconfig:/root/.gitconfig
-      - ~/.git-credentials:/root/.git-credentials
       # hide some unnecessary large folders...
-      - /rosys/.git
-      - /rosys/.pio
       - /rosys/controller
     devices:
       - "${ESP_SERIAL:-/dev/null}:/dev/esp"
