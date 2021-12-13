@@ -6,8 +6,6 @@ services:
       - ./:/rosys
       - ./:/app
       - ~/.rosys:/root/.rosys
-      # hide some unnecessary large folders...
-      - /rosys/controller
     devices:
       - "${ESP_SERIAL:-/dev/null}:/dev/esp"
     build:
