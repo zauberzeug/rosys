@@ -6,7 +6,7 @@ from .obstacle import Obstacle
 from .robot import Robot
 
 
-class AutomationState(Enum, init='value __doc__'):
+class AutomationState(str, Enum, init='value __doc__'):
 
     def _generate_next_value_(name, start, count, last_values):
         '''uses enum name as value when calling auto()'''
