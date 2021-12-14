@@ -5,7 +5,7 @@ import rosys.ui
 from multiprocessing import Queue
 from cpu_intensive_process import CpuIntensiveProcess
 
-runtime = rosys.Runtime()
+runtime = rosys.Runtime(world=rosys.World(mode=rosys.Mode.SIMULATION))
 rosys.ui.configure(ui, runtime)
 
 latest_result = Queue()
