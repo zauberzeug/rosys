@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+import asyncio
 import numpy as np
 from .communication.communication import Communication
 from .communication.communication_factory import CommunicationFactory
@@ -49,6 +50,7 @@ class Hardware:
         else:
             self.simulation.linear_velocity = linear
             self.simulation.angular_velocity = angular
+            await asyncio.sleep(0)
 
     async def stop(self):
         if self.communication:
@@ -56,6 +58,7 @@ class Hardware:
         else:
             self.simulation.linear_velocity = 0
             self.simulation.angular_velocity = 0
+            await asyncio.sleep(0)
 
     async def update(self):
         if self.communication:

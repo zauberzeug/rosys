@@ -8,4 +8,4 @@ async def drive_arc(world: World, hardware: Hardware):
     while world.robot.prediction.x < 2:
         await hardware.drive(1, np.deg2rad(25))
 
-    await hardware.drive(0, np.deg2rad(0))
+    await hardware.stop()
