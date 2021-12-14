@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import asyncio
 import os
 from uuid import uuid4
 import starlette
@@ -7,10 +6,9 @@ from nicegui import ui
 import rosys
 import rosys.ui
 from rosys.automations import drive_path
-from hardware import hardware
 
 shape = rosys.RobotShape(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])
-world = rosys.World(robot=rosys.Robot(hardware=hardware, shape=shape))
+world = rosys.World(mode=rosys.Mode.SIMULATION, robot=rosys.Robot(shape=shape))
 planner = rosys.Planner(world)
 runtime = rosys.Runtime(world, rosys.Persistence(world, '~/.rosys/obstacles/world.json'))
 rosys.ui.configure(ui, runtime)
@@ -37,7 +35,7 @@ with ui.card():
                     end=hit.point,
                 ))]
                 path3d.update(path)
-                runtime.automator.replace(drive_path(world, runtime.esp, path))
+                runtime.automator.replace(drive_path(world, runtime.hardware, path))
                 await runtime.resume()
                 return
             if object_type == 'ground' and click_mode.value == 'plan':
@@ -45,7 +43,7 @@ with ui.card():
                 planner.search(goal=rosys.Pose(x=hit.point.x, y=hit.point.y, yaw=target_yaw), timeout=3.0)
                 path = [rosys.PathSegment(spline=step.spline, backward=step.backward) for step in planner.path]
                 path3d.update(path)
-                runtime.automator.replace(drive_path(world, runtime.esp, path))
+                runtime.automator.replace(drive_path(world, runtime.hardware, path))
                 return
             if object_type == 'ground' and click_mode.value == 'obstacles':
                 id = str(uuid4())

@@ -54,7 +54,7 @@ class Hardware:
 
     async def stop(self):
         if self.communication:
-            await self.communication.send_async(f'wheels.stop()')
+            await self.communication.send_async('wheels.off()')
         else:
             self.simulation.linear_velocity = 0
             self.simulation.angular_velocity = 0
