@@ -1,17 +1,15 @@
 #!/usr/bin/env python3
 from nicegui import ui
 import os
-from rosys import Runtime, Robot, World
+import rosys
 from rosys.automations.square import drive_square
 import rosys.ui
-from hardware import hardware
 
 import log_configuration
 log_configuration.setup()
 
-
-world = World(robot=Robot(hardware=hardware))
-runtime = Runtime(world)
+world = rosys.World(mode=rosys.Mode.SIMULATION)
+runtime = rosys.Runtime(world)
 rosys.ui.configure(ui, runtime)
 
 rosys.ui.keyboard_control()
@@ -27,11 +25,15 @@ with ui.card():
 
     with ui.row():
         async def play(_):
-            runtime.automator.replace(drive_square(world, runtime.esp))
+            runtime.automator.replace(drive_square(world, runtime.hardware))
             await runtime.resume()
 
+        async def configure():
+            await runtime.hardware.configure('lizard.txt')
+
         ui.button('drive square', on_click=play).props('icon=play_arrow')
-        ui.button('configure esp', on_click=lambda: runtime.esp.configure(world.robot.hardware)).props('outline')
+        if runtime.hardware.communication:
+            ui.button('configure microcontroller', on_click=configure).props('outline')
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
 ui.run(title="hello_bot", port=8080)

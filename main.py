@@ -4,7 +4,7 @@ import rosys
 import rosys.ui
 
 # setup
-runtime = rosys.Runtime()
+runtime = rosys.Runtime(world=rosys.World(mode=rosys.Mode.SIMULATION))
 rosys.ui.configure(ui, runtime)
 
 # keyboard control
