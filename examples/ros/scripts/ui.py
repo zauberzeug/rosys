@@ -15,9 +15,6 @@ def send(x, y):
 def handle_status(data):
     msg = json.loads(data.data)
     time.text = f'Timestamp: {msg["time"]} ms'
-    temperature.text = f'Temperature: {msg["temperature"]} C'
-    battery.text = f'Battery: {msg["battery"]} V'
-    state.text = f'State: {msg["state"]}'
 
 
 def handle_odometry(data):
@@ -33,13 +30,10 @@ publish_configure = rospy.Publisher('/configure', Empty, queue_size=1).publish
 with ui.row().classes('items-stretch'):
     with ui.card():
         ui.markdown('### Setup')
-        ui.button('Configure ESP', on_click=publish_configure)
+        ui.button('Configure ESP', on_click=lambda: publish_configure())
     with ui.card() as status:
         ui.markdown('### Status')
         time = ui.label()
-        temperature = ui.label()
-        battery = ui.label()
-        state = ui.label()
     with ui.card():
         ui.markdown('### Control')
         ui.joystick(

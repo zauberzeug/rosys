@@ -10,22 +10,22 @@ import os.path
 
 
 def send(line):
-    line = f'{line}^{reduce(ixor, map(ord, line))}\n'
+    checksum = reduce(ixor, map(ord, line))
+    line = f'{line}@{checksum:02x}\n'
     port.write(line.encode())
 
 
 def handle_command(data):
-    send(f'wheels speed {data.linear.x:3f},{data.angular.z:.3f}')
+    send(f'wheels.speed({data.linear.x:3f}, {data.angular.z:.3f})')
 
 
 def handle_configure(data):
-    with open(os.path.dirname(__file__) + '/../config.txt') as f:
-        send('esp erase')
+    with open(os.path.dirname(__file__) + '/../lizard.txt') as f:
+        send('!-')
         for line in f.read().splitlines():
-            line = line.strip()
-            if line and not line.startswith('#'):
-                send('+' + line)
-        send('esp restart')
+            send('!+' + line)
+        send('!.')
+        send('core.restart()')
 
 
 if __name__ == '__main__':
@@ -39,25 +39,22 @@ if __name__ == '__main__':
     with serial.Serial('/dev/esp', 115200) as port:
         while not rospy.is_shutdown():
             try:
-                line = port.readline().decode()
+                line = port.readline().decode().strip()
             except UnicodeDecodeError:
                 continue
-            if '^' in line:
-                line, checksum = line.split('^')
-                if reduce(ixor, map(ord, line)) != int(checksum):
+            if line[-3:-2] == '@':
+                line, checksum = line.split('@')
+                if reduce(ixor, map(ord, line)) != int(checksum, 16):
                     continue
 
             words = line.split()
             if not any(words):
                 continue
-            if words.pop(0) != 'esp':
+            if words.pop(0) != '!"core':
                 continue
             time = int(words.pop(0))
             linear_speed = float(words.pop(0))
             angular_speed = float(words.pop(0))
-            temperature = float(words.pop(0))
-            battery = float(words.pop(0))
-            state = words.pop(0).lower()
 
             publish_odometry(Twist(
                 Vector3(linear_speed, 0, 0),
@@ -65,7 +62,4 @@ if __name__ == '__main__':
             ))
             publish_status(json.dumps({
                 'time': time,
-                'temperature': temperature,
-                'battery': battery,
-                'state': state,
             }))
