@@ -6,7 +6,7 @@ from rosys.automations import drive_path
 import rosys.ui
 
 # setup
-runtime = rosys.Runtime()
+runtime = rosys.Runtime(world=rosys.World(mode=rosys.Mode.SIMULATION))
 planner = Planner(runtime.world)
 rosys.ui.configure(ui, runtime)
 
@@ -17,7 +17,7 @@ async def handle_click(msg):
         planner.search(goal=rosys.Pose(x=hit.point.x, y=hit.point.y, yaw=target_yaw), timeout=3.0)
         path = [rosys.PathSegment(spline=step.spline, backward=step.backward) for step in planner.path]
         path_3d.update(path)
-        runtime.automator.replace(drive_path(runtime.world, runtime.esp, path))
+        runtime.automator.replace(drive_path(runtime.world, runtime.hardware, path))
         await runtime.resume()
 
 

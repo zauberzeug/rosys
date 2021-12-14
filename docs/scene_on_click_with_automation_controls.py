@@ -4,14 +4,14 @@ import rosys
 import rosys.ui
 from rosys.automations import drive_to
 
-runtime = rosys.Runtime()
+runtime = rosys.Runtime(world=rosys.World(mode=rosys.Mode.SIMULATION))
 rosys.ui.configure(ui, runtime)
 
 
 async def handle_click(msg):
     for hit in msg.hits:
         target = rosys.Point(x=hit.point.x, y=hit.point.y)
-        runtime.automator.replace(drive_to(runtime.world, runtime.esp, target))
+        runtime.automator.replace(drive_to(runtime.world, runtime.hardware, target))
         await runtime.resume()
 
 
