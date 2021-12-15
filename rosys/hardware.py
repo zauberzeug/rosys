@@ -16,14 +16,11 @@ class Simulation(BaseModel):
 
 class Hardware:
 
-    def __init__(self, world: World, communication: Optional[Communication] = None):
+    def __init__(self, world: World, communication: Optional[Communication] = ...):
         self.world = world
-        if communication is None and world.mode == Mode.REAL:
-            self.communication = CommunicationFactory.create()
-        else:
-            self.communication = communication
-        if communication is None:
-            self.simulation = Simulation()
+        self.simulation = Simulation()
+        if communication is ...:
+            self.communication = CommunicationFactory.create() if world.mode == Mode.REAL else None
         else:
             self.communication = communication
 
