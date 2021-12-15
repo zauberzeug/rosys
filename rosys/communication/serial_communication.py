@@ -27,6 +27,8 @@ class SerialCommunication(Communication):
             self.serial.close()
 
     async def read(self) -> Optional[str]:
+        if not self.serial.isOpen():
+            return
         self.buffer += self.serial.read_all().decode()
         if '\n' in self.buffer:
             line, self.buffer = self.buffer.split('\r\n', 1)
