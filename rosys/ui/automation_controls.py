@@ -1,5 +1,4 @@
 from nicegui.ui import Ui
-
 from .. import Runtime
 from ..world.world import AutomationState
 

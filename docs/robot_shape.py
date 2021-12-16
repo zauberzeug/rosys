@@ -1,11 +1,13 @@
+#!/usr/bin/env python3
 from nicegui import ui
 import rosys
 import rosys.ui
+from rosys.world import Mode, Robot, RobotShape, World
 
-shape = rosys.RobotShape(outline=[
+shape = RobotShape(outline=[
     (0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5),
 ])  # the shape for the robot will be used in 3d rendering
-world = rosys.World(mode=rosys.Mode.SIMULATION, robot=rosys.Robot(shape=shape))
+world = World(mode=Mode.SIMULATION, robot=Robot(shape=shape))
 runtime = rosys.Runtime(world)
 rosys.ui.configure(ui, runtime)
 

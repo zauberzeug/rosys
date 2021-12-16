@@ -1,11 +1,8 @@
 import numpy as np
 from ..hardware import Hardware
-from ..world.world import World
-from ..world.mode import Mode
-from ..world.point import Point
-from ..world.spline import Spline
+from ..world import Mode, Point, Spline, World
 from ..helpers import eliminate_pi
-from .navigation.carrot import Carrot
+from .navigation import Carrot
 
 
 def ramp(x: float, in_min: float, in_max: float, out_min: float, out_max: float, clip: bool = False):

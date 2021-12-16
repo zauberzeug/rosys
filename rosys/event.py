@@ -29,7 +29,7 @@ class Id(Enum, init='value __doc__'):
 def register(event: Id, listener: Union[Callable, Awaitable]):
     if not callable(listener):
         raise Exception('non-callable listener')
-    if listener.__name__ == "<lambda>":  # NOTE lambda functions must be stored without weakref because they will be collected otherwise
+    if listener.__name__ == '<lambda>':  # NOTE lambda functions must be stored without weakref because they will be collected otherwise
         ref = listener
     elif inspect.ismethod(listener):
         ref = weakref.WeakMethod(listener)

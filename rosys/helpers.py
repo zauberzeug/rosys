@@ -18,9 +18,9 @@ def measure(*, reset: bool = False, ms: bool = False):
 
 
 def print_stacktrace():
-    print("-" * 60)
+    print('-' * 60)
     traceback.print_exc(file=sys.stdout)
-    print("-" * 60, flush=True)
+    print('-' * 60, flush=True)
 
 
 def angle(yaw0: float, yaw1: float) -> float:

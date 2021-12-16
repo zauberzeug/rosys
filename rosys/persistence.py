@@ -1,10 +1,7 @@
 import logging
 import json
 import os
-from .world.obstacle import Obstacle
-from .world.path_segment import PathSegment
-from .world.robot import RobotParameters
-from .world.world import World
+from .world import Obstacle, RobotParameters, World
 
 
 class Persistence:

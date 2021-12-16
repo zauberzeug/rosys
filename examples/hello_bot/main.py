@@ -2,13 +2,14 @@
 from nicegui import ui
 import os
 import rosys
-from rosys.automations.square import drive_square
 import rosys.ui
+from rosys.automations import drive_square
+from rosys.world import Mode, World
 
 import log_configuration
 log_configuration.setup()
 
-world = rosys.World(mode=rosys.Mode.SIMULATION)
+world = World(mode=Mode.SIMULATION)
 runtime = rosys.Runtime(world)
 rosys.ui.configure(ui, runtime)
 
@@ -36,4 +37,4 @@ with ui.card():
             ui.button('configure microcontroller', on_click=configure).props('outline')
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
-ui.run(title="hello_bot", port=8080)
+ui.run(title='hello_bot', port=8080)

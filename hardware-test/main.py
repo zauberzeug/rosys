@@ -106,7 +106,7 @@ with ui.row():
         ui.button('Reload inputs', on_click=reload_inputs)
         ui.checkbox('Auto-reload').bind_value_to(timer, 'active')
 
-message_input = ui.input(placeholder="Send message...", on_change=lambda e: send(e.value))
+message_input = ui.input(placeholder='Send message...', on_change=lambda e: send(e.value))
 
 with ui.card():
     lines = []

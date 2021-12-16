@@ -3,14 +3,15 @@ from nicegui import ui
 import rosys
 import rosys.ui
 from rosys.automations import drive_to
+from rosys.world import Mode, Point, World
 
-runtime = rosys.Runtime(world=rosys.World(mode=rosys.Mode.SIMULATION))
+runtime = rosys.Runtime(world=World(mode=Mode.SIMULATION))
 rosys.ui.configure(ui, runtime)
 
 
 async def handle_click(msg):
     for hit in msg.hits:
-        target = rosys.Point(x=hit.point.x, y=hit.point.y)
+        target = Point(x=hit.point.x, y=hit.point.y)
         runtime.automator.replace(drive_to(runtime.world, runtime.hardware, target))
         await runtime.resume()
 
@@ -22,4 +23,4 @@ with ui.row():
     rosys.ui.automation_controls()
 ui.label('you can also pause/resume or stop the running automation')
 
-ui.run(title="RoSys", port=8080)
+ui.run(title='RoSys', port=8080)

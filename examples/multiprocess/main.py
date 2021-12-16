@@ -5,7 +5,7 @@ import rosys.ui
 from multiprocessing import Queue
 from cpu_intensive_process import CpuIntensiveProcess
 
-runtime = rosys.Runtime(world=rosys.World(mode=rosys.Mode.SIMULATION))
+runtime = rosys.Runtime(world=rosys.world.World(mode=rosys.world.Mode.SIMULATION))
 rosys.ui.configure(ui, runtime)
 
 latest_result = Queue()
@@ -17,4 +17,4 @@ ui.on_shutdown(process.stop)
 label = ui.label()
 ui.timer(1.0, lambda: label.set_text(f'{latest_result.get()=}'))
 
-ui.run(title="Multiprocess Example", port=8080)
+ui.run(title='Multiprocess Example', port=8080)

@@ -1,5 +1,5 @@
 import pytest
-from rosys.test.runtime import TestRuntime
+from rosys.test import TestRuntime
 
 
 @pytest.mark.asyncio

@@ -1,7 +1,7 @@
 from typing import Coroutine, List, Optional
-from ..world.world import AutomationState
+from ..world import AutomationState
 from .. import event
-from .actor import Actor
+from . import Actor
 
 
 class Automator(Actor):

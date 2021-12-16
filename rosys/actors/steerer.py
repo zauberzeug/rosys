@@ -1,7 +1,7 @@
 from enum import Enum
-from ..actors.actor import Actor
 from ..hardware import Hardware
-from ..world.world import AutomationState
+from ..world import AutomationState
+from . import Actor
 
 
 class State(Enum):

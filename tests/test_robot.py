@@ -1,7 +1,6 @@
 import pytest
 import numpy as np
-from rosys.test.helper import assert_pose
-from rosys.test.runtime import TestRuntime
+from rosys.test import assert_pose, TestRuntime
 
 
 @pytest.mark.asyncio

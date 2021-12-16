@@ -2,13 +2,13 @@ import numpy as np
 import heapq
 import copy
 import time
-from rosys.helpers import angle
-from rosys.actors.pathplanning.distance_map import DistanceMap
-from rosys.actors.pathplanning.grid import Grid
-from rosys.actors.pathplanning.obstacle_map import ObstacleMap
-from rosys.actors.pathplanning.steps import Step
-from rosys.world.pose import Pose
-from rosys.world.world import World
+from ..helpers import angle
+from ..world.pose import Pose
+from ..world.world import World
+from .distance_map import DistanceMap
+from .grid import Grid
+from .obstacle_map import ObstacleMap
+from .steps import Step
 
 
 class Planner:
@@ -39,12 +39,12 @@ class Planner:
 
         while pose != [goal.x, goal.y, goal.yaw]:
             if timeout is not None and time.time() - start_time > timeout:
-                raise TimeoutError("Could not find a path")
+                raise TimeoutError('Could not find a path')
 
             try:
                 _, travel_cost, step = heapq.heappop(heap)
             except IndexError:
-                raise TimeoutError("Could not find a path")
+                raise TimeoutError('Could not find a path')
 
             pose = step.target
             tup = tuple(np.round(pose, 3))

@@ -1,6 +1,6 @@
-from rosys.test import TestRuntime
-from rosys import Persistence
 import json
+from rosys import Persistence
+from rosys.test import TestRuntime
 
 
 def test_dumping(runtime: TestRuntime):

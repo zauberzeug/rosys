@@ -10,7 +10,6 @@ class RobotShape(BaseModel):
 
 
 class RobotParameters(BaseModel):
-
     linear_speed_limit: float = 0.5
     angular_speed_limit: float = 0.5
     minimum_turning_radius: float = 0.0

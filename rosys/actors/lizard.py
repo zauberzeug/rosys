@@ -1,6 +1,6 @@
 from .. import event
 from ..hardware import Hardware
-from .actor import Actor
+from . import Actor
 
 
 class Lizard(Actor):

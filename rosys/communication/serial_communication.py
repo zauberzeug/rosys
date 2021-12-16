@@ -2,8 +2,8 @@ from typing import Optional
 import asyncio
 import os
 import serial
-from .communication import Communication
 from .checksum import augment, check
+from .communication import Communication
 
 
 class SerialCommunication(Communication):

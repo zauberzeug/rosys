@@ -1,18 +1,12 @@
-from typing import Counter
-from nicegui.elements.log import Log
 from nicegui.ui import Ui
 from nicegui.elements.image import Image
-import rosys
-import rosys.ui
-from rosys import World
-from rosys import event
-from datetime import datetime
 import objgraph
 import random
 import base64
 import asyncio
 import logging
 import gc
+from collections import Counter
 
 log = logging.getLogger('rosys.objgraph_page')
 
@@ -47,7 +41,7 @@ class ObjgraphPage:
 
     def load_image(self, file: str, img: Image):
         try:
-            with open(file, "rb") as f:
+            with open(file, 'rb') as f:
                 data = base64.b64encode(f.read()).decode('utf-8')
             img.clear()
             img.visible = True
@@ -70,7 +64,7 @@ class ObjgraphPage:
         if growth_objs:
             biggest_growth = growth_objs[0][0]
             new = objgraph.at_addrs(objgraph.get_new_ids()[biggest_growth])
-            counts = Counter([str(i) for i in new])
+            counts = Counter(str(i) for i in new)
             if counts:
                 most_common = counts.most_common()[0][0]
                 unique = {str(i): i for i in new}

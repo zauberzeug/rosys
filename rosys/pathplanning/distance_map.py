@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.interpolate
-from rosys.world.point import Point
-from rosys.actors.pathplanning.obstacle_map import ObstacleMap
+from ..world.point import Point
+from .obstacle_map import ObstacleMap
 
 
 class DistanceMap:

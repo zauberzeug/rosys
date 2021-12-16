@@ -21,7 +21,7 @@ target = 4.0, 2.0
 
 t = time.time()
 distance_map = DistanceMap(obstacle_map, target)
-ui.label("%5.3f ms" % ((time.time() - t) * 1000))
+ui.label('%5.3f ms' % ((time.time() - t) * 1000))
 
 with ui.plot():
     pt.show_distance_map(distance_map)

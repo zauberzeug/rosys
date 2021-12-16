@@ -9,15 +9,15 @@ log = logging.getLogger('rosys.wifi')
 
 
 def has_internet() -> bool:
-    """Returns True if there's a connection"""
+    '''Returns True if there's a connection'''
 
     IP_ADDRESS_LIST = [
-        "1.1.1.1",  # Cloudflare
-        "1.0.0.1",
-        "8.8.8.8",  # Google DNS
-        "8.8.4.4",
-        "208.67.222.222",  # Open DNS
-        "208.67.220.220",
+        '1.1.1.1',  # Cloudflare
+        '1.0.0.1',
+        '8.8.8.8',  # Google DNS
+        '8.8.4.4',
+        '208.67.222.222',  # Open DNS
+        '208.67.220.220',
     ]
 
     port = 53
@@ -31,7 +31,7 @@ def has_internet() -> bool:
         except socket.error:
             pass
     else:
-        log.exception("No internet connection")
+        log.exception('No internet connection')
         return False
 
 

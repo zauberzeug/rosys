@@ -1,9 +1,8 @@
 import numpy as np
-from ..helpers import angle
-from ..world.pose import PoseStep
-from ..world.world import World
-from .actor import Actor
 from .. import event
+from ..helpers import angle
+from ..world import PoseStep
+from .actor import Actor
 
 
 class Odometer(Actor):

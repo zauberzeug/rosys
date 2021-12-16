@@ -37,7 +37,7 @@ with ui.plot():
 
     t = time.time()
     path.smooth(obstacle_map, control_dist=0.2)
-    print("%.3f ms" % ((time.time() - t) * 1000))
+    print('%.3f ms' % ((time.time() - t) * 1000))
 
     pt.plot_path(path, 'C2', lw=3)
 

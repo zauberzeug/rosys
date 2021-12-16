@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-import os
-from uuid import uuid4
-import starlette
 from nicegui import ui
+import os
+import uuid
+import starlette
 import rosys
 import rosys.ui
 from rosys.automations import drive_path
+from rosys.world import Mode, Obstacle, PathSegment, Point, Pose, Robot, RobotShape, Spline, World
 
-shape = rosys.RobotShape(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])
-world = rosys.World(mode=rosys.Mode.SIMULATION, robot=rosys.Robot(shape=shape))
-planner = rosys.Planner(world)
+shape = RobotShape(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])
+world = World(mode=Mode.SIMULATION, robot=Robot(shape=shape))
+planner = rosys.pathplanning.Planner(world)
 runtime = rosys.Runtime(world, rosys.Persistence(world, '~/.rosys/obstacles/world.json'))
 rosys.ui.configure(ui, runtime)
-
 rosys.ui.keyboard_control()
+
 with ui.card():
     state = ui.label()
     ui.timer(0.1, lambda: state.set_text(f'{world.time:.3f} s, {world.robot.prediction}'))
@@ -27,8 +28,8 @@ with ui.card():
             object_type = hit.object_id if hit.object is None else (hit.object.name or '').split('_')[0]
             if object_type == 'ground' and click_mode.value == 'drive':
                 start = world.robot.prediction.point
-                target = rosys.Point(x=hit.point.x, y=hit.point.y)
-                path = [rosys.PathSegment(spline=rosys.Spline(
+                target = Point(x=hit.point.x, y=hit.point.y)
+                path = [PathSegment(spline=Spline(
                     start=start,
                     control1=start.interpolate(target, 1/3),
                     control2=start.interpolate(target, 2/3),
@@ -40,18 +41,18 @@ with ui.card():
                 return
             if object_type == 'ground' and click_mode.value == 'plan':
                 target_yaw = world.robot.prediction.point.direction(hit.point)
-                planner.search(goal=rosys.Pose(x=hit.point.x, y=hit.point.y, yaw=target_yaw), timeout=3.0)
-                path = [rosys.PathSegment(spline=step.spline, backward=step.backward) for step in planner.path]
+                planner.search(goal=Pose(x=hit.point.x, y=hit.point.y, yaw=target_yaw), timeout=3.0)
+                path = [PathSegment(spline=step.spline, backward=step.backward) for step in planner.path]
                 path3d.update(path)
                 runtime.automator.replace(drive_path(world, runtime.hardware, path))
                 return
             if object_type == 'ground' and click_mode.value == 'obstacles':
-                id = str(uuid4())
-                world.obstacles[id] = rosys.Obstacle(id=id, outline=[
-                    rosys.Point(x=hit.point.x-0.5, y=hit.point.y-0.5),
-                    rosys.Point(x=hit.point.x+0.5, y=hit.point.y-0.5),
-                    rosys.Point(x=hit.point.x+0.5, y=hit.point.y+0.5),
-                    rosys.Point(x=hit.point.x-0.5, y=hit.point.y+0.5),
+                id = str(uuid.uuid4())
+                world.obstacles[id] = Obstacle(id=id, outline=[
+                    Point(x=hit.point.x-0.5, y=hit.point.y-0.5),
+                    Point(x=hit.point.x+0.5, y=hit.point.y-0.5),
+                    Point(x=hit.point.x+0.5, y=hit.point.y+0.5),
+                    Point(x=hit.point.x-0.5, y=hit.point.y+0.5),
                 ])
                 obstacles.update()
                 return
@@ -75,4 +76,4 @@ def get_world(_):
     return starlette.responses.Response(world.json(exclude={'image_data'}), media_type='text/json')
 
 
-ui.run(title="obstacles", port=8080)
+ui.run(title='obstacles', port=8080)

@@ -2,10 +2,7 @@ from typing import List
 import numpy as np
 
 from ..hardware import Hardware
-from ..world.point import Point
-from ..world.spline import Spline
-from ..world.path_segment import PathSegment
-from ..world.world import World
+from ..world import PathSegment, Point, Spline, World
 from ..helpers import eliminate_2pi
 from .spline import drive_spline, throttle
 

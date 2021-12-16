@@ -19,7 +19,7 @@ robot_renderer = RobotRenderer.from_size(0.77, 1.21, 0.445)
 
 t = time.time()
 obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_renderer)
-ui.label("%.3f ms" % ((time.time() - t) * 1000))
+ui.label('%.3f ms' % ((time.time() - t) * 1000))
 
 start = [1.0, 0.5, 0]
 end = [2.3, 0.9, np.deg2rad(90)]

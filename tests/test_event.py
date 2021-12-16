@@ -1,6 +1,6 @@
 import pytest
-from rosys import event
 from aenum import Enum, auto
+from rosys import event
 from rosys.actors import Actor
 from rosys.test import TestRuntime
 

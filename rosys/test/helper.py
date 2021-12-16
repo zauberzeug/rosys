@@ -1,10 +1,9 @@
 from typing import Union
 import pytest
 import numpy as np
-from rosys.automations.drive_path import drive_to
-from rosys.test.runtime import TestRuntime
-from rosys.world.point import Point
-from rosys.world.point3d import Point3d
+from ..automations import drive_to
+from ..world import Point, Point3d
+from .runtime import TestRuntime
 
 global_runtime: TestRuntime = None
 

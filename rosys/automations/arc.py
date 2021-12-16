@@ -1,7 +1,6 @@
 import numpy as np
-
 from ..hardware import Hardware
-from ..world.world import World
+from ..world import World
 
 
 async def drive_arc(world: World, hardware: Hardware):

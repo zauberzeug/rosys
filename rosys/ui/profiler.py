@@ -32,7 +32,7 @@ def create_profiler(ui: Ui):
         output = tabulate(
             table[:15],
             headers=['function', 'total', 'excl. sub', 'avg', 'ncall'],
-            floatfmt=".4f"
+            floatfmt='.4f'
         )
         print(output, flush=True)
         yappi.get_thread_stats().print_all()

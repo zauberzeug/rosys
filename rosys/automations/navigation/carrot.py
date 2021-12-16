@@ -1,8 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
-from ...world.point import Point
-from ...world.pose import Pose
-from ...world.spline import Spline
+from ...world import Point, Pose, Spline
 
 
 class Carrot(BaseModel):

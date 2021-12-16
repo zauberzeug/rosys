@@ -1,5 +1,5 @@
-from rosys.actors.steerer import Steerer
 from nicegui.elements.joystick import Joystick as NiceGuiJoystick
+from ..actors import Steerer
 
 
 class Joystick(NiceGuiJoystick):

@@ -2,7 +2,7 @@ from __future__ import annotations
 from pydantic import BaseModel
 import math
 
-from rosys.world.point import Point
+from .point import Point
 
 
 class Point3d(BaseModel):

@@ -1,7 +1,6 @@
 from ..hardware import Hardware
-from ..world.world import World
-from ..world.point import Point
-from .drive_path import drive_to
+from ..world import Point, World
+from . import drive_to
 
 
 async def drive_square(world: World, hardware: Hardware):

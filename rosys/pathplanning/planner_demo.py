@@ -34,7 +34,7 @@ plot = ui.plot()
 def run():
     t = time.time()
     planner.search(goal=Pose(x=10, y=4, yaw=0))
-    print("path finding: %5.1f ms" % ((time.time() - t) * 1000), flush=True)
+    print('path finding: %5.1f ms' % ((time.time() - t) * 1000), flush=True)
 
     with plot:
         pl.clf()

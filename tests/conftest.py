@@ -4,8 +4,8 @@ import logging
 import logging.config
 import os
 import sys
-from rosys.test.runtime import TestRuntime
 from rosys import event
+from rosys.test import TestRuntime
 import icecream
 icecream.install()
 
@@ -86,7 +86,7 @@ config = {
 logging.config.dictConfig(config)
 
 
-pytest.register_assert_rewrite("tests.helper")
+pytest.register_assert_rewrite('tests.helper')
 
 
 @pytest.fixture

@@ -1,6 +1,6 @@
 from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Extrusion
-from rosys.world.obstacle import Obstacle
+from ..world import Obstacle
 
 
 class ObstacleObject(Object3D):

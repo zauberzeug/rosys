@@ -1,9 +1,7 @@
 import asyncio
 from typing import Callable
-from rosys.runtime import Runtime
-from rosys.world.mode import Mode
-from rosys.world.robot import Robot
-from rosys.world.world import World, AutomationState
+from .. import Runtime
+from ..world import AutomationState, Mode, Robot, World
 
 
 class TestRuntime(Runtime):

@@ -1,4 +1,4 @@
-"""original copied from https://quantlane.com/blog/ensure-asyncio-task-exceptions-get-logged/"""
+'''original copied from https://quantlane.com/blog/ensure-asyncio-task-exceptions-get-logged/'''
 
 from typing import Any, Awaitable, Optional, TypeVar, Tuple
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import numpy as np
-from rosys.actors.pathplanning.binary_renderer import BinaryRenderer
+from .binary_renderer import BinaryRenderer
 
 
 class RobotRenderer:

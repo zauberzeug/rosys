@@ -1,7 +1,6 @@
 from nicegui.ui import Ui
-from ..communication.communication import Communication
-from ..communication.serial_communication import SerialCommunication
 from .. import event
+from ..communication import Communication, SerialCommunication
 
 
 class LizardSerialDebug:

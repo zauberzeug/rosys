@@ -1,7 +1,7 @@
 from nicegui.elements.scene_objects import Extrusion, Group, Sphere, Stl
 from nicegui.elements.scene_object3d import Object3D
 from nicegui.ui import Ui
-from rosys.world.robot import Robot
+from ..world import Robot
 
 
 class RobotObject(Object3D):

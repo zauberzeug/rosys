@@ -2,11 +2,8 @@ from pydantic import BaseModel
 from typing import Optional
 import asyncio
 import numpy as np
-from .communication.communication import Communication
-from .communication.communication_factory import CommunicationFactory
-from .world.mode import Mode
-from .world.velocity import Velocity
-from .world.world import World
+from .communication import Communication, CommunicationFactory
+from .world import Mode, Velocity, World
 
 
 class Simulation(BaseModel):

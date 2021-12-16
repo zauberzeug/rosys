@@ -1,10 +1,10 @@
 import numpy as np
 from scipy import ndimage
 import cv2
-from rosys.actors.pathplanning.binary_renderer import BinaryRenderer
-from rosys.actors.pathplanning.grid import Grid
-from rosys.actors.pathplanning.robot_renderer import RobotRenderer
-from rosys.world.world import World
+from ..world.world import World
+from .binary_renderer import BinaryRenderer
+from .grid import Grid
+from .robot_renderer import RobotRenderer
 
 
 class ObstacleMap:
