@@ -19,7 +19,6 @@ class AutomationState(str, Enum, init='value __doc__'):
 
 
 class World(BaseModel):
-    __slots__ = ['__weakref__']  # required for nicegui binding with weakrefs
 
     robot: Robot = Robot()
     mode: Mode = Mode.REAL

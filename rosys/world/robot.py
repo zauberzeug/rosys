@@ -10,7 +10,6 @@ class RobotShape(BaseModel):
 
 
 class RobotParameters(BaseModel):
-    __slots__ = ['__weakref__']  # required for nicegui binding with weakrefs
 
     linear_speed_limit: float = 0.5
     angular_speed_limit: float = 0.5
