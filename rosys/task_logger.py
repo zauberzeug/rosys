@@ -1,6 +1,6 @@
 '''original copied from https://quantlane.com/blog/ensure-asyncio-task-exceptions-get-logged/'''
 
-from typing import Any, Awaitable, Optional, TypeVar, Tuple
+from typing import Any, Awaitable, Optional, TypeVar
 
 import asyncio
 import functools
@@ -40,7 +40,7 @@ def _handle_task_result(
     *,
     logger: logging.Logger,
     message: str,
-    message_args: Tuple[Any, ...] = (),
+    message_args: tuple[Any, ...] = (),
 ) -> None:
     try:
         task.result()

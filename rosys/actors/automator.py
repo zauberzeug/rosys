@@ -1,4 +1,4 @@
-from typing import Coroutine, List, Optional
+from typing import Coroutine, Optional
 from ..world import AutomationState
 from .. import event
 from . import Actor
@@ -9,7 +9,7 @@ class Automator(Actor):
 
     def __init__(self, default_automation: Coroutine = None) -> None:
         super().__init__()
-        self.routines: List[Coroutine] = []
+        self.routines: list[Coroutine] = []
         self.default_automation = default_automation
         event.register(event.Id.PAUSE_AUTOMATIONS, self._pause)
 

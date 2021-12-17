@@ -1,13 +1,11 @@
-from typing import List
 import numpy as np
-
 from ..hardware import Hardware
 from ..world import PathSegment, Point, Spline, World
 from ..helpers import eliminate_2pi
 from .spline import drive_spline, throttle
 
 
-async def drive_path(world: World, hardware: Hardware, path: List[PathSegment]):
+async def drive_path(world: World, hardware: Hardware, path: list[PathSegment]):
     for s, path_segment in enumerate(path):
         spline = path_segment.spline
         if s == 0 or spline.start.distance(path[s-1].spline.end) > 0.01:

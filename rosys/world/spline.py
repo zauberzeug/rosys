@@ -1,6 +1,6 @@
 from __future__ import annotations
 from pydantic import BaseModel
-from typing import List, Optional
+from typing import Optional
 import numpy as np
 from .pose import Pose
 from .point import Point
@@ -147,7 +147,7 @@ class Spline(BaseModel):
 
         return np.real(t[np.argmin(sqr_d)])
 
-    def turning_points(self, t_min: float = 0.0, t_max: float = 1.0) -> List[float]:
+    def turning_points(self, t_min: float = 0.0, t_max: float = 1.0) -> list[float]:
         inner = self.m**2 * self.r**2 + ((4 * self.n**2 - 2 * self.m * self.o) * self.p - 4 * self.m * self.n * self.q) * \
             self.r + 4 * self.m * self.o * self.q**2 - 4 * self.n * self.o * self.p * self.q + self.o**2 * self.p**2
         if inner < 0:
