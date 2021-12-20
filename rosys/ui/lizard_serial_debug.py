@@ -10,9 +10,15 @@ class LizardSerialDebug:
     def __init__(self) -> None:
         if not isinstance(self.communication, SerialCommunication):
             return
-        self.ui.switch('Lizard', value=self.communication.serial.isOpen(), on_change=self.change)
+        self.ui.switch('Lizard', value=self.communication.serial.isOpen(), on_change=self.toggle_communication)
+        self.input = self.ui.input(on_change=self.submit_message)
 
-    async def change(self, status):
+    async def submit_message(self):
+        await self.communication.send_async(self.input.value)
+        self.input.value = ''
+        await self.input.view.update()
+
+    async def toggle_communication(self, status):
         assert isinstance(self.communication, SerialCommunication)
         if status.value:
             self.communication.connect()
