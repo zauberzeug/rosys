@@ -24,9 +24,20 @@ class Hardware:
     async def configure(self, filepath: str):
         if self.communication:
             with open(filepath) as f:
+                expander = False
                 await self.communication.send_async(f'!-')
                 for line in f.read().splitlines():
-                    await self.communication.send_async(f'!+{line}')
+                    if line == '---':
+                        expander = True
+                        await self.communication.send_async('!>!-')
+                    else:
+                        if expander:
+                            await self.communication.send_async(f'!>!+{line}')
+                        else:
+                            await self.communication.send_async(f'!+{line}')
+                if expander:
+                    await self.communication.send_async(f'!>!.')
+                    await self.communication.send_async(f'!>core.restart()')
                 await self.communication.send_async(f'!.')
                 await self.restart()
         else:
