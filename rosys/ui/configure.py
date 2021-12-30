@@ -8,12 +8,14 @@ from .automation_controls import AutomationControls
 from .lizard_serial_debug import LizardSerialDebug
 from .objgraph_page import ObjgraphPage
 from .pyloot_page import PylootPage
+from . import routes
 
 
 def configure(ui: Ui, runtime: Runtime):
     ui.on_startup(runtime.startup())
     ui.on_shutdown(runtime.shutdown())
     event.register(event.Id.NEW_NOTIFICATION, ui.notify)
+    routes.setup(ui, runtime)
 
     Joystick.steerer = runtime.steerer
     KeyboardControl.ui = ui
