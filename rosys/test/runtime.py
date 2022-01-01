@@ -1,5 +1,5 @@
 import asyncio
-from typing import Callable
+from typing import Callable, Optional
 from .. import Runtime
 from ..world import AutomationState, Mode, Robot, World
 
@@ -8,7 +8,7 @@ class TestRuntime(Runtime):
     __test__ = False
     is_time_running: bool = True
 
-    def __init__(self, world: World = None):
+    def __init__(self, world: Optional[World] = None):
         if world is None:
             world = World(mode=Mode.TEST, automation_state=AutomationState.RUNNING, robot=Robot())
         super().__init__(world)
