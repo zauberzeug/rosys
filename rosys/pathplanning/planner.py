@@ -98,7 +98,7 @@ class Planner:
                         if dist > step_dist:
                             gx, gy = self.distance_map.gradient(candidate[0], candidate[1])
                             target_yaw = np.arctan2(gy, gx) if backward else np.arctan2(-gy, -gx)
-                            yaw_error = np.abs(angle(candidate[2], target_yaw))
+                            yaw_error = abs(angle(candidate[2], target_yaw[0]))
                             if yaw_error > np.pi / 2:
                                 yaw_cost = 5 * yaw_error
                         obstacle_cost = max(1.0 - self.obstacle_map.get_distance(*candidate), 0.0)
