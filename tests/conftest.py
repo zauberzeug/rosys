@@ -86,9 +86,6 @@ config = {
 logging.config.dictConfig(config)
 
 
-pytest.register_assert_rewrite('tests.helper')
-
-
 @pytest.fixture
 async def runtime() -> Generator:
     event.listeners.clear()
