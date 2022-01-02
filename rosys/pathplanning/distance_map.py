@@ -20,7 +20,7 @@ class DistanceMap:
 
         scaled_inf = self.F * self.INF
 
-        d = np.zeros(self.grid.size[:2], dtype=np.int)
+        d = np.zeros(self.grid.size[:2], dtype=int)
         d.fill(scaled_inf)
         row, col = self.grid.to_grid(target.x, target.y)
         for r in [np.floor(row), np.ceil(row)]:
@@ -51,7 +51,7 @@ class DistanceMap:
                 break
             old_sum = new_sum
 
-        self.map = d.astype(np.float) / self.F
+        self.map = d.astype(float) / self.F
         gy, gx = np.gradient(self.map)
 
         rows = np.arange(self.grid.size[0])
