@@ -21,4 +21,4 @@ class Point3d(BaseModel):
         return Point(x=self.x, y=self.y)
 
     def __str__(self) -> str:
-        return f'Point({round(self.x, 2)}, {round(self.y, 2)}, {round(self.z, 2)})'
+        return f'Point3d({round(self.x, 2)}, {round(self.y, 2)}, {round(self.z, 2)})'
