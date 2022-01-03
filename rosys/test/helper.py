@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Any, Union
 import pytest
 import numpy as np
 from ..automations import drive_to
@@ -38,3 +38,26 @@ async def automate_drive_to(x: float, y: float):
     global_runtime.automator.replace(drive_to(global_runtime.world, global_runtime.hardware, Point(x=x, y=y)))
     await global_runtime.automator.step()  # NOTE the step will update the automation_state so we can "resume"
     await global_runtime.resume()
+
+
+def approx(o1: Any, o2: Any) -> None:
+    # code is taken from https://github.com/pytest-dev/pytest/issues/6632#issuecomment-580507745
+    assert type(o1) == type(o2)
+
+    o1_keys = [v for v in dir(o1) if not v.startswith('__')]
+    o2_keys = [v for v in dir(o2) if not v.startswith('__')]
+
+    assert sorted(o1_keys) == sorted(o2_keys)
+
+    for k in o1_keys:
+        v1 = getattr(o1, k)
+        v2 = getattr(o2, k)
+        if isinstance(v1, int) or isinstance(v1, float):
+            assert v1 == pytest.approx(v2)
+            continue
+
+        if isinstance(v1, bool) or isinstance(v1, str):
+            assert v1 == v2
+            continue
+
+        approx(v1, v2)
