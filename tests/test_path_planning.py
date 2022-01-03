@@ -5,6 +5,7 @@ from rosys.world import PathSegment, Pose
 import rosys
 from rosys.world.obstacle import Obstacle
 from rosys.world.point import Point
+import numpy as np
 
 
 @pytest.mark.asyncio
@@ -21,7 +22,7 @@ async def test_driving_to_planned_point(runtime: TestRuntime):
 @pytest.mark.asyncio
 async def test_planning_to_problematic_location(runtime: TestRuntime):
     planner = rosys.pathplanning.Planner(runtime.world)
-    planner.search(goal=Pose(x=2, y=2), timeout=3.0)
+    planner.search(goal=Pose(x=2.250, y=1.299, yaw=np.deg2rad(-60.0)), timeout=3.0)
 
 
 @pytest.mark.asyncio
