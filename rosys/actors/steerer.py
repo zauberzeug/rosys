@@ -1,5 +1,5 @@
 from enum import Enum
-from ..hardware import Hardware
+from ..hardware.hardware import Hardware
 from ..world import AutomationState
 from . import Actor
 

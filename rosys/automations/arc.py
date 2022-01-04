@@ -1,5 +1,5 @@
 import numpy as np
-from ..hardware import Hardware
+from ..hardware.hardware import Hardware
 from ..world import World
 
 

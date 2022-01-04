@@ -1,4 +1,4 @@
-from ..hardware import Hardware
+from ..hardware.hardware import Hardware
 from ..world import Point, World
 from . import drive_to
 

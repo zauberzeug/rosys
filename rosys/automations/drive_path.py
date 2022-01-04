@@ -1,5 +1,5 @@
 import numpy as np
-from ..hardware import Hardware
+from ..hardware.hardware import Hardware
 from ..world import PathSegment, Point, Spline, World
 from ..helpers import eliminate_2pi
 from .spline import drive_spline, throttle

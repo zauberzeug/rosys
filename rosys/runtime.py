@@ -5,7 +5,7 @@ import logging
 from typing import Optional, Type
 from . import event, task_logger
 from .actors import Actor, Automator, Lizard, Odometer, Steerer
-from .hardware import Hardware
+from .hardware.hardware import Hardware
 from .persistence import Persistence
 from .world import AutomationState, Mode, World
 
