@@ -1,11 +1,11 @@
-from ..world import Mode, Velocity, World
+from ..world import Velocity
 from .hardware import Hardware
 
 
 class RobotBrain2(Hardware):
 
     async def configure(self):
-        await super().restart()
+        await super().configure()
         filepath = 'lizard.txt'
         with open(filepath) as f:
             expander = False
