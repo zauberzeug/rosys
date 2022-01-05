@@ -1,11 +1,9 @@
 import pytest
-from rosys.test import assert_pose, TestRuntime
-from rosys.automations import drive_path
-from rosys.world import PathSegment, Pose
-import rosys
-from rosys.world.obstacle import Obstacle
-from rosys.world.point import Point
 import numpy as np
+import rosys
+from rosys.automations import drive_path
+from rosys.world import Obstacle, PathSegment, Point, Pose
+from rosys.test import assert_pose, TestRuntime
 
 
 @pytest.mark.asyncio
