@@ -4,6 +4,7 @@ import numpy as np
 import asyncio
 from pydantic import BaseModel
 from typing import Optional
+import logging
 
 
 class Simulation(BaseModel):
@@ -15,6 +16,8 @@ class Hardware:
 
     def __init__(self, world: World, communication: Optional[Communication] = ...):
         self.world = world
+        self.name = __name__[:-5] + self.__class__.__name__
+        self.log = logging.getLogger(self.name)
         self.simulation = Simulation()
         if communication is ...:
             self.communication = CommunicationFactory.create() if world.mode == Mode.REAL else DummyCommunication()
