@@ -37,7 +37,7 @@ class RobotBrain1(Hardware):
         await self.send('esp restart')
 
     async def drive(self, linear: float, angular: float):
-        super().drive(linear, angular)
+        await super().drive(linear, angular)
         await self.send('wheels speed %.3f,%.3f' % (linear, angular))
 
     async def stop(self):
@@ -46,6 +46,7 @@ class RobotBrain1(Hardware):
 
     async def update(self):
         await super().update()
+        millis = None
         while True:
             line = await self.communication.read()
             if line is None:
