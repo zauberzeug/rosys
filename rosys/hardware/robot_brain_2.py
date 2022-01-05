@@ -9,39 +9,39 @@ class RobotBrain2(Hardware):
         filepath = 'lizard.txt'
         with open(filepath) as f:
             expander = False
-            await self.communication.send_async(f'!-')
+            await self.send(f'!-')
             for line in f.read().splitlines():
                 if line == '---':
                     expander = True
-                    await self.communication.send_async('!>!-')
+                    await self.send('!>!-')
                 else:
                     if expander:
-                        await self.communication.send_async(f'!>!+{line}')
+                        await self.send(f'!>!+{line}')
                     else:
-                        await self.communication.send_async(f'!+{line}')
+                        await self.send(f'!+{line}')
             if expander:
-                await self.communication.send_async(f'!>!.')
-                await self.communication.send_async(f'!>core.restart()')
-            await self.communication.send_async(f'!.')
+                await self.send(f'!>!.')
+                await self.send(f'!>core.restart()')
+            await self.send(f'!.')
             await self.restart()
 
     async def restart(self):
         await super().restart()
-        await self.communication.send_async(f'core.restart()')
+        await self.send(f'core.restart()')
 
     async def drive(self, linear: float, angular: float):
         super().drive(linear, angular)
-        await self.communication.send_async(f'wheels.speed({linear}, {angular})')
+        await self.send(f'wheels.speed({linear}, {angular})')
 
     async def stop(self):
         await super().stop()
-        await self.communication.send_async('wheels.off()')
+        await self.send('wheels.off()')
 
     async def update(self):
         await super().update()
         millis = None
         while True:
-            line = await self.communication.read()
+            line = self.check(await self.communication.read())
             if line is None:
                 break
             words = line.split()
@@ -64,3 +64,23 @@ class RobotBrain2(Hardware):
             angular=float(words.pop(0)),
             time=self.world.robot.hardware_time,
         ))
+
+    async def send(self, msg: str):
+        await self.communication.send_async(self.augment(msg))
+
+    def augment(self, line: str) -> str:
+        checksum = 0
+        for c in line:
+            checksum ^= ord(c)
+        return f'{line}@{checksum:02x}'
+
+    def check(self, line: str) -> str:
+        if line[-3:-2] == '@':
+            check = int(line[-2:], 16)
+            line = line[:-3]
+            checksum = 0
+            for c in line:
+                checksum ^= ord(c)
+            if checksum != check:
+                return None
+        return line
