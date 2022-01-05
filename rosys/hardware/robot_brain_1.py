@@ -18,31 +18,31 @@ class RobotBrain1(Hardware):
 
     async def configure(self):
         await super().configure()
-        await self.communication.send_async('esp erase')
+        await self.send('esp erase')
 
         for group in self.configuration:
             for command in group.commands:
-                await self.communication.send_async('+' + command)
+                await self.send('+' + command)
                 await asyncio.sleep(0.1)
 
         output_modules = ','.join(group.name for group in self.configuration if group.output)
-        await self.communication.send_async(f'+set esp.outputModules={output_modules}')
-        await self.communication.send_async('+esp unmute')
-        await self.communication.send_async('+set esp.ready=1')
-        await self.communication.send_async('+set esp.24v=1')
-        await self.communication.send_async('esp restart')
+        await self.send(f'+set esp.outputModules={output_modules}')
+        await self.send('+esp unmute')
+        await self.send('+set esp.ready=1')
+        await self.send('+set esp.24v=1')
+        await self.send('esp restart')
 
     async def restart(self):
         await super().restart()
-        await self.communication.send_async('esp restart')
+        await self.send('esp restart')
 
     async def drive(self, linear: float, angular: float):
         super().drive(linear, angular)
-        await self.communication.send_async('wheels speed %.3f,%.3f' % (linear, angular))
+        await self.send('wheels speed %.3f,%.3f' % (linear, angular))
 
     async def stop(self):
         await super().stop()
-        await self.communication.send_async('wheels power 0,0')
+        await self.send('wheels power 0,0')
 
     async def update(self):
         await super().update()
@@ -75,6 +75,9 @@ class RobotBrain1(Hardware):
 
         if millis is not None:
             self.world.robot.clock_offset = self.world.time - millis / 1000
+
+    async def send(self, msg: str):
+        await self.communication.send_async(f'{msg}^{reduce(ixor, map(ord, msg))}')
 
 
 class HardwareGroup(BaseModel, abc.ABC):
