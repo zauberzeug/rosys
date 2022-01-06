@@ -10,7 +10,7 @@ from operator import ixor
 from functools import reduce
 
 
-class RobotBrain1(Hardware):
+class RobotBrainLegacy(Hardware):
 
     def __init__(self, world: World, configuration: List[HardwareGroup], communication: Optional[Communication] = ...):
         super().__init__(world, communication=communication)

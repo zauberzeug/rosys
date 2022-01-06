@@ -2,7 +2,7 @@ from ..world import Velocity
 from .hardware import Hardware
 
 
-class RobotBrain2(Hardware):
+class RobotBrain(Hardware):
 
     async def configure(self):
         await super().configure()
