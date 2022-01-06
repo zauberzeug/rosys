@@ -30,7 +30,7 @@ with ui.card():
             await runtime.resume()
 
         async def configure():
-            await runtime.hardware.configure('lizard.txt')
+            await runtime.hardware.configure()
 
         ui.button('drive square', on_click=play).props('icon=play_arrow')
         if runtime.hardware.communication:

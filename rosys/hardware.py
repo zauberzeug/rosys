@@ -21,7 +21,8 @@ class Hardware:
         else:
             self.communication = communication
 
-    async def configure(self, filepath: str):
+    async def configure(self):
+        filepath = 'lizard.txt'
         if self.communication:
             with open(filepath) as f:
                 expander = False
