@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional
+from ..helpers import ModificationContext
 from .pose import Pose
 from .velocity import Velocity
 
@@ -9,7 +10,7 @@ class RobotShape(BaseModel):
     height: float = 0.5
 
 
-class RobotParameters(BaseModel):
+class RobotParameters(BaseModel, ModificationContext):
     linear_speed_limit: float = 0.5
     angular_speed_limit: float = 0.5
     minimum_turning_radius: float = 0.0
