@@ -16,7 +16,7 @@ class Hardware:
 
     def __init__(self, world: World, communication: Optional[Communication] = ...):
         self.world = world
-        self.name = __name__[:-5] + self.__class__.__name__
+        self.name = __name__[:-8] + self.__class__.__name__
         self.log = logging.getLogger(self.name)
         self.simulation = Simulation()
         if communication is ...:
