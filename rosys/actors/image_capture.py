@@ -57,3 +57,8 @@ class ImageCapture(Actor):
         await super().tear_down()
         for capture in self.devices.values():
             capture.release()
+
+    @staticmethod
+    def is_operable():
+        from shutil import which
+        return which('v4l2-ctl') is not None

@@ -6,25 +6,30 @@ from dataclasses import dataclass
 from PIL import Image, ImageDraw
 import io
 
-img = Image.new('RGB', (800, 600), color=(73, 109, 137))
-d = ImageDraw.Draw(img)
-d.text((340, 280), "no image", fill=(255, 255, 255))
-placeholder = io.BytesIO()
-img.save(placeholder, format='PNG')
-placeholder = placeholder.getvalue()
-
 
 @dataclass
 class Frame():
     data: Any
     time: float = 0  # World time of recording
 
+    @staticmethod
+    def create_placeholder(text: str, time: float = None):
+        img = Image.new('RGB', (260, 200), color=(73, 109, 137))
+        d = ImageDraw.Draw(img)
+        d.text((img.width/2-len(text)*3, img.height/2-5), text, fill=(255, 255, 255))
+        bytesio = io.BytesIO()
+        img.save(bytesio, format='PNG')
+        return Frame(data=bytesio.getvalue(), time=time or 0)
+
+
+no_img_placeholder = Frame.create_placeholder('no image')
+
 
 class Camera(BaseModel):
     id: str
     exposure: float = 0
     capture: bool = True
-    frames: deque[Frame] = Field(deque([Frame(data=placeholder)], maxlen=10), exclude=True, repr=False)
+    frames: deque[Frame] = Field(deque([no_img_placeholder], maxlen=10), exclude=True, repr=False)
 
     @property
     def latest_frame_uri(self):

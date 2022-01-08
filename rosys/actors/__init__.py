@@ -4,3 +4,4 @@ from .lizard import Lizard
 from .odometer import Odometer
 from .steerer import Steerer
 from .image_capture import ImageCapture
+from .image_capture_simulation import ImageCaptureSimulation
