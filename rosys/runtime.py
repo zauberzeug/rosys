@@ -4,7 +4,7 @@ import asyncio
 import logging
 from typing import Optional, Type
 from . import event, task_logger
-from .actors import Actor, Automator, Lizard, Odometer, Steerer
+from .actors import Actor, Automator, Lizard, Odometer, Steerer, ImageCapture
 from .hardware import Hardware
 from .persistence import Persistence
 from .world import AutomationState, Mode, World
@@ -30,12 +30,14 @@ class Runtime:
         self.odometer = Odometer()
         self.steerer = Steerer(self.hardware)
         self.automator = Automator()
+        self.image_capture = ImageCapture()
 
         self.actors = [
             self.lizard,
             self.odometer,
             self.steerer,
             self.automator,
+            self.image_capture,
         ]
 
     def with_actors(self, *actors: list[Actor]):

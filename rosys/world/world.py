@@ -1,9 +1,11 @@
 from pydantic import BaseModel, PrivateAttr
 from aenum import Enum, auto
 import time
+
 from .mode import Mode
 from .obstacle import Obstacle
 from .robot import Robot
+from .camera import Camera
 
 
 class AutomationState(str, Enum, init='value __doc__'):
@@ -31,6 +33,7 @@ class World(BaseModel):
     link_queue: list[list[str]] = []
     obstacles: dict[str, Obstacle] = {}
     notifications: list[tuple[float, str]] = []
+    cameras: dict[str, Camera] = {}
 
     @property
     def time(self):
