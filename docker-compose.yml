@@ -6,6 +6,7 @@ services:
       - ./:/rosys
       - ./:/app
       - ~/.rosys:/root/.rosys
+    privileged: true
     devices:
       - "${ESP_SERIAL:-/dev/null}:/dev/esp"
     build:
