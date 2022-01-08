@@ -10,14 +10,11 @@ class KeyboardControl:
     ui: Ui  # will be set by rosys.ui.configure
 
     def __init__(self, *, default_speed: float = 2.0):
-        self.ui.keyboard(on_key=self.handle_keys)
+        self.ui.keyboard(on_key=self.handle_keys, repeating=False)
         self.direction = Point(x=0, y=0)
         self.speed = default_speed
 
     def handle_keys(self, e: KeyEventArguments):
-        if e.action.repeat:
-            return
-
         # change speed via number key
         if e.action.keydown and e.key.number is not None:
             self.speed = e.key.number
