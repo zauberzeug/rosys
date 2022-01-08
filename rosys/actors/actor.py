@@ -5,6 +5,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 from ..world import World
 from .. import event
+import subprocess
 
 
 class Actor:
@@ -39,6 +40,14 @@ class Actor:
 
     async def notify(self, message: str):
         await event.call(event.Id.NEW_NOTIFICATION, message)
+
+    def run(self, command) -> str:
+        proc = subprocess.Popen(
+            command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT)
+        stdout, *_ = proc.communicate()
+        return stdout.decode()
 
     def __str__(self) -> str:
         return type(self).__name__
