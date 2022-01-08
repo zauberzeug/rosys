@@ -13,14 +13,14 @@ feeds = {}
 
 
 def refresh():
-    for id in runtime.world.cameras.keys():
-        if id not in feeds:
+    for uid, camera in runtime.world.cameras.items():
+        if uid not in feeds:
             with ui.card().tight().style('width:30em;'):
-                feeds[id] = ui.image()
-        feeds[id].set_source(f'camera/{id}/latest?{runtime.world.time}')
+                feeds[uid] = ui.image()
+        feeds[uid].set_source(camera.latest_frame_uri)
 
 
-ui.timer(0.3, refresh)
+ui.timer(1, refresh)
 
 # start
 ui.run(title='RoSys', port=80)

@@ -18,11 +18,11 @@ class ImageCapture(Actor):
     async def step(self):
         await super().step()
         await self.update_device_list()
-        for id, camera in self.world.cameras.items():
+        for uid, camera in self.world.cameras.items():
             if not camera.capture:
                 return
-            bytes = await self.run_io_bound(self.capture_frame, id)
-            camera.frames.append(Frame(self.world.time, bytes))
+            bytes = await self.run_io_bound(self.capture_frame, uid)
+            camera.frames.append(Frame(data=bytes, time=self.world.time))
 
     def capture_frame(self, id):
         _, frame = self.devices[id].read()
@@ -30,19 +30,18 @@ class ImageCapture(Actor):
         return bytes
 
     async def update_device_list(self):
+        self.log.info(self.world.cameras)
         output = await self.run_io_bound(self.run, ['v4l2-ctl', '--list-devices'])
-        discovered = []
         for line in output.splitlines():
             if 'Camera' in line:
-                id = re.search('\((.*)\)', line).group(1)
-                if id in self.world.cameras:
-                    camera = self.world.cameras[id]
-                else:
-                    self.world.cameras[id] = camera = Camera()
+                uid = re.search('\((.*)\)', line).group(1)
+                if uid not in self.world.cameras:
+                    self.world.cameras[uid] = Camera(id=uid)
+                    self.log.info(f'adding camera {uid}')
             if '/dev/video' in line:
                 num = int(line.strip().lstrip('/dev/video'))
-                if id not in self.devices:
-                    self.devices[id] = self.get_capture_device(num)
+                if uid not in self.devices:
+                    self.devices[uid] = self.get_capture_device(num)
 
     def get_capture_device(self, index: int):
         try:
