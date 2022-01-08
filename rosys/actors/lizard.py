@@ -27,5 +27,5 @@ class Lizard(Actor):
             self.log.error(msg + '; aborting automations')
             await self.pause_automations(because=msg)
         elif dt > 0.1:
-            self.log.warn('esp serial communication is slow (>= 100 ms)')
+            self.log.warning('esp serial communication is slow (>= 100 ms)')
         self.last_step = self.world.time
