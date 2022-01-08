@@ -5,6 +5,7 @@ services:
     volumes:
       - ./:/rosys
       - ./:/app
+      - ./../nicegui/nicegui:/usr/local/lib/python3.9/site-packages/nicegui
       - ~/.rosys:/root/.rosys
     privileged: true
     devices:
