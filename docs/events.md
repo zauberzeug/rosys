@@ -11,7 +11,7 @@ Other actors may also register for the same event to monitor battery level or bu
 Watching the battery level:
 
 ```python
-{!watch_battery_level.py!}
+{!src/watch_battery_level.py!}
 ```
 
 ![Watch Battery](watch_battery_level.gif)

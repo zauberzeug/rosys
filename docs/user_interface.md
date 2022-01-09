@@ -44,7 +44,7 @@ To do so you can create a 3d scene with [NiceGUI](https://nicegui.io).
 RoSys provides a `robot_object` to render and update the robot:
 
 ```python hl_lines="10-12"
-{!robot_shape.py [ln:5-16] !}
+{!src/robot_shape.py [ln:5-16] !}
 ```
 
 ### Click Handler
@@ -53,7 +53,7 @@ You can also pass a click handler to the 3d scene.
 Here is a full example example for driving to a point on the ground by starting the built-in automation called `drive_to`:
 
 ```python hl_lines="11 18"
-{!scene_on_click.py!}
+{!src/scene_on_click.py!}
 ```
 
 ![Click Handler](scene_on_click.webp){: style="width:60%"}
@@ -66,7 +66,7 @@ While you could write your own UI, RoSys already provides a ready-made set of el
 Building on the [click handler](user_interface.md#click-handler) example above we can add these easily:
 
 ```python hl_lines="2"
-{!scene_on_click_with_automation_controls.py [ln:21-23]!}
+{!src/scene_on_click_with_automation_controls.py [ln:21-23]!}
 ```
 
 The `ui.row()` context arranged the control buttons in a row.

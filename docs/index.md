@@ -1,4 +1,4 @@
-{!../README.md!}
+{!src/../README.md!}
 
 !!! note
 
