@@ -4,7 +4,7 @@ import asyncio
 import logging
 from typing import Optional, Type
 from . import event, task_logger
-from .actors import Actor, Automator, Lizard, Odometer, Steerer, ImageCapture, ImageCaptureSimulation
+from .actors import Actor, Automator, Lizard, Odometer, Steerer, CameraCapture, ImageCaptureSimulation
 from .hardware import Hardware
 from .persistence import Persistence
 from .world import AutomationState, Mode, World
@@ -30,8 +30,8 @@ class Runtime:
         self.odometer = Odometer()
         self.steerer = Steerer(self.hardware)
         self.automator = Automator()
-        if ImageCapture.is_operable() and self.world.mode != Mode.TEST:
-            self.image_capture = ImageCapture()
+        if CameraCapture.is_operable() and self.world.mode != Mode.TEST:
+            self.image_capture = CameraCapture()
         else:
             self.image_capture = ImageCaptureSimulation()
 

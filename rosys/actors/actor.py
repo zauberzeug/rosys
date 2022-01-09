@@ -35,19 +35,27 @@ class Actor:
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, callback, *args)
 
+    async def run_sh(self, command: list[str]) -> str:
+        '''executes a shell command
+        command: a sequence of program arguments as subprocess.Popen requires
+        returns: stdout
+        '''
+
+        def run() -> str:
+            proc = subprocess.Popen(
+                command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT)
+            stdout, *_ = proc.communicate()
+            return stdout.decode()
+
+        return await self.run_io_bound(run)
+
     async def pause_automations(self, *, because: str):
         await event.call(event.Id.PAUSE_AUTOMATIONS, because)
 
     async def notify(self, message: str):
         await event.call(event.Id.NEW_NOTIFICATION, message)
-
-    def run(self, command) -> str:
-        proc = subprocess.Popen(
-            command,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT)
-        stdout, *_ = proc.communicate()
-        return stdout.decode()
 
     def __str__(self) -> str:
         return type(self).__name__
