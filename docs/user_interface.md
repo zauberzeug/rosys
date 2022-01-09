@@ -21,20 +21,6 @@ rosys.ui.configure(ui, runtime)
 
 Afterwards you can use the UI elements provided by RoSys (see below).
 
-## Keyboard Control
-
-By calling `rosys.ui.keyboard_control()` you enable steering the robot with the keyboard (see [Getting Started](getting_started.md) for a full example).
-Press the arrow keys to steer the robot while holding the SHIFT key down.
-You can also modify the speed of the robot by pressing the a number key.
-Use the optional parameter `default_speed` to change the inital value.
-
-## Joystick
-
-When operating from a mobile phone, you can use `rosys.ui.joystick()` to create a UI element with touch control.
-You can drive the robot by dragging the mouse inside the top left square:
-
-![Joystick](joystick.png){: style="width:50%"}
-
 ## 3D Scene
 
 ### Robot and Shape
@@ -60,12 +46,12 @@ Here is a full example example for driving to a point on the ground by starting 
 
 ## Automation Controls
 
-Required for [safety](safety.md) and good usability automation processes only begin when the user makes an active request for it.
+Required for [safety](safety.md) and good usability: automation processes only begin after the user an actively requests it.
 Also the user should always be able to pause/resume and stop an ongoing automation.
 While you could write your own UI, RoSys already provides a ready-made set of elements with `rosys.ui.automation_controls()`.
 Building on the [click handler](user_interface.md#click-handler) example above we can add these easily:
 
-```python hl_lines="2"
+```python hl_lines="3"
 {!src/scene_on_click_with_automation_controls.py [ln:21-23]!}
 ```
 

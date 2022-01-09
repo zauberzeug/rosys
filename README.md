@@ -6,7 +6,7 @@ But RoSys is fully based on modern web technologies and focusses on mobile robot
 
 See full documentation at [rosys.io](https://rosys.io/).
 
-## Features
+## Principles
 
 **All Python**
 : Business logic is wired in Python while computation-heavy tasks are encapsulated through websockets or bindings.
