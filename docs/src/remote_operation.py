@@ -17,9 +17,14 @@ async def add_main_camera(camera: Camera):
         ui.timer(1, lambda: maincam.set_source(camera.latest_frame_uri))
     rosys.event.unregister(rosys.event.Id.NEW_CAMERA, add_main_camera)
 
-
 with ui.card().tight().style('width:30em;') as camera_card:
     ui.label('seeking main camera').style('margin:1em')
+with ui.card().tight().style('width:30em;'):
+    with ui.row():
+        with ui.card().tight():
+            rosys.ui.joystick()
+        ui.markdown('use joystick on the left<br> or SHIFT + arrow keys to steer').style('margin:2em;text-align:center')
+rosys.ui.keyboard_control()
 rosys.event.register(rosys.event.Id.NEW_CAMERA, add_main_camera)
 
 ui.run(title='RoSys', port=80, show=False)
