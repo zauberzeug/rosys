@@ -1,10 +1,8 @@
-import numpy as np
-
 import cv2
 import re
-
 from .actor import Actor
 from ..world.camera import Camera, Frame
+from .. import event
 
 
 class CameraCapture(Actor):
@@ -46,6 +44,7 @@ class CameraCapture(Actor):
                 if uid not in self.world.cameras:
                     self.world.cameras[uid] = Camera(id=uid)
                     self.log.info(f'adding camera {uid}')
+                    await event.call(event.Id.NEW_CAMERA, self.world.cameras[uid])
             if '/dev/video' in line:
                 num = int(line.strip().lstrip('/dev/video'))
                 if uid not in self.devices:

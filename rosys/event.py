@@ -41,7 +41,13 @@ def register(event: Id, listener: Union[Callable, Awaitable]):
 
 
 def unregister(event: Id, listener: Union[Callable, Awaitable]):
-    listeners[event].remove(listener)
+    marked = []
+    for registered in listeners[event]:
+        if hasattr(listener, '__name__') and listener.__name__ == '<lambda>' and listener == registered:
+            marked.append(listener)
+        if (registered() == listener):
+            marked.append(registered)
+    [listeners[event].remove(m) for m in marked]
 
 
 async def call(event: Id, *args):
