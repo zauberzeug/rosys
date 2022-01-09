@@ -3,12 +3,11 @@ import numpy as np
 import cv2
 import re
 
-from rosys.helpers import measure
 from .actor import Actor
 from ..world.camera import Camera, Frame
 
 
-class ImageCapture(Actor):
+class CameraCapture(Actor):
     interval: float = 0.30
 
     def __init__(self):
