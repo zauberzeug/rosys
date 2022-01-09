@@ -12,9 +12,9 @@ nav:
       - automations.md
   - user_interface.md
   - Mobile Robotics:
-      - path_planning.md
       - cameras.md
       - object_detection.md
+      - path_planning.md
 
   - safety.md
   - troubleshooting.md
