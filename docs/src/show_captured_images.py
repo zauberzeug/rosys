@@ -3,13 +3,6 @@ from nicegui import ui
 import rosys
 import rosys.ui
 from rosys.world import Mode, World
-import icecream
-icecream.install()
-
-# setup
-runtime = rosys.Runtime(world=World(mode=Mode.SIMULATION))
-rosys.ui.configure(ui, runtime)
-feeds = {}
 
 
 def refresh():
@@ -20,7 +13,12 @@ def refresh():
         feeds[uid].set_source(camera.latest_frame_uri)
 
 
+# setup
+runtime = rosys.Runtime(world=World(mode=Mode.SIMULATION))
+rosys.ui.configure(ui, runtime)
+
+# refresh timer
+feeds = {}
 ui.timer(1, refresh)
 
-# start
-ui.run(title='RoSys', port=80)
+ui.run(title='RoSys', port=8080)
