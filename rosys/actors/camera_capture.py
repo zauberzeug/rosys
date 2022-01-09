@@ -13,6 +13,7 @@ class CameraCapture(Actor):
     def __init__(self):
         super().__init__()
         self.devices = {}  # mapping camera ids to opencv devices
+        self.last_scan = None
 
     async def step(self):
         await super().step()
@@ -35,6 +36,9 @@ class CameraCapture(Actor):
                 del camera.frames[0]
 
     async def update_device_list(self):
+        if self.last_scan is not None and self.world.time > self.last_scan + 30:  # scan every 30 sec
+            return
+        self.last_scan = self.world.time
         output = await self.run_sh(['v4l2-ctl', '--list-devices'])
         for line in output.splitlines():
             if 'Camera' in line:
