@@ -30,7 +30,7 @@ class CameraCapture(Actor):
 
     async def update_device_list(self):
         self.log.info(self.world.cameras)
-        output = await self.run_io_bound(self.run, ['v4l2-ctl', '--list-devices'])
+        output = await self.run_sh(['v4l2-ctl', '--list-devices'])
         for line in output.splitlines():
             if 'Camera' in line:
                 uid = re.search('\((.*)\)', line).group(1)
