@@ -3,8 +3,7 @@ from asyncio.exceptions import CancelledError
 import asyncio
 import logging
 from typing import Optional, Type
-from . import event
-from nicegui import task_logger
+from . import event, task_logger
 from .actors import Actor, Automator, Lizard, Odometer, Steerer, CameraCapture, ImageCaptureSimulation
 from .hardware import Hardware
 from .persistence import Persistence
