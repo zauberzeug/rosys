@@ -29,7 +29,7 @@ class Camera(BaseModel):
     id: str
     exposure: float = 0
     capture: bool = True
-    frames: deque[Frame] = Field(deque([no_img_placeholder], maxlen=10), exclude=True, repr=False)
+    frames: deque[Frame] = Field(deque([no_img_placeholder], maxlen=10), exclude=True)
 
     @property
     def latest_frame_uri(self):

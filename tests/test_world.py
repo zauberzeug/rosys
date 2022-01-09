@@ -12,8 +12,11 @@ def test_dumping(runtime: TestRuntime):
 
 def test_json_view(runtime: TestRuntime):
     '''exporting whole world as json is needed for example for logging/inspection'''
-    data = json.loads(runtime.world.json())
+    serialized = runtime.world.json()
+    data = json.loads(serialized)
     assert 'robot' in data.keys()
     assert 'automation_state' in data.keys()
     assert 'obstacles' in data.keys()
     assert 'notifications' in data.keys()
+    assert 'cameras' in data.keys()
+    assert 'frames' not in data['cameras']['simulated_cam_0'].keys()
