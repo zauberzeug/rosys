@@ -5,18 +5,19 @@ nav:
   - installation.md
   - getting_started.md
   - Architecture:
-      - Overview: "architecture_overview.md"
-      - world.md
-      - actors.md
-      - events.md
-      - automations.md
-      - user_interface.md
+      - Overview: "architecture/architecture_overview.md"
+      - architecture/world.md
+      - architecture/actors.md
+      - architecture/events.md
+      - architecture/automations.md
+      - architecture/user_interface.md
   - Features:
-      - manual_steering.md
-      - cameras.md
-      - object_detection.md
-      - path_planning.md
-
+      - features/manual_steering.md
+      - features/3d_scene.md
+      - features/automation_controls.md
+      - features/cameras.md
+      - features/object_detection.md
+      - features/path_planning.md
   - safety.md
   - troubleshooting.md
   - development.md

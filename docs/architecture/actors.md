@@ -27,5 +27,5 @@ If you need to do some heavy computation, you should wrap the code in a function
 ## Notifications
 
 Actors can notify the user through `self.notify('message to the user')`.
-When using [NiceGUI](user_interface.md), the notifications will show as snackbar messages.
+When using [the default UI](user_interface.md), the notifications will show as snackbar messages.
 The history of notifications is stored in the [world](world.md#notifications).

@@ -16,18 +16,18 @@ If you launch the program, your browser will open the url <http://0.0.0.0:8080/>
 
 ### Imports
 
-The [User Interface](user_interface.md) is built with [NiceGUI](https://nicegui.io).
-The imports must be stated seperately to make it possible to run RoSys without it.
+The [User Interface](architecture/user_interface.md) is built with [NiceGUI](https://nicegui.io).
+The imports must be stated separately to make it possible to run RoSys without it.
 
 ### Setup
 
-As you can read up in the ["Basic Concepts" section](basic_concepts.md) RoSys provides a runtime to manage the actors which operate on the world.
+As you can read up in the ["Architecture" chapter](architecture/architecture_overview.md) RoSys provides a runtime to manage the actors which operate on the world.
 The command `rosys.ui.configure(ui, runtime)` connects the user interface with the runtime.
 
 ### Keyboard Control
 
 By calling `rosys.ui.keyboard_control()` you create a keyboard event listener which will steer the robot.
-There are also other possibilities of steering the robot like a [Joystick](user_interface.md#joystick) or [clicking in the 3d scene](user_interface.md#click-handler).
+There are also other possibilities of steering the robot like a [Joystick](architecture/user_interface.md#joystick) or [clicking in the 3d scene](architecture/user_interface.md#click-handler).
 
 ### 3D Scene
 

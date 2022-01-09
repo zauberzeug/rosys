@@ -2,10 +2,10 @@
 
 ## Keyboard Control
 
-By calling `rosys.ui.keyboard_control()` you enable steering the robot with the keyboard (see [Getting Started](getting_started.md) for a full example).
+By calling `rosys.ui.keyboard_control()` you enable steering the robot with the keyboard (see [Getting Started](../getting_started.md) for a full example).
 Press the arrow keys to steer the robot while holding the SHIFT key down.
 You can also modify the speed of the robot by pressing the a number key.
-Use the optional parameter `default_speed` to change the inital value.
+Use the optional parameter `default_speed` to change the initial value.
 
 ## Joystick
 
