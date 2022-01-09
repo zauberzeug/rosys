@@ -22,6 +22,17 @@ A timer updates the source property of the `ui.image` in a given interval.
 The cameras `latest_frame_uri` property provides the uri to the latest captured frame.
 Thereby the browser is always fetching new images.
 
-## Configure
+## Remote Operation
 
-tbd.
+A fairly often required use case is the remote operation of a robot.
+In this example we use the `event.Id.NEW_CAMERA` to only display the first camera:
+
+```python hl_lines="6 10"
+{!src/remote_operation.py [ln:13-22]!}
+```
+
+By adding `joystick` and `keyboard_control` the robot is ready to go for remote operation:
+
+```python hl_lines="4 6"
+{!src/remote_operation.py [ln:24-29]!}
+```
