@@ -30,7 +30,10 @@ class Runtime:
         self.odometer = Odometer()
         self.steerer = Steerer(self.hardware)
         self.automator = Automator()
-        self.image_capture = ImageCapture() if ImageCapture.is_operable() else ImageCaptureSimulation()
+        if ImageCapture.is_operable() and self.world.mode != Mode.TEST:
+            self.image_capture = ImageCapture()
+        else:
+            self.image_capture = ImageCaptureSimulation()
 
         self.actors = [
             self.lizard,
