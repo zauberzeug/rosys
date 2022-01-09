@@ -36,7 +36,7 @@ class CameraCapture(Actor):
                 del camera.frames[0]
 
     async def update_device_list(self):
-        if self.last_scan is not None and self.world.time > self.last_scan + 30:  # scan every 30 sec
+        if self.last_scan is not None and self.world.time < self.last_scan + 30:  # scan every 30 sec
             return
         self.last_scan = self.world.time
         output = await self.run_sh(['v4l2-ctl', '--list-devices'])
@@ -51,7 +51,8 @@ class CameraCapture(Actor):
                 if uid not in self.devices:
                     device = self.get_capture_device(num)
                     if device is None:
-                        del self.world.cameras[uid]
+                        if uid in self.world.cameras:
+                            del self.world.cameras[uid]
                     else:
                         self.devices[uid] = device
 
