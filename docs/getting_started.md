@@ -5,7 +5,7 @@ Then create a directory to host your code and put it under version control.
 Name your entry file `main.py` and add the following content:
 
 ```Python
-{!src/../main.py!}
+{!../main.py!}
 ```
 
 If you launch the program, your browser will open the url <http://0.0.0.0:8080/> and present a 3d view:

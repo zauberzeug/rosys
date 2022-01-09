@@ -1,7 +1,7 @@
 # RoSys - The Robot System
 
 RoSys provides an easy-to-use robot system.
-Its purpose is simlar to [ROS](https://www.ros.org/).
+Its purpose is similar to [ROS](https://www.ros.org/).
 But RoSys is fully based on modern web technologies and focusses on mobile robotics.
 
 See full documentation at [rosys.io](https://rosys.io/).
@@ -13,7 +13,7 @@ See full documentation at [rosys.io](https://rosys.io/).
 
 **Shared State**
 : All code can access and manipulate a shared and typesafe state -- this does not mean it should.
-Good software design is still neccessary.
+Good software design is still necessary.
 But it is much easier to do if you do not have to perform serialization all the time.
 
 **No Threading**
