@@ -4,14 +4,14 @@ nav:
   - Features: "index.md"
   - installation.md
   - getting_started.md
-  - Concepts:
-      - Overview: "basic_concepts.md"
+  - Architecture:
+      - Overview: "architecture_overview.md"
       - world.md
       - actors.md
       - events.md
       - automations.md
-  - user_interface.md
-  - Mobile Robotics:
+      - user_interface.md
+  - Use Cases:
       - cameras.md
       - object_detection.md
       - path_planning.md

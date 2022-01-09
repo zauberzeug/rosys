@@ -60,7 +60,7 @@ Here is a full example example for driving to a point on the ground by starting 
 
 ## Automation Controls
 
-It is good [safety](safety.md) and usability design to only begin automation processes when the user makes an active request for it.
+Required for [safety](safety.md) and good usability automation processes only begin when the user makes an active request for it.
 Also the user should always be able to pause/resume and stop an ongoing automation.
 While you could write your own UI, RoSys already provides a ready-made set of elements with `rosys.ui.automation_controls()`.
 Building on the [click handler](user_interface.md#click-handler) example above we can add these easily:
