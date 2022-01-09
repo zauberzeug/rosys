@@ -1,6 +1,5 @@
 
-from collections import deque
-from typing import Any
+from typing import Any, List
 from pydantic import BaseModel, Field
 from dataclasses import dataclass
 from PIL import Image, ImageDraw
@@ -29,7 +28,7 @@ class Camera(BaseModel):
     id: str
     exposure: float = 0
     capture: bool = True
-    frames: deque[Frame] = Field(deque([no_img_placeholder], maxlen=10), exclude=True)
+    frames: List[Frame] = Field([no_img_placeholder], exclude=True)
 
     @property
     def latest_frame_uri(self):

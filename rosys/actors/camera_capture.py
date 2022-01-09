@@ -22,14 +22,19 @@ class CameraCapture(Actor):
                 return
             bytes = await self.run_io_bound(self.capture_frame, uid)
             camera.frames.append(Frame(data=bytes, time=self.world.time))
+        self.purge_old_frames()
 
     def capture_frame(self, id):
         _, frame = self.devices[id].read()
         bytes = cv2.imencode('.jpg', frame)[1].tobytes()
         return bytes
 
+    def purge_old_frames(self):
+        for camera in self.world.cameras.values():
+            while camera.frames and camera.frames[0].time < self.world.time - 5 * 60.0:
+                del camera.frames[0]
+
     async def update_device_list(self):
-        self.log.info(self.world.cameras)
         output = await self.run_sh(['v4l2-ctl', '--list-devices'])
         for line in output.splitlines():
             if 'Camera' in line:
@@ -40,7 +45,11 @@ class CameraCapture(Actor):
             if '/dev/video' in line:
                 num = int(line.strip().lstrip('/dev/video'))
                 if uid not in self.devices:
-                    self.devices[uid] = self.get_capture_device(num)
+                    device = self.get_capture_device(num)
+                    if device is None:
+                        del self.world.cameras[uid]
+                    else:
+                        self.devices[uid] = device
 
     def get_capture_device(self, index: int):
         try:
