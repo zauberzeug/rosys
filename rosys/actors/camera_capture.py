@@ -1,5 +1,6 @@
 import cv2
 import re
+import shutil
 from .actor import Actor
 from ..world.camera import Camera, Frame
 from .. import event
@@ -72,5 +73,4 @@ class CameraCapture(Actor):
 
     @staticmethod
     def is_operable():
-        from shutil import which
-        return which('v4l2-ctl') is not None
+        return shutil.which('v4l2-ctl') is not None

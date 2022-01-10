@@ -45,7 +45,7 @@ def unregister(event: Id, listener: Union[Callable, Awaitable]):
     for registered in listeners[event]:
         if hasattr(listener, '__name__') and listener.__name__ == '<lambda>' and listener == registered:
             marked.append(listener)
-        if (registered() == listener):
+        if registered() == listener:
             marked.append(registered)
     [listeners[event].remove(m) for m in marked]
 
