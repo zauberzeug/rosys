@@ -3,9 +3,9 @@ from typing import List, Optional
 from pydantic import BaseModel
 import abc
 import asyncio
-from ..communication import Communication
+from ..communication import Communication, CommunicationFactory, NoCommunicationError
 from ..world import Velocity, World
-from .communicating_hardware import CommunicatingHardware
+from . import CommunicatingHardware, Hardware, SimulatedHardware
 from operator import ixor
 from functools import reduce
 
@@ -15,6 +15,13 @@ class RobotBrainLegacy(CommunicatingHardware):
     def __init__(self, world: World, configuration: List[HardwareGroup], communication: Optional[Communication] = ...):
         super().__init__(world, communication=communication)
         self.configuration = configuration
+
+    @staticmethod
+    def create(world: World, configuration: List[HardwareGroup]) -> Hardware:
+        try:
+            return RobotBrainLegacy(world, configuration, CommunicationFactory.create())
+        except NoCommunicationError:
+            return SimulatedHardware()
 
     async def configure(self):
         await super().configure()

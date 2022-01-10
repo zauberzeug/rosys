@@ -1,4 +1,5 @@
 from nicegui.ui import Ui
+from rosys.hardware import CommunicatingHardware
 from .. import Runtime
 from .. import event
 from .joystick import Joystick
@@ -25,6 +26,7 @@ def configure(ui: Ui, runtime: Runtime):
     AutomationControls.runtime = runtime
     AutomationControls.ui = ui
     LizardSerialDebug.ui = ui
-    LizardSerialDebug.communication = runtime.hardware.communication
+    if type(runtime.hardware) is CommunicatingHardware:
+        LizardSerialDebug.communication = runtime.hardware.communication
     ObjgraphPage.ui = ui
     PylootPage.ui = ui
