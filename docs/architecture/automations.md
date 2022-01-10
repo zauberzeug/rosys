@@ -16,7 +16,7 @@ When the user signals RoSys that it is ok to start the automations[^1], it will 
 
 [^1]:
     Normally the signal comes from a UI component like the [Automation Controls](automations.md#automation-controls).
-    See [Safety](safety.md) for more information.
+    See [Safety](../safety.md) for more information.
 
 ## Pausing
 

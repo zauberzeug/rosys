@@ -9,3 +9,4 @@ from .rotation import Rotation
 from .spline import Spline
 from .velocity import Velocity
 from .world import World, AutomationState
+from .camera import Camera, Frame

@@ -1,15 +1,23 @@
 site_name: RoSys
 site_url: https://rosys.io/
 nav:
-  - Features: "index.md"
+  - About: "index.md"
   - installation.md
   - getting_started.md
-  - basic_concepts.md
-  - user_interface.md
-  - world.md
-  - actors.md
-  - events.md
-  - automations.md
+  - Architecture:
+      - Overview: "architecture/architecture_overview.md"
+      - architecture/world.md
+      - architecture/actors.md
+      - architecture/events.md
+      - architecture/automations.md
+      - architecture/user_interface.md
+  - Features:
+      - features/manual_steering.md
+      - features/3d_scene.md
+      - features/automation_controls.md
+      - features/cameras.md
+      - features/object_detection.md
+      - features/path_planning.md
   - safety.md
   - troubleshooting.md
   - development.md

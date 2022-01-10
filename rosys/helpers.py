@@ -3,6 +3,7 @@ import time
 import traceback
 import sys
 import numpy as np
+from contextlib import contextmanager
 
 
 def measure(*, reset: bool = False, ms: bool = False):
@@ -33,3 +34,15 @@ def eliminate_pi(angle: float) -> float:
 
 def eliminate_2pi(angle: float) -> float:
     return (angle + np.pi) % (2 * np.pi) - np.pi
+
+
+class ModificationContext:
+
+    @contextmanager
+    def set(self, **kwargs):
+        backup = {key: getattr(self, key) for key in kwargs.keys()}
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+        yield
+        for key, value in backup.items():
+            setattr(self, key, value)

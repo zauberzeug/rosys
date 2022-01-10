@@ -5,6 +5,7 @@ from concurrent.futures import ProcessPoolExecutor
 
 from ..world import World
 from .. import event
+import subprocess
 
 
 class Actor:
@@ -33,6 +34,22 @@ class Actor:
     async def run_cpu_bound(self, callback: Callable, *args: any):
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, callback, *args)
+
+    async def run_sh(self, command: list[str]) -> str:
+        '''executes a shell command
+        command: a sequence of program arguments as subprocess.Popen requires
+        returns: stdout
+        '''
+
+        def run() -> str:
+            proc = subprocess.Popen(
+                command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT)
+            stdout, *_ = proc.communicate()
+            return stdout.decode()
+
+        return await self.run_io_bound(run)
 
     async def pause_automations(self, *, because: str):
         await event.call(event.Id.PAUSE_AUTOMATIONS, because)

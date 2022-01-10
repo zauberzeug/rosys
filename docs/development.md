@@ -2,7 +2,7 @@
 
 ## Continuous Build
 
-We run our continous integration with GitHub Actions.
+We run our continuos integration with GitHub Actions.
 For each commit the pytests are executed.
 
 ## Releases
