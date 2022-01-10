@@ -5,7 +5,7 @@ import logging
 from typing import Optional, Type
 from . import event, task_logger
 from .actors import Actor, Automator, Lizard, Odometer, Steerer, CameraCapture, ImageCaptureSimulation
-from .hardware.hardware import Hardware
+from .hardware import Hardware, SimulatedHardware
 from .persistence import Persistence
 from .world import AutomationState, Mode, World
 
@@ -25,7 +25,7 @@ class Runtime:
             self.persistence = persistence or Persistence(self.world)
             self.persistence.restore()
 
-        self.hardware = hardware or Hardware(self.world)
+        self.hardware = hardware or SimulatedHardware(self.world)
         self.lizard = Lizard(self.hardware)
         self.odometer = Odometer()
         self.steerer = Steerer(self.hardware)

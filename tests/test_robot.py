@@ -26,5 +26,5 @@ async def test_stopping_robot_when_runtime_stops(runtime: TestRuntime):
     await runtime.hardware.drive(1, 0)
     await runtime.forward(seconds=1.0)
     await runtime.shutdown()
-    assert runtime.hardware.simulation.linear_velocity == 0
-    assert runtime.hardware.simulation.angular_velocity == 0
+    assert runtime.hardware.linear_velocity == 0
+    assert runtime.hardware.angular_velocity == 0

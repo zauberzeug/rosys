@@ -1,8 +1,8 @@
 from ..world import Velocity
-from .hardware import Hardware
+from .communicating_hardware import CommunicatingHardware
 
 
-class RobotBrain(Hardware):
+class RobotBrain(CommunicatingHardware):
 
     async def configure(self):
         await super().configure()

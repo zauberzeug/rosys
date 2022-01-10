@@ -5,12 +5,12 @@ import abc
 import asyncio
 from ..communication import Communication
 from ..world import Velocity, World
-from .hardware import Hardware
+from .communicating_hardware import CommunicatingHardware
 from operator import ixor
 from functools import reduce
 
 
-class RobotBrainLegacy(Hardware):
+class RobotBrainLegacy(CommunicatingHardware):
 
     def __init__(self, world: World, configuration: List[HardwareGroup], communication: Optional[Communication] = ...):
         super().__init__(world, communication=communication)
