@@ -6,7 +6,7 @@ import logging
 class Communication(abc.ABC):
 
     def __init__(self) -> None:
-        self.name = __name__[:-14] + self.__class__.__name__
+        self.name = __name__[:-13] + self.__class__.__name__
         self.log = logging.getLogger(self.name)
         super().__init__()
 
