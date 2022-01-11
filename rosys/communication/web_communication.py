@@ -16,6 +16,7 @@ class WebCommunication(Communication):
     host: str = f'ws://{ip}:{port}'
 
     def __init__(self):
+        super().__init__()
         self.buffer: deque[str] = deque()
         self.sio = socketio.AsyncClient()
 
