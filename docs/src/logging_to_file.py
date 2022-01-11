@@ -28,7 +28,7 @@ logging.config.dictConfig({
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'default',
             'filename': os.path.expanduser('~/.rosys/example.log'),
-            'maxBytes': 1024,
+            'maxBytes': 1024 * 1000,
             'backupCount': 3
         }
     },
