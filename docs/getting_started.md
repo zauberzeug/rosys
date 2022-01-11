@@ -43,4 +43,4 @@ See [NiceGUI](https://nicegui.io) for a complete API reference.
 
 NiceGUI provides a `ui.run` command which launches the webserver and presents the interface as configured above.
 If you modify the code, an automatic reload is triggered.
-Very convenient but can be deactivated by passing `reload=False`.
+This is very convenient, but can be deactivated by passing `reload=False`.
