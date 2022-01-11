@@ -16,7 +16,14 @@ To only print rosys messages at the info level on the console we can use a confi
 {!src/logging_config.py !}
 ```
 
-As you move the [joystick](features/manual_steering.md#joystick) `rosys.steerer` messages will appear on the console.
+As you move the [joystick](features/manual_steering.md#joystick) `rosys.steerer` messages will appear on the console:
+
+```
+2022-01-11 06:53:21 - INFO - start steering
+2022-01-11 06:53:22 - INFO - stop steering
+2022-01-11 06:53:23 - INFO - start steering
+2022-01-11 06:53:23 - INFO - stop steering
+```
 
 ### Adding Loggers
 
@@ -53,6 +60,28 @@ Then you can decide for each logger which handlers should be used:
     The above file logger writes to `~/.rosys`.
     For development it is very helpful to have [auto-reloading on file change activated](getting_started.md#start).
     Therefore logging should always be stored outside of your projects source directory.
+
+### Formatting
+
+It's quite useful see from which file and line number a log entry was triggered.
+To not make the log lines to long, you can create a log filter which computes the relative path:
+
+```python hl_lines="8 14"
+{!src/log_formatting.py [ln:10-28] !}
+```
+
+Now you need to register the filter, apply it in the handler.
+Then you can change the format for formatter:
+
+```python hl_lines="3 9 15"
+{!src/log_formatting.py [ln:33-52] !}
+```
+
+Log output then looks like this
+
+```
+2022-01-11 06:51:00.319 [DEBUG] rosys/runtime.py:78: startup completed
+```
 
 ## Profiling
 
