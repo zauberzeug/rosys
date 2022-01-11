@@ -1,17 +1,5 @@
 # Development
 
-## Continuous Build
-
-We run our continuous integration with GitHub Actions.
-For each commit the pytests are executed.
-
-## Releases
-
-To release a new version create a new version on GitHub and describe the changes.
-A GitHub Action performs the following steps:
-If the pytests are successful, a poetry build and deployment to [pypi](https://pypi.org/project/rosys/) is issued.
-Also a multi-arch docker image is built and pushed to [Docker Hub](https://hub.docker.com/r/zauberzeug/rosys).
-
 ## Profiling
 
 You can add a profiler button to your UI:
@@ -44,3 +32,16 @@ The graphs will continuously update and show you which types of object counts ar
 You can then inspect them.
 To analyze cyclic references the [objgraph](https://mg.pov.lt/objgraph/index.html) library can be very helpful.
 You can call `rosys.ui.objgraph_page()` which will add the route `/objgraph` to your app.
+
+## Continuous Build
+
+We run our continuous integration with GitHub Actions.
+For each commit the pytests are executed.
+
+## Releases
+
+We publish releases by creating a new version on GitHub and describe the changes.
+A GitHub Action then performs the following steps:
+
+- If the pytests are successful, a poetry build and deployment to [pypi](https://pypi.org/project/rosys/) is issued.
+- A multi-arch docker image is built and pushed to [Docker Hub](https://hub.docker.com/r/zauberzeug/rosys).
