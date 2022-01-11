@@ -69,11 +69,13 @@ class Runtime:
         event.register(event.Id.NEW_NOTIFICATION, self.store_notification)
         for actor in self.actors:
             if actor.interval is not None:
+                self.log.debug(f'starting actor {actor.name} with interval {actor.interval}s')
                 self.tasks.append(task_logger.create_task(self.repeat(actor), name=actor.name))
         self.tasks.append(asyncio.create_task(self.watch_emitted_events()))
 
         await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
         self.activate_async_debugging()
+        self.log.debug('startup completed')
 
     async def shutdown(self):
         await self.hardware.drive(0, 0)
