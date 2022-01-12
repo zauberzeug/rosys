@@ -15,4 +15,4 @@ The warning also provides a (not so readable) hint where the time is consumed.
 
 The example above is one of the more frequent scenarios.
 It means some code inside a user interaction event handler (e.g. `handle_event()` in `justpy.py`) is blocking.
-Try to figure out which ui event code is responsible by commenting out parts of your logic and try to reproduce the warning systematically.
+Try to figure out which UI event code is responsible by commenting out parts of your logic and try to reproduce the warning systematically.

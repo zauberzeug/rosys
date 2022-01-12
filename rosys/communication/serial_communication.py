@@ -37,10 +37,10 @@ class SerialCommunication(Communication):
         if '\n' in self.buffer:
             line, self.buffer = self.buffer.split('\r\n', 1)
             result = check(line)
-            self.log.debug(f'read {result}')
+            self.log.debug(f'read: {result}')
             return result
 
     async def send_async(self, line: str):
         self.serial.write(f'{augment(line)}\n'.encode())
-        self.log.debug(f'writing {line}')
+        self.log.debug(f'send: {line}')
         await asyncio.sleep(0)
