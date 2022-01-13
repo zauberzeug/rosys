@@ -1,6 +1,7 @@
 import numpy as np
 from nicegui.ui import Ui
 from nicegui.events import KeyEventArguments
+import logging
 from ..actors import Steerer
 from ..world import Point
 
@@ -10,11 +11,14 @@ class KeyboardControl:
     ui: Ui  # will be set by rosys.ui.configure
 
     def __init__(self, *, default_speed: float = 2.0):
+        self.log = logging.getLogger('rosys.ui.keyboard_control')
         self.ui.keyboard(on_key=self.handle_keys, repeating=False)
         self.direction = Point(x=0, y=0)
         self.speed = default_speed
 
     def handle_keys(self, e: KeyEventArguments):
+        self.log.debug(f'{e.key.name} -> {e.action} {e.modifiers}')
+
         # change speed via number key
         if e.action.keydown and e.key.number is not None:
             self.speed = e.key.number
