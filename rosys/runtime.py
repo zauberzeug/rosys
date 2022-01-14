@@ -4,8 +4,8 @@ import asyncio
 import logging
 from typing import Optional, Type
 from . import event, task_logger
-from .hardware import Hardware, SimulatedHardware
 from .actors import Actor, Automator, Lizard, Odometer, Steerer, CameraCapture, CameraCaptureSimulation
+from .hardware import Hardware, SimulatedHardware
 from .persistence import Persistence
 from .world import AutomationState, Mode, World
 

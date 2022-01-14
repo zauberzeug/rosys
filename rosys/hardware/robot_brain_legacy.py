@@ -3,11 +3,11 @@ from typing import List, Optional
 from pydantic import BaseModel
 import abc
 import asyncio
-from ..communication import Communication, CommunicationFactory
-from ..world import Velocity, World
-from . import CommunicatingHardware, Hardware, SimulatedHardware
 from operator import ixor
 from functools import reduce
+from ..communication import Communication
+from ..world import Velocity, World
+from . import CommunicatingHardware
 
 
 class RobotBrainLegacy(CommunicatingHardware):

@@ -3,14 +3,14 @@ import socketio
 import uvicorn
 import logging
 import serial
-from checksum import augment, check
+from hardware import RobotBrain
 
 sio = socketio.AsyncServer(async_mode='asgi')
 
 
 @sio.event
 def write(sid, line):
-    serial.write(f'{augment(line)}\n'.encode())
+    serial.write(f'{RobotBrain.augment(line)}\n'.encode())
 
 
 async def receive():
@@ -24,7 +24,7 @@ async def receive():
                 logging.exception('could not decode', exc_info=e)
             if '\n' in buffer:
                 line, buffer = buffer.split('\n', 1)
-                await sio.emit('read', check(line.rstrip('\r')))
+                await sio.emit('read', RobotBrain.check(line.rstrip('\r')))
     except:
         logging.exception('could not read')
 

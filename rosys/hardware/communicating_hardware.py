@@ -1,4 +1,3 @@
-from typing import Optional
 from ..world import World
 from ..communication import Communication
 from .hardware import Hardware

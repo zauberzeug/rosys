@@ -69,13 +69,15 @@ class RobotBrain(CommunicatingHardware):
     async def send(self, msg: str):
         await self.communication.send_async(self.augment(msg))
 
-    def augment(self, line: str) -> str:
+    @staticmethod
+    def augment(line: str) -> str:
         checksum = 0
         for c in line:
             checksum ^= ord(c)
         return f'{line}@{checksum:02x}'
 
-    def check(self, line: Optional[str]) -> str:
+    @staticmethod
+    def check(line: Optional[str]) -> str:
         if line is None:
             return ""
         if line[-3:-2] == '@':

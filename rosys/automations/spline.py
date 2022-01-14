@@ -1,7 +1,7 @@
 import numpy as np
-from ..hardware.hardware import Hardware
-from ..world import Mode, Point, Spline, World
+from ..hardware import Hardware
 from ..helpers import eliminate_pi
+from ..world import Mode, Point, Spline, World
 from .navigation import Carrot
 
 

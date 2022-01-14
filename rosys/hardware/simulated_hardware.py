@@ -1,7 +1,7 @@
-from .hardware import Hardware
-from ..world import Velocity, World
 import numpy as np
 import asyncio
+from ..world import Velocity, World
+from .hardware import Hardware
 
 
 class SimulatedHardware(Hardware):

@@ -8,5 +8,5 @@ class CommunicationFactory:
     def create():
         if SerialCommunication.is_possible():
             return SerialCommunication()
-        elif WebCommunication.is_possible():
+        if WebCommunication.is_possible():
             return WebCommunication()

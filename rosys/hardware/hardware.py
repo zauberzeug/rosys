@@ -1,8 +1,6 @@
-import numpy as np
-import asyncio
 import logging
 import abc
-from ..world import Velocity, World
+from ..world import World
 
 
 class Hardware(abc.ABC):

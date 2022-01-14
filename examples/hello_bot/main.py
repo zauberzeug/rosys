@@ -4,8 +4,8 @@ import os
 import rosys
 import rosys.ui
 from rosys.automations import drive_square
-from rosys.world import Mode, World
 from rosys.hardware import CommunicatingHardware
+from rosys.world import Mode, World
 
 import log_configuration
 log_configuration.setup()
