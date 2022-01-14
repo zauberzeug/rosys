@@ -5,6 +5,7 @@ import rosys
 import rosys.ui
 from rosys.automations import drive_square
 from rosys.world import Mode, World
+from rosys.hardware import CommunicatingHardware
 
 import log_configuration
 log_configuration.setup()
@@ -33,7 +34,7 @@ with ui.card():
             await runtime.hardware.configure()
 
         ui.button('drive square', on_click=play).props('icon=play_arrow')
-        if runtime.hardware.communication:
+        if isinstance(runtime.hardware, CommunicatingHardware):
             ui.button('configure microcontroller', on_click=configure).props('outline')
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
