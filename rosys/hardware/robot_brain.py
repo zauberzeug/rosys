@@ -1,6 +1,6 @@
-from ..world import World, Velocity
-from . import CommunicatingHardware, SimulatedHardware, Hardware
-from ..communication import CommunicationFactory, NoCommunicationError
+from typing import Optional
+from ..world import Velocity
+from . import CommunicatingHardware
 
 
 class RobotBrain(CommunicatingHardware):

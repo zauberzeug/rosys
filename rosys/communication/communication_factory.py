@@ -2,10 +2,6 @@ from .serial_communication import SerialCommunication
 from .web_communication import WebCommunication
 
 
-class NoCommunicationError(Exception):
-    pass
-
-
 class CommunicationFactory:
 
     @staticmethod
@@ -14,5 +10,3 @@ class CommunicationFactory:
             return SerialCommunication()
         elif WebCommunication.is_possible():
             return WebCommunication()
-        else:
-            raise NoCommunicationError('no communication possible')

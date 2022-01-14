@@ -6,6 +6,6 @@ from .hardware import Hardware
 
 class CommunicatingHardware(Hardware):
 
-    def __init__(self, world: World, communication: Optional[Communication]):
+    def __init__(self, world: World, communication: Communication):
         super().__init__(world)
         self.communication = communication
