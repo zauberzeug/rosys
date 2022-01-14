@@ -31,7 +31,7 @@ class RobotBrain(CommunicatingHardware):
         await self.send(f'core.restart()')
 
     async def drive(self, linear: float, angular: float):
-        super().drive(linear, angular)
+        await super().drive(linear, angular)
         await self.send(f'wheels.speed({linear}, {angular})')
 
     async def stop(self):
