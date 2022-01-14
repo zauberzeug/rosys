@@ -2,10 +2,10 @@ import asyncio
 import logging
 from typing import Callable
 from concurrent.futures import ProcessPoolExecutor
+import subprocess
 
 from ..world import World
 from .. import event
-import subprocess
 
 
 class Actor:

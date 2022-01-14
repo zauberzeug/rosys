@@ -3,7 +3,7 @@ from ..world.camera import Camera, Frame
 from .. import event
 
 
-class ImageCaptureSimulation(Actor):
+class CameraCaptureSimulation(Actor):
     interval: float = 1
 
     def __init__(self) -> None:

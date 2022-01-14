@@ -4,8 +4,8 @@ import asyncio
 import logging
 from typing import Optional, Type
 from . import event, task_logger
-from .actors import Actor, Automator, Lizard, Odometer, Steerer, CameraCapture, ImageCaptureSimulation
 from .hardware import Hardware, SimulatedHardware
+from .actors import Actor, Automator, Lizard, Odometer, Steerer, CameraCapture, CameraCaptureSimulation
 from .persistence import Persistence
 from .world import AutomationState, Mode, World
 
@@ -31,16 +31,16 @@ class Runtime:
         self.steerer = Steerer(self.hardware)
         self.automator = Automator()
         if CameraCapture.is_operable() and self.world.mode != Mode.TEST:
-            self.image_capture = CameraCapture()
+            self.camera_capture = CameraCapture()
         else:
-            self.image_capture = ImageCaptureSimulation()
+            self.camera_capture = CameraCaptureSimulation()
 
         self.actors = [
             self.lizard,
             self.odometer,
             self.steerer,
             self.automator,
-            self.image_capture,
+            self.camera_capture,
         ]
 
     def with_actors(self, *actors: list[Actor]):
@@ -69,11 +69,13 @@ class Runtime:
         event.register(event.Id.NEW_NOTIFICATION, self.store_notification)
         for actor in self.actors:
             if actor.interval is not None:
+                self.log.debug(f'starting actor {actor.name} with interval {actor.interval}s')
                 self.tasks.append(task_logger.create_task(self.repeat(actor), name=actor.name))
         self.tasks.append(asyncio.create_task(self.watch_emitted_events()))
 
         await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
         self.activate_async_debugging()
+        self.log.debug('startup completed')
 
     async def shutdown(self):
         await self.hardware.drive(0, 0)

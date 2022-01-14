@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 
 run() {
-    output=`{ timeout 2 python3.9 $1; } 2>&1`
+    output=`{ timeout 4 python3.9 $1; } 2>&1`
     exitcode=$?
     test $exitcode -eq 124 && exitcode=0 # exitcode 124 is comming from "timeout command above"
     echo $output | grep "JustPy ready to go" > /dev/null || exitcode=1
     echo $output | grep "Traceback" > /dev/null && exitcode=1
     echo $output | grep "Error" > /dev/null && exitcode=1
     if test $exitcode -ne 0; then
+        echo "wrong exit code $exitcode. Output was:"
         echo $output
         return 1
     fi
@@ -26,17 +27,21 @@ check() {
     fi
 }
 
-exitcode=0
+success=0
 pushd ../
-check main.py || exitcode=1
-check docs/src/scene_on_click.py || exitcode=1
-check docs/src/scene_on_click_with_automation_controls.py || exitcode=1
-check docs/src/watch_battery_level.py || exitcode=1
-check docs/src/path_planning.py || exitcode=1
-check docs/src/robot_shape.py || exitcode=1
-check examples/hello_bot/main.py || exitcode=1
-check examples/obstacles/main.py || exitcode=1
-#check examples/multiprocess/main.py || exitcode=1
+check main.py || success=1
+check docs/src/scene_on_click.py || success=1
+check docs/src/scene_on_click_with_automation_controls.py || success=1
+check docs/src/watch_battery_level.py || success=1
+check docs/src/path_planning.py || success=1
+check docs/src/robot_shape.py || success=1
+check docs/src/show_captured_images.py || success=1
+check docs/src/remote_operation.py || success=1
+check docs/src/logging_config.py || success=1
+check docs/src/logging_to_file.py || success=1
+check examples/hello_bot/main.py || success=1
+check examples/obstacles/main.py || success=1
+#check examples/multiprocess/main.py || success=1
 popd
-echo exit $exitcode
-test $exitcode -eq 0
+echo exit $success
+test $success -eq 0

@@ -37,6 +37,7 @@ def register(event: Id, listener: Union[Callable, Awaitable]):
         ref = weakref.WeakMethod(listener)
     else:
         ref = weakref.ref(listener)
+    log.debug(f'registered {listener} to {event}')
     listeners[event].add(ref)
 
 
@@ -45,9 +46,10 @@ def unregister(event: Id, listener: Union[Callable, Awaitable]):
     for registered in listeners[event]:
         if hasattr(listener, '__name__') and listener.__name__ == '<lambda>' and listener == registered:
             marked.append(listener)
-        if (registered() == listener):
+        if registered() == listener:
             marked.append(registered)
     [listeners[event].remove(m) for m in marked]
+    log.debug(f'unregistered {listener} from {event}')
 
 
 async def call(event: Id, *args):
@@ -56,8 +58,8 @@ async def call(event: Id, *args):
     #     log.info(f'calling {event=}')
     for listener in list(listeners.get(event, {})):
         try:
-            # if event != Id.NEW_MACHINE_DATA:
-            #     log.info(f'emitting {event=} with {listener=}')
+            if event != Id.NEW_MACHINE_DATA:
+                log.debug(f'emitting {event} with {listener}')
             if hasattr(listener, '__name__') and listener.__name__ == '<lambda>':
                 listener(*args)
                 continue
@@ -79,8 +81,8 @@ def emit(event: Id, *args):
     #     log.info(f'emitting {event=}')
     loop = asyncio.get_event_loop()
     for listener in list(listeners.get(event, {})):
-        # if event != Id.ROBOT_MOVED:
-        #     log.info(f'emitting {event=} with {listener=}')
+        if event != Id.ROBOT_MOVED:
+            log.debug(f'emitting {event} with {listener}')
         try:
             if hasattr(listener, '__name__') and listener.__name__ == '<lambda>':
                 tasks.append(loop.run_in_executor(None, listener, *args))
