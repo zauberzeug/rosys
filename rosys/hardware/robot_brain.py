@@ -43,7 +43,7 @@ class RobotBrain(CommunicatingHardware):
         millis = None
         while True:
             line = self.check(await self.communication.read())
-            if line is None:
+            if line is None or not line:
                 break
             words = line.split()
             if not words:
@@ -75,7 +75,9 @@ class RobotBrain(CommunicatingHardware):
             checksum ^= ord(c)
         return f'{line}@{checksum:02x}'
 
-    def check(self, line: str) -> str:
+    def check(self, line: Optional[str]) -> str:
+        if line is None:
+            return ""
         if line[-3:-2] == '@':
             check = int(line[-2:], 16)
             line = line[:-3]
