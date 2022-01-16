@@ -73,8 +73,8 @@ To keep the log lines from getting too long, you can create a log filter which c
 You need to register the filter and apply it in the handler.
 Then you can change the format for the formatter:
 
-```python hl_lines="2 8 14"
-{!src/log_formatting.py [ln:33-52] !}
+```python hl_lines="3 9 15"
+{!src/log_formatting.py [ln:32-51] !}
 ```
 
 Log output then looks like this:
