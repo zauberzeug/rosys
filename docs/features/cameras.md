@@ -14,7 +14,7 @@ Make sure the container can access the usb devices by starting it with `privileg
 
 Through the use of `rosys.ui` (see [User Interface](../architecture/user_interface.md)) you can launch a website which shows the latest captured frames from each camera:
 
-```python hl_lines="12-22"
+```python hl_lines="11-21"
 {!src/show_captured_images.py !}
 ```
 
@@ -27,12 +27,12 @@ Thereby the browser is always fetching new images.
 A fairly often required use case is the remote operation of a robot.
 In this example we use the `event.Id.NEW_CAMERA` to only display the first camera:
 
-```python hl_lines="6 10"
+```python hl_lines="4 8"
 {!src/remote_operation.py [ln:13-22]!}
 ```
 
 By adding `joystick` and `keyboard_control` the robot is ready to go for remote operation:
 
-```python hl_lines="4 6"
+```python hl_lines="2 4"
 {!src/remote_operation.py [ln:24-29]!}
 ```

@@ -12,7 +12,7 @@ In the following examples we use Python's logging `dictConfig` for configuration
 
 To only print RoSys messages at the info level to the console we can use a configuration like this:
 
-```python hl_lines="32-36"
+```python hl_lines="31-35"
 {!src/logging_config.py !}
 ```
 
@@ -46,7 +46,7 @@ Sometimes it is helpful to write intensive logging into a file and only show som
 For this you can add a file `handler`:
 
 ```python hl_lines="8-15"
-{!src/logging_to_file.py [ln:19-34] !}
+{!src/logging_to_file.py [ln:18-33] !}
 ```
 
 Then you can decide for each logger which handlers should be used:
@@ -70,10 +70,10 @@ To keep the log lines from getting too long, you can create a log filter which c
 {!src/log_formatting.py [ln:10-28] !}
 ```
 
-Now you need to register the filter and apply it in the handler.
+You need to register the filter and apply it in the handler.
 Then you can change the format for the formatter:
 
-```python hl_lines="3 9 15"
+```python hl_lines="2 8 14"
 {!src/log_formatting.py [ln:33-52] !}
 ```
 
