@@ -22,10 +22,6 @@ class Runtime:
         self.tasks = []
         self.log = logging.getLogger(__name__)
         self.hardware = hardware or SimulatedHardware(self.world)
-        if isinstance(self.hardware, rosys.hardware.CommunicatingHardware):
-            self.world.mode = rosys.world.Mode.REAL
-        else:
-            self.world.mode = rosys.world.Mode.SIMULATION
 
         if self.world.mode != Mode.TEST:
             self.persistence = persistence or Persistence(self.world)
