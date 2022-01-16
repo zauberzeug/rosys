@@ -8,13 +8,12 @@ from rosys.world.obstacle import Obstacle
 from rosys.world.point import Point
 from rosys.world.pose import Pose
 from rosys.world.robot import Robot
-from rosys.world.mode import Mode
 from rosys.world.world import World
 from planner import Planner
 import icecream
 icecream.install()
 
-world = World(mode=Mode.SIMULATION, robot=Robot())
+world = World(robot=Robot())
 for x, y, w, h in [
     [1.5, 1.5, 0.2, 6.0],
     [1.5, 1.5, 5.0, 0.2],

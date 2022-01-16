@@ -3,6 +3,7 @@ from asyncio.exceptions import CancelledError
 import asyncio
 import logging
 from typing import Optional, Type
+import rosys
 from . import event, task_logger
 from .actors import Actor, Automator, Lizard, Odometer, Steerer, CameraCapture, CameraCaptureSimulation
 from .hardware import Hardware, SimulatedHardware
@@ -20,12 +21,16 @@ class Runtime:
         Actor.world = self.world
         self.tasks = []
         self.log = logging.getLogger(__name__)
+        self.hardware = hardware or SimulatedHardware(self.world)
+        if isinstance(self.hardware, rosys.hardware.CommunicatingHardware):
+            self.world.mode = rosys.world.Mode.REAL
+        else:
+            self.world.mode = rosys.world.Mode.SIMULATION
 
         if self.world.mode != Mode.TEST:
             self.persistence = persistence or Persistence(self.world)
             self.persistence.restore()
 
-        self.hardware = hardware or SimulatedHardware(self.world)
         self.lizard = Lizard(self.hardware)
         self.odometer = Odometer()
         self.steerer = Steerer(self.hardware)

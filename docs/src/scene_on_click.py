@@ -3,9 +3,9 @@ from rosys.automations import drive_to
 from nicegui import ui
 import rosys
 import rosys.ui
-from rosys.world import Mode, Point, World
+from rosys.world import Point
 
-runtime = rosys.Runtime(world=World(mode=Mode.SIMULATION))
+runtime = rosys.Runtime()
 rosys.ui.configure(ui, runtime)
 
 

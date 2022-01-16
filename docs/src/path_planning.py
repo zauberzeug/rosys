@@ -4,10 +4,10 @@ import rosys
 import rosys.ui
 from rosys.automations import drive_path
 from rosys.pathplanning import Planner
-from rosys.world import Mode, PathSegment, Pose, World
+from rosys.world import PathSegment, Pose
 
 # setup
-runtime = rosys.Runtime(world=World(mode=Mode.SIMULATION))
+runtime = rosys.Runtime()
 planner = Planner(runtime.world)
 rosys.ui.configure(ui, runtime)
 

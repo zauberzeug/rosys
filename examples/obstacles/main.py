@@ -6,10 +6,10 @@ import starlette
 import rosys
 import rosys.ui
 from rosys.automations import drive_path
-from rosys.world import Mode, Obstacle, PathSegment, Point, Pose, Robot, RobotShape, Spline, World
+from rosys.world import Obstacle, PathSegment, Point, Pose, Robot, RobotShape, Spline, World
 
 shape = RobotShape(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])
-world = World(mode=Mode.SIMULATION, robot=Robot(shape=shape))
+world = World(robot=Robot(shape=shape))
 planner = rosys.pathplanning.Planner(world)
 runtime = rosys.Runtime(world, rosys.Persistence(world, '~/.rosys/obstacles/world.json'))
 rosys.ui.configure(ui, runtime)

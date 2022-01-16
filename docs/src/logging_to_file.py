@@ -5,7 +5,6 @@ import logging.config
 import os
 import rosys
 import rosys.ui
-from rosys.world import Mode, World
 
 logging.config.dictConfig({
     'version': 1,
@@ -57,7 +56,7 @@ logging.config.dictConfig({
 })
 
 # setup
-runtime = rosys.Runtime(world=World(mode=Mode.SIMULATION))
+runtime = rosys.Runtime()
 rosys.ui.configure(ui, runtime)
 
 rosys.ui.joystick()

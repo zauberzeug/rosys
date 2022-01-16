@@ -6,7 +6,6 @@ import os
 import sys
 import rosys
 import rosys.ui
-from rosys.world import Mode, World
 
 
 class PackagePathFilter(logging.Filter):
@@ -65,7 +64,7 @@ logging.config.dictConfig({
 })
 
 # setup
-runtime = rosys.Runtime(world=World(mode=Mode.SIMULATION))
+runtime = rosys.Runtime()
 rosys.ui.configure(ui, runtime)
 
 rosys.ui.joystick()

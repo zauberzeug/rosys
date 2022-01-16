@@ -4,9 +4,9 @@ import rosys
 import rosys.ui
 from rosys.actors import Actor
 from rosys.automations import drive_path
-from rosys.world import Mode, PathSegment, Pose, Spline, World
+from rosys.world import PathSegment, Pose, Spline
 
-runtime = rosys.Runtime(world=World(mode=Mode.SIMULATION))
+runtime = rosys.Runtime()
 rosys.ui.configure(ui, runtime)
 
 

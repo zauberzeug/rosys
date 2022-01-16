@@ -5,12 +5,12 @@ import rosys
 import rosys.ui
 from rosys.automations import drive_square
 from rosys.hardware import CommunicatingHardware
-from rosys.world import Mode, World
+from rosys.world import World
 
 import log_configuration
 log_configuration.setup()
 
-world = World(mode=Mode.SIMULATION)
+world = World()
 runtime = rosys.Runtime(world)
 rosys.ui.configure(ui, runtime)
 

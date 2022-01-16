@@ -2,12 +2,10 @@
 from nicegui import ui
 import rosys
 import rosys.ui
-from rosys.world import Mode, World
 from rosys.world import Camera
 
 # setup
-runtime = rosys.Runtime(world=World(mode=Mode.SIMULATION))
-rosys.ui.configure(ui, runtime)
+rosys.ui.configure(ui, rosys.Runtime())
 
 
 async def add_main_camera(camera: Camera):
