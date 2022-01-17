@@ -11,6 +11,7 @@ from .world import AutomationState, Mode, World
 
 
 class Runtime:
+    log = logging.getLogger(__name__)
 
     def __init__(self,
                  world: Optional[World] = None,
@@ -19,7 +20,6 @@ class Runtime:
         self.world = world or World()
         Actor.world = self.world
         self.tasks = []
-        self.log = logging.getLogger(__name__)
 
         if self.world.mode != Mode.TEST:
             self.persistence = persistence or Persistence(self.world)
