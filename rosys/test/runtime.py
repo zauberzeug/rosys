@@ -10,9 +10,8 @@ class TestRuntime(Runtime):
 
     def __init__(self, world: Optional[World] = None):
         if world is None:
-            world = World(automation_state=AutomationState.RUNNING, robot=Robot())
+            world = World(mode=Mode.TEST, automation_state=AutomationState.RUNNING, robot=Robot())
         super().__init__(world)
-        world.mode = Mode.TEST
         self.world.set_time(0)  # NOTE in tests we start at zero for better reading
 
         from .helper import set_global_runtime  # NOTE import here to avoid PytestAssertRewriteWarning
