@@ -40,6 +40,8 @@ class CameraCapture(Actor):
         self.last_scan = self.world.time
         output = await self.run_sh(['v4l2-ctl', '--list-devices'])
         for line in output.splitlines():
+            if 'Cannot open device' in line:
+                break
             if 'Camera' in line:
                 uid = re.search('\((.*)\)', line).group(1)
                 if uid not in self.world.cameras:
