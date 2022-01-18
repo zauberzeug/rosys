@@ -80,3 +80,14 @@ jobs:
           build-args: INSTALL_DEV=true
           push: true
           tags: ${{ steps.prep.outputs.tags }}
+
+      # Uploading the README.md is not a core feature of docker/build-push-action yet
+      - name: Update README
+        uses: christian-korneck/update-container-description-action@v1
+        env:
+          DOCKER_USER: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASS: ${{ secrets.DOCKER_PASSWORD }}
+        with:
+          destination_container_repo: zauberzeug/rosys
+          provider: dockerhub
+          short_description: "A robot system based on web technologies. The purpose is similar to ROS, but it's easier to use for mobile robotics."

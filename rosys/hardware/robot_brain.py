@@ -5,9 +5,8 @@ from . import CommunicatingHardware
 
 class RobotBrain(CommunicatingHardware):
 
-    async def configure(self):
+    async def configure(self, filepath: str = 'lizard.txt'):
         await super().configure()
-        filepath = 'lizard.txt'
         with open(filepath) as f:
             expander = False
             await self.send(f'!-')

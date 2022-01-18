@@ -71,9 +71,4 @@ with ui.card():
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
 
-@ui.get('/world')
-def get_world(_):
-    return starlette.responses.Response(world.json(exclude={'image_data'}), media_type='text/json')
-
-
 ui.run(title='obstacles', port=8080)
