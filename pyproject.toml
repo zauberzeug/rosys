@@ -19,7 +19,7 @@ aioserial = "^1.3.0"
 aiohttp = "^3.7.4"
 pydantic = "1.9"
 asyncio = "^3.4.3"
-nicegui = "0.6.12"
+nicegui = "0.7.2"
 python-socketio = {extras = ["asyncio_client"], version = "^5.3.0"}
 networkx = "^2.6.2"
 more-itertools = "^8.10.0"
