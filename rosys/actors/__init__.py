@@ -5,3 +5,4 @@ from .camera_capture_simulation import CameraCaptureSimulation
 from .lizard import Lizard
 from .odometer import Odometer
 from .steerer import Steerer
+from .detector import Detector

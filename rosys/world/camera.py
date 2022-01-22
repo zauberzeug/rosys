@@ -1,15 +1,17 @@
 
-from typing import Any, List
+from typing import Any, List, Optional
 from pydantic import BaseModel, Field
 from dataclasses import dataclass
 from PIL import Image, ImageDraw
 import io
+from .detection import Detection
 
 
 @dataclass
 class Frame():
     data: Any
     time: float = 0  # World time of recording
+    detections: Optional[list[Detection]] = None
 
     @staticmethod
     def create_placeholder(text: str, time: float = None):
