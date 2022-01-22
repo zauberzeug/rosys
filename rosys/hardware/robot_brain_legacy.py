@@ -193,12 +193,14 @@ class ODriveMotor(HardwareGroup):
     can: Can
     device_id: int
     m_per_tick: float
+    heartbeat_timeout: float = 2.0
 
     @property
     def commands(self) -> list[str]:
         return [
             f'new odrivemotor {self.name} 0,{self.can.name},{hex(self.device_id)[2:]}',
             f'set {self.name}.mPerTick={self.m_per_tick}',
+            f'set {self.name}.heartbeatTimeout={self.heartbeat_timeout}',
         ]
 
 
