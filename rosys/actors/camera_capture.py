@@ -21,7 +21,7 @@ class CameraCapture(Actor):
             if not camera.capture:
                 return
             bytes = await self.run_io_bound(self.capture_frame, uid)
-            camera.frames.append(Frame(data=bytes, time=self.world.time))
+            camera.frames.append(Frame(camera_id=uid, data=bytes, time=self.world.time))
         self.purge_old_frames()
 
     def capture_frame(self, id):

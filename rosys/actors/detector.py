@@ -7,7 +7,7 @@ from ..world import Frame
 
 
 class Detector(Actor):
-    interval: float = 0.02
+    interval: float = 0
 
     def __init__(self):
         super().__init__()
@@ -41,26 +41,34 @@ class Detector(Actor):
     async def step(self):
         if self.is_connected is None:
             await self.connect()
+        detecting_cameras = [c for c in self.world.cameras.values() if c.detect]
+        if not detecting_cameras:
+            await self.sleep(0.02)
+            return
 
-    async def detect(self, frame: Frame, group: str = 'default_group') -> Frame:
+        for camera in detecting_cameras:
+            frame = camera.frames[-1]
+            await self.detect(frame)
+
+    async def detect(self, frame: Frame, group: str = None) -> Frame:
         if not self.is_connected:
             return
         try:
-            result = await self.sio.call('detect', {'image': frame.data, 'mac': group})
+            result = await self.sio.call('detect', {'image': frame.data, 'mac': group or frame.camera_id})
             box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
             point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
             frame.detections = box_detections + point_detections
         except:
-            self.log.exception(f'could not detect {frame} in {group}')
+            self.log.exception(f'could not detect {frame}')
         else:
             event.emit(event.Id.NEW_DETECTIONS, frame)
             return frame
 
-    async def upload(self, frame: Frame, group: str = 'default_group'):
+    async def upload(self, frame: Frame, group: str = None):
         try:
-            await self.sio.emit('upload', {'image': frame.data, 'mac': group})
+            await self.sio.emit('upload', {'image': frame.data, 'mac': group or frame.camera_id})
         except:
-            self.log.exception(f'could not upload  {frame} in {group}')
+            self.log.exception(f'could not upload  {frame}')
 
     def __str__(self) -> str:
         state = {

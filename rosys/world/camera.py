@@ -9,6 +9,7 @@ from .detection import Detection
 
 @dataclass
 class Frame():
+    camera_id: str
     data: Any
     time: float = 0  # World time of recording
     detections: Optional[list[Detection]] = None
@@ -20,7 +21,7 @@ class Frame():
         d.text((img.width/2-len(text)*3, img.height/2-5), text, fill=(255, 255, 255))
         bytesio = io.BytesIO()
         img.save(bytesio, format='PNG')
-        return Frame(data=bytesio.getvalue(), time=time or 0)
+        return Frame(camera_id='no_cam_id', data=bytesio.getvalue(), time=time or 0)
 
 
 no_img_placeholder = Frame.create_placeholder('no image')
@@ -28,8 +29,8 @@ no_img_placeholder = Frame.create_placeholder('no image')
 
 class Camera(BaseModel):
     id: str
-    exposure: float = 0
     capture: bool = True
+    detect: bool = False
     frames: List[Frame] = Field([no_img_placeholder], exclude=True)
 
     @property
