@@ -152,7 +152,7 @@ class Button(HardwareGroup):
         ]
 
 
-class EStop(Button):
+class EmergencyStop(Button):
     name: str = 'estop'
 
     @property
@@ -162,7 +162,7 @@ class EStop(Button):
         return result
 
     def parse(self, words: list[str], world: World):
-        world.robot.estop = int(words.pop(0)) == 0
+        world.robot.emergency_stop = int(words.pop(0)) == 0
 
 
 class RoboClawWheels(HardwareGroup):
