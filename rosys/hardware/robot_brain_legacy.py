@@ -60,6 +60,8 @@ class RobotBrainLegacy(CommunicatingHardware):
                     self.log.warning('Checksum failed')
                     continue
             if not line.startswith("esp "):
+                if line.startswith('Could not send message with ID'):
+                    continue
                 self.log.warning(line)
                 continue  # NOTE: ignore all messages but esp status
             try:
@@ -72,7 +74,7 @@ class RobotBrainLegacy(CommunicatingHardware):
                     if group.output:
                         group.parse(words, self.world)
             except (IndexError, ValueError):
-                self.log.warning(f'Error parsing esp message "{line}"')
+                self.log.exception(f'Error parsing esp message "{line}"')
 
         if millis is not None:
             self.world.robot.clock_offset = self.world.time - millis / 1000
@@ -150,6 +152,19 @@ class Button(HardwareGroup):
         ]
 
 
+class EStop(Button):
+    name: str = 'estop'
+
+    @property
+    def commands(self) -> list[str]:
+        result = super().commands
+        result.append(f'if {self.name} != 1 esp stop')
+        return result
+
+    def parse(self, words: list[str], world: World):
+        world.robot.estop = int(words.pop(0)) == 0
+
+
 class RoboClawWheels(HardwareGroup):
     address: int = 128
     baud: int = 38400
@@ -178,12 +193,14 @@ class ODriveMotor(HardwareGroup):
     can: Can
     device_id: int
     m_per_tick: float
+    heartbeat_timeout: float = 2.0
 
     @property
     def commands(self) -> list[str]:
         return [
             f'new odrivemotor {self.name} 0,{self.can.name},{hex(self.device_id)[2:]}',
             f'set {self.name}.mPerTick={self.m_per_tick}',
+            f'set {self.name}.heartbeatTimeout={self.heartbeat_timeout}',
         ]
 
 

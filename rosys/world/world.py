@@ -5,7 +5,7 @@ import time
 from .mode import Mode
 from .obstacle import Obstacle
 from .robot import Robot
-from .camera import Camera
+from .camera import Camera, Frame
 
 
 class AutomationState(str, Enum, init='value __doc__'):
@@ -21,7 +21,6 @@ class AutomationState(str, Enum, init='value __doc__'):
 
 
 class World(BaseModel):
-
     robot: Robot = Robot()
     mode: Mode = Mode.REAL
     automation_state: AutomationState = AutomationState.DISABLED
@@ -34,6 +33,7 @@ class World(BaseModel):
     obstacles: dict[str, Obstacle] = {}
     notifications: list[tuple[float, str]] = []
     cameras: dict[str, Camera] = {}
+    upload_queue: list[Frame] = []
 
     @property
     def time(self):
