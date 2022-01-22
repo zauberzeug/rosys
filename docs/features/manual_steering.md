@@ -12,4 +12,4 @@ Use the optional parameter `default_speed` to change the initial value.
 When operating from a mobile phone, you can use `rosys.ui.joystick()` to create a UI element with touch control.
 You can drive the robot by dragging the mouse inside the top left square:
 
-![Joystick](joystick.png){: style="width:50%"}
+![Joystick](manual_steering_joystick.png){: style="width:50%"}

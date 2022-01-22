@@ -19,4 +19,4 @@ Here is a full example example for driving to a point on the ground by starting 
 {!src/scene_on_click.py!}
 ```
 
-![Click Handler](scene_on_click.webp){: style="width:60%"}
+![Click Handler](3d_scene_click_handler.webp){: style="width:60%"}

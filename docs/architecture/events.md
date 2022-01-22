@@ -14,4 +14,4 @@ Watching the battery level:
 {!src/watch_battery_level.py!}
 ```
 
-![Watch Battery](watch_battery_level.gif)
+![Watch Battery](events_watch_battery_level.gif)
