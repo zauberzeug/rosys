@@ -2,7 +2,7 @@ import socketio
 from datetime import datetime, timedelta
 from ..world import BoxDetection, PointDetection
 from .actor import Actor
-from .. import event
+from .. import event, task_logger
 from ..world import Frame
 
 
@@ -41,6 +41,10 @@ class Detector(Actor):
     async def step(self):
         if self.is_connected is None:
             await self.connect()
+
+        if self.world.upload_queue:
+            task_logger.create_task(self.upload(self.world.upload_queue.pop(0)), name='upload_frame')
+
         detecting_cameras = [c for c in self.world.cameras.values() if c.detect]
         if not detecting_cameras:
             await self.sleep(0.02)
@@ -50,11 +54,11 @@ class Detector(Actor):
             frame = camera.frames[-1]
             await self.detect(frame)
 
-    async def detect(self, frame: Frame, group: str = None) -> Frame:
+    async def detect(self, frame: Frame) -> Frame:
         if not self.is_connected:
             return
         try:
-            result = await self.sio.call('detect', {'image': frame.data, 'mac': group or frame.camera_id})
+            result = await self.sio.call('detect', {'image': frame.data, 'mac': frame.camera_id})
             box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
             point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
             frame.detections = box_detections + point_detections
@@ -64,9 +68,9 @@ class Detector(Actor):
             event.emit(event.Id.NEW_DETECTIONS, frame)
             return frame
 
-    async def upload(self, frame: Frame, group: str = None):
+    async def upload(self, frame: Frame):
         try:
-            await self.sio.emit('upload', {'image': frame.data, 'mac': group or frame.camera_id})
+            await self.sio.emit('upload', {'image': frame.data, 'mac': frame.camera_id})
         except:
             self.log.exception(f'could not upload  {frame}')
 
