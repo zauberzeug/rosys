@@ -1,4 +1,4 @@
-from .camera import Camera, Frame
+from .camera import Camera, Image
 from .mode import Mode
 from .obstacle import Obstacle
 from .path_segment import PathSegment

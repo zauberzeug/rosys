@@ -2,7 +2,7 @@ import cv2
 import re
 import shutil
 from .actor import Actor
-from ..world.camera import Camera, Frame
+from ..world.camera import Camera, Image
 from .. import event
 
 
@@ -20,19 +20,19 @@ class CameraCapture(Actor):
         for uid, camera in self.world.cameras.items():
             if not camera.capture:
                 return
-            bytes = await self.run_io_bound(self.capture_frame, uid)
-            camera.frames.append(Frame(camera_id=uid, data=bytes, time=self.world.time))
-        self.purge_old_frames()
+            bytes = await self.run_io_bound(self.capture_image, uid)
+            camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time))
+        self.purge_old_images()
 
-    def capture_frame(self, id):
-        _, frame = self.devices[id].read()
-        bytes = cv2.imencode('.jpg', frame)[1].tobytes()
+    def capture_image(self, id):
+        _, image = self.devices[id].read()
+        bytes = cv2.imencode('.jpg', image)[1].tobytes()
         return bytes
 
-    def purge_old_frames(self):
+    def purge_old_images(self):
         for camera in self.world.cameras.values():
-            while camera.frames and camera.frames[0].time < self.world.time - 5 * 60.0:
-                del camera.frames[0]
+            while camera.images and camera.images[0].time < self.world.time - 5 * 60.0:
+                del camera.images[0]
 
     async def update_device_list(self):
         if self.last_scan is not None and self.world.time < self.last_scan + 30:  # scan every 30 sec

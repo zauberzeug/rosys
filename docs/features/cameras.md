@@ -1,7 +1,7 @@
 # Cameras
 
 RoSys provides instant camera access for [object detection](object_detection.md), remote operation and similar use cases.
-Any plugged in camera becomes an entry in `world.cameras` containing recorded frames and configuration parameters like exposure.
+Any plugged in camera becomes an entry in `world.cameras` containing recorded images and configuration parameters like exposure.
 
 ## Setup
 
@@ -12,14 +12,14 @@ Make sure the container can access the usb devices by starting it with `privileg
 
 ## Show Captured Images
 
-Through the use of `rosys.ui` (see [User Interface](../architecture/user_interface.md)) you can launch a website which shows the latest captured frames from each camera:
+Through the use of `rosys.ui` (see [User Interface](../architecture/user_interface.md)) you can launch a website which shows the latest captured images from each camera:
 
 ```python hl_lines="11-21"
 {!src/show_captured_images.py !}
 ```
 
 A timer updates the source property of the `ui.image` in a given interval.
-The cameras `latest_frame_uri` property provides the uri to the latest captured frame.
+The cameras `latest_image_uri` property provides the uri to the latest captured image.
 Thereby the browser is always fetching new images.
 
 ## Remote Operation

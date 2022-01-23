@@ -12,7 +12,7 @@ async def add_main_camera(camera: Camera):
     camera_card.clear()  # remove "seeking cam" label
     with camera_card:
         maincam = ui.image()
-        ui.timer(1, lambda: maincam.set_source(camera.latest_frame_uri))
+        ui.timer(1, lambda: maincam.set_source(camera.latest_image_uri))
     rosys.event.unregister(rosys.event.Id.NEW_CAMERA, add_main_camera)  # we only show the first cam
 
 with ui.card().tight().style('width:30em;') as camera_card:

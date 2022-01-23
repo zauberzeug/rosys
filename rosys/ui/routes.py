@@ -4,6 +4,7 @@ from rosys import Runtime
 
 not_found = starlette.responses.Response(content='Not Found', status_code=404)
 
+
 def setup(ui: Ui, runtime: Runtime):
     ui.add_route(starlette.routing.Route(
         '/world', lambda request, **_:
@@ -12,13 +13,13 @@ def setup(ui: Ui, runtime: Runtime):
         '/export', lambda request, **_:
         starlette.responses.JSONResponse(content=runtime.persistence.dump())))
 
-    def get_frame(request, **_):
+    def get_image(request, **_):
         cam_id = request.path_params['id']
         if cam_id not in runtime.world.cameras:
             return not_found
-        for frame in reversed(runtime.world.cameras[cam_id].frames):
-            if str(frame.time) == request.path_params['timestamp']:
-                return starlette.responses.Response(content=frame.data, media_type='image/jpeg')
+        for image in reversed(runtime.world.cameras[cam_id].images):
+            if str(image.time) == request.path_params['timestamp']:
+                return starlette.responses.Response(content=image.data, media_type='image/jpeg')
         return not_found
 
-    ui.add_route(starlette.routing.Route('/camera/{id}/{timestamp}', get_frame))
+    ui.add_route(starlette.routing.Route('/camera/{id}/{timestamp}', get_image))

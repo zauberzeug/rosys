@@ -2,7 +2,7 @@ import socketio
 from ..world import BoxDetection, PointDetection
 from .actor import Actor
 from .. import event, task_logger
-from ..world import Frame
+from ..world import Image
 
 
 class Detector(Actor):
@@ -42,7 +42,7 @@ class Detector(Actor):
             await self.connect()
 
         if self.world.upload_queue:
-            task_logger.create_task(self.upload(self.world.upload_queue.pop(0)), name='upload_frame')
+            task_logger.create_task(self.upload(self.world.upload_queue.pop(0)), name='upload_image')
 
         detecting_cameras = [c for c in self.world.cameras.values() if c.detect]
         if not detecting_cameras:
@@ -50,28 +50,28 @@ class Detector(Actor):
             return
 
         for camera in detecting_cameras:
-            frame = camera.frames[-1]
-            await self.detect(frame)
+            image = camera.images[-1]
+            await self.detect(image)
 
-    async def detect(self, frame: Frame) -> Frame:
+    async def detect(self, image: Image) -> Image:
         if not self.is_connected:
             return
         try:
-            result = await self.sio.call('detect', {'image': frame.data, 'mac': frame.camera_id})
+            result = await self.sio.call('detect', {'image': image.data, 'mac': image.camera_id})
             box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
             point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
-            frame.detections = box_detections + point_detections
+            image.detections = box_detections + point_detections
         except:
-            self.log.exception(f'could not detect {frame}')
+            self.log.exception(f'could not detect {image}')
         else:
-            event.emit(event.Id.NEW_DETECTIONS, frame)
-            return frame
+            event.emit(event.Id.NEW_DETECTIONS, image)
+            return image
 
-    async def upload(self, frame: Frame):
+    async def upload(self, image: Image):
         try:
-            await self.sio.emit('upload', {'image': frame.data, 'mac': frame.camera_id})
+            await self.sio.emit('upload', {'image': image.data, 'mac': image.camera_id})
         except:
-            self.log.exception(f'could not upload  {frame}')
+            self.log.exception(f'could not upload  {image}')
 
     def __str__(self) -> str:
         state = {
