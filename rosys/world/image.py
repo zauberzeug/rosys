@@ -1,5 +1,5 @@
 from typing import Any, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import PIL.Image
 import PIL.ImageDraw
 import io
@@ -7,11 +7,18 @@ from .detection import Detection
 
 
 @dataclass
+class ImageSize():
+    width: int
+    height: int
+
+
+@dataclass
 class Image():
     camera_id: str
-    data: Any
-    time: float = 0  # World time of recording
-    detections: Optional[list[Detection]] = None
+    size: ImageSize
+    time: float  # World time of recording
+    data: Optional[Any] = field(default=None, init=False)
+    detections: Optional[list[Detection]] = field(default=None, init=False)
 
     @staticmethod
     def create_placeholder(text: str, time: float = None):
@@ -20,4 +27,6 @@ class Image():
         d.text((img.width/2-len(text)*3, img.height/2-5), text, fill=(255, 255, 255))
         bytesio = io.BytesIO()
         img.save(bytesio, format='PNG')
-        return Image(camera_id='no_cam_id', data=bytesio.getvalue(), time=time or 0)
+        result = Image(camera_id='no_cam_id', time=time or 0, size=ImageSize(width=img.width, height=img.height))
+        result.data = bytesio.getvalue()
+        return result

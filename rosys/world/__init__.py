@@ -11,3 +11,4 @@ from .spline import Spline
 from .velocity import Velocity
 from .world import World, AutomationState
 from .detection import Detection, BoxDetection, PointDetection
+from .image import Image, ImageSize
