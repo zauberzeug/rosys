@@ -1,6 +1,7 @@
 from __future__ import annotations
 from pydantic import BaseModel
 import numpy as np
+import cv2
 
 
 class Rotation(BaseModel):
@@ -16,6 +17,10 @@ class Rotation(BaseModel):
         Ry = np.array([[np.cos(phi), 0, np.sin(phi)], [0, 1, 0], [-np.sin(phi), 0, np.cos(phi)]])
         Rz = np.array([[np.cos(kappa), -np.sin(kappa), 0], [np.sin(kappa), np.cos(kappa), 0], [0, 0, 1]])
         return Rotation(R=(Rz @ Ry @ Rx).tolist())
+
+    @staticmethod
+    def from_rvec(rvec):
+        return Rotation(R=cv2.Rodrigues(rvec)[0].tolist())
 
     def __mul__(self, other) -> Rotation:
         return Rotation(R=np.dot(self.R, other.R).tolist())
