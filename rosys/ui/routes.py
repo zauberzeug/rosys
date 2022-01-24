@@ -8,7 +8,7 @@ not_found = starlette.responses.Response(content='Not Found', status_code=404)
 def setup(ui: Ui, runtime: Runtime):
     ui.add_route(starlette.routing.Route(
         '/world', lambda request, **_:
-        starlette.responses.Response(content=runtime.world.json(exclude={'image_data'}), media_type='text/json')))
+        starlette.responses.Response(content=runtime.world.json(), media_type='text/json')))
     ui.add_route(starlette.routing.Route(
         '/export', lambda request, **_:
         starlette.responses.JSONResponse(content=runtime.persistence.dump())))
