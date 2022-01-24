@@ -17,7 +17,7 @@ class Image():
     camera_id: str
     size: ImageSize
     time: float  # World time of recording
-    data: Optional[Any] = field(default=None, init=False)
+    data: Optional[bytes] = field(default=None, init=False)
     detections: Optional[list[Detection]] = field(default=None, init=False)
 
     @staticmethod
