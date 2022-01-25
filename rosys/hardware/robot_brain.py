@@ -1,9 +1,15 @@
+import asyncio
 from typing import Optional
-from ..world import Velocity
+from ..communication import Communication
+from ..world import Velocity, World
 from . import CommunicatingHardware
 
 
 class RobotBrain(CommunicatingHardware):
+
+    def __init__(self, world: World, communication: Communication):
+        super().__init__(world, communication)
+        self.waiting_list = set()
 
     async def configure(self, filepath: str = 'lizard.txt'):
         await super().configure()
@@ -48,6 +54,9 @@ class RobotBrain(CommunicatingHardware):
             if not words:
                 continue
             first = words.pop(0)
+            if first in self.waiting_list:
+                self.waiting_list.remove(first)
+                continue
             if first not in ['core', '!"core']:
                 continue
             millis = float(words.pop(0))
@@ -67,6 +76,13 @@ class RobotBrain(CommunicatingHardware):
 
     async def send(self, msg: str):
         await self.communication.send_async(self.augment(msg))
+
+    async def send_and_await(self, msg: str, ack: str):
+        ack_str = f'!""{ack}"'
+        self.waiting_list.add(ack_str)
+        await self.send(msg)
+        while ack_str in self.waiting_list:
+            await asyncio.sleep(0)
 
     @staticmethod
     def augment(line: str) -> str:
