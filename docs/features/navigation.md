@@ -1,9 +1,5 @@
 # Navigation
 
-## Path Planning
-
-tbd.
-
 ## Path Following
 
 When following a path, a "carrot" is dragged along a spline and the robot follows it like a donkey. Additionally, there is a virtual "hook" attached to the robot, which is pulled towards the carrot.
