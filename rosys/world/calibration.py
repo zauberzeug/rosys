@@ -17,8 +17,8 @@ class Intrinsics(BaseModel):
 
 class Extrinsics(BaseModel):
     tilt: Optional[Rotation]
-    yaw: float = 0
-    translation: list[float] = [0, 0, 1]
+    yaw: float = 0.0
+    translation: list[float] = [0.0, 0.0, 1.0]
 
 
 class Calibration(BaseModel):
@@ -72,10 +72,11 @@ class Calibration(BaseModel):
         flags = cv2.CALIB_USE_INTRINSIC_GUESS
         _, K, D, rvecs, tvecs = cv2.calibrateCamera(world_points, image_points, image_size.tuple, K0, None, flags=flags)
 
-        rot0 = Rotation.from_rvec(rvecs[0]).T
-        intrinsics = Intrinsics(matrix=K.tolist(), distortion=D.tolist()[0], rotation=rot0, size=image_size)
+        rotation0 = Rotation(R=np.eye(3).tolist())
+        intrinsics = Intrinsics(matrix=K.tolist(), distortion=D.tolist()[0], rotation=rotation0, size=image_size)
 
-        translation = (-np.array(rot0.R).dot(tvecs)).flatten().tolist()
-        extrinsics = Extrinsics(tilt=Rotation(R=np.eye(3).tolist()), translation=translation)
+        rotation = Rotation.from_rvec(rvecs[0]).T
+        translation = (-np.array(rotation.R).dot(tvecs)).flatten().tolist()
+        extrinsics = Extrinsics(tilt=rotation, translation=translation)
 
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
