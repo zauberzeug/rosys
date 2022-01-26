@@ -22,4 +22,4 @@ async def test_json_view(runtime: TestRuntime):
     assert 'obstacles' in data
     assert 'notifications' in data
     assert 'cameras' in data
-    assert 'frames' not in data['cameras']['simulated_cam_0']
+    assert 'images' not in data['cameras']['simulated_cam_0']

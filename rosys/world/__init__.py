@@ -1,5 +1,7 @@
-from .camera import Camera, Frame
+from .calibration import Calibration, Intrinsics, Extrinsics
+from .camera import Camera
 from .detection import Detection, BoxDetection, PointDetection
+from .image import Image, ImageSize
 from .mode import Mode
 from .obstacle import Obstacle
 from .path_segment import PathSegment

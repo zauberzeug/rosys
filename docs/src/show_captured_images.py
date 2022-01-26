@@ -13,7 +13,7 @@ def refresh():
         if uid not in feeds:
             with ui.card().tight().style('width:30em;'):
                 feeds[uid] = ui.image()
-        feeds[uid].set_source(camera.latest_frame_uri)
+        feeds[uid].set_source(camera.latest_image_uri)
 
 
 # refresh timer
