@@ -70,7 +70,7 @@ class Detector(Actor):
         try:
             await self.sio.emit('upload', {'image': image.data, 'mac': image.camera_id})
         except:
-            self.log.exception(f'could not upload  {image}')
+            self.log.exception(f'could not upload {image}')
 
     def __str__(self) -> str:
         state = {

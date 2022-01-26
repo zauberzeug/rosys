@@ -3,15 +3,14 @@ from typing import Optional
 from uuid import uuid4
 from pydantic import BaseModel, Field
 import numpy as np
+from .calibration import Calibration, Extrinsics, Intrinsics
 from .image import Image, ImageSize
 from .rotation import Rotation
-from .calibration import Calibration, Extrinsics, Intrinsics
 
 
 class Camera(BaseModel):
     id: str
     calibration: Optional[Calibration] = None
-    size: Optional[ImageSize] = None
     capture: bool = True
     detect: bool = False
     images: list[Image] = Field([Image.create_placeholder('no image')], exclude=True)
@@ -34,7 +33,6 @@ class Camera(BaseModel):
             id=id or str(uuid4()),
             calibration_simulation=calibration,
             calibration=calibration.copy(deep=True),
-            size=ImageSize(calibration.intrinsics.size.width, calibration.intrinsics.size.height),
         )
 
     @staticmethod
