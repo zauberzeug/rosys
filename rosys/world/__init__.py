@@ -1,4 +1,5 @@
 from .camera import Camera, Frame
+from .detection import Detection, BoxDetection, PointDetection
 from .mode import Mode
 from .obstacle import Obstacle
 from .path_segment import PathSegment
