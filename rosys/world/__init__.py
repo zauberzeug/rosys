@@ -1,4 +1,7 @@
+from .calibration import Calibration, Intrinsics, Extrinsics
 from .camera import Camera, Image
+from .detection import Detection, BoxDetection, PointDetection
+from .image import Image, ImageSize
 from .mode import Mode
 from .obstacle import Obstacle
 from .path_segment import PathSegment
@@ -10,6 +13,3 @@ from .rotation import Rotation
 from .spline import Spline
 from .velocity import Velocity
 from .world import World, AutomationState
-from .detection import Detection, BoxDetection, PointDetection
-from .image import Image, ImageSize
-from .calibration import Calibration, Intrinsics, Extrinsics

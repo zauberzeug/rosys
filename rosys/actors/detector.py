@@ -1,8 +1,7 @@
 import socketio
-from ..world import BoxDetection, PointDetection
-from .actor import Actor
 from .. import event, task_logger
-from ..world import Image
+from ..world import BoxDetection, Image, PointDetection
+from .actor import Actor
 
 
 class Detector(Actor):

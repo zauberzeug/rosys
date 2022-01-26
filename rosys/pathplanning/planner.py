@@ -37,7 +37,7 @@ class Planner:
         heap = [(self.distance_map.interpolate(start.x, start.y), 0, Step(pose))]
         visited = set()
 
-        while pose != [goal.x, goal.y, goal.yaw]:
+        while pose != (goal.x, goal.y, goal.yaw):
             if timeout is not None and time.time() - start_time > timeout:
                 raise TimeoutError('Could not find a path')
 
@@ -52,11 +52,11 @@ class Planner:
                 continue
             visited.add(tup)
 
-            if pose == [goal.x, goal.y, goal.yaw]:
+            if pose == (goal.x, goal.y, goal.yaw):
                 break
 
             goal_dist = np.sqrt((goal.x - pose[0])**2 + (goal.y - pose[1])**2)
-            goal_candidate = [[goal.x, goal.y, goal.yaw]] if goal_dist < 3 * step_dist else []
+            goal_candidate = [(goal.x, goal.y, goal.yaw)] if goal_dist < 3 * step_dist else []
             fw_candidates = [
                 (pose[0] + step_dist * np.cos(yaw), pose[1] + step_dist * np.sin(yaw), yaw)
                 for yaw in np.linspace(-np.pi / 2, np.pi / 2, num_candidates // 2 + 1)[1:-1] + pose[2]
