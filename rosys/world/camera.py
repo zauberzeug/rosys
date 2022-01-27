@@ -15,8 +15,6 @@ class Camera(BaseModel):
     id: str
     calibration: Optional[Calibration] = None
     size: Optional[ImageSize] = None
-    capture: bool = True
-    detect: bool = False
     images: List[Image] = Field([no_img_placeholder], exclude=True)
 
     @property

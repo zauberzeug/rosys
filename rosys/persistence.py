@@ -1,6 +1,8 @@
 import logging
 import json
 import os
+
+from rosys.world.camera import Camera
 from .world import Obstacle, RobotParameters, World
 
 
@@ -13,12 +15,14 @@ class Persistence:
     def dump(self) -> dict:
         return {
             'robot': {'parameters': self.world.robot.parameters.dict()},
+            'cameras': {id: camera.dict() for id, camera in self.world.cameras.items()},
             'obstacles': {id: obstacle.dict() for id, obstacle in self.world.obstacles.items()},
         }
 
     def load(self, dict: dict):
         self.world.robot.parameters = RobotParameters.parse_obj(dict['robot']['parameters'])
-        self.world.obstacles = {id: Obstacle.parse_obj(obstacle) for id, obstacle in dict['obstacles'].items()}
+        self.world.cameras.update({mac: Camera.parse_obj(camera) for mac, camera in dict['cameras'].items()})
+        self.world.obstacles.update({id: Obstacle.parse_obj(obstacle) for id, obstacle in dict['obstacles'].items()})
 
     def backup(self):
         os.makedirs(os.path.dirname(self.filepath), exist_ok=True)

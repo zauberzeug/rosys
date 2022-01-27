@@ -65,7 +65,7 @@ class Calibration(BaseModel):
         return Point3d(x=X_, y=Y_, z=target_height)
 
     @staticmethod
-    def from_points(world_points: list[Point3d], image_points: list[Point], image_size: ImageSize = ImageSize(1600, 1200), f0=500):
+    def from_points(world_points: list[Point3d], image_points: list[Point], image_size: ImageSize = ImageSize(width=1600, height=1200), f0=500):
         world_points = [(p.x, p.y, p.z) for p in world_points]
         world_points = np.array(world_points, dtype=np.float32).reshape(1, -1, 3)
         image_points = [(p.x, p.y) for p in image_points]

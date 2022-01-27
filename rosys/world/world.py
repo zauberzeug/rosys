@@ -25,11 +25,6 @@ class World(BaseModel):
     mode: Mode = Mode.REAL
     automation_state: AutomationState = AutomationState.DISABLED
     _time: float = PrivateAttr(default_factory=time.time)
-    tracking: bool = False
-    robot_locator_cam: str = None
-    download_queue: list[str] = []
-    image_data: dict[str, bytes] = {}
-    link_queue: list[list[str]] = []
     obstacles: dict[str, Obstacle] = {}
     notifications: list[tuple[float, str]] = []
     cameras: dict[str, Camera] = {}

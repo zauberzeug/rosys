@@ -1,24 +1,31 @@
-from typing import Any, Optional
-from dataclasses import dataclass, field
+from typing import Optional
+from pydantic import BaseModel
 import PIL.Image
 import PIL.ImageDraw
 import io
 from .detection import Detection
+import urllib.parse
 
 
-@dataclass
-class ImageSize():
+class ImageSize(BaseModel):
     width: int
     height: int
 
 
-@dataclass
-class Image():
+class Image(BaseModel):
     camera_id: str
     size: ImageSize
     time: float  # World time of recording
-    data: Optional[bytes] = field(default=None, init=False)
-    detections: Optional[list[Detection]] = field(default=None, init=False)
+    data: Optional[bytes] = None
+    detections: Optional[list[Detection]] = None
+
+    @property
+    def url(self) -> str:
+        return f'camera/{urllib.parse.quote_plus(self.camera_id)}/{self.time}'
+
+    @property
+    def id(self) -> str:
+        return f'{self.camera_id}/{self.time}'
 
     @staticmethod
     def create_placeholder(text: str, time: float = None):
@@ -30,3 +37,6 @@ class Image():
         result = Image(camera_id='no_cam_id', time=time or 0, size=ImageSize(width=img.width, height=img.height))
         result.data = bytesio.getvalue()
         return result
+
+    def __hash__(self):
+        return hash(self.id)
