@@ -71,18 +71,6 @@ def test_id_enum_definition():
     assert 'machine data' in event.Id.NEW_MACHINE_DATA.__doc__, '__doc__ should have a description'
 
 
-def test_extending_id_enum():
-    class NewId(event.Id, Enum, init='value __doc__'):
-
-        def _generate_next_value_(name, start, count, last_values):
-            return name
-
-        TEST = auto(), 'docs'
-
-    assert NewId.TEST.value == 'TEST'
-    assert NewId.TEST.__doc__ == 'docs'
-
-
 @pytest.mark.asyncio
 async def test_fire_and_forget_with_emit(runtime: TestRuntime):
 
