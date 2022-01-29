@@ -30,22 +30,25 @@ class Runtime:
         self.odometer = Odometer()
         self.steerer = Steerer(self.hardware)
         self.automator = Automator()
-        if CameraCapture.is_operable() and self.world.mode != Mode.TEST:
-            self.camera_capture = CameraCapture()
-        else:
-            self.camera_capture = CameraCaptureSimulation()
 
         self.actors = [
             self.lizard,
             self.odometer,
             self.steerer,
             self.automator,
-            self.camera_capture,
         ]
 
     def with_actors(self, *actors: list[Actor]):
+        '''Adds list of additional actors to runtime.'''
         self.actors += actors
         return self
+
+    def with_usb_cameras(self):
+        '''Adds usb camera capture actor to runtime.'''
+        if CameraCapture.is_operable() and self.world.mode != Mode.TEST:
+            self.with_actor([CameraCapture()])
+        else:
+            self.with_actor([CameraCaptureSimulation()])
 
     async def pause(self, because: Optional[str] = None):
         await event.call(event.Id.PAUSE_AUTOMATIONS, because)
