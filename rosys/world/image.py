@@ -42,3 +42,6 @@ class Image(BaseModel):
         image = Image(camera_id='no_cam_id', time=time or 0, size=ImageSize(width=img.width, height=img.height))
         image.data = bytesio.getvalue()
         return image
+
+    def __hash__(self) -> int:
+        return hash(self.id)
