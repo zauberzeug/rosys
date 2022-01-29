@@ -1,21 +1,17 @@
 from __future__ import annotations
-from typing import List, Optional
+from typing import Optional
 from uuid import uuid4
 from pydantic import BaseModel, Field
 import numpy as np
+from .calibration import Calibration, Extrinsics, Intrinsics
 from .image import Image, ImageSize
 from .rotation import Rotation
-from .calibration import Calibration, Extrinsics, Intrinsics
-
-
-no_img_placeholder = Image.create_placeholder('no image')
 
 
 class Camera(BaseModel):
     id: str
     calibration: Optional[Calibration] = None
-    size: Optional[ImageSize] = None
-    images: List[Image] = Field([no_img_placeholder], exclude=True)
+    images: list[Image] = Field([Image.create_placeholder('no image')], exclude=True)
 
     @property
     def latest_image_uri(self):
@@ -35,7 +31,6 @@ class Camera(BaseModel):
             id=id or str(uuid4()),
             calibration_simulation=calibration,
             calibration=calibration.copy(deep=True),
-            size=ImageSize(calibration.intrinsics.size.width, calibration.intrinsics.size.height),
         )
 
     @staticmethod

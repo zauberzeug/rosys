@@ -2,10 +2,10 @@ from pydantic import BaseModel
 from typing import Optional
 import numpy as np
 import cv2
+from .image import ImageSize
 from .point import Point
 from .point3d import Point3d
 from .rotation import Rotation
-from .image import ImageSize
 
 
 class Intrinsics(BaseModel):
@@ -17,8 +17,8 @@ class Intrinsics(BaseModel):
 
 class Extrinsics(BaseModel):
     tilt: Optional[Rotation]
-    yaw: float = 0
-    translation: list[float] = [0, 0, 1]
+    yaw: float = 0.0
+    translation: list[float] = [0.0, 0.0, 1.0]
 
 
 class Calibration(BaseModel):
@@ -65,23 +65,18 @@ class Calibration(BaseModel):
         return Point3d(x=X_, y=Y_, z=target_height)
 
     @staticmethod
-    def from_points(world_points: list[Point3d], image_points: list[Point], image_size: ImageSize = ImageSize(width=1600, height=1200), f0=500):
-        world_points = [(p.x, p.y, p.z) for p in world_points]
-        world_points = np.array(world_points, dtype=np.float32).reshape(1, -1, 3)
-        image_points = [(p.x, p.y) for p in image_points]
-        image_points = np.array(image_points, dtype=np.float32).reshape(1, -1, 2)
+    def from_points(world_points: list[Point3d], image_points: list[Point], image_size: ImageSize, f0: float):
+        world_points = np.array([p.tuple for p in world_points], dtype=np.float32).reshape(1, -1, 3)
+        image_points = np.array([p.tuple for p in image_points], dtype=np.float32).reshape(1, -1, 2)
         K0 = np.array([[f0, 0, image_size.width / 2], [0, f0, image_size.height / 2], [0, 0, 1]], dtype=np.float32)
         flags = cv2.CALIB_USE_INTRINSIC_GUESS
-        ret, K, D, rvecs, tvecs = cv2.calibrateCamera(world_points,
-                                                      image_points,
-                                                      (image_size.width, image_size.height),
-                                                      K0, None, flags=flags)
+        _, K, D, rvecs, tvecs = cv2.calibrateCamera(world_points, image_points, image_size.tuple, K0, None, flags=flags)
 
-        rot0 = Rotation.from_rvec(rvecs[0]).T
-        intrinsics = Intrinsics(matrix=K.tolist(), distortion=D.tolist()[0], rotation=rot0,
-                                size=ImageSize(width=image_size.width, height=image_size.height))
+        rotation0 = Rotation(R=np.eye(3).tolist())
+        intrinsics = Intrinsics(matrix=K.tolist(), distortion=D.tolist()[0], rotation=rotation0, size=image_size)
 
-        translation = (-np.array(rot0.R).dot(tvecs)).tolist()
-        translation = [v[0][0] for v in translation]
-        extrinsics = Extrinsics(tilt=Rotation(R=np.eye(3).tolist()), translation=translation)
+        rotation = Rotation.from_rvec(rvecs[0]).T
+        translation = (-np.array(rotation.R).dot(tvecs)).flatten().tolist()
+        extrinsics = Extrinsics(tilt=rotation, translation=translation)
+
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)

@@ -24,10 +24,9 @@ class CameraCapture(Actor):
             camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time))
         self.purge_old_images()
 
-    def capture_image(self, id):
+    def capture_image(self, id) -> bytes:
         _, image = self.devices[id].read()
-        bytes = cv2.imencode('.jpg', image)[1].tobytes()
-        return bytes
+        return cv2.imencode('.jpg', image)[1].tobytes()
 
     def purge_old_images(self):
         for camera in self.world.cameras.values():
@@ -74,5 +73,5 @@ class CameraCapture(Actor):
             capture.release()
 
     @staticmethod
-    def is_operable():
+    def is_operable() -> bool:
         return shutil.which('v4l2-ctl') is not None

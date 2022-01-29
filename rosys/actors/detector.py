@@ -1,8 +1,7 @@
 import socketio
-from ..world import BoxDetection, PointDetection
-from .actor import Actor
 from .. import event, task_logger
-from ..world import Image
+from ..world import BoxDetection, Image, PointDetection
+from .actor import Actor
 
 
 class Detector(Actor):
@@ -71,7 +70,7 @@ class Detector(Actor):
         try:
             await self.sio.emit('upload', {'image': image.data, 'mac': image.camera_id})
         except:
-            self.log.exception(f'could not upload  {image}')
+            self.log.exception(f'could not upload {image}')
 
     def __str__(self) -> str:
         state = {

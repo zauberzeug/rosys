@@ -19,7 +19,7 @@ class Rotation(BaseModel):
         return Rotation(R=(Rz @ Ry @ Rx).tolist())
 
     @staticmethod
-    def from_rvec(rvec):
+    def from_rvec(rvec) -> Rotation:
         return Rotation(R=cv2.Rodrigues(rvec)[0].tolist())
 
     def __mul__(self, other) -> Rotation:
