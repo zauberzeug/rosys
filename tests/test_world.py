@@ -14,6 +14,7 @@ def test_dumping(runtime: TestRuntime):
 @pytest.mark.asyncio
 async def test_json_view(runtime: TestRuntime):
     '''exporting whole world as json is needed for example for logging/inspection'''
+    runtime.with_usb_cameras()
     await runtime.forward(1)
     serialized = runtime.world.json()
     data = json.loads(serialized)

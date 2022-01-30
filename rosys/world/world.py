@@ -5,7 +5,9 @@ import time
 from .mode import Mode
 from .obstacle import Obstacle
 from .robot import Robot
-from .camera import Camera, Image
+from .camera import Camera
+from .usb_camera import UsbCamera
+from .upload import Upload
 
 
 class AutomationState(str, Enum, init='value __doc__'):
@@ -28,7 +30,7 @@ class World(BaseModel):
     obstacles: dict[str, Obstacle] = {}
     notifications: list[tuple[float, str]] = []
     cameras: dict[str, Camera] = {}
-    upload_queue: list[Image] = []
+    upload: Upload = Upload()
 
     @property
     def time(self):
@@ -37,3 +39,7 @@ class World(BaseModel):
     def set_time(self, value):
         assert self.mode == Mode.TEST
         self._time = value
+
+    @property
+    def usb_cameras(self) -> dict[str, UsbCamera]:
+        return {c.id: c for c in self.cameras.values() if isinstance(c, UsbCamera)}

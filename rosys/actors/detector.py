@@ -2,6 +2,7 @@ import socketio
 from .. import event, task_logger
 from ..world import BoxDetection, Image, PointDetection
 from .actor import Actor
+from datetime import datetime, timedelta
 
 
 class Detector(Actor):
@@ -40,10 +41,19 @@ class Detector(Actor):
         if self.is_connected is None:
             await self.connect()
 
-        if self.world.upload_queue:
-            task_logger.create_task(self.upload(self.world.upload_queue.pop(0)), name='upload_image')
+        if not self.is_connected:
+            return
 
-        detecting_cameras = [c for c in self.world.cameras.values() if c.detect]
+        for image in self.world.upload.queue:
+            if datetime.now() < self.world.upload.last_upload + timedelta(minutes=self.world.upload.minimal_minutes_between_uploads):
+                break
+            if image.data:
+                self.world.upload.last_upload = datetime.now()
+                self.world.upload.queue.clear()  # because old images should not be uploaded later when the robot is inactive
+                task_logger.create_task(self.upload(image), name='upload_image')
+                break
+
+        detecting_cameras = [c for c in self.world.usb_cameras.values() if c.detect]
         if not detecting_cameras:
             await self.sleep(0.02)
             return

@@ -46,9 +46,9 @@ class Runtime:
     def with_usb_cameras(self):
         '''Adds usb camera capture actor to runtime.'''
         if CameraCapture.is_operable() and self.world.mode != Mode.TEST:
-            self.with_actor([CameraCapture()])
+            self.with_actors(CameraCapture())
         else:
-            self.with_actor([CameraCaptureSimulation()])
+            self.with_actors(CameraCaptureSimulation())
 
     async def pause(self, because: Optional[str] = None):
         await event.call(event.Id.PAUSE_AUTOMATIONS, because)
