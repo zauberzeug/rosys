@@ -1,6 +1,6 @@
 from .actor import Actor
 from .automator import Automator
-from .camera_capture import CameraCapture
+from .usb_camera_capture import UsbCameraCapture
 from .usb_camera_simulator import UsbCameraSimulator
 from .detector import Detector
 from .lizard import Lizard

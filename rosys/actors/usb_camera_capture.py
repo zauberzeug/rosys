@@ -8,7 +8,7 @@ from ..world import UsbCamera, Image
 from .. import event
 
 
-class CameraCapture(Actor):
+class UsbCameraCapture(Actor):
     interval: float = 0.30
 
     def __init__(self):

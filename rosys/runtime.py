@@ -4,7 +4,7 @@ import asyncio
 import logging
 from typing import Optional, Type
 from . import event, task_logger
-from .actors import Actor, Automator, Lizard, Odometer, Steerer, CameraCapture, UsbCameraSimulator
+from .actors import Actor, Automator, Lizard, Odometer, Steerer, UsbCameraCapture, UsbCameraSimulator
 from .hardware import Hardware, SimulatedHardware
 from .persistence import Persistence
 from .world import AutomationState, Mode, World
@@ -45,8 +45,8 @@ class Runtime:
 
     def with_usb_cameras(self):
         '''Adds usb camera capture actor to runtime.'''
-        if CameraCapture.is_operable() and self.world.mode != Mode.TEST:
-            self.with_actors(CameraCapture())
+        if UsbCameraCapture.is_operable() and self.world.mode != Mode.TEST:
+            self.with_actors(UsbCameraCapture())
         else:
             self.with_actors(UsbCameraSimulator())
 
