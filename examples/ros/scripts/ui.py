@@ -30,7 +30,7 @@ publish_configure = rospy.Publisher('/configure', Empty, queue_size=1).publish
 with ui.row().classes('items-stretch'):
     with ui.card():
         ui.markdown('### Setup')
-        ui.button('Configure ESP', on_click=lambda: publish_configure())
+        ui.button('Configure', on_click=lambda: publish_configure())
     with ui.card() as status:
         ui.markdown('### Status')
         time = ui.label()

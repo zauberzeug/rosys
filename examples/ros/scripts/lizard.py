@@ -29,7 +29,7 @@ def handle_configure(data):
 
 
 if __name__ == '__main__':
-    rospy.init_node('esp')
+    rospy.init_node('lizard')
     publish_odometry = rospy.Publisher('/odometry', Twist, queue_size=1).publish
     publish_status = rospy.Publisher('/status', String, queue_size=1).publish
 
