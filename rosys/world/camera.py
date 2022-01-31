@@ -19,6 +19,16 @@ class Camera(BaseModel, abc.ABC):
     def latest_image_uri(self):
         return f'camera/{self.id}/{self.images[-1].time}'
 
+    @property
+    def captured_images(self) -> list[Image]:
+        return [i for i in self.images if i.data]
+
+    @property
+    def latest_captured_image(self) -> Optional[Image]:
+        images = self.captured_images
+        if images:
+            return images[-1]
+
     @staticmethod
     def create_perfect_camera(
         x: float = 0, y: float = 0, z: float = 1,
