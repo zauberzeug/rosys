@@ -1,11 +1,9 @@
 import cv2
 import re
 import shutil
-
-from rosys.world.image import ImageSize
-from .actor import Actor
-from ..world import UsbCamera, Image
+from ..world import UsbCamera, Image, ImageSize
 from .. import event
+from .actor import Actor
 
 
 class UsbCameraCapture(Actor):
@@ -23,8 +21,7 @@ class UsbCameraCapture(Actor):
             if not camera.capture:
                 return
             bytes = await self.run_io_bound(self.capture_image, uid)
-            camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time,
-                                 size=ImageSize(width=camera.resolution.width, height=camera.resolution.height)))
+            camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time, size=camera.resolution))
         self.purge_old_images()
 
     def capture_image(self, id) -> bytes:

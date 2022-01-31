@@ -1,7 +1,7 @@
 from typing import Literal, Optional
 from pydantic import Field
-from rosys.world.image import ImageSize
-from rosys.world.camera import Camera
+from .image import ImageSize
+from .camera import Camera
 
 
 class UsbCamera(Camera):

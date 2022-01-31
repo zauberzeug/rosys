@@ -1,13 +1,11 @@
 from pydantic import BaseModel, PrivateAttr
 from aenum import Enum, auto
 import time
-
 from .mode import Mode
 from .obstacle import Obstacle
 from .robot import Robot
-from .camera import Camera
-from .usb_camera import UsbCamera
 from .upload import Upload
+from .usb_camera import UsbCamera
 
 
 class AutomationState(str, Enum, init='value __doc__'):

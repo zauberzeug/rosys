@@ -4,10 +4,10 @@ from .image import Image
 
 
 class Upload(BaseModel):
-    minimal_minutes_between_uploads = 1
+    minimal_minutes_between_uploads: float = 1.0
     last_upload: datetime = datetime.fromtimestamp(0)
     queue: set[Image] = Field(set(), exclude=True)
 
     def mark(self, image: Image):
-        '''Mark an image for upload. May still not get uploaded because minimal_minutes_between_uploads has not elapsed.'''
+        '''Mark an image for upload. May still not get uploaded because minimal_minutes_between_uploads have not elapsed.'''
         self.queue.add(image)

@@ -1,9 +1,7 @@
 import logging
 import json
 import os
-
-from rosys.world.camera import Camera
-from .world import Obstacle, RobotParameters, World
+from .world import World
 
 
 class Persistence:
@@ -29,7 +27,7 @@ class Persistence:
         with open(self.filepath, 'w') as f:
             json.dump(self.dump(), f)
 
-    def world_parser(self, obj: dict):
+    def parse_world(self, obj: dict):
         return World.parse_obj(obj)
 
     def restore(self):
@@ -38,6 +36,6 @@ class Persistence:
             return
         try:
             with open(self.filepath, 'r') as f:
-                self.load(self.world_parser(json.load(f)))
+                self.load(self.parse_world(json.load(f)))
         except:
             logging.exception(f'Could not load from backup at {self.filepath}')
