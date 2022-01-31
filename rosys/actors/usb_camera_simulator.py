@@ -4,7 +4,7 @@ from ..world.image import Image
 from .. import event
 
 
-class CameraCaptureSimulation(Actor):
+class UsbCameraSimulator(Actor):
     interval: float = 1
 
     def __init__(self) -> None:
@@ -17,5 +17,5 @@ class CameraCaptureSimulation(Actor):
             self.world.cameras[uid] = UsbCamera(id=uid)
             await event.call(event.Id.NEW_CAMERA, self.world.cameras[uid])
 
-        for camera in [c for c in self.world.cameras.values() if isinstance(c, UsbCamera)]:
+        for camera in [c for c in self.world.usb_cameras.values()]:
             camera.images.append(Image.create_placeholder(f'{camera.id}: {self.world.time:.2f}', time=self.world.time))

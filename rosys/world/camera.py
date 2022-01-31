@@ -3,12 +3,13 @@ from typing import Optional
 from uuid import uuid4
 from pydantic import BaseModel, Field
 import numpy as np
+import abc
 from .calibration import Calibration, Extrinsics, Intrinsics
 from .image import Image, ImageSize
 from .rotation import Rotation
 
 
-class Camera(BaseModel):
+class Camera(BaseModel, abc.ABC):
     id: str
     calibration: Optional[Calibration] = None
     projection: Optional[list[list[list[Optional[float]]]]] = Field(None, exclude=True)

@@ -4,7 +4,7 @@ import asyncio
 import logging
 from typing import Optional, Type
 from . import event, task_logger
-from .actors import Actor, Automator, Lizard, Odometer, Steerer, CameraCapture, CameraCaptureSimulation
+from .actors import Actor, Automator, Lizard, Odometer, Steerer, CameraCapture, UsbCameraSimulator
 from .hardware import Hardware, SimulatedHardware
 from .persistence import Persistence
 from .world import AutomationState, Mode, World
@@ -48,7 +48,7 @@ class Runtime:
         if CameraCapture.is_operable() and self.world.mode != Mode.TEST:
             self.with_actors(CameraCapture())
         else:
-            self.with_actors(CameraCaptureSimulation())
+            self.with_actors(UsbCameraSimulator())
 
     async def pause(self, because: Optional[str] = None):
         await event.call(event.Id.PAUSE_AUTOMATIONS, because)

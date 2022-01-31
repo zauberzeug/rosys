@@ -29,7 +29,7 @@ class World(BaseModel):
     _time: float = PrivateAttr(default_factory=time.time)
     obstacles: dict[str, Obstacle] = {}
     notifications: list[tuple[float, str]] = []
-    cameras: dict[str, Camera] = {}
+    cameras: dict[str, UsbCamera] = {}
     upload: Upload = Upload()
 
     @property

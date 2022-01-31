@@ -19,15 +19,18 @@ class Persistence:
             'obstacles': {id: obstacle.dict() for id, obstacle in self.world.obstacles.items()},
         }
 
-    def load(self, dict: dict):
-        self.world.robot.parameters = RobotParameters.parse_obj(dict['robot']['parameters'])
-        self.world.cameras.update({mac: Camera.parse_obj(camera) for mac, camera in dict['cameras'].items()})
-        self.world.obstacles.update({id: Obstacle.parse_obj(obstacle) for id, obstacle in dict['obstacles'].items()})
+    def load(self, world: World):
+        self.world.robot.parameters = world.robot.parameters
+        self.world.cameras = world.cameras
+        self.world.obstacles = world.obstacles
 
     def backup(self):
         os.makedirs(os.path.dirname(self.filepath), exist_ok=True)
         with open(self.filepath, 'w') as f:
             json.dump(self.dump(), f)
+
+    def world_parser(self, obj: dict):
+        return World.parse_obj(obj)
 
     def restore(self):
         if not os.path.exists(self.filepath):
@@ -35,6 +38,6 @@ class Persistence:
             return
         try:
             with open(self.filepath, 'r') as f:
-                self.load(json.load(f))
+                self.load(self.world_parser(json.load(f)))
         except:
             logging.exception(f'Could not load from backup at {self.filepath}')
