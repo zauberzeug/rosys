@@ -1,4 +1,0 @@
-<launch>
-    <node pkg="robot" name="lizard" type="lizard.py" output="screen" />
-    <node pkg="robot" name="ui" type="ui.py" output="screen" />
-</launch>
