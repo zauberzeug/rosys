@@ -28,4 +28,4 @@ def setup(ui: Ui, runtime: Runtime):
             log.exception('could not get image')
             raise
 
-    ui.add_route(starlette.routing.Route('/usb_camera/{id}/{timestamp}', get_image))
+    ui.add_route(starlette.routing.Route('/camera/{id}/{timestamp}', get_image))
