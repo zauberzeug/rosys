@@ -1,8 +1,8 @@
 import socketio
+from datetime import datetime, timedelta
 from .. import event, task_logger
 from ..world import BoxDetection, Image, PointDetection
 from .actor import Actor
-from datetime import datetime, timedelta
 
 
 class Detector(Actor):
@@ -71,7 +71,7 @@ class Detector(Actor):
             point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
             image.detections = box_detections + point_detections
         except:
-            self.log.exception(f'could not detect {image}')
+            self.log.exception(f'could not detect {image.id}')
         else:
             event.emit(event.Id.NEW_DETECTIONS, image)
             return image
@@ -80,7 +80,7 @@ class Detector(Actor):
         try:
             await self.sio.emit('upload', {'image': image.data, 'mac': image.camera_id})
         except:
-            self.log.exception(f'could not upload {image}')
+            self.log.exception(f'could not upload {image.id}')
 
     def __str__(self) -> str:
         state = {
