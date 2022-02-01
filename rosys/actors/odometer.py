@@ -1,6 +1,4 @@
-import numpy as np
 from .. import event
-from ..helpers import angle
 from ..world import PoseStep
 from .actor import Actor
 
@@ -12,8 +10,6 @@ class Odometer(Actor):
 
         self.last_time: float = None
         self.steps: list[PoseStep] = []
-        self.flips: int = 0
-        self.flip_detection_initialized: bool = False
         event.register(event.Id.NEW_MACHINE_DATA, self.handle_velocity)
 
     def handle_velocity(self):
@@ -46,30 +42,12 @@ class Odometer(Actor):
         if self.world.robot.detection is None or not self.steps or self.world.robot.detection.time < self.steps[0].time:
             return
 
-        while self.steps and self.steps[0].time < self.world.robot.detection.time:
-            del self.steps[0]
-
-        # NOTE: attempt to avoid 180-degree flips due to swapped marker points
-        if self.flip_detection_initialized:
-            dYaw = sum(step.angular for step in self.steps)
-            if abs(angle(self.world.robot.prediction.yaw - dYaw, self.world.robot.detection.yaw)) > np.deg2rad(90):
-                self.flips += 1
-                for image in self.world.images:
-                    if image.time == self.world.robot.detection.time:
-                        self.log.warning(f'adding {image.id} to upload queue because our position has flipped')
-                        self.world.upload.mark(image)
-                if self.flips < 3:
-                    self.log.warn('Avoiding flip')
-                    return
-            else:
-                self.flips = 0
+        self.prune_steps(self.world.robot.detection.time)
 
         self.world.robot.prediction = self.world.robot.detection.copy(deep=True)
         for step in self.steps:
             self.world.robot.prediction += step
 
-        self.flip_detection_initialized = True
-
     def prune_steps(self, cut_off_time: float):
-        while any(self.steps) and self.steps[0].time < cut_off_time:
+        while self.steps and self.steps[0].time < cut_off_time:
             del self.steps[0]
