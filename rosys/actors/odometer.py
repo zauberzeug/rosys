@@ -43,10 +43,10 @@ class Odometer(Actor):
         self.prune_steps(self.world.time - 10.0)
 
     def handle_detection(self):
-        if self.world.robot.detection is None or not any(self.steps) or self.world.robot.detection.time < self.steps[0].time:
+        if self.world.robot.detection is None or not self.steps or self.world.robot.detection.time < self.steps[0].time:
             return
 
-        while self.steps[0].time < self.world.robot.detection.time:
+        while self.steps and self.steps[0].time < self.world.robot.detection.time:
             del self.steps[0]
 
         # NOTE: attempt to avoid 180-degree flips due to swapped marker points
