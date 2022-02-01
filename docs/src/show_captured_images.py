@@ -9,7 +9,7 @@ rosys.ui.configure(ui, runtime)
 
 
 def refresh():
-    for uid, camera in runtime.world.cameras.items():
+    for uid, camera in runtime.world.usb_cameras.items():
         if uid not in feeds:
             with ui.card().tight().style('width:30em;'):
                 feeds[uid] = ui.image()

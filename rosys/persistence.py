@@ -13,13 +13,13 @@ class Persistence:
     def dump(self) -> dict:
         return {
             'robot': {'parameters': self.world.robot.parameters.dict()},
-            'cameras': {id: camera.dict() for id, camera in self.world.cameras.items()},
+            'usb_cameras': {id: camera.dict() for id, camera in self.world.usb_cameras.items()},
             'obstacles': {id: obstacle.dict() for id, obstacle in self.world.obstacles.items()},
         }
 
     def load(self, world: World):
         self.world.robot.parameters = world.robot.parameters
-        self.world.cameras = world.cameras
+        self.world.usb_cameras = world.usb_cameras
         self.world.obstacles = world.obstacles
 
     def backup(self):

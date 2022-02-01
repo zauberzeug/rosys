@@ -1,7 +1,7 @@
 # Cameras
 
 RoSys provides instant camera access for [object detection](object_detection.md), remote operation and similar use cases.
-Any plugged in camera becomes an entry in `world.cameras` containing recorded images and configuration parameters like exposure.
+Any plugged in camera becomes an entry in `world.usb_cameras` containing recorded images and configuration parameters like exposure.
 
 ## Setup
 

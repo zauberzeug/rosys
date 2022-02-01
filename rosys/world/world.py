@@ -27,7 +27,7 @@ class World(BaseModel):
     _time: float = PrivateAttr(default_factory=time.time)
     obstacles: dict[str, Obstacle] = {}
     notifications: list[tuple[float, str]] = []
-    cameras: dict[str, UsbCamera] = {}
+    usb_cameras: dict[str, UsbCamera] = {}
     upload: Upload = Upload()
 
     @property
@@ -37,7 +37,3 @@ class World(BaseModel):
     def set_time(self, value):
         assert self.mode == Mode.TEST
         self._time = value
-
-    @property
-    def usb_cameras(self) -> dict[str, UsbCamera]:
-        return {c.id: c for c in self.cameras.values() if isinstance(c, UsbCamera)}

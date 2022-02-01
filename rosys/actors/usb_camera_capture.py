@@ -29,7 +29,7 @@ class UsbCameraCapture(Actor):
         return cv2.imencode('.jpg', image)[1].tobytes()
 
     def purge_old_images(self):
-        for camera in self.world.cameras.values():
+        for camera in self.world.usb_cameras.values():
             while camera.images and camera.images[0].time < self.world.time - 5 * 60.0:
                 del camera.images[0]
 
@@ -45,17 +45,17 @@ class UsbCameraCapture(Actor):
             if match is None:
                 continue
             uid = match.group(1)
-            if uid not in self.world.cameras:
-                self.world.cameras[uid] = UsbCamera(id=uid)
+            if uid not in self.world.usb_cameras:
+                self.world.usb_cameras[uid] = UsbCamera(id=uid)
                 self.log.info(f'adding camera {uid}')
-                await event.call(event.Id.NEW_CAMERA, self.world.cameras[uid])
+                await event.call(event.Id.NEW_CAMERA, self.world.usb_cameras[uid])
             lines = infos.splitlines()
             num = int(lines[1].strip().lstrip('/dev/video'))
             if uid not in self.devices:
                 device = self.get_capture_device(num)
                 if device is None:
-                    if uid in self.world.cameras:
-                        del self.world.cameras[uid]
+                    if uid in self.world.usb_cameras:
+                        del self.world.usb_cameras[uid]
                 else:
                     self.devices[uid] = device
             if uid in self.devices:
@@ -83,4 +83,4 @@ class UsbCameraCapture(Actor):
     async def update_parameters(self, uid: str, dev_num: int):
         output = await self.run_sh(['v4l2-ctl', '--all', '-d', str(dev_num)])
         size = re.search('Width/Height.*: (\d*)/(\d*)', output)
-        self.world.cameras[uid].resolution = ImageSize(width=int(size.group(1)), height=int(size.group(2)))
+        self.world.usb_cameras[uid].resolution = ImageSize(width=int(size.group(1)), height=int(size.group(2)))

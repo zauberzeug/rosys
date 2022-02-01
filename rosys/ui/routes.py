@@ -18,9 +18,9 @@ def setup(ui: Ui, runtime: Runtime):
     def get_image(request, **_):
         try:
             cam_id = request.path_params['id']
-            if cam_id not in runtime.world.cameras:
+            if cam_id not in runtime.world.usb_cameras:
                 return not_found
-            for image in reversed(runtime.world.cameras[cam_id].images):
+            for image in reversed(runtime.world.usb_cameras[cam_id].images):
                 if str(image.time) == request.path_params['timestamp']:
                     return starlette.responses.Response(content=image.data, media_type='image/jpeg')
             return not_found
@@ -28,4 +28,4 @@ def setup(ui: Ui, runtime: Runtime):
             log.exception('could not get image')
             raise
 
-    ui.add_route(starlette.routing.Route('/camera/{id}/{timestamp}', get_image))
+    ui.add_route(starlette.routing.Route('/usb_camera/{id}/{timestamp}', get_image))
