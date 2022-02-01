@@ -8,7 +8,7 @@ class CameraProjector(Actor):
     interval: float = 1.0
 
     async def step(self):
-        for camera in self.world.usb_cameras.values():
+        for camera in self.world.cameras.values():
             if camera.calibration is None or not camera.calibration.is_complete:
                 continue
             if camera.projection is not None:

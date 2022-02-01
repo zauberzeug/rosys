@@ -1,6 +1,7 @@
 from pydantic import BaseModel, PrivateAttr
 from aenum import Enum, auto
 import time
+from .camera import Camera
 from .mode import Mode
 from .obstacle import Obstacle
 from .robot import Robot
@@ -37,3 +38,7 @@ class World(BaseModel):
     def set_time(self, value):
         assert self.mode == Mode.TEST
         self._time = value
+
+    @property
+    def cameras(self) -> dict[str, Camera]:
+        return self.usb_cameras
