@@ -4,8 +4,8 @@ from typing import Optional
 import PIL.Image
 import PIL.ImageDraw
 import io
-from .detection import Detection
 import urllib.parse
+from .detection import Detection
 
 
 class ImageSize(BaseModel):

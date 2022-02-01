@@ -1,4 +1,4 @@
-from typing import Literal, Optional
+from typing import Optional
 from pydantic import Field
 from .image import ImageSize
 from .camera import Camera

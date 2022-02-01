@@ -3,21 +3,21 @@ import logging
 import yappi
 from tabulate import tabulate
 import asyncio
+import time
 
 log = logging.getLogger('rosys.profiler')
 
 
 def create_profiler(ui: Ui):
 
-    async def start():
+    async def start(duration: float = 10.0):
         ui.notify('start profiling')
         profile_button.props(replace='icon=stop')
         yappi.clear_stats()
         yappi.start()
-        for i in range(100):
+        t = time.time()
+        while yappi.is_running() and time.time() < t + duration:
             await asyncio.sleep(0.1)
-            if not yappi.is_running():
-                return  # profiling was stopped early
         stop()
 
     def stop():
