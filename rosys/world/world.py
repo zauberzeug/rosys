@@ -1,6 +1,7 @@
 from pydantic import BaseModel, PrivateAttr
 from aenum import Enum, auto
 import time
+from .area import Area
 from .camera import Camera
 from .mode import Mode
 from .obstacle import Obstacle
@@ -27,6 +28,7 @@ class World(BaseModel):
     automation_state: AutomationState = AutomationState.DISABLED
     _time: float = PrivateAttr(default_factory=time.time)
     obstacles: dict[str, Obstacle] = {}
+    areas: dict[str, Area] = {}
     notifications: list[tuple[float, str]] = []
     usb_cameras: dict[str, UsbCamera] = {}
     upload: Upload = Upload()

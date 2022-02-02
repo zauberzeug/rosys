@@ -1,5 +1,6 @@
 from .configure import configure
 
+from .area_object import AreaObject as area_object
 from .automation_controls import AutomationControls as automation_controls
 from .joystick import Joystick as joystick
 from .keyboard_control import KeyboardControl as keyboard_control

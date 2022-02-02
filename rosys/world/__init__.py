@@ -1,3 +1,4 @@
+from .area import Area
 from .calibration import Calibration, Intrinsics, Extrinsics
 from .camera import Camera
 from .detection import Detection, BoxDetection, PointDetection
