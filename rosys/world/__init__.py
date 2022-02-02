@@ -3,6 +3,8 @@ from .calibration import Calibration, Intrinsics, Extrinsics
 from .camera import Camera
 from .detection import Detection, BoxDetection, PointDetection
 from .image import Image, ImageSize
+from .line import Line
+from .line_segment import LineSegment
 from .mode import Mode
 from .obstacle import Obstacle
 from .path_segment import PathSegment
