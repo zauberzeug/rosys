@@ -1,10 +1,32 @@
+from dataclasses import dataclass
 import re
 import shutil
 from .actor import Actor
 
 
+@dataclass
+class Stats:
+    tx_errors: int
+    tx_dropped: int
+    rx_errors: int
+    rx_dropped: int
+
+    def __gt__(self, other):
+        return self.tx_errors > other.tx_errors or \
+            self.tx_dropped > other.tx_dropped or \
+            self.rx_errors > other.rx_errors or \
+            self.rx_dropped > other.rx_dropped
+
+    def msg(self):
+        return f'{self.tx_errors} tx errors, {self.tx_dropped} tx dropped, {self.rx_errors} rx errors and {self.rx_dropped} rx dropped'
+
+
 class NetworkMonitor(Actor):
-    interval: float = 6
+    interval: float = 60
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.interfaces: dict[str, Stats] = {}
 
     @staticmethod
     def is_operable() -> bool:
@@ -16,14 +38,20 @@ class NetworkMonitor(Actor):
         for interface in NetworkMonitor.split_interfaces(output):
             name = interface[:interface.index(':')]
             lines = interface.split('\n')
-            tx_errors = int(lines[-1].split()[2])
-            tx_dropped = int(lines[-1].split()[3])
-            rx_errors = int(lines[-1].split()[2])
-            rx_dropped = int(lines[-3].split()[3])
-            if any([v > 0 for v in [tx_errors, tx_dropped, rx_errors, rx_dropped]]):
-                msg = f'{name} has {tx_errors} tx errors, {tx_dropped} tx_dropped, {rx_errors} rx errors and {rx_dropped} rx_dropped'
-                self.log.warning(msg)
-                await self.notify(msg)
+            stats = Stats(
+                tx_errors=int(lines[-1].split()[2]),
+                tx_dropped=int(lines[-1].split()[3]),
+                rx_errors=int(lines[-1].split()[2]),
+                rx_dropped=int(lines[-3].split()[3]),
+            )
+            if name not in self.interfaces:
+                self.interfaces[name] = stats
+            else:
+                if stats > self.interfaces[name]:
+                    msg = name + ' has ' + stats.msg()
+                    self.log.warning(msg)
+                    await self.notify(msg)
+                    self.interfaces[name] = stats
 
     @ staticmethod
     def split_interfaces(output: str) -> list[str]:

@@ -1,4 +1,5 @@
 from rosys.actors import NetworkMonitor
+from rosys.actors.network_monitor import Stats
 
 
 def test_parsing_ip_stats():
@@ -28,3 +29,9 @@ def test_parsing_ip_stats():
     assert len(interfaces) == 2
     assert interfaces[0].startswith('wlan1')
     assert interfaces[1].startswith('wlan2')
+
+
+def test_stat_comparision():
+    a = Stats(tx_errors=0, tx_dropped=0, rx_errors=0, rx_dropped=0)
+    b = Stats(tx_errors=1, tx_dropped=0, rx_errors=0, rx_dropped=0)
+    assert b > a
