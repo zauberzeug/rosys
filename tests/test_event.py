@@ -1,5 +1,4 @@
 import pytest
-from aenum import Enum, auto
 from rosys import event
 from rosys.actors import Actor
 from rosys.test import TestRuntime
