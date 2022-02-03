@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import ndimage
 import cv2
-from ..world.world import World
+from ..world import World
 from .binary_renderer import BinaryRenderer
 from .grid import Grid
 from .robot_renderer import RobotRenderer
@@ -38,7 +38,10 @@ class ObstacleMap:
     @staticmethod
     def from_world(world: World, grid: Grid):
         robot_renderer = RobotRenderer(world.robot.shape.outline)
-        binary_renderer = BinaryRenderer(grid.size[:2])
+        has_areas = any(len(a.outline) > 2 for a in world.areas.values())
+        binary_renderer = BinaryRenderer(grid.size[:2], fill_value=has_areas)
+        for area in world.areas.values():
+            binary_renderer.polygon(np.array([grid.to_grid(p.x, p.y)[::-1] for p in area.outline]), False)
         for obstacle in world.obstacles.values():
             binary_renderer.polygon(np.array([grid.to_grid(p.x, p.y)[::-1] for p in obstacle.outline]))
         return ObstacleMap(grid, binary_renderer.map, robot_renderer)
