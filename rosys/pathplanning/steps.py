@@ -1,9 +1,8 @@
 from __future__ import annotations
 from typing import Optional
 import numpy as np
-from rosys.world.pose import Pose
-from rosys.world.spline import Spline
-from rosys.helpers import angle
+from ..world import Pose, Spline
+from ..helpers import angle
 
 
 class Path(list):

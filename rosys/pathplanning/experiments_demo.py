@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 from nicegui import ui
 import pylab as pl
-import plot_tools as pt
-from experiments import generate_experiment
+import rosys.pathplanning.plot_tools as pt
+from rosys.pathplanning.experiments import generate_experiment
 
 robot_renderer, pose, goal, obstacle_map, small_obstacle_map, backward_to_goal = generate_experiment(5.0)
 

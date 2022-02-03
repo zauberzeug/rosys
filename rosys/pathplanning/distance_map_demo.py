@@ -3,11 +3,12 @@ from nicegui import ui
 import pylab as pl
 import numpy as np
 import time
-from grid import Grid
-from robot_renderer import RobotRenderer
-from obstacle_map import ObstacleMap
-from distance_map import DistanceMap
-import plot_tools as pt
+from rosys.world import Point
+from rosys.pathplanning.grid import Grid
+from rosys.pathplanning.robot_renderer import RobotRenderer
+from rosys.pathplanning.obstacle_map import ObstacleMap
+from rosys.pathplanning.distance_map import DistanceMap
+import rosys.pathplanning.plot_tools as pt
 
 grid = Grid((60, 80, 36), (0, 0, 16.0, 12.0))
 obstacles = [
@@ -17,7 +18,7 @@ obstacles = [
 robot_renderer = RobotRenderer.from_size(0.77, 1.21, 0.445)
 obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_renderer)
 
-target = 4.0, 2.0
+target = Point(x=4.0, y=2.0)
 
 t = time.time()
 distance_map = DistanceMap(obstacle_map, target)

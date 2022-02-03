@@ -3,8 +3,7 @@ import heapq
 import copy
 import time
 from ..helpers import angle
-from ..world.pose import Pose
-from ..world.world import World
+from ..world import Pose, World
 from .distance_map import DistanceMap
 from .grid import Grid
 from .obstacle_map import ObstacleMap
@@ -117,6 +116,7 @@ class Planner:
                 not self.obstacle_map.grid.contains(start.point, padding=1.0) or \
                 not self.obstacle_map.grid.contains(goal.point, padding=1.0):
             points = [p for obstacle in self.world.obstacles.values() for p in obstacle.outline]
+            points += [p for area in self.world.areas.values() for p in area.outline]
             grid = Grid.from_points(points + [start.point, goal.point], 0.1, 36, padding=1.0)
             self.obstacle_map = ObstacleMap.from_world(self.world, grid)
             self.small_obstacle_map = self.obstacle_map  # TODO?

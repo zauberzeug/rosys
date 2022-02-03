@@ -1,6 +1,6 @@
 import numpy as np
 import scipy.interpolate
-from ..world.point import Point
+from ..world import Point
 from .obstacle_map import ObstacleMap
 
 

@@ -2,7 +2,6 @@
 from nicegui import ui
 import os
 import uuid
-import starlette
 import rosys
 import rosys.ui
 from rosys.automations import drive_path

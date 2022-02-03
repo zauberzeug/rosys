@@ -4,8 +4,8 @@ from matplotlib.path import Path
 
 class BinaryRenderer:
 
-    def __init__(self, size):
-        self.map = np.zeros(size, dtype=bool)
+    def __init__(self, size, fill_value: bool = False):
+        self.map = np.full(size, fill_value=fill_value, dtype=bool)
 
         self.xx, self.yy = np.meshgrid(range(size[1]), range(size[0]))
         self.xy = np.vstack((self.xx.flatten(), self.yy.flatten())).T

@@ -1,5 +1,5 @@
 import numpy as np
-from rosys.world.point import Point
+from ..world import Point
 
 
 class Grid:

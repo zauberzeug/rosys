@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 from nicegui import ui
 import pylab as pl
-from rosys.world.pose import Pose
-from rosys.world.spline import Spline
-from grid import Grid
-from obstacle_map import ObstacleMap
-from robot_renderer import RobotRenderer
-from plot_tools import plot_bbox, show_obstacle_map, plot_spline, plot_robot
+from rosys.world import Pose, Spline
+from rosys.pathplanning.grid import Grid
+from rosys.pathplanning.obstacle_map import ObstacleMap
+from rosys.pathplanning.robot_renderer import RobotRenderer
+from rosys.pathplanning.plot_tools import plot_bbox, show_obstacle_map, plot_spline, plot_robot
 
 with ui.plot():
     pl.axis('equal')
