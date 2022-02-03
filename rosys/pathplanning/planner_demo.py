@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
 from nicegui import ui
 import pylab as pl
-import plot_tools as pt
 import time
 from uuid import uuid4
-from rosys.world.obstacle import Obstacle
-from rosys.world.point import Point
-from rosys.world.pose import Pose
-from rosys.world.robot import Robot
-from rosys.world.world import World
-from planner import Planner
-import icecream
-icecream.install()
+from rosys.world import Obstacle, Point, Pose, Robot, World
+from rosys.pathplanning.planner import Planner
+import rosys.pathplanning.plot_tools as pt
 
 world = World(robot=Robot())
 for x, y, w, h in [

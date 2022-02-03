@@ -2,7 +2,7 @@
 from nicegui import ui
 import numpy as np
 import pylab as pl
-from robot_renderer import RobotRenderer
+from rosys.pathplanning.robot_renderer import RobotRenderer
 
 robot_renderer = RobotRenderer.from_size(0.77, 1.21, 0.445)
 pose = (0, 0, np.deg2rad(30))
