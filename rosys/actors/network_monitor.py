@@ -53,7 +53,7 @@ class NetworkMonitor(Actor):
                     await self.notify(msg)
                     self.interfaces[name] = stats
 
-    @ staticmethod
+    @staticmethod
     def split_interfaces(output: str) -> list[str]:
         spacing = re.sub('^[0-9]+: ', '\n', output, flags=re.MULTILINE)
         return spacing.strip().split('\n\n')
