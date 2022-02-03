@@ -7,3 +7,4 @@ from .lizard import Lizard
 from .odometer import Odometer
 from .steerer import Steerer
 from .camera_projector import CameraProjector
+from .network_monitor import NetworkMonitor

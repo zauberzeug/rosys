@@ -4,8 +4,8 @@ import asyncio
 import logging
 from typing import Optional, Type
 from . import event, task_logger
-from .actors import Actor, Automator, Lizard, Odometer, Steerer, UsbCameraCapture, UsbCameraSimulator
-from .hardware import Hardware, SimulatedHardware
+from .actors import Actor, Automator, Lizard, Odometer, Steerer, UsbCameraCapture, UsbCameraSimulator, NetworkMonitor
+from .hardware import Hardware, SimulatedHardware, CommunicatingHardware
 from .persistence import Persistence
 from .world import AutomationState, Mode, World
 
@@ -37,6 +37,9 @@ class Runtime:
             self.steerer,
             self.automator,
         ]
+
+        if NetworkMonitor.is_operable():
+           self.with_actors(NetworkMonitor())
 
     def with_actors(self, *actors: list[Actor]):
         '''Adds list of additional actors to runtime.'''
