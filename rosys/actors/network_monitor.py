@@ -41,7 +41,7 @@ class NetworkMonitor(Actor):
             stats = Stats(
                 tx_errors=int(lines[-1].split()[2]),
                 tx_dropped=int(lines[-1].split()[3]),
-                rx_errors=int(lines[-1].split()[2]),
+                rx_errors=int(lines[-3].split()[2]),
                 rx_dropped=int(lines[-3].split()[3]),
             )
             if name not in self.interfaces:
