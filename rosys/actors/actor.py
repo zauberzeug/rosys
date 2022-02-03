@@ -48,7 +48,7 @@ class Actor:
                 stderr=asyncio.subprocess.STDOUT)
             stdout, *_ = proc.communicate()
             return stdout.decode()
-        self.log.debug('executing sh command: ' + ' '.join(command))
+        #self.log.debug('executing sh command: ' + ' '.join(command))
         return await self.run_io_bound(run)
 
     async def pause_automations(self, *, because: str):
