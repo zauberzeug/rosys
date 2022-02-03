@@ -18,7 +18,7 @@ class Stats:
             self.rx_dropped > other.rx_dropped
 
     def msg(self):
-        return f'{self.tx_errors} tx errors, {self.tx_dropped} tx dropped, {self.rx_errors} rx errors and {self.rx_dropped} rx dropped'
+        return f'{self.tx_errors}/{self.rx_errors} errors and {self.tx_dropped}/{self.rx_dropped} dropped'
 
 
 class NetworkMonitor(Actor):
