@@ -48,6 +48,8 @@ def unregister(event: Id, listener: Union[Callable, Awaitable]):
             marked.append(listener)
         if registered() == listener:
             marked.append(registered)
+        if registered == listener:
+            marked.append(registered)
     [listeners[event].remove(m) for m in marked]
     log.debug(f'unregistered {listener} from {event}')
 
