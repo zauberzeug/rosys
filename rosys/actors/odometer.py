@@ -39,11 +39,13 @@ class Odometer(Actor):
         self.prune_steps(self.world.time - 10.0)
 
     def handle_detection(self):
-        if self.world.robot.detection is None or not self.steps or self.world.robot.detection.time < self.steps[0].time:
+        if self.world.robot.detection is None:
+            return
+
+        if self.steps and self.world.robot.detection.time < self.steps[0].time:
             return
 
         self.prune_steps(self.world.robot.detection.time)
-
         self.world.robot.prediction = self.world.robot.detection.copy(deep=True)
         for step in self.steps:
             self.world.robot.prediction += step
