@@ -19,7 +19,7 @@ class CpuUsage(Chart):
             }
         }
         super().__init__(options)
-        self.ui.timer(0.5, self.update)
+        self.ui.timer(0.1, self.update)
 
     def update(self):
         utilizations = psutil.cpu_percent(percpu=True)
