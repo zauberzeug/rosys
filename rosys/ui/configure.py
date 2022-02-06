@@ -1,4 +1,5 @@
 from nicegui.ui import Ui
+
 from ..hardware import CommunicatingHardware
 from .. import Runtime
 from .. import event
@@ -9,6 +10,7 @@ from .automation_controls import AutomationControls
 from .lizard_serial_debug import LizardSerialDebug
 from .objgraph_page import ObjgraphPage
 from .pyloot_page import PylootPage
+from .cpu_usage import CpuUsage
 from . import routes
 
 
@@ -30,3 +32,4 @@ def configure(ui: Ui, runtime: Runtime):
         LizardSerialDebug.communication = runtime.hardware.communication
     ObjgraphPage.ui = ui
     PylootPage.ui = ui
+    CpuUsage.ui = ui

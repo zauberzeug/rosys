@@ -27,6 +27,7 @@ with ui.scene(on_click=handle_click, width=800) as scene:
     path3d = rosys.ui.path_object()
 
 ui.label('click into the scene to drive the robot')
+rosys.ui.cpu_usage().classes('h-64').style('width:800px')
 
 # start
 ui.run(title='RoSys', port=8080)
