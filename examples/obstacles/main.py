@@ -40,7 +40,7 @@ with ui.card():
                 return
             if object_type == 'ground' and click_mode.value == 'plan':
                 target_yaw = world.robot.prediction.point.direction(hit.point)
-                path = planner.search(goal=Pose(x=hit.point.x, y=hit.point.y, yaw=target_yaw), timeout=3.0)
+                path = await planner.search_async(goal=Pose(x=hit.point.x, y=hit.point.y, yaw=target_yaw), timeout=3.0)
                 path3d.update(path)
                 runtime.automator.replace(drive_path(world, runtime.hardware, path))
                 return
