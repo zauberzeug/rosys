@@ -11,6 +11,7 @@ class CpuUsage(Chart):
         options = {
             'title': False,
             'chart': {'type': 'line'},
+            'xAxis': {'labels': {'enabled': False}},
             'yAxis': {'categories': [f'cpu_{i}' for i in range(cpus)], 'max': 100, 'min': 0, 'title': {'text': 'utilization'}},
             'series': [{'name': f'cpu_{i}', 'data': []} for i in range(cpus)],
             'plotOptions': {
@@ -18,7 +19,7 @@ class CpuUsage(Chart):
             }
         }
         super().__init__(options)
-        self.ui.timer(0.1, self.update)
+        self.ui.timer(0.5, self.update)
 
     def update(self):
         utilizations = psutil.cpu_percent(percpu=True)

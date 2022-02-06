@@ -1,6 +1,7 @@
 import cv2
 import re
 import shutil
+import rosys
 from ..world import UsbCamera, Image, ImageSize
 from .. import event
 from .actor import Actor
@@ -20,7 +21,7 @@ class UsbCameraCapture(Actor):
         for uid, camera in self.world.usb_cameras.items():
             if not camera.capture:
                 return
-            bytes = await self.run_io_bound(self.capture_image, uid)
+            bytes = await rosys.run.io_bound(self.capture_image, uid)
             camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time, size=camera.resolution))
         self.purge_old_images()
 
@@ -37,7 +38,7 @@ class UsbCameraCapture(Actor):
         if self.last_scan is not None and self.world.time < self.last_scan + 30:  # scan every 30 sec
             return
         self.last_scan = self.world.time
-        output = await self.run_sh(['v4l2-ctl', '--list-devices'])
+        output = await rosys.run.sh(['v4l2-ctl', '--list-devices'])
         for infos in output.split('\n\n'):
             if 'Cannot open device' in infos:
                 continue
@@ -81,6 +82,6 @@ class UsbCameraCapture(Actor):
         return shutil.which('v4l2-ctl') is not None
 
     async def update_parameters(self, uid: str, dev_num: int):
-        output = await self.run_sh(['v4l2-ctl', '--all', '-d', str(dev_num)])
+        output = await rosys.run.sh(['v4l2-ctl', '--all', '-d', str(dev_num)])
         size = re.search('Width/Height.*: (\d*)/(\d*)', output)
         self.world.usb_cameras[uid].resolution = ImageSize(width=int(size.group(1)), height=int(size.group(2)))

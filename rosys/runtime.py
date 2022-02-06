@@ -3,7 +3,7 @@ from asyncio.exceptions import CancelledError
 import asyncio
 import logging
 from typing import Optional, Type
-from . import event, task_logger
+from . import event, task_logger, run
 from .actors import Actor, Automator, Lizard, Odometer, Steerer, UsbCameraCapture, UsbCameraSimulator, NetworkMonitor
 from .hardware import Hardware, SimulatedHardware
 from .persistence import Persistence
@@ -88,7 +88,7 @@ class Runtime:
         if self.world.mode != Mode.TEST:
             self.persistence.backup()
         [t.cancel() for t in self.tasks]
-        Actor.process_pool.shutdown()
+        run.process_pool.shutdown()
         await asyncio.gather(*[task_logger.create_task(a.tear_down(), name=f'{a.name}.tear_down()') for a in self.actors])
 
     async def repeat(self, actor: Actor):

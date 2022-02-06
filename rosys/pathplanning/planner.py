@@ -2,12 +2,14 @@ import numpy as np
 import heapq
 import copy
 import time
+import functools
 from ..helpers import angle
 from ..world import Pose, PathSegment, World
 from .distance_map import DistanceMap
 from .grid import Grid
 from .obstacle_map import ObstacleMap
 from .steps import Path, Step
+from .. import run
 
 
 class Planner:
@@ -18,6 +20,9 @@ class Planner:
         self.small_obstacle_map = None
         self.obstacles = None
         self.goal = None
+
+    async def search_async(self, *, goal: Pose, start: Pose = None, backward: bool = False, timeout: float = None):
+        return await run.cpu_bound(functools.partial(self.search, goal=goal, start=start, backward=backward, timeout=timeout))
 
     def search(self, *, goal: Pose, start: Pose = None, backward: bool = False, timeout: float = None):
         if start is None:

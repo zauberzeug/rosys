@@ -34,7 +34,7 @@ class NetworkMonitor(Actor):
 
     async def step(self):
         await super().step()
-        output = await self.run_sh(['ip', '-s', 'a'])
+        output = await rosys.run.sh(['ip', '-s', 'a'])
         for interface in NetworkMonitor.split_interfaces(output):
             name = interface[:interface.index(':')]
             lines = interface.split('\n')

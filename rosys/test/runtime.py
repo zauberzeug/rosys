@@ -1,12 +1,11 @@
 import asyncio
 from typing import Callable, Optional
-from .. import Runtime
+from .. import Runtime, run
 from ..world import AutomationState, Mode, Robot, World
 
 
 class TestRuntime(Runtime):
     __test__ = False
-    is_time_running: bool = True
 
     def __init__(self, world: Optional[World] = None):
         if world is None:
@@ -23,34 +22,25 @@ class TestRuntime(Runtime):
         if not self.tasks:
             for actor in self.actors:
                 actor.sleep = self.sleep
-                actor.run_cpu_bound = self.run_cpu_bound
+                actor.run_cpu_bound = run.cpu_bound
             await self.startup()
 
         end_time = self.world.time + seconds
         self.log.info(f'-------------------> forwarding to {round(end_time,2)}')
         while self.world.time <= end_time:
-            if self.is_time_running:
+            if not run.heavy_computation:
                 self.world.set_time(self.world.time + dt)
                 await asyncio.sleep(0)
             else:
                 await asyncio.sleep(0.01)
             if self.exception is not None:
                 raise RuntimeError(f'error while forwarding time {dt} s') from self.exception
-
         self.log.info(f'-------------------> now it\'s {round(self.world.time,2)}')
 
     async def sleep(self, seconds: float):
         sleep_end_time = self.world.time + seconds
         while self.world.time <= sleep_end_time:
             await asyncio.sleep(0)
-
-    async def run_cpu_bound(self, callback: Callable, *args: any):
-        try:
-            self.is_time_running = False
-            loop = asyncio.get_running_loop()
-            return await loop.run_in_executor(None, callback, *args)
-        finally:
-            self.is_time_running = True
 
     def handle_exception(self, ex: Exception):
         super().handle_exception(ex)
