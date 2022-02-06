@@ -9,6 +9,7 @@ from .automation_controls import AutomationControls
 from .lizard_serial_debug import LizardSerialDebug
 from .objgraph_page import ObjgraphPage
 from .pyloot_page import PylootPage
+from .lizard_stats import LizardStats
 from . import routes
 
 
@@ -30,3 +31,5 @@ def configure(ui: Ui, runtime: Runtime):
         LizardSerialDebug.communication = runtime.hardware.communication
     ObjgraphPage.ui = ui
     PylootPage.ui = ui
+    LizardStats.ui = ui
+    LizardStats.lizard = runtime.lizard

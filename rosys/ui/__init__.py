@@ -12,3 +12,4 @@ from .profiler import create_profiler
 from .pyloot_page import PylootPage as pyloot_page
 from .robot_object import RobotObject as robot_object
 from .wifi import create_wifi
+from .lizard_stats import LizardStats as lizard_stats

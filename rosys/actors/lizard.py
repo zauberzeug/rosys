@@ -1,3 +1,4 @@
+from queue import Queue
 from .. import event
 from ..hardware import Hardware
 from . import Actor
@@ -11,6 +12,7 @@ class Lizard(Actor):
         self.hardware = hardware
         self.last_step = None
         event.register(event.Id.PAUSE_AUTOMATIONS, self._handle_pause)
+        self.responsiveness_stats: list = []
 
     async def step(self):
         await self.ensure_responsiveness()
@@ -33,3 +35,6 @@ class Lizard(Actor):
         elif dt > 0.1:
             self.log.warning(f'esp serial communication is slow ({dt:.2f} s since last step)')
         self.last_step = self.world.time
+        self.responsiveness_stats.append(dt * 100)
+        if len(self.responsiveness_stats) > 50:
+            self.responsiveness_stats.pop(0)
