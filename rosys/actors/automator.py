@@ -19,6 +19,7 @@ class Automator(Actor):
     def replace(self, coro: Coroutine):
         self.clear()
         self.add(coro)
+        self.world.automation_state = AutomationState.STOPPED
 
     def clear(self):
         '''clears all automations'''
