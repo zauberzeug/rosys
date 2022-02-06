@@ -3,11 +3,11 @@ import heapq
 import copy
 import time
 from ..helpers import angle
-from ..world import Pose, World
+from ..world import Pose, PathSegment, World
 from .distance_map import DistanceMap
 from .grid import Grid
 from .obstacle_map import ObstacleMap
-from .steps import Step
+from .steps import Path, Step
 
 
 class Planner:
@@ -106,10 +106,11 @@ class Planner:
 
                     heapq.heappush(heap, (costs[0], costs[1], next_step))
 
-        self.raw_path = step.backtrace()
-        self.path = copy.deepcopy(self.raw_path)
+        self.raw_path: Path = step.backtrace()
+        self.path: Path = copy.deepcopy(self.raw_path)
         self.path.smooth(self.obstacle_map, control_dist=0.5)
         del self.path[0]
+        return [PathSegment(spline=step.spline, backward=step.backward) for step in self.path]
 
     def update_obstacle_map(self, goal: Pose, start: Pose) -> None:
         if self.obstacles != self.world.obstacles or \

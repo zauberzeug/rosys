@@ -9,8 +9,7 @@ from rosys.test import assert_pose, TestRuntime
 @pytest.mark.asyncio
 async def test_driving_to_planned_point(runtime: TestRuntime):
     planner = rosys.pathplanning.Planner(runtime.world)
-    planner.search(goal=Pose(x=5, y=2), timeout=3.0)
-    path = [PathSegment(spline=step.spline, backward=step.backward) for step in planner.path]
+    path = planner.search(goal=Pose(x=5, y=2), timeout=3.0)
     runtime.automator.replace(drive_path(runtime.world, runtime.hardware, path))
     await runtime.resume()
     await runtime.forward(12)
