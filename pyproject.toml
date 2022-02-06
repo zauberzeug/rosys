@@ -32,6 +32,7 @@ aenum = "^3.1.5"
 pyloot = "^0.0.7"
 objgraph = "^3.5.0"
 opencv-python = "^4.5.5"
+psutil = "^5.9.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.1"
