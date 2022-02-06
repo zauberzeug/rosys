@@ -1,6 +1,5 @@
 from nicegui.ui import Ui
 from nicegui.elements.chart import Chart
-import psutil
 from rosys.actors import Lizard
 
 
@@ -11,7 +10,7 @@ class LizardStats(Chart):
     def __init__(self) -> None:
         options = {
             'title': {'text': 'Lizard Statistics'},
-            'chart': {'type': 'line'},
+            'chart': {'type': 'line', 'animation': False},
             'xAxis': {'labels': {'enabled': False}},
             'yAxis': {'categories': ['responsiveness'], 'title': {'text': 'ms'}},
             'series': [{'name': 'responsiveness', 'data': []}],
@@ -23,4 +22,6 @@ class LizardStats(Chart):
         self.ui.timer(0.1, self.update)
 
     def update(self):
-        self.view.options.series[0].data[:] = self.lizard.responsiveness_stats
+        self.view.options.series[0].data.append(max(self.lizard.responsiveness_stats))
+        if len(self.view.options.series[0].data) > 20:
+            self.view.options.series[0].data.pop(0)

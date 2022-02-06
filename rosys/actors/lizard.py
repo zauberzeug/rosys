@@ -36,5 +36,5 @@ class Lizard(Actor):
             self.log.warning(f'esp serial communication is slow ({dt:.2f} s since last step)')
         self.last_step = self.world.time
         self.responsiveness_stats.append(dt * 100)
-        if len(self.responsiveness_stats) > 50:
+        if len(self.responsiveness_stats) > 100:
             self.responsiveness_stats.pop(0)
