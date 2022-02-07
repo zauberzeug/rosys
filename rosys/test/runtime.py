@@ -28,7 +28,7 @@ class TestRuntime(Runtime):
         end_time = self.world.time + seconds
         self.log.info(f'-------------------> forwarding to {round(end_time,2)}')
         while self.world.time <= end_time:
-            if not run.heavy_computation:
+            if not run.running_processes:
                 self.world.set_time(self.world.time + dt)
                 await asyncio.sleep(0)
             else:

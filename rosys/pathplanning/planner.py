@@ -3,13 +3,13 @@ import heapq
 import copy
 import time
 import functools
+from .. import run
 from ..helpers import angle
 from ..world import Pose, PathSegment, World
 from .distance_map import DistanceMap
 from .grid import Grid
 from .obstacle_map import ObstacleMap
 from .steps import Path, Step
-from .. import run
 
 
 class Planner:
@@ -24,7 +24,7 @@ class Planner:
     async def search_async(self, *, goal: Pose, start: Pose = None, backward: bool = False, timeout: float = None):
         return await run.cpu_bound(functools.partial(self.search, goal=goal, start=start, backward=backward, timeout=timeout))
 
-    def search(self, *, goal: Pose, start: Pose = None, backward: bool = False, timeout: float = None):
+    def search(self, *, goal: Pose, start: Pose = None, backward: bool = False, timeout: float = None) -> list[PathSegment]:
         if start is None:
             start = self.world.robot.prediction
 
