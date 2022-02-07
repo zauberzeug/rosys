@@ -2,13 +2,14 @@ from nicegui.ui import Ui
 from ..hardware import CommunicatingHardware
 from .. import Runtime
 from .. import event
+from .automation_controls import AutomationControls
 from .joystick import Joystick
 from .keyboard_control import KeyboardControl
-from .robot_object import RobotObject
-from .automation_controls import AutomationControls
 from .lizard_serial_debug import LizardSerialDebug
+from .lizard_stats import LizardStats
 from .objgraph_page import ObjgraphPage
 from .pyloot_page import PylootPage
+from .robot_object import RobotObject
 from . import routes
 
 
@@ -30,3 +31,5 @@ def configure(ui: Ui, runtime: Runtime):
         LizardSerialDebug.communication = runtime.hardware.communication
     ObjgraphPage.ui = ui
     PylootPage.ui = ui
+    LizardStats.ui = ui
+    LizardStats.lizard = runtime.lizard

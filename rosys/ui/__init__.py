@@ -5,6 +5,7 @@ from .automation_controls import AutomationControls as automation_controls
 from .joystick import Joystick as joystick
 from .keyboard_control import KeyboardControl as keyboard_control
 from .lizard_serial_debug import LizardSerialDebug as lizard_serial_debug
+from .lizard_stats import LizardStats as lizard_stats
 from .objgraph_page import ObjgraphPage as objgraph_page
 from .obstacle_object import ObstacleObject as obstacle_object
 from .path_object import PathObject as path_object
