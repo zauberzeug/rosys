@@ -9,7 +9,7 @@ class LizardStats(Chart):
 
     def __init__(self) -> None:
         super().__init__({
-            'title': False,
+            'title': {'text': 'Lizard', 'floating': True, 'y': 20},
             'chart': {'type': 'line', 'animation': False},
             'xAxis': {'labels': False},
             'yAxis': {'title': {'text': 'ms'}},
@@ -22,6 +22,11 @@ class LizardStats(Chart):
                 'series': {'marker': False}
             },
             'credits': False,
+            'navigation': {
+                'buttonOptions': {
+                    'enabled': False
+                }
+            }
         })
         self.ui.timer(0.1, self.update)
 

@@ -9,13 +9,19 @@ class CpuUsage(Chart):
     def __init__(self) -> None:
         cpus = len(psutil.cpu_percent(percpu=True))
         super().__init__({
-            'title': False,
-            'chart': {'type': 'line'},
+            'title': {'text': 'CPU', 'floating': True, 'y': 20},
+            'chart': {'type': 'line', 'animation': False},
             'xAxis': {'labels': False},
-            'yAxis': {'categories': [f'cpu_{i}' for i in range(cpus)], 'max': 100, 'min': 0, 'title': {'text': 'utilization'}},
+            'yAxis': {'max': 100, 'min': 0, 'title': {'text': 'utilization'}},
             'series': [{'name': f'cpu_{i}', 'data': []} for i in range(cpus)],
             'plotOptions': {
                 'series': {'marker': False}
+            },
+            'credits': False,
+            'navigation': {
+                'buttonOptions': {
+                    'enabled': False
+                }
             }
         })
         self.ui.timer(0.1, self.update)
