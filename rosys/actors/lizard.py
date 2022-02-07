@@ -1,4 +1,4 @@
-from queue import Queue
+from collections import deque
 from .. import event
 from ..hardware import Hardware
 from . import Actor
@@ -12,13 +12,13 @@ class Lizard(Actor):
         self.hardware = hardware
         self.last_step = None
         event.register(event.Id.PAUSE_AUTOMATIONS, self._handle_pause)
-        self.responsiveness_stats: list = []
-        self.update_stats: list = []
-        self.processing_stats: list = []
+        self.responsiveness_stats: deque = deque(maxlen=100)
+        self.update_stats: deque = deque(maxlen=100)
+        self.processing_stats: deque = deque(maxlen=100)
 
     async def step(self):
-        t = self.world.time
         await self.ensure_responsiveness()
+        t = self.world.time
         await self.hardware.update()
         self.update_stats.append(self.world.time - t)
         t = self.world.time
@@ -27,7 +27,6 @@ class Lizard(Actor):
         if dt > 0.02:
             self.log.warning(f'processing machine data took {dt:.2f} s')
         self.processing_stats.append(dt)
-        self.limit_stat_values()
 
     async def _handle_pause(self, reason: str):
         await self.hardware.stop()
@@ -41,12 +40,4 @@ class Lizard(Actor):
         elif dt > 0.1:
             self.log.warning(f'esp serial communication is slow ({dt:.2f} s since last step)')
         self.last_step = self.world.time
-        self.responsiveness_stats.append(dt * 100)
-
-    def limit_stat_values(self):
-        if len(self.responsiveness_stats) > 100:
-            self.responsiveness_stats.pop(0)
-        if len(self.update_stats) > 100:
-            self.update_stats.pop(0)
-        if len(self.processing_stats) > 100:
-            self.processing_stats.pop(0)
+        self.responsiveness_stats.append(dt)
