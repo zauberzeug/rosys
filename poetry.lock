@@ -1379,11 +1379,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9 <3.10"
-<<<<<<< HEAD
-content-hash = "8cd0d1117ab1251684f9eb9e2fe3241734ff4d362b3bd5387bbddf629ce8fa46"
-=======
 content-hash = "c6b3c870702ffaa03b455b016ae71383375b3cae6ee55963b772065eaea970f4"
->>>>>>> c5a69f7... now latest nicegui dep
 
 [metadata.files]
 addict = [
@@ -2053,13 +2049,8 @@ networkx = [
     {file = "networkx-2.6.3.tar.gz", hash = "sha256:c0946ed31d71f1b732b5aaa6da5a0388a345019af232ce2f49c766e2d6795c51"},
 ]
 nicegui = [
-<<<<<<< HEAD
-    {file = "nicegui-0.7.2-py3-none-any.whl", hash = "sha256:bab0997b03a385853e36685cc33b97b51ec1642c80586e01cd6fa3e365bac97b"},
-    {file = "nicegui-0.7.2.tar.gz", hash = "sha256:4d254a23b5181f8b5c76fab9c65eb9da4e8577a41482e916a70c30f0ea773593"},
-=======
     {file = "nicegui-0.7.6-py3-none-any.whl", hash = "sha256:4dc6e6ac287ecf427b32b63e02ffeed7c216f3399fde46728a0581da4c58e606"},
     {file = "nicegui-0.7.6.tar.gz", hash = "sha256:6bdf4b8945820fa0e03f741ecf41a1521f66a3bf9927cfd9c186d80497db2fdd"},
->>>>>>> c5a69f7... now latest nicegui dep
 ]
 numpy = [
     {file = "numpy-1.21.4-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:8890b3360f345e8360133bc078d2dacc2843b6ee6059b568781b15b97acbe39f"},
