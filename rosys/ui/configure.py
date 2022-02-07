@@ -8,6 +8,7 @@ from .cpu_usage import CpuUsage
 from .joystick import Joystick
 from .keyboard_control import KeyboardControl
 from .lizard_serial_debug import LizardSerialDebug
+from .lizard_stats import LizardStats
 from .objgraph_page import ObjgraphPage
 from .pyloot_page import PylootPage
 from .robot_object import RobotObject
@@ -33,3 +34,5 @@ def configure(ui: Ui, runtime: Runtime):
     ObjgraphPage.ui = ui
     PylootPage.ui = ui
     CpuUsage.ui = ui
+    LizardStats.ui = ui
+    LizardStats.lizard = runtime.lizard
