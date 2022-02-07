@@ -3,9 +3,12 @@ from typing import Callable
 import subprocess
 from concurrent.futures import ProcessPoolExecutor
 import sys
+import logging
+
 
 process_pool = ProcessPoolExecutor()
 heavy_computation = False  # NOTE is used in rosys.test.Runtime to advance time slower until computation is done
+log = logging.getLogger('rosys.run')
 
 
 async def io_bound(callback: Callable, *args: any):
