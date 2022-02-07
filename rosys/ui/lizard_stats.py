@@ -12,21 +12,15 @@ class LizardStats(Chart):
             'title': {'text': 'Lizard', 'floating': True, 'y': 20},
             'chart': {'type': 'line', 'animation': False},
             'xAxis': {'labels': False},
-            'yAxis': {'title': {'text': 'ms'}},
+            'yAxis': {'min': 0, 'title': {'text': 'ms'}},
             'series': [
                 {'name': 'responsiveness', 'data': []},
                 {'name': 'update', 'data': []},
                 {'name': 'processing', 'data': []},
             ],
-            'plotOptions': {
-                'series': {'marker': False}
-            },
+            'plotOptions': {'series': {'marker': False}},
+            'navigation': {'buttonOptions': {'enabled': False}},
             'credits': False,
-            'navigation': {
-                'buttonOptions': {
-                    'enabled': False
-                }
-            }
         })
         self.ui.timer(0.1, self.update)
 
