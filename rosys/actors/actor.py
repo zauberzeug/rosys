@@ -23,8 +23,8 @@ class Actor:
         '''delay execution; in tests this method will be replaced'''
         await asyncio.sleep(seconds)
 
-    async def pause_automations(self, *, because: str):
-        await event.call(event.Id.PAUSE_AUTOMATIONS, because)
+    async def pause_automation(self, *, because: str):
+        await event.call(event.Id.PAUSE_AUTOMATION, because)
 
     async def notify(self, message: str):
         await event.call(event.Id.NEW_NOTIFICATION, message)

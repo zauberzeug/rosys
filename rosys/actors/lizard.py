@@ -11,7 +11,7 @@ class Lizard(Actor):
         super().__init__()
         self.hardware = hardware
         self.last_step = None
-        event.register(event.Id.PAUSE_AUTOMATIONS, self._handle_pause)
+        event.register(event.Id.AUTOMATION_PAUSED, self._handle_pause)
         self.responsiveness_stats: deque = deque(maxlen=100)
         self.update_stats: deque = deque(maxlen=100)
         self.processing_stats: deque = deque(maxlen=100)
@@ -35,8 +35,8 @@ class Lizard(Actor):
         dt = self.world.time - self.last_step if self.last_step is not None else 0
         if dt > 1:
             msg = f'esp serial communication can not be guaranteed ({dt:.2f} s since last step)'
-            self.log.error(msg + '; aborting automations')
-            await self.pause_automations(because=msg)
+            self.log.error(msg + '; aborting automation')
+            await self.pause_automation(because=msg)
         elif dt > 0.1:
             self.log.warning(f'esp serial communication is slow ({dt:.2f} s since last step)')
         self.last_step = self.world.time

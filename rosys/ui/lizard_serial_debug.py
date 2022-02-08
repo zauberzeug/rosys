@@ -24,6 +24,6 @@ class LizardSerialDebug:
             self.communication.connect()
             await event.call(event.Id.NEW_NOTIFICATION, 'connected to Lizard')
         else:
-            await event.call(event.Id.PAUSE_AUTOMATIONS, 'communication is deactivated')
+            await event.call(event.Id.PAUSE_AUTOMATION, 'communication is deactivated')
             self.communication.disconnect()
             await event.call(event.Id.NEW_NOTIFICATION, 'disconnected from Lizard')

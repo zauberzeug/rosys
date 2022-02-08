@@ -26,8 +26,8 @@ with ui.card():
         rosys.ui.joystick(size=50, color='blue', steerer=runtime.steerer)
 
     with ui.row():
-        async def play(_):
-            await runtime.automator.start(drive_square(world, runtime.hardware))
+        def play(_):
+            runtime.automator.start(drive_square(world, runtime.hardware))
 
         async def configure():
             await runtime.hardware.configure()

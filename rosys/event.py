@@ -21,8 +21,8 @@ class Id(Enum, init='value __doc__'):
 
     ROBOT_MOVED = auto(), 'triggered when a robot movement is detected'
     NEW_MACHINE_DATA = auto(), 'triggered in high frequency when machine data has been read'
-    PAUSE_AUTOMATIONS = auto(), 'call this event to pause any running automations; provide a description of the cause as string parameter'
-    AUTOMATIONS_STARTED = auto(), 'triggered when automations were stopped and are now running'
+    PAUSE_AUTOMATION = auto(), 'call this event to pause any running automation; provide a description of the cause as string parameter'
+    AUTOMATION_PAUSED = auto(), 'triggered when the automation has been paused; provides a description of the cause as string parameter'
     NEW_NOTIFICATION = auto(), 'call this event to notify the user; provide the message as string parameter'
     NEW_CAMERA = auto(), 'called if new camera has been discoverd; provides camera as parameter'
     NEW_DETECTIONS = auto(), 'called after detection on an image is completed; provides image frame as parameter'

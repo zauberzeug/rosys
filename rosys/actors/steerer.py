@@ -25,7 +25,7 @@ class Steerer(Actor):
     def start(self):
         self.log.info('start steering')
         self.state = State.INITIALIZING
-        event.emit(event.Id.PAUSE_AUTOMATIONS, 'using steerer')
+        event.emit(event.Id.PAUSE_AUTOMATION, 'using steerer')
 
     def update(self, x: float, y: float):
         if self.state == State.INITIALIZING:

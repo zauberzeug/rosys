@@ -20,6 +20,6 @@ When the user signals RoSys that it is ok to start the automations[^1], it will 
 
 ## Pausing
 
-To pause the ongoing automations you should fire the event `event.Id.PAUSE_AUTOMATIONS` and provide an explanation as string parameter.
-The runtime provides a handy wrapper `runtime.pause(because='...')`.
-From within an [actor](actors.md) you can use `self.pause_automations(because='...')`.
+To pause the ongoing automation you should fire the event `event.Id.PAUSE_AUTOMATION` and provide an explanation as string parameter.
+The runtime provides a handy wrapper `runtime.automation.pause(because='...')`.
+From within an [actor](actors.md) you can use `self.pause_automation(because='...')`.
