@@ -42,7 +42,6 @@ check docs/src/logging_to_file.py || success=1
 check examples/hello_bot/main.py || success=1
 check examples/obstacles/main.py || success=1
 check rosys/pathplanning/planner_demo.py || success=1
-#check examples/multiprocess/main.py || success=1
 popd
 echo exit $success
 test $success -eq 0
