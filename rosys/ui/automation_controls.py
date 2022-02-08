@@ -27,10 +27,9 @@ class AutomationControls:
         stop_button = self.ui.button(on_click=stop).props('icon=stop outline')
 
         def refresh():
-            state = self.runtime.world.automation_state
-            play_button.visible = state == AutomationState.STOPPED
-            pause_button.visible = state == AutomationState.RUNNING
-            resume_button.visible = state == AutomationState.PAUSED
-            stop_button.visible = state in [AutomationState.RUNNING, AutomationState.PAUSED]
+            play_button.visible = self.runtime.automator.is_stopped
+            pause_button.visible = self.runtime.automator.is_running
+            resume_button.visible = self.runtime.automator.is_paused
+            stop_button.visible = not self.runtime.automator.is_stopped
             play_button.view.disable = self.runtime.automator.default_automation is None
         self.ui.timer(0.1, refresh)

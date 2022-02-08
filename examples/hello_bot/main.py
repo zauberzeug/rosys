@@ -27,8 +27,7 @@ with ui.card():
 
     with ui.row():
         def play(_):
-            if world.automation_state == AutomationState.STOPPED:
-                runtime.automator.start(drive_square(world, runtime.hardware))
+            runtime.automator.start(drive_square(world, runtime.hardware))
 
         async def configure():
             await runtime.hardware.configure()

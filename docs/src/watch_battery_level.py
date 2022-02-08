@@ -25,7 +25,7 @@ runtime.with_actors(BatteryGuard())
 voltage = ui.label()
 ui.timer(1, lambda: voltage.set_text(f'{runtime.world.robot.battery:.1f} V, pose: {runtime.world.robot.prediction}'))
 path = [PathSegment(spline=Spline.from_poses(Pose(), Pose(x=10, y=2)))]
-runtime.automator.default_automation = lambda: drive_path(runtime.world, runtime.hardware, path)
+runtime.automator.default_automation = drive_path(runtime.world, runtime.hardware, path)
 rosys.ui.automation_controls()
 
 ui.run(title='RoSys', port=8080)

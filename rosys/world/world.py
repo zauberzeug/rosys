@@ -1,5 +1,4 @@
 from pydantic import BaseModel, PrivateAttr
-from aenum import Enum, auto
 import time
 from .area import Area
 from .camera import Camera
@@ -10,21 +9,9 @@ from .upload import Upload
 from .usb_camera import UsbCamera
 
 
-class AutomationState(str, Enum, init='value __doc__'):
-
-    def _generate_next_value_(name, start, count, last_values):
-        '''uses enum name as value when calling auto()'''
-        return name
-
-    STOPPED = auto(), 'there is an automation which could be started'
-    RUNNING = auto(), 'automations are beeing processed'
-    PAUSED = auto(), 'an ongoing automation can be resumed'
-
-
 class World(BaseModel):
     robot: Robot = Robot()
     mode: Mode = Mode.REAL
-    automation_state: AutomationState = AutomationState.STOPPED
     _time: float = PrivateAttr(default_factory=time.time)
     obstacles: dict[str, Obstacle] = {}
     areas: dict[str, Area] = {}

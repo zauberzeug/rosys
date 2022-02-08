@@ -1,6 +1,6 @@
 from enum import Enum
+from .. import event
 from ..hardware import Hardware
-from ..world import AutomationState
 from . import Actor
 
 
@@ -17,7 +17,6 @@ class Steerer(Actor):
     def __init__(self, hardware: Hardware):
         super().__init__()
         self.hardware = hardware
-        self.world_state = None
         self.state = State.IDLE
         self.orientation = None
         self.linear_speed = 0
@@ -26,10 +25,7 @@ class Steerer(Actor):
     def start(self):
         self.log.info('start steering')
         self.state = State.INITIALIZING
-        if self.world.automation_state == AutomationState.RUNNING:
-            self.log.info('pausing automations')
-            self.world_state = self.world.automation_state
-            self.world.automation_state = AutomationState.PAUSED
+        event.emit(event.Id.PAUSE_AUTOMATIONS, 'using steerer')
 
     def update(self, x: float, y: float):
         if self.state == State.INITIALIZING:
@@ -54,9 +50,6 @@ class Steerer(Actor):
             await self.hardware.drive(self.linear_speed, self.angular_speed)
         elif self.state == State.STOPPING:
             await self.hardware.drive(0, 0)
-            if self.world_state is not None:
-                self.world.automation_state = self.world_state
-                self.world_state = None
             self.state = State.IDLE
 
     def __str__(self) -> str:
