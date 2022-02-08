@@ -1,10 +1,11 @@
 import asyncio
-from typing import Coroutine
+from typing import Callable, Coroutine, Optional
 
 
 class Automation:
-    def __init__(self, target: Coroutine):
-        self.target = target
+    def __init__(self, coro: Coroutine, exception_handler: Optional[Callable] = None):
+        self.coro = coro
+        self.exception_handler = exception_handler
         self._can_run = asyncio.Event()
         self._can_run.set()
         self._stop = False
@@ -25,8 +26,8 @@ class Automation:
     def __await__(self):
         try:
             self._is_waited = True
-            target_iter = self.target.__await__()
-            iter_send, iter_throw = target_iter.send, target_iter.throw
+            coro_iter = self.coro.__await__()
+            iter_send, iter_throw = coro_iter.send, coro_iter.throw
             send, message = iter_send, None
             while not self._stop:
                 try:
@@ -48,6 +49,9 @@ class Automation:
                     message = yield signal
                 except BaseException as err:
                     send, message = iter_throw, err
+        except Exception as e:
+            if self.exception_handler:
+                self.exception_handler(e)
         finally:
             self._is_waited = False
 

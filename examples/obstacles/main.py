@@ -39,13 +39,13 @@ with ui.card():
                     end=hit.point,
                 ))]
                 path3d.update(path)
-                await runtime.automator.start(drive_path(world, runtime.hardware, path))
+                runtime.automator.start(drive_path(world, runtime.hardware, path))
                 return
             if object_type == 'ground' and click_mode.value == 'navigate':
                 target_yaw = world.robot.prediction.point.direction(hit.point)
                 path = await planner.search_async(goal=Pose(x=hit.point.x, y=hit.point.y, yaw=target_yaw), timeout=3.0)
                 path3d.update(path)
-                await runtime.automator.start(drive_path(world, runtime.hardware, path))
+                runtime.automator.start(drive_path(world, runtime.hardware, path))
                 return
             if object_type == 'ground' and click_mode.value == 'obstacles':
                 id = str(uuid.uuid4())
