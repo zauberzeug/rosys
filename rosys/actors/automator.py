@@ -34,7 +34,7 @@ class Automator(Actor):
         self.world.automation_state = AutomationState.RUNNING
 
     def stop(self, because: Optional[str] = None):
-        # TODO: how to stop/cancel coroutines? `step()` is still gathering.
+        [a.stop() for a in self.automations]
         self.automations.clear()
         self.world.automation_state = AutomationState.STOPPED
         event.emit(event.Id.PAUSE_AUTOMATIONS, because)

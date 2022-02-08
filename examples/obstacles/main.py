@@ -22,7 +22,7 @@ with ui.card():
         'drive': 'Drive',
         'navigate': 'Navigate',
         'obstacles': 'Obstacles',
-    }).props('outline clearable')
+    }, value='drive').props('outline')
 
     async def handle_click(msg):
         if msg.click_type != 'dblclick':
