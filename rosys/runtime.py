@@ -73,7 +73,8 @@ class Runtime:
         if self.world.mode != Mode.TEST:
             self.persistence.backup()
         [t.cancel() for t in self.tasks]
-        run.process_pool.shutdown()
+        if self.world.mode != Mode.TEST:
+            run.process_pool.shutdown()
         await asyncio.gather(*[task_logger.create_task(a.tear_down(), name=f'{a.name}.tear_down()') for a in self.actors])
 
     async def repeat(self, actor: Actor):
