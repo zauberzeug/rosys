@@ -17,4 +17,4 @@ from .spline import Spline
 from .upload import Upload
 from .usb_camera import UsbCamera
 from .velocity import Velocity
-from .world import World, AutomationState
+from .world import World

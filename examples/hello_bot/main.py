@@ -5,7 +5,7 @@ import rosys
 import rosys.ui
 from rosys.automations import drive_square
 from rosys.hardware import CommunicatingHardware
-from rosys.world import AutomationState, World
+from rosys.world import World
 
 import log_configuration
 log_configuration.setup()
@@ -26,8 +26,8 @@ with ui.card():
         rosys.ui.joystick(size=50, color='blue', steerer=runtime.steerer)
 
     with ui.row():
-        def play(_):
-            runtime.automator.start(drive_square(world, runtime.hardware))
+        async def play(_):
+            await runtime.automator.start(drive_square(world, runtime.hardware))
 
         async def configure():
             await runtime.hardware.configure()

@@ -14,7 +14,7 @@ class Automator(Actor):
 
     @property
     def is_stopped(self) -> bool:
-        return self.automation is None
+        return self.automation is None or self.automation.is_stopped
 
     @property
     def is_running(self) -> bool:
@@ -22,33 +22,33 @@ class Automator(Actor):
 
     @property
     def is_paused(self) -> bool:
-        return self.automation is not None and not self.automation.is_running
+        return self.automation is not None and self.automation.is_paused
 
-    def start(self, coro: Optional[Coroutine] = None):
-        self.stop()
+    async def start(self, coro: Optional[Coroutine] = None):
+        await self.stop()
         self.automation = Automation(coro or self.default_automation or asyncio.sleep(0))
         asyncio.gather(self.automation)
 
-    def pause(self, because: Optional[str] = None):
-        if self.automation is not None:
+    async def pause(self, because: Optional[str] = None):
+        if self.is_running:
             self.automation.pause()
-            event.emit(event.Id.PAUSE_AUTOMATIONS, because)
+            await event.call(event.Id.PAUSE_AUTOMATIONS, because)
 
     def resume(self):
-        if self.automation is not None:
+        if self.is_paused:
             self.automation.resume()
 
-    def stop(self, because: Optional[str] = None):
-        if self.automation is not None:
+    async def stop(self, because: Optional[str] = None):
+        if not self.is_stopped:
             self.automation.stop()
             self.automation = None
-            event.emit(event.Id.PAUSE_AUTOMATIONS, because)
+            await event.call(event.Id.PAUSE_AUTOMATIONS, because)
 
-    def _handle_pause_event(self, because: Optional[str] = None):
-        if self.automation is not None:
+    async def _handle_pause_event(self, because: Optional[str] = None):
+        if self.is_running:
             if because:
-                event.emit(event.Id.NEW_NOTIFICATION, f'pausing automations because {because}')
-            self.pause(because)
+                await event.call(event.Id.NEW_NOTIFICATION, f'pausing automations because {because}')
+            await self.pause(because)
 
     async def tear_down(self):
         await super().tear_down()

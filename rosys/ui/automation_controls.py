@@ -1,6 +1,5 @@
 from nicegui.ui import Ui
 from .. import Runtime
-from ..world import AutomationState
 
 
 class AutomationControls:
@@ -9,17 +8,17 @@ class AutomationControls:
 
     def __init__(self) -> None:
 
-        def start():
-            self.runtime.automator.start()
+        async def start():
+            await self.runtime.automator.start()
 
-        def pause():
-            self.runtime.automator.pause(because='pause button was pressed')
+        async def pause():
+            await self.runtime.automator.pause(because='pause button was pressed')
 
         def resume():
             self.runtime.automator.resume()
 
-        def stop():
-            self.runtime.automator.stop(because='stop button was pressed')
+        async def stop():
+            await self.runtime.automator.stop(because='stop button was pressed')
 
         play_button = self.ui.button(on_click=start).props('icon=play_arrow outline')
         pause_button = self.ui.button(on_click=pause).props('icon=pause outline')
