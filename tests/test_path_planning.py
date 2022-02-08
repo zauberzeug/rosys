@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 import rosys
 from rosys.automations import drive_path
-from rosys.world import Obstacle, PathSegment, Point, Pose
+from rosys.world import Obstacle, Point, Pose
 from rosys.test import assert_pose, TestRuntime
 
 

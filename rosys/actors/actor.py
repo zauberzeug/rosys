@@ -1,13 +1,13 @@
 import asyncio
 import logging
-
-from ..world import World
+from typing import Optional
 from .. import event
+from ..world import World
 
 
 class Actor:
     world: World
-    interval: float = None
+    interval: Optional[float] = None
 
     def __init__(self) -> None:
         self.name = __name__[:-5] + self.__class__.__name__

@@ -1,5 +1,5 @@
 import asyncio
-from typing import Callable, Optional
+from typing import Optional
 from .. import Runtime, run
 from ..world import AutomationState, Mode, Robot, World
 

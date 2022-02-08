@@ -18,7 +18,11 @@ with ui.card():
     state = ui.label()
     ui.timer(0.1, lambda: state.set_text(f'{world.time:.3f} s, {world.robot.prediction}'))
 
-    click_mode = ui.toggle({'drive': 'Drive', 'plan': 'Plan', 'obstacles': 'Obstacles'}).props('outline clearable')
+    click_mode = ui.toggle({
+        'drive': 'Drive',
+        'navigate': 'Navigate',
+        'obstacles': 'Obstacles',
+    }).props('outline clearable')
 
     async def handle_click(msg):
         if msg.click_type != 'dblclick':
@@ -35,14 +39,13 @@ with ui.card():
                     end=hit.point,
                 ))]
                 path3d.update(path)
-                runtime.automator.replace(drive_path(world, runtime.hardware, path))
-                await runtime.resume()
+                runtime.automator.start(drive_path(world, runtime.hardware, path))
                 return
-            if object_type == 'ground' and click_mode.value == 'plan':
+            if object_type == 'ground' and click_mode.value == 'navigate':
                 target_yaw = world.robot.prediction.point.direction(hit.point)
                 path = await planner.search_async(goal=Pose(x=hit.point.x, y=hit.point.y, yaw=target_yaw), timeout=3.0)
                 path3d.update(path)
-                runtime.automator.replace(drive_path(world, runtime.hardware, path))
+                runtime.automator.start(drive_path(world, runtime.hardware, path))
                 return
             if object_type == 'ground' and click_mode.value == 'obstacles':
                 id = str(uuid.uuid4())

@@ -1,3 +1,5 @@
+from .automation import Automation
+
 from .arc import drive_arc
 from .drive_path import drive_path
 from .drive_path import drive_to

@@ -1,6 +1,8 @@
+import asyncio
 from typing import Coroutine, Optional
-from ..world import AutomationState
 from .. import event
+from ..automations import Automation
+from ..world import AutomationState
 from . import Actor
 
 
@@ -9,64 +11,40 @@ class Automator(Actor):
 
     def __init__(self, default_automation: Coroutine = None) -> None:
         super().__init__()
-        self.routines: list[Coroutine] = []
+        self.automations: list[Automation] = []
         self.default_automation = default_automation
-        event.register(event.Id.PAUSE_AUTOMATIONS, self._pause)
-
-    def add(self, coro: Coroutine):
-        self.routines.append(coro)
-
-    def replace(self, coro: Coroutine):
-        self.clear()
-        self.add(coro)
-        self.world.automation_state = AutomationState.STOPPED
-
-    def clear(self):
-        '''clears all automations'''
-        [r.close() for r in self.routines]  # NOTE: this ensures we do not get warnings about missing await for our routines
-        self.routines.clear()
+        event.register(event.Id.PAUSE_AUTOMATIONS, self._handle_pause_event)
 
     async def step(self):
-        if not self.routines or self.world.automation_state == AutomationState.DISABLED:
-            if not self.routines:
-                if self.default_automation:
-                    self.log.info('automations were disabled, now using default automation')
-                    self.add(self.default_automation())
-                else:
-                    self.world.automation_state = AutomationState.DISABLED
-            if self.routines:
-                self.world.automation_state = AutomationState.STOPPED
+        if self.automations:
+            await asyncio.gather(*self.automations)
+            self.stop('the last one has completed')
 
-        if self.world.automation_state != AutomationState.RUNNING:
-            return
+    def start(self, coro: Optional[Coroutine] = None):
+        self.automations = [Automation(coro or self.default_automation)]
+        self.world.automation_state = AutomationState.RUNNING
 
-        for coro in self.routines:
-            try:
-                coro.send(None)
-            except StopIteration:
-                self.routines.remove(coro)
-                if not self.routines:
-                    await self.pause_automations(because='the last one has completed')
-                    self.world.automation_state = AutomationState.DISABLED
-            except:
-                await self.pause_automations(because='an exception occurred in an automation')
-                self.routines.clear()
-                self.log.exception(f'paused and cleared automations due to exception in {coro}')
-                self.world.automation_state = AutomationState.DISABLED
-
-    async def _pause(self, because: Optional[str] = None):
-        '''Pauses the automation.
-
-        Only to be used internally.
-        The proper way is to use runtime.pause(...) or fire event.Id.PAUSE_AUTOMATION.
-        See rosys.io/automations.
-        '''
-        if self.world.automation_state == AutomationState.PAUSED:
-            return
+    def pause(self, because: Optional[str] = None):
+        [a.pause() for a in self.automations]
         self.world.automation_state = AutomationState.PAUSED
-        if because:
-            await event.call(event.Id.NEW_NOTIFICATION, f'pausing automations because {because}')
+        event.emit(event.Id.PAUSE_AUTOMATIONS, because)
+
+    def resume(self):
+        [a.resume() for a in self.automations]
+        self.world.automation_state = AutomationState.RUNNING
+
+    def stop(self, because: Optional[str] = None):
+        # TODO: how to stop/cancel coroutines? `step()` is still gathering.
+        self.automations.clear()
+        self.world.automation_state = AutomationState.STOPPED
+        event.emit(event.Id.PAUSE_AUTOMATIONS, because)
+
+    def _handle_pause_event(self, because: Optional[str] = None):
+        if self.world.automation_state == AutomationState.RUNNING:
+            if because:
+                event.emit(event.Id.NEW_NOTIFICATION, f'pausing automations because {because}')
+            self.pause(because)
 
     async def tear_down(self):
         await super().tear_down()
-        self.clear()
+        self.stop()

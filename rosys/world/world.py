@@ -16,7 +16,6 @@ class AutomationState(str, Enum, init='value __doc__'):
         '''uses enum name as value when calling auto()'''
         return name
 
-    DISABLED = auto(), 'no automations available or execution not allowed'
     STOPPED = auto(), 'there is an automation which could be started'
     RUNNING = auto(), 'automations are beeing processed'
     PAUSED = auto(), 'an ongoing automation can be resumed'
@@ -25,7 +24,7 @@ class AutomationState(str, Enum, init='value __doc__'):
 class World(BaseModel):
     robot: Robot = Robot()
     mode: Mode = Mode.REAL
-    automation_state: AutomationState = AutomationState.DISABLED
+    automation_state: AutomationState = AutomationState.STOPPED
     _time: float = PrivateAttr(default_factory=time.time)
     obstacles: dict[str, Obstacle] = {}
     areas: dict[str, Area] = {}

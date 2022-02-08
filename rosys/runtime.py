@@ -7,7 +7,7 @@ from . import event, task_logger, run
 from .actors import Actor, Automator, Lizard, Odometer, Steerer, UsbCameraCapture, UsbCameraSimulator, NetworkMonitor
 from .hardware import Hardware, SimulatedHardware
 from .persistence import Persistence
-from .world import AutomationState, Mode, World
+from .world import Mode, World
 
 
 class Runtime:
@@ -52,21 +52,6 @@ class Runtime:
             self.with_actors(UsbCameraCapture())
         else:
             self.with_actors(UsbCameraSimulator())
-
-    async def pause(self, because: Optional[str] = None):
-        await event.call(event.Id.PAUSE_AUTOMATIONS, because)
-
-    async def stop(self, because: Optional[str] = None):
-        await event.call(event.Id.PAUSE_AUTOMATIONS, because)
-        self.automator.routines.clear()
-        self.world.automation_state = AutomationState.STOPPED
-
-    async def resume(self):
-        previous = self.world.automation_state
-        if previous != AutomationState.DISABLED:
-            self.world.automation_state = AutomationState.RUNNING
-            if previous == AutomationState.STOPPED:
-                event.emit(event.Id.AUTOMATIONS_STARTED)
 
     async def startup(self):
         if self.tasks:
