@@ -52,4 +52,4 @@ class Automator(Actor):
 
     async def tear_down(self):
         await super().tear_down()
-        self.stop()
+        self.stop(because='automator is shutting down')

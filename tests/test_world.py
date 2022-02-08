@@ -19,7 +19,6 @@ async def test_json_view(runtime: TestRuntime):
     serialized = runtime.world.json()
     data = json.loads(serialized)
     assert 'robot' in data
-    assert 'automation_state' in data
     assert 'obstacles' in data
     assert 'notifications' in data
     assert 'usb_cameras' in data

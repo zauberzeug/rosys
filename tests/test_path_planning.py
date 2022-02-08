@@ -10,8 +10,7 @@ from rosys.test import assert_pose, TestRuntime
 async def test_driving_to_planned_point(runtime: TestRuntime):
     planner = rosys.pathplanning.Planner(runtime.world)
     path = planner.search(goal=Pose(x=5, y=2), timeout=3.0)
-    runtime.automator.replace(drive_path(runtime.world, runtime.hardware, path))
-    await runtime.resume()
+    runtime.automator.start(drive_path(runtime.world, runtime.hardware, path))
     await runtime.forward(12)
     assert_pose(5, 2, deg=0, linear_tolerance=0.15, deg_tolerance=3)
 
