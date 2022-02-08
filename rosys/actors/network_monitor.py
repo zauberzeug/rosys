@@ -6,7 +6,7 @@ from .actor import Actor
 
 
 @dataclass
-class Stats:
+class NetworkStats:
     tx_errors: int
     tx_dropped: int
     rx_errors: int
@@ -27,7 +27,7 @@ class NetworkMonitor(Actor):
 
     def __init__(self) -> None:
         super().__init__()
-        self.interfaces: dict[str, Stats] = {}
+        self.interfaces: dict[str, NetworkStats] = {}
 
     @staticmethod
     def is_operable() -> bool:
@@ -39,7 +39,7 @@ class NetworkMonitor(Actor):
         for interface in NetworkMonitor.split_interfaces(output):
             name = interface[:interface.index(':')]
             lines = interface.split('\n')
-            stats = Stats(
+            stats = NetworkStats(
                 tx_errors=int(lines[-1].split()[2]),
                 tx_dropped=int(lines[-1].split()[3]),
                 rx_errors=int(lines[-3].split()[2]),

@@ -1,5 +1,4 @@
-from rosys.actors import NetworkMonitor
-from rosys.actors.network_monitor import Stats
+from rosys.actors import NetworkMonitor, NetworkStats
 
 
 def test_parsing_ip_stats():
@@ -32,6 +31,6 @@ def test_parsing_ip_stats():
 
 
 def test_stat_comparision():
-    a = Stats(tx_errors=0, tx_dropped=0, rx_errors=0, rx_dropped=0)
-    b = Stats(tx_errors=1, tx_dropped=0, rx_errors=0, rx_dropped=0)
+    a = NetworkStats(tx_errors=0, tx_dropped=0, rx_errors=0, rx_dropped=0)
+    b = NetworkStats(tx_errors=1, tx_dropped=0, rx_errors=0, rx_dropped=0)
     assert b > a

@@ -88,7 +88,7 @@ Log output then looks like this:
 You can add a profiler button to your UI:
 
 ```python
-from rosys.ui.profiler import create_profiler
+from rosys.ui import create_profiler
 
 ...
 create_profiler(ui)

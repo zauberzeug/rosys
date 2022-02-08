@@ -8,7 +8,6 @@ def test_dumping(runtime: TestRuntime):
     data = Persistence(runtime.world).dump()
     assert 'robot' in data
     assert 'obstacles' in data
-    assert 'automation_state' not in data
 
 
 @pytest.mark.asyncio
