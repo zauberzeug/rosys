@@ -17,7 +17,7 @@ async def handle_click(msg):
         yaw = runtime.world.robot.prediction.point.direction(hit.point)
         path = await planner.search_async(goal=Pose(x=hit.point.x, y=hit.point.y, yaw=yaw), timeout=3.0)
         path3d.update(path)
-        await runtime.automator.start(drive_path(runtime.world, runtime.hardware, path))
+        runtime.automator.start(drive_path(runtime.world, runtime.hardware, path))
 
 
 # 3d scene

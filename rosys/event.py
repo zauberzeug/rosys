@@ -77,6 +77,7 @@ async def call(event: Id, *args):
 
 def emit(event: Id, *args):
     '''Fires event without waiting for the result.'''
+    assert asyncio.get_running_loop()
 
     # if event != Id.ROBOT_MOVED:
     #     log.info(f'emitting {event=}')
@@ -86,7 +87,7 @@ def emit(event: Id, *args):
             log.debug(f'emitting {event} with {listener}')
         try:
             if hasattr(listener, '__name__') and listener.__name__ == '<lambda>':
-                tasks.append(loop.run_in_executor(None, listener, *args))
+                listener(*args)
                 continue
             if listener() is None:
                 unregister(event, listener)
@@ -94,6 +95,6 @@ def emit(event: Id, *args):
             if inspect.iscoroutinefunction(listener()):
                 tasks.append(loop.create_task(listener()(*args), name=f'handle {event=}'))
             else:
-                tasks.append(loop.run_in_executor(None, listener(),  *args))
+                listener()(*args)
         except:
             log.exception(f'could not call {listener=} for {event=}')

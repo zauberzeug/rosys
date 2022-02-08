@@ -34,7 +34,7 @@ class Automator(Actor):
         if self.is_running:
             self.automation.pause()
             event.emit(event.Id.PAUSE_AUTOMATIONS, because)
-            event.call(event.Id.NEW_NOTIFICATION, f'pausing automation because {because}')
+            event.emit(event.Id.NEW_NOTIFICATION, f'pausing automation because {because}')
 
     def resume(self):
         if self.is_paused:
