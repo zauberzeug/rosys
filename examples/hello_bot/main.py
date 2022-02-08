@@ -23,16 +23,15 @@ with ui.card():
     with ui.row():
         with ui.scene() as scene:
             rosys.ui.robot_object()
-        rosys.ui.joystick(size=50, color='blue', steerer=runtime.steerer)
+        rosys.ui.joystick(size=50, color='blue')
 
     with ui.row():
-        def play(_):
-            runtime.automator.start(drive_square(world, runtime.hardware))
+        runtime.automator.default_automation = drive_square(world, runtime.hardware)
+        rosys.ui.automation_controls()
 
         async def configure():
             await runtime.hardware.configure()
 
-        ui.button('drive square', on_click=play).props('icon=play_arrow')
         if isinstance(runtime.hardware, CommunicatingHardware):
             ui.button('configure microcontroller', on_click=configure).props('outline')
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')

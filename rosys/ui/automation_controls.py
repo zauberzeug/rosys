@@ -8,17 +8,17 @@ class AutomationControls:
 
     def __init__(self) -> None:
 
-        async def start():
-            await self.runtime.automator.start()
+        def start():
+            self.runtime.automator.start()
 
-        async def pause():
-            await self.runtime.automator.pause(because='pause button was pressed')
+        def pause():
+            self.runtime.automator.pause(because='pause button was pressed')
 
         def resume():
             self.runtime.automator.resume()
 
-        async def stop():
-            await self.runtime.automator.stop(because='stop button was pressed')
+        def stop():
+            self.runtime.automator.stop(because='stop button was pressed')
 
         play_button = self.ui.button(on_click=start).props('icon=play_arrow outline')
         pause_button = self.ui.button(on_click=pause).props('icon=pause outline')
