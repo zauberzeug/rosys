@@ -31,12 +31,18 @@ class Calibration(BaseModel):
         return Rotation.from_euler(0, 0, self.extrinsics.yaw) * tilt * self.intrinsics.rotation
 
     @property
+    def rotation_array(self) -> Any:
+        tilt = self.extrinsics.tilt or Rotation.zero()
+        yaw = self.extrinsics.yaw
+        return np.dot([[np.cos(yaw), -np.sin(yaw), 0], [np.sin(yaw), np.cos(yaw), 0], [0, 0, 1]], tilt.R) @ self.intrinsics.rotation.R
+
+    @property
     def is_complete(self) -> bool:
         return self.extrinsics.tilt is not None
 
     def project_to_image(self, world_point: Point3d) -> Point:
         world_points = np.array([world_point.tuple])
-        R = np.array(self.rotation.R)
+        R = self.rotation_array
         Rod = cv2.Rodrigues(R.T)[0]
         t = -R.T @ self.extrinsics.translation
         K = np.array(self.intrinsics.matrix)
@@ -44,9 +50,8 @@ class Calibration(BaseModel):
         image_points, _ = cv2.projectPoints(world_points, Rod, t, K, D)
         return Point(x=image_points[0, 0, 0], y=image_points[0, 0, 1])
 
-    @profile
     def project_array_to_image(self, world_points: Any) -> Any:
-        R = np.array(self.rotation.R)
+        R = self.rotation_array
         Rod = cv2.Rodrigues(R.T)[0]
         t = -R.T @ self.extrinsics.translation
         K = np.array(self.intrinsics.matrix)
@@ -60,7 +65,7 @@ class Calibration(BaseModel):
         image_points = np.array(image_point.tuple, dtype=np.float32).reshape(1, 1, 2)
         image_points_ = cv2.undistortPoints(image_points, K, D).reshape(-1, 2)
         image_points__ = cv2.convertPointsToHomogeneous(image_points_).reshape(-1, 3)
-        objPoints = image_points__ @ self.rotation.T.R
+        objPoints = image_points__ @ self.rotation_array.T
         Z = self.extrinsics.translation[-1]
         t = np.array(self.extrinsics.translation)
         floorPoints = t.T - objPoints * Z / objPoints[:, 2:]
