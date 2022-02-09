@@ -18,6 +18,7 @@ class World(BaseModel):
     notifications: list[tuple[float, str]] = []
     usb_cameras: dict[str, UsbCamera] = {}
     upload: Upload = Upload()
+    needs_backup: bool = False
 
     @property
     def time(self):

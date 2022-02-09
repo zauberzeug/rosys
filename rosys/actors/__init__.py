@@ -8,3 +8,4 @@ from .odometer import Odometer
 from .steerer import Steerer
 from .usb_camera_capture import UsbCameraCapture
 from .usb_camera_simulator import UsbCameraSimulator
+from .backup import Backup
