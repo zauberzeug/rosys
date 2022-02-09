@@ -48,7 +48,6 @@ class Automator(Actor):
 
     def _handle_exception(self, e: Exception):
         self.stop(because='an exception occurred in an automation')
-        raise
 
     async def tear_down(self):
         await super().tear_down()

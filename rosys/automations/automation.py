@@ -52,6 +52,7 @@ class Automation:
         except Exception as e:
             if self.exception_handler:
                 self.exception_handler(e)
+            raise
         finally:
             self._is_waited = False
 
