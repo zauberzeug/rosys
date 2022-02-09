@@ -3,8 +3,9 @@ from asyncio.exceptions import CancelledError
 import asyncio
 import logging
 from typing import Optional, Type
+
 from . import event, task_logger, run
-from .actors import Actor, Automator, Lizard, Odometer, Steerer, UsbCameraCapture, UsbCameraSimulator, NetworkMonitor
+from .actors import Actor, Automator, Lizard, Odometer, Steerer, UsbCameraCapture, UsbCameraSimulator, NetworkMonitor, Backup
 from .hardware import Hardware, SimulatedHardware
 from .persistence import Persistence
 from .world import Mode, World
@@ -20,26 +21,24 @@ class Runtime:
         self.world = world or World()
         Actor.world = self.world
         self.tasks = []
-
         if self.world.mode != Mode.TEST:
             self.persistence = persistence or Persistence(self.world)
             self.persistence.restore()
-
         self.hardware = hardware or SimulatedHardware(self.world)
         self.lizard = Lizard(self.hardware)
         self.odometer = Odometer()
         self.steerer = Steerer(self.hardware)
         self.automator = Automator()
-
         self.actors = [
             self.lizard,
             self.odometer,
             self.steerer,
             self.automator,
         ]
-
         if NetworkMonitor.is_operable():
             self.with_actors(NetworkMonitor())
+        if self.world.mode != Mode.TEST:
+            self.with_actors(Backup(self.persistence))
 
     def with_actors(self, *actors: list[Actor]):
         '''Adds list of additional actors to runtime.'''
