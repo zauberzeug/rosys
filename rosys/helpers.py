@@ -18,12 +18,6 @@ def measure(*, reset: bool = False, ms: bool = False):
     t = time.time()
 
 
-def print_stacktrace():
-    print('-' * 60)
-    traceback.print_exc(file=sys.stdout)
-    print('-' * 60, flush=True)
-
-
 def angle(yaw0: float, yaw1: float) -> float:
     return eliminate_2pi(yaw1 - yaw0)
 
@@ -34,6 +28,10 @@ def eliminate_pi(angle: float) -> float:
 
 def eliminate_2pi(angle: float) -> float:
     return (angle + np.pi) % (2 * np.pi) - np.pi
+
+
+def is_test():
+    return 'pytest' in sys.modules
 
 
 class ModificationContext:
