@@ -1,5 +1,6 @@
 from __future__ import annotations  # NOTE: for PEP 563 (postponed evaluation of annotations)
 from pydantic import BaseModel
+from typing import Any
 from dataclasses import dataclass
 import numpy as np
 from .point import Point
@@ -63,6 +64,12 @@ class Pose(BaseModel):
             x=self.x + point.x * np.cos(self.yaw) - point.y * np.sin(self.yaw),
             y=self.y + point.x * np.sin(self.yaw) + point.y * np.cos(self.yaw),
         )
+
+    def transform_array(self, points: Any) -> Any:
+        return np.stack((
+            self.x + points[:, 0] * np.cos(self.yaw) - points[:, 1] * np.sin(self.yaw),
+            self.y + points[:, 0] * np.sin(self.yaw) + points[:, 1] * np.cos(self.yaw),
+        ), axis=1)
 
     def transform_pose(self, pose: Pose) -> Pose:
         return Pose(

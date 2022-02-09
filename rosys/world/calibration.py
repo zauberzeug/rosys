@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import Optional
+from typing import Any, Optional
 import numpy as np
 import cv2
 from .image import ImageSize
@@ -43,6 +43,16 @@ class Calibration(BaseModel):
         D = np.array(self.intrinsics.distortion)
         image_points, _ = cv2.projectPoints(world_points, Rod, t, K, D)
         return Point(x=image_points[0, 0, 0], y=image_points[0, 0, 1])
+
+    @profile
+    def project_array_to_image(self, world_points: Any) -> Any:
+        R = np.array(self.rotation.R)
+        Rod = cv2.Rodrigues(R.T)[0]
+        t = -R.T @ self.extrinsics.translation
+        K = np.array(self.intrinsics.matrix)
+        D = np.array(self.intrinsics.distortion)
+        image_points, _ = cv2.projectPoints(world_points, Rod, t, K, D)
+        return image_points.reshape(-1, 2)
 
     def project_from_image(self, image_point: Point, target_height: float = 0) -> Optional[Point3d]:
         K = np.array(self.intrinsics.matrix)
