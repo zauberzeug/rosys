@@ -1,7 +1,8 @@
-from pydantic import BaseModel
+from dataclasses import dataclass
 
 
-class Velocity(BaseModel):
+@dataclass
+class Velocity:
     linear: float
     angular: float
     time: float
