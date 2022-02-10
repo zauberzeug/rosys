@@ -4,6 +4,7 @@ import yappi
 from tabulate import tabulate
 import asyncio
 import time
+from ..profiling import profile
 
 log = logging.getLogger('rosys.profiler')
 
@@ -15,6 +16,7 @@ def create_profiler(ui: Ui):
         profile_button.props(replace='icon=stop')
         yappi.clear_stats()
         yappi.start()
+        profile.enable()
         t = time.time()
         while yappi.is_running() and time.time() < t + duration:
             await asyncio.sleep(0.1)
@@ -23,6 +25,7 @@ def create_profiler(ui: Ui):
     def stop():
         ui.notify('stop profiling')
         profile_button.props(replace='icon=play_arrow')
+        profile.disable()
         yappi.stop()
         table = [
             [str(v) for v in [stat.full_name, stat.ttot, stat.tsub, stat.tavg, stat.ncall]]
@@ -36,6 +39,7 @@ def create_profiler(ui: Ui):
         )
         print(output, flush=True)
         yappi.get_thread_stats().print_all()
+        profile.print_stats()
 
     async def toggle() -> bool:
         if yappi.is_running():
