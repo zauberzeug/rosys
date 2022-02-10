@@ -21,7 +21,7 @@ class World(BaseModel):
     needs_backup: bool = False
 
     @property
-    def time(self):
+    def time(self) -> float:
         return self._time if self.mode == Mode.TEST else time.time()
 
     def set_time(self, value):
