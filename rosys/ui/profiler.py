@@ -16,7 +16,7 @@ def create_profiler(ui: Ui):
         profile_button.props(replace='icon=stop')
         yappi.clear_stats()
         yappi.start()
-        profile.enable()
+        profile.start()
         t = time.time()
         while yappi.is_running() and time.time() < t + duration:
             await asyncio.sleep(0.1)
@@ -25,7 +25,7 @@ def create_profiler(ui: Ui):
     def stop():
         ui.notify('stop profiling')
         profile_button.props(replace='icon=play_arrow')
-        profile.disable()
+        profile.stop(print=False)
         yappi.stop()
         table = [
             [str(v) for v in [stat.full_name, stat.ttot, stat.tsub, stat.tavg, stat.ncall]]
@@ -39,7 +39,7 @@ def create_profiler(ui: Ui):
         )
         print(output, flush=True)
         yappi.get_thread_stats().print_all()
-        profile.print_stats()
+        profile.print()
 
     async def toggle() -> bool:
         if yappi.is_running():
