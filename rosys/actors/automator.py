@@ -6,10 +6,9 @@ from . import Actor
 
 
 class Automator(Actor):
-    def __init__(self, default_automation: Coroutine = None) -> None:
+    def __init__(self) -> None:
         super().__init__()
         self.automation: Optional[Automation] = None
-        self.default_automation = default_automation
         event.register(event.Id.PAUSE_AUTOMATION, self.pause)
 
     @property
@@ -24,10 +23,9 @@ class Automator(Actor):
     def is_paused(self) -> bool:
         return self.automation is not None and self.automation.is_paused
 
-    def start(self, coro: Optional[Coroutine] = None):
+    def start(self, coro: Coroutine):
         self.stop(because='new automation starts')
-        coro_ = coro or self.default_automation or asyncio.sleep(0)
-        self.automation = Automation(coro_, self._handle_exception)
+        self.automation = Automation(coro, self._handle_exception)
         task_logger.create_task(asyncio.wait([self.automation]), name='automation')
 
     def pause(self, because: str):

@@ -11,12 +11,8 @@ See [Automation Controls in the User Interface section](user_interface.md#automa
 ## Default Automation
 
 In most cases your robot will have one automation which describes its automatic behavior.
-This automation should be set as `runtime.automator.default_automation` in your main file.
-When the user signals RoSys that it is ok to start the automations[^1], it will begin executing this default automation.
-
-[^1]:
-    Normally the signal comes from a UI component like the [Automation Controls](automations.md#automation-controls).
-    See [Safety](../safety.md) for more information.
+This automation can be passed to `rosys.ui.automation_controls` in your main file.
+When the user presses the start button, RoSys will begin executing this default automation.
 
 ## Pausing
 
