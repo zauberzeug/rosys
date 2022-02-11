@@ -85,8 +85,8 @@ async def test_fire_and_forget_with_emit(runtime: TestRuntime):
 
     actor = TestActor()
     runtime.with_actors(actor)
-    event.register('some event', actor.handle_event)
-    event.emit('some event', 42)
+    event.register(event.Id.NEW_NOTIFICATION, actor.handle_event)
+    event.emit(event.Id.NEW_NOTIFICATION, 42)
     await runtime.forward(0.5)
     assert len(calls) == 0
     await runtime.forward(0.5)
