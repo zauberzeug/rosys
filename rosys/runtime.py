@@ -4,11 +4,11 @@ import asyncio
 import logging
 from typing import Optional, Type
 
-from . import event, task_logger, run, sleep
+from . import event, task_logger, run, sleep, is_test
 from .actors import Actor, Automator, Lizard, Odometer, Steerer, UsbCameraCapture, UsbCameraSimulator, NetworkMonitor, Backup
 from .hardware import Hardware, SimulatedHardware
 from .persistence import Persistence
-from .world import Mode, World
+from .world import World
 
 
 class Runtime:
@@ -21,7 +21,7 @@ class Runtime:
         self.world = world or World()
         Actor.world = self.world
         self.tasks = []
-        if self.world.mode != Mode.TEST:
+        if not is_test:
             self.persistence = persistence or Persistence(self.world)
             self.persistence.restore()
         self.hardware = hardware or SimulatedHardware(self.world)
@@ -37,7 +37,7 @@ class Runtime:
         ]
         if NetworkMonitor.is_operable():
             self.with_actors(NetworkMonitor())
-        if self.world.mode != Mode.TEST:
+        if not is_test:
             self.with_actors(Backup(self.persistence))
 
     def with_actors(self, *actors: list[Actor]):
@@ -47,7 +47,7 @@ class Runtime:
 
     def with_usb_cameras(self):
         '''Adds usb camera capture actor to runtime.'''
-        if UsbCameraCapture.is_operable() and self.world.mode != Mode.TEST:
+        if UsbCameraCapture.is_operable() and not is_test:
             self.with_actors(UsbCameraCapture())
         else:
             self.with_actors(UsbCameraSimulator())
@@ -69,10 +69,10 @@ class Runtime:
 
     async def shutdown(self):
         await self.hardware.drive(0, 0)
-        if self.world.mode != Mode.TEST:
+        if not is_test:
             self.persistence.backup()
         [t.cancel() for t in self.tasks]
-        if self.world.mode != Mode.TEST:
+        if not is_test:
             run.process_pool.shutdown()
         await asyncio.gather(*[task_logger.create_task(a.tear_down(), name=f'{a.name}.tear_down()') for a in self.actors])
 
@@ -125,7 +125,7 @@ class Runtime:
                 event.tasks = [t for t in event.tasks if not t.done()]
             except:
                 self.log.exception('failing to watch emitted events')
-            await asyncio.sleep(0 if self.world.mode == Mode.TEST else 0.1)
+            await asyncio.sleep(0 if is_test else 0.1)
 
     def handle_exception(self, ex: Exception):
         self.log.exception('task failed to execute', exc_info=ex)

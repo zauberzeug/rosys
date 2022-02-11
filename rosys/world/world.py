@@ -1,8 +1,8 @@
 from pydantic import BaseModel, PrivateAttr
 import time
+from .. import is_test
 from .area import Area
 from .camera import Camera
-from .mode import Mode
 from .obstacle import Obstacle
 from .robot import Robot
 from .upload import Upload
@@ -11,7 +11,6 @@ from .usb_camera import UsbCamera
 
 class World(BaseModel):
     robot: Robot = Robot()
-    mode: Mode = Mode.REAL
     _time: float = PrivateAttr(default_factory=time.time)
     obstacles: dict[str, Obstacle] = {}
     areas: dict[str, Area] = {}
@@ -22,10 +21,10 @@ class World(BaseModel):
 
     @property
     def time(self) -> float:
-        return self._time if self.mode == Mode.TEST else time.time()
+        return self._time if is_test else time.time()
 
     def set_time(self, value):
-        assert self.mode == Mode.TEST
+        assert is_test
         self._time = value
 
     @property

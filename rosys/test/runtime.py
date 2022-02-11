@@ -1,7 +1,7 @@
 import asyncio
 from typing import Optional
 from .. import Runtime, run
-from ..world import Mode, Robot, World
+from ..world import Robot, World
 
 
 class TestRuntime(Runtime):
@@ -9,7 +9,7 @@ class TestRuntime(Runtime):
 
     def __init__(self, world: Optional[World] = None):
         if world is None:
-            world = World(mode=Mode.TEST, robot=Robot())
+            world = World(robot=Robot())
         super().__init__(world)
         self.world.set_time(0)  # NOTE in tests we start at zero for better reading
 

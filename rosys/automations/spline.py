@@ -1,7 +1,8 @@
 import numpy as np
+from .. import is_test
 from ..hardware import Hardware
 from ..helpers import eliminate_pi
-from ..world import Mode, Point, Spline, World
+from ..world import Point, Spline, World
 from .navigation import Carrot
 
 
@@ -45,7 +46,7 @@ async def drive_spline(spline: Spline, world: World, hardware: Hardware, *, flip
 
 
 def throttle(world: World, linear: float, angular: float):
-    if world.mode != Mode.TEST:  # TODO: require camera tracking in tests as well
+    if not is_test:  # TODO: require camera tracking in tests as well
         if world.robot.parameters.max_detection_age_ramp is None:
             factor = 1
         elif world.robot.detection is None:
