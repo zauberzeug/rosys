@@ -8,7 +8,7 @@ The runtime will invoke the actor's `step` method in the interval defined in the
 
 ### Delayed Execution
 
-If an actor wants to delay execution it should invoke `await self.sleep(delay_in_ms: float)`.
+If you want to delay the execution, you should invoke `await rosys.sleep(seconds: float)`.
 Using `time.sleep` would result in blocking the whole runtime and `await asyncio.sleep` would delay execution of tests.
 
 ## Threading and Multiprocessing
@@ -18,11 +18,11 @@ The actor class provides convenience functions for IO and CPU bound work.
 
 ### IO Bound
 
-If you need to read from an external device or use a non-async HTTP library like `requests`, you should wrap the code in a function and await it with `Actor.run_io_bound(...)`.
+If you need to read from an external device or use a non-async HTTP library like `requests`, you should wrap the code in a coroutine and await it with `await rosys.run.io_bound(...)`.
 
 ### CPU Bound
 
-If you need to do some heavy computation, you should wrap the code in a function and await it with `Actor.run_cpu_bound(...)`.
+If you need to do some heavy computation, you should wrap the code in a coroutine and await it with `await rosys.run.cpu_bound(...)`.
 
 ## Notifications
 

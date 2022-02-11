@@ -1,5 +1,5 @@
 import pytest
-from rosys import event
+from rosys import event, sleep
 from rosys.actors import Actor
 from rosys.test import TestRuntime
 
@@ -76,9 +76,9 @@ async def test_fire_and_forget_with_emit(runtime: TestRuntime):
     class TestActor(Actor):
 
         async def handle_event(self, param):
-            await self.sleep(1)
+            await sleep(1)
             calls.append(param)
-            await self.sleep(1)
+            await sleep(1)
             raise Exception('some failure which should be detected even when using "fire and forget"')
 
     calls = []

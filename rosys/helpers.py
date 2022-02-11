@@ -1,6 +1,6 @@
+import asyncio
 import inspect
 import time
-import traceback
 import sys
 import numpy as np
 from contextlib import contextmanager
@@ -30,8 +30,17 @@ def eliminate_2pi(angle: float) -> float:
     return (angle + np.pi) % (2 * np.pi) - np.pi
 
 
-def is_test():
-    return 'pytest' in sys.modules
+is_test: bool = 'pytest' in sys.modules
+
+
+async def sleep(seconds: float):
+    if is_test:
+        from rosys.test.helper import global_runtime
+        sleep_end_time = global_runtime.world.time + seconds
+        while global_runtime.world.time <= sleep_end_time:
+            await asyncio.sleep(0)
+    else:
+        await asyncio.sleep(seconds)
 
 
 class ModificationContext:

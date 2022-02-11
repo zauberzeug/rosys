@@ -4,7 +4,7 @@ import asyncio
 import logging
 from typing import Optional, Type
 
-from . import event, task_logger, run
+from . import event, task_logger, run, sleep
 from .actors import Actor, Automator, Lizard, Odometer, Steerer, UsbCameraCapture, UsbCameraSimulator, NetworkMonitor, Backup
 from .hardware import Hardware, SimulatedHardware
 from .persistence import Persistence
@@ -93,9 +93,9 @@ class Runtime:
                         f'{actor} would be called to frequently ' +
                         f'because it only took {dt*1000:.0f} ms; ' +
                         f'delaying this step for {delay*1000:.0f} ms')
-                    await actor.sleep(delay)
+                    await sleep(delay)
             try:
-                await actor.sleep(actor.interval - dt)
+                await sleep(actor.interval - dt)
             except (CancelledError, GeneratorExit):
                 return
 

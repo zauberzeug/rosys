@@ -20,9 +20,6 @@ class TestRuntime(Runtime):
     async def forward(self, seconds, dt=0.01):
         # NOTE we start runtime here because this makes it easy in the tests to prepare it beforehand
         if not self.tasks:
-            for actor in self.actors:
-                actor.sleep = self.sleep
-                actor.run_cpu_bound = run.cpu_bound
             await self.startup()
 
         end_time = self.world.time + seconds
@@ -36,11 +33,6 @@ class TestRuntime(Runtime):
             if self.exception is not None:
                 raise RuntimeError(f'error while forwarding time {dt} s') from self.exception
         self.log.info(f'-------------------> now it\'s {round(self.world.time,2)}')
-
-    async def sleep(self, seconds: float):
-        sleep_end_time = self.world.time + seconds
-        while self.world.time <= sleep_end_time:
-            await asyncio.sleep(0)
 
     def handle_exception(self, ex: Exception):
         super().handle_exception(ex)

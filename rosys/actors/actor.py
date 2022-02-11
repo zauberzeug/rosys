@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from typing import Optional
 from .. import event
@@ -18,10 +17,6 @@ class Actor:
 
     async def tear_down(self):
         pass
-
-    async def sleep(self, seconds: float):
-        '''delay execution; in tests this method will be replaced'''
-        await asyncio.sleep(seconds)
 
     async def pause_automation(self, *, because: str):
         await event.call(event.Id.PAUSE_AUTOMATION, because)

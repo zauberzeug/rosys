@@ -1,6 +1,6 @@
 import socketio
 from datetime import datetime, timedelta
-from .. import event, task_logger
+from .. import event, sleep, task_logger
 from ..world import BoxDetection, Image, PointDetection
 from .actor import Actor
 
@@ -35,7 +35,7 @@ class Detector(Actor):
         except:
             self.log.exception('connection failed; trying again')
             self.is_connected = None
-            await self.sleep(reconnect_delay)
+            await sleep(reconnect_delay)
 
     async def step(self):
         if self.is_connected is None:
@@ -55,7 +55,7 @@ class Detector(Actor):
 
         detecting_cameras = [c for c in self.world.usb_cameras.values() if c.detect]
         if not detecting_cameras:
-            await self.sleep(0.02)
+            await sleep(0.02)
             return
 
         for camera in detecting_cameras:
