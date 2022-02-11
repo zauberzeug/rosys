@@ -93,7 +93,7 @@ def emit(event: Id, *args):
                 unregister(event, listener)
                 continue
             if inspect.iscoroutinefunction(listener()):
-                tasks.append(loop.create_task(listener()(*args), name=f'handle {event=}'))
+                tasks.append(loop.create_task(listener()(*args), name=f'handle {event.name}'))
             else:
                 listener()(*args)
         except:
