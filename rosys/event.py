@@ -6,6 +6,8 @@ from aenum import Enum, auto
 from typing import Awaitable, Callable, Union
 import logging
 import weakref
+import functools
+
 
 tasks: list[Task] = []
 listeners = collections.defaultdict(set)
@@ -63,14 +65,15 @@ async def call(event: Id, *args):
             if hasattr(listener, '__name__') and listener.__name__ == '<lambda>':
                 listener(*args)
                 continue
-            if listener() is None:
+            callback = listener()
+            if callback is None:
                 listeners[event].remove(listener)
                 log.debug(f'unregistered {listener} from {event}')
                 continue
-            if inspect.iscoroutinefunction(listener()):
-                await listener()(*args)
+            if iscoroutinefunction(listener):
+                await callback(*args)
             else:
-                listener()(*args)
+                callback(*args)
         except:
             log.exception(f'could not call {listener=} for {event=}')
 
@@ -89,12 +92,18 @@ def emit(event: Id, *args):
             if hasattr(listener, '__name__') and listener.__name__ == '<lambda>':
                 listener(*args)
                 continue
-            if listener() is None:
+            callback = listener()
+            if callback is None:
                 unregister(event, listener)
                 continue
-            if inspect.iscoroutinefunction(listener()):
-                tasks.append(loop.create_task(listener()(*args), name=f'handle {event.name}'))
+            if iscoroutinefunction(listener):
+                tasks.append(loop.create_task(callback(*args), name=f'handle {event.name}'))
             else:
-                listener()(*args)
+                callback(*args)
         except:
             log.exception(f'could not call {listener=} for {event=}')
+
+
+@functools.lru_cache(maxsize=100)
+def iscoroutinefunction(listener):
+    return inspect.iscoroutinefunction(listener())
