@@ -70,7 +70,7 @@ async def call(event: Id, *args):
                 listeners[event].remove(listener)
                 log.debug(f'unregistered {listener} from {event}')
                 continue
-            if iscoroutinefunction(callback):
+            if iscoroutinefunction(listener):
                 await callback(*args)
             else:
                 callback(*args)
@@ -96,7 +96,7 @@ def emit(event: Id, *args):
             if callback is None:
                 unregister(event, listener)
                 continue
-            if iscoroutinefunction(callback):
+            if iscoroutinefunction(listener):
                 tasks.append(loop.create_task(callback(*args), name=f'handle {event=}'))
             else:
                 callback(*args)
@@ -105,5 +105,5 @@ def emit(event: Id, *args):
 
 
 @functools.lru_cache(maxsize=100)
-def iscoroutinefunction(callback: Union[Awaitable, Callable]):
-    return inspect.iscoroutinefunction(callback)
+def iscoroutinefunction(listener):
+    return inspect.iscoroutinefunction(listener())
