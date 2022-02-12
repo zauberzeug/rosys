@@ -26,7 +26,10 @@ class AsyncioMonitor(Actor):
 
     async def step(self):
         await super().step()
-        with open(os.path.expanduser('~/.rosys/debug.log'), 'r') as f:
+        log = os.path.expanduser('~/.rosys/debug.log')
+        if not os.path.isfile(log):
+            return
+        with open(log, 'r') as f:
             warnings = list(filter(lambda line: '[WARNING] asyncio/base_events.py' in line, f))
             for warning in warnings[-3:]:
                 warning = self.color_pattern.sub('', warning)
