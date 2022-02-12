@@ -29,7 +29,7 @@ class AsyncioMonitor(Actor):
 
     async def step(self):
         await super().step()
-        log = os.path.expanduser('~/.rosys/debug.log.1')
+        log = os.path.expanduser('~/.rosys/debug.log')
         if not os.path.isfile(log):
             return
         with open(log, 'r') as f:
