@@ -22,19 +22,35 @@ class AsyncioMonitor(Actor):
     def __init__(self) -> None:
         super().__init__()
         self.timings: dict[str, list[Measurement]] = defaultdict(list)
-        self.log_position = 0
         self.color_pattern = re.compile(r'''((\[\d+m){1,2})(?=\[[A-Z]+\])''')  # https://stackoverflow.com/a/61235364
         self.warning_pattern = re.compile(r"(.*) \[WARNING\].*Executing(.*)took (.*) seconds")
         self.task_pattern = re.compile(r".*name=['\"](.*)['\"] coro=<(.*)> .*")
+        self.log_position = 0
+        self.log_size = 0
+        # NOTE also parse archived logfile once
+        log1 = os.path.expanduser('~/.rosys/debug.log.1')
+        if os.path.isfile(log1):
+            self.parse(log1)
+        # NOTE reset log file infos for latest logfile
+        self.log_position = 0
+        self.log_size = 0
 
     async def step(self):
         await super().step()
         log = os.path.expanduser('~/.rosys/debug.log')
         if not os.path.isfile(log):
+            log.warning('cound not find debug.log')
             return
+        self.parse(log)
+
+    def parse(self, log):
+        if os.path.getsize(log) < self.log_size:
+            self.log_position = 0
+        self.log_size = os.path.getsize(log)
         with open(log, 'r') as f:
             f.seek(self.log_position)
             warnings = list(filter(lambda line: '[WARNING] asyncio/base_events.py' in line, f))
+            ic(len(warnings))
             for warning in warnings:
                 if 'could not parse' in warning:
                     continue
