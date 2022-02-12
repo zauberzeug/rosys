@@ -29,13 +29,13 @@ class AsyncioMonitor(Actor):
         self.timings: dict[str, list[Measurement]] = defaultdict(list)
         self.log_position = 0
         self.log_size = 0
-        # # NOTE also parse archived logfile once
-        # log1 = os.path.expanduser('~/.rosys/debug.log.1')
-        # if os.path.isfile(log1):
-        #     self.parse(log1)
-        # # NOTE reset log file infos for latest logfile
-        # self.log_position = 0
-        # self.log_size = 0
+        # NOTE also parse archived logfile once
+        log1 = os.path.expanduser('~/.rosys/debug.log.1')
+        if os.path.isfile(log1):
+            self.parse(log1)
+        # NOTE reset log file infos for latest logfile
+        self.log_position = 0
+        self.log_size = 0
 
     async def step(self):
         await super().step()
