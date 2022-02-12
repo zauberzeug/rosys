@@ -1,9 +1,24 @@
 from nicegui.ui import Ui
 from ..actors import AsyncioMonitor
+from .. import run
 import logging
 import numpy as np
 
 log = logging.getLogger('rosys.asyncio')
+
+
+def prepare_data(timings):
+    def calc_box(data: list):
+        return {
+            'low': min(data),
+            'q1': np.percentile(data, 25),
+            'median': np.percentile(data, 50),
+            'q3': np.percentile(data, 75),
+            'high': max(data),
+        }
+    timings = dict(sorted(timings.items(), key=lambda i: len(i[1]), reverse=True))
+    names = [f'{n} ({len(w)} warnings):<br>{w[0].details}' for n, w in timings.items()]
+    return names, [calc_box([w.millis for w in t]) for t in timings.values()]
 
 
 class AsyncioPage:
@@ -12,7 +27,7 @@ class AsyncioPage:
 
     def __init__(self) -> None:
         with self.ui.page('/asyncio'):
-            self.ui.timer(2, self.refresh_stats)
+            self.ui.button('load', on_click=self.update)
             self.chart = self.ui.chart(options={
                 'title': {'text': 'asyncio ui thread warnings'},
                 'chart': {'type': 'boxplot'},
@@ -24,18 +39,7 @@ class AsyncioPage:
                 'credits': False,
             }).classes('fit')
 
-    async def refresh_stats(self):
-        timings = dict(sorted(self.asyncio_monitor.timings.items(), key=lambda i: len(i[1]), reverse=True))
-        names = [f'{n} ({len(w)} warnings):<br>{w[0].details}' for n, w in timings.items()]
+    async def update(self):
+        names, data = await run.cpu_bound(prepare_data, self.asyncio_monitor.timings)
         self.chart.options['xAxis']['categories'][:] = names
-        data = [self.calc_box([w.millis for w in t]) for t in timings.values()]
         self.chart.options['series']['data'][:] = data
-
-    def calc_box(self, data: list):
-        return {
-            'low': min(data),
-            'q1': np.percentile(data, 25),
-            'median': np.percentile(data, 50),
-            'q3': np.percentile(data, 75),
-            'high': max(data),
-        }
