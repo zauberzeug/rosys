@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import re
 import shutil
 import os
+import html
 import rosys
 from .actor import Actor
 from collections import defaultdict
@@ -55,6 +56,9 @@ class AsyncioMonitor(Actor):
                         continue
                     name = match_task.group(1)
                     details = match_task.group(2)
-                m = Measurement(time=time, name=name, millis=millis, details=match_warning.group(3))
+                m = Measurement(time=time, name=self.clean(name), millis=millis, details=self.clean(details))
                 self.timings[m.name].append(m)
             self.log_position = f.tell()
+
+    def clean(self, text):
+        return html.escape(text)

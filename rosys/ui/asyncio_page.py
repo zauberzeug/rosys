@@ -14,15 +14,19 @@ class AsyncioPage:
         with self.ui.page('/asyncio'):
             self.ui.timer(2, self.refresh_stats)
             self.chart = self.ui.chart(options={
+                'title': {'text': 'asyncio ui thread warnings'},
                 'chart': {'type': 'boxplot'},
                 'xAxis': {'categories': [], },
                 'yAxis': {'title': {'text': 'ms on UI thread'}, },
                 'series': {'data': []},
+                'navigation': {'buttonOptions': {'enabled': False}},
+                'legend': False,
+                'credits': False,
             }).classes('fit')
 
     async def refresh_stats(self):
         timings = dict(sorted(self.asyncio_monitor.timings.items(), key=lambda i: len(i[1]), reverse=True))
-        names = [f'{n} ({len(w)} warnings)' for n, w in timings.items()]
+        names = [f'{n} ({len(w)} warnings):<br>{w[0].details}' for n, w in timings.items()]
         self.chart.options['xAxis']['categories'][:] = names
         data = [self.calc_box([w.millis for w in t]) for t in timings.values()]
         self.chart.options['series']['data'][:] = data
