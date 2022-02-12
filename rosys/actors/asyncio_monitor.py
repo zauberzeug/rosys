@@ -16,15 +16,17 @@ class Measurement:
     details: str
 
 
+color_pattern = re.compile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
+warning_pattern = re.compile(r"(.*) \[WARNING\].*Executing(.*)took (.*) seconds")
+task_pattern = re.compile(r".*name=['\"](.*)['\"] coro=<(.*)> .*")
+
+
 class AsyncioMonitor(Actor):
     interval: float = 10
 
     def __init__(self) -> None:
         super().__init__()
         self.timings: dict[str, list[Measurement]] = defaultdict(list)
-        self.color_pattern = re.compile(r'''((\[\d+m){1,2})(?=\[[A-Z]+\])''')  # https://stackoverflow.com/a/61235364
-        self.warning_pattern = re.compile(r"(.*) \[WARNING\].*Executing(.*)took (.*) seconds")
-        self.task_pattern = re.compile(r".*name=['\"](.*)['\"] coro=<(.*)> .*")
         self.log_position = 0
         self.log_size = 0
         # # NOTE also parse archived logfile once
@@ -40,7 +42,7 @@ class AsyncioMonitor(Actor):
         ic(len(self.timings))
         log = os.path.expanduser('~/.rosys/debug.log')
         if not os.path.isfile(log):
-            self.log.warning('cound not find debug.log')
+            self.log.warning('could not find debug.log')
             return
         self.parse(log)
 
@@ -52,34 +54,32 @@ class AsyncioMonitor(Actor):
             self.log.info(f'parsing from pos {self.log_position}; size is {self.log_size}')
             f.seek(self.log_position)
             warnings = list(filter(lambda line: 'asyncio/base_events.py' in line, f))
-            ic(len(warnings))
             for warning in warnings:
-                if 'could not parse' in warning:
-                    continue
-                warning = self.color_pattern.sub('', warning)
-                self.log.info(f'trying "{warning}"')
-                match_warning = self.warning_pattern.match(warning)
-                if match_warning is None:
-                    self.log.warning(f'could not parse: {warning}')
-                    continue
-                time = match_warning.group(1)
-                ic(time)
-                millis = int(float(match_warning.group(3))*1000)
-                description = match_warning.group(2)
-                if 'TimerHandle' in description:
-                    name = 'TimerHandle'
-                    details = description
-                else:
-                    match_task = self.task_pattern.match(description)
-                    if match_task is None:
-                        self.log.warning(f'could not parse task "{warning}"')
-                        continue
-                    name = match_task.group(1)
-                    details = match_task.group(2)
-                ic(m)
-                m = Measurement(time=time, name=self.clean(name), millis=millis, details=self.clean(details))
-                self.timings[m.name].append(m)
+                message = AsyncioMonitor.parse_warning(warning)
+                if message:
+                    self.timings[message.name].append(message)
             self.log_position = f.tell()
 
-    def clean(self, text):
-        return html.escape(text)
+    @staticmethod
+    def parse_warning(msg: str):
+        if 'could not parse' in msg:
+            return
+        warning = color_pattern.sub('', msg)
+        match_warning = warning_pattern.match(warning)
+        if match_warning is None:
+            return
+        ic(warning)
+        time = match_warning.group(1)
+        millis = int(float(match_warning.group(3))*1000)
+        description = match_warning.group(2)
+        if 'TimerHandle' in description:
+            name = 'TimerHandle'
+            details = description
+        else:
+            match_task = task_pattern.match(description)
+            if match_task is None:
+                self.log.warning(f'could not parse task "{warning}"')
+                return
+            name = match_task.group(1)
+            details = match_task.group(2)
+        return Measurement(time=time, name=name, millis=millis, details=details)

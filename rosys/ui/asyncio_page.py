@@ -2,6 +2,7 @@ from nicegui.ui import Ui
 from ..actors import AsyncioMonitor
 from .. import run
 import logging
+import html
 import numpy as np
 
 log = logging.getLogger('rosys.asyncio')
@@ -17,7 +18,7 @@ def prepare_data(timings):
             'high': max(data),
         }
     timings = dict(sorted(timings.items(), key=lambda i: len(i[1]), reverse=True))
-    names = [f'{n} ({len(w)} warnings):<br>{w[0].details}' for n, w in timings.items()]
+    names = [f'{html.escape(n)} ({len(w)} warnings):<br>{html.escape(w[0].details)}' for n, w in timings.items()]
     return names, [calc_box([w.millis for w in t]) for t in timings.values()]
 
 
