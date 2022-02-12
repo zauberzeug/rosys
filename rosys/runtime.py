@@ -5,7 +5,7 @@ import logging
 from typing import Optional, Type
 
 from . import event, task_logger, run, sleep, is_test
-from .actors import Actor, Automator, Lizard, Odometer, Steerer, UsbCameraCapture, UsbCameraSimulator, NetworkMonitor, Backup
+from .actors import Actor, Automator, Lizard, Odometer, Steerer, UsbCameraCapture, UsbCameraSimulator, NetworkMonitor, Backup, AsyncioMonitor
 from .hardware import Hardware, SimulatedHardware
 from .persistence import Persistence
 from .world import World
@@ -34,6 +34,7 @@ class Runtime:
             self.odometer,
             self.steerer,
             self.automator,
+            AsyncioMonitor(),
         ]
         if NetworkMonitor.is_operable():
             self.with_actors(NetworkMonitor())

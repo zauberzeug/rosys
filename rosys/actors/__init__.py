@@ -1,4 +1,5 @@
 from .actor import Actor
+from .asyncio_monitor import AsyncioMonitor
 from .automator import Automator
 from .camera_projector import CameraProjector
 from .detector import Detector
