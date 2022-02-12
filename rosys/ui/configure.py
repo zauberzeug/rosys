@@ -4,6 +4,7 @@ from ..hardware import CommunicatingHardware
 from .. import Runtime
 from .. import event
 from .automation_controls import AutomationControls
+from .asyncio_page import AsyncioPage
 from .cpu_usage import CpuUsage
 from .joystick import Joystick
 from .keyboard_control import KeyboardControl
@@ -36,3 +37,5 @@ def configure(ui: Ui, runtime: Runtime):
     CpuUsage.ui = ui
     LizardStats.ui = ui
     LizardStats.lizard = runtime.lizard
+    AsyncioPage.ui = ui
+    AsyncioPage.asyncio_monitor = runtime.asyncio_monitor

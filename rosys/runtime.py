@@ -29,12 +29,13 @@ class Runtime:
         self.odometer = Odometer()
         self.steerer = Steerer(self.hardware)
         self.automator = Automator()
+        self.asyncio_monitor = AsyncioMonitor()
         self.actors = [
             self.lizard,
             self.odometer,
             self.steerer,
             self.automator,
-            AsyncioMonitor(),
+            self.asyncio_monitor,
         ]
         if NetworkMonitor.is_operable():
             self.with_actors(NetworkMonitor())
