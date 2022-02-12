@@ -39,7 +39,6 @@ class AsyncioMonitor(Actor):
 
     async def step(self):
         await super().step()
-        ic(len(self.timings))
         log = os.path.expanduser('~/.rosys/debug.log')
         if not os.path.isfile(log):
             self.log.warning('could not find debug.log')
@@ -68,7 +67,6 @@ class AsyncioMonitor(Actor):
         match_warning = warning_pattern.match(warning)
         if match_warning is None:
             return
-        ic(warning)
         time = match_warning.group(1)
         millis = int(float(match_warning.group(3))*1000)
         description = match_warning.group(2)
