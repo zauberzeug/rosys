@@ -27,38 +27,34 @@ class AsyncioMonitor(Actor):
     def __init__(self) -> None:
         super().__init__()
         self.timings: dict[str, list[Measurement]] = defaultdict(list)
-        self.log_position = 0
-        # NOTE also parse archived logfile once
-        log1 = os.path.expanduser('~/.rosys/debug.log.1')
-        if os.path.isfile(log1):
-            self.parse(log1)
-        # NOTE reset log file infos for latest logfile
-        self.log_position = 0
+        self.log_position = None
 
     async def step(self):
         await super().step()
-        log = os.path.expanduser('~/.rosys/debug.log')
-        if not os.path.isfile(log):
+        logfile = os.path.expanduser('~/.rosys/debug.log')
+        if not os.path.isfile(logfile):
             self.log.warning('could not find debug.log')
             return
-        self.parse(log)
+        self.parse_log(logfile)
 
-    def parse(self, log):
+    def parse_log(self, log):
+        if self.log_position is None:  # NOTE only messgages generated after startup should be analyzed
+            self.log_position = os.path.getsize(log)
         if os.path.getsize(log) < self.log_position:  # NOTE detect beginning of new log file
             self.log_position = 0
         with open(log, 'r') as f:
             f.seek(self.log_position)
             warnings = list(filter(lambda line: 'asyncio/base_events.py' in line, f))
             for warning in warnings:
-                message = AsyncioMonitor.parse_warning(warning)
+                message = AsyncioMonitor.parse_async_warning(warning)
                 if message:
                     self.timings[message.name].append(message)
             self.log_position = f.tell()
 
     @staticmethod
-    def parse_warning(msg: str):
-        if 'could not parse' in msg:
-            return
+    def parse_async_warning(msg: str):
+        if 'rosys/actors/asyncio_monitor.py' in msg:
+            return  # NOTE we ignore our own messages
         warning = color_pattern.sub('', msg)
         match_warning = warning_pattern.match(warning)
         if match_warning is None:

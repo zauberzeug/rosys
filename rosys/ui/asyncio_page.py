@@ -28,9 +28,11 @@ class AsyncioPage:
 
     def __init__(self) -> None:
         with self.ui.page('/asyncio'):
-            self.ui.button('load', on_click=self.update)
+            with self.ui.row():
+                self.ui.button('load', on_click=self.update)
+                self.info_label = self.ui.label()
             self.chart = self.ui.chart(options={
-                'title': {'text': 'asyncio ui thread warnings'},
+                'title': False,
                 'chart': {'type': 'boxplot'},
                 'xAxis': {'categories': [], },
                 'yAxis': {'title': {'text': 'ms on UI thread'}, },
