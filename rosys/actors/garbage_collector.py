@@ -8,7 +8,7 @@ class GarbageCollector(Actor):
     '''
 
     interval: float = 10*60
-    mbit_limit: int = 100
+    mbit_limit: int = 300
 
     starting_msg = 'performing garbage collection'
     finished_msg = 'finished garbage collection'
