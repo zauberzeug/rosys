@@ -28,14 +28,12 @@ class AsyncioMonitor(Actor):
         super().__init__()
         self.timings: dict[str, list[Measurement]] = defaultdict(list)
         self.log_position = 0
-        self.log_size = 0
         # NOTE also parse archived logfile once
         log1 = os.path.expanduser('~/.rosys/debug.log.1')
         if os.path.isfile(log1):
             self.parse(log1)
         # NOTE reset log file infos for latest logfile
         self.log_position = 0
-        self.log_size = 0
 
     async def step(self):
         await super().step()
@@ -46,11 +44,9 @@ class AsyncioMonitor(Actor):
         self.parse(log)
 
     def parse(self, log):
-        if os.path.getsize(log) < self.log_size:  # NOTE detect beginning of new log file
+        if os.path.getsize(log) < self.log_position:  # NOTE detect beginning of new log file
             self.log_position = 0
-        self.log_size = os.path.getsize(log)
         with open(log, 'r') as f:
-            self.log.info(f'parsing from pos {self.log_position}; size is {self.log_size}')
             f.seek(self.log_position)
             warnings = list(filter(lambda line: 'asyncio/base_events.py' in line, f))
             for warning in warnings:
