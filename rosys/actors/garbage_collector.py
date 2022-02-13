@@ -1,6 +1,7 @@
 import gc
 import psutil
 from .actor import Actor
+from .. import sleep
 
 
 class GarbageCollector(Actor):
@@ -22,4 +23,5 @@ class GarbageCollector(Actor):
         if psutil.virtual_memory().free < self.mbit_limit * 1000000:
             self.log.warning(f'less than {self.mbit_limit} mb of memory remaining -> {self.starting_msg}')
             gc.collect()
+            await sleep(1)  # NOTE yield execution to make sure all warnings appear before we send the "finish" message
             self.log.warning(self.finished_msg)
