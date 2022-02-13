@@ -5,6 +5,7 @@ import os
 import html
 import rosys
 from .actor import Actor
+from .garbage_collector import GarbageCollector
 from collections import defaultdict
 
 
@@ -42,21 +43,26 @@ class AsyncioMonitor(Actor):
             self.log_position = os.path.getsize(log)
         if os.path.getsize(log) < self.log_position:  # NOTE detect beginning of new log file
             self.log_position = 0
+        ignore_warnings = False
         with open(log, 'r') as f:
             f.seek(self.log_position)
-            warnings = list(filter(lambda line: 'asyncio/base_events.py' in line, f))
-            for warning in warnings:
-                message = AsyncioMonitor.parse_async_warning(warning)
-                if message:
-                    self.timings[message.name].append(message)
+            for line in f:
+                line = color_pattern.sub('', line)
+                if GarbageCollector.starting_msg in line:
+                    ignore_warnings = True
+                if GarbageCollector.finished_msg in line:
+                    ignore_warnings = False
+                if not ignore_warnings:
+                    message = AsyncioMonitor.parse_async_warning(line)
+                    if message:
+                        self.timings[message.name].append(message)
             self.log_position = f.tell()
 
     @staticmethod
     def parse_async_warning(msg: str):
         if 'rosys/actors/asyncio_monitor.py' in msg:
             return  # NOTE we ignore our own messages
-        warning = color_pattern.sub('', msg)
-        match_warning = warning_pattern.match(warning)
+        match_warning = warning_pattern.match(msg)
         if match_warning is None:
             return
         time = match_warning.group(1)
