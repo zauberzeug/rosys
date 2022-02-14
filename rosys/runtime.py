@@ -66,7 +66,7 @@ class Runtime:
                 self.tasks.append(task_logger.create_task(self.repeat(actor), name=actor.name))
         self.tasks.append(asyncio.create_task(self.watch_emitted_events()))
 
-        await sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
+        await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
         self.activate_async_debugging()
         self.log.debug('startup completed')
 

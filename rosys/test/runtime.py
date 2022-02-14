@@ -17,12 +17,13 @@ class TestRuntime(Runtime):
         set_global_runtime(self)
         self.exception = None
 
-    async def forward(self, seconds, dt=0.01):
+    async def forward(self, seconds: Optional[float] = None, until: Optional[float] = None, dt: float = 0.01):
         # NOTE we start runtime here because this makes it easy in the tests to prepare it beforehand
         if not self.tasks:
             await self.startup()
 
-        end_time = self.world.time + seconds
+        assert seconds or until
+        end_time = self.world.time + seconds if seconds is not None else until
         self.log.info(f'-------------------> forwarding to {round(end_time,2)}')
         while self.world.time <= end_time:
             if not run.running_processes:
