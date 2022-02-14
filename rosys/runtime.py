@@ -66,7 +66,7 @@ class Runtime:
                 self.tasks.append(task_logger.create_task(self.repeat(actor), name=actor.name))
         self.tasks.append(asyncio.create_task(self.watch_emitted_events()))
 
-        await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
+        await sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
         self.activate_async_debugging()
         self.log.debug('startup completed')
 
@@ -128,7 +128,7 @@ class Runtime:
                 event.tasks = [t for t in event.tasks if not t.done()]
             except:
                 self.log.exception('failing to watch emitted events')
-            await asyncio.sleep(0 if is_test else 0.1)
+            await sleep(0 if is_test else 0.1)
 
     def handle_exception(self, ex: Exception):
         self.log.exception('task failed to execute', exc_info=ex)

@@ -1,5 +1,5 @@
 import numpy as np
-from .. import is_test
+from .. import is_test, sleep
 from ..hardware import Hardware
 from ..helpers import eliminate_pi
 from ..world import Point, Spline, World
@@ -40,6 +40,7 @@ async def drive_spline(spline: Spline, world: World, hardware: Hardware, *, flip
         angular = linear * curvature
 
         await hardware.drive(*throttle(world, linear, angular))
+        await sleep(0.1)
 
     world.robot.carrot = None
     await hardware.drive(0, 0)

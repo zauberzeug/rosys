@@ -1,5 +1,4 @@
 from typing import Optional
-import asyncio
 import os
 import serial
 from .communication import Communication
@@ -41,4 +40,3 @@ class SerialCommunication(Communication):
     async def send_async(self, line: str):
         self.serial.write(f'{line}\n'.encode())
         self.log.debug(f'send: {line}')
-        await asyncio.sleep(0)

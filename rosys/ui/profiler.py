@@ -2,8 +2,8 @@ from nicegui.ui import Ui
 import logging
 import yappi
 from tabulate import tabulate
-import asyncio
 import time
+from .. import sleep
 from ..profiling import profile
 
 log = logging.getLogger('rosys.profiler')
@@ -19,7 +19,7 @@ def create_profiler(ui: Ui):
         profile.start()
         t = time.time()
         while yappi.is_running() and time.time() < t + duration:
-            await asyncio.sleep(0.1)
+            await sleep(0.1)
         stop()
 
     def stop():

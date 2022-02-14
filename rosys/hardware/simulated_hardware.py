@@ -1,5 +1,4 @@
 import numpy as np
-import asyncio
 from ..world import Velocity, World
 from .hardware import Hardware
 
@@ -20,12 +19,10 @@ class SimulatedHardware(Hardware):
     async def drive(self, linear: float, angular: float):
         self.linear_velocity = linear
         self.angular_velocity = angular
-        await asyncio.sleep(0)
 
     async def stop(self):
         self.linear_velocity = 0
         self.angular_velocity = 0
-        await asyncio.sleep(0)
 
     async def update(self):
         self.world.robot.odometry.append(Velocity(

@@ -1,5 +1,5 @@
-import asyncio
 from typing import Optional
+from .. import sleep
 from ..communication import Communication
 from ..world import Velocity, World
 from . import CommunicatingHardware
@@ -82,7 +82,7 @@ class RobotBrain(CommunicatingHardware):
         self.waiting_list.add(ack_str)
         await self.send(msg)
         while ack_str in self.waiting_list:
-            await asyncio.sleep(0)
+            await sleep(0.1)
 
     @staticmethod
     def augment(line: str) -> str:

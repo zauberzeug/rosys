@@ -1,4 +1,5 @@
 import numpy as np
+from .. import sleep
 from ..hardware import Hardware
 from ..helpers import eliminate_2pi
 from ..world import PathSegment, Point, Spline, World
@@ -38,3 +39,4 @@ async def drive_circle(world: World, hardware: Hardware, target: Point):
         sign = 1 if angle > 0 else -1
         angular = linear / world.robot.parameters.minimum_turning_radius * sign
         await hardware.drive(*throttle(world, linear, angular))
+        await sleep(0.1)
