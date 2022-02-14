@@ -40,7 +40,7 @@ class AsyncioPage:
                 'navigation': {'buttonOptions': {'enabled': False}},
                 'legend': False,
                 'credits': False,
-            }).classes('fit')
+            }).classes('fit').style('height:400px')
 
     async def update(self):
         names, data = await run.cpu_bound(prepare_data, self.asyncio_monitor.timings)
