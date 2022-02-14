@@ -54,7 +54,7 @@ class AsyncioMonitor(Actor):
                 if GarbageCollector.finished_msg in line:
                     ignore_warnings = False
                 if not ignore_warnings:
-                    message = AsyncioMonitor.parse_async_warning(line)
+                    message = self.parse_async_warning(line)
                     if message:
                         self.timings[message.name].append(message)
             self.log_position = f.tell()
