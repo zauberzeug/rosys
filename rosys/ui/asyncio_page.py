@@ -46,3 +46,4 @@ class AsyncioPage:
         names, data = await run.cpu_bound(prepare_data, self.asyncio_monitor.timings)
         self.chart.options['xAxis']['categories'][:] = names
         self.chart.options['series']['data'][:] = data
+        await self.chart.view.update()

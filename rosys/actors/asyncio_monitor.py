@@ -20,6 +20,7 @@ class Measurement:
 color_pattern = re.compile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
 warning_pattern = re.compile(r"(.*) \[WARNING\].*Executing(.*)took (.*) seconds")
 task_pattern = re.compile(r".*name=['\"](.*)['\"] coro=<(.*)> .*")
+coro_pattern = re.compile(r"(.*) (running at .*)")
 
 
 class AsyncioMonitor(Actor):
@@ -78,4 +79,9 @@ class AsyncioMonitor(Actor):
                 return
             name = match_task.group(1)
             details = match_task.group(2)
+            if name.startswith('Task-'):
+                match_coro = coro_pattern.match(details)
+                if match_coro is not None:
+                    name = match_coro.group(1)
+                    details = match_coro.group(2)
         return Measurement(time=time, name=name, millis=millis, details=details)

@@ -9,8 +9,16 @@ def test_parse_task_warning():
     assert result.name == '<bound method CameraGrid.update of <outside_in_tracking.ui.cameras.camera_grid.CameraGrid object at 0x7f80ba1ac0>>'
 
 
-def test_parse_tasks_warning():
+def test_parse_timer_warning():
     msg = "2022-02-10 06:16:37.192 [WARNING] asyncio/base_events.py:1885: Executing <TimerHandle when=12768.78187203222 _set_result_unless_cancelled(<Future finis...events.py:424>, None) at /opt/homebrew/Cellar/python@3.9/3.9.7_1/Frameworks/Python.framework/Versions/3.9/lib/python3.9/asyncio/futures.py:308 created at /opt/homebrew/Cellar/python@3.9/3.9.7_1/Frameworks/Python.framework/Versions/3.9/lib/python3.9/asyncio/tasks.py:651> took 0.075 seconds"
     result = AsyncioMonitor.parse_async_warning(msg)
     assert result.millis == 75
     assert result.name == 'TimerHandle'
+
+
+def test_parse_coro_from_task_warning():
+    msg = "2022-02-13 17:26:01.174 [WARNING] asyncio/base_events.py:1885: Executing <Task pending name='Task-3716' coro=<handle_event() running at /usr/local/lib/python3.9/site-packages/justpy/justpy.py:361> wait_for=<_GatheringFuture pending cb=[<TaskWakeupMethWrapper object at 0x7f64aecca0>()] created at /usr/local/lib/python3.9/asyncio/tasks.py:702> created at /usr/local/lib/python3.9/site-packages/justpy/justpy.py:276> took 0.506 seconds"
+    result = AsyncioMonitor.parse_async_warning(msg)
+    assert result.millis == 506
+    assert result.name == 'handle_event()'
+    assert result.details == 'running at /usr/local/lib/python3.9/site-packages/justpy/justpy.py:361> wait_for=<_GatheringFuture pending cb=[<TaskWakeupMethWrapper object at 0x7f64aecca0>()] created at /usr/local/lib/python3.9/asyncio/tasks.py:702> created at /usr/local/lib/python3.9/site-packages/justpy/justpy.py:276'
