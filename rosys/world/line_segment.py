@@ -31,4 +31,13 @@ class LineSegment(BaseModel):
             return Point(x=p1.x + s * (p2.x - p1.x), y=p1.y + s * (p2.y - p1.y))
 
     def distance(self, point: Point):
-        return min(self.point1.distance(point), self.point1.distance(point), self.line.distance(point))
+        # https://stackoverflow.com/a/6853926/3419103
+        a = point.x - self.point1.x
+        b = point.y - self.point1.y
+        c = self.point2.x - self.point1.x
+        d = self.point2.y - self.point1.y
+        dot = a * c + b * d
+        len_sq = c * c + d * d
+        t = dot / len_sq if len_sq > 0 else -1
+        p = self.point1 if t < 0 else self.point2 if t > 1 else Point(x=self.point1.x + t * c, y=self.point1.y + t * d)
+        return p.distance(point)
