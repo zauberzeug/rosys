@@ -3,6 +3,7 @@ from nicegui.ui import Ui
 from ..hardware import CommunicatingHardware
 from .. import Runtime
 from .. import event
+from .asyncio_page import AsyncioPage
 from .automation_controls import AutomationControls
 from .cpu_usage import CpuUsage
 from .joystick import Joystick
@@ -36,3 +37,5 @@ def configure(ui: Ui, runtime: Runtime):
     CpuUsage.ui = ui
     LizardStats.ui = ui
     LizardStats.lizard = runtime.lizard
+    AsyncioPage.ui = ui
+    AsyncioPage.asyncio_monitor = runtime.asyncio_monitor

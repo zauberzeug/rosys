@@ -1,6 +1,7 @@
 from .configure import configure
 
 from .area_object import AreaObject as area_object
+from .asyncio_page import AsyncioPage as asyncio_page
 from .automation_controls import AutomationControls as automation_controls
 from .cpu_usage import CpuUsage as cpu_usage
 from .joystick import Joystick as joystick
