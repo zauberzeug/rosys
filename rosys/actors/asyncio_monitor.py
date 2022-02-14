@@ -59,8 +59,7 @@ class AsyncioMonitor(Actor):
                         self.timings[message.name].append(message)
             self.log_position = f.tell()
 
-    @staticmethod
-    def parse_async_warning(msg: str):
+    def parse_async_warning(self, msg: str):
         if 'rosys/actors/asyncio_monitor.py' in msg:
             return  # NOTE we ignore our own messages
         match_warning = warning_pattern.match(msg)
