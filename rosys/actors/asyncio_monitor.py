@@ -74,7 +74,7 @@ class AsyncioMonitor(Actor):
         else:
             match_task = task_pattern.match(description)
             if match_task is None:
-                self.log.warning(f'could not parse task "{warning}"')
+                self.log.warning(f'could not parse task "{description}"')
                 return
             name = match_task.group(1)
             details = match_task.group(2)
