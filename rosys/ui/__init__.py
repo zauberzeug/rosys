@@ -1,6 +1,7 @@
 from .configure import configure
 
 from .area_object import AreaObject as area_object
+from .asyncio_page import AsyncioPage as asyncio_page
 from .automation_controls import AutomationControls as automation_controls
 from .cpu_usage import CpuUsage as cpu_usage
 from .joystick import Joystick as joystick
@@ -14,4 +15,3 @@ from .profiler import create_profiler
 from .pyloot_page import PylootPage as pyloot_page
 from .robot_object import RobotObject as robot_object
 from .wifi import create_wifi
-from .asyncio_page import AsyncioPage as asyncio_page

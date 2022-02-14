@@ -3,8 +3,8 @@ from nicegui.ui import Ui
 from ..hardware import CommunicatingHardware
 from .. import Runtime
 from .. import event
-from .automation_controls import AutomationControls
 from .asyncio_page import AsyncioPage
+from .automation_controls import AutomationControls
 from .cpu_usage import CpuUsage
 from .joystick import Joystick
 from .keyboard_control import KeyboardControl

@@ -1,9 +1,9 @@
 from nicegui.ui import Ui
-from ..actors import AsyncioMonitor
-from .. import run
 import logging
 import html
 import numpy as np
+from ..actors import AsyncioMonitor
+from .. import run
 
 log = logging.getLogger('rosys.asyncio')
 
@@ -19,7 +19,7 @@ def prepare_data(timings):
         }
     timings = dict(sorted(timings.items(), key=lambda i: len(i[1]), reverse=True))
     names = [f'{html.escape(n)} ({len(w)} warnings):<br>{html.escape(w[0].details)}' for n, w in timings.items()]
-    return names, [calc_box([w.millis for w in t]) for t in timings.values()]
+    return names, [calc_box([w.duration * 1000 for w in t]) for t in timings.values()]
 
 
 class AsyncioPage:
@@ -34,8 +34,8 @@ class AsyncioPage:
             self.chart = self.ui.chart(options={
                 'title': False,
                 'chart': {'type': 'boxplot'},
-                'xAxis': {'categories': [], },
-                'yAxis': {'title': {'text': 'ms on UI thread'}, },
+                'xAxis': {'categories': []},
+                'yAxis': {'title': {'text': 'ms on UI thread'}},
                 'series': {'data': []},
                 'navigation': {'buttonOptions': {'enabled': False}},
                 'legend': False,

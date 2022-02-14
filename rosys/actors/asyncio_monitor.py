@@ -1,18 +1,15 @@
 from dataclasses import dataclass
 import re
-import shutil
 import os
-import html
-import rosys
+from collections import defaultdict
 from .actor import Actor
 from .garbage_collector import GarbageCollector
-from collections import defaultdict
 
 
 @dataclass
 class Measurement:
     time: str
-    millis: int
+    duration: float
     name: str
     details: str
 
@@ -66,7 +63,7 @@ class AsyncioMonitor(Actor):
         if match_warning is None:
             return
         time = match_warning.group(1)
-        millis = int(float(match_warning.group(3))*1000)
+        duration = float(match_warning.group(3))
         description = match_warning.group(2)
         if 'TimerHandle' in description:
             name = 'TimerHandle'
@@ -83,4 +80,4 @@ class AsyncioMonitor(Actor):
                 if match_coro is not None:
                     name = match_coro.group(1)
                     details = match_coro.group(2)
-        return Measurement(time=time, name=name, millis=millis, details=details)
+        return Measurement(time=time, name=name, duration=duration, details=details)
