@@ -40,7 +40,9 @@ async def sleep(seconds: float):
         while global_runtime.world.time <= sleep_end_time:
             await asyncio.sleep(0)
     else:
-        await asyncio.sleep(seconds)
+        count = int(np.ceil(seconds))
+        for _ in range(count):
+            await asyncio.sleep(seconds / count)
 
 
 class ModificationContext:
