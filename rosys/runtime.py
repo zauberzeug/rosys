@@ -4,10 +4,9 @@ import asyncio
 import logging
 from typing import Optional, Type
 
-from . import event, task_logger, run, sleep, is_test
+from . import event, task_logger, run, sleep, is_test, Persistence
 from .actors import Actor, Automator, Lizard, Odometer, Steerer, UsbCameraCapture, UsbCameraSimulator, NetworkMonitor, Backup, AsyncioMonitor, GarbageCollector
 from .hardware import Hardware, SimulatedHardware
-from .persistence import Persistence
 from .world import World
 
 

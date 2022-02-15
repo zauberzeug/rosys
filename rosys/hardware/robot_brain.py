@@ -9,7 +9,7 @@ class RobotBrain(CommunicatingHardware):
 
     def __init__(self, world: World, communication: Communication):
         super().__init__(world, communication)
-        self.waiting_list = set()
+        self.waiting_list: dict[str, Optional[str]] = {}
 
     async def configure(self, filepath: str = 'lizard.txt'):
         await super().configure()
@@ -55,7 +55,7 @@ class RobotBrain(CommunicatingHardware):
                 continue
             first = words.pop(0)
             if first in self.waiting_list:
-                self.waiting_list.remove(first)
+                self.waiting_list[first] = line
                 continue
             if first not in ['core', '!"core']:
                 continue
@@ -77,12 +77,14 @@ class RobotBrain(CommunicatingHardware):
     async def send(self, msg: str):
         await self.communication.send_async(self.augment(msg))
 
-    async def send_and_await(self, msg: str, ack: str):
-        ack_str = f'!""{ack}"'
-        self.waiting_list.add(ack_str)
+    async def send_and_await(self, msg: str, ack: str, *, timeout: Optional[float] = None) -> Optional[str]:
+        ack_str = f'!"{ack}'
+        self.waiting_list[ack_str] = None
         await self.send(msg)
-        while ack_str in self.waiting_list:
+        t0 = self.world.time
+        while self.waiting_list.get(ack_str) is None and self.world.time < t0 + timeout:
             await sleep(0.1)
+        return self.waiting_list.pop(ack_str) if ack_str in self.waiting_list else None
 
     @staticmethod
     def augment(line: str) -> str:
