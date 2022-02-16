@@ -12,7 +12,7 @@ from . import CommunicatingHardware
 
 class RobotBrainLegacy(CommunicatingHardware):
 
-    def __init__(self, world: World, configuration: List[HardwareGroup], communication: Optional[Communication] = ...):
+    def __init__(self, world: World, configuration: List[HardwareGroup], communication: Communication):
         super().__init__(world, communication=communication)
         self.configuration = configuration
 
