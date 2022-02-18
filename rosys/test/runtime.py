@@ -31,7 +31,7 @@ class TestRuntime(Runtime):
             await self.startup()
 
         start_time = self.world.time
-        pose = self.world.robot.prediction
+        robot = self.world.robot
         if seconds is not None:
             msg = f'forwarding {seconds=}'
             def condition(): return self.world.time >= start_time + seconds
@@ -43,13 +43,13 @@ class TestRuntime(Runtime):
             condition = until
         elif x is not None and y is not None:
             msg = f'forwarding to {x=} and {y=}'
-            def condition(): return (pose.x - x)**2 + (pose.y - y)**2 < tolerance**2
+            def condition(): return (robot.prediction.x - x)**2 + (robot.prediction.y - y)**2 < tolerance**2
         elif x is not None:
             msg = f'forwarding to {x=}'
-            def condition(): return abs(pose.x - x) < tolerance
+            def condition(): return abs(robot.prediction.x - x) < tolerance
         elif y is not None:
             msg = f'forwarding to {y=}'
-            def condition(): return abs(pose.y - y) < tolerance
+            def condition(): return abs(robot.prediction.y - y) < tolerance
         else:
             raise Exception('invalid arguments')
 
