@@ -1,3 +1,4 @@
+import coloredlogs
 from typing import Generator
 import pytest
 import logging
@@ -43,6 +44,7 @@ config = {
     'disable_existing_loggers': True,
     'formatters': {
         'default': {
+            '()': coloredlogs.ColoredFormatter,
             'format': '%(worldtime).2f [%(levelname)s] %(robotpose)s %(relativepath)s:%(lineno)d: %(message)s',
             'datefmt': '%Y-%m-%d %H:%M:%S',
         },
