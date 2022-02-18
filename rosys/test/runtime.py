@@ -35,9 +35,11 @@ class TestRuntime(Runtime):
         if seconds is not None:
             msg = f'forwarding {seconds=}'
             def condition(): return self.world.time >= start_time + seconds
+            timeout = max(timeout, seconds)
         elif isinstance(until, int) or isinstance(until, float):
             msg = f'forwarding {until=}'
             def condition(): return self.world.time >= until
+            timeout = max(timeout, until - start_time)
         elif isinstance(until, Callable):
             msg = f'forwarding {until=}'
             condition = until
@@ -55,6 +57,8 @@ class TestRuntime(Runtime):
 
         self.log.info(f'\033[94m{msg}\033[0m')
         while not condition():
+            if self.world.time > start_time + timeout:
+                raise TimeoutError(f'condition not met in time')
             if not run.running_processes:
                 self.world.set_time(self.world.time + dt)
                 await asyncio.sleep(0)
@@ -62,8 +66,6 @@ class TestRuntime(Runtime):
                 await asyncio.sleep(0.01)
             if self.exception is not None:
                 raise RuntimeError(f'error while forwarding time {dt} s') from self.exception
-            if self.world.time > start_time + timeout:
-                raise TimeoutError(f'condition not met in time')
 
     def handle_exception(self, ex: Exception):
         super().handle_exception(ex)
