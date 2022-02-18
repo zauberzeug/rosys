@@ -89,9 +89,9 @@ async def test_fire_and_forget_with_emit(runtime: TestRuntime):
     event.emit(event.Id.NEW_NOTIFICATION, 42)
     await runtime.forward(0.5)
     assert len(calls) == 0
-    await runtime.forward(0.5)
+    await runtime.forward(1.0)
     assert calls[0] == 42
     with pytest.raises(RuntimeError) as ex_info:
-        await runtime.forward(1)
+        await runtime.forward(1.0)
     assert ex_info.value.__cause__ is not None
     assert 'some failure' in str(ex_info.value.__cause__)

@@ -1,6 +1,6 @@
 import numpy as np
 from rosys.world import Calibration, Camera, Point3d
-from rosys.test.helper import approx
+from rosys.test import approx
 
 
 def test_calibration_from_points():

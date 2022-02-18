@@ -16,7 +16,7 @@ class RobotParameters(BaseModel, ModificationContext):
     minimum_turning_radius: float = 0.0
     max_detection_age_ramp: Optional[tuple[float, float]]
     hook_offset: float = 0.5
-    carrot_offset: float = 0.5
+    carrot_offset: float = 0.6
     carrot_distance: float = 0.1
 
 

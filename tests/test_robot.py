@@ -9,9 +9,11 @@ async def test_drive(runtime: TestRuntime):
 
     await runtime.forward(seconds=1.0)
     assert_pose(0, 0, deg=0)
+
     await runtime.hardware.drive(1.0, 0.0)
     await runtime.forward(seconds=1.0)
     assert_pose(1.0, 0, deg=0)
+
     await runtime.hardware.drive(0.0, np.deg2rad(90))
     await runtime.forward(seconds=0.5, dt=0.005)
     assert_pose(1.0, 0, deg=45)
@@ -24,7 +26,7 @@ async def test_drive(runtime: TestRuntime):
 @pytest.mark.asyncio
 async def test_stopping_robot_when_runtime_stops(runtime: TestRuntime):
     await runtime.hardware.drive(1, 0)
-    await runtime.forward(seconds=1.0)
+    await runtime.forward(x=1.0, y=0.0)
     await runtime.shutdown()
     assert runtime.hardware.linear_velocity == 0
     assert runtime.hardware.angular_velocity == 0
