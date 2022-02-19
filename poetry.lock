@@ -246,6 +246,20 @@ optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
 
 [[package]]
+name = "coloredlogs"
+version = "15.0.1"
+description = "Colored terminal output for Python's logging module"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+
+[package.dependencies]
+humanfriendly = ">=9.1"
+
+[package.extras]
+cron = ["capturer (>=2.4)"]
+
+[[package]]
 name = "cryptography"
 version = "36.0.1"
 description = "cryptography is a package which provides cryptographic recipes and primitives to Python developers."
@@ -392,6 +406,17 @@ sniffio = "*"
 brotli = ["brotlicffi", "brotli"]
 cli = ["click (>=8.0.0,<9.0.0)", "rich (>=10.0.0,<11.0.0)", "pygments (>=2.0.0,<3.0.0)"]
 http2 = ["h2 (>=3,<5)"]
+
+[[package]]
+name = "humanfriendly"
+version = "10.0"
+description = "Human friendly output for text interfaces using Python"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+
+[package.dependencies]
+pyreadline3 = {version = "*", markers = "sys_platform == \"win32\" and python_version >= \"3.8\""}
 
 [[package]]
 name = "icecream"
@@ -920,6 +945,14 @@ optional = false
 python-versions = ">=2.6, !=3.0.*, !=3.1.*, !=3.2.*"
 
 [[package]]
+name = "pyreadline3"
+version = "3.4.1"
+description = "A python implementation of GNU readline."
+category = "main"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "pyserial"
 version = "3.5"
 description = "Python Serial Port Extension"
@@ -1031,7 +1064,7 @@ client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
 
 [[package]]
 name = "python-socketio"
-version = "5.5.1"
+version = "5.5.2"
 description = "Socket.IO server and client for Python"
 category = "main"
 optional = false
@@ -1390,7 +1423,7 @@ testing = ["pytest (>=4.6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytes
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9 <3.10"
-content-hash = "c6b3c870702ffaa03b455b016ae71383375b3cae6ee55963b772065eaea970f4"
+content-hash = "c6df29d836bfbb3b1f6a6940350d99a3d41771f209c50ec83191f34388b62791"
 
 [metadata.files]
 addict = [
@@ -1606,6 +1639,10 @@ colorama = [
     {file = "colorama-0.4.4-py2.py3-none-any.whl", hash = "sha256:9f47eda37229f68eee03b24b9748937c7dc3868f906e8ba69fbcbdd3bc5dc3e2"},
     {file = "colorama-0.4.4.tar.gz", hash = "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b"},
 ]
+coloredlogs = [
+    {file = "coloredlogs-15.0.1-py2.py3-none-any.whl", hash = "sha256:612ee75c546f53e92e70049c9dbfcc18c935a2b9a53b66085ce9ef6a6e5c0934"},
+    {file = "coloredlogs-15.0.1.tar.gz", hash = "sha256:7c991aa71a4577af2f82600d8f8f3a89f936baeaf9b50a9c197da014e5bf16b0"},
+]
 cryptography = [
     {file = "cryptography-36.0.1-cp36-abi3-macosx_10_10_universal2.whl", hash = "sha256:73bc2d3f2444bcfeac67dd130ff2ea598ea5f20b40e36d19821b4df8c9c5037b"},
     {file = "cryptography-36.0.1-cp36-abi3-macosx_10_10_x86_64.whl", hash = "sha256:2d87cdcb378d3cfed944dac30596da1968f88fb96d7fc34fdae30a99054b2e31"},
@@ -1765,6 +1802,10 @@ httpcore = [
 httpx = [
     {file = "httpx-0.20.0-py3-none-any.whl", hash = "sha256:33af5aad9bdc82ef1fc89219c1e36f5693bf9cd0ebe330884df563445682c0f8"},
     {file = "httpx-0.20.0.tar.gz", hash = "sha256:09606d630f070d07f9ff28104fbcea429ea0014c1e89ac90b4d8de8286c40e7b"},
+]
+humanfriendly = [
+    {file = "humanfriendly-10.0-py2.py3-none-any.whl", hash = "sha256:1697e1a8a8f550fd43c2865cd84542fc175a61dcb779b6fee18cf6b6ccba1477"},
+    {file = "humanfriendly-10.0.tar.gz", hash = "sha256:6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc"},
 ]
 icecream = [
     {file = "icecream-2.1.1-py2.py3-none-any.whl", hash = "sha256:adc1c48f5a4f83b2171c774a35142f217d317a84fca8cdf3fc65aa1321ff26b6"},
@@ -2320,6 +2361,10 @@ pyparsing = [
     {file = "pyparsing-2.4.7-py2.py3-none-any.whl", hash = "sha256:ef9d7589ef3c200abe66653d3f1ab1033c3c419ae9b9bdb1240a85b024efc88b"},
     {file = "pyparsing-2.4.7.tar.gz", hash = "sha256:c203ec8783bf771a155b207279b9bccb8dea02d8f0c9e5f8ead507bc3246ecc1"},
 ]
+pyreadline3 = [
+    {file = "pyreadline3-3.4.1-py3-none-any.whl", hash = "sha256:b0efb6516fd4fb07b45949053826a62fa4cb353db5be2bbb4a7aa1fdd1e345fb"},
+    {file = "pyreadline3-3.4.1.tar.gz", hash = "sha256:6f3d1f7b8a31ba32b73917cefc1f28cc660562f39aea8646d30bd6eff21f7bae"},
+]
 pyserial = [
     {file = "pyserial-3.5-py2.py3-none-any.whl", hash = "sha256:c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0"},
     {file = "pyserial-3.5.tar.gz", hash = "sha256:3c77e014170dfffbd816e6ffc205e9842efb10be9f58ec16d3e8675b4925cddb"},
@@ -2354,8 +2399,8 @@ python-engineio = [
     {file = "python_engineio-4.3.0-py3-none-any.whl", hash = "sha256:ad06a975f7e14cb3bb7137cbf70fd883804484d29acd58004d1db1e2a7fc0ad3"},
 ]
 python-socketio = [
-    {file = "python-socketio-5.5.1.tar.gz", hash = "sha256:ac8e64d59a15d1c31a4fe8434f4ff16d0f640c824ba517dce7ca99e95f0cd36a"},
-    {file = "python_socketio-5.5.1-py3-none-any.whl", hash = "sha256:d0b98474064ac239a618649ca67f5288827705d36bd5f7615a473b37965baf61"},
+    {file = "python-socketio-5.5.2.tar.gz", hash = "sha256:6213f7dfbb87e554472d11151f96bae9059854aa88e4a1e0fa6e97cca1c3fcf4"},
+    {file = "python_socketio-5.5.2-py3-none-any.whl", hash = "sha256:5a1b173a4c3471bed363c502a93b36a02e2a29847645c5557237b3359d49caf0"},
 ]
 pywin32-ctypes = [
     {file = "pywin32-ctypes-0.2.0.tar.gz", hash = "sha256:24ffc3b341d457d48e8922352130cf2644024a4ff09762a2261fd34c36ee5942"},
