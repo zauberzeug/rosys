@@ -78,13 +78,12 @@ class RobotBrain(CommunicatingHardware):
         await self.communication.send_async(self.augment(msg))
 
     async def send_and_await(self, msg: str, ack: str, *, timeout: Optional[float] = None) -> Optional[str]:
-        ack_str = f'!"{ack}'
-        self.waiting_list[ack_str] = None
+        self.waiting_list[ack] = None
         await self.send(msg)
         t0 = self.world.time
-        while self.waiting_list.get(ack_str) is None and self.world.time < t0 + timeout:
+        while self.waiting_list.get(ack) is None and self.world.time < t0 + timeout:
             await sleep(0.1)
-        return self.waiting_list.pop(ack_str) if ack_str in self.waiting_list else None
+        return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
     @staticmethod
     def augment(line: str) -> str:
