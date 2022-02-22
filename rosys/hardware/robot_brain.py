@@ -57,22 +57,25 @@ class RobotBrain(CommunicatingHardware):
             if first in self.waiting_list:
                 self.waiting_list[first] = line
                 continue
-            if first not in ['core', '!"core']:
-                continue
-            millis = float(words.pop(0))
-            if self.world.robot.clock_offset is None:
-                continue
-            self.world.robot.hardware_time = millis / 1000 + self.world.robot.clock_offset
-            self.parse(words)
+            if first == 'core':
+                millis = float(words.pop(0))
+                if self.world.robot.clock_offset is None:
+                    continue
+                self.world.robot.hardware_time = millis / 1000 + self.world.robot.clock_offset
+                self.parse_core(words)
+            self.parse_line(line)
         if millis is not None:
             self.world.robot.clock_offset = self.world.time - millis / 1000
 
-    def parse(self, words: list[str]):
+    def parse_core(self, words: list[str]):
         self.world.robot.odometry.append(Velocity(
             linear=float(words.pop(0)),
             angular=float(words.pop(0)),
             time=self.world.robot.hardware_time,
         ))
+
+    def parse_line(self, line: str):
+        pass
 
     async def send(self, msg: str):
         await self.communication.send_async(self.augment(msg))
