@@ -80,7 +80,7 @@ class RobotBrain(CommunicatingHardware):
     async def send(self, msg: str):
         await self.communication.send_async(self.augment(msg))
 
-    async def send_and_await(self, msg: str, ack: str, *, timeout: Optional[float] = None) -> Optional[str]:
+    async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf')) -> Optional[str]:
         self.waiting_list[ack] = None
         await self.send(msg)
         t0 = self.world.time

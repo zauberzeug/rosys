@@ -8,7 +8,6 @@ runtime = rosys.Runtime()
 rosys.ui.configure(ui, runtime)
 
 # keyboard control
-print(rosys.ui.keyboard_control.ui)
 rosys.ui.keyboard_control()
 
 # 3d scene

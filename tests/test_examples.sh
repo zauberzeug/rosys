@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 run() {
-    output=`{ timeout 4 python3.9 $1; } 2>&1`
+    output=`{ timeout 5 python3.9 $1; } 2>&1`
     exitcode=$?
     test $exitcode -eq 124 && exitcode=0 # exitcode 124 is comming from "timeout command above"
     echo $output | grep "JustPy ready to go" > /dev/null || exitcode=1
-    echo $output | grep "Traceback" > /dev/null && exitcode=1
-    echo $output | grep "Error" > /dev/null && exitcode=1
+    echo $output | grep "Traceback" > /dev/null && exitcode=2
+    echo $output | grep "Error" > /dev/null && exitcode=3
     if test $exitcode -ne 0; then
         echo "wrong exit code $exitcode. Output was:"
         echo $output
