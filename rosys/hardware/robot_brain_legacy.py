@@ -218,6 +218,8 @@ class ODriveWheels(HardwareGroup):
             f'set {self.name}.width={self.width}',
             f'set {self.name}.leftPowerFactor={self.left_power_factor}',
             f'set {self.name}.rightPowerFactor={self.right_power_factor}',
+            # f'set {self.name}.leftTorqueFactor={self.left_power_factor}',
+            # f'set {self.name}.rightTorqueFactor={self.right_power_factor}',
         ]
 
     def parse(self, words: list[str], world: World):
