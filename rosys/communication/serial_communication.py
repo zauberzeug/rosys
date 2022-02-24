@@ -2,21 +2,42 @@ from typing import Optional
 import os
 import serial
 from .communication import Communication
+import logging
+
+log = logging.getLogger('rosys.hardware.serial_communication')
 
 
 class SerialCommunication(Communication):
-    device_path: str = '/dev/esp'
     baudrate: int = 115200
 
     def __init__(self):
         super().__init__()
+        self.device_path = SerialCommunication.get_device_path()
         self.log.debug(f'connecting serial on {self.device_path} with baudrate {self.baudrate}')
         self.serial = serial.Serial(self.device_path, self.baudrate)
         self.buffer = ''
 
     @classmethod
     def is_possible(cls) -> bool:
-        return os.path.exists(cls.device_path) and os.stat(cls.device_path).st_gid > 0
+        try:
+            return True
+        except:
+            return False
+
+    @classmethod
+    def get_device_path(cls) -> str:
+        device_paths = [
+            '/dev/ttyTHS1',
+            '/dev/ttyUSB0',
+            '/dev/tty.SLAB_USBtoUART',
+            '/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0',
+            '/dev/esp',
+        ]
+        for device_path in device_paths:
+            if os.path.exists(device_path) and os.stat(device_path).st_gid > 0:
+                return device_path
+        else:
+            raise Exception('No serial port found')
 
     def connect(self):
         if not self.serial.isOpen():
