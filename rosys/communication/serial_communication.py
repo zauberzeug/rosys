@@ -13,19 +13,18 @@ class SerialCommunication(Communication):
     def __init__(self):
         super().__init__()
         self.device_path = SerialCommunication.get_device_path()
+        if self.device_path == None:
+            raise Exception('No serial port found')
         self.log.debug(f'connecting serial on {self.device_path} with baudrate {self.baudrate}')
         self.serial = serial.Serial(self.device_path, self.baudrate)
         self.buffer = ''
 
     @classmethod
     def is_possible(cls) -> bool:
-        try:
-            return True
-        except:
-            return False
+        return cls.get_device_path() is not None
 
     @classmethod
-    def get_device_path(cls) -> str:
+    def get_device_path(cls) -> Optional[str]:
         device_paths = [
             '/dev/ttyTHS1',
             '/dev/ttyUSB0',
@@ -37,7 +36,7 @@ class SerialCommunication(Communication):
             if os.path.exists(device_path) and os.stat(device_path).st_gid > 0:
                 return device_path
         else:
-            raise Exception('No serial port found')
+            return None
 
     def connect(self):
         if not self.serial.isOpen():
