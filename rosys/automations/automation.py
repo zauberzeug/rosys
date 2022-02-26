@@ -1,11 +1,14 @@
 import asyncio
+import logging
 from typing import Callable, Coroutine, Optional
 
 
 class Automation:
-    def __init__(self, coro: Coroutine, exception_handler: Optional[Callable] = None):
+    def __init__(self, coro: Coroutine, exception_handler: Optional[Callable] = None, on_stop: Optional[Callable] = None):
+        self.log = logging.getLogger('automations.automation')
         self.coro = coro
         self.exception_handler = exception_handler
+        self.on_stop = on_stop
         self._can_run = asyncio.Event()
         self._can_run.set()
         self._stop = False
@@ -42,6 +45,9 @@ class Automation:
                 try:
                     signal = send(message)
                 except StopIteration as err:
+                    self.log.info('automation is finished')
+                    if self.on_stop:
+                        self.on_stop()
                     return err.value
                 else:
                     send = iter_send

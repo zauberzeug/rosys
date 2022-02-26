@@ -25,7 +25,8 @@ class Automator(Actor):
 
     def start(self, coro: Coroutine):
         self.stop(because='new automation starts')
-        self.automation = Automation(coro, self._handle_exception)
+        self.automation = Automation(coro, self._handle_exception,
+                                     on_stop=lambda: self.stop(because='it has completed'))
         task_logger.create_task(asyncio.wait([self.automation]), name='automation')
 
     def pause(self, because: str):
