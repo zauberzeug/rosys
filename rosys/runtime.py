@@ -42,17 +42,18 @@ class Runtime:
         if not is_test:
             self.with_actors(Backup(self.persistence))
 
-    def with_actors(self, *actors: list[Actor]):
+    def with_actors(self, *actors: list[Actor]) -> Runtime:
         '''Adds list of additional actors to runtime.'''
         self.actors += actors
         return self
 
-    def with_usb_cameras(self):
+    def with_usb_cameras(self) -> Runtime:
         '''Adds usb camera capture actor to runtime.'''
         if UsbCameraCapture.is_operable() and not is_test:
             self.with_actors(UsbCameraCapture())
         else:
             self.with_actors(UsbCameraSimulator())
+        return self
 
     async def startup(self):
         if self.tasks:

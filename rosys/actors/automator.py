@@ -25,8 +25,7 @@ class Automator(Actor):
 
     def start(self, coro: Coroutine):
         self.stop(because='new automation starts')
-        self.automation = Automation(coro, self._handle_exception,
-                                     on_stop=lambda: self.stop(because='it has completed'))
+        self.automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
         task_logger.create_task(asyncio.wait([self.automation]), name='automation')
 
     def pause(self, because: str):
@@ -47,6 +46,9 @@ class Automator(Actor):
 
     def _handle_exception(self, e: Exception):
         self.stop(because='an exception occurred in an automation')
+
+    def _on_complete(self):
+        event.emit(event.Id.NEW_NOTIFICATION, f'automation completed')
 
     async def tear_down(self):
         await super().tear_down()
