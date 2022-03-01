@@ -7,4 +7,5 @@ from .camera import Camera
 class UsbCamera(Camera):
     capture: bool = True
     detect: bool = False
+    connected: bool = False
     resolution: Optional[ImageSize] = Field(None, exclude=True)
