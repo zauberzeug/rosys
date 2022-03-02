@@ -31,6 +31,7 @@ class Robot(BaseModel):
     last_movement: float = 0
     hardware_time: Optional[float]
     battery: float = 0
+    is_charging: bool = False
     temperature: float = 0
     emergency_stop: bool = False
     clock_offset: Optional[float]
