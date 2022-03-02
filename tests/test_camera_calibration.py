@@ -4,7 +4,7 @@ from rosys.test import approx
 
 
 def test_calibration_from_points():
-    cam = Camera.create_perfect_camera(x=0.1, y=0.2, z=3, tilt_x=np.deg2rad(-170), tilt_y=np.deg2rad(10))
+    cam = Camera.create_perfect_camera(x=0.1, y=0.2, z=3, tilt_x=np.deg2rad(10), tilt_y=np.deg2rad(20))
     image_size = cam.calibration.intrinsics.size
 
     world_points = [
@@ -23,3 +23,17 @@ def test_calibration_from_points():
     approx(calibration.extrinsics.translation, cam.calibration.extrinsics.translation)
     approx(calibration.extrinsics.yaw, cam.calibration.extrinsics.yaw)
     approx(calibration.extrinsics.tilt.R, cam.calibration.extrinsics.tilt.R)
+
+
+def test_projection():
+    cam = Camera.create_perfect_camera(z=3)  # x=0.1, y=0.2, z=3, tilt_x=np.deg2rad(10), tilt_y=np.deg2rad(20))
+    world_points = [
+        Point3d(x=x, y=y, z=z)
+        for x in [-1.0, 0.0, 1.0]
+        for y in [-1.0, 0.0, 1.0]
+        for z in [-1.0, 0.0, 1.0]
+    ]
+    for world_point in world_points:
+        image_point = cam.calibration.project_to_image(world_point)
+        world_point_ = cam.calibration.project_from_image(image_point, target_height=world_point.z)
+        assert np.allclose(world_point.tuple, world_point_.tuple, atol=1e-6)
