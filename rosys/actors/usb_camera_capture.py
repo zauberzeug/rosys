@@ -27,7 +27,6 @@ class UsbCameraCapture(Actor):
 
     def capture_image(self, id) -> bytes:
         _, image = self.devices[id].read()
-        ic(image)
         return cv2.imencode('.jpg', image)[1].tobytes()
 
     def purge_old_images(self):
