@@ -68,13 +68,30 @@ class Calibration(BaseModel):
         objPoints = image_points__ @ self.rotation_array.T
         Z = self.extrinsics.translation[-1]
         t = np.array(self.extrinsics.translation)
-        floorPoints = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
+        floor_points = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
 
-        reprojection = self.project_to_image(Point3d(x=floorPoints[0, 0], y=floorPoints[0, 1], z=target_height))
+        reprojection = self.project_to_image(Point3d(x=floor_points[0, 0], y=floor_points[0, 1], z=target_height))
         if objPoints[0, -1] * np.sign(Z) > 0 or reprojection.distance(image_point) > 2:
             return None
 
-        return Point3d(x=floorPoints[0, 0], y=floorPoints[0, 1], z=target_height)
+        return Point3d(x=floor_points[0, 0], y=floor_points[0, 1], z=target_height)
+
+    def project_array_from_image(self, image_points: Any, target_height: float = 0) -> Any:
+        K = np.array(self.intrinsics.matrix)
+        D = np.array(self.intrinsics.distortion)
+        image_points_ = cv2.undistortPoints(image_points.astype(np.float32), K, D).reshape(-1, 2)
+        image_points__ = cv2.convertPointsToHomogeneous(image_points_).reshape(-1, 3)
+        objPoints = image_points__ @ self.rotation_array.T
+        Z = self.extrinsics.translation[-1]
+        t = np.array(self.extrinsics.translation)
+        floor_points = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
+
+        reprojection = self.project_array_to_image(floor_points)
+        sign = objPoints[:, -1] * np.sign(Z)
+        distance = np.linalg.norm(reprojection - image_points, axis=1)
+        floor_points[np.logical_or(sign > 0, distance > 2), :] = np.nan
+
+        return floor_points
 
     @staticmethod
     def from_points(world_points: list[Point3d], image_points: list[Point], image_size: ImageSize, f0: float):
