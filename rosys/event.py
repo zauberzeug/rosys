@@ -51,7 +51,7 @@ def unregister(event: Id, listener: Union[Callable, Awaitable]):
         if registered() == listener:
             marked.append(registered)
     [listeners[event].remove(m) for m in marked]
-    log.debug(f'unregistered {listener} from {event}')
+    #log.debug(f'unregistered {listener} from {event}')
 
 
 async def call(event: Id, *args):
@@ -60,8 +60,8 @@ async def call(event: Id, *args):
     #     log.info(f'calling {event=}')
     for listener in list(listeners.get(event, {})):
         try:
-            if event != Id.NEW_MACHINE_DATA:
-                log.debug(f'emitting {event} with {listener}')
+            # if event != Id.NEW_MACHINE_DATA:
+            #     log.debug(f'emitting {event} with {listener}')
             if hasattr(listener, '__name__') and listener.__name__ == '<lambda>':
                 listener(*args)
                 continue
@@ -86,8 +86,8 @@ def emit(event: Id, *args):
     #     log.info(f'emitting {event=}')
     loop = asyncio.get_event_loop()
     for listener in list(listeners.get(event, {})):
-        if event != Id.ROBOT_MOVED:
-            log.debug(f'emitting {event} with {listener}')
+        # if event != Id.ROBOT_MOVED:
+        #     log.debug(f'emitting {event} with {listener}')
         try:
             if hasattr(listener, '__name__') and listener.__name__ == '<lambda>':
                 listener(*args)
