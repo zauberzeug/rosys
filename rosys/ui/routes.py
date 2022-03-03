@@ -1,5 +1,6 @@
 from nicegui.ui import Ui
-import starlette
+import starlette.responses
+import starlette.routing
 from rosys import Runtime
 import logging
 
@@ -22,7 +23,8 @@ def setup(ui: Ui, runtime: Runtime):
                 return not_found
             for image in reversed(runtime.world.usb_cameras[cam_id].images):
                 if str(image.time) == request.path_params['timestamp']:
-                    return starlette.responses.Response(content=image.data, media_type='image/jpeg')
+                    headers = {'cache-control': 'max-age=7776000'}  # 90 days
+                    return starlette.responses.Response(content=image.data, headers=headers, media_type='image/png')
             return not_found
         except:
             log.exception('could not get image')
