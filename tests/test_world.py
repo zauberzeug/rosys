@@ -6,8 +6,9 @@ from rosys.test import TestRuntime
 
 def test_dumping(runtime: TestRuntime):
     data = Persistence(runtime.world).dump()
-    assert 'robot' in data
+    assert 'areas' in data
     assert 'obstacles' in data
+    assert 'usb_cameras' in data
 
 
 @pytest.mark.asyncio

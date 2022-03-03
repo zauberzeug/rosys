@@ -12,17 +12,15 @@ class Persistence:
 
     def dump(self) -> dict:
         return {
-            'robot': {'parameters': self.world.robot.parameters.dict()},
-            'usb_cameras': {id: camera.dict() for id, camera in self.world.usb_cameras.items()},
-            'obstacles': {id: obstacle.dict() for id, obstacle in self.world.obstacles.items()},
             'areas': {id: area.dict() for id, area in self.world.areas.items()},
+            'obstacles': {id: obstacle.dict() for id, obstacle in self.world.obstacles.items()},
+            'usb_cameras': {id: camera.dict() for id, camera in self.world.usb_cameras.items()},
         }
 
     def load(self, world: World):
-        self.world.robot.parameters = world.robot.parameters
-        self.world.usb_cameras = world.usb_cameras
-        self.world.obstacles = world.obstacles
         self.world.areas = world.areas
+        self.world.obstacles = world.obstacles
+        self.world.usb_cameras = world.usb_cameras
 
     def backup(self):
         os.makedirs(os.path.dirname(self.filepath), exist_ok=True)
