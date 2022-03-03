@@ -20,7 +20,7 @@ class UsbCameraCapture(Actor):
         await self.update_device_list()
         for uid, camera in self.world.usb_cameras.items():
             if not camera.capture or not camera.connected:
-                return
+                continue
             bytes = await rosys.run.io_bound(self.capture_image, uid)
             camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time, size=camera.resolution))
         self.purge_old_images()
