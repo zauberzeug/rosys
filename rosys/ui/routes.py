@@ -1,22 +1,21 @@
 from nicegui.ui import Ui
-import starlette.responses
-import starlette.routing
+from starlette.requests import Request
+from starlette.responses import JSONResponse, Response
+from starlette.routing import Route
 from rosys import Runtime
 import logging
+import cv2
+import numpy as np
 
 log = logging.getLogger('rosys.routes')
-not_found = starlette.responses.Response(content='Not Found', status_code=404)
+not_found = Response(content='Not Found', status_code=404)
 
 
 def setup(ui: Ui, runtime: Runtime):
-    ui.add_route(starlette.routing.Route(
-        '/world', lambda request, **_:
-        starlette.responses.Response(content=runtime.world.json(), media_type='text/json')))
-    ui.add_route(starlette.routing.Route(
-        '/export', lambda request, **_:
-        starlette.responses.JSONResponse(content=runtime.persistence.dump())))
+    ui.add_route(Route('/world', lambda request, **_: Response(content=runtime.world.json(), media_type='text/json')))
+    ui.add_route(Route('/export', lambda request, **_: JSONResponse(content=runtime.persistence.dump())))
 
-    def get_image(request, **_):
+    def get_image(request: Request, **_):
         try:
             cam_id = request.path_params['id']
             camera = runtime.world.cameras.get(cam_id)
@@ -25,10 +24,13 @@ def setup(ui: Ui, runtime: Runtime):
             for image in reversed(camera.images):
                 if str(image.time) == request.path_params['timestamp']:
                     headers = {'cache-control': 'max-age=7776000'}  # 90 days
-                    return starlette.responses.Response(content=image.data, headers=headers, media_type='image/jpeg')
+                    array = np.frombuffer(image.data, dtype=np.uint8)
+                    img = cv2.imdecode(array, cv2.IMREAD_COLOR)[::2, ::2]
+                    jpeg = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 90])[1].tostring()
+                    return Response(content=jpeg, headers=headers, media_type='image/jpeg')
             return not_found
         except:
             log.exception('could not get image')
             raise
 
-    ui.add_route(starlette.routing.Route('/camera/{id}/{timestamp}', get_image))
+    ui.add_route(Route('/camera/{id}/{timestamp}', get_image))
