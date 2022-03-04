@@ -19,9 +19,10 @@ def setup(ui: Ui, runtime: Runtime):
     def get_image(request, **_):
         try:
             cam_id = request.path_params['id']
-            if cam_id not in runtime.world.usb_cameras:
+            camera = runtime.world.cameras.get(cam_id)
+            if camera is None:
                 return not_found
-            for image in reversed(runtime.world.usb_cameras[cam_id].images):
+            for image in reversed(camera.images):
                 if str(image.time) == request.path_params['timestamp']:
                     headers = {'cache-control': 'max-age=7776000'}  # 90 days
                     return starlette.responses.Response(content=image.data, headers=headers, media_type='image/jpeg')
