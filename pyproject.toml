@@ -34,6 +34,7 @@ objgraph = "^3.5.0"
 opencv-python = "^4.5.5"
 psutil = "^5.9.0"
 coloredlogs = "^15.0.1"
+humanize = "^4.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.1"
