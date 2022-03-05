@@ -78,7 +78,9 @@ class Runtime:
         [t.cancel() for t in self.tasks]
         if not is_test:
             run.process_pool.shutdown()
-        await asyncio.gather(*[task_logger.create_task(a.tear_down(), name=f'{a.name}.tear_down()') for a in self.actors])
+        for a in self.actors:
+            await a.tear_down()
+        # await asyncio.gather(*[task_logger.create_task(a.tear_down(), name=f'{a.name}.tear_down()') for a in self.actors])
 
     async def repeat(self, actor: Actor):
         while True:
