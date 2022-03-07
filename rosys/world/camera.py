@@ -12,7 +12,7 @@ from .rotation import Rotation
 class Camera(BaseModel, abc.ABC):
     id: str
     calibration: Optional[Calibration] = None
-    projection: Optional[list[list[list[Optional[float]]]]] = Field(None, exclude=True)
+    projection: Optional[list[list[Optional[list[float]]]]] = Field(None, exclude=True)
     images: list[Image] = Field([Image.create_placeholder('no image')], exclude=True)
 
     @property
