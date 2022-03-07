@@ -15,7 +15,8 @@ class CameraProjector(Actor):
                 continue
             self.update_projection(camera)
 
-    def update_projection(self, camera: Camera, rows: int = 12, columns: int = 16):
+    @staticmethod
+    def update_projection(camera: Camera, rows: int = 12, columns: int = 16):
         camera.projection = [[None for _ in range(columns)] for _ in range(rows)]
         for row, j in enumerate(np.linspace(0, camera.calibration.intrinsics.size.height, rows)):
             for column, i in enumerate(np.linspace(0, camera.calibration.intrinsics.size.width, columns)):
