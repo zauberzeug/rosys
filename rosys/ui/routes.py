@@ -24,9 +24,12 @@ def setup(ui: Ui, runtime: Runtime):
             for image in reversed(camera.images):
                 if str(image.time) == request.path_params['timestamp']:
                     headers = {'cache-control': 'max-age=7776000'}  # 90 days
-                    array = np.frombuffer(image.data, dtype=np.uint8)
-                    img = cv2.imdecode(array, cv2.IMREAD_COLOR)[::2, ::2]
-                    jpeg = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 90])[1].tostring()
+                    jpeg = image.data
+                    shrink = int(request.query_params.get('shrink', 1))
+                    if shrink != 1:
+                        array = np.frombuffer(image.data, dtype=np.uint8)
+                        img = cv2.imdecode(array, cv2.IMREAD_COLOR)[::shrink, ::shrink]
+                        jpeg = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 90])[1].tostring()
                     return Response(content=jpeg, headers=headers, media_type='image/jpeg')
             return not_found
         except:
