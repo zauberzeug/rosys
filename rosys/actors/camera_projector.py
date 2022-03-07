@@ -1,3 +1,4 @@
+from typing import Optional
 import numpy as np
 from rosys.world import Point
 from ..world import Camera
@@ -23,3 +24,14 @@ class CameraProjector(Actor):
                 point = camera.calibration.project_from_image(Point(x=i, y=j))
                 if point is not None:
                     camera.projection[row][column] = point.tuple[:2]
+
+    @staticmethod
+    def allclose(array1: list[list[list[Optional[float]]]],
+                 array2: list[list[list[Optional[float]]]]) -> bool:
+        is_none1 = [point is None for row in array1 for point in row]
+        is_none2 = [point is None for row in array2 for point in row]
+        if is_none1 != is_none2:
+            return False
+        values1 = [point for row in array1 for point in row if point is not None]
+        values2 = [point for row in array2 for point in row if point is not None]
+        return np.allclose(values1, values2)
