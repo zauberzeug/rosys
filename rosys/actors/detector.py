@@ -12,6 +12,8 @@ class Detector(Actor):
     def __init__(self):
         super().__init__()
         self.sio = socketio.AsyncClient()
+        self.is_detecting: bool = False
+        self.next_image: Optional[Image] = None
 
     async def step(self):
         if not self.sio.connected and not await self.connect():
@@ -48,19 +50,29 @@ class Detector(Actor):
         except:
             self.log.exception(f'could not upload {image.id}')
 
-    async def detect(self, image: Image) -> Optional[Image]:
+    async def detect(self, image: Image):
         if not self.sio.connected:
             return
-        try:
-            result = await self.sio.call('detect', {'image': image.data, 'mac': image.camera_id}, timeout=1)
-            box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
-            point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
-            image.detections = box_detections + point_detections
-        except:
-            self.log.exception(f'could not detect {image.id}')
-        else:
-            event.emit(event.Id.NEW_DETECTIONS, image)
-            return image
+
+        self.next_image = image
+        if self.is_detecting:
+            return
+
+        while self.next_image is not None:
+            try:
+                image = self.next_image
+                self.next_image = None
+                self.is_detecting = True
+                result = await self.sio.call('detect', {'image': image.data, 'mac': image.camera_id}, timeout=1)
+                box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
+                point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
+                image.detections = box_detections + point_detections
+            except:
+                self.log.exception(f'could not detect {image.id}')
+            else:
+                event.emit(event.Id.NEW_DETECTIONS, image)
+            finally:
+                self.is_detecting = False
 
     def __str__(self) -> str:
         return f'{type(self).__name__} ({"connected" if self.sio.connected else "disconnected"})'
