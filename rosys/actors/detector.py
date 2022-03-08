@@ -15,8 +15,12 @@ class Detector(Actor):
         self.is_detecting: bool = False
         self.next_image: Optional[Image] = None
 
+    @property
+    def is_connected(self):
+        return self.sio.connected
+
     async def step(self):
-        if not self.sio.connected and not await self.connect():
+        if not self.is_connected and not await self.connect():
             await sleep(3.0)
             return
 
@@ -51,7 +55,7 @@ class Detector(Actor):
             self.log.exception(f'could not upload {image.id}')
 
     async def detect(self, image: Image):
-        if not self.sio.connected:
+        if not self.is_connected:
             return
 
         self.next_image = image
@@ -75,4 +79,4 @@ class Detector(Actor):
                 self.is_detecting = False
 
     def __str__(self) -> str:
-        return f'{type(self).__name__} ({"connected" if self.sio.connected else "disconnected"})'
+        return f'{type(self).__name__} ({"connected" if self.is_connected else "disconnected"})'
