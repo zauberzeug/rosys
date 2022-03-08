@@ -29,7 +29,7 @@ class Detector(Actor):
     async def connect(self) -> bool:
         try:
             self.log.info('connecting to detector')
-            await self.sio.connect('ws://localhost:8004', socketio_path='/ws/socket.io')
+            await self.sio.connect('ws://localhost:8004', socketio_path='/ws/socket.io', wait_timeout=3.0)
             self.log.info('connected successfully')
             return True
         except:
