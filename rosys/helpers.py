@@ -41,8 +41,11 @@ async def sleep(seconds: float):
             await asyncio.sleep(0)
     else:
         count = int(np.ceil(seconds))
-        for _ in range(count):
-            await asyncio.sleep(seconds / count)
+        if count > 0:
+            for _ in range(count):
+                await asyncio.sleep(seconds / count)
+        else:
+            await asyncio.sleep(0)
 
 
 class ModificationContext:
