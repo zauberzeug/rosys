@@ -23,7 +23,7 @@ jobs:
       - name: test
         run: pytest
       - name: examples
-        run: cd tests && ./test_examples.sh
+        run: cd tests && ./test_examples.py
 
   slack:
     needs:
