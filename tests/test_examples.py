@@ -34,7 +34,7 @@ def check(path: str):
         fail(output, 4)
     try:
         script.terminate()
-        time.sleep(0.5)  # NOTE termination needs a little time
+        time.sleep(2)  # NOTE termination needs a little time
     except ProcessLookupError:
         pass
 
