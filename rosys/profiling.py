@@ -1,6 +1,7 @@
 from line_profiler import LineProfiler as PyUtilsLineProfiler
 from functools import wraps
-from typing import Optional
+from typing import Awaitable, Callable, Optional, Union
+from inspect import iscoroutinefunction
 
 
 class LineProfiler:
@@ -9,15 +10,23 @@ class LineProfiler:
         self.functions: list[list] = []
         self.line_profiler: Optional[PyUtilsLineProfiler] = None
 
-    def __call__(self, func):
+    def __call__(self, func: Union[Callable, Awaitable]):
         index = len(self.functions)
 
-        @wraps(func)
-        def wrap(*args, **kw):
-            return self.functions[index][1](*args, **kw)
+        if iscoroutinefunction(func):
+            @wraps(func)
+            async def wrap(*args, **kw):
+                return await self.functions[index][1](*args, **kw)
 
-        self.functions.append([func, func])
-        return wrap
+            self.functions.append([func, func])
+            return wrap
+        else:
+            @wraps(func)
+            def wrap(*args, **kw):
+                return self.functions[index][1](*args, **kw)
+
+            self.functions.append([func, func])
+            return wrap
 
     def start(self):
         self.line_profiler = PyUtilsLineProfiler()
