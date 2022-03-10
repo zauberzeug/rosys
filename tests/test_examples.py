@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
 from doctest import OutputChecker
 from io import StringIO
+import logging
 import subprocess
 import sys
 from icecream import ic
 import time
 import sh
 
+has_failures = False
+
 
 def fail(output, errcode):
+    global has_failures
     print(f' failed with error code {errcode}: {output}', flush=True)
-    sys.exit(errcode)
+    has_failures = True
 
 
 def check(path: str):
@@ -30,9 +34,25 @@ def check(path: str):
         fail(output, 4)
     try:
         script.terminate()
-    except:
+        time.sleep(0.5)  # NOTE termination needs a little time
+    except ProcessLookupError:
         pass
 
 
 if __name__ == '__main__':
     check('../main.py')
+    check('../docs/src/scene_on_click.py')
+    check('../docs/src/scene_on_click_with_automation_controls.py')
+    check('../docs/src/watch_battery_level.py')
+    check('../docs/src/path_planning.py')
+    check('../docs/src/robot_shape.py')
+    check('../docs/src/show_captured_images.py')
+    check('../docs/src/remote_operation.py')
+    check('../docs/src/logging_config.py')
+    check('../docs/src/logging_to_file.py')
+    check('../examples/hello_bot/main.py')
+    check('../examples/obstacles/main.py')
+    check('../rosys/pathplanning/planner_demo.py')
+
+    if has_failures:
+        sys.exit(1)

@@ -16,4 +16,4 @@ with ui.scene() as scene:
 ui.label('hold SHIFT to steer with the keyboard arrow keys')
 
 # start
-ui.run(title='RoSys', port=8080, show=False)
+ui.run(title='RoSys')
