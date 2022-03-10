@@ -13,23 +13,12 @@ class RobotBrain(CommunicatingHardware):
 
     async def configure(self, filepath: str = 'lizard.txt'):
         await super().configure()
+        await self.send(f'!-')
         with open(filepath) as f:
-            expander = False
-            await self.send(f'!-')
             for line in f.read().splitlines():
-                if line == '---':
-                    expander = True
-                    await self.send('!>!-')
-                else:
-                    if expander:
-                        await self.send(f'!>!+{line}')
-                    else:
-                        await self.send(f'!+{line}')
-            if expander:
-                await self.send(f'!>!.')
-                await self.send(f'!>core.restart()')
-            await self.send(f'!.')
-            await self.restart()
+                await self.send(f'!+{line}')
+        await self.send(f'!.')
+        await self.restart()
 
     async def restart(self):
         await super().restart()
