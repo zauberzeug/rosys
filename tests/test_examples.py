@@ -27,6 +27,13 @@ def check(path: str):
     script = sh.python3(path, _bg=True, _bg_exc=False, _out=buf, _err=buf)
     time.sleep(5)
     output = buf.getvalue()
+
+    try:
+        script.terminate()
+        script.wait(1)
+    except (ProcessLookupError, sh.SignalException_SIGKILL, sh.TimeoutException):
+        return
+
     if 'Traceback' in output:
         fail(output, 2)
     if 'Error' in output:
@@ -36,13 +43,6 @@ def check(path: str):
         print(f' is ok', flush=True)
     else:
         fail(output, 4)
-    try:
-        script.terminate()
-        script.wait(1)
-    except (ProcessLookupError, sh.SignalException_SIGKILL, sh.TimeoutException):
-        return
-
-    sys.exit(2)  # should not happen
 
 
 if __name__ == '__main__':
