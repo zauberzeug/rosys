@@ -18,6 +18,7 @@ def fail(output, errcode):
 
 
 def check(path: str):
+    sh.fuser('-k 8080/tcp')
     print(path, end='', flush=True)
     buf = StringIO()
     script = sh.python3(path, _bg=True, _out=buf, _err=buf)
@@ -34,9 +35,7 @@ def check(path: str):
         fail(output, 4)
     try:
         script.terminate()
-        time.sleep(2)  # NOTE termination needs a little time
-        sh.lsof('-t -i:8080')
-        sh.kill('-9 $(lsof -t -i:8080)')
+        time.sleep(1)  # NOTE termination needs a little time
     except ProcessLookupError:
         pass
 
