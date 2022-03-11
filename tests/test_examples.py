@@ -18,7 +18,10 @@ def fail(output, errcode):
 
 
 def check(path: str):
-    sh.fuser('-k 8080/tcp')
+    try:
+        sh.fuser('-k', '8080/tcp')
+    except sh.ErrorReturnCode_1:
+        pass
     print(path, end='', flush=True)
     buf = StringIO()
     script = sh.python3(path, _bg=True, _out=buf, _err=buf)
