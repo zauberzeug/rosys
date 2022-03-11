@@ -1,6 +1,9 @@
 FROM python:3.9-buster
 
-RUN apt update && apt install sudo vim less ack-grep rsync wget curl cmake iproute2 iw python3-pip python3-autopep8 libgeos-dev graphviz graphviz-dev v4l-utils -y && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt install -y \
+    sudo vim less ack-grep rsync wget curl cmake iproute2 iw python3-pip python3-autopep8 libgeos-dev graphviz graphviz-dev v4l-utils \
+    libgl1-mesa-glx ffmpeg libsm6 libxext6 # for opencv libGL.so.1 \  
+    && rm -rf /var/lib/apt/lists/*
 
 RUN python3 -m pip install --upgrade pip
 
