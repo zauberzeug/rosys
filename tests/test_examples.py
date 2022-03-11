@@ -19,12 +19,12 @@ def fail(output, errcode):
 
 def check(path: str):
     try:
-        sh.fuser('-k', '8080/tcp')
+        sh.fuser('-k', '8080/tcp')  # brew/apt install psutils
     except sh.ErrorReturnCode_1:
-        pass
+        pass  # its ok to not find any process to kill
     print(path, end='', flush=True)
     buf = StringIO()
-    script = sh.python3(path, _bg=True, _out=buf, _err=buf)
+    script = sh.python3(path, _bg=True, _bg_exc=False, _out=buf, _err=buf)
     time.sleep(5)
     output = buf.getvalue()
     if 'Traceback' in output:
@@ -38,8 +38,8 @@ def check(path: str):
         fail(output, 4)
     try:
         script.terminate()
-        time.sleep(1)  # NOTE termination needs a little time
-    except ProcessLookupError:
+        script.wait(1)
+    except (ProcessLookupError, sh.SignalException_SIGKILL):
         pass
 
 
