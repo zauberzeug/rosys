@@ -39,24 +39,26 @@ def check(path: str):
     try:
         script.terminate()
         script.wait(1)
-    except (ProcessLookupError, sh.SignalException_SIGKILL):
-        pass
+    except (ProcessLookupError, sh.SignalException_SIGKILL, sh.TimeoutException):
+        return
+
+    sys.exit(2)  # should not happen
 
 
 if __name__ == '__main__':
     check('../main.py')
     check('../docs/src/scene_on_click.py')
     check('../docs/src/scene_on_click_with_automation_controls.py')
-    # check('../docs/src/watch_battery_level.py')
-    # check('../docs/src/path_planning.py')
-    # check('../docs/src/robot_shape.py')
-    # check('../docs/src/show_captured_images.py')
-    # check('../docs/src/remote_operation.py')
-    # check('../docs/src/logging_config.py')
-    # check('../docs/src/logging_to_file.py')
-    # check('../examples/hello_bot/main.py')
-    # check('../examples/obstacles/main.py')
-    # check('../rosys/pathplanning/planner_demo.py')
+    check('../docs/src/watch_battery_level.py')
+    check('../docs/src/path_planning.py')
+    check('../docs/src/robot_shape.py')
+    check('../docs/src/show_captured_images.py')
+    check('../docs/src/remote_operation.py')
+    check('../docs/src/logging_config.py')
+    check('../docs/src/logging_to_file.py')
+    check('../examples/hello_bot/main.py')
+    check('../examples/obstacles/main.py')
+    check('../rosys/pathplanning/planner_demo.py')
 
     if has_failures:
         sys.exit(1)
