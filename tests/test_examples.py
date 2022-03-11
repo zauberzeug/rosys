@@ -32,7 +32,7 @@ def check(path: str):
         script.terminate()
         script.wait(1)
     except (ProcessLookupError, sh.SignalException_SIGKILL, sh.TimeoutException):
-        return
+        pass
 
     if 'Traceback' in output:
         fail(output, 2)
