@@ -19,7 +19,7 @@ def fail(output, errcode):
 
 def check(path: str):
     try:
-        sh.fuser('-k', '8080/tcp')  # brew/apt install psutils
+        sh.fuser('-k', '8080/tcp')  # apt install psutils, is not available on mac
     except sh.ErrorReturnCode_1:
         pass  # its ok to not find any process to kill
     print(path, end='', flush=True)
