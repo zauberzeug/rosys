@@ -1,6 +1,7 @@
 from typing import Awaitable, Optional
 from nicegui.ui import Ui
 from .. import Runtime
+from .settings import update_interval
 
 
 class AutomationControls:
@@ -32,4 +33,4 @@ class AutomationControls:
             resume_button.visible = self.runtime.automator.is_paused
             play_button.view.disable = default_automation is None
             stop_button.view.disable = self.runtime.automator.is_stopped
-        self.ui.timer(0.1, refresh)
+        self.ui.timer(update_interval, refresh)

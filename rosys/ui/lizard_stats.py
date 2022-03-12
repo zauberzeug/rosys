@@ -1,6 +1,7 @@
 from nicegui.ui import Ui
 from nicegui.elements.chart import Chart
 from rosys.actors import Lizard
+from .settings import update_interval
 
 
 class LizardStats(Chart):
@@ -22,7 +23,7 @@ class LizardStats(Chart):
             'navigation': {'buttonOptions': {'enabled': False}},
             'credits': False,
         })
-        self.ui.timer(0.1, self.update)
+        self.ui.timer(update_interval, self.update)
 
     def update(self):
         self.options.series[0].data.append(max(self.lizard.responsiveness_stats or [0]) * 1000)
