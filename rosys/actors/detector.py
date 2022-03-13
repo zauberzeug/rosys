@@ -14,12 +14,16 @@ class Detector(Actor):
         self.sio = socketio.AsyncClient()
         self.is_detecting: bool = False
         self.next_image: Optional[Image] = None
+        self.stopping = False
 
     @property
     def is_connected(self):
         return self.sio.connected
 
     async def step(self):
+        if self.stopping:
+            await sleep(1.0)
+            return
         if not self.is_connected and not await self.connect():
             await sleep(3.0)
             return
@@ -35,6 +39,11 @@ class Detector(Actor):
         except:
             self.log.exception('connection failed; trying again')
             return False
+
+    async def tear_down(self):
+        await super().tear_down()
+        self.log.info('stopping detector')
+        self.stopping = True
 
     async def try_start_one_upload(self):
         if datetime.now() < self.world.upload.last_upload + timedelta(minutes=self.world.upload.minimal_minutes_between_uploads):
