@@ -4,11 +4,9 @@ import numpy as np
 import heapq
 import copy
 import time
-import functools
 from rosys.world.area import Area
 
 from rosys.world.obstacle import Obstacle
-from .. import run
 from ..helpers import angle
 from ..world import Pose, PathSegment, World
 from .distance_map import DistanceMap
@@ -27,18 +25,20 @@ class Planner:
         self.connection, process_connection = Pipe()
         self.process = PlannerProcess(process_connection, self.world.robot.shape.outline)
         self.process.start()
+        self.last_obstacles = []
+        self.last_areas = []
 
     async def search_async(self, *, goal: Pose, start: Pose = None, backward: bool = False, timeout: float = 3.0):
         if start is None:
             start = self.world.robot.prediction
         await self.ensure_map()
-        result = await self.call(['search', goal, start, backward], timeout)
+        result = await self.call(['search', goal, start, backward])
         if result is None:
             raise TimeoutError('Could not find a path')
         else:
             return result
 
-    async def call(self, cmd: list, timeout: float) -> Any:
+    async def call(self, cmd: list, timeout: float = 5.0) -> Any:
         self.connection.send(cmd)
         t = time.time()
         while not self.connection.poll():
@@ -48,8 +48,14 @@ class Planner:
         return self.connection.recv()
 
     async def ensure_map(self):
-        pass
-        # hash(frozenset(my_dict.items()))
+        obstacles = list(self.world.obstacles.values())
+        if self.last_obstacles != obstacles:
+            await self.call(['obstacles', obstacles])
+            self.last_obstacles = copy.deepcopy(obstacles)
+        areas = list(self.world.areas.values())
+        if self.last_areas != areas:
+            await self.call(['areas', areas])
+            self.last_areas = copy.deepcopy(areas)
 
 
 class PlannerProcess(Process):
@@ -74,12 +80,16 @@ class PlannerProcess(Process):
                 return
             try:
                 if cmd[0] == 'search':
-                    try:
-                        self.connection.send(self.search(*cmd[1:]))
-                    except:
-                        self.connection.send(None)
+                    self.connection.send(self.search(*cmd[1:]))
+                if cmd[0] == 'obstacles':
+                    self.obstacles = cmd[1]
+                    self.connection.send(True)
+                if cmd[0] == 'areas':
+                    self.areas = cmd[1]
+                    self.connection.send(True)
             except:
                 self.log.exception(f'failed to compute cmd "{cmd}"')
+                self.connection.send(None)
 
     def update_obstacle_map(self, goal: Pose, start: Pose) -> None:
         if self.obstacle_map and all([self.obstacle_map.grid.contains(pose.point, padding=1.0) for pose in [goal, start]]):
