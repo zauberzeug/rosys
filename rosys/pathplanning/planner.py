@@ -32,14 +32,18 @@ class Planner:
         if start is None:
             start = self.world.robot.prediction
         await self.ensure_map()
-        return await self.call(['search', goal, start, backward, timeout], timeout)
+        result = await self.call(['search', goal, start, backward], timeout)
+        if result is None:
+            raise TimeoutError('Could not find a path')
+        else:
+            return result
 
     async def call(self, cmd: list, timeout: float) -> Any:
         self.connection.send(cmd)
         t = time.time()
         while not self.connection.poll():
             if time.time() - t > timeout:
-                raise TimeoutError()
+                raise TimeoutError('process call took too long')
             await asyncio.sleep(0.1)
         return self.connection.recv()
 
@@ -70,11 +74,12 @@ class PlannerProcess(Process):
                 return
             try:
                 if cmd[0] == 'search':
-                    self.connection.send(self.search(*cmd[1:]))
+                    try:
+                        self.connection.send(self.search(*cmd[1:]))
+                    except:
+                        self.connection.send(None)
             except:
                 self.log.exception(f'failed to compute cmd "{cmd}"')
-            finally:
-                time.sleep(0.01)
 
     def update_obstacle_map(self, goal: Pose, start: Pose) -> None:
         if self.obstacle_map and all([self.obstacle_map.grid.contains(pose.point, padding=1.0) for pose in [goal, start]]):
@@ -102,12 +107,12 @@ class PlannerProcess(Process):
 
         while pose != (goal.x, goal.y, goal.yaw):
             if timeout is not None and time.time() - start_time > timeout:
-                raise TimeoutError('Could not find a path')
+                return None
 
             try:
                 _, travel_cost, step = heapq.heappop(heap)
             except IndexError:
-                raise TimeoutError('Could not find a path')
+                return None
 
             pose = step.target
             tup = tuple(np.round(pose, 3))
