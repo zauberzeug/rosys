@@ -1,3 +1,4 @@
+import os
 from pydantic import BaseModel
 from typing import Optional
 from ..helpers import ModificationContext
@@ -21,6 +22,7 @@ class RobotParameters(BaseModel, ModificationContext):
 
 
 class Robot(BaseModel):
+    name: str = os.environ['ROBOT_ID']
     shape: RobotShape = RobotShape()
     parameters: RobotParameters = RobotParameters()
     prediction: Pose = Pose()
