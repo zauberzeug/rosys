@@ -24,6 +24,9 @@ class Runtime:
             self.persistence = persistence or Persistence(self.world)
             self.persistence.restore()
         self.hardware = hardware or SimulatedHardware(self.world)
+        if is_test:
+            assert isinstance(self.hardware, SimulatedHardware), \
+                'real hardware must not be used in tests'
         self.lizard = Lizard(self.hardware)
         self.odometer = Odometer()
         self.steerer = Steerer(self.hardware)
