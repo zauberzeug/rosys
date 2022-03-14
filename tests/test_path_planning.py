@@ -9,7 +9,7 @@ from rosys.test import TestRuntime
 @pytest.mark.asyncio
 async def test_driving_to_planned_point(runtime: TestRuntime):
     planner = rosys.pathplanning.Planner(runtime.world)
-    path = planner.search(goal=Pose(x=5, y=2), timeout=3.0)
+    path = await planner.search_async(goal=Pose(x=5, y=2), timeout=3.0)
     runtime.automator.start(drive_path(runtime.world, runtime.hardware, path))
     await runtime.forward(x=5, y=2, tolerance=0.15)
 

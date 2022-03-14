@@ -1,8 +1,13 @@
+import logging
+from typing import Any
 import numpy as np
 import heapq
 import copy
 import time
 import functools
+from rosys.world.area import Area
+
+from rosys.world.obstacle import Obstacle
 from .. import run
 from ..helpers import angle
 from ..world import Pose, PathSegment, World
@@ -10,24 +15,78 @@ from .distance_map import DistanceMap
 from .grid import Grid
 from .obstacle_map import ObstacleMap
 from .steps import Path, Step
+from multiprocessing import Process, Pipe
+from multiprocessing.connection import Connection
+import asyncio
 
 
 class Planner:
 
     def __init__(self, world: World):
         self.world = world
-        self.obstacle_map = None
-        self.small_obstacle_map = None
-        self.obstacles = None
-        self.goal = None
+        self.connection, process_connection = Pipe()
+        self.process = PlannerProcess(process_connection, self.world.robot.shape.outline)
+        self.process.start()
 
-    async def search_async(self, *, goal: Pose, start: Pose = None, backward: bool = False, timeout: float = None):
-        return await run.cpu_bound(functools.partial(self.search, goal=goal, start=start, backward=backward, timeout=timeout))
-
-    def search(self, *, goal: Pose, start: Pose = None, backward: bool = False, timeout: float = None) -> list[PathSegment]:
+    async def search_async(self, *, goal: Pose, start: Pose = None, backward: bool = False, timeout: float = 3.0):
         if start is None:
             start = self.world.robot.prediction
+        await self.ensure_map()
+        return await self.call(['search', goal, start, backward, timeout], timeout)
 
+    async def call(self, cmd: list, timeout: float) -> Any:
+        self.connection.send(cmd)
+        t = time.time()
+        while not self.connection.poll():
+            if time.time() - t > timeout:
+                raise TimeoutError()
+            await asyncio.sleep(0.1)
+        return self.connection.recv()
+
+    async def ensure_map(self):
+        pass
+        # hash(frozenset(my_dict.items()))
+
+
+class PlannerProcess(Process):
+
+    def __init__(self, connection: Connection, robot_outline: list[tuple[float, float]]):
+        super().__init__()
+        self.log = logging.getLogger('rosys.path_planning.PlannerProcess')
+        self.connection = connection
+        self.obstacle_map = None
+        self.small_obstacle_map = None
+        self.robot_outline = robot_outline
+        self.obstacles: list[Obstacle] = []
+        self.areas: list[Area] = []
+        self.goal = None
+
+    def run(self):
+        while True:
+            try:
+                cmd = self.connection.recv()
+            except EOFError:
+                self.log.info('PlannerProcess stopped')
+                return
+            try:
+                if cmd[0] == 'search':
+                    self.connection.send(self.search(*cmd[1:]))
+            except:
+                self.log.exception(f'failed to compute cmd "{cmd}"')
+            finally:
+                time.sleep(0.01)
+
+    def update_obstacle_map(self, goal: Pose, start: Pose) -> None:
+        if self.obstacle_map and all([self.obstacle_map.grid.contains(pose.point, padding=1.0) for pose in [goal, start]]):
+            return
+        points = [p for obstacle in self.obstacles for p in obstacle.outline]
+        points += [p for area in self.areas for p in area.outline]
+        grid = Grid.from_points(points + [start.point, goal.point], 0.1, 36, padding=1.0)
+        self.obstacle_map = ObstacleMap.from_world(self.robot_outline, self.areas, self.obstacles, grid)
+        self.small_obstacle_map = self.obstacle_map  # TODO?
+        self.goal = None
+
+    def search(self, goal: Pose, start: Pose = None, backward: bool = False, timeout: float = None) -> list[PathSegment]:
         self.update_obstacle_map(goal, start)
         if self.goal != goal:
             self.distance_map = DistanceMap(self.small_obstacle_map, goal)
@@ -116,15 +175,3 @@ class Planner:
         self.path.smooth(self.obstacle_map, control_dist=0.5)
         del self.path[0]
         return [PathSegment(spline=step.spline, backward=step.backward) for step in self.path]
-
-    def update_obstacle_map(self, goal: Pose, start: Pose) -> None:
-        if self.obstacles != self.world.obstacles or \
-                not self.obstacle_map.grid.contains(start.point, padding=1.0) or \
-                not self.obstacle_map.grid.contains(goal.point, padding=1.0):
-            points = [p for obstacle in self.world.obstacles.values() for p in obstacle.outline]
-            points += [p for area in self.world.areas.values() for p in area.outline]
-            grid = Grid.from_points(points + [start.point, goal.point], 0.1, 36, padding=1.0)
-            self.obstacle_map = ObstacleMap.from_world(self.world, grid)
-            self.small_obstacle_map = self.obstacle_map  # TODO?
-            self.obstacles = copy.deepcopy(self.world.obstacles)
-            self.goal = None

@@ -1,6 +1,9 @@
 import numpy as np
 from scipy import ndimage
 import cv2
+from rosys.world.area import Area
+
+from rosys.world.obstacle import Obstacle
 from ..world import World
 from .binary_renderer import BinaryRenderer
 from .grid import Grid
@@ -36,13 +39,13 @@ class ObstacleMap:
         return ObstacleMap(grid, map_, robot_renderer)
 
     @staticmethod
-    def from_world(world: World, grid: Grid):
-        robot_renderer = RobotRenderer(world.robot.shape.outline)
-        has_areas = any(len(a.outline) > 2 for a in world.areas.values())
+    def from_world(robot_outline: list[tuple[float, float]], areas: list[Area], obstacles: list[Obstacle], grid: Grid):
+        robot_renderer = RobotRenderer(robot_outline)
+        has_areas = any(len(a.outline) > 2 for a in areas)
         binary_renderer = BinaryRenderer(grid.size[:2], fill_value=has_areas)
-        for area in world.areas.values():
+        for area in areas:
             binary_renderer.polygon(np.array([grid.to_grid(p.x, p.y)[::-1] for p in area.outline]), False)
-        for obstacle in world.obstacles.values():
+        for obstacle in obstacles:
             binary_renderer.polygon(np.array([grid.to_grid(p.x, p.y)[::-1] for p in obstacle.outline]))
         return ObstacleMap(grid, binary_renderer.map, robot_renderer)
 
