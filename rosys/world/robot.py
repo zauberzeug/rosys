@@ -22,7 +22,7 @@ class RobotParameters(BaseModel, ModificationContext):
 
 
 class Robot(BaseModel):
-    name: str = os.environ['ROBOT_ID']
+    name: str = os.environ['ROBOT_ID'] if 'ROBOT_ID' in os.environ else 'unnamed'
     shape: RobotShape = RobotShape()
     parameters: RobotParameters = RobotParameters()
     prediction: Pose = Pose()
