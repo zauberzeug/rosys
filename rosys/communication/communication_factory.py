@@ -1,4 +1,4 @@
-import rosys
+from ..helpers import is_test
 from .serial_communication import SerialCommunication
 from .web_communication import WebCommunication
 
@@ -7,7 +7,7 @@ class CommunicationFactory:
 
     @staticmethod
     def create():
-        if rosys.is_test:
+        if is_test:
             return
         if SerialCommunication.is_possible():
             return SerialCommunication()
