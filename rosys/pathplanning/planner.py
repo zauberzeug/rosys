@@ -4,9 +4,10 @@ import numpy as np
 import heapq
 import copy
 import time
+import rosys
 from rosys.world.area import Area
-
 from rosys.world.obstacle import Obstacle
+from rosys.world.spline import Spline
 from ..helpers import angle
 from ..world import Pose, PathSegment, World
 from .distance_map import DistanceMap
@@ -38,14 +39,12 @@ class Planner:
         else:
             return result
 
-    async def call(self, cmd: list, timeout: float = 5.0) -> Any:
-        self.connection.send(cmd)
-        t = time.time()
-        while not self.connection.poll():
-            if time.time() - t > timeout:
-                raise TimeoutError('process call took too long')
-            await asyncio.sleep(0.1)
-        return self.connection.recv()
+    async def update_map(self, *, goal: Pose, start: Pose):
+        await self.ensure_map()
+        await self.call(['update_map', goal, start])
+
+    async def test_spline(self, spline: Spline):
+        return await self.call(['test_spline', spline])
 
     async def ensure_map(self):
         obstacles = list(self.world.obstacles.values())
@@ -56,6 +55,16 @@ class Planner:
         if self.last_areas != areas:
             await self.call(['areas', areas])
             self.last_areas = copy.deepcopy(areas)
+
+    async def call(self, cmd: list, timeout: float = 5.0) -> Any:
+        with rosys.run.cpu():
+            self.connection.send(cmd)
+            t = time.time()
+            while not self.connection.poll():
+                if time.time() - t > timeout:
+                    raise TimeoutError(f'process call "{cmd[0]}" took too long')
+                await asyncio.sleep(0.1)
+            return self.connection.recv()
 
 
 class PlannerProcess(Process):
@@ -72,6 +81,8 @@ class PlannerProcess(Process):
         self.goal = None
 
     def run(self):
+        import icecream
+        icecream.install()
         while True:
             try:
                 cmd = self.connection.recv()
@@ -81,17 +92,23 @@ class PlannerProcess(Process):
             try:
                 if cmd[0] == 'search':
                     self.connection.send(self.search(*cmd[1:]))
+                    continue
+                if cmd[0] == 'test_spline':
+                    result = self.obstacle_map.test_spline(*cmd[1:])
+                    self.connection.send(result)
+                    continue
+                if cmd[0] == 'update_map':
+                    self.update_map(*cmd[1:])
                 if cmd[0] == 'obstacles':
                     self.obstacles = cmd[1]
-                    self.connection.send(True)
                 if cmd[0] == 'areas':
                     self.areas = cmd[1]
-                    self.connection.send(True)
+                self.connection.send(True)
             except:
                 self.log.exception(f'failed to compute cmd "{cmd}"')
                 self.connection.send(None)
 
-    def update_obstacle_map(self, goal: Pose, start: Pose) -> None:
+    def update_map(self, goal: Pose, start: Pose) -> None:
         if self.obstacle_map and all([self.obstacle_map.grid.contains(pose.point, padding=1.0) for pose in [goal, start]]):
             return
         points = [p for obstacle in self.obstacles for p in obstacle.outline]
@@ -102,7 +119,7 @@ class PlannerProcess(Process):
         self.goal = None
 
     def search(self, goal: Pose, start: Pose = None, backward: bool = False, timeout: float = None) -> list[PathSegment]:
-        self.update_obstacle_map(goal, start)
+        self.update_map(goal, start)
         if self.goal != goal:
             self.distance_map = DistanceMap(self.small_obstacle_map, goal)
             self.goal = copy.deepcopy(goal)

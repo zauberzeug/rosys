@@ -70,7 +70,7 @@ class ObstacleMap:
         t = ObstacleMap.t_lookup[n] if n < len(ObstacleMap.t_lookup) else np.linspace(0, 1, n)
         return pose(t)
 
-    def test_spline(self, spline, backward=False):
+    def test_spline(self, spline, backward=False) -> bool:
         return self.test(*self._create_poses(spline, backward)).any()
 
     def get_distance(self, x, y, yaw):

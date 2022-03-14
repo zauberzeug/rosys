@@ -58,7 +58,7 @@ class TestRuntime(Runtime):
         self.log.info(f'\033[94m{msg}\033[0m')
         while not condition():
             if self.world.time > start_time + timeout:
-                raise TimeoutError(f'condition not met in time')
+                raise TimeoutError(f'condition took more than {timeout} s')
             if not run.running_processes:
                 self.world.set_time(self.world.time + dt)
                 await asyncio.sleep(0)

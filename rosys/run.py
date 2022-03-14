@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import contextmanager
 from typing import Callable
 import subprocess
 from concurrent.futures import ProcessPoolExecutor
@@ -17,16 +18,21 @@ async def io_bound(callback: Callable, *args: any):
 
 
 async def cpu_bound(callback: Callable, *args: any):
+    with cpu():
+        try:
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(process_pool, callback, *args)
+        except RuntimeError as e:
+            if 'cannot schedule new futures after shutdown' not in str(e):
+                raise
+
+
+@contextmanager
+def cpu():
     id = str(uuid.uuid4())
     running_processes.append(id)
-    try:
-        loop = asyncio.get_running_loop()
-        return await loop.run_in_executor(process_pool, callback, *args)
-    except RuntimeError as e:
-        if 'cannot schedule new futures after shutdown' not in str(e):
-            raise
-    finally:
-        running_processes.remove(id)
+    yield
+    running_processes.remove(id)
 
 
 async def sh(command: list[str]) -> str:
