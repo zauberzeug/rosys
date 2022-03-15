@@ -63,7 +63,7 @@ class Planner:
             while not self.connection.poll():
                 if time.time() - t > timeout:
                     raise TimeoutError(f'process call "{cmd[0]}" took too long')
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.01)
             return self.connection.recv()
 
 
