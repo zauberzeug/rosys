@@ -1,9 +1,9 @@
 import asyncio
 from typing import Coroutine, Optional
 from .. import event, task_logger
+from ..helpers import is_test
 from ..automations import Automation
 from . import Actor
-import rosys
 
 
 class Automator(Actor):
@@ -47,7 +47,7 @@ class Automator(Actor):
 
     def _handle_exception(self, e: Exception):
         self.stop(because='an exception occurred in an automation')
-        if rosys.is_test:
+        if is_test:
             self.log.exception('automation failed', e)
 
     def _on_complete(self):

@@ -1,22 +1,19 @@
-import logging
-from typing import Any
-import numpy as np
-import heapq
+import asyncio
 import copy
+import logging
+import heapq
+from multiprocessing import Process, Pipe
+from multiprocessing.connection import Connection
+import numpy as np
 import time
-import rosys
-from rosys.world.area import Area
-from rosys.world.obstacle import Obstacle
-from rosys.world.spline import Spline
+from typing import Any, Optional
+from .. import run
 from ..helpers import angle
-from ..world import Pose, PathSegment, World
+from ..world import Area, Obstacle, PathSegment, Pose, Spline, World
 from .distance_map import DistanceMap
 from .grid import Grid
 from .obstacle_map import ObstacleMap
 from .steps import Path, Step
-from multiprocessing import Process, Pipe
-from multiprocessing.connection import Connection
-import asyncio
 
 
 class Planner:
@@ -29,35 +26,32 @@ class Planner:
         self.last_obstacles = []
         self.last_areas = []
 
-    async def search_async(self, *, goal: Pose, start: Pose = None, backward: bool = False, timeout: float = 3.0):
+    async def search_async(self, *, goal: Pose, start: Optional[Pose] = None, backward: bool = False, timeout: float = 3.0):
         if start is None:
             start = self.world.robot.prediction
-        await self.ensure_map()
-        result = await self.call(['search', goal, start, backward])
+        await self._sync_map(goal=goal, start=start)
+        result = await self._call(('search', goal, start, backward, timeout))
         if result is None:
             raise TimeoutError('Could not find a path')
         else:
             return result
 
-    async def update_map(self, *, goal: Pose, start: Pose):
-        await self.ensure_map()
-        await self.call(['update_map', goal, start])
-
     async def test_spline(self, spline: Spline):
-        return await self.call(['test_spline', spline])
+        return await self._call(('test_spline', spline))
 
-    async def ensure_map(self):
+    async def _sync_map(self, *, goal: Pose, start: Pose):
         obstacles = list(self.world.obstacles.values())
         if self.last_obstacles != obstacles:
-            await self.call(['obstacles', obstacles])
+            await self._call(('set_obstacles', obstacles))
             self.last_obstacles = copy.deepcopy(obstacles)
         areas = list(self.world.areas.values())
         if self.last_areas != areas:
-            await self.call(['areas', areas])
+            await self._call(('set_areas', areas))
             self.last_areas = copy.deepcopy(areas)
+        await self._call(('update_obstacle_map', goal, start))
 
-    async def call(self, cmd: list, timeout: float = 5.0) -> Any:
-        with rosys.run.cpu():
+    async def _call(self, cmd: tuple, timeout: float = 5.0) -> Any:
+        with run.cpu():
             self.connection.send(cmd)
             t = time.time()
             while not self.connection.poll():
@@ -73,16 +67,15 @@ class PlannerProcess(Process):
         super().__init__()
         self.log = logging.getLogger('rosys.path_planning.PlannerProcess')
         self.connection = connection
-        self.obstacle_map = None
-        self.small_obstacle_map = None
+        self.obstacle_map: Optional[ObstacleMap] = None
+        self.small_obstacle_map: Optional[ObstacleMap] = None
+        self.distance_map: Optional[DistanceMap] = None
         self.robot_outline = robot_outline
         self.obstacles: list[Obstacle] = []
         self.areas: list[Area] = []
-        self.goal = None
+        self.goal: Optional[Pose] = None
 
     def run(self):
-        import icecream
-        icecream.install()
         while True:
             try:
                 cmd = self.connection.recv()
@@ -90,26 +83,27 @@ class PlannerProcess(Process):
                 self.log.info('PlannerProcess stopped')
                 return
             try:
+                if cmd[0] == 'set_obstacles':
+                    self.obstacles = cmd[1]
+                    self.connection.send(True)
+                if cmd[0] == 'set_areas':
+                    self.areas = cmd[1]
+                    self.connection.send(True)
+                if cmd[0] == 'update_obstacle_map':
+                    self.update_obstacle_map(*cmd[1:])
+                    self.connection.send(True)
                 if cmd[0] == 'search':
-                    self.connection.send(self.search(*cmd[1:]))
-                    continue
+                    result = self.search(*cmd[1:])
+                    self.connection.send(result)
                 if cmd[0] == 'test_spline':
                     result = self.obstacle_map.test_spline(*cmd[1:])
                     self.connection.send(result)
-                    continue
-                if cmd[0] == 'update_map':
-                    self.update_map(*cmd[1:])
-                if cmd[0] == 'obstacles':
-                    self.obstacles = cmd[1]
-                if cmd[0] == 'areas':
-                    self.areas = cmd[1]
-                self.connection.send(True)
             except:
                 self.log.exception(f'failed to compute cmd "{cmd}"')
                 self.connection.send(None)
 
-    def update_map(self, goal: Pose, start: Pose) -> None:
-        if self.obstacle_map and all([self.obstacle_map.grid.contains(pose.point, padding=1.0) for pose in [goal, start]]):
+    def update_obstacle_map(self, goal: Pose, start: Pose) -> None:
+        if self.obstacle_map and all(self.obstacle_map.grid.contains(pose.point, padding=1.0) for pose in [goal, start]):
             return
         points = [p for obstacle in self.obstacles for p in obstacle.outline]
         points += [p for area in self.areas for p in area.outline]
@@ -118,9 +112,9 @@ class PlannerProcess(Process):
         self.small_obstacle_map = self.obstacle_map  # TODO?
         self.goal = None
 
-    def search(self, goal: Pose, start: Pose = None, backward: bool = False, timeout: float = None) -> list[PathSegment]:
-        self.update_map(goal, start)
-        if self.goal != goal:
+    def search(self, goal: Pose, start: Pose, backward: bool, timeout: float) -> list[PathSegment]:
+        self.update_obstacle_map(goal, start)
+        if self.distance_map is None or self.goal != goal:
             self.distance_map = DistanceMap(self.small_obstacle_map, goal)
             self.goal = copy.deepcopy(goal)
 

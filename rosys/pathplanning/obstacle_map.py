@@ -1,10 +1,7 @@
 import numpy as np
 from scipy import ndimage
 import cv2
-from rosys.world.area import Area
-
-from rosys.world.obstacle import Obstacle
-from ..world import World
+from ..world import Area, Obstacle
 from .binary_renderer import BinaryRenderer
 from .grid import Grid
 from .robot_renderer import RobotRenderer
