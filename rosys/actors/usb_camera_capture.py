@@ -12,7 +12,8 @@ class UsbCameraCapture(Actor):
 
     def __init__(self):
         super().__init__()
-        self.devices = {}  # mapping camera ids to opencv devices
+        self.devices = {}  # NOTE: opencv devices are kept seperately (world should not be aware of them)
+        self.resolutions = {}  # NOTE: storing the current resolutions seperately to discover changes in the world
         self.last_scan = None
 
     async def step(self):
@@ -21,8 +22,11 @@ class UsbCameraCapture(Actor):
         for uid, camera in self.world.usb_cameras.items():
             if not camera.capture or not camera.connected:
                 continue
-            bytes = await rosys.run.io_bound(self.capture_image, uid)
-            camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time, size=camera.resolution))
+            try:
+                bytes = await rosys.run.io_bound(self.capture_image, uid)
+                camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time, size=camera.resolution))
+            except:
+                self.log.exception(f'could not capture image for {uid}')
         self.purge_old_images()
 
     def capture_image(self, id) -> bytes:
@@ -49,11 +53,12 @@ class UsbCameraCapture(Actor):
                 continue
             uid = match.group(1)
             if uid not in self.world.usb_cameras:
-                self.world.usb_cameras[uid] = UsbCamera(id=uid, connected=True)
+                self.world.usb_cameras[uid] = UsbCamera(id=uid)
                 self.log.info(f'adding camera {uid}')
                 await event.call(event.Id.NEW_CAMERA, self.world.usb_cameras[uid])
-            self.world.usb_cameras[uid].connected = True
             lines = infos.splitlines()
+            if 'dev/video' not in lines[1]:
+                continue
             num = int(lines[1].strip().lstrip('/dev/video'))
             if uid not in self.devices:
                 device = self.get_capture_device(num)
@@ -63,6 +68,7 @@ class UsbCameraCapture(Actor):
                 else:
                     self.devices[uid] = device
             if uid in self.devices:
+                self.world.usb_cameras[uid].connected = True
                 await self.update_parameters(uid, num)
 
     def get_capture_device(self, index: int):

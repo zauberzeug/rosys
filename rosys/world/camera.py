@@ -8,15 +8,19 @@ from .calibration import Calibration, Extrinsics, Intrinsics
 from .image import Image, ImageSize
 from .rotation import Rotation
 
+placeholder = Image.create_placeholder('no image')
+
 
 class Camera(BaseModel, abc.ABC):
     id: str
     calibration: Optional[Calibration] = None
     projection: Optional[list[list[Optional[list[float]]]]] = Field(None, exclude=True)
-    images: list[Image] = Field([Image.create_placeholder('no image')], exclude=True)
+    images: list[Image] = Field([placeholder], exclude=True)
 
     @property
     def latest_image_uri(self):
+        if not self.images:
+            return placeholder
         return f'camera/{self.id}/{self.images[-1].time}'
 
     @property
