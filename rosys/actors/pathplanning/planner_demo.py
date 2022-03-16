@@ -4,8 +4,7 @@ import pylab as pl
 import time
 from uuid import uuid4
 from rosys.world import Obstacle, Point, Pose, Robot, World
-from rosys.pathplanning.planner import Planner
-import rosys.pathplanning.plot_tools as pt
+from rosys.actors.pathplanning import plot_tools as pt
 
 world = World(robot=Robot())
 for x, y, w, h in [
@@ -19,7 +18,7 @@ for x, y, w, h in [
     outline = [Point(x=x, y=y), Point(x=x+w, y=y), Point(x=x+w, y=y+h), Point(x=x, y=y+h)]
     world.obstacles[id] = Obstacle(id=id, outline=outline)
 
-planner = Planner(world)
+planner = Planner(world)  # TODO: how to instantiate PlannerProcess?
 
 plot = ui.plot()
 

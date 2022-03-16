@@ -4,10 +4,7 @@ import pylab as pl
 import numpy as np
 import time
 from rosys.world import Pose, Spline
-from rosys.pathplanning.grid import Grid
-from rosys.pathplanning.robot_renderer import RobotRenderer
-from rosys.pathplanning.obstacle_map import ObstacleMap
-import rosys.pathplanning.plot_tools as pt
+from rosys.actors.pathplanning import Grid, ObstacleMap, RobotRenderer, plot_tools as pt
 
 grid = Grid((30, 40, 36), (0.45, -0.05, 4.0, 3.0))
 obstacles = [

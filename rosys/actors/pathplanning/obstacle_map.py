@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import ndimage
 import cv2
-from ..world import Area, Obstacle
+from ...world import Area, Obstacle
 from .binary_renderer import BinaryRenderer
 from .grid import Grid
 from .robot_renderer import RobotRenderer
