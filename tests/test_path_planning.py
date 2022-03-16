@@ -2,7 +2,20 @@ import pytest
 import numpy as np
 from rosys.automations import drive_path
 from rosys.world import Obstacle, Point, Pose
-from rosys.test import TestRuntime
+from rosys.test import TestRuntime, assert_point
+
+
+@pytest.mark.asyncio
+async def test_basic_path_planning(runtime: TestRuntime):
+    await runtime.forward(1.0)
+
+    goal = Pose(x=1.0, y=1.0)
+    path = await runtime.path_planner.search_async(goal=goal, timeout=3.0)
+    assert_point(path[-1].spline.end, goal.point)
+
+    goal = Pose(x=3.0, y=2.0)
+    path = await runtime.path_planner.search_async(goal=goal, timeout=1.0)
+    assert_point(path[-1].spline.end, goal.point)
 
 
 @pytest.mark.asyncio
