@@ -14,6 +14,7 @@ from .distance_map import DistanceMap
 from .grid import Grid
 from .obstacle_map import ObstacleMap
 from .steps import Path, Step
+import icecream
 
 
 class Planner:
@@ -76,6 +77,7 @@ class PlannerProcess(Process):
         self.goal: Optional[Pose] = None
 
     def run(self):
+        icecream.install()  # NOTE provide ic(...) in sub process
         while True:
             try:
                 cmd = self.connection.recv()
