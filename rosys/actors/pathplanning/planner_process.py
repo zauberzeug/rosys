@@ -82,7 +82,7 @@ class PlannerProcess(Process):
             return
         points = [p for obstacle in self.obstacles for p in obstacle.outline]
         points += [p for area in self.areas for p in area.outline]
-        grid = Grid.from_points(points + more_points, 0.1, 36, padding=1.0)
+        grid = Grid.from_points(points + more_points, 0.1, 36, padding=2.0)
         self.obstacle_map = ObstacleMap.from_world(self.robot_outline, areas, obstacles, grid)
         self.small_obstacle_map = self.obstacle_map  # TODO?
         self.distance_map = None
