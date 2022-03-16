@@ -1,4 +1,5 @@
-import copy
+import abc
+from dataclasses import dataclass
 import icecream
 import heapq
 import logging
@@ -7,12 +8,33 @@ from multiprocessing.connection import Connection
 import numpy as np
 import time
 from typing import Optional
+
 from .distance_map import DistanceMap
 from .grid import Grid
 from .obstacle_map import Obstacle, ObstacleMap
-from .steps import Path, Step
+from .steps import Step
 from ...helpers import angle
-from ...world import Area, PathSegment, Pose
+from ...world import Area, PathSegment, Point, Pose, Spline
+
+
+@dataclass
+class PlannerCommand(abc.ABC):
+    timeout: float
+    areas: list[Area]
+    obstacles: list[Obstacle]
+
+
+@dataclass
+class PlannerSearchCommand(PlannerCommand):
+    start: Pose
+    goal: Pose
+    backward: bool
+
+
+@dataclass
+class PlannerTestCommand(PlannerCommand):
+    spline: Spline
+    backward: bool = False
 
 
 class PlannerProcess(Process):
@@ -30,7 +52,7 @@ class PlannerProcess(Process):
         self.goal: Optional[Pose] = None
 
     def run(self):
-        icecream.install()  # NOTE provide ic(...) in sub process
+        icecream.install()  # NOTE provide ic(...) in subprocess
         while True:
             try:
                 cmd = self.connection.recv()
@@ -38,41 +60,42 @@ class PlannerProcess(Process):
                 self.log.info('PlannerProcess stopped')
                 return
             try:
-                if cmd[0] == 'set_obstacles':
-                    self.obstacles = cmd[1]
-                    self.connection.send(True)
-                if cmd[0] == 'set_areas':
-                    self.areas = cmd[1]
-                    self.connection.send(True)
-                if cmd[0] == 'update_obstacle_map':
-                    self.update_obstacle_map(*cmd[1:])
-                    self.connection.send(True)
-                if cmd[0] == 'search':
-                    result = self.search(*cmd[1:])
-                    self.connection.send(result)
-                if cmd[0] == 'test_spline':
-                    result = self.obstacle_map.test_spline(*cmd[1:])
-                    self.connection.send(result)
-            except:
+                if isinstance(cmd, PlannerSearchCommand):
+                    try:
+                        self.update_obstacle_map(cmd.areas, cmd.obstacles, [cmd.start.point, cmd.goal.point])
+                        self.update_distance_map(cmd.goal)
+                        self.connection.send(self.search(cmd.goal, cmd.start, cmd.backward, cmd.timeout))
+                    except (TimeoutError, RuntimeError) as e:
+                        self.connection.send(e)
+                if isinstance(cmd, PlannerTestCommand):
+                    self.update_obstacle_map(cmd.areas, cmd.obstacles, [cmd.spline.start, cmd.spline.end])
+                    self.connection.send(self.obstacle_map.test_spline(cmd.spline, cmd.backward))
+            except Exception as e:
                 self.log.exception(f'failed to compute cmd "{cmd}"')
-                self.connection.send(None)
+                self.connection.send(e)
 
-    def update_obstacle_map(self, goal: Pose, start: Pose) -> None:
-        if self.obstacle_map and all(self.obstacle_map.grid.contains(pose.point, padding=1.0) for pose in [goal, start]):
+    def update_obstacle_map(self, areas: list[Area], obstacles: list[Obstacle], more_points: list[Point] = []) -> None:
+        if self.obstacle_map and \
+                self.areas == areas and \
+                self.obstacles == obstacles and \
+                all(self.obstacle_map.grid.contains(point, padding=1.0) for point in more_points):
             return
         points = [p for obstacle in self.obstacles for p in obstacle.outline]
         points += [p for area in self.areas for p in area.outline]
-        grid = Grid.from_points(points + [start.point, goal.point], 0.1, 36, padding=1.0)
-        self.obstacle_map = ObstacleMap.from_world(self.robot_outline, self.areas, self.obstacles, grid)
+        grid = Grid.from_points(points + more_points, 0.1, 36, padding=1.0)
+        self.obstacle_map = ObstacleMap.from_world(self.robot_outline, areas, obstacles, grid)
         self.small_obstacle_map = self.obstacle_map  # TODO?
-        self.goal = None
+        self.distance_map = None
+        self.areas = areas
+        self.obstacles = obstacles
 
-    def search(self, goal: Pose, start: Pose, backward: bool, timeout: float) -> list[PathSegment]:
-        self.update_obstacle_map(goal, start)
-        if self.distance_map is None or self.goal != goal:
-            self.distance_map = DistanceMap(self.small_obstacle_map, goal)
-            self.goal = copy.deepcopy(goal)
+    def update_distance_map(self, goal: Pose) -> None:
+        if self.distance_map and self.goal == goal:
+            return
+        self.distance_map = DistanceMap(self.small_obstacle_map, goal)
+        self.goal = goal
 
+    def search(self, goal: Pose, start: Pose, backward: bool, timeout: float) -> Optional[list[PathSegment]]:
         start_time = time.time()
         step_dist = 0.5
         num_candidates = 16
@@ -83,12 +106,12 @@ class PlannerProcess(Process):
 
         while pose != (goal.x, goal.y, goal.yaw):
             if timeout is not None and time.time() - start_time > timeout:
-                return None
+                raise TimeoutError('could not find path')
 
             try:
                 _, travel_cost, step = heapq.heappop(heap)
             except IndexError:
-                return None
+                raise RuntimeError('could not find path')
 
             pose = step.target
             tup = tuple(np.round(pose, 3))
@@ -151,8 +174,6 @@ class PlannerProcess(Process):
 
                     heapq.heappush(heap, (costs[0], costs[1], next_step))
 
-        self.raw_path: Path = step.backtrace()
-        self.path: Path = copy.deepcopy(self.raw_path)
-        self.path.smooth(self.obstacle_map, control_dist=0.5)
-        del self.path[0]
-        return [PathSegment(spline=step.spline, backward=step.backward) for step in self.path]
+        path = step.backtrace()
+        path.smooth(self.obstacle_map, control_dist=0.5)
+        return [PathSegment(spline=step.spline, backward=step.backward) for step in path[1:]]
