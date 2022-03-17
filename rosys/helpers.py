@@ -55,6 +55,8 @@ class ModificationContext:
         backup = {key: getattr(self, key) for key in kwargs.keys()}
         for key, value in kwargs.items():
             setattr(self, key, value)
-        yield
-        for key, value in backup.items():
-            setattr(self, key, value)
+        try:
+            yield
+        finally:
+            for key, value in backup.items():
+                setattr(self, key, value)

@@ -31,8 +31,10 @@ async def cpu_bound(callback: Callable, *args: any):
 def cpu():
     id = str(uuid.uuid4())
     running_processes.append(id)
-    yield
-    running_processes.remove(id)
+    try:
+        yield
+    finally:
+        running_processes.remove(id)
 
 
 async def sh(command: list[str]) -> str:
