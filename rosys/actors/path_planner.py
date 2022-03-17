@@ -25,8 +25,11 @@ class PathPlanner(Actor):
         if self.process.is_alive():
             self.process.kill()
 
-    async def grow_map(self, points: list[Point], timeout: float = 3.0):
-        await self._call(PlannerGrowCommand(timeout=timeout, points=points))
+    async def grow_map(self, points: list[Point], timeout: float = 3.0) -> None:
+        return await self._call(PlannerGrowCommand(
+            points=points,
+            timeout=timeout,
+        ))
 
     async def search(self, *,
                      goal: Pose,
@@ -42,8 +45,13 @@ class PathPlanner(Actor):
             timeout=timeout,
         ))
 
-    async def test_spline(self, spline: Spline):
-        return await self._call(PlannerTestCommand(spline=spline))
+    async def test_spline(self, spline: Spline, timeout: float = 3.0):
+        return await self._call(PlannerTestCommand(
+            areas=list(self.world.areas.values()),
+            obstacles=list(self.world.obstacles.values()),
+            spline=spline,
+            timeout=timeout,
+        ))
 
     async def _call(self, command: PlannerCommand) -> Any:
         with run.cpu():

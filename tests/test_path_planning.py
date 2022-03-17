@@ -1,8 +1,18 @@
 import pytest
 import numpy as np
+import uuid
 from rosys.automations import drive_path
-from rosys.world import Obstacle, Point, Pose
+from rosys.world import Obstacle, Point, Pose, Spline
 from rosys.test import TestRuntime, assert_point
+
+
+def create_obstacle(*, x: float, y: float, radius: float = 0.5) -> Obstacle:
+    return Obstacle(id=str(uuid.uuid4()), outline=[
+        Point(x=x-radius, y=y-radius),
+        Point(x=x+radius, y=y-radius),
+        Point(x=x+radius, y=y+radius),
+        Point(x=x-radius, y=y+radius),
+    ])
 
 
 @pytest.mark.asyncio
@@ -35,13 +45,19 @@ async def test_planning_to_problematic_location(runtime: TestRuntime):
 @pytest.mark.asyncio
 async def test_not_finding_a_path(runtime: TestRuntime):
     await runtime.forward(1.0)
-    id = 'o1'
-    p = Point(x=3, y=0)
-    runtime.world.obstacles[id] = Obstacle(id=id, outline=[
-        Point(x=p.x-0.5, y=p.y-0.5),
-        Point(x=p.x+0.5, y=p.y-0.5),
-        Point(x=p.x+0.5, y=p.y+0.5),
-        Point(x=p.x-0.5, y=p.y+0.5),
-    ])
+    obstacle = create_obstacle(x=3, y=0)
+    runtime.world.obstacles[obstacle.id] = obstacle
     with pytest.raises(TimeoutError):
         await runtime.path_planner.search(goal=Pose(x=3, y=0), timeout=1.0)
+
+
+@pytest.mark.asyncio
+async def test_test_spline(runtime: TestRuntime):
+    await runtime.forward(1.0)
+
+    spline = Spline.from_poses(Pose(x=0, y=0), Pose(x=2, y=1))
+    assert await runtime.path_planner.test_spline(spline) == False
+
+    obstacle = create_obstacle(x=2, y=1)
+    runtime.world.obstacles[obstacle.id] = obstacle
+    assert await runtime.path_planner.test_spline(spline) == True
