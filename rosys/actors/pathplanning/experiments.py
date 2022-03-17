@@ -1,7 +1,7 @@
 import numpy as np
-from rosys.pathplanning.grid import Grid
-from rosys.pathplanning.obstacle_map import ObstacleMap
-from rosys.pathplanning.robot_renderer import RobotRenderer
+from .grid import Grid
+from .obstacle_map import ObstacleMap
+from .robot_renderer import RobotRenderer
 
 
 def generate_experiment(id_):

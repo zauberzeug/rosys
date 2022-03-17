@@ -9,8 +9,7 @@ from rosys.world import Obstacle, PathSegment, Point, Pose, Robot, RobotShape, S
 
 shape = RobotShape(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])
 world = World(robot=Robot(shape=shape))
-planner = rosys.pathplanning.Planner(world)
-runtime = rosys.Runtime(world, rosys.Persistence(world, '~/.rosys/obstacles/world.json'))
+runtime = rosys.Runtime(world, rosys.Persistence(world, '~/.rosys/obstacles/world.json')).with_path_planner()
 rosys.ui.configure(ui, runtime)
 rosys.ui.keyboard_control()
 
@@ -42,8 +41,8 @@ with ui.card():
                 runtime.automator.start(drive_path(world, runtime.hardware, path))
                 return
             if object_type == 'ground' and click_mode.value == 'navigate':
-                target_yaw = world.robot.prediction.point.direction(hit.point)
-                path = await planner.search_async(goal=Pose(x=hit.point.x, y=hit.point.y, yaw=target_yaw), timeout=3.0)
+                goal = Pose(x=hit.point.x, y=hit.point.y, yaw=world.robot.prediction.point.direction(hit.point))
+                path = await runtime.path_planner.search(goal=goal, timeout=3.0)
                 path3d.update(path)
                 runtime.automator.start(drive_path(world, runtime.hardware, path))
                 return

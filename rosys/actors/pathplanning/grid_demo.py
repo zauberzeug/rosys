@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import numpy as np
-from rosys.pathplanning.grid import Grid
+from rosys.actors.pathplanning import Grid
 
 grid = Grid((6, 8), (2.0, 1.0, 4.0, 3.0))
 x, y = 2.5, 1.0

@@ -1,35 +1,83 @@
 import pytest
 import numpy as np
-import rosys
+import uuid
 from rosys.automations import drive_path
-from rosys.world import Obstacle, Point, Pose
-from rosys.test import TestRuntime
+from rosys.world import Obstacle, Point, Pose, Spline
+from rosys.test import TestRuntime, assert_point
+
+
+def create_obstacle(*, x: float, y: float, radius: float = 0.5) -> Obstacle:
+    return Obstacle(id=str(uuid.uuid4()), outline=[
+        Point(x=x-radius, y=y-radius),
+        Point(x=x+radius, y=y-radius),
+        Point(x=x+radius, y=y+radius),
+        Point(x=x-radius, y=y+radius),
+    ])
+
+
+@pytest.mark.asyncio
+async def test_basic_path_planning(runtime: TestRuntime):
+    await runtime.forward(1.0)
+
+    goal = Pose(x=1.0, y=1.0)
+    path = await runtime.path_planner.search(goal=goal, timeout=3.0)
+    assert_point(path[-1].spline.end, goal.point)
+
+    goal = Pose(x=3.0, y=2.0)
+    path = await runtime.path_planner.search(goal=goal, timeout=1.0)
+    assert_point(path[-1].spline.end, goal.point)
 
 
 @pytest.mark.asyncio
 async def test_driving_to_planned_point(runtime: TestRuntime):
-    planner = rosys.pathplanning.Planner(runtime.world)
-    path = planner.search(goal=Pose(x=5, y=2), timeout=3.0)
+    await runtime.forward(1.0)
+    path = await runtime.path_planner.search(goal=Pose(x=5, y=2), timeout=3.0)
     runtime.automator.start(drive_path(runtime.world, runtime.hardware, path))
     await runtime.forward(x=5, y=2, tolerance=0.15)
 
 
 @pytest.mark.asyncio
 async def test_planning_to_problematic_location(runtime: TestRuntime):
-    planner = rosys.pathplanning.Planner(runtime.world)
-    planner.search(goal=Pose(x=2.250, y=1.299, yaw=np.deg2rad(-60.0)), timeout=3.0)
+    await runtime.forward(1.0)
+    await runtime.path_planner.search(goal=Pose(x=2.250, y=1.299, yaw=np.deg2rad(-60.0)), timeout=3.0)
 
 
 @pytest.mark.asyncio
 async def test_not_finding_a_path(runtime: TestRuntime):
-    id = 'o1'
-    p = Point(x=3, y=0)
-    runtime.world.obstacles[id] = Obstacle(id=id, outline=[
-        Point(x=p.x-0.5, y=p.y-0.5),
-        Point(x=p.x+0.5, y=p.y-0.5),
-        Point(x=p.x+0.5, y=p.y+0.5),
-        Point(x=p.x-0.5, y=p.y+0.5),
-    ])
-    planner = rosys.pathplanning.Planner(runtime.world)
+    await runtime.forward(1.0)
+    obstacle = create_obstacle(x=3, y=0)
+    runtime.world.obstacles[obstacle.id] = obstacle
     with pytest.raises(TimeoutError):
-        planner.search(goal=Pose(x=3, y=0), timeout=1.0)
+        await runtime.path_planner.search(goal=Pose(x=3, y=0), timeout=1.0)
+
+
+@pytest.mark.asyncio
+async def test_test_spline(runtime: TestRuntime):
+    await runtime.forward(1.0)
+
+    spline = Spline.from_poses(Pose(x=0, y=0), Pose(x=2, y=1))
+    assert await runtime.path_planner.test_spline(spline) == False
+
+    obstacle = create_obstacle(x=2, y=1)
+    runtime.world.obstacles[obstacle.id] = obstacle
+    assert await runtime.path_planner.test_spline(spline) == True
+
+
+@pytest.mark.asyncio
+async def test_grow_map(runtime: TestRuntime):
+    await runtime.forward(1.0)
+
+    state = await runtime.path_planner.get_state()
+    assert state.obstacle_map is None
+    assert state.distance_map is None
+
+    path = await runtime.path_planner.search(goal=Pose(x=2, y=1))
+    assert path is not None
+    state = await runtime.path_planner.get_state()
+    assert state.obstacle_map.grid.bbox == pytest.approx((-1.2, -1.2, 4.4, 3.4))
+    assert state.obstacle_map.grid.bbox == state.distance_map.grid.bbox
+
+    await runtime.path_planner.grow_map([Point(x=5, y=0)])
+    state = await runtime.path_planner.get_state()
+    assert state.obstacle_map.grid.bbox == pytest.approx((-2.4, -2.4, 8.6, 5.8))
+    assert state.distance_map is None
