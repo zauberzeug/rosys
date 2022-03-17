@@ -1,31 +1,33 @@
 #!/usr/bin/env python3
+from turtle import back
 from nicegui import ui
 import pylab as pl
 import time
 from uuid import uuid4
+from rosys.actors.pathplanning.planner_process import PlannerProcess
 from rosys.world import Obstacle, Point, Pose, Robot, World
 from rosys.actors.pathplanning import plot_tools as pt
 
-world = World(robot=Robot())
-for x, y, w, h in [
+obstacles = [Obstacle(
+    id=str(uuid4()),
+    outline=[Point(x=x, y=y), Point(x=x+w, y=y), Point(x=x+w, y=y+h), Point(x=x, y=y+h)]
+) for x, y, w, h in [
     [1.5, 1.5, 0.2, 6.0],
     [1.5, 1.5, 5.0, 0.2],
     [6.3, 1.5, 0.2, 2.0],
     [4.5, 2.5, 0.2, 1.5],
     [5.5, 5.0, 0.2, 0.2],
-]:
-    id = str(uuid4())
-    outline = [Point(x=x, y=y), Point(x=x+w, y=y), Point(x=x+w, y=y+h), Point(x=x, y=y+h)]
-    world.obstacles[id] = Obstacle(id=id, outline=outline)
-
-planner = Planner(world)  # TODO: how to instantiate PlannerProcess?
-
+]]
+goal = Pose(x=10, y=4, yaw=0)
+planner = PlannerProcess(None, Robot().shape.outline)
 plot = ui.plot()
 
 
 def run():
     t = time.time()
-    planner.search(goal=Pose(x=10, y=4, yaw=0))
+    planner.update_obstacle_map([], obstacles, [Pose(), goal])
+    planner.update_distance_map(goal)
+    planner.search(goal=goal, start=Pose(), backward=False, timeout=3.0)
     print('path finding: %5.1f ms' % ((time.time() - t) * 1000), flush=True)
 
     with plot:
