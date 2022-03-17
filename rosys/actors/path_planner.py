@@ -4,9 +4,9 @@ import time
 from typing import Any, Optional
 
 from .. import run
-from ..world import PathSegment, Pose, Spline
+from ..world import PathSegment, Point, Pose, Spline
 from . import Actor
-from .pathplanning.planner_process import PlannerCommand, PlannerProcess, PlannerSearchCommand, PlannerTestCommand
+from .pathplanning import PlannerCommand, PlannerProcess, PlannerGrowCommand, PlannerSearchCommand, PlannerTestCommand
 
 
 class PathPlanner(Actor):
@@ -25,11 +25,14 @@ class PathPlanner(Actor):
         if self.process.is_alive():
             self.process.kill()
 
-    async def search_async(self, *,
-                           goal: Pose,
-                           start: Optional[Pose] = None,
-                           backward: bool = False,
-                           timeout: float = 3.0) -> list[PathSegment]:
+    async def grow_map(self, points: list[Point], timeout: float = 3.0):
+        await self._call(PlannerGrowCommand(timeout=timeout, points=points))
+
+    async def search(self, *,
+                     goal: Pose,
+                     start: Optional[Pose] = None,
+                     backward: bool = False,
+                     timeout: float = 3.0) -> list[PathSegment]:
         return await self._call(PlannerSearchCommand(
             areas=list(self.world.areas.values()),
             obstacles=list(self.world.obstacles.values()),

@@ -13,7 +13,7 @@ rosys.ui.configure(ui, runtime)
 async def handle_click(msg):
     for hit in msg.hits:
         yaw = runtime.world.robot.prediction.point.direction(hit.point)
-        path = await runtime.path_planner.search_async(goal=Pose(x=hit.point.x, y=hit.point.y, yaw=yaw), timeout=3.0)
+        path = await runtime.path_planner.search(goal=Pose(x=hit.point.x, y=hit.point.y, yaw=yaw), timeout=3.0)
         path3d.update(path)
         runtime.automator.start(drive_path(runtime.world, runtime.hardware, path))
 

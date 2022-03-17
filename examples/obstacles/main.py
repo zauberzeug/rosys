@@ -42,7 +42,7 @@ with ui.card():
                 return
             if object_type == 'ground' and click_mode.value == 'navigate':
                 goal = Pose(x=hit.point.x, y=hit.point.y, yaw=world.robot.prediction.point.direction(hit.point))
-                path = await runtime.path_planner.search_async(goal=goal, timeout=3.0)
+                path = await runtime.path_planner.search(goal=goal, timeout=3.0)
                 path3d.update(path)
                 runtime.automator.start(drive_path(world, runtime.hardware, path))
                 return

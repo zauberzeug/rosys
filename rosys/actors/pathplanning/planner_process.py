@@ -25,6 +25,11 @@ class PlannerCommand(abc.ABC):
 
 
 @dataclass
+class PlannerGrowCommand(PlannerCommand):
+    points: list[Point]
+
+
+@dataclass
 class PlannerSearchCommand(PlannerCommand):
     start: Pose
     goal: Pose
@@ -60,6 +65,9 @@ class PlannerProcess(Process):
                 self.log.info('PlannerProcess stopped')
                 return
             try:
+                if isinstance(cmd, PlannerGrowCommand):
+                    self.grow_obstacle_map(self.areas, self.obstacle_map, cmd.points)
+                    self.connection.send(None)
                 if isinstance(cmd, PlannerSearchCommand):
                     try:
                         self.update_obstacle_map(cmd.areas, cmd.obstacles, [cmd.start.point, cmd.goal.point])
@@ -74,7 +82,7 @@ class PlannerProcess(Process):
                 self.log.exception(f'failed to compute cmd "{cmd}"')
                 self.connection.send(e)
 
-    def update_obstacle_map(self, areas: list[Area], obstacles: list[Obstacle], more_points: list[Point] = []) -> None:
+    def update_obstacle_map(self, areas: list[Area], obstacles: list[Obstacle], more_points: list[Point] = []):
         if self.obstacle_map and \
                 self.areas == areas and \
                 self.obstacles == obstacles and \
@@ -82,12 +90,27 @@ class PlannerProcess(Process):
             return
         points = [p for obstacle in self.obstacles for p in obstacle.outline]
         points += [p for area in self.areas for p in area.outline]
-        grid = Grid.from_points(points + more_points, 0.1, 36, padding=2.0)
+        grid = Grid.from_points(points + more_points, 0.1, 36, padding=1.0)
         self.obstacle_map = ObstacleMap.from_world(self.robot_outline, areas, obstacles, grid)
         self.small_obstacle_map = self.obstacle_map  # TODO?
         self.distance_map = None
         self.areas = areas
         self.obstacles = obstacles
+
+    def grow_obstacle_map(self, points: list[Point]):
+        if self.obstacle_map is not None and \
+                all(self.obstacle_map.grid.contains(point, padding=1.0) for point in points):
+            return
+        if self.obstacle_map is not None:
+            bbox = self.obstacle_map.grid.bbox
+            points.append(Point(x=bbox[0],         y=bbox[1]))
+            points.append(Point(x=bbox[0]+bbox[2], y=bbox[1]))
+            points.append(Point(x=bbox[0],         y=bbox[1]+bbox[3]))
+            points.append(Point(x=bbox[0]+bbox[2], y=bbox[1]+bbox[3]))
+        grid = Grid.from_points(points, 0.1, 36, padding=1.0)
+        self.obstacle_map = ObstacleMap.from_world(self.robot_outline, self.areas, self.obstacles, grid)
+        self.small_obstacle_map = self.obstacle_map  # TODO?
+        self.distance_map = None
 
     def update_distance_map(self, goal: Pose) -> None:
         if self.distance_map and self.goal == goal:
