@@ -61,3 +61,23 @@ async def test_test_spline(runtime: TestRuntime):
     obstacle = create_obstacle(x=2, y=1)
     runtime.world.obstacles[obstacle.id] = obstacle
     assert await runtime.path_planner.test_spline(spline) == True
+
+
+@pytest.mark.asyncio
+async def test_grow_map(runtime: TestRuntime):
+    await runtime.forward(1.0)
+
+    state = await runtime.path_planner.get_state()
+    assert state.obstacle_map is None
+    assert state.distance_map is None
+
+    path = await runtime.path_planner.search(goal=Pose(x=2, y=1))
+    assert path is not None
+    state = await runtime.path_planner.get_state()
+    assert state.obstacle_map.grid.bbox == pytest.approx((-1.2, -1.2, 4.4, 3.4))
+    assert state.obstacle_map.grid.bbox == state.distance_map.grid.bbox
+
+    await runtime.path_planner.grow_map([Point(x=5, y=0)])
+    state = await runtime.path_planner.get_state()
+    assert state.obstacle_map.grid.bbox == pytest.approx((-2.4, -2.4, 8.6, 5.8))
+    assert state.distance_map is None

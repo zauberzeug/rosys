@@ -6,7 +6,8 @@ from typing import Any, Optional
 from .. import run
 from ..world import PathSegment, Point, Pose, Spline
 from . import Actor
-from .pathplanning import PlannerCommand, PlannerProcess, PlannerGrowCommand, PlannerSearchCommand, PlannerTestCommand
+from .pathplanning import PlannerCommand, PlannerProcess, PlannerState, \
+    PlannerGetStateCommand, PlannerGrowMapCommand, PlannerSearchCommand, PlannerTestCommand
 
 
 class PathPlanner(Actor):
@@ -25,8 +26,11 @@ class PathPlanner(Actor):
         if self.process.is_alive():
             self.process.kill()
 
+    async def get_state(self, timeout: float = 3.0) -> PlannerState:
+        return await self._call(PlannerGetStateCommand(timeout=timeout))
+
     async def grow_map(self, points: list[Point], timeout: float = 3.0) -> None:
-        return await self._call(PlannerGrowCommand(
+        return await self._call(PlannerGrowMapCommand(
             points=points,
             timeout=timeout,
         ))

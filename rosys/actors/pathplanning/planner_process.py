@@ -1,5 +1,5 @@
 import abc
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import icecream
 import heapq
 import logging
@@ -18,19 +18,35 @@ from ...world import Area, PathSegment, Point, Pose, Spline
 
 
 @dataclass
-class PlannerCommand(abc.ABC):
-    timeout: float
-    areas: list[Area]
-    obstacles: list[Obstacle]
+class PlannerState:
+    robot_outline: list[tuple[float, float]]
+    obstacle_map: Optional[ObstacleMap] = None
+    small_obstacle_map: Optional[ObstacleMap] = None
+    distance_map: Optional[DistanceMap] = None
+    obstacles: list[Obstacle] = field(default_factory=list)
+    areas: list[Area] = field(default_factory=list)
+    goal: Optional[Pose] = None
 
 
 @dataclass
-class PlannerGrowCommand(PlannerCommand):
+class PlannerCommand(abc.ABC):
+    timeout: float
+
+
+@dataclass
+class PlannerGetStateCommand(PlannerCommand):
+    pass
+
+
+@dataclass
+class PlannerGrowMapCommand(PlannerCommand):
     points: list[Point]
 
 
 @dataclass
 class PlannerSearchCommand(PlannerCommand):
+    areas: list[Area]
+    obstacles: list[Obstacle]
     start: Pose
     goal: Pose
     backward: bool
@@ -38,6 +54,8 @@ class PlannerSearchCommand(PlannerCommand):
 
 @dataclass
 class PlannerTestCommand(PlannerCommand):
+    areas: list[Area]
+    obstacles: list[Obstacle]
     spline: Spline
     backward: bool = False
 
@@ -48,13 +66,7 @@ class PlannerProcess(Process):
         super().__init__()
         self.log = logging.getLogger('rosys.pathplanning.PlannerProcess')
         self.connection = connection
-        self.obstacle_map: Optional[ObstacleMap] = None
-        self.small_obstacle_map: Optional[ObstacleMap] = None
-        self.distance_map: Optional[DistanceMap] = None
-        self.robot_outline = robot_outline
-        self.obstacles: list[Obstacle] = []
-        self.areas: list[Area] = []
-        self.goal: Optional[Pose] = None
+        self.state = PlannerState(robot_outline)
 
     def run(self):
         icecream.install()  # NOTE provide ic(...) in subprocess
@@ -65,8 +77,10 @@ class PlannerProcess(Process):
                 self.log.info('PlannerProcess stopped')
                 return
             try:
-                if isinstance(cmd, PlannerGrowCommand):
-                    self.grow_obstacle_map(self.areas, self.obstacle_map, cmd.points)
+                if isinstance(cmd, PlannerGetStateCommand):
+                    self.connection.send(self.state)
+                if isinstance(cmd, PlannerGrowMapCommand):
+                    self.grow_obstacle_map(cmd.points)
                     self.connection.send(None)
                 if isinstance(cmd, PlannerSearchCommand):
                     try:
@@ -77,46 +91,47 @@ class PlannerProcess(Process):
                         self.connection.send(e)
                 if isinstance(cmd, PlannerTestCommand):
                     self.update_obstacle_map(cmd.areas, cmd.obstacles, [cmd.spline.start, cmd.spline.end])
-                    self.connection.send(self.obstacle_map.test_spline(cmd.spline, cmd.backward))
+                    self.connection.send(self.state.obstacle_map.test_spline(cmd.spline, cmd.backward))
             except Exception as e:
                 self.log.exception(f'failed to compute cmd "{cmd}"')
                 self.connection.send(e)
 
     def update_obstacle_map(self, areas: list[Area], obstacles: list[Obstacle], more_points: list[Point] = []):
-        if self.obstacle_map and \
-                self.areas == areas and \
-                self.obstacles == obstacles and \
-                all(self.obstacle_map.grid.contains(point, padding=1.0) for point in more_points):
+        if self.state.obstacle_map and \
+                self.state.areas == areas and \
+                self.state.obstacles == obstacles and \
+                all(self.state.obstacle_map.grid.contains(point, padding=1.0) for point in more_points):
             return
-        points = [p for obstacle in self.obstacles for p in obstacle.outline]
-        points += [p for area in self.areas for p in area.outline]
+        points = [p for obstacle in self.state.obstacles for p in obstacle.outline]
+        points += [p for area in self.state.areas for p in area.outline]
         grid = Grid.from_points(points + more_points, 0.1, 36, padding=1.0)
-        self.obstacle_map = ObstacleMap.from_world(self.robot_outline, areas, obstacles, grid)
-        self.small_obstacle_map = self.obstacle_map  # TODO?
-        self.distance_map = None
-        self.areas = areas
-        self.obstacles = obstacles
+        self.state.obstacle_map = ObstacleMap.from_world(self.state.robot_outline, areas, obstacles, grid)
+        self.state.small_obstacle_map = self.state.obstacle_map  # TODO?
+        self.state.distance_map = None
+        self.state.areas = areas
+        self.state.obstacles = obstacles
 
     def grow_obstacle_map(self, points: list[Point]):
-        if self.obstacle_map is not None and \
-                all(self.obstacle_map.grid.contains(point, padding=1.0) for point in points):
+        if self.state.obstacle_map is not None and \
+                all(self.state.obstacle_map.grid.contains(point, padding=1.0) for point in points):
             return
-        if self.obstacle_map is not None:
-            bbox = self.obstacle_map.grid.bbox
+        if self.state.obstacle_map is not None:
+            bbox = self.state.obstacle_map.grid.bbox
             points.append(Point(x=bbox[0],         y=bbox[1]))
             points.append(Point(x=bbox[0]+bbox[2], y=bbox[1]))
             points.append(Point(x=bbox[0],         y=bbox[1]+bbox[3]))
             points.append(Point(x=bbox[0]+bbox[2], y=bbox[1]+bbox[3]))
         grid = Grid.from_points(points, 0.1, 36, padding=1.0)
-        self.obstacle_map = ObstacleMap.from_world(self.robot_outline, self.areas, self.obstacles, grid)
-        self.small_obstacle_map = self.obstacle_map  # TODO?
-        self.distance_map = None
+        self.state.obstacle_map = ObstacleMap.from_world(self.state.robot_outline,
+                                                         self.state.areas, self.state.obstacles, grid)
+        self.state.small_obstacle_map = self.state.obstacle_map  # TODO?
+        self.state.distance_map = None
 
     def update_distance_map(self, goal: Pose) -> None:
-        if self.distance_map and self.goal == goal:
+        if self.state.distance_map and self.state.goal == goal:
             return
-        self.distance_map = DistanceMap(self.small_obstacle_map, goal)
-        self.goal = goal
+        self.state.distance_map = DistanceMap(self.state.small_obstacle_map, goal)
+        self.state.goal = goal
 
     def search(self, goal: Pose, start: Pose, backward: bool, timeout: float) -> Optional[list[PathSegment]]:
         start_time = time.time()
@@ -124,7 +139,7 @@ class PlannerProcess(Process):
         num_candidates = 16
 
         pose = (start.x, start.y, start.yaw)
-        heap = [(self.distance_map.interpolate(start.x, start.y), 0, Step(pose))]
+        heap = [(self.state.distance_map.interpolate(start.x, start.y), 0, Step(pose))]
         visited = set()
 
         while pose != (goal.x, goal.y, goal.yaw):
@@ -161,7 +176,7 @@ class PlannerProcess(Process):
                 if tup in visited:
                     continue
 
-                if self.obstacle_map.test(*candidate):
+                if self.state.obstacle_map.test(*candidate):
                     continue
 
                 costs = None
@@ -176,27 +191,27 @@ class PlannerProcess(Process):
                         if not next_step.is_healthy():
                             continue
 
-                    if self.obstacle_map.get_minimum_spline_distance(next_step.spline, backward=backward) < 0.1:
+                    if self.state.obstacle_map.get_minimum_spline_distance(next_step.spline, backward=backward) < 0.1:
                         continue
 
                     if costs is None:
-                        dist = self.distance_map.interpolate(candidate[0], candidate[1])[0]
+                        dist = self.state.distance_map.interpolate(candidate[0], candidate[1])[0]
                         new_travel_cost = travel_cost + step_dist
                         if step.backward != next_step.backward:
                             new_travel_cost += step_dist
                         yaw_cost = 0
                         if dist > step_dist:
-                            gx, gy = self.distance_map.gradient(candidate[0], candidate[1])
+                            gx, gy = self.state.distance_map.gradient(candidate[0], candidate[1])
                             target_yaw = np.arctan2(gy, gx) if backward else np.arctan2(-gy, -gx)
                             yaw_error = abs(angle(candidate[2], target_yaw[0]))
                             if yaw_error > np.pi / 2:
                                 yaw_cost = 5 * yaw_error
-                        obstacle_cost = max(1.0 - self.obstacle_map.get_distance(*candidate), 0.0)
+                        obstacle_cost = max(1.0 - self.state.obstacle_map.get_distance(*candidate), 0.0)
                         remaining_cost = dist + 0.7 * new_travel_cost + yaw_cost + 0.3 * obstacle_cost
                         costs = (remaining_cost, new_travel_cost)
 
                     heapq.heappush(heap, (costs[0], costs[1], next_step))
 
         path = step.backtrace()
-        path.smooth(self.obstacle_map, control_dist=0.5)
+        path.smooth(self.state.obstacle_map, control_dist=0.5)
         return [PathSegment(spline=step.spline, backward=step.backward) for step in path[1:]]
