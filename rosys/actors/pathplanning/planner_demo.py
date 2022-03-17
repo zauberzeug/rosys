@@ -31,8 +31,8 @@ def run():
 
     with plot:
         pl.clf()
-        pt.show_distance_map(planner.distance_map)
-        pt.show_obstacle_map(planner.obstacle_map)
+        pt.show_distance_map(planner.state.distance_map)
+        pt.show_obstacle_map(planner.state.obstacle_map)
         pl.gca().invert_yaxis()
         pl.autoscale(False)
         pt.plot_path(path, 'C0')
