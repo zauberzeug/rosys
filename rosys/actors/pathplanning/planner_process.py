@@ -91,7 +91,7 @@ class PlannerProcess(Process):
                         self.connection.send(e)
                 if isinstance(cmd, PlannerTestCommand):
                     self.update_obstacle_map(cmd.areas, cmd.obstacles, [cmd.spline.start, cmd.spline.end])
-                    self.connection.send(self.state.obstacle_map.test_spline(cmd.spline, cmd.backward))
+                    self.connection.send(bool(self.state.obstacle_map.test_spline(cmd.spline, cmd.backward)))
             except Exception as e:
                 self.log.exception(f'failed to compute cmd "{cmd}"')
                 self.connection.send(e)
