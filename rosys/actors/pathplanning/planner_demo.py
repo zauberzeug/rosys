@@ -26,7 +26,7 @@ def run():
     t = time.time()
     planner.update_obstacle_map([], obstacles, [Pose(), goal])
     planner.update_distance_map(goal)
-    path = planner.search(goal=goal, start=Pose(), backward=False, timeout=3.0)
+    path = planner.search(goal=goal, start=Pose(), backward=False, deadline=time.time()+3.0)
     print('path finding: %5.1f ms' % ((time.time() - t) * 1000), flush=True)
 
     with plot:
