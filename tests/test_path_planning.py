@@ -1,3 +1,4 @@
+import asyncio
 import pytest
 import numpy as np
 import uuid
@@ -81,3 +82,19 @@ async def test_grow_map(runtime: TestRuntime):
     state = await runtime.path_planner.get_state()
     assert state.obstacle_map.grid.bbox == pytest.approx((-2.4, -2.4, 8.6, 5.8))
     assert state.distance_map is None
+
+
+@pytest.mark.asyncio
+async def test_overlapping_commands(runtime: TestRuntime):
+    await runtime.forward(1.0)
+
+    start = Pose()
+    end = Pose(x=10.0, y=1.0)
+    spline = Spline.from_poses(start, end)
+
+    task1 = asyncio.create_task(runtime.path_planner.search(goal=end))
+    await asyncio.sleep(0.2)
+    task2 = asyncio.create_task(runtime.path_planner.test_spline(spline))
+    path, test = await asyncio.gather(task1, task2)
+    assert isinstance(path, list)
+    assert isinstance(test, bool)

@@ -7,7 +7,8 @@ from multiprocessing import Process
 from multiprocessing.connection import Connection
 import numpy as np
 import time
-from typing import Optional
+from typing import Any, Optional
+import uuid
 
 from .distance_map import DistanceMap
 from .grid import Grid
@@ -30,7 +31,10 @@ class PlannerState:
 
 @dataclass
 class PlannerCommand(abc.ABC):
-    timeout: float
+    deadline: float
+
+    def __post_init__(self):
+        self.id = str(uuid.uuid4())
 
 
 @dataclass
@@ -60,6 +64,13 @@ class PlannerTestCommand(PlannerCommand):
     backward: bool = False
 
 
+@dataclass
+class PlannerResponse:
+    id: str
+    deadline: float
+    content: Any
+
+
 class PlannerProcess(Process):
 
     def __init__(self, connection: Connection, robot_outline: list[tuple[float, float]]):
@@ -78,23 +89,26 @@ class PlannerProcess(Process):
                 return
             try:
                 if isinstance(cmd, PlannerGetStateCommand):
-                    self.connection.send(self.state)
+                    self.respond(cmd, self.state)
                 if isinstance(cmd, PlannerGrowMapCommand):
                     self.grow_obstacle_map(cmd.points)
-                    self.connection.send(None)
+                    self.respond(cmd, None)
                 if isinstance(cmd, PlannerSearchCommand):
                     try:
                         self.update_obstacle_map(cmd.areas, cmd.obstacles, [cmd.start.point, cmd.goal.point])
                         self.update_distance_map(cmd.goal)
-                        self.connection.send(self.search(cmd.goal, cmd.start, cmd.backward, cmd.timeout))
+                        self.respond(cmd, self.search(cmd.goal, cmd.start, cmd.backward, cmd.deadline))
                     except (TimeoutError, RuntimeError) as e:
-                        self.connection.send(e)
+                        self.respond(cmd, e)
                 if isinstance(cmd, PlannerTestCommand):
                     self.update_obstacle_map(cmd.areas, cmd.obstacles, [cmd.spline.start, cmd.spline.end])
-                    self.connection.send(bool(self.state.obstacle_map.test_spline(cmd.spline, cmd.backward)))
+                    self.respond(cmd, bool(self.state.obstacle_map.test_spline(cmd.spline, cmd.backward)))
             except Exception as e:
                 self.log.exception(f'failed to compute cmd "{cmd}"')
-                self.connection.send(e)
+                self.respond(cmd, e)
+
+    def respond(self, cmd: PlannerCommand, content: Any):
+        self.connection.send(PlannerResponse(cmd.id, cmd.deadline, content))
 
     def update_obstacle_map(self, areas: list[Area], obstacles: list[Obstacle], more_points: list[Point] = []):
         if self.state.obstacle_map and \
@@ -133,8 +147,7 @@ class PlannerProcess(Process):
         self.state.distance_map = DistanceMap(self.state.small_obstacle_map, goal)
         self.state.goal = goal
 
-    def search(self, goal: Pose, start: Pose, backward: bool, timeout: float) -> Optional[list[PathSegment]]:
-        start_time = time.time()
+    def search(self, goal: Pose, start: Pose, backward: bool, deadline: float) -> Optional[list[PathSegment]]:
         step_dist = 0.5
         num_candidates = 16
 
@@ -143,7 +156,7 @@ class PlannerProcess(Process):
         visited = set()
 
         while pose != (goal.x, goal.y, goal.yaw):
-            if timeout is not None and time.time() - start_time > timeout:
+            if time.time() > deadline:
                 raise TimeoutError('could not find path')
 
             try:
