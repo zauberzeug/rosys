@@ -3,11 +3,7 @@ from nicegui import ui
 import numpy as np
 import pylab as pl
 import time
-from rosys.pathplanning.grid import Grid
-from rosys.pathplanning.obstacle_map import ObstacleMap
-from rosys.pathplanning.robot_renderer import RobotRenderer
-import rosys.pathplanning.plot_tools as pt
-from rosys.pathplanning.steps import Path, Step
+from rosys.actors.pathplanning import Grid, ObstacleMap, Path, RobotRenderer, Step, plot_tools as pt
 
 grid = Grid((30, 40, 36), (0, 0, 4.0, 3.0))
 obstacles = [

@@ -91,6 +91,6 @@ logging.config.dictConfig(config)
 @pytest.fixture
 async def runtime() -> Generator:
     event.listeners.clear()
-    runtime = TestRuntime()
+    runtime = TestRuntime().with_path_planner()
     yield runtime
     await runtime.shutdown()

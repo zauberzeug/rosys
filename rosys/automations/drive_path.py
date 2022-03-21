@@ -7,12 +7,8 @@ from .spline import drive_spline, throttle
 
 
 async def drive_path(world: World, hardware: Hardware, path: list[PathSegment]):
-    for s, path_segment in enumerate(path):
-        spline = path_segment.spline
-        if s == 0 or spline.start.distance(path[s-1].spline.end) > 0.01:
-            await drive_to(world, hardware, spline.start)
-        is_last_segment = path_segment == path[-1]
-        await drive_spline(spline, world, hardware, throttle_at_end=is_last_segment, flip_hook=path_segment.backward)
+    for segment in path:
+        await drive_spline(segment.spline, world, hardware, throttle_at_end=segment == path[-1], flip_hook=segment.backward)
 
 
 async def drive_to(world: World, hardware: Hardware, target: Point):

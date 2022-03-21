@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import ndimage
 import cv2
-from ..world import World
+from ...world import Area, Obstacle
 from .binary_renderer import BinaryRenderer
 from .grid import Grid
 from .robot_renderer import RobotRenderer
@@ -36,13 +36,13 @@ class ObstacleMap:
         return ObstacleMap(grid, map_, robot_renderer)
 
     @staticmethod
-    def from_world(world: World, grid: Grid):
-        robot_renderer = RobotRenderer(world.robot.shape.outline)
-        has_areas = any(len(a.outline) > 2 for a in world.areas.values())
+    def from_world(robot_outline: list[tuple[float, float]], areas: list[Area], obstacles: list[Obstacle], grid: Grid):
+        robot_renderer = RobotRenderer(robot_outline)
+        has_areas = any(len(a.outline) > 2 for a in areas)
         binary_renderer = BinaryRenderer(grid.size[:2], fill_value=has_areas)
-        for area in world.areas.values():
+        for area in areas:
             binary_renderer.polygon(np.array([grid.to_grid(p.x, p.y)[::-1] for p in area.outline]), False)
-        for obstacle in world.obstacles.values():
+        for obstacle in obstacles:
             binary_renderer.polygon(np.array([grid.to_grid(p.x, p.y)[::-1] for p in obstacle.outline]))
         return ObstacleMap(grid, binary_renderer.map, robot_renderer)
 
@@ -67,7 +67,7 @@ class ObstacleMap:
         t = ObstacleMap.t_lookup[n] if n < len(ObstacleMap.t_lookup) else np.linspace(0, 1, n)
         return pose(t)
 
-    def test_spline(self, spline, backward=False):
+    def test_spline(self, spline, backward=False) -> bool:
         return self.test(*self._create_poses(spline, backward)).any()
 
     def get_distance(self, x, y, yaw):

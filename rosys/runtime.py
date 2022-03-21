@@ -3,9 +3,9 @@ from asyncio.exceptions import CancelledError
 import asyncio
 import logging
 from typing import Optional, Type
-
 from . import event, task_logger, run, sleep, is_test, Persistence
-from .actors import Actor, Automator, Lizard, Odometer, Steerer, UsbCameraCapture, UsbCameraSimulator, NetworkMonitor, Backup, AsyncioMonitor, GarbageCollector
+from .actors import Actor, AsyncioMonitor, Automator, Backup, GarbageCollector, Lizard, NetworkMonitor, Odometer, \
+    PathPlanner, Steerer, UsbCameraCapture, UsbCameraSimulator
 from .hardware import Hardware, SimulatedHardware
 from .world import World
 
@@ -44,6 +44,7 @@ class Runtime:
             self.with_actors(NetworkMonitor())
         if not is_test:
             self.with_actors(Backup(self.persistence))
+        self.path_planner: Optional[PathPlanner] = None
 
     def with_actors(self, *actors: list[Actor]) -> Runtime:
         '''Adds list of additional actors to runtime.'''
@@ -58,12 +59,23 @@ class Runtime:
             self.with_actors(UsbCameraSimulator())
         return self
 
+    def with_path_planner(self) -> Runtime:
+        '''Adds path planning actor to runtime.'''
+        self.path_planner = PathPlanner()
+        self.with_actors(self.path_planner)
+        return self
+
     async def startup(self):
         if self.tasks:
             raise Exception('should be only executed once')
 
         event.register(event.Id.NEW_NOTIFICATION, self.store_notification)
         for actor in self.actors:
+            try:
+                await actor.startup()
+            except:
+                self.log.exception(f'error while starting {actor}')
+                continue
             if actor.interval is not None:
                 self.log.debug(f'starting actor {actor.name} with interval {actor.interval}s')
                 self.tasks.append(task_logger.create_task(self.repeat(actor), name=actor.name))

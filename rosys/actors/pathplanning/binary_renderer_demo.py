@@ -3,7 +3,7 @@ from nicegui import ui
 import numpy as np
 import pylab as pl
 import time
-from rosys.pathplanning.binary_renderer import BinaryRenderer
+from rosys.actors.pathplanning import BinaryRenderer
 
 renderer = BinaryRenderer((30, 40), fill_value=True)
 
