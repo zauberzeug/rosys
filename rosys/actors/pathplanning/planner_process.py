@@ -157,6 +157,9 @@ class PlannerProcess(Process):
         heap = [(self.state.distance_map.interpolate(start.x, start.y), 0, Step(pose))]
         visited = set()
 
+        if self.state.obstacle_map.test(goal.x, goal.y, goal.yaw):
+            raise RuntimeError('target pose is unreachable')
+
         while pose != (goal.x, goal.y, goal.yaw):
             if time.time() > deadline:
                 raise TimeoutError('could not find path')
