@@ -110,17 +110,22 @@ class PlannerProcess(Process):
     def respond(self, cmd: PlannerCommand, content: Any):
         self.connection.send(PlannerResponse(cmd.id, cmd.deadline, content))
 
-    def update_obstacle_map(self, areas: list[Area], obstacles: list[Obstacle], more_points: list[Point] = []):
+    def recreate_obstacle_map(self, areas: list[Area], obstacles: list[Obstacle], additional_points: list[Point]):
+        points = [p for obstacle in obstacles for p in obstacle.outline]
+        points += [p for area in areas for p in area.outline]
+        points += additional_points
+        grid1 = Grid.from_points(points, 0.1, 36, padding=1.0)
+        grid2 = Grid.from_points(points, 0.2, 0, padding=1.0)
+        self.state.obstacle_map = ObstacleMap.from_world(self.state.robot_outline, areas, obstacles, grid1)
+        self.state.small_obstacle_map = ObstacleMap.from_world(self.state.robot_outline, areas, obstacles, grid2)
+
+    def update_obstacle_map(self, areas: list[Area], obstacles: list[Obstacle], additional_points: list[Point] = []):
         if self.state.obstacle_map and \
                 self.state.areas == areas and \
                 self.state.obstacles == obstacles and \
-                all(self.state.obstacle_map.grid.contains(point, padding=1.0) for point in more_points):
+                all(self.state.obstacle_map.grid.contains(point, padding=1.0) for point in additional_points):
             return
-        points = [p for obstacle in self.state.obstacles for p in obstacle.outline]
-        points += [p for area in self.state.areas for p in area.outline]
-        grid = Grid.from_points(points + more_points, 0.1, 36, padding=1.0)
-        self.state.obstacle_map = ObstacleMap.from_world(self.state.robot_outline, areas, obstacles, grid)
-        self.state.small_obstacle_map = self.state.obstacle_map  # TODO?
+        self.recreate_obstacle_map(areas, obstacles, additional_points)
         self.state.distance_map = None
         self.state.areas = areas
         self.state.obstacles = obstacles
@@ -135,10 +140,7 @@ class PlannerProcess(Process):
             points.append(Point(x=bbox[0]+bbox[2], y=bbox[1]))
             points.append(Point(x=bbox[0],         y=bbox[1]+bbox[3]))
             points.append(Point(x=bbox[0]+bbox[2], y=bbox[1]+bbox[3]))
-        grid = Grid.from_points(points, 0.1, 36, padding=1.0)
-        self.state.obstacle_map = ObstacleMap.from_world(self.state.robot_outline,
-                                                         self.state.areas, self.state.obstacles, grid)
-        self.state.small_obstacle_map = self.state.obstacle_map  # TODO?
+        self.recreate_obstacle_map(self.state.areas, self.state.obstacles, points)
         self.state.distance_map = None
 
     def update_distance_map(self, goal: Pose) -> None:
@@ -154,6 +156,9 @@ class PlannerProcess(Process):
         pose = (start.x, start.y, start.yaw)
         heap = [(self.state.distance_map.interpolate(start.x, start.y), 0, Step(pose))]
         visited = set()
+
+        if self.state.obstacle_map.test(goal.x, goal.y, goal.yaw):
+            raise RuntimeError('target pose is unreachable')
 
         while pose != (goal.x, goal.y, goal.yaw):
             if time.time() > deadline:
