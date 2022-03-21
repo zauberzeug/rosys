@@ -8,4 +8,5 @@ class UsbCamera(Camera):
     capture: bool = True
     detect: bool = False
     connected: bool = False
-    resolution: Optional[ImageSize] = Field(None, exclude=True)
+    resolution: Optional[ImageSize] = None
+    exposure: Optional[float] = None
