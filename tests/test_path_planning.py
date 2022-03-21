@@ -76,7 +76,7 @@ async def test_grow_map(runtime: TestRuntime):
     assert path is not None
     state = await runtime.path_planner.get_state()
     assert state.obstacle_map.grid.bbox == pytest.approx((-1.2, -1.2, 4.4, 3.4))
-    assert state.obstacle_map.grid.bbox == state.distance_map.grid.bbox
+    assert state.distance_map.grid.bbox == pytest.approx((-1.4, -1.4, 4.8, 3.8))
 
     await runtime.path_planner.grow_map([Point(x=5, y=0)])
     state = await runtime.path_planner.get_state()
