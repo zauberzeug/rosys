@@ -1,12 +1,14 @@
-from dataclasses import dataclass
-from typing import Any, Optional
-import cv2
 import re
 import shutil
+from dataclasses import dataclass
+from typing import Any, Optional
+
+import cv2
 import rosys
 from rosys.world.camera import Camera
-from ..world import UsbCamera, Image, ImageSize
+
 from .. import event
+from ..world import Image, ImageSize, UsbCamera
 from .actor import Actor
 
 
@@ -100,8 +102,10 @@ class UsbCameraCapture(Actor):
 
     async def tear_down(self):
         await super().tear_down()
-        for device in self.devices.values():
-            device.capture.release()
+        for camera in self.world.usb_cameras.values():
+            camera.connected = False
+        [device.capture.release() for device in self.devices.values()]
+        self.devices.clear()
 
     @staticmethod
     def is_operable() -> bool:
