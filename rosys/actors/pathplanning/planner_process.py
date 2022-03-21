@@ -116,8 +116,8 @@ class PlannerProcess(Process):
                 self.state.obstacles == obstacles and \
                 all(self.state.obstacle_map.grid.contains(point, padding=1.0) for point in more_points):
             return
-        points = [p for obstacle in self.state.obstacles for p in obstacle.outline]
-        points += [p for area in self.state.areas for p in area.outline]
+        points = [p for obstacle in obstacles for p in obstacle.outline]
+        points += [p for area in areas for p in area.outline]
         grid = Grid.from_points(points + more_points, 0.1, 36, padding=1.0)
         self.state.obstacle_map = ObstacleMap.from_world(self.state.robot_outline, areas, obstacles, grid)
         self.state.small_obstacle_map = self.state.obstacle_map  # TODO?
