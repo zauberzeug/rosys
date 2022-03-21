@@ -1,12 +1,14 @@
+from typing import Optional
 import numpy as np
 import scipy.interpolate
+import time
 from ...world import Point
 from .obstacle_map import ObstacleMap
 
 
 class DistanceMap:
 
-    def __init__(self, obstacle_map: ObstacleMap, target: Point):
+    def __init__(self, obstacle_map: ObstacleMap, target: Point, deadline: Optional[float] = None):
         self.grid = obstacle_map.grid
         scaled_obstacle_map = obstacle_map.map
 
@@ -50,6 +52,8 @@ class DistanceMap:
             if new_sum == old_sum:
                 break
             old_sum = new_sum
+            if deadline and time.time() > deadline:
+                raise TimeoutError('distance map creation took too long')
 
         self.map = d.astype(float) / self.F
         gy, gx = np.gradient(self.map)

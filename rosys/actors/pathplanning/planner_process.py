@@ -91,17 +91,15 @@ class PlannerProcess(Process):
                 if isinstance(cmd, PlannerGetStateCommand):
                     self.respond(cmd, self.state)
                 if isinstance(cmd, PlannerGrowMapCommand):
-                    self.grow_obstacle_map(cmd.points)
+                    self.grow_obstacle_map(cmd.points, cmd.deadline)
                     self.respond(cmd, None)
                 if isinstance(cmd, PlannerSearchCommand):
-                    try:
-                        self.update_obstacle_map(cmd.areas, cmd.obstacles, [cmd.start.point, cmd.goal.point])
-                        self.update_distance_map(cmd.goal)
-                        self.respond(cmd, self.search(cmd.goal, cmd.start, cmd.backward, cmd.deadline))
-                    except (TimeoutError, RuntimeError) as e:
-                        self.respond(cmd, e)
+                    additional_points = [cmd.start.point, cmd.goal.point]
+                    self.update_obstacle_map(cmd.areas, cmd.obstacles, additional_points, cmd.deadline)
+                    self.update_distance_map(cmd.goal, cmd.deadline)
+                    self.respond(cmd, self.search(cmd.goal, cmd.start, cmd.backward, cmd.deadline))
                 if isinstance(cmd, PlannerTestCommand):
-                    self.update_obstacle_map(cmd.areas, cmd.obstacles, [cmd.spline.start, cmd.spline.end])
+                    self.update_obstacle_map(cmd.areas, cmd.obstacles, [cmd.spline.start, cmd.spline.end], cmd.deadline)
                     self.respond(cmd, bool(self.state.obstacle_map.test_spline(cmd.spline, cmd.backward)))
             except Exception as e:
                 self.log.exception(f'failed to compute cmd "{cmd}"')
@@ -110,27 +108,35 @@ class PlannerProcess(Process):
     def respond(self, cmd: PlannerCommand, content: Any):
         self.connection.send(PlannerResponse(cmd.id, cmd.deadline, content))
 
-    def recreate_obstacle_map(self, areas: list[Area], obstacles: list[Obstacle], additional_points: list[Point]):
+    def recreate_obstacle_map(self,
+                              areas: list[Area],
+                              obstacles: list[Obstacle],
+                              additional_points: list[Point],
+                              deadline: float):
         points = [p for obstacle in obstacles for p in obstacle.outline]
         points += [p for area in areas for p in area.outline]
         points += additional_points
-        grid1 = Grid.from_points(points, 0.1, 36, padding=1.0)
-        grid2 = Grid.from_points(points, 0.2, 0, padding=1.0)
-        self.state.obstacle_map = ObstacleMap.from_world(self.state.robot_outline, areas, obstacles, grid1)
-        self.state.small_obstacle_map = ObstacleMap.from_world(self.state.robot_outline, areas, obstacles, grid2)
+        g1 = Grid.from_points(points, 0.1, 36, padding=1.0)
+        g2 = Grid.from_points(points, 0.2, 0, padding=1.0)
+        self.state.obstacle_map = ObstacleMap.from_world(self.state.robot_outline, areas, obstacles, g1, deadline)
+        self.state.small_obstacle_map = ObstacleMap.from_world(self.state.robot_outline, areas, obstacles, g2, deadline)
 
-    def update_obstacle_map(self, areas: list[Area], obstacles: list[Obstacle], additional_points: list[Point] = []):
+    def update_obstacle_map(self,
+                            areas: list[Area],
+                            obstacles: list[Obstacle],
+                            additional_points: list[Point],
+                            deadline: float):
         if self.state.obstacle_map and \
                 self.state.areas == areas and \
                 self.state.obstacles == obstacles and \
                 all(self.state.obstacle_map.grid.contains(point, padding=1.0) for point in additional_points):
             return
-        self.recreate_obstacle_map(areas, obstacles, additional_points)
+        self.recreate_obstacle_map(areas, obstacles, additional_points, deadline)
         self.state.distance_map = None
         self.state.areas = areas
         self.state.obstacles = obstacles
 
-    def grow_obstacle_map(self, points: list[Point]):
+    def grow_obstacle_map(self, points: list[Point], deadline: float):
         if self.state.obstacle_map is not None and \
                 all(self.state.obstacle_map.grid.contains(point, padding=1.0) for point in points):
             return
@@ -140,13 +146,13 @@ class PlannerProcess(Process):
             points.append(Point(x=bbox[0]+bbox[2], y=bbox[1]))
             points.append(Point(x=bbox[0],         y=bbox[1]+bbox[3]))
             points.append(Point(x=bbox[0]+bbox[2], y=bbox[1]+bbox[3]))
-        self.recreate_obstacle_map(self.state.areas, self.state.obstacles, points)
+        self.recreate_obstacle_map(self.state.areas, self.state.obstacles, points, deadline)
         self.state.distance_map = None
 
-    def update_distance_map(self, goal: Pose) -> None:
+    def update_distance_map(self, goal: Pose, deadline: float) -> None:
         if self.state.distance_map and self.state.goal == goal:
             return
-        self.state.distance_map = DistanceMap(self.state.small_obstacle_map, goal)
+        self.state.distance_map = DistanceMap(self.state.small_obstacle_map, goal, deadline)
         self.state.goal = goal
 
     def search(self, goal: Pose, start: Pose, backward: bool, deadline: float) -> Optional[list[PathSegment]]:
