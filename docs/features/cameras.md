@@ -25,7 +25,8 @@ Thereby the browser is always fetching new images.
 ## Remote Operation
 
 A fairly often required use case is the remote operation of a robot.
-In this example we use the `event.Id.NEW_CAMERA` to only display the first camera:
+In a simple use case you may only need to visualize one camera and have some steering controls.
+Here we use the `event.Id.NEW_CAMERA` to only display the first camera:
 
 ```python hl_lines="6 10"
 {!src/remote_operation.py [ln:11-21]!}
