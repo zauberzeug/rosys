@@ -1,9 +1,12 @@
 from __future__ import annotations
+
+import abc
 from typing import Optional
 from uuid import uuid4
-from pydantic import BaseModel, Field
+
 import numpy as np
-import abc
+from pydantic import BaseModel, Field
+
 from .calibration import Calibration, Extrinsics, Intrinsics
 from .image import Image, ImageSize
 from .rotation import Rotation
@@ -20,7 +23,7 @@ class Camera(BaseModel, abc.ABC):
     @property
     def latest_image_uri(self):
         if not self.images:
-            return placeholder
+            return 'camera/placeholder'
         return f'camera/{self.id}/{self.images[-1].time}'
 
     @property
