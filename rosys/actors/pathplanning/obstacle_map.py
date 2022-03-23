@@ -1,6 +1,8 @@
+from typing import Optional
 import numpy as np
 from scipy import ndimage
 import cv2
+import time
 from ...world import Area, Obstacle
 from .binary_renderer import BinaryRenderer
 from .grid import Grid
@@ -9,7 +11,7 @@ from .robot_renderer import RobotRenderer
 
 class ObstacleMap:
 
-    def __init__(self, grid, map_, robot_renderer):
+    def __init__(self, grid, map_, robot_renderer, deadline=None):
         self.grid = grid
         self.map = map_
         self.stack = np.zeros(grid.size, dtype=bool)
@@ -20,6 +22,8 @@ class ObstacleMap:
             self.stack[:, :, layer] = cv2.dilate(self.map.astype(np.uint8), kernel)
             self.dist_stack[:, :, layer] = \
                 ndimage.distance_transform_edt(~self.stack[:, :, layer]) * grid.pixel_size
+            if deadline and time.time() > deadline:
+                raise TimeoutError('obstacle map creation took too long')
 
         # NOTE: when yaw wraps around, map_coordinates should wrap around on axis 2
         self.stack = np.dstack((self.stack, self.stack[:, :, :1]))
@@ -36,15 +40,23 @@ class ObstacleMap:
         return ObstacleMap(grid, map_, robot_renderer)
 
     @staticmethod
-    def from_world(robot_outline: list[tuple[float, float]], areas: list[Area], obstacles: list[Obstacle], grid: Grid):
+    def from_world(robot_outline: list[tuple[float, float]],
+                   areas: list[Area],
+                   obstacles: list[Obstacle],
+                   grid: Grid,
+                   deadline: Optional[float] = None):
         robot_renderer = RobotRenderer(robot_outline)
         has_areas = any(len(a.outline) > 2 for a in areas)
         binary_renderer = BinaryRenderer(grid.size[:2], fill_value=has_areas)
         for area in areas:
             binary_renderer.polygon(np.array([grid.to_grid(p.x, p.y)[::-1] for p in area.outline]), False)
+            if deadline and time.time() > deadline:
+                raise TimeoutError('obstacle map creation took too long')
         for obstacle in obstacles:
             binary_renderer.polygon(np.array([grid.to_grid(p.x, p.y)[::-1] for p in obstacle.outline]))
-        return ObstacleMap(grid, binary_renderer.map, robot_renderer)
+            if deadline and time.time() > deadline:
+                raise TimeoutError('obstacle map creation took too long')
+        return ObstacleMap(grid, binary_renderer.map, robot_renderer, deadline)
 
     def test(self, x, y, yaw):
         row, col, layer = self.grid.to_grid(x, y, yaw)

@@ -12,7 +12,13 @@
       "path": "/usr/local/lib/python3.9/site-packages/nicegui"
     }
   ],
-  "settings": {},
+  "settings": {
+    "[python]": {
+      "editor.codeActionsOnSave": {
+        "source.organizeImports": true
+      }
+    }
+  },
   "extensions": {
     "recommendations": [
       "ms-python.vscode-pylance",

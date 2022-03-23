@@ -46,10 +46,12 @@ async def test_planning_to_problematic_location(runtime: TestRuntime):
 @pytest.mark.asyncio
 async def test_not_finding_a_path(runtime: TestRuntime):
     await runtime.forward(1.0)
-    obstacle = create_obstacle(x=3, y=0)
+    obstacle = create_obstacle(x=2, y=0)
     runtime.world.obstacles[obstacle.id] = obstacle
     with pytest.raises(TimeoutError):
-        await runtime.path_planner.search(goal=Pose(x=3, y=0), timeout=1.0)
+        await runtime.path_planner.search(goal=Pose(x=1, y=0), timeout=0.1)
+    with pytest.raises(RuntimeError):
+        await runtime.path_planner.search(goal=Pose(x=2, y=0))
 
 
 @pytest.mark.asyncio

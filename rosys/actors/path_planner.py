@@ -74,7 +74,7 @@ class PathPlanner(Actor):
             self.connection.send(command)
             while command.id not in self.responses:
                 if time.time() > command.deadline:
-                    raise TimeoutError(f'process call {command.id} took too long')
+                    raise TimeoutError(f'process call {command.id} did not respond in time')
                 if is_test:
                     await self.step()  # NOTE: otherwise step() is not called while awaiting response
                 await asyncio.sleep(self.interval)
