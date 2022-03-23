@@ -1,18 +1,19 @@
+import logging
 from functools import lru_cache
 from typing import Optional
+
+import cv2
+import numpy as np
+import rosys
 from nicegui.ui import Ui
 from starlette.requests import Request
 from starlette.responses import JSONResponse, Response
 from starlette.routing import Route
-from rosys import Runtime
-import logging
-import cv2
-import numpy as np
 
 log = logging.getLogger('rosys.routes')
 
 
-def setup(ui: Ui, runtime: Runtime):
+def setup(ui: Ui, runtime: rosys.Runtime):
     ui.add_route(Route('/world', lambda request, **_: Response(content=runtime.world.json(), media_type='text/json')))
     ui.add_route(Route('/export', lambda request, **_: JSONResponse(content=runtime.persistence.dump())))
 
@@ -27,7 +28,7 @@ def setup(ui: Ui, runtime: Runtime):
                 if shrink != 1:
                     array = np.frombuffer(image.data, dtype=np.uint8)
                     img = cv2.imdecode(array, cv2.IMREAD_COLOR)[::shrink, ::shrink]
-                    jpeg = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 90])[1].tobytes()
+                    jpeg = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 60])[1].tobytes()
                 return jpeg
 
     def get_image(request: Request, **_):
@@ -44,3 +45,7 @@ def setup(ui: Ui, runtime: Runtime):
             raise
 
     ui.add_route(Route('/camera/{id}/{timestamp}', get_image))
+    ui.add_route(Route('/camera/placeholder', lambda _: Response(
+        content=rosys.world.camera.placeholder.data,
+        media_type='image/jpeg'
+    )))
