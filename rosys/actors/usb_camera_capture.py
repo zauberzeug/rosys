@@ -40,7 +40,9 @@ class UsbCameraCapture(Actor):
                 bytes = await rosys.run.io_bound(self.capture_image, uid)
                 camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time, size=camera.resolution))
             except:
-                self.log.exception(f'could not capture image for {uid}')
+                self.log.exception(f'could not capture image from {uid}; disconnecting')
+                camera.connected = False
+                del self.devices[camera.id]
         self.purge_old_images()
 
     def capture_image(self, id) -> bytes:
