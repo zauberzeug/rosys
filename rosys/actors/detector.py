@@ -1,7 +1,10 @@
-import socketio
-from typing import Optional
 from datetime import datetime, timedelta
-from .. import event, sleep, task_logger
+from typing import Optional
+
+import socketio
+
+from .. import event, task_logger
+from ..helpers import sleep
 from ..world import BoxDetection, Image, PointDetection
 from .actor import Actor
 

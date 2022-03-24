@@ -1,7 +1,7 @@
 import numpy as np
-from .. import is_test, sleep
+
 from ..hardware import Hardware
-from ..helpers import eliminate_pi
+from ..helpers import eliminate_pi, is_test, sleep
 from ..world import Point, Spline, World
 from .navigation import Carrot
 

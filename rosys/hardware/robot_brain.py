@@ -1,6 +1,7 @@
 from typing import Optional
-from .. import sleep
+
 from ..communication import Communication
+from ..helpers import sleep
 from ..world import Velocity, World
 from . import CommunicatingHardware
 

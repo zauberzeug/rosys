@@ -1,4 +1,5 @@
-from .. import Persistence, run
+from .. import run
+from ..persistence import Persistence
 from .actor import Actor
 
 

@@ -1,7 +1,9 @@
 import gc
+
 import psutil
+
+from ..helpers import sleep
 from .actor import Actor
-from .. import sleep
 
 
 class GarbageCollector(Actor):
