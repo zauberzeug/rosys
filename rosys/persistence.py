@@ -13,8 +13,22 @@ class Persistence:
         os.makedirs(os.path.dirname(self.filepath), exist_ok=True)
 
     def dump(self) -> dict:
+        robot_excludes = {
+            'velocity',
+            'shape',
+            'parameters',
+            'prediction',
+            'detection',
+            'simulation',
+            'odometry',
+            'current_velocity',
+            'last_movement',
+            'hardware_time',
+            'clock_offset',
+            'carrot',
+        }
         return {
-            'robot': self.world.robot.dict(exclude={'velocity', 'position', 'shape', 'parameters', 'prediction', 'detection', 'simulation', 'odometry', 'current_velocity', 'last_movement', 'hardware_time', 'clock_offset', 'carrot'}),
+            'robot': self.world.robot.dict(exclude=robot_excludes),
             'areas': {id: area.dict() for id, area in self.world.areas.items()},
             'obstacles': {id: obstacle.dict() for id, obstacle in self.world.obstacles.items()},
             'usb_cameras': {id: camera.dict() for id, camera in self.world.usb_cameras.items()},
@@ -31,7 +45,7 @@ class Persistence:
         with open(self.filepath, 'w') as f:
             json.dump(self.dump(), f)
 
-    def parse_world(self, obj: dict):
+    def parse_world(self, obj: dict) -> World:
         return self.world.parse_obj(obj)  # NOTE we use the provided world for parsing to load all attributes
 
     def restore(self):
