@@ -87,7 +87,10 @@ class Runtime:
         self.log.debug('startup completed')
 
     async def shutdown(self):
-        await self.hardware.drive(0, 0)
+        try:
+            await self.hardware.drive(0, 0)
+        except:
+            pass
         if not is_test:
             self.persistence.backup()
         [t.cancel() for t in self.tasks]

@@ -1,6 +1,7 @@
 import numpy as np
-from .. import sleep
+
 from ..hardware import Hardware
+from ..helpers import sleep
 from ..world import World
 
 
