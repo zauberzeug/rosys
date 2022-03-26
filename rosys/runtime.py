@@ -67,12 +67,12 @@ class Runtime:
             self.with_actors(self.usb_camera_simulator)
         return self
 
-    def with_detector(self) -> Runtime:
+    def with_detector(self, real: Detector = Detector(), simulation: DetectorSimulator = DetectorSimulator()) -> Runtime:
         '''Adds detector to runtime.'''
         if isinstance(self.hardware, CommunicatingHardware) and not is_test:
-            self.detector = Detector()
+            self.detector = real
         else:
-            self.detector = DetectorSimulator()
+            self.detector = simulation
         self.with_actors(self.detector)
         return self
 
