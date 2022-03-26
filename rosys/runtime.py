@@ -6,11 +6,11 @@ from asyncio.exceptions import CancelledError
 from typing import Optional, Type
 
 from . import Persistence, event, is_test, run, sleep, task_logger
-from .actors import (Actor, AsyncioMonitor, Automator, Backup,
-                     GarbageCollector, Lizard, NetworkMonitor, Odometer,
-                     PathPlanner, Steerer, UsbCameraCapture,
-                     UsbCameraSimulator)
-from .hardware import Hardware, SimulatedHardware
+from .actors import (Actor, AsyncioMonitor, Automator, Backup, Detector,
+                     DetectorSimulator, GarbageCollector, Lizard,
+                     NetworkMonitor, Odometer, PathPlanner, Steerer,
+                     UsbCameraCapture, UsbCameraSimulator)
+from .hardware import CommunicatingHardware, Hardware, SimulatedHardware
 from .world import World
 
 
@@ -36,6 +36,7 @@ class Runtime:
         self.steerer = Steerer(self.hardware)
         self.automator = Automator()
         self.asyncio_monitor = AsyncioMonitor()
+        self.detector: Optional[Detector] = None  # NOTE can be set by runtime.with_detector()
         self.actors = [
             self.lizard,
             self.odometer,
@@ -61,6 +62,15 @@ class Runtime:
             self.with_actors(UsbCameraCapture())
         else:
             self.with_actors(UsbCameraSimulator())
+        return self
+
+    def with_detector(self) -> Runtime:
+        '''Adds detector to runtime.'''
+        if isinstance(self.hardware, CommunicatingHardware) and not is_test:
+            self.detector = Detector()
+        else:
+            self.detector = DetectorSimulator()
+        self.with_actors(self.detector)
         return self
 
     def with_path_planner(self) -> Runtime:
