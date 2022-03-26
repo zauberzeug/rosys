@@ -1,7 +1,9 @@
 from typing import Optional
+
 from pydantic import Field
-from .image import ImageSize
+
 from .camera import Camera
+from .image import ImageSize
 
 
 class UsbCamera(Camera):
@@ -10,3 +12,4 @@ class UsbCamera(Camera):
     connected: bool = False
     resolution: Optional[ImageSize] = None
     exposure: Optional[float] = None
+    color: Optional[str] = None
