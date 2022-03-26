@@ -12,7 +12,11 @@ class UsbCameraSimulator(Actor):
         await super().step()
 
         for camera in self.world.usb_cameras.values():
-            camera.images.append(Image.create_placeholder(f'{camera.id}: {self.world.time:.2f}', time=self.world.time))
+            camera.images.append(Image.create_placeholder(
+                f'{camera.id}: {self.world.time:.2f}',
+                time=self.world.time,
+                camera_id=camera.id,
+            ))
 
     async def create(
         self, uid: str = '',

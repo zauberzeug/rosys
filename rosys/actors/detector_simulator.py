@@ -30,7 +30,7 @@ class DetectorSimulator(Detector):
         return True
 
     async def detect(self, image: Image) -> tuple[Optional[BoxDetection], Optional[PointDetection]]:
-        is_blocked = image.mac in self.blocked_cameras
+        is_blocked = image.camera_id in self.blocked_cameras
         await rosys.sleep(0.4)
         image.detections = []
         if not is_blocked:
