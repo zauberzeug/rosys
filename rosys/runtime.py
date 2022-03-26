@@ -1,11 +1,15 @@
 from __future__ import annotations
-from asyncio.exceptions import CancelledError
+
 import asyncio
 import logging
+from asyncio.exceptions import CancelledError
 from typing import Optional, Type
-from . import event, task_logger, run, sleep, is_test, Persistence
-from .actors import Actor, AsyncioMonitor, Automator, Backup, GarbageCollector, Lizard, NetworkMonitor, Odometer, \
-    PathPlanner, Steerer, UsbCameraCapture, UsbCameraSimulator
+
+from . import Persistence, event, is_test, run, sleep, task_logger
+from .actors import (Actor, AsyncioMonitor, Automator, Backup,
+                     GarbageCollector, Lizard, NetworkMonitor, Odometer,
+                     PathPlanner, Steerer, UsbCameraCapture,
+                     UsbCameraSimulator)
 from .hardware import Hardware, SimulatedHardware
 from .world import World
 
