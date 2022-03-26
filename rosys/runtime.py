@@ -61,7 +61,8 @@ class Runtime:
         if UsbCameraCapture.is_operable() and not is_test:
             self.with_actors(UsbCameraCapture())
         else:
-            self.with_actors(UsbCameraSimulator())
+            self.usb_camera_simulator = UsbCameraSimulator()
+            self.with_actors(self.usb_camera_simulator)
         return self
 
     def with_detector(self) -> Runtime:
