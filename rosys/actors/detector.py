@@ -57,13 +57,14 @@ class Detector(Actor):
         except:
             self.log.exception(f'could not upload {image.id}')
 
-    async def detect(self, image: Image):
+    async def detect(self, image: Image) -> tuple[Optional[BoxDetection], Optional[PointDetection]]:
+        '''Returns (None,None) if detector is busy'''
         if not self.is_connected:
             return
 
         self.next_image = image
         if self.is_detecting:
-            return
+            return None, None
 
         while self.next_image is not None:
             try:
@@ -76,8 +77,10 @@ class Detector(Actor):
                 image.detections = box_detections + point_detections
             except:
                 self.log.exception(f'could not detect {image.id}')
+                return None, None
             else:
                 event.emit(event.Id.NEW_DETECTIONS, image)
+                return box_detections, point_detections
             finally:
                 self.is_detecting = False
 
