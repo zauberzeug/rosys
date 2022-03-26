@@ -6,8 +6,8 @@ from asyncio.exceptions import CancelledError
 from typing import Optional, Type
 
 from . import Persistence, event, is_test, run, sleep, task_logger
-from .actors import (Actor, AsyncioMonitor, Automator, Backup, Detector,
-                     DetectorSimulator, GarbageCollector, Lizard,
+from .actors import (Actor, AsyncioMonitor, Automator, Backup, CameraProjector,
+                     Detector, DetectorSimulator, GarbageCollector, Lizard,
                      NetworkMonitor, Odometer, PathPlanner, Steerer,
                      UsbCameraCapture, UsbCameraSimulator)
 from .hardware import CommunicatingHardware, Hardware, SimulatedHardware
@@ -35,9 +35,11 @@ class Runtime:
         self.odometer = Odometer()
         self.steerer = Steerer(self.hardware)
         self.automator = Automator()
+        self.camera_projector = CameraProjector()
         self.asyncio_monitor = AsyncioMonitor()
         self.detector: Optional[Detector] = None  # NOTE can be set by runtime.with_detector()
         self.actors = [
+            self.camera_projector,
             self.lizard,
             self.odometer,
             self.steerer,
