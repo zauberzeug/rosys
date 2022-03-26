@@ -1,10 +1,25 @@
-import cv2
 import re
 import shutil
+from dataclasses import dataclass
+from typing import Any, Optional
+
+import cv2
 import rosys
-from ..world import UsbCamera, Image, ImageSize
+from rosys.world.camera import Camera
+
 from .. import event
+from ..world import Image, ImageSize, UsbCamera
 from .actor import Actor
+
+
+@dataclass
+class Device:
+    '''devices specific infos are kept seperately (world should not be aware of them)'''
+    uid: str
+    video_id: int
+    capture: Any  # cv2.VideoCapture device
+    resolution: Optional[ImageSize] = None
+    exposure: Optional[float] = None
 
 
 class UsbCameraCapture(Actor):
@@ -12,8 +27,7 @@ class UsbCameraCapture(Actor):
 
     def __init__(self):
         super().__init__()
-        self.devices = {}  # NOTE: opencv devices are kept seperately (world should not be aware of them)
-        self.resolutions = {}  # NOTE: storing the current resolutions seperately to discover changes in the world
+        self.devices: dict[str, Device] = {}
         self.last_scan = None
 
     async def step(self):
@@ -26,11 +40,18 @@ class UsbCameraCapture(Actor):
                 bytes = await rosys.run.io_bound(self.capture_image, uid)
                 camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time, size=camera.resolution))
             except:
-                self.log.exception(f'could not capture image for {uid}')
+                self.log.exception(f'could not capture image from {uid}; disconnecting')
+                camera.connected = False
+                del self.devices[camera.id]
         self.purge_old_images()
 
     def capture_image(self, id) -> bytes:
-        _, image = self.devices[id].read()
+        camera = self.world.usb_cameras[id]
+        capture = self.devices[id].capture
+        if camera.resolution:
+            capture.set(cv2.CAP_PROP_FRAME_WIDTH, camera.resolution.width)
+            capture.set(cv2.CAP_PROP_FRAME_HEIGHT, camera.resolution.height)
+        _, image = capture.read()
         return cv2.imencode('.jpg', image)[1].tobytes()
 
     def purge_old_images(self):
@@ -61,15 +82,15 @@ class UsbCameraCapture(Actor):
                 continue
             num = int(lines[1].strip().lstrip('/dev/video'))
             if uid not in self.devices:
-                device = self.get_capture_device(num)
-                if device is None:
+                capture = self.get_capture_device(num)
+                if capture is None:
                     if uid in self.world.usb_cameras:
                         self.world.usb_cameras[uid].connected = False
                 else:
-                    self.devices[uid] = device
+                    self.devices[uid] = Device(uid, num, capture)
             if uid in self.devices:
                 self.world.usb_cameras[uid].connected = True
-                await self.update_parameters(uid, num)
+                await self.update_parameters(self.devices[uid])
 
     def get_capture_device(self, index: int):
         try:
@@ -83,14 +104,31 @@ class UsbCameraCapture(Actor):
 
     async def tear_down(self):
         await super().tear_down()
-        for capture in self.devices.values():
-            capture.release()
+        for camera in self.world.usb_cameras.values():
+            camera.connected = False
+        [device.capture.release() for device in self.devices.values()]
+        self.devices.clear()
 
     @staticmethod
     def is_operable() -> bool:
         return shutil.which('v4l2-ctl') is not None
 
-    async def update_parameters(self, uid: str, dev_num: int):
-        output = await rosys.run.sh(['v4l2-ctl', '--all', '-d', str(dev_num)])
+    async def update_parameters(self, device: Device):
+        output = await self.run_v4l(device, '--all')
         size = re.search('Width/Height.*: (\d*)/(\d*)', output)
-        self.world.usb_cameras[uid].resolution = ImageSize(width=int(size.group(1)), height=int(size.group(2)))
+        device.resolution = ImageSize(width=int(size.group(1)), height=int(size.group(2)))
+        camera = self.world.usb_cameras[device.uid]
+        # TODO read exposure from output and update it correctly
+    #     if device.exposure != camera.brightness:
+    #         await self.update_exposure(device)
+
+    # async def update_exposure(self, device: Device):
+    #     exposure = self.world.usb_cameras[device.uid].exposure
+    #     # TODO if expousre is None, set auto exposure
+    #     await self.run_v4l(device, '--set-ctrl=brightness=0', '--set-ctrl=exposure_auto=1', f'--set-ctrl=exposure_absolute={exposure}')
+    #     self.log.info(f'using new exposure {exposure}')
+
+    async def run_v4l(self, device: Device, *args):
+        cmd = ['v4l2-ctl', '-d', str(device.video_id)]
+        cmd.extend(args)
+        return await rosys.run.sh(cmd)
