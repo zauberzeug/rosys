@@ -38,9 +38,13 @@ class UsbCameraCapture(Actor):
                 continue
             try:
                 bytes = await rosys.run.io_bound(self.capture_image, uid)
-                camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time, size=camera.resolution))
+                camera.images.append(Image(
+                    camera_id=uid, data=bytes, time=self.world.time,
+                    size=camera.resolution or ImageSize(width=800, height=600)
+                ))
             except:
-                self.log.exception(f'could not capture image from {uid}; disconnecting')
+                self.log.exception(
+                    f'could not capture image from {uid}; disconnecting device /dev/video{self.devices[uid].video_id}')
                 camera.connected = False
                 del self.devices[camera.id]
         self.purge_old_images()

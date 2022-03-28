@@ -10,7 +10,9 @@ from .actors import (Actor, AsyncioMonitor, Automator, Backup, CameraProjector,
                      Detector, DetectorSimulator, GarbageCollector, Lizard,
                      NetworkMonitor, Odometer, PathPlanner, Steerer,
                      UsbCameraCapture, UsbCameraSimulator)
-from .hardware import CommunicatingHardware, Hardware, SimulatedHardware
+from .communication import CommunicationFactory
+from .hardware import (CommunicatingHardware, Hardware, RobotBrain,
+                       SimulatedHardware)
 from .world import World
 
 
@@ -27,7 +29,12 @@ class Runtime:
         if not is_test:
             self.persistence = persistence or Persistence(self.world)
             self.persistence.restore()
-        self.hardware = hardware or SimulatedHardware(self.world)
+
+        communication = CommunicationFactory.create()
+        if communication is not None:
+            self.hardware = RobotBrain(self.world, communication)
+        else:
+            self.hardware = SimulatedHardware(self.world)
         if is_test:
             assert isinstance(self.hardware, SimulatedHardware), \
                 'real hardware must not be used in tests'
