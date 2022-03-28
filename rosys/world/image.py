@@ -1,11 +1,14 @@
 from __future__ import annotations
-from pydantic import BaseModel
-from typing import Optional
-import PIL.Image
-import PIL.ImageDraw
+
 import io
 import urllib.parse
-from .detection import Detection
+from typing import Optional
+
+import PIL.Image
+import PIL.ImageDraw
+from pydantic import BaseModel
+
+from .detections import Detections
 
 
 class ImageSize(BaseModel):
@@ -22,7 +25,7 @@ class Image(BaseModel):
     size: ImageSize
     time: float  # World time of recording
     data: Optional[bytes] = None
-    detections: Optional[list[Detection]] = None
+    detections: Optional[Detections] = None
 
     @property
     def url(self) -> str:

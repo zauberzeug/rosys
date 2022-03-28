@@ -5,7 +5,7 @@ import socketio
 
 from .. import event, task_logger
 from ..helpers import sleep
-from ..world import BoxDetection, Image, PointDetection
+from ..world import BoxDetection, Detections, Image, PointDetection
 from .actor import Actor
 
 
@@ -74,7 +74,7 @@ class Detector(Actor):
                 result = await self.sio.call('detect', {'image': image.data, 'mac': image.camera_id}, timeout=1)
                 box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
                 point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
-                image.detections = box_detections + point_detections
+                image.detections = Detections(boxes=box_detections, points=point_detections)
             except:
                 self.log.exception(f'could not detect {image.id}')
                 return None, None

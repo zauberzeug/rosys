@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 import rosys
 
-from ..world import BoxDetection, Image, PointDetection, World
+from ..world import BoxDetection, Detections, Image, PointDetection, World
 from . import Detector
 
 
@@ -32,7 +32,7 @@ class DetectorSimulator(Detector):
     async def detect(self, image: Image) -> tuple[Optional[BoxDetection], Optional[PointDetection]]:
         is_blocked = image.mac in self.blocked_cameras
         await rosys.sleep(0.4)
-        image.detections = []
+        image.detections = Detections()
         if not is_blocked:
             self.add_detections(image)
         rosys.event.emit(rosys.event.Id.NEW_DETECTIONS, image)
@@ -52,6 +52,11 @@ class DetectorSimulator(Detector):
                     x=image_point.x,
                     y=image_point.y,
                 )
+                if self.noisy_image_points:
+                    detection.x += np.random.randn()
+                    detection.y += np.random.randn()
+                image.detections.points.append(detection)
+
             else:
                 world_points = np.array([
                     [object.position.x + dx, object.position.y + dy, object.position.z + dz]
@@ -69,12 +74,12 @@ class DetectorSimulator(Detector):
                     width=image_points[:, 0].max() - image_points[:, 0].min(),
                     height=image_points[:, 1].max() - image_points[:, 1].min(),
                 )
-
-            if self.noisy_image_points:
-                detection.x += np.random.randn()
-                detection.y += np.random.randn()
-
-            image.detections.append(detection)
+                if self.noisy_image_points:
+                    detection.x += np.random.randn()
+                    detection.y += np.random.randn()
+                    detection.width += np.random.randn()
+                    detection.height += np.random.randn()
+                image.detections.boxes.append(detection)
 
     async def upload(self, image: rosys.world.Image):
         self.uploaded.append(image)
