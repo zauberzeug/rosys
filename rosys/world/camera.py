@@ -41,18 +41,19 @@ class Camera(BaseModel, abc.ABC):
         self,
         x: float = 0, y: float = 0, z: float = 1,
         yaw: float = 0, tilt_x: float = 0, tilt_y: float = 0,
+        image_width=800, image_height=800,
     ) -> None:
         calibration = Calibration(
-            intrinsics=Camera.create_intrinsics(),
+            intrinsics=Camera.create_intrinsics(image_width, image_height),
             extrinsics=Extrinsics(tilt=Rotation.from_euler(tilt_x, np.pi + tilt_y, 0), yaw=yaw, translation=[x, y, z]),
         )
         self.calibration_simulation = calibration
         self.calibration = calibration.copy(deep=True)
 
     @staticmethod
-    def create_intrinsics() -> Intrinsics:
+    def create_intrinsics(image_width: int = 800, image_height: int = 800) -> Intrinsics:
         c = 570
-        size = ImageSize(width=800, height=600)
+        size = ImageSize(width=image_width, height=image_height)
         K = [[c, 0, size.width / 2], [0, c, size.height / 2], [0, 0, 1]]
         D = [0, 0, 0, 0, 0]
         rotation = Rotation.zero()
