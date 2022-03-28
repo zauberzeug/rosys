@@ -17,6 +17,7 @@ placeholder = Image.create_placeholder('no image')
 class Camera(BaseModel, abc.ABC):
     id: str
     calibration: Optional[Calibration] = None
+    calibration_simulation: Optional[Calibration] = Field(None, description='only needed for simulation')
     projection: Optional[list[list[Optional[list[float]]]]] = Field(None, exclude=True)
     images: list[Image] = Field([placeholder], exclude=True)
 
@@ -36,26 +37,22 @@ class Camera(BaseModel, abc.ABC):
         if images:
             return images[-1]
 
-    @staticmethod
-    def create_perfect_camera(
+    def set_perfect_calibration(
+        self,
         x: float = 0, y: float = 0, z: float = 1,
         yaw: float = 0, tilt_x: float = 0, tilt_y: float = 0,
-        id: str = None,
-    ) -> Camera:
+    ) -> None:
         calibration = Calibration(
             intrinsics=Camera.create_intrinsics(),
             extrinsics=Extrinsics(tilt=Rotation.from_euler(tilt_x, np.pi + tilt_y, 0), yaw=yaw, translation=[x, y, z]),
         )
-        return Camera(
-            id=id or str(uuid4()),
-            calibration_simulation=calibration,
-            calibration=calibration.copy(deep=True),
-        )
+        self.calibration_simulation = calibration
+        self.calibration = calibration.copy(deep=True)
 
     @staticmethod
     def create_intrinsics() -> Intrinsics:
         c = 570
-        size = ImageSize(width=1600, height=1200)
+        size = ImageSize(width=800, height=600)
         K = [[c, 0, size.width / 2], [0, c, size.height / 2], [0, 0, 1]]
         D = [0, 0, 0, 0, 0]
         rotation = Rotation.zero()

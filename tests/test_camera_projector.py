@@ -4,7 +4,8 @@ from rosys.world import Camera
 
 
 def test_projection():
-    cam = Camera.create_perfect_camera(x=0.1, y=0.2, z=3, tilt_x=np.deg2rad(10), tilt_y=np.deg2rad(20))
+    cam = Camera(id='1')
+    cam.set_perfect_calibration(x=0.1, y=0.2, z=3, tilt_x=np.deg2rad(10), tilt_y=np.deg2rad(20))
     CameraProjector.update_projection(cam, rows=3, columns=4)
     assert CameraProjector.allclose(cam.projection, [
         [[2.6401056200399315, -2.7431146775069135], [0.6428110258043753, -3.7739688197606194],
@@ -15,7 +16,8 @@ def test_projection():
          [-2.5856242030237238, 2.962541680968452], [-8.25227030862712, 4.395033003953365]],
     ])
 
-    cam = Camera.create_perfect_camera(tilt_x=np.deg2rad(70))
+    cam = Camera(id='1')
+    cam.set_perfect_calibration(tilt_x=np.deg2rad(70))
     CameraProjector.update_projection(cam, rows=3, columns=4)
     assert CameraProjector.allclose(cam.projection, [
         [None, None, None, None],
