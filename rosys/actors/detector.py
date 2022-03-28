@@ -60,7 +60,7 @@ class Detector(Actor):
     async def detect(self, image: Image) -> tuple[Optional[BoxDetection], Optional[PointDetection]]:
         '''Returns (None,None) if detector is busy'''
         if not self.is_connected:
-            return
+            return None, None
 
         self.next_image = image
         if self.is_detecting:

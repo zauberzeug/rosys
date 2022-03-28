@@ -1,4 +1,5 @@
 import json
+
 import pytest
 from rosys import Persistence
 from rosys.test import TestRuntime
@@ -16,6 +17,7 @@ async def test_json_view(runtime: TestRuntime):
     '''exporting whole world as json is needed for example for logging/inspection'''
     runtime.with_usb_cameras()
     await runtime.forward(1)
+    await runtime.usb_camera_simulator.create()
     serialized = runtime.world.json()
     data = json.loads(serialized)
     assert 'robot' in data

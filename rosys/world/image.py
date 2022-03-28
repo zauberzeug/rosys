@@ -36,13 +36,17 @@ class Image(BaseModel):
         return f'{self.camera_id}/{self.time}'
 
     @staticmethod
-    def create_placeholder(text: str, time: float = None) -> Image:
+    def create_placeholder(text: str, time: float = None, camera_id: str = None) -> Image:
         img = PIL.Image.new('RGB', (260, 200), color=(73, 109, 137))
         d = PIL.ImageDraw.Draw(img)
         d.text((img.width/2-len(text)*3, img.height/2-5), text, fill=(255, 255, 255))
         bytesio = io.BytesIO()
         img.save(bytesio, format='PNG')
-        image = Image(camera_id='no_cam_id', time=time or 0, size=ImageSize(width=img.width, height=img.height))
+        image = Image(
+            camera_id=camera_id or 'no_cam_id',
+            time=time or 0,
+            size=ImageSize(width=img.width, height=img.height)
+        )
         image.data = bytesio.getvalue()
         return image
 

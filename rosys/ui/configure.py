@@ -1,8 +1,9 @@
 from nicegui.ui import Ui
+from rosys.ui.camera_objects import CameraObjects
 
+from .. import Runtime, event
 from ..hardware import CommunicatingHardware
-from .. import Runtime
-from .. import event
+from . import routes
 from .asyncio_page import AsyncioPage
 from .automation_controls import AutomationControls
 from .cpu_usage import CpuUsage
@@ -13,7 +14,6 @@ from .lizard_stats import LizardStats
 from .objgraph_page import ObjgraphPage
 from .pyloot_page import PylootPage
 from .robot_object import RobotObject
-from . import routes
 
 
 def configure(ui: Ui, runtime: Runtime):
@@ -39,3 +39,4 @@ def configure(ui: Ui, runtime: Runtime):
     LizardStats.lizard = runtime.lizard
     AsyncioPage.ui = ui
     AsyncioPage.asyncio_monitor = runtime.asyncio_monitor
+    CameraObjects.world = runtime.world
