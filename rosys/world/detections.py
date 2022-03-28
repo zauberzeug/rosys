@@ -35,8 +35,8 @@ class BoxDetection(Detection):
 
     def to_svg(self):
         color = 'red'
-        return f'<rect x="{self.x}" y="{self.y}" width="{self.width}" height="{self.height}" stroke="{color}" />' \
-            f'<text x="{self.x - 15}" y="{self.y + 15}" stroke="{color}" fill="{color}" font-size="20">{self.category_name} ({int(self.confidence*100)}%)</text>'
+        return f'<rect x="{self.x}" y="{self.y}" width="{self.width}" height="{self.height}" stroke-width="2" stroke="{color}" fill="none" />' \
+            f'<text x="{self.x}" y="{self.y - 7}" text-anchor="start" stroke="{color}" fill="{color}" font-size="10">{self.category_name} ({int(self.confidence*100)}%)</text>'
 
 
 class PointDetection(Detection):
@@ -54,8 +54,8 @@ class PointDetection(Detection):
 
     def to_svg(self):
         color = 'red'
-        return f'<circle cx="{self.x}" cy="{self.y}" r="4" stroke="{color}" />' \
-            f'<text x="{self.x - 15}" y="{self.y + 15}" stroke="{color}" fill="{color}" font-size="20">{self.category_name} ({int(self.confidence*100)}%)</text>'
+        return f'<circle cx="{self.x}" cy="{self.y}" r="4" stroke-width="2" stroke="{color}" fill="none" />' \
+            f'<text x="{self.x + 10}" y="{self.y+4}" text-anchor="start" stroke="{color}" fill="{color}" font-size="12" font-weight="light">{self.category_name} ({int(self.confidence*100)}%)</text>'
 
 
 class Detections(BaseModel):
@@ -63,4 +63,4 @@ class Detections(BaseModel):
     points: list[PointDetection] = []
 
     def to_svg(self) -> str:
-        return '\n'.joint([b.to_svg() for b in self.boxes]) + '\n' + '\n'.joint([p.to_svg() for p in self.points])
+        return '\n'.join([b.to_svg() for b in self.boxes]) + '\n' + '\n'.join([p.to_svg() for p in self.points])

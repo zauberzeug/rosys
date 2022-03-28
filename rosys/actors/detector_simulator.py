@@ -29,7 +29,7 @@ class DetectorSimulator(Detector):
     def is_connected(self):
         return True
 
-    async def detect(self, image: Image) -> tuple[Optional[BoxDetection], Optional[PointDetection]]:
+    async def detect(self, image: Image) -> Optional[Detections]:
         is_blocked = image.camera_id in self.blocked_cameras
         await rosys.sleep(0.4)
         image.detections = Detections()
@@ -37,11 +37,14 @@ class DetectorSimulator(Detector):
             self.update_simulated_objects(image)
             self.detect_from_simulated_objects(image)
         rosys.event.emit(rosys.event.Id.NEW_DETECTIONS, image)
+        return image.detections
 
     def update_simulated_objects(self, image: Image) -> None:
         pass
 
     def detect_from_simulated_objects(self, image: Image):
+        if image.camera_id not in self.world.cameras:
+            return
         camera = self.world.cameras[image.camera_id]
         for object in self.simulated_objects:
             image_point = camera.calibration_simulation.project_to_image(object.position)
