@@ -82,6 +82,12 @@ class Runtime:
         self.with_actors(self.path_planner)
         return self
 
+    def get_actor(self, type_: Type[Actor]) -> Actor:
+        for a in self.actors():
+            if isinstance(a, type_):
+                return a
+        return None
+
     async def startup(self):
         if self.tasks:
             raise Exception('should be only executed once')

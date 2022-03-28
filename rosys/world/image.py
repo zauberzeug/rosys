@@ -8,7 +8,7 @@ import PIL.Image
 import PIL.ImageDraw
 from pydantic import BaseModel
 
-from .detection import Detection
+from .detections import Detections
 
 
 class ImageSize(BaseModel):
@@ -25,7 +25,7 @@ class Image(BaseModel):
     size: ImageSize
     time: float  # World time of recording
     data: Optional[bytes] = None
-    detections: Optional[list[Detection]] = None
+    detections: Optional[Detections] = None
 
     @property
     def url(self) -> str:
