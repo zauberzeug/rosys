@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Optional
+from typing import Any, Optional
 from uuid import uuid4
 
 import numpy as np
@@ -11,15 +11,16 @@ from .calibration import Calibration, Extrinsics, Intrinsics
 from .image import Image, ImageSize
 from .rotation import Rotation
 
-placeholder = Image.create_placeholder('no image')
-
 
 class Camera(BaseModel, abc.ABC):
     id: str
     calibration: Optional[Calibration] = None
     calibration_simulation: Optional[Calibration] = Field(None, description='only needed for simulation')
     projection: Optional[list[list[Optional[list[float]]]]] = Field(None, exclude=True)
-    images: list[Image] = Field([placeholder], exclude=True)
+    images: list[Image] = Field([], exclude=True)
+
+    def __init__(self, **data: Any) -> None:
+        super().__init__(**data)
 
     @property
     def latest_image_uri(self):
