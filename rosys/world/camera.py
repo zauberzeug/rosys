@@ -24,9 +24,10 @@ class Camera(BaseModel, abc.ABC):
 
     @property
     def latest_image_uri(self):
-        if not self.images:
+        image = self.latest_captured_image
+        if image is None:
             return 'camera/placeholder'
-        return f'camera/{self.id}/{self.latest_captured_image[-1].time}'
+        return f'camera/{self.id}/{image.time}'
 
     @property
     def captured_images(self) -> list[Image]:
