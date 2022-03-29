@@ -1,7 +1,8 @@
-from dataclasses import dataclass
-import re
 import os
+import re
 from collections import defaultdict
+from dataclasses import dataclass
+
 from .actor import Actor
 from .garbage_collector import GarbageCollector
 
@@ -32,7 +33,7 @@ class AsyncioMonitor(Actor):
         await super().step()
         logfile = os.path.expanduser('~/.rosys/debug.log')
         if not os.path.isfile(logfile):
-            self.log.warning('could not find debug.log')
+            #self.log.warning('could not find debug.log')
             return
         self.parse_log(logfile)
 
