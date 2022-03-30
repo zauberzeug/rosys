@@ -12,11 +12,12 @@ from .actor import Actor
 class Detector(Actor):
     interval: float = 1.0
 
-    def __init__(self):
+    def __init__(self, port='8004'):
         super().__init__()
         self.sio = socketio.AsyncClient()
         self.is_detecting: bool = False
         self.next_image: Optional[Image] = None
+        self.port = port
 
     @property
     def is_connected(self):
@@ -31,8 +32,9 @@ class Detector(Actor):
 
     async def connect(self) -> bool:
         try:
-            self.log.info('connecting to detector')
-            await self.sio.connect('ws://localhost:8004', socketio_path='/ws/socket.io', wait_timeout=3.0)
+            url = f'ws://localhost:{self.port}'
+            self.log.info(f'connecting to detector at {url}')
+            await self.sio.connect(url, socketio_path='/ws/socket.io', wait_timeout=3.0)
             self.log.info('connected successfully')
             return True
         except:
