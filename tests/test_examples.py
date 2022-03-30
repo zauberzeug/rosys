@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-from doctest import OutputChecker
-from io import StringIO
 import logging
 import subprocess
 import sys
-from icecream import ic
 import time
+from doctest import OutputChecker
+from io import StringIO
+
 import sh
+from icecream import ic
 
 has_failures = False
 
@@ -25,7 +26,7 @@ def check(path: str):
     print(path, end='', flush=True)
     buf = StringIO()
     script = sh.python3(path, _bg=True, _bg_exc=False, _out=buf, _err=buf)
-    time.sleep(5)
+    time.sleep(8)
     output = buf.getvalue()
 
     try:
