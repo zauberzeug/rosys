@@ -1,5 +1,5 @@
-from ..world import World
 from ..communication import Communication
+from ..world import World
 from .hardware import Hardware
 
 

@@ -1,9 +1,10 @@
 import asyncio
 import inspect
-import time
 import sys
-import numpy as np
+import time
 from contextlib import contextmanager
+
+import numpy as np
 
 
 def measure(*, reset: bool = False, ms: bool = False):
