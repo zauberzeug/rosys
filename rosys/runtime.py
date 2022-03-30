@@ -30,11 +30,14 @@ class Runtime:
             self.persistence = persistence or Persistence(self.world)
             self.persistence.restore()
 
-        communication = CommunicationFactory.create()
-        if communication is not None:
-            self.hardware = RobotBrain(self.world, communication)
-        else:
-            self.hardware = SimulatedHardware(self.world)
+        def create_hardware():
+            communication = CommunicationFactory.create()
+            if communication is not None:
+                return RobotBrain(self.world, communication)
+            else:
+                return SimulatedHardware(self.world)
+
+        self.hardware = hardware or create_hardware()
         if is_test:
             assert isinstance(self.hardware, SimulatedHardware), \
                 'real hardware must not be used in tests'
