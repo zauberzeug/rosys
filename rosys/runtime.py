@@ -30,17 +30,9 @@ class Runtime:
             self.persistence = persistence or Persistence(self.world)
             self.persistence.restore()
 
-        def create_hardware():
-            communication = CommunicationFactory.create()
-            if communication is not None:
-                return RobotBrain(self.world, communication)
-            else:
-                return SimulatedHardware(self.world)
-
-        self.hardware = hardware or create_hardware()
+        self.hardware = hardware or self.create_hardware()
         if is_test:
-            assert isinstance(self.hardware, SimulatedHardware), \
-                'real hardware must not be used in tests'
+            assert self.hardware.is_simulation, 'real hardware must not be used in tests'
         self.lizard = Lizard(self.hardware)
         self.odometer = Odometer()
         self.steerer = Steerer(self.hardware)
@@ -63,6 +55,13 @@ class Runtime:
             self.with_actors(Backup(self.persistence))
         self.path_planner: Optional[PathPlanner] = None
 
+    def create_hardware(self):
+        communication = CommunicationFactory.create()
+        if communication is not None:
+            return RobotBrain(self.world, communication)
+        else:
+            return SimulatedHardware(self.world)
+
     def with_actors(self, *actors: list[Actor]) -> Runtime:
         '''Adds list of additional actors to runtime.'''
         self.actors += actors
@@ -79,7 +78,7 @@ class Runtime:
 
     def with_detector(self, real: Detector = Detector(), simulation: DetectorSimulator = DetectorSimulator()) -> Runtime:
         '''Adds detector to runtime.'''
-        if isinstance(self.hardware, CommunicatingHardware) and not is_test:
+        if self.hardware.is_real and not is_test:
             self.detector = real
         else:
             self.detector = simulation

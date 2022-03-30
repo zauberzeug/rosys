@@ -8,3 +8,7 @@ class CommunicatingHardware(Hardware):
     def __init__(self, world: World, communication: Communication):
         super().__init__(world)
         self.communication = communication
+
+    @property
+    def is_simulation(self):
+        return False

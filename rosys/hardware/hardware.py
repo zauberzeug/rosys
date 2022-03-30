@@ -35,3 +35,11 @@ class Hardware(abc.ABC):
     async def update(self):
         '''Called by actors to update the world'''
         return
+
+    @property
+    def is_simulation(self):
+        return True
+
+    @property
+    def is_real(self):
+        return not self.is_simulation
