@@ -26,7 +26,7 @@ def check(path: str):
     print(path, end='', flush=True)
     buf = StringIO()
     script = sh.python3(path, _bg=True, _bg_exc=False, _out=buf, _err=buf)
-    time.sleep(8)
+    time.sleep(12)
     output = buf.getvalue()
 
     try:
