@@ -11,6 +11,7 @@ class Persistence:
         self.world = world
         self.filepath = os.path.expanduser(filepath)
         os.makedirs(os.path.dirname(self.filepath), exist_ok=True)
+        self.log = logging.getLogger('rosys.Persistence')
 
     def dump(self) -> dict:
         robot_excludes = {
@@ -42,8 +43,11 @@ class Persistence:
 
     def backup(self):
         os.makedirs(os.path.dirname(self.filepath), exist_ok=True)
-        with open(self.filepath, 'w') as f:
-            json.dump(self.dump(), f)
+        try:
+            with open(self.filepath, 'w') as f:
+                json.dump(self.dump(), f)
+        except:
+            self.log.exception('failed to backup')
 
     def parse_world(self, obj: dict) -> World:
         return self.world.parse_obj(obj)  # NOTE we use the provided world for parsing to load all attributes
