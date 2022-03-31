@@ -1,6 +1,7 @@
 from __future__ import annotations
-from pydantic import BaseModel
+
 import numpy as np
+from pydantic import BaseModel
 
 
 class Point(BaseModel):
@@ -23,14 +24,14 @@ class Point(BaseModel):
         return self.x + 1j * self.y
 
     def distance(self, other: Point) -> float:
-        return np.sqrt((other.x - self.x)**2 + (other.y - self.y)**2)
+        return float(np.sqrt((other.x - self.x)**2 + (other.y - self.y)**2))
 
     def direction(self, other: Point) -> float:
-        return np.arctan2(other.y - self.y, other.x - self.x)
+        return float(np.arctan2(other.y - self.y, other.x - self.x))
 
     def projected_distance(self, other: Point, direction: float) -> float:
         def d(p): return np.sqrt(p.x**2 + p.y**2) * np.cos(direction - np.arctan2(p.y, p.x))
-        return d(other) - d(self)
+        return float(d(other) - d(self))
 
     def polar(self, distance: float, yaw: float):
         return Point(
