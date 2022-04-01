@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 import cv2
 import rosys
+from nicegui.helpers import measure
 from rosys.world.camera import Camera
 
 from .. import event
@@ -37,7 +38,8 @@ class UsbCameraCapture(Actor):
             if not camera.capture or not camera.connected:
                 continue
             try:
-                bytes = await rosys.run.io_bound(self.capture_image, uid)
+                image = await rosys.run.io_bound(self.capture_image, uid)
+                bytes = await rosys.run.cpu_bound(UsbCameraCapture.process_image, image)
                 camera.images.append(Image(
                     camera_id=uid, data=bytes, time=self.world.time,
                     size=camera.resolution or ImageSize(width=800, height=600)
@@ -49,14 +51,20 @@ class UsbCameraCapture(Actor):
                 del self.devices[camera.id]
         self.purge_old_images()
 
-    def capture_image(self, id) -> bytes:
+    def capture_image(self, id) -> Any:
         camera = self.world.usb_cameras[id]
         capture = self.devices[id].capture
         if camera.resolution:
             capture.set(cv2.CAP_PROP_FRAME_WIDTH, camera.resolution.width)
             capture.set(cv2.CAP_PROP_FRAME_HEIGHT, camera.resolution.height)
         _, image = capture.read()
-        return cv2.imencode('.jpg', image)[1].tobytes()
+        return image
+
+    @staticmethod
+    def process_image(image) -> bytes:
+        #image = cv2.rotate(image, cv2.ROTATE_180)
+        result = cv2.imencode('.jpg', image)[1].tobytes()
+        return result
 
     def purge_old_images(self):
         for camera in self.world.usb_cameras.values():
