@@ -122,6 +122,8 @@ class UsbCameraCapture(Actor):
         size = re.search('Width/Height.*: (\d*)/(\d*)', output)
         device.resolution = ImageSize(width=int(size.group(1)), height=int(size.group(2)))
         camera = self.world.usb_cameras[device.uid]
+        await self.run_v4l(device, '--set-ctrl', f'rotate={camera.rotation.value}')
+
         # TODO read exposure from output and update it correctly
     #     if device.exposure != camera.brightness:
     #         await self.update_exposure(device)

@@ -14,6 +14,6 @@ from .robot import Robot, RobotParameters, RobotShape
 from .rotation import Rotation
 from .spline import Spline
 from .upload import Upload
-from .usb_camera import UsbCamera
+from .usb_camera import ImageRotation, UsbCamera
 from .velocity import Velocity
 from .world import World
