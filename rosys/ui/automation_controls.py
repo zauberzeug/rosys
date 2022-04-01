@@ -1,5 +1,7 @@
-from typing import Awaitable, Optional
+from typing import Awaitable, Callable, Optional
+
 from nicegui.ui import Ui
+
 from .. import Runtime
 from .settings import update_interval
 
@@ -8,9 +10,15 @@ class AutomationControls:
     ui: Ui
     runtime: Runtime
 
-    def __init__(self, default_automation: Optional[Awaitable] = None) -> None:
+    def __init__(self, default_automation: Optional[Awaitable] = None, custom_start: Optional[Callable[[Callable], None]] = None) -> None:
 
         def start():
+            if custom_start is not None:
+                custom_start(_start)
+            else:
+                _start()
+
+        def _start():
             self.runtime.automator.start(default_automation())
 
         def pause():
