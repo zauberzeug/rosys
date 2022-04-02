@@ -7,7 +7,7 @@ from .camera import Camera
 from .image import ImageSize
 
 
-class ImageRotation(Enum):
+class ImageRotation(str, Enum):
     NONE: int = 0
     RIGHT: int = 90
     UPSIDE_DOWN: int = 180
