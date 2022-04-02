@@ -22,8 +22,14 @@ class Device:
     exposure: Optional[float] = None
 
 
+def process_image(image) -> bytes:
+    #image = cv2.rotate(image, cv2.ROTATE_180)
+    result = cv2.imencode('.jpg', image)[1].tobytes()
+    return result
+
+
 class UsbCameraCapture(Actor):
-    interval: float = 0.30
+    interval: float = 0.3
 
     def __init__(self):
         super().__init__()
@@ -37,7 +43,11 @@ class UsbCameraCapture(Actor):
             if not camera.capture or not camera.connected:
                 continue
             try:
-                bytes = await rosys.run.io_bound(self.capture_image, uid)
+                image = await rosys.run.io_bound(self.capture_image, uid)
+                if image is None:
+                    self.disconnect(uid)
+                    continue
+                bytes = await rosys.run.cpu_bound(process_image, image)
                 camera.images.append(Image(
                     camera_id=uid, data=bytes, time=self.world.time,
                     size=camera.resolution or ImageSize(width=800, height=600)
@@ -45,18 +55,19 @@ class UsbCameraCapture(Actor):
             except:
                 self.log.exception(
                     f'could not capture image from {uid}; disconnecting device /dev/video{self.devices[uid].video_id}')
-                camera.connected = False
-                del self.devices[camera.id]
+                self.disconnect(uid)
         self.purge_old_images()
 
-    def capture_image(self, id) -> bytes:
-        camera = self.world.usb_cameras[id]
+    def capture_image(self, id) -> Any:
         capture = self.devices[id].capture
-        if camera.resolution:
-            capture.set(cv2.CAP_PROP_FRAME_WIDTH, camera.resolution.width)
-            capture.set(cv2.CAP_PROP_FRAME_HEIGHT, camera.resolution.height)
         _, image = capture.read()
-        return cv2.imencode('.jpg', image)[1].tobytes()
+        return image
+
+    def disconnect(self, uid: str):
+        self.log.info(f'disconnecting {uid}')
+        camera = self.world.usb_cameras[uid]
+        camera.connected = False
+        del self.devices[camera.id]
 
     def purge_old_images(self):
         for camera in self.world.usb_cameras.values():
@@ -122,7 +133,11 @@ class UsbCameraCapture(Actor):
         size = re.search('Width/Height.*: (\d*)/(\d*)', output)
         device.resolution = ImageSize(width=int(size.group(1)), height=int(size.group(2)))
         camera = self.world.usb_cameras[device.uid]
-        await self.run_v4l(device, '--set-ctrl', f'rotate={camera.rotation.value}')
+        if camera.resolution:
+            device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, camera.resolution.width)
+            device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, camera.resolution.height)
+
+        # await self.run_v4l(device, '--set-ctrl', f'rotate={camera.rotation.value}')
 
         # TODO read exposure from output and update it correctly
     #     if device.exposure != camera.brightness:
