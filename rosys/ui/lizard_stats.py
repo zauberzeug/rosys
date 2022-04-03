@@ -1,6 +1,7 @@
-from nicegui.ui import Ui
 from nicegui.elements.chart import Chart
+from nicegui.ui import Ui
 from rosys.actors import Lizard
+
 from .settings import update_interval
 
 
@@ -30,3 +31,4 @@ class LizardStats(Chart):
         self.options.series[1].data.append(max(self.lizard.update_stats or [0]) * 1000)
         self.options.series[2].data.append(max(self.lizard.processing_stats or [0]) * 1000)
         [s.data.pop(0) for s in self.options.series if len(s.data) > 20]
+        return False

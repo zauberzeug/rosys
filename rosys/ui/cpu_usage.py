@@ -1,6 +1,7 @@
-from nicegui.ui import Ui
-from nicegui.elements.chart import Chart
 import psutil
+from nicegui.elements.chart import Chart
+from nicegui.ui import Ui
+
 from .settings import update_interval
 
 
@@ -25,3 +26,4 @@ class CpuUsage(Chart):
         for i, v in enumerate(psutil.cpu_percent(percpu=True)):
             self.options.series[i].data.append(v)
         [s.data.pop(0) for s in self.options.series if len(s.data) > 20]
+        return False
