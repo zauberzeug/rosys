@@ -117,6 +117,7 @@ class Runtime:
             await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
         self.activate_async_debugging()
         self.log.debug('startup completed')
+        self.world.start_time = self.world.time
 
     async def shutdown(self):
         try:

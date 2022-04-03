@@ -1,5 +1,7 @@
+import datetime
 import time
 
+import humanize
 from pydantic import BaseModel, PrivateAttr
 
 from ..helpers import is_test
@@ -20,6 +22,7 @@ class World(BaseModel):
     usb_cameras: dict[str, UsbCamera] = {}
     upload: Upload = Upload()
     needs_backup: bool = False
+    start_time: float = 0
 
     @property
     def time(self) -> float:
@@ -32,3 +35,13 @@ class World(BaseModel):
     @property
     def cameras(self) -> dict[str, Camera]:
         return self.usb_cameras
+
+    @property
+    def uptime(self) -> str:
+        uptime = datetime.timedelta(seconds=self.time - self.start_time)
+        return humanize.precisedelta(uptime)
+
+    @property
+    def lizard_offset(self) -> str:
+        offset = datetime.timedelta(seconds=self.robot.clock_offset or 0)
+        return humanize.naturaldelta(offset, minimum_unit='milliseconds')
