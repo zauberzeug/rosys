@@ -1,6 +1,7 @@
-from line_profiler import LineProfiler as PyUtilsLineProfiler
 from functools import wraps
 from typing import Optional
+
+from line_profiler import LineProfiler as PyUtilsLineProfiler
 
 
 class LineProfiler:
@@ -12,12 +13,12 @@ class LineProfiler:
     def __call__(self, func):
         index = len(self.functions)
 
-            @wraps(func)
-            def wrap(*args, **kw):
-                return self.functions[index][1](*args, **kw)
+        @wraps(func)
+        def wrap(*args, **kw):
+            return self.functions[index][1](*args, **kw)
 
-            self.functions.append([func, func])
-            return wrap
+        self.functions.append([func, func])
+        return wrap
 
     def start(self):
         self.line_profiler = PyUtilsLineProfiler()
