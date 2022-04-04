@@ -143,7 +143,7 @@ class UsbCameraCapture(Actor):
         device.resolution = ImageSize(width=int(size.group(1)), height=int(size.group(2)))
         camera = self.world.usb_cameras[device.uid]
         if camera.resolution and camera.resolution != device.resolution:
-            self.log.info(f'updating resolution of {camera.uid} from {device.resolution} to {camera.resolution}')
+            self.log.info(f'updating resolution of {camera.id} from {device.resolution} to {camera.resolution}')
             await rosys.run.io_bound(UsbCameraCapture.update_resolution, device, camera.resolution)
             # TODO read exposure from output and update it correctly
             #     if device.exposure != camera.brightness:
