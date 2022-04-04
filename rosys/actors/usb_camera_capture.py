@@ -24,15 +24,11 @@ class Device:
 
 def process_image(image, rotation: rosys.world.ImageRotation) -> bytes:
     if rotation == rosys.world.ImageRotation.LEFT:
-        rotation = cv2.ROTATE_90_COUNTERCLOCKWISE
+        image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
     elif rotation == rosys.world.ImageRotation.RIGHT:
-        rotation = cv2.ROTATE_90_CLOCKWISE
-    elif rotation == rosys.world.ImageRotation.LEFT:
-        rotation = cv2.ROTATE_180
-    else:
-        rotation = 0
-    if rotation != 0:
-        image = cv2.rotate(image, rotation)
+        image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+    elif rotation == rosys.world.ImageRotation.UPSIDE_DOWN:
+        image = cv2.rotate(image, cv2.ROTATE_180)
     result = cv2.imencode('.jpg', image)[1].tobytes()
     return result
 
@@ -147,7 +143,7 @@ class UsbCameraCapture(Actor):
         device.resolution = ImageSize(width=int(size.group(1)), height=int(size.group(2)))
         camera = self.world.usb_cameras[device.uid]
         if camera.resolution and camera.resolution != device.resolution:
-            self.log.info(f'updating resolution from {device.resolution} to {camera.resolution}')
+            self.log.info(f'updating resolution of {camera.uid} from {device.resolution} to {camera.resolution}')
             await rosys.run.io_bound(UsbCameraCapture.update_resolution, device, camera.resolution)
             # TODO read exposure from output and update it correctly
             #     if device.exposure != camera.brightness:
