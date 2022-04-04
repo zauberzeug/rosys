@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import abc
 from typing import Any, Optional
-from uuid import uuid4
 
 import numpy as np
 from pydantic import BaseModel, Field
@@ -23,7 +22,7 @@ class Camera(BaseModel, abc.ABC):
         super().__init__(**data)
 
     @property
-    def latest_image_uri(self):
+    def latest_image_uri(self) -> str:
         image = self.latest_captured_image
         if image is None:
             return 'camera/placeholder'
@@ -43,7 +42,7 @@ class Camera(BaseModel, abc.ABC):
         self,
         x: float = 0, y: float = 0, z: float = 1,
         yaw: float = 0, tilt_x: float = 0, tilt_y: float = 0,
-        image_width=800, image_height=800,
+        image_width=800, image_height=600,
     ) -> None:
         calibration = Calibration(
             intrinsics=Camera.create_intrinsics(image_width, image_height),
@@ -53,7 +52,7 @@ class Camera(BaseModel, abc.ABC):
         self.calibration = calibration.copy(deep=True)
 
     @staticmethod
-    def create_intrinsics(image_width: int = 800, image_height: int = 800) -> Intrinsics:
+    def create_intrinsics(image_width: int = 800, image_height: int = 600) -> Intrinsics:
         c = 570
         size = ImageSize(width=image_width, height=image_height)
         K = [[c, 0, size.width / 2], [0, c, size.height / 2], [0, 0, 1]]

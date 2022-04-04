@@ -1,11 +1,10 @@
 import numpy as np
 from nicegui import ui
 from nicegui.elements.scene_object3d import Object3D
-from nicegui.elements.scene_objects import Cylinder, Group, Sphere, Texture
+from nicegui.elements.scene_objects import Cylinder, Group, Texture
 from rosys.actors import CameraProjector
-from rosys.world.camera import Camera
+from rosys.world import Camera
 
-from .. import event
 from ..world import World
 
 

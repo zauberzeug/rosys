@@ -4,7 +4,7 @@ from typing import Optional
 import numpy as np
 import rosys
 
-from ..world import BoxDetection, Detections, Image, PointDetection, World
+from ..world import Detections, Image, World
 from . import Detector
 
 
@@ -21,9 +21,9 @@ class DetectorSimulator(Detector):
 
     def __init__(self) -> None:
         super().__init__()
-        self.blocked_cameras: set = set()
+        self.blocked_cameras: set[str] = set()
         self.simulated_objects: list[SimulatedObject] = []
-        self.uploaded = []
+        self.uploaded: list[rosys.world.Image] = []
 
     @property
     def is_connected(self):

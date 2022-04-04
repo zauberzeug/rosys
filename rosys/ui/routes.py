@@ -13,10 +13,9 @@ from starlette.routing import Route
 log = logging.getLogger('rosys.routes')
 
 
-def shrink(factor, array) -> bytes:
+def shrink(factor: int, array: np.ndarray) -> bytes:
     img = cv2.imdecode(array, cv2.IMREAD_COLOR)[::factor, ::factor]
-    jpeg = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 60])[1].tobytes()
-    return jpeg
+    return cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 60])[1].tobytes()
 
 
 def setup(ui: Ui, runtime: rosys.Runtime):
@@ -51,6 +50,6 @@ def setup(ui: Ui, runtime: rosys.Runtime):
 
     ui.add_route(Route('/camera/{id}/{timestamp}', get_image))
     ui.add_route(Route('/camera/placeholder', lambda _: Response(
-        content=rosys.world.camera.placeholder.data,
+        content=rosys.world.Image.create_placeholder('no image'),
         media_type='image/jpeg'
     )))

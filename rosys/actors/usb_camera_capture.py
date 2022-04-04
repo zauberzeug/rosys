@@ -5,7 +5,6 @@ from typing import Any, Optional
 
 import cv2
 import rosys
-from rosys.world.camera import Camera
 
 from .. import event
 from ..world import Image, ImageSize, UsbCamera
@@ -29,8 +28,7 @@ def process_image(image, rotation: rosys.world.ImageRotation) -> bytes:
         image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
     elif rotation == rosys.world.ImageRotation.UPSIDE_DOWN:
         image = cv2.rotate(image, cv2.ROTATE_180)
-    result = cv2.imencode('.jpg', image)[1].tobytes()
-    return result
+    return cv2.imencode('.jpg', image)[1].tobytes()
 
 
 class UsbCameraCapture(Actor):
@@ -39,7 +37,7 @@ class UsbCameraCapture(Actor):
     def __init__(self):
         super().__init__()
         self.devices: dict[str, Device] = {}
-        self.last_scan = None
+        self.last_scan: Optional[float] = None
 
     async def step(self):
         await super().step()
@@ -53,10 +51,8 @@ class UsbCameraCapture(Actor):
                     self.disconnect(uid)
                     continue
                 bytes = await rosys.run.cpu_bound(process_image, image, camera.rotation)
-                camera.images.append(Image(
-                    camera_id=uid, data=bytes, time=self.world.time,
-                    size=camera.resolution or ImageSize(width=800, height=600)
-                ))
+                size = camera.resolution or ImageSize(width=800, height=600)
+                camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time, size=size))
             except:
                 self.log.exception(
                     f'could not capture image from {uid}; disconnecting device /dev/video{self.devices[uid].video_id}')

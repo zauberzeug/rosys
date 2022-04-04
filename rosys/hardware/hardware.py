@@ -37,9 +37,9 @@ class Hardware(abc.ABC):
         return
 
     @property
-    def is_simulation(self):
+    def is_simulation(self) -> bool:
         return True
 
     @property
-    def is_real(self):
+    def is_real(self) -> bool:
         return not self.is_simulation

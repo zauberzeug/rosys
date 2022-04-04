@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
-import logging
-import subprocess
 import sys
 import time
-from doctest import OutputChecker
 from io import StringIO
 
 import sh
-from icecream import ic
 
 has_failures = False
 

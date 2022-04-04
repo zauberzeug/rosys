@@ -45,5 +45,5 @@ class World(BaseModel):
     def lizard_offset(self) -> str:
         if self.robot.hardware_time is None:
             return '-'
-        offset = (self.time - self.robot.hardware_time) * 1000
-        return f'{int(offset):4} ms'
+        offset_ms = (self.time - self.robot.hardware_time) * 1000
+        return f'{int(offset_ms):4} ms'

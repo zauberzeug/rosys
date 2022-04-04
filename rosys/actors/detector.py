@@ -12,7 +12,7 @@ from .actor import Actor
 class Detector(Actor):
     interval: float = 1.0
 
-    def __init__(self, port='8004'):
+    def __init__(self, port: int = 8004):
         super().__init__()
         self.sio = socketio.AsyncClient()
         self.is_detecting: bool = False
@@ -59,14 +59,13 @@ class Detector(Actor):
         except:
             self.log.exception(f'could not upload {image.id}')
 
-    async def detect(self, image: Image) -> Optional[Detections]:
-        '''Returns (None,None) if detector is busy'''
+    async def detect(self, image: Image) -> None:
         if not self.is_connected:
-            return None
+            return
 
         self.next_image = image
         if self.is_detecting:
-            return None
+            return
 
         while self.next_image is not None:
             try:
@@ -79,10 +78,8 @@ class Detector(Actor):
                 image.detections = Detections(boxes=box_detections, points=point_detections)
             except:
                 self.log.exception(f'could not detect {image.id}')
-                return None
             else:
                 event.emit(event.Id.NEW_DETECTIONS, image)
-                return image.detections
             finally:
                 self.is_detecting = False
 

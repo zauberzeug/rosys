@@ -10,15 +10,13 @@ class AutomationControls:
     ui: Ui
     runtime: Runtime
 
-    def __init__(self, default_automation: Optional[Awaitable] = None, custom_start: Optional[Callable[[Callable], None]] = None) -> None:
+    def __init__(self,
+                 default_automation: Optional[Awaitable] = None,
+                 can_start: Optional[Callable[[], bool]] = None) -> None:
 
         def start():
-            if custom_start is not None:
-                custom_start(_start)
-            else:
-                _start()
-
-        def _start():
+            if can_start is not None and not can_start():
+                return
             self.runtime.automator.start(default_automation())
 
         def pause():

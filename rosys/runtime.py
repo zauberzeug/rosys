@@ -11,8 +11,7 @@ from .actors import (Actor, AsyncioMonitor, Automator, Backup, CameraProjector,
                      NetworkMonitor, Odometer, PathPlanner, Steerer,
                      UsbCameraCapture, UsbCameraSimulator)
 from .communication import CommunicationFactory
-from .hardware import (CommunicatingHardware, Hardware, RobotBrain,
-                       SimulatedHardware)
+from .hardware import Hardware, RobotBrain, SimulatedHardware
 from .world import World
 
 
@@ -40,6 +39,7 @@ class Runtime:
         self.camera_projector = CameraProjector()
         self.asyncio_monitor = AsyncioMonitor()
         self.detector: Optional[Detector] = None  # NOTE can be set by runtime.with_detector()
+        self.usb_camera_simulator: Optional[UsbCameraSimulator] = None  # NOTE can be set by runtime.with_usb_cameras()
         self.actors = [
             self.camera_projector,
             self.lizard,
@@ -76,12 +76,12 @@ class Runtime:
             self.with_actors(self.usb_camera_simulator)
         return self
 
-    def with_detector(self, real: Detector = Detector(), simulation: DetectorSimulator = DetectorSimulator()) -> Runtime:
+    def with_detector(self, real: Optional[Detector] = None, simulation: Optional[DetectorSimulator] = None) -> Runtime:
         '''Adds detector to runtime.'''
         if self.hardware.is_real and not is_test:
-            self.detector = real
+            self.detector = real or Detector()
         else:
-            self.detector = simulation
+            self.detector = simulation or DetectorSimulator()
         self.with_actors(self.detector)
         return self
 
@@ -90,12 +90,6 @@ class Runtime:
         self.path_planner = PathPlanner()
         self.with_actors(self.path_planner)
         return self
-
-    def get_actor(self, type_: Type[Actor]) -> Actor:
-        for a in self.actors():
-            if isinstance(a, type_):
-                return a
-        return None
 
     async def startup(self):
         if self.tasks:
@@ -156,7 +150,7 @@ class Runtime:
             except (CancelledError, GeneratorExit):
                 return
 
-    def get_actor(self, _type: Type):
+    def get_actor(self, _type: Type[Actor]) -> Actor:
         return next((a for a in self.actors if type(a) is _type), None)
 
     def store_notification(self, message: str):

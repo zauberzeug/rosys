@@ -1,12 +1,10 @@
-from uuid import uuid4
-
 import numpy as np
 from rosys.test import approx
 from rosys.world import Calibration, Camera, Point3d
 
 
 def demo_data() -> tuple[Camera, list[Point3d]]:
-    cam = Camera(id=str(uuid4()))
+    cam = Camera(id='1')
     cam.set_perfect_calibration(x=0.1, y=0.2, z=3, tilt_x=np.deg2rad(10), tilt_y=np.deg2rad(20))
     world_points = [
         Point3d(x=x, y=y, z=z)

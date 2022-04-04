@@ -1,8 +1,6 @@
 from enum import Enum
 from typing import Optional
 
-from pydantic import Field
-
 from .camera import Camera
 from .image import ImageSize
 
