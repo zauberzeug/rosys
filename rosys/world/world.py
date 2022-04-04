@@ -43,5 +43,5 @@ class World(BaseModel):
 
     @property
     def lizard_offset(self) -> str:
-        offset = datetime.timedelta(seconds=self.robot.clock_offset or 0)
-        return humanize.naturaldelta(offset, minimum_unit='milliseconds')
+        offset = (self.time - self.robot.hardware_time) * 1000
+        return f'{int(offset):4} ms'
