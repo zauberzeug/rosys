@@ -59,6 +59,7 @@ class Automation:
                 except BaseException as err:
                     send, message = iter_throw, err
         except Exception as e:
+            self.log.exception('automation failed')
             if self.exception_handler:
                 self.exception_handler(e)
             raise
