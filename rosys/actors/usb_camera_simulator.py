@@ -17,8 +17,8 @@ class UsbCameraSimulator(Actor):
         await super().step()
 
         for camera in self.world.usb_cameras.values():
-            size = camera.calibration.intrinsics.size
-            image = Image(time=self.world.time, camera_id=camera.id, size=size)
+            assert camera.calibration is not None, 'simulated USB cameras should be created with calibration'
+            image = Image(time=self.world.time, camera_id=camera.id, size=camera.calibration.intrinsics.size)
             if rosys.is_test:
                 image.data = b'test data'
             else:
@@ -37,7 +37,7 @@ class UsbCameraSimulator(Actor):
         camera.color = color or '#' + ('%06x' % random.randint(0, 0xFFFFFF))
         camera.set_perfect_calibration(x, y, z, yaw, tilt_x, tilt_y)
         self.world.usb_cameras[uid] = camera
-        await event.call(event.Id.NEW_CAMERA, self.world.usb_cameras[uid])
+        await event.call(event.Id.NEW_CAMERA, camera)
 
     @staticmethod
     def create_image_data(camera: UsbCamera):
