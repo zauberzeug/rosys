@@ -49,6 +49,6 @@ class World(BaseModel):
         offset_ms = (self.time - self.robot.hardware_time) * 1000
         return f'{int(offset_ms):4} ms'
 
-    async def add_usb_camera(self, camera: Camera) -> None:
+    async def add_usb_camera(self, camera: UsbCamera) -> None:
         self.usb_cameras[camera.id] = camera
         await event.call(event.Id.NEW_CAMERA, camera)

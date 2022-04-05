@@ -1,6 +1,7 @@
 import io
 import random
 import time
+from typing import Optional
 
 import PIL as pil
 import rosys
@@ -26,23 +27,14 @@ class UsbCameraSimulator(Actor):
             camera.images.append(image)
 
     @staticmethod
-    def create(
-        uid: str,
-        width: int = 800, height: int = 600,
-        color=None,
-    ) -> UsbCamera:
-        camera = UsbCamera(id=uid, resolution=ImageSize(width=width, height=height), connected=True)
-        camera.color = color or '#' + ('%06x' % random.randint(0, 0xFFFFFF))
-        return camera
+    def create(uid: str, width: int = 800, height: int = 600, color: Optional[str] = None) -> UsbCamera:
+        color = color or f'#{random.randint(0, 0xffffff):06x}'
+        return UsbCamera(id=uid, resolution=ImageSize(width=width, height=height), connected=True, color=color)
 
     @staticmethod
-    def create_calibrated(
-        uid: str,
-        width: int = 800, height: int = 600,
-        color=None,
-        x: float = 0, y: float = 0, z: float = 1,
-        yaw: float = 0, tilt_x: float = 0, tilt_y: float = 0,
-    ) -> UsbCamera:
+    def create_calibrated(uid: str, width: int = 800, height: int = 600, color: Optional[str] = None,
+                          x: float = 0, y: float = 0, z: float = 1,
+                          yaw: float = 0, tilt_x: float = 0, tilt_y: float = 0) -> UsbCamera:
         camera = UsbCameraSimulator.create(uid, width, height, color)
         camera.set_perfect_calibration(x, y, z, yaw, tilt_x, tilt_y, width, height)
         return camera
