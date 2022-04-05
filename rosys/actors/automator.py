@@ -52,6 +52,7 @@ class Automator(Actor):
             self.log.exception('automation failed', e)
 
     def _on_complete(self):
+        event.emit(event.Id.AUTOMATION_COMPLETED)
         event.emit(event.Id.NEW_NOTIFICATION, f'automation completed')
 
     async def tear_down(self):
