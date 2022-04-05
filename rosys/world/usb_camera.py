@@ -23,6 +23,8 @@ class UsbCamera(Camera):
 
     @property
     def image_resolution(self) -> Optional[ImageSize]:
+        if self.resolution is None:
+            return None
         if self.rotation == ImageRotation.LEFT or self.rotation == ImageRotation.RIGHT:
             return ImageSize(width=self.resolution.height, height=self.resolution.width)
         else:
