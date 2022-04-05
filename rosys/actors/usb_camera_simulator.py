@@ -4,8 +4,8 @@ import time
 
 import PIL as pil
 import rosys
+from rosys.world.image import ImageSize
 
-from .. import event
 from ..world import Image, UsbCamera
 from .actor import Actor
 
@@ -17,31 +17,39 @@ class UsbCameraSimulator(Actor):
         await super().step()
 
         for camera in self.world.usb_cameras.values():
-            assert camera.calibration is not None, 'simulated USB cameras should be created with calibration'
-            image = Image(time=self.world.time, camera_id=camera.id, size=camera.calibration.intrinsics.size)
+            assert camera.image_resolution is not None, 'simulated USB cameras should have an image resolution'
+            image = Image(time=self.world.time, camera_id=camera.id, size=camera.image_resolution)
             if rosys.is_test:
                 image.data = b'test data'
             else:
                 image.data = await rosys.run.cpu_bound(self.create_image_data, camera)
             camera.images.append(image)
 
-    async def create(
-        self, uid: str = '',
+    @staticmethod
+    def create(
+        uid: str,
+        width: int = 800, height: int = 600,
+        color=None,
+    ) -> UsbCamera:
+        camera = UsbCamera(id=uid, resolution=ImageSize(width=width, height=height), connected=True)
+        camera.color = color or '#' + ('%06x' % random.randint(0, 0xFFFFFF))
+        return camera
+
+    @staticmethod
+    def create_calibrated(
+        uid: str,
+        width: int = 800, height: int = 600,
+        color=None,
         x: float = 0, y: float = 0, z: float = 1,
         yaw: float = 0, tilt_x: float = 0, tilt_y: float = 0,
-        color=None,
-    ):
-        if uid == '':
-            uid = f'simulated_cam_{len(self.world.usb_cameras)}'
-        camera = UsbCamera(id=uid)
-        camera.color = color or '#' + ('%06x' % random.randint(0, 0xFFFFFF))
-        camera.set_perfect_calibration(x, y, z, yaw, tilt_x, tilt_y)
-        self.world.usb_cameras[uid] = camera
-        await event.call(event.Id.NEW_CAMERA, camera)
+    ) -> UsbCamera:
+        camera = UsbCameraSimulator.create(uid, width, height, color)
+        camera.set_perfect_calibration(x, y, z, yaw, tilt_x, tilt_y, width, height)
+        return camera
 
     @staticmethod
     def create_image_data(camera: UsbCamera):
-        size = camera.calibration.intrinsics.size
+        size = camera.image_resolution
         img = pil.Image.new('RGB', size=(size.width, size.height), color=camera.color)
         d = pil.ImageDraw.Draw(img)
         text = f'{camera.id}: {time.time()}'

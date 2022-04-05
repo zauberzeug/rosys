@@ -17,7 +17,7 @@ async def test_json_view(runtime: TestRuntime):
     '''exporting whole world as json is needed for example for logging/inspection'''
     runtime.with_usb_cameras()
     await runtime.forward(1)
-    await runtime.usb_camera_simulator.create()
+    await runtime.world.add_usb_camera(runtime.usb_camera_simulator.create_calibrated('simulated_cam_0'))
     serialized = runtime.world.json()
     data = json.loads(serialized)
     assert 'robot' in data

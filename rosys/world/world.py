@@ -4,6 +4,7 @@ import time
 import humanize
 from pydantic import BaseModel, PrivateAttr
 
+from .. import event
 from ..helpers import is_test
 from .area import Area
 from .camera import Camera
@@ -47,3 +48,7 @@ class World(BaseModel):
             return '-'
         offset_ms = (self.time - self.robot.hardware_time) * 1000
         return f'{int(offset_ms):4} ms'
+
+    async def add_usb_camera(self, camera: Camera) -> None:
+        self.usb_cameras[camera.id] = camera
+        await event.call(event.Id.NEW_CAMERA, camera)
