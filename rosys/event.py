@@ -1,13 +1,13 @@
 import asyncio
-from asyncio.tasks import Task
 import collections
+import functools
 import inspect
-from aenum import Enum, auto
-from typing import Awaitable, Callable, Union
 import logging
 import weakref
-import functools
+from asyncio.tasks import Task
+from typing import Callable
 
+from aenum import Enum, auto
 
 tasks: list[Task] = []
 listeners = collections.defaultdict(set)
@@ -30,7 +30,7 @@ class Id(Enum, init='value __doc__'):
     NEW_DETECTIONS = auto(), 'called after detection on an image is completed; provides image frame as parameter'
 
 
-def register(event: Id, listener: Union[Callable, Awaitable]):
+def register(event: Id, listener: Callable):
     if not callable(listener):
         raise Exception('non-callable listener')
     if listener.__name__ == '<lambda>':  # NOTE lambda functions must be stored without weakref because they will be collected otherwise
@@ -43,7 +43,7 @@ def register(event: Id, listener: Union[Callable, Awaitable]):
     listeners[event].add(ref)
 
 
-def unregister(event: Id, listener: Union[Callable, Awaitable]):
+def unregister(event: Id, listener: Callable):
     marked = []
     for registered in listeners[event]:
         if hasattr(listener, '__name__') and listener.__name__ == '<lambda>' and listener == registered:
