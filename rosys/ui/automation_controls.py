@@ -13,7 +13,7 @@ class AutomationControls:
 
     def __init__(self,
                  default_automation: Optional[Awaitable] = None,
-                 can_start: Optional[Union[Callable[[], bool], Awaitable[None]]] = None) -> None:
+                 can_start: Optional[Union[Callable[[], bool], Awaitable[bool]]] = None) -> None:
 
         async def start():
             if inspect.iscoroutinefunction(can_start):
