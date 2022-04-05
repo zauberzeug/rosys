@@ -1,4 +1,5 @@
-from typing import Awaitable, Callable, Optional
+import inspect
+from typing import Awaitable, Callable, Optional, Union
 
 from nicegui.ui import Ui
 
@@ -12,10 +13,13 @@ class AutomationControls:
 
     def __init__(self,
                  default_automation: Optional[Awaitable] = None,
-                 can_start: Optional[Callable[[], bool]] = None) -> None:
+                 can_start: Optional[Union[Callable[[], bool], Awaitable[None]]] = None) -> None:
 
-        def start():
-            if can_start is not None and not can_start():
+        async def start():
+            if inspect.iscoroutinefunction(can_start):
+                if not await can_start():
+                    return
+            elif can_start is not None and not can_start():
                 return
             self.runtime.automator.start(default_automation())
 
