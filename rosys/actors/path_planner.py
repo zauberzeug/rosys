@@ -1,14 +1,15 @@
 import asyncio
-from multiprocessing import Pipe
 import time
+from multiprocessing import Pipe
 from typing import Any, Optional
 
 from .. import run
-from ..world import PathSegment, Point, Pose, Spline
 from ..helpers import is_test
+from ..world import PathSegment, Point, Pose, Spline
 from . import Actor
-from .pathplanning import PlannerCommand, PlannerProcess, PlannerResponse, PlannerState, \
-    PlannerGetStateCommand, PlannerGrowMapCommand, PlannerSearchCommand, PlannerTestCommand
+from .pathplanning import (PlannerCommand, PlannerGetStateCommand, PlannerGrowMapCommand,
+                           PlannerObstacleDistanceCommand, PlannerProcess, PlannerResponse, PlannerSearchCommand,
+                           PlannerState, PlannerTestCommand)
 
 
 class PathPlanner(Actor):
@@ -61,11 +62,19 @@ class PathPlanner(Actor):
             deadline=time.time()+timeout,
         ))
 
-    async def test_spline(self, spline: Spline, timeout: float = 3.0):
+    async def test_spline(self, spline: Spline, timeout: float = 3.0) -> bool:
         return await self._call(PlannerTestCommand(
             areas=list(self.world.areas.values()),
             obstacles=list(self.world.obstacles.values()),
             spline=spline,
+            deadline=time.time()+timeout,
+        ))
+
+    async def get_obstacle_distance(self, pose: Pose, timeout: float = 3.0) -> float:
+        return await self._call(PlannerObstacleDistanceCommand(
+            areas=list(self.world.areas.values()),
+            obstacles=list(self.world.obstacles.values()),
+            pose=pose,
             deadline=time.time()+timeout,
         ))
 

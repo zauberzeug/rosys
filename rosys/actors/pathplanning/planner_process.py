@@ -1,21 +1,22 @@
 import abc
-from dataclasses import dataclass, field
-import icecream
 import heapq
 import logging
+import time
+import uuid
+from dataclasses import dataclass, field
 from multiprocessing import Process
 from multiprocessing.connection import Connection
-import numpy as np
-import time
 from typing import Any, Optional
-import uuid
 
+import icecream
+import numpy as np
+
+from ...helpers import angle
+from ...world import Area, PathSegment, Point, Pose, Spline
 from .distance_map import DistanceMap
 from .grid import Grid
 from .obstacle_map import Obstacle, ObstacleMap
 from .steps import Step
-from ...helpers import angle
-from ...world import Area, PathSegment, Point, Pose, Spline
 
 
 @dataclass
@@ -65,6 +66,14 @@ class PlannerTestCommand(PlannerCommand):
 
 
 @dataclass
+class PlannerObstacleDistanceCommand(PlannerCommand):
+    areas: list[Area]
+    obstacles: list[Obstacle]
+    pose: Pose
+    backward: bool = False
+
+
+@dataclass
 class PlannerResponse:
     id: str
     deadline: float
@@ -101,6 +110,9 @@ class PlannerProcess(Process):
                 if isinstance(cmd, PlannerTestCommand):
                     self.update_obstacle_map(cmd.areas, cmd.obstacles, [cmd.spline.start, cmd.spline.end], cmd.deadline)
                     self.respond(cmd, bool(self.state.obstacle_map.test_spline(cmd.spline, cmd.backward)))
+                if isinstance(cmd, PlannerObstacleDistanceCommand):
+                    self.update_obstacle_map(cmd.areas, cmd.obstacles, [cmd.pose], cmd.deadline)
+                    self.respond(cmd, self.state.obstacle_map.get_distance(cmd.pose.x, cmd.pose.y, cmd.pose.yaw))
             except Exception as e:
                 self.log.exception(f'failed to compute cmd "{cmd}"')
                 self.respond(cmd, e)
