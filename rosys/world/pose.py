@@ -1,8 +1,11 @@
 from __future__ import annotations  # NOTE: for PEP 563 (postponed evaluation of annotations)
-from pydantic import BaseModel
-from typing import Any
+
 from dataclasses import dataclass
+from typing import Any
+
 import numpy as np
+from pydantic import BaseModel
+
 from .point import Point
 from .point3d import Point3d
 
@@ -52,12 +55,20 @@ class Pose(BaseModel):
     def projected_distance(self, other: Pose) -> float:
         return self.point.projected_distance(other.point, other.yaw)
 
-    def __iadd__(self, step: PoseStep):
+    def __iadd__(self, step: PoseStep) -> Pose:
         self.x += step.linear * np.cos(self.yaw)
         self.y += step.linear * np.sin(self.yaw)
         self.yaw += step.angular
         self.time = step.time
         return self
+
+    def __add__(self, step: PoseStep) -> Pose:
+        return Pose(
+            x=self.x + step.linear * np.cos(self.yaw),
+            y=self.y + step.linear * np.sin(self.yaw),
+            yaw=self.yaw + step.angular,
+            time=step.time,
+        )
 
     def transform(self, point: Point) -> Point:
         return Point(
