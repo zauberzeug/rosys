@@ -1,4 +1,5 @@
 from collections import deque
+
 from .. import event
 from ..hardware import Hardware
 from . import Actor
@@ -11,7 +12,8 @@ class Lizard(Actor):
         super().__init__()
         self.hardware = hardware
         self.last_step = None
-        event.register(event.Id.AUTOMATION_PAUSED, self._handle_pause)
+        event.register(event.Id.AUTOMATION_PAUSED, self._stop)
+        event.register(event.Id.AUTOMATION_STOPPED, self._stop)
         self.responsiveness_stats: deque = deque(maxlen=100)
         self.update_stats: deque = deque(maxlen=100)
         self.processing_stats: deque = deque(maxlen=100)
@@ -28,7 +30,7 @@ class Lizard(Actor):
             self.log.warning(f'processing machine data took {dt:.2f} s')
         self.processing_stats.append(dt)
 
-    async def _handle_pause(self, reason: str):
+    async def _stop(self, _):
         await self.hardware.stop()
 
     async def ensure_responsiveness(self):

@@ -29,6 +29,8 @@ class Automator(Actor):
         self.stop(because='new automation starts')
         self.automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
         task_logger.create_task(asyncio.wait([self.automation]), name='automation')
+        event.emit(event.Id.AUTOMATION_STARTED)
+        event.emit(event.Id.NEW_NOTIFICATION, f'automation started')
 
     def pause(self, because: str):
         if self.is_running:
@@ -45,7 +47,7 @@ class Automator(Actor):
     def stop(self, because: str):
         if not self.is_stopped:
             self.automation.stop()
-            event.emit(event.Id.AUTOMATION_PAUSED, because)
+            event.emit(event.Id.AUTOMATION_STOPPED, because)
             event.emit(event.Id.NEW_NOTIFICATION, f'automation stopped because {because}')
 
     def _handle_exception(self, e: Exception):
