@@ -39,6 +39,8 @@ class Automator(Actor):
     def resume(self):
         if self.is_paused:
             self.automation.resume()
+            event.emit(event.Id.AUTOMATION_RESUMED)
+            event.emit(event.Id.NEW_NOTIFICATION, f'automation resumed')
 
     def stop(self, because: str):
         if not self.is_stopped:
