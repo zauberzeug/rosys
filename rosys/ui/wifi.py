@@ -1,9 +1,9 @@
-from nicegui.ui import Ui
-import logging
-import socket
-import os.path
-from pathlib import Path
 import asyncio
+import logging
+import os
+import socket
+
+from nicegui.ui import Ui
 
 log = logging.getLogger('rosys.wifi')
 
@@ -40,7 +40,7 @@ def create_wifi(ui: Ui):
     def add(ssid: str, password: str):
         log.info(f'adding {ssid}, {password}')
         wifi_configs = os.path.expanduser(f'~/.rosys/wifi')
-        Path(wifi_configs).mkdir(parents=True, exist_ok=True)
+        os.makedirs(wifi_configs, exist_ok=True)
         # NOTE a daemon on the host system must watch the .rosys/wifi dir and reload the configuration with nmcli or similar
         with open(f'{wifi_configs}/{ssid}', 'w') as f:
             f.write(password)
