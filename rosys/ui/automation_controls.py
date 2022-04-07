@@ -32,7 +32,7 @@ class AutomationControls:
         def stop():
             self.runtime.automator.stop(because='stop button was pressed')
 
-        play_button = self.ui.button(on_click=start).props('icon=play_arrow outline')
+        play_button = self.ui.button(on_click=start).props('icon=play_arrow unelevated')
         pause_button = self.ui.button(on_click=pause).props('icon=pause outline')
         resume_button = self.ui.button(on_click=resume).props('icon=play_arrow outline')
         stop_button = self.ui.button(on_click=stop).props('icon=stop outline')
