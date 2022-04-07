@@ -1,10 +1,11 @@
 import asyncio
-import pytest
-import numpy as np
 import uuid
+
+import numpy as np
+import pytest
 from rosys.automations import drive_path
-from rosys.world import Obstacle, Point, Pose, Spline
 from rosys.test import TestRuntime, assert_point
+from rosys.world import Obstacle, Point, Pose, Spline
 
 
 def create_obstacle(*, x: float, y: float, radius: float = 0.5) -> Obstacle:
@@ -94,9 +95,9 @@ async def test_overlapping_commands(runtime: TestRuntime):
     end = Pose(x=10.0, y=1.0)
     spline = Spline.from_poses(start, end)
 
-    task1 = asyncio.create_task(runtime.path_planner.search(goal=end))
+    task1 = asyncio.create_task(runtime.path_planner.search(goal=end), name='search')
     await asyncio.sleep(0.2)
-    task2 = asyncio.create_task(runtime.path_planner.test_spline(spline))
+    task2 = asyncio.create_task(runtime.path_planner.test_spline(spline), name='test')
     path, test = await asyncio.gather(task1, task2)
     assert isinstance(path, list)
     assert isinstance(test, bool)

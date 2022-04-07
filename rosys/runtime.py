@@ -6,10 +6,9 @@ from asyncio.exceptions import CancelledError
 from typing import Optional, Type
 
 from . import Persistence, event, is_test, run, sleep, task_logger
-from .actors import (Actor, AsyncioMonitor, Automator, Backup, CameraProjector,
-                     Detector, DetectorSimulator, GarbageCollector, Lizard,
-                     NetworkMonitor, Odometer, PathPlanner, Steerer,
-                     UsbCameraCapture, UsbCameraSimulator)
+from .actors import (Actor, AsyncioMonitor, Automator, Backup, CameraProjector, Detector, DetectorSimulator,
+                     GarbageCollector, Lizard, NetworkMonitor, Odometer, PathPlanner, Steerer, UsbCameraCapture,
+                     UsbCameraSimulator)
 from .communication import CommunicationFactory
 from .hardware import Hardware, RobotBrain, SimulatedHardware
 from .world import World
@@ -105,7 +104,7 @@ class Runtime:
             if actor.interval is not None:
                 self.log.debug(f'starting actor {actor.name} with interval {actor.interval}s')
                 self.tasks.append(task_logger.create_task(self.repeat(actor), name=actor.name))
-        self.tasks.append(asyncio.create_task(self.watch_emitted_events()))
+        self.tasks.append(asyncio.create_task(self.watch_emitted_events(), name='watch_emitted_events'))
 
         if not is_test:
             await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
