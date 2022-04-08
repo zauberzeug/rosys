@@ -83,9 +83,8 @@ class UsbCameraCapture(Actor):
         output = await rosys.run.sh(['v4l2-ctl', '--list-devices'])
         for c in self.world.usb_cameras.values():
             c.connected = False
+        output = '\n'.join([s for s in output.split('\n') if not s.startswith('Cannot open device')])
         for infos in output.split('\n\n'):
-            if 'Cannot open device' in infos:
-                continue
             match = re.search('\((.*)\)', infos)
             if match is None:
                 continue
@@ -138,18 +137,18 @@ class UsbCameraCapture(Actor):
         size = re.search('Width/Height.*: (\d*)/(\d*)', output)
         device.resolution = ImageSize(width=int(size.group(1)), height=int(size.group(2)))
         camera = self.world.usb_cameras[device.uid]
-        if camera.resolution and camera.resolution != device.resolution:
-            self.log.info(f'updating resolution of {camera.id} from {device.resolution} to {camera.resolution}')
-            await rosys.run.io_bound(UsbCameraCapture.update_resolution, device, camera.resolution)
-            # TODO read exposure from output and update it correctly
-            #     if device.exposure != camera.brightness:
-            #         await self.update_exposure(device)
+        # if camera.resolution and camera.resolution != device.resolution:
+        #self.log.info(f'updating resolution of {camera.id} from {device.resolution} to {camera.resolution}')
+        # await rosys.run.io_bound(UsbCameraCapture.update_resolution, device, camera.resolution)
+        # TODO read exposure from output and update it correctly
+        #     if device.exposure != camera.brightness:
+        #         await self.update_exposure(device)
 
-            # async def update_exposure(self, device: Device):
-            #     exposure = self.world.usb_cameras[device.uid].exposure
-            #     # TODO if expousre is None, set auto exposure
-            #     await self.run_v4l(device, '--set-ctrl=brightness=0', '--set-ctrl=exposure_auto=1', f'--set-ctrl=exposure_absolute={exposure}')
-            #     self.log.info(f'using new exposure {exposure}')
+        # async def update_exposure(self, device: Device):
+        #     exposure = self.world.usb_cameras[device.uid].exposure
+        #     # TODO if expousre is None, set auto exposure
+        #     await self.run_v4l(device, '--set-ctrl=brightness=0', '--set-ctrl=exposure_auto=1', f'--set-ctrl=exposure_absolute={exposure}')
+        #     self.log.info(f'using new exposure {exposure}')
 
     @staticmethod
     def update_resolution(device: Device, size: ImageSize):
