@@ -50,6 +50,6 @@ def setup(ui: Ui, runtime: rosys.Runtime):
 
     ui.add_route(Route('/camera/{id}/{timestamp}', get_image))
     ui.add_route(Route('/camera/placeholder', lambda _: Response(
-        content=rosys.world.Image.create_placeholder('no image'),
+        content=rosys.world.Image.create_placeholder('no image').data,
         media_type='image/jpeg'
     )))
