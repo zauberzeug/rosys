@@ -1,10 +1,13 @@
 from __future__ import annotations
-from typing import List, Optional
-from pydantic import BaseModel
+
 import abc
 import asyncio
-from operator import ixor
 from functools import reduce
+from operator import ixor
+from typing import List
+
+from pydantic import BaseModel
+
 from ..communication import Communication
 from ..world import Velocity, World
 from . import CommunicatingHardware
@@ -185,8 +188,8 @@ class RoboClawWheels(HardwareGroup):
             angular=float(words.pop(0)),
             time=world.robot.hardware_time,
         ))
-        world.robot.temperature = float(words.pop(0))
-        world.robot.battery = float(words.pop(0))
+        # world.robot.temperature = float(words.pop(0))
+        # world.robot.battery = float(words.pop(0))
 
 
 class ODriveMotor(HardwareGroup):

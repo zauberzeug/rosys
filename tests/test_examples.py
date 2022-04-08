@@ -46,7 +46,7 @@ if __name__ == '__main__':
     check('../main.py')
     check('../docs/src/scene_on_click.py')
     check('../docs/src/scene_on_click_with_automation_controls.py')
-    check('../docs/src/watch_battery_level.py')
+    check('../docs/src/geofence.py')
     check('../docs/src/path_planning.py')
     check('../docs/src/robot_shape.py')
     check('../docs/src/show_captured_images.py')

@@ -1,4 +1,3 @@
-import numpy as np
 from ..world import Velocity, World
 from .hardware import Hardware
 
@@ -30,5 +29,3 @@ class SimulatedHardware(Hardware):
             angular=self.angular_velocity,
             time=self.world.time,
         ))
-        self.world.robot.battery = 25.0 + np.sin(0.1 * self.world.time) + 0.02 * np.random.randn()
-        self.world.robot.temperature = np.random.uniform(34, 35)

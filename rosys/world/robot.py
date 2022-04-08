@@ -1,6 +1,8 @@
 import os
-from pydantic import BaseModel
 from typing import Optional
+
+from pydantic import BaseModel
+
 from ..helpers import ModificationContext
 from .pose import Pose
 from .velocity import Velocity
@@ -32,9 +34,6 @@ class Robot(BaseModel):
     current_velocity: Optional[Velocity]
     last_movement: float = 0
     hardware_time: Optional[float]
-    battery: float = 0
-    is_charging: bool = False
-    temperature: float = 0
     emergency_stop: bool = False
     clock_offset: Optional[float]
     carrot: Optional[Pose]
