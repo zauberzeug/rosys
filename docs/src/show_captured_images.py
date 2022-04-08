@@ -9,12 +9,11 @@ runtime.with_usb_cameras()
 rosys.ui.configure(ui, runtime)
 
 
-def refresh():
+async def refresh():
     for uid, camera in runtime.world.usb_cameras.items():
         if uid not in feeds:
-            with ui.card().tight().style('width:30em;'):
-                feeds[uid] = ui.image()
-        feeds[uid].set_source(camera.latest_image_uri)
+                feeds[uid] = ui.interactive_image('', cross=False)
+        await feeds[uid].set_source(camera.latest_image_uri)
 
 
 # refresh timer
