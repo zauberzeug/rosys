@@ -29,6 +29,7 @@ class Detector(Actor):
             return
 
         await self.try_start_one_upload()
+        await self.upload_priority_queue()
 
     async def connect(self) -> bool:
         try:
@@ -46,12 +47,19 @@ class Detector(Actor):
             return
 
         upload_images = [image for image in self.world.upload.queue if image.data]
-        if not upload_images:
-            return
+        if upload_images:
+            task_logger.create_task(self.upload(upload_images[0]), name='upload_image')
+            self.world.upload.queue.clear()  # old images should not be uploaded later when the robot is inactive
+            self.world.upload.last_upload = datetime.now()
 
-        self.world.upload.last_upload = datetime.now()
-        self.world.upload.queue.clear()  # old images should not be uploaded later when the robot is inactive
-        task_logger.create_task(self.upload(upload_images[0]), name='upload_image')
+    async def upload_priority_queue(self):
+        upload_images = [image for image in self.world.upload.priority_queue if image.data]
+        if upload_images:
+            async def upload_priority_images():
+                for image in upload_images:
+                    await self.upload(image)
+            task_logger.create_task(upload_priority_images, name='upload_priority_images')
+            self.world.upload.priority_queue.clear()
 
     async def upload(self, image: Image):
         try:
