@@ -12,6 +12,7 @@ class Automator(Actor):
         super().__init__()
         self.automation: Optional[Automation] = None
         event.register(event.Id.PAUSE_AUTOMATION, self.pause)
+        event.register(event.Id.STOP_AUTOMATION, self.stop)
 
     @property
     def is_stopped(self) -> bool:
