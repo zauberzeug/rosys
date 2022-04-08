@@ -5,6 +5,7 @@ import rosys.ui
 
 # setup
 runtime = rosys.Runtime()
+runtime.with_usb_cameras()
 rosys.ui.configure(ui, runtime)
 
 
