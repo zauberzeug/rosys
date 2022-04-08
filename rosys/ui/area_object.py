@@ -1,6 +1,7 @@
 import numpy as np
 from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Extrusion
+
 from ..world import Area
 
 
@@ -19,5 +20,5 @@ class AreaObject(Object3D):
                            for phi in np.linspace(0, 2 * np.pi, 16, endpoint=False)]
             else:
                 outline = [[point.x, point.y] for point in area.outline]
-            Extrusion(outline, 0.1, wireframe=True).with_name(f'area_{area.id}').material('green')
+            Extrusion(outline, 0.1, wireframe=True).with_name(f'area_{area.id}').material(area.color)
         return False  # NOTE: avoid JustPy page_update
