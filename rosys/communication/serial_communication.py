@@ -1,7 +1,9 @@
-from typing import Optional
-import os
-import serial
 import logging
+import os
+from typing import Optional
+
+import serial
+
 from .communication import Communication
 
 log = logging.getLogger('rosys.hardware.serial_communication')
@@ -56,5 +58,7 @@ class SerialCommunication(Communication):
             return line
 
     async def send_async(self, line: str):
+        if not self.serial.isOpen():
+            return
         self.serial.write(f'{line}\n'.encode())
         self.log.debug(f'send: {line}')
