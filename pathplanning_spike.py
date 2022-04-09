@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
 import time
 from dataclasses import dataclass
 
@@ -90,6 +92,71 @@ def run_new():
         for i, point in enumerate(points)
     ]
 
+    @dataclass
+    class FastSpline:
+        start_x: float
+        start_y: float
+        start_yaw: float
+        end_x: float
+        end_y: float
+        end_yaw: float
+        backward: bool
+
+        def __post_init__(self):
+            distance = -0.5 if self.backward else 0.5
+            distance *= np.sqrt((self.end_x - self.start_x)**2 + (self.end_y - self.start_y)**2)
+            self.a = self.start_x
+            self.e = self.start_y
+            self.b = self.start_x + distance * np.cos(self.start_yaw)
+            self.f = self.start_y + distance * np.sin(self.start_yaw)
+            self.c = self.end_x - distance * np.cos(self.end_yaw)
+            self.g = self.end_y - distance * np.sin(self.end_yaw)
+            self.d = self.end_x
+            self.h = self.end_y
+            self.m = self.d - 3 * self.c + 3 * self.b - self.a
+            self.n = self.c - 2 * self.b + self.a
+            self.o = self.b - self.a
+            self.p = self.h - 3 * self.g + 3 * self.f - self.e
+            self.q = self.g - 2 * self.f + self.e
+            self.r = self.f - self.e
+
+        @staticmethod
+        def from_poses(start: Pose, end: Pose, *, backward: bool = False) -> FastSpline:
+            return FastSpline(
+                start_x=start.x,
+                start_y=start.y,
+                start_yaw=start.yaw,
+                end_x=end.x,
+                end_y=end.y,
+                end_yaw=end.yaw,
+                backward=backward,
+            )
+
+        def x(self, t: float) -> float:
+            return t**3 * self.d + 3 * t**2 * (1 - t) * self.c + 3 * t * (1 - t)**2 * self.b + (1 - t)**3 * self.a
+
+        def y(self, t: float) -> float:
+            return t**3 * self.h + 3 * t**2 * (1 - t) * self.g + 3 * t * (1 - t)**2 * self.f + (1 - t)**3 * self.e
+
+        def gx(self, t: float) -> float:
+            return 3 * (self.m * t**2 + 2 * self.n * t + self.o)
+
+        def gy(self, t: float) -> float:
+            return 3 * (self.p * t**2 + 2 * self.q * t + self.r)
+
+        def yaw(self, t: float) -> float:
+            return np.arctan2(self.gy(t), self.gx(t))
+
+        def create_poses(self) -> tuple:
+            row0, col0, layer0 = obstacle_map.grid.to_grid(self.start_x, self.start_y, self.start_yaw)
+            row1, col1, layer1 = obstacle_map.grid.to_grid(self.end_x, self.end_y, self.end_yaw)
+            num_rows = int(abs(row1 - row0))
+            num_cols = int(abs(col1 - col0))
+            num_layers = int(abs(layer1 - layer0))
+            n = max(num_rows, num_cols, num_layers)
+            t = obstacle_map.t_lookup[n] if n < len(obstacle_map.t_lookup) else np.linspace(0, 1, n)
+            return (self.x(t), self.y(t), self.yaw(t) + [0, np.pi][self.backward])
+
     G = nx.DiGraph()
     for g, group in enumerate(pose_groups):
         for p in range(len(group.poses)):
@@ -97,8 +164,8 @@ def run_new():
     for g, group in enumerate(pose_groups):
         for p, (pose, g_) in enumerate(zip(group.poses, group.neighbor_indices)):
             for p_, pose_ in enumerate(pose_groups[g_].poses):
-                spline = Spline.from_poses(pose, pose_)
-                if not obstacle_map.test_spline(spline):
+                spline = FastSpline.from_poses(pose, pose_)
+                if not obstacle_map.test(*spline.create_poses()).any():
                     G.add_edge((g, p), (g_, p_))
 
     dt1 = time.time() - t
