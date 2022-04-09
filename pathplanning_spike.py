@@ -23,9 +23,12 @@ np.random.seed(seed)
 
 robot_outline = [(-0.5, -0.5), (0.5, -0.5), (0.75, 0), (0.5, 0.5), (-0.5, 0.5)]
 areas = [Area(id='main', outline=[Point(x=-5, y=-5), Point(x=25, y=-5), Point(x=25, y=25), Point(x=-5, y=25)])]
-obstacles = [Obstacle(id='0', outline=[Point(x=5, y=-5), Point(x=15, y=-5), Point(x=15, y=15), Point(x=5, y=15)])]
+obstacles = [
+    Obstacle(id='0', outline=[Point(x=5, y=-5), Point(x=8, y=-5), Point(x=8, y=15), Point(x=5, y=15)]),
+    Obstacle(id='1', outline=[Point(x=12, y=5), Point(x=15, y=5), Point(x=15, y=25), Point(x=12, y=25)]),
+]
 start = Pose(x=np.random.uniform(-4, 4), y=np.random.uniform(-4, 4), yaw=np.random.uniform(-np.pi, np.pi))
-goal = Pose(x=np.random.uniform(16, 24), y=np.random.uniform(-4, 4), yaw=np.random.uniform(-np.pi, np.pi))
+goal = Pose(x=np.random.uniform(16, 24), y=np.random.uniform(16, 24), yaw=np.random.uniform(-np.pi, np.pi))
 planner = PlannerProcess(None, robot_outline)
 plot = ui.plot(figsize=(14, 8))
 
