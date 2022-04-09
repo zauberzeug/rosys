@@ -19,7 +19,7 @@ from rosys.world import Area, Obstacle, PathSegment, Point, Pose, Spline
 robot_outline = [(-0.5, -0.5), (0.5, -0.5), (0.75, 0), (0.5, 0.5), (-0.5, 0.5)]
 areas = [Area(id='main', outline=[Point(x=-5, y=-5), Point(x=25, y=-5), Point(x=25, y=25), Point(x=-5, y=25)])]
 obstacles = [Obstacle(id='0', outline=[Point(x=5, y=-5), Point(x=15, y=-5), Point(x=15, y=15), Point(x=5, y=15)])]
-start = Pose()
+start = Pose(x=-4, y=0, yaw=np.pi)
 goal = Pose(x=20, y=0, yaw=0)
 planner = PlannerProcess(None, robot_outline)
 plot = ui.plot(figsize=(14, 8))
@@ -166,7 +166,9 @@ def run_new():
             for p_, pose_ in enumerate(pose_groups[g_].poses):
                 spline = FastSpline.from_poses(pose, pose_)
                 if not obstacle_map.test(*spline.create_poses()).any():
-                    G.add_edge((g, p), (g_, p_))
+                    G.add_edge((g, p), (g_, p_), backward=False)
+                    if ((g_, p_), (g, p)) not in G.edges:
+                        G.add_edge((g_, p_), (g, p), backward=True)
 
     dt1 = time.time() - t
 
@@ -201,12 +203,17 @@ def run_new():
 
     path: list[PathSegment] = []
     path.append(first_segment)
-    last_pose = pose_groups[g].poses[p]
-    for path_g, path_p in nx.shortest_path(G, (g, p), (g_, p_))[1:]:
-        next_pose = pose_groups[path_g].poses[path_p]
-        spline = Spline.from_poses(last_pose, next_pose, backward=False)
-        path.append(PathSegment(spline=spline, backward=False))
-        last_pose = next_pose
+    last_g, last_p = g, p
+    try:
+        for next_g, next_p in nx.shortest_path(G, (g, p), (g_, p_))[1:]:
+            last_pose = pose_groups[last_g].poses[last_p]
+            next_pose = pose_groups[next_g].poses[next_p]
+            backward = G.edges[((last_g, last_p), (next_g, next_p))]['backward']
+            spline = Spline.from_poses(last_pose, next_pose, backward=backward)
+            path.append(PathSegment(spline=spline, backward=backward))
+            last_g, last_p = next_g, next_p
+    except nx.exception.NetworkXNoPath:
+        pass
     path.append(last_segment)
 
     dt2 = time.time() - t
