@@ -119,9 +119,9 @@ def run_new():
             best_length = np.inf
             for p, pose in enumerate(group.poses):
                 for backward in [False, True]:
-                    poses = (terminal_pose, pose) if start else (pose, terminal_pose)
+                    poses = (terminal_pose, pose) if first else (pose, terminal_pose)
                     spline = Spline.from_poses(*poses, backward=backward)
-                    if not obstacle_map.test_spline(spline):
+                    if not obstacle_map.test_spline(spline, backward):
                         length = estimate_length(spline)
                         if length < best_length:
                             best_length = length
@@ -156,22 +156,26 @@ def run_new():
             np.abs(spline.max_curvature()) < curvature_limit  # NOTE: max_curvature can be NaN
 
     while True:
-        for s in range(1, len(path) - 1):
-            if path[s].backward != path[s+1].backward:
-                continue
-
-            backward = path[s].backward
-            new_spline = Spline.from_poses(path[s].spline.pose(0), path[s+1].spline.pose(1))
+        for s in range(len(path) - 1):
+            new_start = Pose(
+                x=path[s].spline.start.x,
+                y=path[s].spline.start.y,
+                yaw=path[s].spline.yaw(0) + (np.pi if path[s].backward else 0),
+            )
+            new_end = Pose(
+                x=path[s+1].spline.end.x,
+                y=path[s+1].spline.end.y,
+                yaw=path[s+1].spline.yaw(1) + (np.pi if path[s+1].backward else 0),
+            )
+            new_backward = path[s+1].backward
+            new_spline = Spline.from_poses(new_start, new_end, backward=new_backward)
             if not is_healthy(new_spline):
                 continue
-            new_distance = obstacle_map.get_minimum_spline_distance(new_spline, backward=backward)
-            if new_distance == 0:
+            if obstacle_map.test_spline(new_spline, new_backward):
                 continue
-            old_distance1 = obstacle_map.get_minimum_spline_distance(path[s].spline, backward)
-            old_distance2 = obstacle_map.get_minimum_spline_distance(path[s+1].spline, backward)
-            if new_distance < min(old_distance1, old_distance2):
+            if .9 * estimate_length(new_spline) > estimate_length(path[s].spline) + estimate_length(path[s + 1].spline):
                 continue
-            path[s] = PathSegment(spline=new_spline, backward=path[s].backward)
+            path[s] = PathSegment(spline=new_spline, backward=new_backward)
             del path[s+1]
             break  # restart while loop
         else:
@@ -186,12 +190,11 @@ def run_new():
         pl.gca().invert_yaxis()
         pl.autoscale(False)
         pl.triplot(points[:, 0], points[:, 1], tri.simplices, lw=0.1)
-        for (g, p), (g_, p_) in G.edges:
-            pl.plot([pose_groups[g].poses[p].x, pose_groups[g_].poses[p_].x],
-                    [pose_groups[g].poses[p].y, pose_groups[g_].poses[p_].y], 'C0-', lw=1)
 
         pt.plot_path(path, 'C1')
         robot_renderer = RobotRenderer(robot_outline)
+        pt.plot_robot(robot_renderer, (start.x, start.y, start.yaw), 'C0', lw=2)
+        pt.plot_robot(robot_renderer, (goal.x, goal.y, goal.yaw), 'C0', lw=2)
         for step in path:
             for t in [0, 1]:
                 yaw = step.spline.yaw(t) + np.pi if step.backward else step.spline.yaw(t)
