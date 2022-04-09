@@ -187,13 +187,7 @@ def run_new():
         return np.sum(np.sqrt(dx**2 + dy**2))
 
     def is_healthy(spline: Spline, curvature_limit: float = 10.0):
-        dir_ = spline.start.direction(spline.end)
-        yaw0 = spline.start.direction(spline.control1)
-        yaw1 = spline.control2.direction(spline.end)
-        return \
-            np.abs(angle(dir_, yaw0)) < np.pi / 2 and \
-            np.abs(angle(dir_, yaw1)) < np.pi / 2 and \
-            np.abs(spline.max_curvature()) < curvature_limit  # NOTE: max_curvature can be NaN
+        return np.abs(spline.max_curvature()) < curvature_limit  # NOTE: max_curvature can be NaN
 
     def find_terminal_segment(terminal_pose: Pose, first: bool) -> tuple[PathSegment, int, int]:
         terminal_point = terminal_pose
