@@ -16,11 +16,16 @@ from rosys.actors.pathplanning.robot_renderer import RobotRenderer
 from rosys.helpers import angle
 from rosys.world import Area, Obstacle, PathSegment, Point, Pose, Spline
 
+seed = np.random.randint(0, 1000)
+ui.label(f'{seed=}')
+print(f'{seed=}')
+np.random.seed(seed)
+
 robot_outline = [(-0.5, -0.5), (0.5, -0.5), (0.75, 0), (0.5, 0.5), (-0.5, 0.5)]
 areas = [Area(id='main', outline=[Point(x=-5, y=-5), Point(x=25, y=-5), Point(x=25, y=25), Point(x=-5, y=25)])]
 obstacles = [Obstacle(id='0', outline=[Point(x=5, y=-5), Point(x=15, y=-5), Point(x=15, y=15), Point(x=5, y=15)])]
-start = Pose(x=-4, y=0, yaw=np.pi)
-goal = Pose(x=20, y=0, yaw=0)
+start = Pose(x=np.random.uniform(-4, 4), y=np.random.uniform(-4, 4), yaw=np.random.uniform(-np.pi, np.pi))
+goal = Pose(x=np.random.uniform(16, 24), y=np.random.uniform(-4, 4), yaw=np.random.uniform(-np.pi, np.pi))
 planner = PlannerProcess(None, robot_outline)
 plot = ui.plot(figsize=(14, 8))
 
@@ -164,6 +169,8 @@ def run_new():
     for g, group in enumerate(pose_groups):
         for p, (pose, g_) in enumerate(zip(group.poses, group.neighbor_indices)):
             for p_, pose_ in enumerate(pose_groups[g_].poses):
+                if abs(angle(pose.yaw, pose_.yaw + np.pi)) < 0.01:
+                    continue  # NOTE: avoid 180-degree turns
                 spline = FastSpline.from_poses(pose, pose_)
                 if not obstacle_map.test(*spline.create_poses()).any():
                     G.add_edge((g, p), (g_, p_), backward=False)
@@ -179,6 +186,15 @@ def run_new():
         dy = np.diff([spline.y(t) for t in np.linspace(0, 1, 10)])
         return np.sum(np.sqrt(dx**2 + dy**2))
 
+    def is_healthy(spline: Spline, curvature_limit: float = 10.0):
+        dir_ = spline.start.direction(spline.end)
+        yaw0 = spline.start.direction(spline.control1)
+        yaw1 = spline.control2.direction(spline.end)
+        return \
+            np.abs(angle(dir_, yaw0)) < np.pi / 2 and \
+            np.abs(angle(dir_, yaw1)) < np.pi / 2 and \
+            np.abs(spline.max_curvature()) < curvature_limit  # NOTE: max_curvature can be NaN
+
     def find_terminal_segment(terminal_pose: Pose, first: bool) -> tuple[PathSegment, int, int]:
         terminal_point = terminal_pose
         group_distances = [g.point.distance(terminal_point) for g in pose_groups]
@@ -190,7 +206,7 @@ def run_new():
                 for backward in [False, True]:
                     poses = (terminal_pose, pose) if first else (pose, terminal_pose)
                     spline = Spline.from_poses(*poses, backward=backward)
-                    if not obstacle_map.test_spline(spline, backward):
+                    if is_healthy(spline) and not obstacle_map.test_spline(spline, backward):
                         length = estimate_length(spline)
                         if length < best_length:
                             best_length = length
@@ -219,15 +235,6 @@ def run_new():
     dt2 = time.time() - t
 
     t = time.time()
-
-    def is_healthy(spline: Spline, curvature_limit: float = 10.0):
-        dir_ = spline.start.direction(spline.end)
-        yaw0 = spline.start.direction(spline.control1)
-        yaw1 = spline.control2.direction(spline.end)
-        return \
-            np.abs(angle(dir_, yaw0)) < np.pi / 2 and \
-            np.abs(angle(dir_, yaw1)) < np.pi / 2 and \
-            np.abs(spline.max_curvature()) < curvature_limit  # NOTE: max_curvature can be NaN
 
     while True:
         for s in range(len(path) - 1):
