@@ -56,21 +56,15 @@ def run_new():
     t = time.time()
 
     min_x, min_y, size_x, size_y = obstacle_map.grid.bbox
-    points = []
-    while True:
-        for _ in range(100):
-            obstacle_map.grid.bbox
-            point = Point(x=min_x + size_x * np.random.rand(), y=min_y + size_y * np.random.rand())
-            row, col = obstacle_map.grid.to_grid(point.x, point.y)
-            if all(obstacle_map.stack[int(np.round(row)), int(np.round(col)), :]):
-                continue
-            if any(p.distance(point) < 2.0 for p in points):
-                continue
-            points.append(point)
-            break
-        else:
-            break
-    points = np.array([[p.x, p.y] for p in points])
+    a = 2.0
+    X, Y = np.meshgrid(
+        np.arange(min_x, min_x + size_x - a / 2, a),
+        np.arange(min_y, min_y + size_y, a * np.sqrt(3) / 2),
+    )
+    X[::2] += a / 2
+    rows, cols = obstacle_map.grid.to_grid(X.flatten(), Y.flatten())
+    free = [not all(obstacle_map.stack[int(np.round(row)), int(np.round(col)), :]) for row, col in zip(rows, cols)]
+    points = np.stack((X.flatten(), Y.flatten()), axis=1)[free]
 
     @dataclass
     class PoseGroup:
