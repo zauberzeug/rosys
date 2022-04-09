@@ -96,7 +96,7 @@ def run_new():
         for i, point in enumerate(points)
     ]
 
-    G = nx.Graph()
+    G = nx.DiGraph()
     for g, group in enumerate(pose_groups):
         for p in range(len(group.poses)):
             G.add_node((g, p))
@@ -111,17 +111,29 @@ def run_new():
 
     t = time.time()
 
+    def estimate_length(spline: Spline) -> float:
+        dx = np.diff([spline.x(t) for t in np.linspace(0, 1, 10)])
+        dy = np.diff([spline.y(t) for t in np.linspace(0, 1, 10)])
+        return np.sum(np.sqrt(dx**2 + dy**2))
+
     def find_terminal_segment(terminal_pose: Pose, first: bool) -> tuple[PathSegment, int, int]:
         terminal_point = terminal_pose
         group_distances = [g.point.distance(terminal_point) for g in pose_groups]
         group_indices = np.argsort(group_distances)
         for g, group in zip(group_indices, np.array(pose_groups)[group_indices]):
+            best_result = None
+            best_length = np.inf
             for p, pose in enumerate(group.poses):
                 for backward in [False, True]:
                     poses = (terminal_pose, pose) if start else (pose, terminal_pose)
                     spline = Spline.from_poses(*poses, backward=backward)
                     if not obstacle_map.test_spline(spline):
-                        return PathSegment(spline=spline, backward=backward), g, p
+                        length = estimate_length(spline)
+                        if length < best_length:
+                            best_length = length
+                            best_result = (PathSegment(spline=spline, backward=backward), g, p)
+            if best_result is not None:
+                return best_result
 
     first_segment, g, p = find_terminal_segment(start, True)
     last_segment, g_, p_ = find_terminal_segment(goal, False)
@@ -180,9 +192,6 @@ def run_new():
         pl.gca().invert_yaxis()
         pl.autoscale(False)
         pl.triplot(points[:, 0], points[:, 1], tri.simplices, lw=0.1)
-        for group in pose_groups:
-            for pose in group.poses:
-                pl.plot([pose.x, pose.x + np.cos(pose.yaw)], [pose.y, pose.y + np.sin(pose.yaw)], 'C2-')
         for (g, p), (g_, p_) in G.edges:
             pl.plot([pose_groups[g].poses[p].x, pose_groups[g_].poses[p_].x],
                     [pose_groups[g].poses[p].y, pose_groups[g_].poses[p_].y], 'C0-', lw=1)
