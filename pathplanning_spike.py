@@ -245,6 +245,8 @@ def run_new():
                 y=path[s+1].spline.end.y,
                 yaw=path[s+1].spline.yaw(1) + (np.pi if path[s+1].backward else 0),
             )
+            if abs(angle(new_start.yaw, new_end.yaw + np.pi)) < 0.01:
+                continue
             new_backward = path[s+1].backward
             new_spline = Spline.from_poses(new_start, new_end, backward=new_backward)
             if not is_healthy(new_spline):
