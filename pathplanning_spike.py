@@ -175,10 +175,12 @@ def run_new():
                 if abs(angle(pose.yaw, pose_.yaw + np.pi)) < 0.01:
                     continue  # NOTE: avoid 180-degree turns
                 spline = FastSpline.from_poses(pose, pose_)
-                if not obstacle_map.test(*spline.create_poses()).any():
-                    G.add_edge((g, p), (g_, p_), backward=False)
+                x, y, yaw = spline.create_poses()
+                if not obstacle_map.test(x, y, yaw).any():
+                    length = np.sum(np.sqrt(np.diff(x)**2 + np.diff(y)**2))
+                    G.add_edge((g, p), (g_, p_), backward=False, weight=length)
                     if ((g_, p_), (g, p)) not in G.edges:
-                        G.add_edge((g_, p_), (g, p), backward=True)
+                        G.add_edge((g_, p_), (g, p), backward=True, weight=1.2*length)
 
     dt1 = time.time() - t
 
@@ -218,7 +220,7 @@ def run_new():
     path.append(first_segment)
     last_g, last_p = g, p
     try:
-        for next_g, next_p in nx.shortest_path(G, (g, p), (g_, p_))[1:]:
+        for next_g, next_p in nx.shortest_path(G, (g, p), (g_, p_), weight='weight')[1:]:
             last_pose = pose_groups[last_g].poses[last_p]
             next_pose = pose_groups[next_g].poses[next_p]
             backward = G.edges[((last_g, last_p), (next_g, next_p))]['backward']
