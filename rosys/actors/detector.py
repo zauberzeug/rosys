@@ -12,12 +12,13 @@ from .actor import Actor
 class Detector(Actor):
     interval: float = 1.0
 
-    def __init__(self, port: int = 8004):
+    def __init__(self, port: int = 8004, name: str = 'detector'):
         super().__init__()
         self.sio = socketio.AsyncClient()
         self.is_detecting: bool = False
         self.next_image: Optional[Image] = None
         self.port = port
+        self.name = name
 
     @property
     def is_connected(self):
@@ -46,23 +47,24 @@ class Detector(Actor):
         if datetime.now() < self.world.upload.last_upload + timedelta(minutes=self.world.upload.minimal_minutes_between_uploads):
             return
 
-        upload_images = [image for image in self.world.upload.queue if image.data]
+        upload_images = self.world.upload.get_queued(self.name)
         if upload_images:
             task_logger.create_task(self.upload(upload_images[0]), name='upload_image')
             self.world.upload.queue.clear()  # old images should not be uploaded later when the robot is inactive
             self.world.upload.last_upload = datetime.now()
 
     async def upload_priority_queue(self):
-        upload_images = [image for image in self.world.upload.priority_queue if image.data]
+        upload_images = self.world.upload.get_priority_queued(self.name)
         if upload_images:
             async def upload_priority_images():
                 for image in upload_images:
                     await self.upload(image)
-            task_logger.create_task(upload_priority_images, name='upload_priority_images')
+            task_logger.create_task(upload_priority_images(), name='upload_priority_images')
             self.world.upload.priority_queue.clear()
 
     async def upload(self, image: Image):
         try:
+            self.log.info(f'uploading to {self.name}')
             await self.sio.emit('upload', {'image': image.data, 'mac': image.camera_id})
         except:
             self.log.exception(f'could not upload {image.id}')
