@@ -1,4 +1,5 @@
 from enum import Enum
+
 from .. import event
 from ..hardware import Hardware
 from . import Actor
