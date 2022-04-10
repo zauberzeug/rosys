@@ -8,7 +8,7 @@ import networkx as nx
 import numpy as np
 import pylab as pl
 from nicegui import ui
-from scipy import spatial
+from scipy import ndimage, spatial
 
 from rosys.actors.pathplanning import PlannerProcess
 from rosys.actors.pathplanning import plot_tools as pt
@@ -17,6 +17,7 @@ from rosys.helpers import angle
 from rosys.world import Area, Obstacle, PathSegment, Point, Pose, Spline
 
 seed = np.random.randint(0, 1000)
+# seed = 300
 ui.label(f'{seed=}')
 print(f'{seed=}')
 np.random.seed(seed)
@@ -66,15 +67,23 @@ def run_new():
     t = time.time()
 
     min_x, min_y, size_x, size_y = obstacle_map.grid.bbox
-    a = 2.0
+    a = 1.0
     X, Y = np.meshgrid(
         np.arange(min_x, min_x + size_x - a / 2, a),
         np.arange(min_y, min_y + size_y, a * np.sqrt(3) / 2),
     )
     X[::2] += a / 2
     rows, cols = obstacle_map.grid.to_grid(X.flatten(), Y.flatten())
-    free = [not all(obstacle_map.stack[int(np.round(row)), int(np.round(col)), :]) for row, col in zip(rows, cols)]
-    points = np.stack((X.flatten(), Y.flatten()), axis=1)[free]
+    keep = np.reshape(
+        [not all(obstacle_map.stack[int(np.round(row)), int(np.round(col)), :]) for row, col in zip(rows, cols)],
+        X.shape
+    )
+    distance = ndimage.distance_transform_edt(1 - obstacle_map.map) * obstacle_map.grid.pixel_size
+    D = ndimage.map_coordinates(distance, [[rows], [cols]], order=0).reshape(X.shape)
+    keep[1::2, :] = np.logical_and(keep[1::2, :], D[1::2, :] < 2)
+    keep[::4, 1::2] = np.logical_and(keep[::4, 1::2], D[::4, 1::2] < 2)
+    keep[2::4, ::2] = np.logical_and(keep[2::4, ::2], D[2::4, ::2] < 2)
+    points = np.stack((X[keep], Y[keep]), axis=1)
 
     @dataclass
     class PoseGroup:
