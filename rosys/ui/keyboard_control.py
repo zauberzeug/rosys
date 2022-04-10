@@ -1,7 +1,9 @@
-import numpy as np
-from nicegui.ui import Ui
-from nicegui.events import KeyEventArguments
 import logging
+
+import numpy as np
+from nicegui.events import KeyEventArguments
+from nicegui.ui import Ui
+
 from ..actors import Steerer
 from ..world import Point
 
@@ -10,11 +12,12 @@ class KeyboardControl:
     steerer: Steerer  # will be set by rosys.ui.configure
     ui: Ui  # will be set by rosys.ui.configure
 
-    def __init__(self, *, default_speed: float = 2.0):
+    def __init__(self, *, default_speed: float = 2.0, speed_scaling: float = 1.0):
         self.log = logging.getLogger('rosys.ui.keyboard_control')
         self.ui.keyboard(on_key=self.handle_keys, repeating=False)
         self.direction = Point(x=0, y=0)
         self.speed = default_speed
+        self.speed_scaling = speed_scaling
 
     def handle_keys(self, e: KeyEventArguments):
         self.log.debug(f'{e.key.name} -> {e.action} {e.modifiers}')
@@ -31,7 +34,7 @@ class KeyboardControl:
             if e.action.keydown and self.direction.x == 0 and self.direction.y == 0:
                 self.steerer.start()
 
-            new_speed = self.speed if e.action.keydown else 0
+            new_speed = self.speed * self.speed_scaling if e.action.keydown else 0
             if e.key.arrow_left:
                 self.direction.y = -new_speed
             elif e.key.arrow_right:
