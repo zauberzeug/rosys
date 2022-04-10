@@ -7,9 +7,8 @@ from . import Actor
 
 class State(Enum):
     IDLE = 1
-    INITIALIZING = 2
-    STEERING = 3
-    STOPPING = 4
+    STEERING = 2
+    STOPPING = 3
 
 
 class Steerer(Actor):
@@ -24,17 +23,10 @@ class Steerer(Actor):
 
     def start(self):
         self.log.info('start steering')
-        self.state = State.INITIALIZING
+        self.state = State.STEERING
         event.emit(event.Id.PAUSE_AUTOMATION, 'using steerer')
 
     def update(self, x: float, y: float):
-        if self.state == State.INITIALIZING:
-            squared_distance = x**2 + y**2
-            dead_zone = 0.1
-            if squared_distance > dead_zone**2:
-                is_down = y < 0 and abs(y) > abs(x)
-                self.state = State.STEERING
-
         if self.state == State.STEERING:
             self.linear_speed = y
             self.angular_speed = -x
