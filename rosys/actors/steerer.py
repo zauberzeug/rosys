@@ -19,7 +19,6 @@ class Steerer(Actor):
         super().__init__()
         self.hardware = hardware
         self.state = State.IDLE
-        self.orientation = None
         self.linear_speed = 0
         self.angular_speed = 0
 
@@ -34,12 +33,11 @@ class Steerer(Actor):
             dead_zone = 0.1
             if squared_distance > dead_zone**2:
                 is_down = y < 0 and abs(y) > abs(x)
-                self.orientation = -1 if is_down else 1
                 self.state = State.STEERING
 
         if self.state == State.STEERING:
             self.linear_speed = y
-            self.angular_speed = -x * self.orientation
+            self.angular_speed = -x
 
     def stop(self):
         self.log.info('stop steering')
