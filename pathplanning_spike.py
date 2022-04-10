@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
+from functools import lru_cache
 
 import networkx as nx
 import numpy as np
@@ -174,6 +175,15 @@ def run_new():
             t = obstacle_map.t_lookup[n] if n < len(obstacle_map.t_lookup) else np.linspace(0, 1, n)
             return (self.x(t), self.y(t), self.yaw(t) + [0, np.pi][self.backward])
 
+    @lru_cache(maxsize=10000)
+    def generate_pose_offsets(dx: float, dy: float, yaw: float, yaw_: float) -> tuple:
+        spline = FastSpline(0, 0, yaw, dx, dy, yaw_, False)
+        return spline.create_poses()
+
+    def generate_poses(pose: Pose, pose_: Pose) -> tuple:
+        dx, dy, yaw = generate_pose_offsets(pose_.x - pose.x, pose_.y - pose.y, pose.yaw, pose_.yaw)
+        return pose.x + dx, pose.y + dy, yaw
+
     G = nx.DiGraph()
     for g, group in enumerate(pose_groups):
         for p in range(len(group.poses)):
@@ -183,8 +193,7 @@ def run_new():
             for p_, pose_ in enumerate(pose_groups[g_].poses):
                 if abs(angle(pose.yaw, pose_.yaw + np.pi)) < 0.01:
                     continue  # NOTE: avoid 180-degree turns
-                spline = FastSpline.from_poses(pose, pose_)
-                x, y, yaw = spline.create_poses()
+                x, y, yaw = generate_poses(pose, pose_)
                 if not obstacle_map.test(x, y, yaw).any():
                     length = np.sum(np.sqrt(np.diff(x)**2 + np.diff(y)**2))
                     G.add_edge((g, p), (g_, p_), backward=False, weight=length)
