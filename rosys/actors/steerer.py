@@ -13,6 +13,7 @@ class State(Enum):
 
 class Steerer(Actor):
     interval: float = 0.05
+    speed_scaling: float = 1
 
     def __init__(self, hardware: Hardware):
         super().__init__()
@@ -28,8 +29,8 @@ class Steerer(Actor):
 
     def update(self, x: float, y: float):
         if self.state == State.STEERING:
-            self.linear_speed = y
-            self.angular_speed = -x
+            self.linear_speed = y * self.speed_scaling
+            self.angular_speed = -x * self.speed_scaling
 
     def stop(self):
         self.log.info('stop steering')
