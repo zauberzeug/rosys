@@ -9,18 +9,18 @@ class Point(BaseModel):
     y: float
 
     @staticmethod
-    def from_complex(number: complex):
+    def from_complex(number: complex) -> Point:
         return Point(
             x=np.real(number),
             y=np.imag(number),
         )
 
     @property
-    def tuple(self):
+    def tuple(self) -> tuple[float, float]:
         return (self.x, self.y)
 
     @property
-    def complex(self):
+    def complex(self) -> complex:
         return self.x + 1j * self.y
 
     def distance(self, other: Point) -> float:
@@ -33,7 +33,7 @@ class Point(BaseModel):
         def d(p): return np.sqrt(p.x**2 + p.y**2) * np.cos(direction - np.arctan2(p.y, p.x))
         return float(d(other) - d(self))
 
-    def polar(self, distance: float, yaw: float):
+    def polar(self, distance: float, yaw: float) -> Point:
         return Point(
             x=self.x + distance * np.cos(yaw),
             y=self.y + distance * np.sin(yaw),
@@ -45,13 +45,13 @@ class Point(BaseModel):
             y=(1 - t) * self.y + t * other.y,
         )
 
-    def __add__(self, other: Point):
+    def __add__(self, other: Point) -> Point:
         return Point(x=self.x + other.x, y=self.y * other.y)
 
-    def __mul__(self, factor):
+    def __mul__(self, factor) -> Point:
         return Point(x=self.x * factor, y=self.y * factor)
 
-    def __truediv__(self, factor):
+    def __truediv__(self, factor) -> Point:
         return Point(x=self.x / factor, y=self.y / factor)
 
     def __str__(self) -> str:
