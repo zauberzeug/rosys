@@ -54,10 +54,10 @@ class Persistence:
 
     def restore(self):
         if not os.path.exists(self.filepath):
-            logging.warning('No backup file found.')
+            self.log.warning('No backup file found.')
             return
         try:
             with open(self.filepath, 'r') as f:
                 self.load(self.parse_world(json.load(f)))
         except:
-            logging.exception(f'Could not load from backup at {self.filepath}')
+            self.log.exception(f'Could not load from backup at {self.filepath}')
