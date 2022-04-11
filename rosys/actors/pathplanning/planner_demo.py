@@ -8,6 +8,7 @@ import pylab as pl
 from nicegui import ui
 from rosys.actors.pathplanning import plot_tools as pt
 from rosys.actors.pathplanning.delaunay_planner import DelaunayPlanner
+from rosys.actors.pathplanning.planner_process import PlannerSearchCommand
 from rosys.actors.pathplanning.robot_renderer import RobotRenderer
 from rosys.world import Area, Obstacle, Point, Pose
 
@@ -15,24 +16,27 @@ seed = np.random.randint(0, 1000)
 seed = 0
 np.random.seed(seed)
 
+cmd = PlannerSearchCommand(
+    areas=[Area(id='main', outline=[Point(x=-5, y=-5), Point(x=25, y=-5), Point(x=25, y=25), Point(x=-5, y=25)])],
+    obstacles=[
+        Obstacle(id='0', outline=[Point(x=5, y=-5), Point(x=8, y=-5), Point(x=8, y=15), Point(x=5, y=15)]),
+        Obstacle(id='1', outline=[Point(x=12, y=5), Point(x=15, y=5), Point(x=15, y=25), Point(x=12, y=25)]),
+    ],
+    start=Pose(x=np.random.uniform(-4, 4), y=np.random.uniform(-4, 4), yaw=np.random.uniform(-np.pi, np.pi)),
+    goal=Pose(x=np.random.uniform(16, 24), y=np.random.uniform(16, 24), yaw=np.random.uniform(-np.pi, np.pi)),
+    deadline=np.inf,
+)
 robot_outline = [(-0.5, -0.5), (0.5, -0.5), (0.75, 0), (0.5, 0.5), (-0.5, 0.5)]
-areas = [Area(id='main', outline=[Point(x=-5, y=-5), Point(x=25, y=-5), Point(x=25, y=25), Point(x=-5, y=25)])]
-obstacles = [
-    Obstacle(id='0', outline=[Point(x=5, y=-5), Point(x=8, y=-5), Point(x=8, y=15), Point(x=5, y=15)]),
-    Obstacle(id='1', outline=[Point(x=12, y=5), Point(x=15, y=5), Point(x=15, y=25), Point(x=12, y=25)]),
-]
-start = Pose(x=np.random.uniform(-4, 4), y=np.random.uniform(-4, 4), yaw=np.random.uniform(-np.pi, np.pi))
-goal = Pose(x=np.random.uniform(16, 24), y=np.random.uniform(16, 24), yaw=np.random.uniform(-np.pi, np.pi))
 planner = DelaunayPlanner(robot_outline)
 
 
 def run():
     t = time.time()
-    planner.update_map(areas, obstacles, [start, goal], deadline=time.time()+10.0)
+    planner.update_map(cmd.areas, cmd.obstacles, [cmd.start, cmd.goal], deadline=time.time()+10.0)
     dt0 = time.time() - t
 
     t = time.time()
-    path = planner.search(start, goal)
+    path = planner.search(cmd.start, cmd.goal)
     dt1 = time.time() - t
 
     with plot:
@@ -45,8 +49,8 @@ def run():
 
         pt.plot_path(path, 'C1')
         robot_renderer = RobotRenderer(robot_outline)
-        pt.plot_robot(robot_renderer, (start.x, start.y, start.yaw), 'C0', lw=2)
-        pt.plot_robot(robot_renderer, (goal.x, goal.y, goal.yaw), 'C0', lw=2)
+        pt.plot_robot(robot_renderer, (cmd.start.x, cmd.start.y, cmd.start.yaw), 'C0', lw=2)
+        pt.plot_robot(robot_renderer, (cmd.goal.x, cmd.goal.y, cmd.goal.yaw), 'C0', lw=2)
         for step in path:
             for t in [0, 1]:
                 yaw = step.spline.yaw(t) + np.pi if step.backward else step.spline.yaw(t)
