@@ -1,8 +1,10 @@
 import asyncio
+import time
 import uuid
 
 import numpy as np
 import pytest
+from rosys.actors.pathplanning.delaunay_planner import DelaunayPlanner
 from rosys.automations import drive_path
 from rosys.test import TestRuntime, assert_point
 from rosys.world import Obstacle, Point, Pose, Spline
@@ -67,24 +69,19 @@ async def test_test_spline(runtime: TestRuntime):
     assert await runtime.path_planner.test_spline(spline) == True
 
 
-@pytest.mark.asyncio
-async def test_grow_map(runtime: TestRuntime):
-    await runtime.forward(1.0)
+def test_grow_map(runtime: TestRuntime):
+    planner = DelaunayPlanner(runtime.world.robot.shape.outline)
+    assert planner.obstacle_map is None
 
-    state = await runtime.path_planner.get_state()
-    assert state.obstacle_map is None
-    assert state.distance_map is None
-
-    path = await runtime.path_planner.search(goal=Pose(x=2, y=1))
+    start = Pose(x=0, y=0)
+    goal = Pose(x=2, y=1)
+    planner.update_map(runtime.world.areas.values(), runtime.world.obstacles.values(), [start, goal], time.time() + 3.0)
+    path = planner.search(start, goal)
     assert path is not None
-    state = await runtime.path_planner.get_state()
-    assert state.obstacle_map.grid.bbox == pytest.approx((-1.2, -1.2, 4.4, 3.4))
-    assert state.distance_map.grid.bbox == pytest.approx((-1.4, -1.4, 4.8, 3.8))
+    assert planner.obstacle_map.grid.bbox == pytest.approx((-1.2, -1.2, 4.4, 3.4))
 
-    await runtime.path_planner.grow_map([Point(x=5, y=0)])
-    state = await runtime.path_planner.get_state()
-    assert state.obstacle_map.grid.bbox == pytest.approx((-2.4, -2.4, 8.6, 5.8))
-    assert state.distance_map is None
+    planner.grow_map([Point(x=5, y=0)], time.time() + 3.0)
+    assert planner.obstacle_map.grid.bbox == pytest.approx((-2.4, -2.4, 8.6, 5.8))
 
 
 @pytest.mark.asyncio

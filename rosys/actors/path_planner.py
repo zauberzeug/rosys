@@ -7,9 +7,8 @@ from .. import run
 from ..helpers import is_test
 from ..world import PathSegment, Point, Pose, Spline
 from . import Actor
-from .pathplanning import (PlannerCommand, PlannerGetStateCommand, PlannerGrowMapCommand,
-                           PlannerObstacleDistanceCommand, PlannerProcess, PlannerResponse, PlannerSearchCommand,
-                           PlannerState, PlannerTestCommand)
+from .pathplanning import (PlannerCommand, PlannerGrowMapCommand, PlannerObstacleDistanceCommand, PlannerProcess,
+                           PlannerResponse, PlannerSearchCommand, PlannerTestCommand)
 
 
 class PathPlanner(Actor):
@@ -37,11 +36,6 @@ class PathPlanner(Actor):
             if time.time() < response.deadline:
                 self.responses[response.id] = response.content
 
-    async def get_state(self, timeout: float = 3.0) -> PlannerState:
-        return await self._call(PlannerGetStateCommand(
-            deadline=time.time()+timeout,
-        ))
-
     async def grow_map(self, points: list[Point], timeout: float = 3.0) -> None:
         return await self._call(PlannerGrowMapCommand(
             points=points,
@@ -51,14 +45,12 @@ class PathPlanner(Actor):
     async def search(self, *,
                      goal: Pose,
                      start: Optional[Pose] = None,
-                     backward: bool = False,
                      timeout: float = 3.0) -> list[PathSegment]:
         return await self._call(PlannerSearchCommand(
             areas=list(self.world.areas.values()),
             obstacles=list(self.world.obstacles.values()),
             start=start or self.world.robot.prediction,
             goal=goal,
-            backward=backward,
             deadline=time.time()+timeout,
         ))
 
