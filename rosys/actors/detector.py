@@ -69,7 +69,13 @@ class Detector(Actor):
         except:
             self.log.exception(f'could not upload {image.id}')
 
-    async def detect(self, image: Image) -> None:
+    async def detect(self, image: Image, submission_criteria: str = 'novel,uncertain') -> None:
+        '''Runs detections and adds them to the provided image.
+
+        `submission_criteria` comma seperated string with criteria which must be true before auto-submitting to the Learning Loop
+           - `uncertain`: only submit images with detections having a confidence between 0.3 and 0.6
+           - `novel`: only submit images which have some novel detections (helps to prevent multiple image uploads from the same scene)
+        '''
         if not self.is_connected:
             return
 
@@ -82,7 +88,11 @@ class Detector(Actor):
                 image = self.next_image
                 self.next_image = None
                 self.is_detecting = True
-                result = await self.sio.call('detect', {'image': image.data, 'mac': image.camera_id}, timeout=1)
+                result = await self.sio.call('detect', {
+                    'image': image.data,
+                    'mac': image.camera_id,
+                    'submission_criteria': submission_criteria
+                }, timeout=1)
                 box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
                 point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
                 image.detections = Detections(boxes=box_detections, points=point_detections)
