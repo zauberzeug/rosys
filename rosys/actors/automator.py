@@ -10,6 +10,7 @@ from . import Actor
 class Automator(Actor):
     def __init__(self) -> None:
         super().__init__()
+        self.enabled: bool = True
         self.automation: Optional[Automation] = None
         event.register(event.Id.PAUSE_AUTOMATION, self.pause)
         event.register(event.Id.STOP_AUTOMATION, self.stop)
@@ -50,6 +51,13 @@ class Automator(Actor):
             self.automation.stop()
             event.emit(event.Id.AUTOMATION_STOPPED, because)
             event.emit(event.Id.NEW_NOTIFICATION, f'automation stopped because {because}')
+
+    def enable(self):
+        self.enabled = True
+
+    def disable(self, because: str):
+        self.stop(because)
+        self.enabled = False
 
     def _handle_exception(self, e: Exception):
         self.stop(because='an exception occurred in an automation')

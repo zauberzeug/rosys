@@ -41,6 +41,6 @@ class AutomationControls:
             play_button.visible = self.runtime.automator.is_stopped
             pause_button.visible = self.runtime.automator.is_running
             resume_button.visible = self.runtime.automator.is_paused
-            play_button.view.disable = default_automation is None
+            play_button.view.disable = default_automation is None or not self.runtime.automator.enabled
             stop_button.view.disable = self.runtime.automator.is_stopped
         self.ui.timer(update_interval, refresh)
