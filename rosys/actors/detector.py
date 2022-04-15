@@ -99,7 +99,7 @@ class Detector(Actor):
                 result = await self.sio.call('detect', {
                     'image': image.data,
                     'mac': image.camera_id,
-                    'autoupload': autoupload
+                    'autoupload': autoupload.value
                 }, timeout=1)
                 box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
                 point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
