@@ -19,6 +19,7 @@ class Device:
     capture: Any  # cv2.VideoCapture device
     resolution: Optional[ImageSize] = None
     exposure: Optional[float] = None
+    fps: Optional[int] = None
 
 
 def process_image(image, rotation: rosys.world.ImageRotation) -> bytes:
@@ -133,13 +134,15 @@ class UsbCameraCapture(Actor):
         return shutil.which('v4l2-ctl') is not None
 
     async def update_parameters(self, device: Device):
-        output = await self.run_v4l(device, '--all')
-        size = re.search('Width/Height.*: (\d*)/(\d*)', output)
-        device.resolution = ImageSize(width=int(size.group(1)), height=int(size.group(2)))
+        device.resolution = ImageSize(
+            width=int(device.capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
+            height=int(device.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        )
         camera = self.world.usb_cameras[device.uid]
-        # if camera.resolution and camera.resolution != device.resolution:
-        #self.log.info(f'updating resolution of {camera.id} from {device.resolution} to {camera.resolution}')
-        # await rosys.run.io_bound(UsbCameraCapture.update_resolution, device, camera.resolution)
+        camera.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
+        if camera.resolution and camera.resolution != device.resolution:
+            self.log.info(f'updating resolution of {camera.id} from {device.resolution} to {camera.resolution}')
+            await rosys.run.io_bound(UsbCameraCapture.update_resolution, device, camera.resolution)
         # TODO read exposure from output and update it correctly
         #     if device.exposure != camera.brightness:
         #         await self.update_exposure(device)
@@ -151,7 +154,12 @@ class UsbCameraCapture(Actor):
         #     self.log.info(f'using new exposure {exposure}')
 
     @staticmethod
+    def update_fps(device: Device, fps: int):
+        device.capture.set(cv2.CAP_PROP_FPS, fps)
+
+    @staticmethod
     def update_resolution(device: Device, size: ImageSize):
+        device.capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))  # NOTE enforcing motion jpeg for now
         device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, size.width)
         device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, size.height)
 

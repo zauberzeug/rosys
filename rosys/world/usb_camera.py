@@ -20,6 +20,7 @@ class UsbCamera(Camera):
     exposure: Optional[float] = None
     color: Optional[str] = None
     rotation: ImageRotation = ImageRotation.NONE
+    fps: Optional[int] = None
 
     @property
     def image_resolution(self) -> Optional[ImageSize]:
