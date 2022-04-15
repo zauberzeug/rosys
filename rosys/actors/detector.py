@@ -2,11 +2,24 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 import socketio
+from aenum import Enum, auto
 
 from .. import event, task_logger
 from ..helpers import sleep
 from ..world import BoxDetection, Detections, Image, PointDetection
 from .actor import Actor
+
+
+class Autoupload(Enum, init='value __doc__'):
+    '''Configures the auto-submitting of images to the Learning Loop'''
+
+    def _generate_next_value_(name: str, start, count, last_values):
+        '''uses enum name as value when calling auto()'''
+        return name.lower()
+
+    FILTERED = auto(), 'only submit images with novel detections and in an uncertainty range (this is the default)'
+    DISABLED = auto(), 'no auto-submitting'
+    ALL = auto(), 'submit all images which are run through the detector'
 
 
 class Detector(Actor):
@@ -69,13 +82,8 @@ class Detector(Actor):
         except:
             self.log.exception(f'could not upload {image.id}')
 
-    async def detect(self, image: Image, submission_criteria: str = 'novel,uncertain') -> None:
-        '''Runs detections and adds them to the provided image.
-
-        `submission_criteria` comma seperated string with criteria which must be true before auto-submitting to the Learning Loop
-           - `uncertain`: only submit images with detections having a confidence between 0.3 and 0.6
-           - `novel`: only submit images which have some novel detections (helps to prevent multiple image uploads from the same scene)
-        '''
+    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> None:
+        '''Runs detections on the image. Afterwards the `image.detections` property is filled.'''
         if not self.is_connected:
             return
 
@@ -91,7 +99,7 @@ class Detector(Actor):
                 result = await self.sio.call('detect', {
                     'image': image.data,
                     'mac': image.camera_id,
-                    'submission_criteria': submission_criteria
+                    'autoupload': autoupload
                 }, timeout=1)
                 box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
                 point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
