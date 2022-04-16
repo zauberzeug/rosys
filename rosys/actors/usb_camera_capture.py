@@ -19,9 +19,6 @@ class Device:
     uid: str
     video_id: int
     capture: Any  # cv2.VideoCapture device
-    resolution: Optional[ImageSize] = None
-    exposure: Optional[float] = None
-    fps: Optional[int] = None
 
 
 def process_image(image, rotation: rosys.world.ImageRotation, crop: rosys.world.Rectangle = None) -> bytes:
@@ -144,14 +141,23 @@ class UsbCameraCapture(Actor):
         # NOTE enforcing motion jpeg for now
         if device.capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
             device.capture.set(cv2.CAP_PROP_FOURCC, MJPG)
-        device.resolution = ImageSize(
+        resolution = ImageSize(
             width=int(device.capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
             height=int(device.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         )
-        if camera.resolution and camera.resolution != device.resolution:
-            self.log.info(f'updating resolution of {camera.id} from {device.resolution} to {camera.resolution}')
+        if camera.resolution and camera.resolution != resolution:
+            self.log.info(f'updating resolution of {camera.id} from {resolution} to {camera.resolution}')
             device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, camera.resolution.width)
             device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, camera.resolution.height)
+        auto_exposure = device.capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
+        exposure = device.capture.get(cv2.CAP_PROP_EXPOSURE)
+        if camera.exposure is None:
+            if not auto_exposure:
+                device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
+        elif camera.exposure != exposure or auto_exposure:
+            self.log.info(f'updating exposure of {camera.id} from {exposure} to {camera.exposure}')
+            device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.0)
+            device.capture.set(cv2.CAP_PROP_EXPOSURE, camera.exposure)
 
     async def run_v4l(self, device: Device, *args):
         cmd = ['v4l2-ctl', '-d', str(device.video_id)]
