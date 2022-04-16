@@ -1,6 +1,7 @@
 from enum import Enum
 from typing import Optional
 
+from pydantic import Field
 from rosys.world.rectangle import Rectangle
 
 from .camera import Camera
@@ -18,12 +19,31 @@ class UsbCamera(Camera):
     capture: bool = True
     detect: bool = False
     connected: bool = False
-    resolution: Optional[ImageSize] = None
-    exposure: Optional[float] = None
-    color: Optional[str] = None
-    rotation: ImageRotation = ImageRotation.NONE
-    fps: Optional[int] = None
-    crop: Optional[Rectangle] = None
+    color: Optional[str] = Field(
+        None,
+        description='a color code to identify the camera'
+    )
+    resolution: Optional[ImageSize] = Field(
+        None,
+        description='physical resolution of the camera which should be used;'
+        'camera may go into error state with wrong values'
+    )
+    exposure: Optional[float] = Field(
+        None,
+        description='required exposure between 0-1 or None for auto-exposure'
+    )
+    rotation: ImageRotation = Field(
+        ImageRotation.NONE,
+        description='rotation which should be applied after grabbing and cropping'
+    )
+    fps: Optional[int] = Field(
+        None,
+        description='current frames per second (read only)'
+    )
+    crop: Optional[Rectangle] = Field(
+        None,
+        description='region to crop on the original resolution before rotation'
+    )
 
     @property
     def image_resolution(self) -> Optional[ImageSize]:
