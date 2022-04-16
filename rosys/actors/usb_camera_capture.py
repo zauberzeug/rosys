@@ -10,6 +10,8 @@ from .. import event
 from ..world import Image, ImageSize, UsbCamera
 from .actor import Actor
 
+MJPG = cv2.VideoWriter_fourcc(*'MJPG')
+
 
 @dataclass
 class Device:
@@ -139,7 +141,9 @@ class UsbCameraCapture(Actor):
         return shutil.which('v4l2-ctl') is not None
 
     def set_parameters(self, camera: UsbCamera, device: Device):
-        device.capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))  # NOTE enforcing motion jpeg for now
+        # NOTE enforcing motion jpeg for now
+        if device.capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
+            device.capture.set(cv2.CAP_PROP_FOURCC, MJPG)
         device.resolution = ImageSize(
             width=int(device.capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
             height=int(device.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
