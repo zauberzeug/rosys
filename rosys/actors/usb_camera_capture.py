@@ -19,6 +19,8 @@ class Device:
     uid: str
     video_id: int
     capture: Any  # cv2.VideoCapture device
+    exposure_min: int = 0
+    exposure_max: int = 0
 
 
 def process_image(image, rotation: rosys.world.ImageRotation, crop: rosys.world.Rectangle = None) -> bytes:
@@ -106,6 +108,7 @@ class UsbCameraCapture(Actor):
                         self.world.usb_cameras[uid].connected = False
                 else:
                     self.devices[uid] = Device(uid, num, capture)
+                    await self.load_value_ranges(self.devices[uid])
             if uid in self.devices:
                 camera = self.world.usb_cameras[uid]
                 device = self.devices[uid]
@@ -150,14 +153,20 @@ class UsbCameraCapture(Actor):
             device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, camera.resolution.width)
             device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, camera.resolution.height)
         auto_exposure = device.capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
-        exposure = device.capture.get(cv2.CAP_PROP_EXPOSURE)
+        exposure = device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
         if camera.exposure is None:
             if not auto_exposure:
                 device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3.0)
         elif camera.exposure != exposure or auto_exposure:
             self.log.info(f'updating exposure of {camera.id} from {exposure} to {camera.exposure}')
             device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.0)
-            device.capture.set(cv2.CAP_PROP_EXPOSURE, camera.exposure)
+            device.capture.set(cv2.CAP_PROP_EXPOSURE, camera.exposure * device.exposure_max)
+
+    async def load_value_ranges(self, device: Device) -> None:
+        output = await self.run_v4l(device, '--all')
+        exposure_range = re.search('exposure_absolute.*: min=(\d*).*max=(\d*)', output)
+        device.exposure_min = int(exposure_range.group(1))
+        device.exposure_max = int(exposure_range.group(2))
 
     async def run_v4l(self, device: Device, *args):
         cmd = ['v4l2-ctl', '-d', str(device.video_id)]
