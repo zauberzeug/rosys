@@ -108,8 +108,11 @@ class UsbCameraCapture(Actor):
                 else:
                     self.devices[uid] = Device(uid, num, capture)
             if uid in self.devices:
-                self.world.usb_cameras[uid].connected = True
-                await self.update_parameters(self.devices[uid])
+                camera = self.world.usb_cameras[uid]
+                device = self.devices[uid]
+                camera.connected = True
+                camera.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
+                await rosys.run.io_bound(self.set_parameters, camera, device)
 
     def get_capture_device(self, index: int):
         try:
@@ -135,35 +138,16 @@ class UsbCameraCapture(Actor):
     def is_operable() -> bool:
         return shutil.which('v4l2-ctl') is not None
 
-    async def update_parameters(self, device: Device):
+    def set_parameters(self, camera: UsbCamera, device: Device):
+        device.capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))  # NOTE enforcing motion jpeg for now
         device.resolution = ImageSize(
             width=int(device.capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
             height=int(device.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         )
-        camera = self.world.usb_cameras[device.uid]
-        camera.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
         if camera.resolution and camera.resolution != device.resolution:
             self.log.info(f'updating resolution of {camera.id} from {device.resolution} to {camera.resolution}')
-            await rosys.run.io_bound(UsbCameraCapture.update_resolution, device, camera.resolution)
-        # TODO read exposure from output and update it correctly
-        #     if device.exposure != camera.brightness:
-        #         await self.update_exposure(device)
-
-        # async def update_exposure(self, device: Device):
-        #     exposure = self.world.usb_cameras[device.uid].exposure
-        #     # TODO if expousre is None, set auto exposure
-        #     await self.run_v4l(device, '--set-ctrl=brightness=0', '--set-ctrl=exposure_auto=1', f'--set-ctrl=exposure_absolute={exposure}')
-        #     self.log.info(f'using new exposure {exposure}')
-
-    @staticmethod
-    def update_fps(device: Device, fps: int):
-        device.capture.set(cv2.CAP_PROP_FPS, fps)
-
-    @staticmethod
-    def update_resolution(device: Device, size: ImageSize):
-        device.capture.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))  # NOTE enforcing motion jpeg for now
-        device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, size.width)
-        device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, size.height)
+            device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, camera.resolution.width)
+            device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, camera.resolution.height)
 
     async def run_v4l(self, device: Device, *args):
         cmd = ['v4l2-ctl', '-d', str(device.video_id)]
