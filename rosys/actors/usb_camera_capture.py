@@ -22,7 +22,9 @@ class Device:
     fps: Optional[int] = None
 
 
-def process_image(image, rotation: rosys.world.ImageRotation) -> bytes:
+def process_image(image, rotation: rosys.world.ImageRotation, crop: rosys.world.Rectangle = None) -> bytes:
+    if crop is not None:
+        image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]
     if rotation == rosys.world.ImageRotation.LEFT:
         image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
     elif rotation == rosys.world.ImageRotation.RIGHT:
@@ -51,7 +53,7 @@ class UsbCameraCapture(Actor):
                 if image is None:
                     self.disconnect(uid)
                     continue
-                bytes = await rosys.run.cpu_bound(process_image, image, camera.rotation)
+                bytes = await rosys.run.cpu_bound(process_image, image, camera.rotation, camera.crop)
                 size = camera.resolution or ImageSize(width=800, height=600)
                 camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time, size=size))
             except:

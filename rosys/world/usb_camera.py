@@ -1,6 +1,8 @@
 from enum import Enum
 from typing import Optional
 
+from rosys.world.rectangle import Rectangle
+
 from .camera import Camera
 from .image import ImageSize
 
@@ -21,6 +23,7 @@ class UsbCamera(Camera):
     color: Optional[str] = None
     rotation: ImageRotation = ImageRotation.NONE
     fps: Optional[int] = None
+    crop: Optional[Rectangle] = None
 
     @property
     def image_resolution(self) -> Optional[ImageSize]:
