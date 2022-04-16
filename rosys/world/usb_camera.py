@@ -49,7 +49,9 @@ class UsbCamera(Camera):
     def image_resolution(self) -> Optional[ImageSize]:
         if self.resolution is None:
             return None
+        width = self.crop.width if self.crop else self.resolution.width
+        height = self.crop.height if self.crop else self.resolution.height
         if self.rotation == ImageRotation.LEFT or self.rotation == ImageRotation.RIGHT:
-            return ImageSize(width=self.resolution.height, height=self.resolution.width)
+            return ImageSize(width=height, height=width)
         else:
             return self.resolution.copy()
