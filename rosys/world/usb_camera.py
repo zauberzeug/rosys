@@ -28,9 +28,13 @@ class UsbCamera(Camera):
         description='physical resolution of the camera which should be used;'
         'camera may go into error state with wrong values'
     )
+    auto_exposure: Optional[bool] = Field(
+        True,
+        description='toggles auto exposure'
+    )
     exposure: Optional[float] = Field(
         None,
-        description='required exposure between 0-1 or None for auto-exposure'
+        description='manual exposure of the camera (between 0-1); set auto_exposure to False for this value to take effect'
     )
     rotation: ImageRotation = Field(
         ImageRotation.NONE,
