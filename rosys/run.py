@@ -1,11 +1,10 @@
 import asyncio
+import logging
+import subprocess
+import uuid
+from concurrent.futures import ProcessPoolExecutor
 from contextlib import contextmanager
 from typing import Callable
-import subprocess
-from concurrent.futures import ProcessPoolExecutor
-import logging
-import uuid
-
 
 process_pool = ProcessPoolExecutor()
 running_processes = []  # NOTE is used in rosys.test.Runtime to advance time slower until computation is done
