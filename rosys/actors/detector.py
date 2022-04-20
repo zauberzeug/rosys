@@ -2,11 +2,24 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 import socketio
+from aenum import Enum, auto
 
 from .. import event, task_logger
 from ..helpers import sleep
 from ..world import BoxDetection, Detections, Image, PointDetection
 from .actor import Actor
+
+
+class Autoupload(Enum, init='value __doc__'):
+    '''Configures the auto-submitting of images to the Learning Loop'''
+
+    def _generate_next_value_(name: str, start, count, last_values):
+        '''uses enum name as value when calling auto()'''
+        return name.lower()
+
+    FILTERED = auto(), 'only submit images with novel detections and in an uncertainty range (this is the default)'
+    DISABLED = auto(), 'no auto-submitting'
+    ALL = auto(), 'submit all images which are run through the detector'
 
 
 class Detector(Actor):
@@ -69,7 +82,8 @@ class Detector(Actor):
         except:
             self.log.exception(f'could not upload {image.id}')
 
-    async def detect(self, image: Image) -> None:
+    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> None:
+        '''Runs detections on the image. Afterwards the `image.detections` property is filled.'''
         if not self.is_connected:
             return
 
@@ -82,7 +96,11 @@ class Detector(Actor):
                 image = self.next_image
                 self.next_image = None
                 self.is_detecting = True
-                result = await self.sio.call('detect', {'image': image.data, 'mac': image.camera_id}, timeout=1)
+                result = await self.sio.call('detect', {
+                    'image': image.data,
+                    'mac': image.camera_id,
+                    'autoupload': autoupload.value
+                }, timeout=1)
                 box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
                 point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
                 image.detections = Detections(boxes=box_detections, points=point_detections)

@@ -3,7 +3,7 @@ from .asyncio_monitor import AsyncioMonitor
 from .automator import Automator
 from .backup import Backup
 from .camera_projector import CameraProjector
-from .detector import Detector
+from .detector import Autoupload, Detector
 from .detector_simulator import DetectorSimulator, SimulatedObject
 from .garbage_collector import GarbageCollector
 from .lizard import Lizard
