@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 import cv2
 import rosys
+from numpy.typing import NDArray
 
 from .. import event
 from ..world import Image, ImageSize, UsbCamera
@@ -25,7 +26,7 @@ class Device:
     exposure_default: int = 0
 
 
-def process_image(image, rotation: rosys.world.ImageRotation, crop: rosys.world.Rectangle = None) -> bytes:
+def process_image(image:NDArray, rotation: rosys.world.ImageRotation, crop: rosys.world.Rectangle = None) -> bytes:
     if crop is not None:
         image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]
     if rotation == rosys.world.ImageRotation.LEFT:
