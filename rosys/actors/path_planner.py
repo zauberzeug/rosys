@@ -28,6 +28,9 @@ class PathPlanner(Actor):
         await super().tear_down()
         if self.process.is_alive():
             self.process.kill()
+        self.log.info(f'teardown of {self.process} completed ({self.process.is_alive})')
+        self.connection.close()
+        self.process.connection.close()
 
     async def step(self):
         if self.connection.poll():
