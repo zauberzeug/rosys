@@ -28,6 +28,8 @@ class Automator(Actor):
         return self.automation is not None and self.automation.is_paused
 
     def start(self, coro: Coroutine):
+        if not self.enabled:
+            return
         self.stop(because='new automation starts')
         self.automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
         task_logger.create_task(asyncio.wait([self.automation]), name='automation')
@@ -41,6 +43,8 @@ class Automator(Actor):
             event.emit(event.Id.NEW_NOTIFICATION, f'automation paused because {because}')
 
     def resume(self):
+        if not self.enabled:
+            return
         if self.is_paused:
             self.automation.resume()
             event.emit(event.Id.AUTOMATION_RESUMED)
