@@ -5,6 +5,7 @@ from typing import Any, Optional
 
 import cv2
 import rosys
+from numpy.typing import NDArray
 
 from .. import event
 from ..world import Image, ImageSize, UsbCamera
@@ -25,7 +26,7 @@ class Device:
     exposure_default: int = 0
 
 
-def process_image(image, rotation: rosys.world.ImageRotation, crop: rosys.world.Rectangle = None) -> bytes:
+def process_image(image: NDArray, rotation: rosys.world.ImageRotation, crop: rosys.world.Rectangle = None) -> bytes:
     if crop is not None:
         image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]
     if rotation == rosys.world.ImageRotation.LEFT:
@@ -163,10 +164,11 @@ class UsbCameraCapture(Actor):
         if auto_exposure and not camera.auto_exposure:
             self.log.info(f'deactivating auto-exposure of {camera.id}')
             device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)  # `v4l2-ctl -L` says "1: Manual Mode"
-        exposure = device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
-        if camera.exposure != exposure:
-            self.log.info(f'updating exposure of {camera.id} from {exposure} to {camera.exposure})')
-            device.capture.set(cv2.CAP_PROP_EXPOSURE, int(camera.exposure * device.exposure_max))
+        if not camera.auto_exposure:
+            exposure = device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
+            if camera.exposure is not None and camera.exposure != exposure:
+                self.log.info(f'updating exposure of {camera.id} from {exposure} to {camera.exposure})')
+                device.capture.set(cv2.CAP_PROP_EXPOSURE, int(camera.exposure * device.exposure_max))
 
     async def load_value_ranges(self, device: Device) -> None:
         output = await self.run_v4l(device, '--all')

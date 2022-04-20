@@ -3,6 +3,7 @@ from typing import Optional
 
 import numpy as np
 import rosys
+from rosys.actors.detector import Autoupload
 
 from ..world import Detections, Image, World
 from . import Detector
@@ -29,7 +30,7 @@ class DetectorSimulator(Detector):
     def is_connected(self):
         return True
 
-    async def detect(self, image: Image) -> Optional[Detections]:
+    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Optional[Detections]:
         is_blocked = image.camera_id in self.blocked_cameras
         await rosys.sleep(0.4)
         image.detections = Detections()
