@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from asyncio.exceptions import CancelledError
-from typing import Optional, Type
+from typing import Optional, Type, TypeVar
 
 from . import Persistence, event, is_test, run, sleep, task_logger
 from .actors import (Actor, AsyncioMonitor, Automator, Backup, CameraProjector, Detector, DetectorSimulator,
@@ -12,6 +12,8 @@ from .actors import (Actor, AsyncioMonitor, Automator, Backup, CameraProjector, 
 from .communication import CommunicationFactory
 from .hardware import Hardware, RobotBrain, SimulatedHardware
 from .world import World
+
+T = TypeVar('T')
 
 
 class Runtime:
@@ -149,7 +151,7 @@ class Runtime:
             except (CancelledError, GeneratorExit):
                 return
 
-    def get_actor(self, _type: Type[Actor]) -> Actor:
+    def get_actor(self, _type: Type[T]) -> T:
         return next((a for a in self.actors if type(a) is _type), None)
 
     def store_notification(self, message: str):
