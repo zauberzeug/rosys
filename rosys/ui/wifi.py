@@ -3,7 +3,8 @@ import logging
 import os
 import socket
 
-from nicegui.ui import Ui
+from nicegui import ui
+from nicegui.elements.button import Button
 
 log = logging.getLogger('rosys.wifi')
 
@@ -35,7 +36,7 @@ def has_internet() -> bool:
         return False
 
 
-def create_wifi(ui: Ui):
+def wifi_button() -> Button:
 
     def add(ssid: str, password: str):
         log.info(f'adding {ssid}, {password}')
@@ -65,3 +66,4 @@ def create_wifi(ui: Ui):
 
     wifi_button = ui.button(on_click=dialog.open).props('icon=network_wifi')
     ui.timer(5, callback=update_wifi_status)
+    return wifi_button
