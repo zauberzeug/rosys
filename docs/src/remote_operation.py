@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-from nicegui import ui
 import rosys
 import rosys.ui
+from nicegui import ui
 from rosys.world import Camera
 
 # setup
@@ -23,7 +23,8 @@ with ui.card().tight().style('width:30em;'):
     with ui.row():
         with ui.card().tight():
             rosys.ui.joystick()
-        ui.markdown('use joystick on the left<br> or SHIFT + arrow keys to steer').style('margin:2em;text-align:center')
-rosys.ui.keyboard_control()
+            rosys.ui.keyboard_control()
+        ui.markdown('steer with joystick on the left<br>or SHIFT + arrow keys') \
+            .style('margin:2em;text-align:center')
 
 ui.run(title='RoSys', port=8080)
