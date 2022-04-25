@@ -69,7 +69,7 @@ class Runtime:
         return self
 
     def with_usb_cameras(self) -> Runtime:
-        '''Adds usb camera capture actor to runtime.'''
+        '''Adds USB camera capture actor to runtime.'''
         if UsbCameraCapture.is_operable() and not is_test:
             self.with_actors(UsbCameraCapture())
         else:

@@ -8,7 +8,7 @@ Any plugged in camera becomes an entry in `world.usb_cameras` containing recorde
 Camera devices are discovered through video4linux (v4l) and accessed with openCV.
 Therefore the program `v4l2ctl` and openCV (including python bindings) must be available.
 We recommend to use the [RoSys docker image](https://hub.docker.com/r/zauberzeug/rosys) which provides the full required software stack.
-Make sure the container can access the usb devices by starting it with `privileged` or explicit passing the specific `devices`.
+Make sure the container can access the USB devices by starting it with `privileged` or explicitly passing the specific `devices`.
 
 ## Show Captured Images
 
@@ -20,14 +20,13 @@ Through the use of `rosys.ui` (see [User Interface](../architecture/user_interfa
 {!src/show_captured_images.py [ln:28-29] !}
 ```
 
-The `ui.timer` updates the source property of the `ui.image` regularly.
+The `ui.timer` regularly updates the source property of the `ui.image`.
 The cameras `latest_image_uri` property provides the uri to the latest captured image.
 
 ## Simulated Cameras
 
 The above code works out-of-the-box if your camera can be discoverd with `v4l2ctl`.
-When you have no camera at hand or develop parts of your robot on a Mac/Windows system,
-you can simply add a simulated camera:
+When you have no camera at hand or develop parts of your robot on a Mac or Windows system, you can simply add a simulated camera:
 
 ```python hl_lines="8-15"
 {!src/show_captured_images.py [ln:5] !}
