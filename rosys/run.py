@@ -8,7 +8,7 @@ from contextlib import contextmanager
 from signal import signal
 from typing import Callable
 
-process_pool = ProcessPoolExecutor()
+process_pool = ProcessPoolExecutor(max_workers=10)
 running_processes = []  # NOTE is used in rosys.test.Runtime to advance time slower until computation is done
 log = logging.getLogger('rosys.run')
 
