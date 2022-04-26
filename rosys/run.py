@@ -1,21 +1,22 @@
 import asyncio
 import logging
-import os
-import signal
-import subprocess
+import time
 import uuid
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from typing import Callable
 
-process_pool = ProcessPoolExecutor(max_workers=10)
+import sh as sh_module
+
+process_pool = ProcessPoolExecutor()
+thread_pool = ThreadPoolExecutor(thread_name_prefix='run.py thread_pool')
 running_processes = []  # NOTE is used in rosys.test.Runtime to advance time slower until computation is done
 log = logging.getLogger('rosys.run')
 
 
 async def io_bound(callback: Callable, *args: any):
     loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(None, callback, *args)
+    return await loop.run_in_executor(thread_pool, callback, *args)
 
 
 async def cpu_bound(callback: Callable, *args: any):
@@ -43,15 +44,15 @@ async def sh(command: list[str], timeout: float = 1) -> str:
     command: a sequence of program arguments as subprocess.Popen requires
     returns: stdout
     '''
-    def run() -> str:
-        with subprocess.Popen(command, preexec_fn=os.setsid, stdout=asyncio.subprocess.PIPE,
-                              stderr=asyncio.subprocess.STDOUT) as proc:
-            try:
-                stdout, *_ = proc.communicate(timeout=timeout)
-            except subprocess.TimeoutExpired:
-                log.warning(f'{" ".join(command)} took longer than {timeout} s. Aborting.')
-                os.killpg(proc.pid, signal.SIGINT)  # send signal to the process group
-                stdout, *_ = proc.communicate()
-            return stdout.decode()
-    #self.log.debug('executing sh command: ' + ' '.join(command))
-    return await io_bound(run)
+    log.debug('executing sh command: "' + ' '.join(command) + '"')
+    cmd = sh_module.Command(command[0])
+    proc = cmd(*command[1:], _bg=True)
+    t = time.time()
+    while proc.is_alive() and time.time() - t < timeout:
+        await asyncio.sleep(0.01)
+    if proc.is_alive():
+        log.warning(f'{" ".join(command)} took longer than {timeout} s. Aborting.')
+        proc.terminate()
+    result = proc.stdout.decode()
+    log.debug('completed sh command: "' + ' '.join(command) + '", result starts with: ' + result[:10])
+    return result
