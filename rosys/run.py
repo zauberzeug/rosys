@@ -44,15 +44,16 @@ async def sh(command: list[str], timeout: float = 1) -> str:
     command: a sequence of program arguments as subprocess.Popen requires
     returns: stdout
     '''
-    log.debug('executing sh command: "' + ' '.join(command) + '"')
+    joined_command = ' '.join(command)
+    log.debug(f'executing sh command "{joined_command}"')
     cmd = sh_module.Command(command[0])
     proc = cmd(*command[1:], _bg=True)
     t = time.time()
     while proc.is_alive() and time.time() - t < timeout:
         await asyncio.sleep(0.01)
     if proc.is_alive():
-        log.warning(f'{" ".join(command)} took longer than {timeout} s. Aborting.')
+        log.warning(f'{joined_command} took longer than {timeout} s. Aborting.')
         proc.terminate()
     result = proc.stdout.decode()
-    log.debug('completed sh command: "' + ' '.join(command) + '", result starts with: ' + result[:10])
+    log.debug(f'completed sh command "{joined_command}", result starts with "{result[:10]}"')
     return result
