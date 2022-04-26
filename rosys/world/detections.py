@@ -34,8 +34,8 @@ class BoxDetection(Detection):
 
     def to_svg(self, shrink: int = 1) -> str:
         color = 'red'
-        x = self.x/shrink
-        y = self.y/shrink
+        x = self.x / shrink
+        y = self.y / shrink
         return f'<rect x="{x}" y="{y}" width="{self.width/shrink}" height="{self.height/shrink}" stroke-width="2" stroke="{color}" fill="none" />' \
             f'<text x="{x}" y="{y - 7}" text-anchor="start" stroke="{color}" fill="{color}" font-size="10">{self.category_name} ({int(self.confidence*100)}%)</text>'
 
@@ -53,10 +53,12 @@ class PointDetection(Detection):
     def __str__(self) -> str:
         return f'x:{self.x:.0f} y: {self.y:.0f} cat: {self.category_name} conf: {self.confidence:.2f}'
 
-    def to_svg(self, shrink: int) -> str:
+    def to_svg(self, shrink: int = 1) -> str:
         color = 'red'
-        return f'<circle cx="{self.x}" cy="{self.y}" r="4" stroke-width="2" stroke="{color}" fill="none" />' \
-            f'<text x="{self.x + 10}" y="{self.y+4}" text-anchor="start" stroke="{color}" fill="{color}" font-size="12" font-weight="light">{self.category_name} ({int(self.confidence*100)}%)</text>'
+        x = self.x / shrink
+        y = self.y / shrink
+        return f'<circle cx="{x}" cy="{y}" r="4" stroke-width="2" stroke="{color}" fill="none" />' \
+            f'<text x="{x + 10}" y="{y + 4}" text-anchor="start" stroke="{color}" fill="{color}" font-size="12" font-weight="light">{self.category_name} ({int(self.confidence*100)}%)</text>'
 
 
 class Detections(BaseModel):
