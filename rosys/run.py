@@ -1,11 +1,11 @@
 import asyncio
 import logging
 import os
+import signal
 import subprocess
 import uuid
 from concurrent.futures import ProcessPoolExecutor
 from contextlib import contextmanager
-from signal import signal
 from typing import Callable
 
 process_pool = ProcessPoolExecutor(max_workers=10)
