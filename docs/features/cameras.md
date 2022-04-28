@@ -12,7 +12,7 @@ Make sure the container can access the USB devices by starting it with `privileg
 
 ## Show Captured Images
 
-Through the use of `rosys.ui` (see [User Interface](../architecture/user_interface.md)) you can shows the latest captured images from each camera:
+Using `rosys.ui` (see [User Interface](../architecture/user_interface.md)) you can show the latest captured images from each camera:
 
 ```python hl_lines="8 12-21"
 {!src/show_captured_images.py [ln:1-4] !}
