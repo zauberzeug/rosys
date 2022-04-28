@@ -50,10 +50,13 @@ async def sh(command: list[str], timeout: float = 1) -> str:
     proc = cmd(*command[1:], _bg=True)
     t = time.time()
     while proc.is_alive() and time.time() - t < timeout:
-        await asyncio.sleep(0.01)
+        await asyncio.sleep(0.1)
     if proc.is_alive():
         log.warning(f'{joined_command} took longer than {timeout} s. Aborting.')
         proc.terminate()
-    result = proc.stdout.decode()
+    try:
+        result = proc.stdout.decode()
+    except sh_module.ErrorReturnCode_1:
+        result = proc.stderr.decode()
     log.debug(f'completed sh command "{joined_command}", result starts with "{result[:10]}"')
     return result
