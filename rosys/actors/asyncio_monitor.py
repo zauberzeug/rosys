@@ -68,7 +68,7 @@ class AsyncioMonitor(Actor):
         if 'TimerHandle' in description:
             name = 'TimerHandle'
             details = description
-        if '<Handle' in description:
+        elif '<Handle' in description:
             name = 'Handle'
             details = description
         else:

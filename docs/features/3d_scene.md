@@ -15,7 +15,7 @@ RoSys provides a `robot_object` to render and update the robot:
 You can also pass a click handler to the 3d scene.
 Here is a full example example for driving to a point on the ground by starting the built-in automation called `drive_to`:
 
-```python hl_lines="12 19"
+```python hl_lines="12 18"
 {!src/scene_on_click.py!}
 ```
 

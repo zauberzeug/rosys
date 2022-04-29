@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-from nicegui import ui
 import rosys
 import rosys.ui
+from nicegui import ui
 from rosys.automations import drive_path
 from rosys.world import Pose
 
@@ -17,9 +17,8 @@ async def handle_click(msg):
         path3d.update(path)
         runtime.automator.start(drive_path(runtime.world, runtime.hardware, path))
 
-
 # 3d scene
-with ui.scene(on_click=handle_click, width=800) as scene:
+with ui.scene(on_click=handle_click, width=600) as scene:
     rosys.ui.robot_object()
     path3d = rosys.ui.path_object()
 
