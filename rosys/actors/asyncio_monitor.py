@@ -68,6 +68,9 @@ class AsyncioMonitor(Actor):
         if 'TimerHandle' in description:
             name = 'TimerHandle'
             details = description
+        elif '<Handle' in description:
+            name = 'Handle'
+            details = description
         else:
             match_task = task_pattern.match(description)
             if match_task is None:

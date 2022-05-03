@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 from typing import Optional
 
 import socketio
+import socketio.exceptions
 from aenum import Enum, auto
 
 from .. import event, task_logger
@@ -32,6 +33,10 @@ class Detector(Actor):
         self.next_image: Optional[Image] = None
         self.port = port
         self.name = name
+
+        @self.sio.on('disconnect')
+        def on_sio_disconnect():
+            self.log.warning(f'sio disconnect on port {port}')
 
     @property
     def is_connected(self):
@@ -104,6 +109,9 @@ class Detector(Actor):
                 box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
                 point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
                 image.detections = Detections(boxes=box_detections, points=point_detections)
+            except socketio.exceptions.TimeoutError:
+                self.log.exception(f'detection for {image.id} took to long; reconnecting')
+                await self.connect()
             except:
                 self.log.exception(f'could not detect {image.id}')
             else:

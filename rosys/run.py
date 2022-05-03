@@ -1,12 +1,12 @@
 import asyncio
 import logging
-import time
+import os
+import signal
+import subprocess
 import uuid
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from typing import Callable
-
-import sh as sh_module
 
 process_pool = ProcessPoolExecutor()
 thread_pool = ThreadPoolExecutor(thread_name_prefix='run.py thread_pool')
@@ -44,16 +44,19 @@ async def sh(command: list[str], timeout: float = 1) -> str:
     command: a sequence of program arguments as subprocess.Popen requires
     returns: stdout
     '''
-    joined_command = ' '.join(command)
-    log.debug(f'executing sh command "{joined_command}"')
-    cmd = sh_module.Command(command[0])
-    proc = cmd(*command[1:], _bg=True)
-    t = time.time()
-    while proc.is_alive() and time.time() - t < timeout:
-        await asyncio.sleep(0.01)
-    if proc.is_alive():
-        log.warning(f'{joined_command} took longer than {timeout} s. Aborting.')
-        proc.terminate()
-    result = proc.stdout.decode()
-    log.debug(f'completed sh command "{joined_command}", result starts with "{result[:10]}"')
-    return result
+    def run() -> str:
+        with subprocess.Popen(
+            command,
+            preexec_fn=os.setpgrp,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        ) as proc:
+            try:
+                stdout, *_ = proc.communicate(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                log.warning(f'{" ".join(command)} took longer than {timeout} s. Aborting.')
+                os.killpg(proc.pid, signal.SIGTERM)
+                return ''
+            return stdout.decode('utf-8')
+    #self.log.debug('executing sh command: ' + ' '.join(command))
+    return await io_bound(run)

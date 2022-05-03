@@ -1,7 +1,10 @@
-from pydantic import BaseModel
+import logging
 from typing import Any, Optional
-import numpy as np
+
 import cv2
+import numpy as np
+from pydantic import BaseModel
+
 from .image import ImageSize
 from .point import Point
 from .point3d import Point3d
@@ -13,6 +16,9 @@ class Intrinsics(BaseModel):
     distortion: list[float]
     rotation: Rotation
     size: ImageSize
+
+
+log = logging.getLogger('rosys.world.calibration')
 
 
 class Extrinsics(BaseModel):
@@ -72,6 +78,7 @@ class Calibration(BaseModel):
 
         reprojection = self.project_to_image(Point3d(x=floor_points[0, 0], y=floor_points[0, 1], z=target_height))
         if objPoints[0, -1] * np.sign(Z) > 0 or reprojection.distance(image_point) > 2:
+            log.warning(f'reprojection failed with {reprojection.distance(image_point)} px')
             return None
 
         return Point3d(x=floor_points[0, 0], y=floor_points[0, 1], z=target_height)
