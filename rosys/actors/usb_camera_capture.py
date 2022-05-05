@@ -66,8 +66,7 @@ class UsbCameraCapture(Actor):
         self.purge_old_images()
 
     def capture_image(self, id) -> Any:
-        capture = self.devices[id].capture
-        _, image = capture.read()
+        _, image = self.devices[id].capture.read()
         return image
 
     def disconnect(self, camera: UsbCamera):
