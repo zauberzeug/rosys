@@ -16,9 +16,8 @@ class ImageRotation(str, Enum):
 
 
 class UsbCamera(Camera):
-    capture: bool = True
+    active: bool = True
     detect: bool = False
-    connected: bool = False
     color: Optional[str] = Field(
         None,
         description='a color code to identify the camera'

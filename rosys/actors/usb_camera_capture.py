@@ -20,7 +20,7 @@ class Device:
     '''devices specific infos are kept seperately (world should not be aware of them)'''
     uid: str
     video_id: int
-    capture: Any  # cv2.VideoCapture device
+    capture: Optional[Any] = None  # cv2.VideoCapture device
     exposure_min: int = 0
     exposure_max: int = 0
     exposure_default: int = 0
@@ -50,29 +50,49 @@ class UsbCameraCapture(Actor):
         await super().step()
         await self.update_device_list()
         for uid, camera in self.world.usb_cameras.items():
-            if not camera.capture or not camera.connected:
+            if not camera.active:
+                if uid in self.devices and self.devices[uid].capture is not None:
+                    self.deactivate(camera)
                 continue
             try:
+                if uid not in self.devices or self.devices[uid].capture is None:
+                    await self.activate(uid)
+                if self.devices[uid].capture is None:
+                    self.log.warn(f'unexpected missing capture handle for {uid}')
+                    continue
                 image = await rosys.run.io_bound(self.capture_image, uid)
                 if image is None:
-                    self.disconnect(camera)
+                    self.deactivate(camera)
                     continue
                 bytes = await rosys.run.cpu_bound(process_image, image, camera.rotation, camera.crop)
                 size = camera.resolution or ImageSize(width=800, height=600)
                 camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time, size=size))
             except:
                 self.log.exception(f'could not capture image from {uid}')
-                self.disconnect(camera)
+                self.deactivate(camera)
         self.purge_old_images()
 
     def capture_image(self, id) -> Any:
-        capture = self.devices[id].capture
-        _, image = capture.read()
+        _, image = self.devices[id].capture.read()
         return image
 
-    def disconnect(self, camera: UsbCamera):
-        self.log.info(f'disconnecting {camera.id}')
-        camera.connected = False
+    async def activate(self, uid: str):
+        camera = self.world.usb_cameras[uid]
+        device = self.devices[uid]
+        capture = self.get_capture_device(device.video_id)
+        if capture is None:
+            return
+        self.devices[uid].capture = capture
+        camera.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
+        if camera.exposure is None:
+            camera.exposure = device.exposure_default / device.exposure_max
+        await rosys.run.io_bound(self.set_parameters, camera, device)
+        self.log.info(f'activated {uid}')
+
+    def deactivate(self, camera: UsbCamera):
+        if camera.id not in self.devices:
+            return
+        self.log.info(f'deactivated {camera.id}')
         self.devices[camera.id].capture.release()
         del self.devices[camera.id]
 
@@ -86,8 +106,6 @@ class UsbCameraCapture(Actor):
             return
         self.last_scan = self.world.time
         output = await rosys.run.sh(['v4l2-ctl', '--list-devices'])
-        for c in self.world.usb_cameras.values():
-            c.connected = False
         output = '\n'.join([s for s in output.split('\n') if not s.startswith('Cannot open device')])
         for infos in output.split('\n\n'):
             match = re.search('\((.*)\)', infos)
@@ -103,21 +121,9 @@ class UsbCameraCapture(Actor):
                 continue
             num = int(lines[1].strip().lstrip('/dev/video'))
             if uid not in self.devices:
-                capture = self.get_capture_device(num)
-                if capture is None:
-                    if uid in self.world.usb_cameras:
-                        self.world.usb_cameras[uid].connected = False
-                else:
-                    self.devices[uid] = Device(uid, num, capture)
-                    await self.load_value_ranges(self.devices[uid])
-            if uid in self.devices:
-                camera = self.world.usb_cameras[uid]
-                device = self.devices[uid]
-                camera.connected = True
-                camera.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
-                if camera.exposure is None:
-                    camera.exposure = device.exposure_default / device.exposure_max
-                await rosys.run.io_bound(self.set_parameters, camera, device)
+                self.devices[uid] = Device(uid=uid, video_id=num)
+                await self.load_value_ranges(self.devices[uid])
+        ic(self.devices)
 
     def get_capture_device(self, index: int):
         try:
@@ -135,8 +141,7 @@ class UsbCameraCapture(Actor):
     async def tear_down(self):
         await super().tear_down()
         for camera in self.world.usb_cameras.values():
-            camera.connected = False
-        [device.capture.release() for device in self.devices.values()]
+            self.deactivate(camera)
         self.devices.clear()
 
     @staticmethod

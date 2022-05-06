@@ -29,6 +29,7 @@ class Automator(Actor):
 
     def start(self, coro: Coroutine):
         if not self.enabled:
+            coro.close()
             return
         self.stop(because='new automation starts')
         self.automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
