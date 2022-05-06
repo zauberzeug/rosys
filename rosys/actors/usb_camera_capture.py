@@ -123,7 +123,6 @@ class UsbCameraCapture(Actor):
             if uid not in self.devices:
                 self.devices[uid] = Device(uid=uid, video_id=num)
                 await self.load_value_ranges(self.devices[uid])
-        ic(self.devices)
 
     def get_capture_device(self, index: int):
         try:
