@@ -92,7 +92,7 @@ class Runtime:
         self.with_actors(self.path_planner)
         return self
 
-    async def startup(self):
+    async def startup(self) -> None:
         if self.tasks:
             raise Exception('should be only executed once')
 
@@ -114,7 +114,7 @@ class Runtime:
         self.log.debug('startup completed')
         self.world.start_time = self.world.time
 
-    async def shutdown(self):
+    async def shutdown(self) -> None:
         try:
             await self.hardware.drive(0, 0)
         except:
