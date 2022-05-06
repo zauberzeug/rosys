@@ -61,7 +61,7 @@ class Detector(Actor):
         except:
             return False
 
-    async def disconnect(self) -> bool:
+    async def disconnect(self) -> None:
         self.sio.disconnect()
 
     async def try_start_one_upload(self):

@@ -50,7 +50,7 @@ class Pose(BaseModel):
         return '%.3f, %.3f, %.1f deg' % (self.x, self.y, self.yaw_deg)
 
     def distance(self, other: Pose) -> float:
-        return self.point.distance(other.point)
+        return float(np.sqrt((other.x - self.x)**2 + (other.y - self.y)**2))
 
     def projected_distance(self, other: Pose) -> float:
         return self.point.projected_distance(other.point, other.yaw)
