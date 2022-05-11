@@ -45,7 +45,8 @@ class UsbCameraSimulator(Actor):
         img = pil.Image.new('RGB', size=(size.width, size.height), color=camera.color)
         d = pil.ImageDraw.Draw(img)
         text = f'{camera.id}: {time.time()}'
-        d.text((img.width/2-len(text)*3, img.height/2-5), text, fill=(255, 255, 255))
+        d.text((img.width / 2 - len(text) * 3 + 0, img.height / 2 - 5), text, fill=(0, 0, 0))
+        d.text((img.width / 2 - len(text) * 3 + 1, img.height / 2 - 4), text, fill=(255, 255, 255))
         img_byte_arr = io.BytesIO()
         img.save(img_byte_arr, format='JPEG')
         return img_byte_arr.getvalue()
