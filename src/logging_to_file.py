@@ -1,10 +1,14 @@
 #!/usr/bin/env python3
-from nicegui import ui
 import logging
 import logging.config
 import os
+
 import rosys
 import rosys.ui
+from nicegui import ui
+
+if not os.path.exists(os.path.expanduser('~/.rosys/')):
+    os.makedirs(os.path.expanduser('~/.rosys/'))
 
 logging.config.dictConfig({
     'version': 1,
