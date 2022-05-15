@@ -30,13 +30,13 @@ class Runtime:
             self.persistence = persistence or Persistence(self.world)
             self.persistence.restore()
 
+        self.automator = Automator()
         self.hardware = hardware or self.create_hardware()
         if is_test:
             assert self.hardware.is_simulation, 'real hardware must not be used in tests'
         self.lizard = Lizard(self.hardware)
         self.odometer = Odometer()
         self.steerer = Steerer(self.hardware)
-        self.automator = Automator()
         self.camera_projector = CameraProjector()
         self.asyncio_monitor = AsyncioMonitor()
         self.detector: Optional[Detector] = None  # NOTE can be set by runtime.with_detector()
@@ -59,7 +59,7 @@ class Runtime:
     def create_hardware(self):
         communication = CommunicationFactory.create()
         if communication is not None:
-            return RobotBrain(self.world, communication)
+            return RobotBrain(self.world, communication, self.automator)
         else:
             return SimulatedHardware(self.world)
 
@@ -107,7 +107,8 @@ class Runtime:
                 self.log.debug(f'starting actor {actor.name} with interval {actor.interval}s')
                 self.tasks.append(task_logger.create_task(self.repeat(actor), name=actor.name))
         self.tasks.append(asyncio.create_task(self.watch_emitted_events(), name='watch_emitted_events'))
-
+        if self.hardware.is_real:
+            await self.hardware.send_automator_buttons()
         if not is_test:
             await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
         self.activate_async_debugging()
