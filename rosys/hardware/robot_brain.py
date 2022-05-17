@@ -12,9 +12,9 @@ from . import AppControls, CommunicatingHardware
 
 class RobotBrain(CommunicatingHardware):
 
-    def __init__(self, world: World, communication: Communication, automator: rosys.actors.Automator = None):
+    def __init__(self, world: World, communication: Communication):
         super().__init__(world, communication)
-        self.app_controls = AppControls(automator, self)
+        self.app_controls = AppControls(self)
         self.waiting_list: dict[str, Optional[str]] = {}
 
     async def configure(self, filepath: str = 'lizard.txt'):

@@ -30,11 +30,11 @@ class Runtime:
             self.persistence = persistence or Persistence(self.world)
             self.persistence.restore()
 
-        self.automator = Automator()
         self.hardware = hardware or self.create_hardware()
         if is_test:
             assert self.hardware.is_simulation, 'real hardware must not be used in tests'
         self.lizard = Lizard(self.hardware)
+        self.automator = Automator()
         self.odometer = Odometer()
         self.steerer = Steerer(self.hardware)
         self.camera_projector = CameraProjector()
@@ -59,7 +59,7 @@ class Runtime:
     def create_hardware(self):
         communication = CommunicationFactory.create()
         if communication is not None:
-            return RobotBrain(self.world, communication, self.automator)
+            return RobotBrain(self.world, communication)
         else:
             return SimulatedHardware(self.world)
 
@@ -111,7 +111,7 @@ class Runtime:
         if not is_test:
             await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
         self.activate_async_debugging()
-        self.log.debug('startup completed')
+        self.log.info('startup completed')
         self.world.start_time = self.world.time
 
     async def shutdown(self) -> None:
@@ -122,11 +122,15 @@ class Runtime:
         if not is_test:
             self.persistence.backup()
         [t.cancel() for t in self.tasks]
+        ic()
         if not is_test:
             run.process_pool.shutdown()
+        ic()
         for a in self.actors:
             await a.tear_down()
+        ic()
         await self.hardware.tear_down()
+        ic()
         # await asyncio.gather(*[task_logger.create_task(a.tear_down(), name=f'{a.name}.tear_down()') for a in self.actors])
 
     async def repeat(self, actor: Actor):
