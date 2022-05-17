@@ -10,7 +10,7 @@ import rosys
 @dataclass
 class AppButton:
     icon: str
-    state: str
+    state: str = 'enabled'
     visible: bool = True
     pressed: Callable[[], None] = lambda: None
     released: Callable[[], None] = lambda: None
