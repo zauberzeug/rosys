@@ -107,8 +107,7 @@ class Runtime:
                 self.log.debug(f'starting actor {actor.name} with interval {actor.interval}s')
                 self.tasks.append(task_logger.create_task(self.repeat(actor), name=actor.name))
         self.tasks.append(asyncio.create_task(self.watch_emitted_events(), name='watch_emitted_events'))
-        if self.hardware.is_real:
-            await self.hardware.send_automator_buttons()
+        await self.hardware.startup()
         if not is_test:
             await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
         self.activate_async_debugging()
@@ -127,6 +126,7 @@ class Runtime:
             run.process_pool.shutdown()
         for a in self.actors:
             await a.tear_down()
+        await self.hardware.tear_down()
         # await asyncio.gather(*[task_logger.create_task(a.tear_down(), name=f'{a.name}.tear_down()') for a in self.actors])
 
     async def repeat(self, actor: Actor):

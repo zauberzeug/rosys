@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Optional
 
 import rosys
@@ -8,14 +7,14 @@ import rosys
 from ..communication import Communication
 from ..helpers import sleep
 from ..world import Velocity, World
-from . import CommunicatingHardware
+from . import AppControls, CommunicatingHardware
 
 
 class RobotBrain(CommunicatingHardware):
 
     def __init__(self, world: World, communication: Communication, automator: rosys.actors.Automator = None):
         super().__init__(world, communication)
-        self.automator = automator
+        self.app_controls = AppControls(automator, self)
         self.waiting_list: dict[str, Optional[str]] = {}
 
     async def configure(self, filepath: str = 'lizard.txt'):
@@ -71,15 +70,21 @@ class RobotBrain(CommunicatingHardware):
         ))
 
     async def parse_line(self, line: str):
-        if line.startswith('"'):
-            line = line[1:-1]
-        if line.startswith('app:'):
-            print(line, flush=True)
-            if line.endswith('connected'):
-                await self.send_automator_buttons()
+        if self.app_controls is not None:
+            await self.app_controls.parse(line)
 
     async def send(self, msg: str):
         await self.communication.send_async(self.augment(msg))
+
+    async def startup(self):
+        await super().startup()
+        if self.app_controls is not None:
+            await self.app_controls.sync()
+
+    async def tear_down(self):
+        await super().tear_down()
+        if self.app_controls is not None:
+            await self.app_controls.clear()
 
     async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf')) -> Optional[str]:
         self.waiting_list[ack] = None
@@ -88,28 +93,6 @@ class RobotBrain(CommunicatingHardware):
         while self.waiting_list.get(ack) is None and self.world.time < t0 + timeout:
             await sleep(0.1)
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
-
-    async def send_automator_buttons(self):
-        if self.automator is None:
-            return
-
-        @dataclass
-        class Button:
-            icon: str
-            state: str
-
-        b0 = Button('play_arrow', 'enabled')
-        b1 = Button('stop', 'enabled')
-        if not self.automator.enabled:
-            b0.state = b1.state = 'disabled'
-        elif self.automator.is_stopped:
-            b1.state = 'disabled'
-        elif self.automator.is_running:
-            b0.icon = 'pause'
-        await self.send(f'bluetooth.send("b0.icon={b0.icon}")')
-        await self.send(f'bluetooth.send("b0.state={b0.state}")')
-        await self.send(f'bluetooth.send("b1.icon={b1.icon}")')
-        await self.send(f'bluetooth.send("b1.state={b1.state}")')
 
     @staticmethod
     def augment(line: str) -> str:

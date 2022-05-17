@@ -36,6 +36,12 @@ class Hardware(abc.ABC):
         '''Called by actors to update the world'''
         return
 
+    async def startup(self):
+        return
+
+    async def tear_down(self):
+        return
+
     @property
     def is_simulation(self) -> bool:
         return True
