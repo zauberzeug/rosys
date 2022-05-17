@@ -10,6 +10,7 @@ then
     echo "  `basename $0` (d | down)    [<containers>]      Stop and remove"
     echo "  `basename $0` (s | start)   [<containers>]      Start"
     echo "  `basename $0` (r | restart) [<containers>]      Restart"
+    echo "  `basename $0` (i | install) [<containers>]      Autorestart running containers on failure/reboot"
     echo "  `basename $0` (h | stop)    [<containers>]      Stop (halt)"
     echo "  `basename $0` ps            [<containers>]      List"
     echo "  `basename $0` rm            [<containers>]      Remove"
@@ -68,6 +69,12 @@ case $cmd in
         ;;
     r | restart)
         docker-compose $compose_args restart $cmd_args
+        ;;
+    i | install)
+        echo "disabing restart for any containers which may have been configured before"
+        docker update --restart=no $(docker ps -a -q) > /dev/null
+        echo "configuring running containers to always restart"
+        docker update --restart=always $(docker ps -q)
         ;;
     h | stop)
         docker-compose $compose_args stop $cmd_args
