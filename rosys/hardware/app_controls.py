@@ -34,7 +34,15 @@ class AppControls():
         self.main_buttons: dict[str, AppButton] = {}
         self.extra_buttons: dict[str, AppButton] = {}
 
-    async def parse(self, line: str):
+    async def set_info(self, msg: str) -> None:
+        '''replace constantly shown info text on mobile defice'''
+        self.robot_brain.send(f'bluetooth.send("PUT /info {msg}")')
+
+    async def notify(self, msg: str) -> None:
+        '''show notification as Snackbar message on mobile device'''
+        self.robot_brain.send(f'bluetooth.send("POST /notification {msg}")')
+
+    async def parse(self, line: str) -> None:
         if line.startswith('"'):
             line = line[1:-1]
         if line.startswith('app: '):

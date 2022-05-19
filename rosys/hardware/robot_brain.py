@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-import rosys
+from rosys import event
 
 from ..communication import Communication
 from ..helpers import sleep
@@ -15,6 +15,7 @@ class RobotBrain(CommunicatingHardware):
     def __init__(self, world: World, communication: Communication):
         super().__init__(world, communication)
         self.app_controls = AppControls(self)
+        event.register(event.Id.NEW_NOTIFICATION, self.app_controls.notify)
         self.waiting_list: dict[str, Optional[str]] = {}
 
     async def configure(self, filepath: str = 'lizard.txt'):

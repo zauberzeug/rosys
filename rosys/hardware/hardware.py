@@ -2,6 +2,7 @@ import abc
 import logging
 
 from ..world import World
+from .app_controls import AppControls
 
 
 class Hardware(abc.ABC):
@@ -10,6 +11,7 @@ class Hardware(abc.ABC):
         self.world = world
         self.name = __name__[:-8] + self.__class__.__name__
         self.log = logging.getLogger(self.name)
+        self.app_controls: AppControls = None
 
     @abc.abstractmethod
     async def configure(self):
