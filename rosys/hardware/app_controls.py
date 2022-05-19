@@ -36,7 +36,7 @@ class AppControls():
 
     async def set_info(self, msg: str) -> None:
         '''replace constantly shown info text on mobile defice'''
-        self.robot_brain.send(f'bluetooth.send("PUT /info {msg}")')
+        await self.robot_brain.send(f'bluetooth.send("PUT /info {msg}")')
 
     async def notify(self, msg: str) -> None:
         '''show notification as Snackbar message on mobile device'''
