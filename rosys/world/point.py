@@ -46,7 +46,7 @@ class Point(BaseModel):
         )
 
     def __add__(self, other: Point) -> Point:
-        return Point(x=self.x + other.x, y=self.y * other.y)
+        return Point(x=self.x + other.x, y=self.y + other.y)
 
     def __mul__(self, factor) -> Point:
         return Point(x=self.x * factor, y=self.y * factor)
