@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
-from nicegui import ui
 import os
+
 import rosys
 import rosys.ui
+from nicegui import ui
 from rosys.automations import drive_square
 from rosys.hardware import CommunicatingHardware
 from rosys.world import World
 
 import log_configuration
+
 log_configuration.setup()
 
 world = World()
@@ -28,7 +30,7 @@ with ui.card():
     with ui.row():
         async def automation():
             await drive_square(world, runtime.hardware)
-        rosys.ui.automation_controls(automation)
+        rosys.ui.automation_controls(default_automation=automation)
 
         async def configure():
             await runtime.hardware.configure()

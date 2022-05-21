@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-from nicegui import ui
 import os
 import uuid
+
 import rosys
 import rosys.ui
+from nicegui import ui
 from rosys.automations import drive_path
 from rosys.world import Obstacle, PathSegment, Point, Pose, Robot, RobotShape, Spline, World
 

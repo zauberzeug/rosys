@@ -27,6 +27,6 @@ path = [PathSegment(spline=Spline.from_poses(Pose(), Pose(x=5, y=1)))]
 
 async def automation():
     await drive_path(runtime.world, runtime.hardware, path)
-rosys.ui.automation_controls(automation)
+rosys.ui.automation_controls(default_automation=automation)
 
 ui.run(title='RoSys')
