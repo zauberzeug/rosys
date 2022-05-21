@@ -7,6 +7,7 @@ class Detection(BaseModel):
     confidence: float
     x: float
     y: float
+    uuid: str = ''  # NOTE this is used to keep track of simulated objects
 
     @property
     def cx(self) -> float:

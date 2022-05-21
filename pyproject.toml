@@ -51,6 +51,7 @@ debugpy = "^1.2.1"
 line-profiler = "3.5.1"
 py-spy = "^0.3.10"
 isort = "^5.10.1"
+approx = "^0.0.1"
 
 [build-system]
 requires = [

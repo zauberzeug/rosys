@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional
+from uuid import uuid4
 
 import numpy as np
 import rosys
@@ -14,6 +15,7 @@ class SimulatedObject:
     category_name: str
     position: rosys.world.Point3d
     size: Optional[tuple[float]] = None
+    uuid: str = str(uuid4())
 
 
 class DetectorSimulator(Detector):
@@ -81,6 +83,7 @@ class DetectorSimulator(Detector):
                     y=image_points[:, 1].min(),
                     width=image_points[:, 0].max() - image_points[:, 0].min(),
                     height=image_points[:, 1].max() - image_points[:, 1].min(),
+                    uuid=object.uuid
                 )
                 if self.noisy_image_points:
                     detection.x += np.random.randn()

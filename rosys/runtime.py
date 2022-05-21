@@ -122,16 +122,11 @@ class Runtime:
         if not is_test:
             self.persistence.backup()
         [t.cancel() for t in self.tasks]
-        ic()
         if not is_test:
             run.process_pool.shutdown()
-        ic()
         for a in self.actors:
             await a.tear_down()
-        ic()
         await self.hardware.tear_down()
-        ic()
-        # await asyncio.gather(*[task_logger.create_task(a.tear_down(), name=f'{a.name}.tear_down()') for a in self.actors])
 
     async def repeat(self, actor: Actor):
         while True:
