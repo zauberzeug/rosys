@@ -40,7 +40,7 @@ class AppControls():
 
     async def notify(self, msg: str) -> None:
         '''show notification as Snackbar message on mobile device'''
-        self.robot_brain.send(f'bluetooth.send("POST /notification {msg}")')
+        await self.robot_brain.send(f'bluetooth.send("POST /notification {msg}")')
 
     async def parse(self, line: str) -> None:
         if line.startswith('"'):

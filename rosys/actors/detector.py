@@ -62,7 +62,7 @@ class Detector(Actor):
             return False
 
     async def disconnect(self) -> None:
-        self.sio.disconnect()
+        await self.sio.disconnect()
 
     async def try_start_one_upload(self):
         if datetime.now() < self.world.upload.last_upload + timedelta(minutes=self.world.upload.minimal_minutes_between_uploads):
@@ -113,8 +113,7 @@ class Detector(Actor):
                 point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
                 image.detections = Detections(boxes=box_detections, points=point_detections)
             except socketio.exceptions.TimeoutError:
-                self.log.exception(f'detection for {image.id} took to long; trying to reset connection...')
-                await self.disconnect()
+                self.log.exception(f'detection for {image.id} took to long')
             except:
                 self.log.exception(f'could not detect {image.id}')
             else:
