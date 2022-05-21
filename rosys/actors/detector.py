@@ -44,7 +44,7 @@ class Detector(Actor):
 
     async def step(self):
         if not self.is_connected and not await self.connect():
-            self.log.exception(f'connection to {port} failed; trying again')
+            self.log.exception(f'connection to {self.port} failed; trying again')
             await sleep(3.0)
             return
 
