@@ -61,6 +61,7 @@ class DetectorSimulator(Detector):
                     confidence=1.0,
                     x=image_point.x,
                     y=image_point.y,
+                    uuid=object.uuid,
                 )
                 if self.noisy_image_points:
                     detection.x += np.random.randn()
@@ -83,7 +84,7 @@ class DetectorSimulator(Detector):
                     y=image_points[:, 1].min(),
                     width=image_points[:, 0].max() - image_points[:, 0].min(),
                     height=image_points[:, 1].max() - image_points[:, 1].min(),
-                    uuid=object.uuid
+                    uuid=object.uuid,
                 )
                 if self.noisy_image_points:
                     detection.x += np.random.randn()
