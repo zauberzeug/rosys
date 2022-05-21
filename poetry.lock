@@ -96,6 +96,14 @@ test = ["coverage[toml] (>=4.5)", "hypothesis (>=4.0)", "pytest (>=6.0)", "pytes
 trio = ["trio (>=0.16)"]
 
 [[package]]
+name = "approx"
+version = "0.0.1"
+description = "Set of tools for comparing complex objects"
+category = "dev"
+optional = false
+python-versions = "*"
+
+[[package]]
 name = "asgiref"
 version = "3.5.0"
 description = "ASGI specs, helper code, and adapters"
@@ -1011,7 +1019,7 @@ client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
 
 [[package]]
 name = "python-socketio"
-version = "5.5.2"
+version = "5.6.0"
 description = "Socket.IO server and client for Python"
 category = "main"
 optional = false
@@ -1384,7 +1392,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "6b8f877dc8cb67bbbc26515d349df3be8b351b2832df2ab68c22747ef1dfa72b"
+content-hash = "acc43c9fd0b37acf8c07ee4b3f75ca36605d705df1e02233a3a095a07c6e2c08"
 
 [metadata.files]
 addict = [
@@ -1489,6 +1497,9 @@ aiosignal = [
 anyio = [
     {file = "anyio-3.5.0-py3-none-any.whl", hash = "sha256:b5fa16c5ff93fa1046f2eeb5bbff2dad4d3514d6cda61d02816dba34fa8c3c2e"},
     {file = "anyio-3.5.0.tar.gz", hash = "sha256:a0aeffe2fb1fdf374a8e4b471444f0f3ac4fb9f5a5b542b48824475e0042a5a6"},
+]
+approx = [
+    {file = "approx-0.0.1-py3-none-any.whl", hash = "sha256:1c9e12e73513b2d702582c8c526227924f0b036a80bd9f27feec2cb04d2f4f4a"},
 ]
 asgiref = [
     {file = "asgiref-3.5.0-py3-none-any.whl", hash = "sha256:88d59c13d634dcffe0510be048210188edd79aeccb6a6c9028cdad6f31d730a9"},
@@ -2323,8 +2334,8 @@ python-engineio = [
     {file = "python_engineio-4.3.1-py3-none-any.whl", hash = "sha256:85986067cb9f7695347954d4e03491f7d45152c5428c07109a9707e04e8942cb"},
 ]
 python-socketio = [
-    {file = "python-socketio-5.5.2.tar.gz", hash = "sha256:6213f7dfbb87e554472d11151f96bae9059854aa88e4a1e0fa6e97cca1c3fcf4"},
-    {file = "python_socketio-5.5.2-py3-none-any.whl", hash = "sha256:5a1b173a4c3471bed363c502a93b36a02e2a29847645c5557237b3359d49caf0"},
+    {file = "python-socketio-5.6.0.tar.gz", hash = "sha256:f1f2eabdea500dbcb384902418cacedd98b7fe4d0fed818415ddf8af10e428fa"},
+    {file = "python_socketio-5.6.0-py3-none-any.whl", hash = "sha256:41d6d93831aac6e0e4917dee2a1d0a0fadaa3fb362d34fc14e98c379e6f20503"},
 ]
 pywin32-ctypes = [
     {file = "pywin32-ctypes-0.2.0.tar.gz", hash = "sha256:24ffc3b341d457d48e8922352130cf2644024a4ff09762a2261fd34c36ee5942"},
