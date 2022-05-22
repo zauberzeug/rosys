@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import os
+import signal
 import subprocess
 import uuid
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
@@ -43,17 +44,23 @@ async def sh(command: list[str], timeout: float = 1) -> str:
     command: a sequence of program arguments as subprocess.Popen requires
     returns: stdout
     '''
+    command.insert(0, 'timeout')
+    command.insert(1, str(timeout))
+
     def run() -> str:
-        try:
-            result = subprocess.run(
-                command,
-                preexec_fn=os.setsid,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.STDOUT
-            )
-        except subprocess.TimeoutExpired:
-            log.warning(f'{" ".join(command)} took longer than {timeout} s. Aborting.')
-            return ''
-        return result.stdout.decode('utf-8')
-    #self.log.debug('executing sh command: ' + ' '.join(command))
+        log.info('running sh command: ' + ' '.join(command))
+        with subprocess.Popen(
+            command,
+            preexec_fn=os.setpgrp,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        ) as proc:
+            try:
+                stdout, *_ = proc.communicate(timeout=timeout)
+            except subprocess.TimeoutExpired:
+                log.warning(f'{" ".join(command)} took longer than {timeout} s. Aborting.')
+                os.killpg(proc.pid, signal.SIGTERM)
+                return ''
+            log.info('done executing')
+            return stdout.decode('utf-8')
     return await io_bound(run)
