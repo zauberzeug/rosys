@@ -121,9 +121,8 @@ class Runtime:
             pass
         if not is_test:
             self.persistence.backup()
+        run.tear_down()
         [t.cancel() for t in self.tasks]
-        if not is_test:
-            run.process_pool.shutdown()
         for a in self.actors:
             await a.tear_down()
         await self.hardware.tear_down()

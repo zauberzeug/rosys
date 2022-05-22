@@ -1,4 +1,5 @@
 import asyncio
+import concurrent.futures.thread
 import logging
 import os
 import signal
@@ -7,6 +8,8 @@ import uuid
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from typing import Callable
+
+from .helpers import is_test
 
 process_pool = ProcessPoolExecutor()
 thread_pool = ThreadPoolExecutor(thread_name_prefix='run.py thread_pool')
@@ -64,3 +67,13 @@ async def sh(command: list[str], timeout: float = 1) -> str:
             log.info('done executing')
             return stdout.decode('utf-8')
     return await io_bound(run)
+
+
+def tear_down():
+    thread_pool.shutdown(wait=False, cancel_futures=True)
+    # NOTE we shut down all pending threads non-gracefully because otherwise threads will prevent reload (see https://trello.com/c/M9IvOg1c/698)
+    thread_pool._threads.clear()
+    concurrent.futures.thread._threads_queues.clear()
+
+    if not is_test:
+        process_pool.shutdown(wait=False, cancel_futures=True)
