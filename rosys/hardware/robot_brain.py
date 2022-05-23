@@ -70,7 +70,7 @@ class RobotBrain(CommunicatingHardware):
             time=self.world.robot.hardware_time,
         ))
 
-    async def parse_line(self, line: str):
+    async def parse_line(self, line: str) -> None:
         if self.app_controls is not None:
             await self.app_controls.parse(line)
 
