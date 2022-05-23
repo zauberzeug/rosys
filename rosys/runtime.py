@@ -128,6 +128,7 @@ class Runtime:
         await self.hardware.tear_down()
 
     async def repeat(self, actor: Actor):
+        await sleep(actor.interval)  # NOTE delaying first execution so not all actors rush in at the same time
         while True:
             start = self.world.time
             try:
