@@ -51,7 +51,8 @@ async def sh(command: list[str], timeout: float = 1) -> str:
     command.insert(1, str(timeout))
 
     def run() -> str:
-        log.info('running sh command: ' + ' '.join(command))
+        #cmd_str = ' '.join(command)
+        #log.info(f'running sh command "{cmd_str}"')
         with subprocess.Popen(
             command,
             preexec_fn=os.setpgrp,
@@ -64,7 +65,7 @@ async def sh(command: list[str], timeout: float = 1) -> str:
                 log.warning(f'{" ".join(command)} took longer than {timeout} s. Aborting.')
                 os.killpg(proc.pid, signal.SIGTERM)
                 return ''
-            log.info('done executing')
+            #log.info(f'done executing "{cmd_str}"')
             return stdout.decode('utf-8')
     return await io_bound(run)
 
