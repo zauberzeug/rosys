@@ -47,27 +47,17 @@ async def sh(command: list[str], timeout: float = 1) -> str:
     command: a sequence of program arguments as subprocess.Popen requires
     returns: stdout
     '''
-    command.insert(0, 'timeout')
-    command.insert(1, str(timeout))
-
-    def run() -> str:
-        #cmd_str = ' '.join(command)
-        #log.info(f'running sh command "{cmd_str}"')
-        with subprocess.Popen(
-            command,
-            preexec_fn=os.setpgrp,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
-        ) as proc:
-            try:
-                stdout, *_ = proc.communicate(timeout=timeout)
-            except subprocess.TimeoutExpired:
-                log.warning(f'{" ".join(command)} took longer than {timeout} s. Aborting.')
-                os.killpg(proc.pid, signal.SIGTERM)
-                return ''
-            #log.info(f'done executing "{cmd_str}"')
-            return stdout.decode('utf-8')
-    return await io_bound(run)
+    #cmd_str = ' '.join(command)
+    #log.info(f'running sh command "{cmd_str}"')
+    proc = await asyncio.create_subprocess_exec(
+        'timeout',
+        str(timeout), *command,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.STDOUT,
+    )
+    stdout, *_ = await proc.communicate()
+    #log.info(f'done executing "{cmd_str}"')
+    return stdout.decode()
 
 
 def tear_down():
