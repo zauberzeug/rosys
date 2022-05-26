@@ -49,6 +49,7 @@ class AppControls():
             line = line[5:]
             if line == 'connected':
                 await self.sync()
+                rosys.event.emit(rosys.event.Id.APP_CONNECTED)
             elif line.startswith('PUT /button/') and '/action' in line:
                 cmd = line.split(' ')
                 path = cmd[1].split('/')

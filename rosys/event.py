@@ -33,6 +33,7 @@ class Id(Enum, init='value __doc__'):
     NEW_NOTIFICATION = auto(), 'call this event to notify the user; provide the message as string parameter'
     NEW_CAMERA = auto(), 'called if new camera has been discoverd; provides camera as parameter'
     NEW_DETECTIONS = auto(), 'called after detection on an image is completed; provides image frame as parameter'
+    APP_CONNECTED = auto(), 'called after app connected via bluetooth; use this to refresh infos or similar'
 
 
 def register(event: Id, listener: Callable):
