@@ -1,8 +1,10 @@
-from nicegui.ui import Ui
 import logging
-import yappi
-from tabulate import tabulate
 import time
+
+import yappi
+from nicegui.ui import Ui
+from tabulate import tabulate
+
 from .. import sleep
 from ..profiling import profile
 
@@ -48,4 +50,4 @@ def create_profiler(ui: Ui):
             await start()
         return False  # do not refresh UI
 
-    profile_button = ui.button('Profiler', on_click=toggle).props('icon=play_arrow')
+    profile_button = ui.button('Profiler', on_click=toggle).props('icon=play_arrow').tooltip('run profiling')
