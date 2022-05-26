@@ -56,7 +56,9 @@ class UsbCameraCapture(Actor):
                     self.deactivate(camera)
                 continue
             try:
-                if uid not in self.devices or self.devices[uid].capture is None:
+                if uid not in self.devices:
+                    continue
+                if self.devices[uid].capture is None:
                     await self.activate(uid)
                 if self.devices[uid].last_state != camera.json():
                     await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
