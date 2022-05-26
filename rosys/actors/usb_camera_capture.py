@@ -24,6 +24,7 @@ class Device:
     exposure_min: int = 0
     exposure_max: int = 0
     exposure_default: int = 0
+    last_state: str = ''
 
 
 def process_image(image: NDArray, rotation: rosys.world.ImageRotation, crop: rosys.world.Rectangle = None) -> bytes:
@@ -57,6 +58,9 @@ class UsbCameraCapture(Actor):
             try:
                 if uid not in self.devices or self.devices[uid].capture is None:
                     await self.activate(uid)
+                if self.devices[uid].last_state != camera.json():
+                    await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
+                    self.devices[uid].last_state = camera.json()
                 if self.devices[uid].capture is None:
                     self.log.warn(f'unexpected missing capture handle for {uid}')
                     continue
