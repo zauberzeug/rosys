@@ -79,7 +79,10 @@ class UsbCameraCapture(Actor):
         self.purge_old_images()
 
     def capture_image(self, id) -> Any:
-        _, image = self.devices[id].capture.read()
+        capture = self.devices[id].capture
+        for i in range(5):  # minimize lag (see https://stackoverflow.com/a/57309372/364388)
+            capture.grab()
+        _, image = capture.retrieve()
         return image
 
     async def activate(self, uid: str):
@@ -157,6 +160,9 @@ class UsbCameraCapture(Actor):
         # NOTE enforcing motion jpeg for now
         if device.capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
             device.capture.set(cv2.CAP_PROP_FOURCC, MJPG)
+        # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
+        if device.capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
+            device.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         resolution = ImageSize(
             width=int(device.capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
             height=int(device.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
