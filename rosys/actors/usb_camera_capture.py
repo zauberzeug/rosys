@@ -60,12 +60,12 @@ class UsbCameraCapture(Actor):
                     continue
                 if self.devices[uid].capture is None:
                     await self.activate(uid)
-                if self.devices[uid].last_state != camera.json():
-                    await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
-                    self.devices[uid].last_state = camera.json()
                 if self.devices[uid].capture is None:
                     self.log.warn(f'unexpected missing capture handle for {uid}')
                     continue
+                elif self.devices[uid].last_state != camera.json():
+                    await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
+                    self.devices[uid].last_state = camera.json()
                 image = await rosys.run.io_bound(self.capture_image, uid)
                 if image is None:
                     self.deactivate(camera)
