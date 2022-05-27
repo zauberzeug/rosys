@@ -88,7 +88,7 @@ class UsbCameraCapture(Actor):
     async def activate(self, uid: str):
         camera = self.world.usb_cameras[uid]
         device = self.devices[uid]
-        capture = self.get_capture_device(device.video_id)
+        capture = await rosys.run.io_bound(self.get_capture_device, device.video_id)
         if capture is None:
             return
         self.devices[uid].capture = capture
