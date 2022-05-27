@@ -695,7 +695,7 @@ test = ["pytest (>=6.2)", "pytest-cov (>=2.12)", "codecov (>=2.1)"]
 
 [[package]]
 name = "nicegui"
-version = "0.7.21"
+version = "0.7.27"
 description = "Web User Interface with Buttons, Dialogs, Markdown, 3D Scences and Plots"
 category = "main"
 optional = false
@@ -710,7 +710,7 @@ matplotlib = ">=3.4.1,<4.0.0"
 pydantic = ">=1.8.2,<2.0.0"
 Pygments = ">=2.9.0,<3.0.0"
 typing-extensions = ">=3.10.0,<4.0.0"
-uvicorn = "0.17.5"
+uvicorn = "0.17.6"
 watchgod = ">=0.7,<0.8"
 websockets = "10.2"
 
@@ -1293,7 +1293,7 @@ socks = ["PySocks (>=1.5.6,!=1.5.7,<2.0)"]
 
 [[package]]
 name = "uvicorn"
-version = "0.17.5"
+version = "0.17.6"
 description = "The lightning-fast ASGI server."
 category = "main"
 optional = false
@@ -1305,7 +1305,7 @@ click = ">=7.0"
 h11 = ">=0.8"
 
 [package.extras]
-standard = ["websockets (>=10.0)", "httptools (>=0.2.0,<0.4.0)", "watchgod (>=0.6)", "python-dotenv (>=0.13)", "PyYAML (>=5.1)", "uvloop (>=0.14.0,!=0.15.0,!=0.15.1)", "colorama (>=0.4)"]
+standard = ["websockets (>=10.0)", "httptools (>=0.4.0)", "watchgod (>=0.6)", "python-dotenv (>=0.13)", "PyYAML (>=5.1)", "uvloop (>=0.14.0,!=0.15.0,!=0.15.1)", "colorama (>=0.4)"]
 
 [[package]]
 name = "watchdog"
@@ -1392,7 +1392,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "acc43c9fd0b37acf8c07ee4b3f75ca36605d705df1e02233a3a095a07c6e2c08"
+content-hash = "9e26757230ead1b69cebe05fddd83fd28a8c18bde7ddbe207417ae363beef15d"
 
 [metadata.files]
 addict = [
@@ -2096,8 +2096,8 @@ networkx = [
     {file = "networkx-2.6.3.tar.gz", hash = "sha256:c0946ed31d71f1b732b5aaa6da5a0388a345019af232ce2f49c766e2d6795c51"},
 ]
 nicegui = [
-    {file = "nicegui-0.7.21-py3-none-any.whl", hash = "sha256:9f3feb5ad07d0e6d1968f764c56b322cdd047e743f90c4796fee5a2c7c7654ef"},
-    {file = "nicegui-0.7.21.tar.gz", hash = "sha256:4bb7b1bca790638091a3b87bb1f2a22129edf90989acaecdf4d40f30759a6a9b"},
+    {file = "nicegui-0.7.27-py3-none-any.whl", hash = "sha256:f3b2755f13dce949b17551f496b23279843d2cdb4dc60969ea9a6389a57607a7"},
+    {file = "nicegui-0.7.27.tar.gz", hash = "sha256:8ff979f48a38c312ecee2a891bbf3a23e9c2167a02f160e9699a5df7902b977b"},
 ]
 numpy = [
     {file = "numpy-1.22.2-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:515a8b6edbb904594685da6e176ac9fbea8f73a5ebae947281de6613e27f1956"},
@@ -2555,8 +2555,8 @@ urllib3 = [
     {file = "urllib3-1.26.8.tar.gz", hash = "sha256:0e7c33d9a63e7ddfcb86780aac87befc2fbddf46c58dbb487e0855f7ceec283c"},
 ]
 uvicorn = [
-    {file = "uvicorn-0.17.5-py3-none-any.whl", hash = "sha256:8adddf629b79857b48b999ae1b14d6c92c95d4d7840bd86461f09bee75f1653e"},
-    {file = "uvicorn-0.17.5.tar.gz", hash = "sha256:c04a9c069111489c324f427501b3840d306c6b91a77b00affc136a840a3f45f1"},
+    {file = "uvicorn-0.17.6-py3-none-any.whl", hash = "sha256:19e2a0e96c9ac5581c01eb1a79a7d2f72bb479691acd2b8921fce48ed5b961a6"},
+    {file = "uvicorn-0.17.6.tar.gz", hash = "sha256:5180f9d059611747d841a4a4c4ab675edf54c8489e97f96d0583ee90ac3bfc23"},
 ]
 watchdog = [
     {file = "watchdog-2.1.6-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:9693f35162dc6208d10b10ddf0458cc09ad70c30ba689d9206e02cd836ce28a3"},
