@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Coroutine, Optional
 
 import socketio
 import socketio.exceptions
@@ -33,20 +33,27 @@ class Detector(Actor):
         self.next_image: Optional[Image] = None
         self.port = port
         self.name = name
+        self.timeout_count = 0
 
         @self.sio.on('disconnect')
         def on_sio_disconnect():
             self.log.warning(f'sio disconnect on port {port}')
+
+        @self.sio.on('connect_error')
+        def on_sio_connect_error(err):
+            self.log.warning(f'sio connect error on {port}: {err.message}')
 
     @property
     def is_connected(self):
         return self.sio.connected
 
     async def step(self):
-        if not self.is_connected and not await self.connect():
-            self.log.exception(f'connection to {self.port} failed; trying again')
-            await sleep(3.0)
-            return
+        if not self.is_connected:
+            self.log.info('trying reconnect {self.port}')
+            if not await self.connect():
+                self.log.exception(f'connection to {self.port} failed; trying again')
+                await sleep(3.0)
+                return
 
         await self.try_start_one_upload()
         await self.upload_priority_queue()
@@ -61,10 +68,10 @@ class Detector(Actor):
         except:
             return False
 
-    async def disconnect(self) -> None:
+    async def disconnect(self) -> Coroutine:
         await self.sio.disconnect()
 
-    async def try_start_one_upload(self):
+    async def try_start_one_upload(self) -> Coroutine:
         if datetime.now() < self.world.upload.last_upload + timedelta(minutes=self.world.upload.minimal_minutes_between_uploads):
             return
 
@@ -74,7 +81,7 @@ class Detector(Actor):
             self.world.upload.queue.clear()  # old images should not be uploaded later when the robot is inactive
             self.world.upload.last_upload = datetime.now()
 
-    async def upload_priority_queue(self):
+    async def upload_priority_queue(self) -> Coroutine:
         upload_images = self.world.upload.get_priority_queued(self.name)
         if upload_images:
             async def upload_priority_images():
@@ -83,14 +90,14 @@ class Detector(Actor):
             task_logger.create_task(upload_priority_images(), name='upload_priority_images')
             self.world.upload.priority_queue.clear()
 
-    async def upload(self, image: Image):
+    async def upload(self, image: Image) -> Coroutine:
         try:
             self.log.info(f'uploading to {self.name}')
             await self.sio.emit('upload', {'image': image.data, 'mac': image.camera_id})
         except:
             self.log.exception(f'could not upload {image.id}')
 
-    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> None:
+    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Coroutine:
         '''Runs detections on the image. Afterwards the `image.detections` property is filled.'''
         if not self.is_connected:
             return
@@ -114,12 +121,16 @@ class Detector(Actor):
                 image.detections = Detections(boxes=box_detections, points=point_detections)
             except socketio.exceptions.TimeoutError:
                 self.log.exception(f'detection for {image.id} on {self.port} took to long')
+                self.timeout_count += 1
             except:
                 self.log.exception(f'could not detect {image.id}')
             else:
+                self.timeout_count = 0
                 event.emit(event.Id.NEW_DETECTIONS, image)
             finally:
                 self.is_detecting = False
+                if self.timeout_count > 5:
+                    await self.disconnect()
 
     def __str__(self) -> str:
         return f'{type(self).__name__} ({"connected" if self.is_connected else "disconnected"})'
