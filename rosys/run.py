@@ -1,9 +1,5 @@
 import asyncio
-import concurrent.futures.thread
 import logging
-import os
-import signal
-import subprocess
 import uuid
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
@@ -19,7 +15,13 @@ log = logging.getLogger('rosys.run')
 
 async def io_bound(callback: Callable, *args: any):
     loop = asyncio.get_running_loop()
-    return await loop.run_in_executor(thread_pool, callback, *args)
+    try:
+        return await loop.run_in_executor(thread_pool, callback, *args)
+    except RuntimeError as e:
+        if 'cannot schedule new futures after shutdown' not in str(e):
+            raise
+    except asyncio.exceptions.CancelledError:
+        pass
 
 
 async def cpu_bound(callback: Callable, *args: any):
@@ -30,6 +32,8 @@ async def cpu_bound(callback: Callable, *args: any):
         except RuntimeError as e:
             if 'cannot schedule new futures after shutdown' not in str(e):
                 raise
+        except asyncio.exceptions.CancelledError:
+            pass
 
 
 @contextmanager
