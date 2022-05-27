@@ -49,7 +49,7 @@ class Detector(Actor):
 
     async def step(self):
         if not self.is_connected:
-            self.log.info('trying reconnect {self.port}')
+            self.log.info(f'trying reconnect {self.port}')
             if not await self.connect():
                 self.log.exception(f'connection to {self.port} failed; trying again')
                 await sleep(3.0)
