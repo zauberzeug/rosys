@@ -61,10 +61,9 @@ async def sh(command: list[str], timeout: float = 1) -> str:
 
 
 def tear_down():
-    thread_pool.shutdown(wait=False, cancel_futures=True)
-    # NOTE we shut down all pending threads non-gracefully because otherwise threads will prevent reload (see https://trello.com/c/M9IvOg1c/698)
-    thread_pool._threads.clear()
-    concurrent.futures.thread._threads_queues.clear()
-
+    log.info('teardown thread_pool')
+    thread_pool.shutdown(wait=True, cancel_futures=True)
     if not is_test:
-        process_pool.shutdown(wait=False, cancel_futures=True)
+        log.info('teardown process_pool')
+        process_pool.shutdown(wait=True, cancel_futures=True)
+    log.info('teardown complete')
