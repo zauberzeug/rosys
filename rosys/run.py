@@ -51,15 +51,23 @@ async def sh(command: list[str], timeout: float = 1) -> str:
     command: a sequence of program arguments as subprocess.Popen requires
     returns: stdout
     '''
-    #cmd_str = ' '.join(command)
+    cmd_str = ' '.join(command)
     #log.info(f'running sh command "{cmd_str}"')
-    proc = await asyncio.create_subprocess_exec(
-        'timeout',
-        str(timeout), *command,
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.STDOUT,
-    )
-    stdout, *_ = await proc.communicate()
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            'timeout',
+            str(timeout), *command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+        )
+    except:
+        log.exception(f'"{cmd_str}" failed')
+    else:
+        try:
+            stdout, *_ = await proc.communicate()
+        except:
+            log.exception(f'"{cmd_str}" failed; waiting for process to finish')
+            await proc.wait()
     #log.info(f'done executing "{cmd_str}"')
     return stdout.decode()
 
