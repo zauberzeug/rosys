@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import os
 import shlex
 import shutil
@@ -8,6 +9,7 @@ from datetime import datetime
 from glob import glob
 
 import rosys
+from PIL import Image, ImageDraw, ImageFont, ImageStat
 from rosys.actors import Actor
 from world import World
 
@@ -22,14 +24,27 @@ class TimelapsRecorder(Actor):
         os.makedirs(self.storage_path, exist_ok=True)
         # NOTE as long as we develop this feature we cleanup on start
         self.clear_jpegs()
+        rosys_dir = os.path.dirname(os.path.dirname(__file__))
+        self.font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 12)
 
     async def step(self):
         await super().step()
 
     async def save(self, image: rosys.Image) -> None:
-        def _save(image: rosys.Image):
-            with open(self.storage_path + f'/{image.time}.jpg', 'wb') as f:
-                f.write(image.data)
+        def _save(image: rosys.world.Image):
+            img = Image.open(io.BytesIO(image.data))
+            draw = ImageDraw.Draw(img)
+            x = img.width - 300
+            y = img.height - 18
+            text = f'{datetime.utcfromtimestamp(image.time).strftime("%Y-%m-%d %H:%M:%S")}, cam {image.camera_id}'
+            # shadow
+            draw.text((x - 1, y - 1), text, font=self.font, fill=(0, 0, 0))
+            draw.text((x + 1, y - 1), text, font=self.font, fill=(0, 0, 0))
+            draw.text((x - 1, y + 1), text, font=self.font, fill=(0, 0, 0))
+            draw.text((x + 1, y + 1), text, font=self.font, fill=(0, 0, 0))
+            draw.text((x, y), text, font=self.font, fill=(255, 255, 255))
+            dest = self.storage_path + f'/{image.time}.jpg'
+            img.save(dest, "JPEG")
         await rosys.run.io_bound(_save, image)
 
     async def compress_video(self) -> None:
