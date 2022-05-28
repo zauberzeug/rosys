@@ -3,7 +3,7 @@ import logging
 import uuid
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
-from typing import Callable
+from typing import Callable, Optional, Union
 
 from .helpers import is_test
 
@@ -46,29 +46,32 @@ def cpu():
         running_processes.remove(id)
 
 
-async def sh(command: list[str], timeout: float = 1) -> str:
+async def sh(command: Union[list[str], str], timeout: Optional[float] = 1) -> str:
     '''executes a shell command
     command: a sequence of program arguments as subprocess.Popen requires
     returns: stdout
     '''
-    cmd_str = ' '.join(command)
-    #log.info(f'running sh command "{cmd_str}"')
+    cmd_str = command if isinstance(command, str) else ' '.join(command)
+    log.info(f'running sh command "{cmd_str}"')
     try:
-        proc = await asyncio.create_subprocess_exec(
-            'timeout',
-            str(timeout), *command,
+        proc = await asyncio.create_subprocess_shell(
+            f'{cmd_str}' if timeout is None else f'timeout {timeout} {cmd_str}',
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
         )
     except:
         log.exception(f'"{cmd_str}" failed')
+        return 'could not execute "{cmd_str}"'
     else:
         try:
             stdout, *_ = await proc.communicate()
+        except asyncio.exceptions.CancelledError:
+            return
         except:
             log.exception(f'"{cmd_str}" failed; waiting for process to finish')
-            await proc.wait()
-    #log.info(f'done executing "{cmd_str}"')
+            proc.kill()
+            return 'could not execute "{cmd_str}"'
+    log.info(f'done executing "{cmd_str}"')
     return stdout.decode()
 
 
