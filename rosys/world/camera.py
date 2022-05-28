@@ -38,6 +38,9 @@ class Camera(BaseModel, abc.ABC):
         if images:
             return images[-1]
 
+    def get_recent_images(self, current_time: float, timespan: float = 10.0) -> list[Image]:
+        return [i for i in self.captured_images if i.time > current_time - timespan]
+
     def set_perfect_calibration(
         self,
         x: float = 0, y: float = 0, z: float = 1,
