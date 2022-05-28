@@ -19,21 +19,18 @@ class TimelapsRecorder(Actor):
 
     def __init__(self) -> None:
         super().__init__()
-        self.camera = None
         os.makedirs(self.storage_path, exist_ok=True)
         # NOTE as long as we develop this feature we cleanup on start
         self.clear_jpegs()
 
     async def step(self):
         await super().step()
-        if self.camera is None:
-            return
-        latest = self.camera.latest_captured_image
-        await rosys.run.io_bound(self.save, latest)
 
-    def save(self, image: rosys.Image) -> None:
-        with open(self.storage_path + f'/{image.time}.jpg', 'wb') as f:
-            f.write(image.data)
+    async def save(self, image: rosys.Image) -> None:
+        def _save(image: rosys.Image):
+            with open(self.storage_path + f'/{image.time}.jpg', 'wb') as f:
+                f.write(image.data)
+        await rosys.run.io_bound(_save, image)
 
     async def compress_video(self) -> None:
         now = datetime.now().strftime('%Y-%m-%d_%H_%M_%S')
