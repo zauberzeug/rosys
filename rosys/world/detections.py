@@ -1,5 +1,7 @@
 from pydantic import BaseModel
 
+from .point import Point
+
 
 class Detection(BaseModel):
     category_name: str
@@ -16,6 +18,10 @@ class Detection(BaseModel):
     @property
     def cy(self) -> float:
         raise NotImplementedError()
+
+    @property
+    def center(self) -> Point:
+        return Point(x=self.cx, y=self.cy)
 
 
 class BoxDetection(Detection):
