@@ -52,7 +52,7 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1) -> st
     returns: stdout
     '''
     cmd_str = command if isinstance(command, str) else ' '.join(command)
-    log.info(f'running sh command "{cmd_str}"')
+    #log.info(f'running sh command "{cmd_str}"')
     try:
         proc = await asyncio.create_subprocess_shell(
             f'{cmd_str}' if timeout is None else f'timeout {timeout} {cmd_str}',
@@ -71,7 +71,7 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1) -> st
             log.exception(f'"{cmd_str}" failed; waiting for process to finish')
             proc.kill()
             return 'could not execute "{cmd_str}"'
-    log.info(f'done executing "{cmd_str}"')
+    #log.info(f'done executing "{cmd_str}"')
     return stdout.decode()
 
 
