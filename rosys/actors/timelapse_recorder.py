@@ -2,15 +2,12 @@ from __future__ import annotations
 
 import io
 import os
-import shlex
-import shutil
-from asyncio import Task
 from datetime import datetime
 from glob import glob
 from pathlib import Path
 
 import rosys
-from PIL import Image, ImageDraw, ImageFont, ImageStat
+from PIL import Image, ImageDraw, ImageFont
 from rosys.actors import Actor
 from world import World
 
