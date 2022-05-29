@@ -23,7 +23,7 @@ class VideosPage:
                     ui.html(self.create_video_tag(name))
                 ui.link(name.replace('_', ' ').replace('-', ':'), page)
 
-    @ui.get('/videos/{name}/mp4')
+    @ui.get('/timelapse/{name}')
     def produce_plain_response(name: str):
         return responses.FileResponse(os.path.expanduser(f'~/.rosys/timelapse/{name}.mp4'))
 
@@ -37,7 +37,7 @@ class VideosPage:
   max-width: 100%;
   transform: translate(-50%, -50%);
 " autoplay muted loop controls>
-  <source src="videos/{name}/mp4" type="video/mp4">
+  <source src="timelapse/{name}" type="video/mp4">
 Your browser does not support the video tag.
 </video>
 '''
