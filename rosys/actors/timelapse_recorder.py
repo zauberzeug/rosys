@@ -51,7 +51,7 @@ class TimelapsRecorder(Actor):
         self.log.info(f'creating video from {start} to {end}')
         duration = humanize.naturaldelta(end-start)
         for i in range(20):
-            self.create_cover(start.strftime("%d.%m.%Y, %H:%M:%S"), duration, f'{self.storage_path}/0_cover_{i}.jpg')
+            self.create_cover(start.strftime("%d.%m.%Y %H:%M:%S"), duration, f'{self.storage_path}/0_cover_{i}.jpg')
         id = start.strftime('%Y%m%d_%H-%M-%S_' + duration.replace(' ', '_'))
         target_dir = self.storage_path + '/' + id
         os.mkdir(target_dir)
