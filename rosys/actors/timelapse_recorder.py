@@ -21,8 +21,6 @@ class TimelapsRecorder(Actor):
     def __init__(self) -> None:
         super().__init__()
         os.makedirs(self.storage_path, exist_ok=True)
-        # NOTE as long as we develop this feature we cleanup on start
-        self.clear_jpegs()
         rosys_dir = os.path.dirname(os.path.dirname(__file__))
         self.image_font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 12)
         self.cover_font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 100)
