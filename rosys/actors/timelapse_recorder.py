@@ -25,7 +25,7 @@ class TimelapsRecorder(Actor):
         self.clear_jpegs()
         rosys_dir = os.path.dirname(os.path.dirname(__file__))
         self.image_font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 12)
-        self.cover_font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 110)
+        self.cover_font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 100)
 
     async def save(self, image: rosys.Image) -> None:
         def _save(image: rosys.world.Image):
@@ -33,7 +33,7 @@ class TimelapsRecorder(Actor):
             draw = ImageDraw.Draw(img)
             x = img.width - 300
             y = img.height - 18
-            text = f'{datetime.utcfromtimestamp(image.time).strftime("%Y-%m-%d %H:%M:%S")}, cam {image.camera_id}'
+            text = f'{datetime.fromtimestamp(image.time).strftime("%Y-%m-%d %H:%M:%S")}, cam {image.camera_id}'
             # shadow
             draw.text((x - 1, y - 1), text, font=self.image_font, fill=(0, 0, 0))
             draw.text((x + 1, y - 1), text, font=self.image_font, fill=(0, 0, 0))
@@ -45,16 +45,16 @@ class TimelapsRecorder(Actor):
         await rosys.run.io_bound(_save, image)
 
     async def compress_video(self) -> None:
-        jpgs = glob(f'{self.storage_path}/*.jpg')
+        jpgs = sorted(glob(f'{self.storage_path}/*.jpg'))
         if len(jpgs) < 2:
             return
-        start = datetime.utcfromtimestamp(int(Path(jpgs[0]).stem))
-        end = datetime.utcfromtimestamp(int(Path(jpgs[-1]).stem))
-        self.log.info(f'creating video from {start} to {end}; {end-start}')
-        subtitle = f'{start.strftime("%H:%M:%S")} - {end.strftime("%H:%M:%S")}'
-        for i in range(10):
-            self.create_cover(start.strftime("%d.%m.%Y"), subtitle, f'{self.storage_path}/0_cover_{i}.jpg')
-        id = start.strftime('%Y%m%d_%H-%M-%S_' + humanize.naturaldelta(end-start).replace(' ', '_'))
+        start = datetime.fromtimestamp(int(Path(jpgs[0]).stem))
+        end = datetime.fromtimestamp(int(Path(jpgs[-1]).stem))
+        self.log.info(f'creating video from {start} to {end}')
+        duration = humanize.naturaldelta(end-start)
+        for i in range(20):
+            self.create_cover(start.strftime("%d.%m.%Y, %H:%M:%S"), duration, f'{self.storage_path}/0_cover_{i}.jpg')
+        id = start.strftime('%Y%m%d_%H-%M-%S_' + duration.replace(' ', '_'))
         target_dir = self.storage_path + '/' + id
         os.mkdir(target_dir)
         await rosys.run.sh(['mv', self.storage_path + '/*.jpg', target_dir])
