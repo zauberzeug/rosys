@@ -11,6 +11,12 @@ class VideosPage:
 
     def __init__(self) -> None:
         with ui.page('/videos'):
+            self.list = ui.column()
+            ui.timer(5, self.update_list)
+
+    def update_list(self):
+        self.list.clear()
+        with self.list:
             for mp4 in sorted(glob(os.path.expanduser('~/.rosys/timelapse/*mp4')), reverse=True):
                 name = Path(mp4).stem
                 with ui.page(f'/videos/{name}', name) as page:
