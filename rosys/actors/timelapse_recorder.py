@@ -6,6 +6,7 @@ from datetime import datetime
 from glob import glob
 from pathlib import Path
 
+import humanize
 import rosys
 from PIL import Image, ImageDraw, ImageFont
 from rosys.actors import Actor
@@ -49,14 +50,15 @@ class TimelapsRecorder(Actor):
             return
         start = datetime.utcfromtimestamp(int(Path(jpgs[0]).stem))
         end = datetime.utcfromtimestamp(int(Path(jpgs[-1]).stem))
+        self.log.info(f'creating video from {start} to {end}; {end-start}')
         subtitle = f'{start.strftime("%H:%M:%S")} - {end.strftime("%H:%M:%S")}'
         for i in range(10):
             self.create_cover(start.strftime("%d.%m.%Y"), subtitle, f'{self.storage_path}/0_cover_{i}.jpg')
-        id = start.strftime('%Y-%m-%d_%H_%M_%S')
+        id = start.strftime('%Y%m%d_%H-%M-%S_' + humanize.naturaldelta(end-start).replace(' ', '_'))
         target_dir = self.storage_path + '/' + id
         os.mkdir(target_dir)
         await rosys.run.sh(['mv', self.storage_path + '/*.jpg', target_dir])
-        cmd = f'nice -n 19 ffmpeg -hide_banner -r 10 -pattern_type glob -i "{target_dir}/*.jpg" -s 1600x1200 -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/timelapse_{id}.mp4; mv {target_dir}/*mp4 {self.storage_path}; rm -r {target_dir};'
+        cmd = f'nice -n 19 ffmpeg -hide_banner -r 10 -pattern_type glob -i "{target_dir}/*.jpg" -s 1600x1200 -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{id}.mp4; mv {target_dir}/*mp4 {self.storage_path}; rm -r {target_dir};'
         rosys.task_logger.create_task(rosys.run.sh(cmd, timeout=None))
 
     def clear_jpegs(self):

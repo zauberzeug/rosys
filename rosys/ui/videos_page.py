@@ -11,17 +11,17 @@ class VideosPage:
 
     def __init__(self) -> None:
         with ui.page('/videos'):
-            for mp4 in glob(os.path.expanduser('~/.rosys/timelapse/*mp4')):
+            for mp4 in sorted(glob(os.path.expanduser('~/.rosys/timelapse/*mp4')), reverse=True):
                 name = Path(mp4).stem
                 with ui.page(f'/videos/{name}', name) as page:
                     ui.html(self.create_video_tag(name))
-                ui.link(name, page)
+                ui.link(name.replace('_', ' ').replace('-', ':'), page)
 
     @ui.get('/videos/{name}/mp4')
     def produce_plain_response(name: str):
         return responses.FileResponse(os.path.expanduser(f'~/.rosys/timelapse/{name}.mp4'))
 
-    def create_video_tag(name: str) -> str:
+    def create_video_tag(self, name: str) -> str:
         return f'''
 <video style="
   position: absolute;
