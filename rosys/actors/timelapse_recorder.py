@@ -12,6 +12,9 @@ from PIL import Image, ImageDraw, ImageFont
 from rosys.actors import Actor
 from world import World
 
+rosys_dir = os.path.dirname(os.path.dirname(__file__))
+image_font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 12)
+
 
 class TimelapsRecorder(Actor):
     interval: float = 1
@@ -21,26 +24,10 @@ class TimelapsRecorder(Actor):
     def __init__(self) -> None:
         super().__init__()
         os.makedirs(self.storage_path, exist_ok=True)
-        rosys_dir = os.path.dirname(os.path.dirname(__file__))
-        self.image_font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 12)
         self.cover_font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 100)
 
     async def save(self, image: rosys.Image) -> None:
-        def _save(image: rosys.world.Image):
-            img = Image.open(io.BytesIO(image.data))
-            draw = ImageDraw.Draw(img)
-            x = img.width - 300
-            y = img.height - 18
-            text = f'{datetime.fromtimestamp(image.time).strftime("%Y-%m-%d %H:%M:%S")}, cam {image.camera_id}'
-            # shadow
-            draw.text((x - 1, y - 1), text, font=self.image_font, fill=(0, 0, 0))
-            draw.text((x + 1, y - 1), text, font=self.image_font, fill=(0, 0, 0))
-            draw.text((x - 1, y + 1), text, font=self.image_font, fill=(0, 0, 0))
-            draw.text((x + 1, y + 1), text, font=self.image_font, fill=(0, 0, 0))
-            draw.text((x, y), text, font=self.image_font, fill=(255, 255, 255))
-            dest = self.storage_path + f'/{int(image.time)}.jpg'
-            img.save(dest, "JPEG")
-        await rosys.run.io_bound(_save, image)
+        await rosys.run.cpu_bound(save_image, image, self.storage_path)
 
     async def compress_video(self) -> None:
         jpgs = sorted(glob(f'{self.storage_path}/*.jpg'))
@@ -72,3 +59,21 @@ class TimelapsRecorder(Actor):
         w, h = draw.textsize(subtilte, font=self.cover_font)
         draw.text((img.width / 2 - w / 2, img.height / 2 - h / 2 + 100), subtilte, font=self.cover_font, fill='white')
         img.save(dest)
+
+# static to run cpu bound
+
+
+def save_image(image: rosys.world.Image, path: str):
+    img = Image.open(io.BytesIO(image.data))
+    draw = ImageDraw.Draw(img)
+    x = img.width - 300
+    y = img.height - 18
+    text = f'{datetime.fromtimestamp(image.time).strftime("%Y-%m-%d %H:%M:%S")}, cam {image.camera_id}'
+    # shadow
+    draw.text((x - 1, y - 1), text, font=image_font, fill=(0, 0, 0))
+    draw.text((x + 1, y - 1), text, font=image_font, fill=(0, 0, 0))
+    draw.text((x - 1, y + 1), text, font=image_font, fill=(0, 0, 0))
+    draw.text((x + 1, y + 1), text, font=image_font, fill=(0, 0, 0))
+    draw.text((x, y), text, font=image_font, fill=(255, 255, 255))
+    dest = path + f'/{int(image.time)}.jpg'
+    img.save(dest, "JPEG")
