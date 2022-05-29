@@ -37,7 +37,7 @@ class VideosPage:
   max-width: 100%;
   transform: translate(-50%, -50%);
 " autoplay muted loop controls>
-  <source src="/videos/{name}/mp4" type="video/mp4">
+  <source src="videos/{name}/mp4" type="video/mp4">
 Your browser does not support the video tag.
 </video>
 '''
