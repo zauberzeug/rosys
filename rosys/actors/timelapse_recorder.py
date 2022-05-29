@@ -10,7 +10,8 @@ import humanize
 import rosys
 from PIL import Image, ImageDraw, ImageFont
 from rosys.actors import Actor
-from world import World
+
+from ..world import World
 
 rosys_dir = os.path.dirname(os.path.dirname(__file__))
 image_font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 12)
