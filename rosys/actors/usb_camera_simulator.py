@@ -18,6 +18,8 @@ class UsbCameraSimulator(Actor):
         await super().step()
 
         for camera in self.world.usb_cameras.values():
+            if not camera.active:
+                continue
             assert camera.image_resolution is not None, 'simulated USB cameras should have an image resolution'
             image = Image(time=self.world.time, camera_id=camera.id, size=camera.image_resolution)
             if rosys.is_test:
