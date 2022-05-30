@@ -21,6 +21,8 @@ class BinaryRenderer:
         self.map[y0:y1, x0:x1] = roi
 
     def polygon(self, points, value=True):
+        if len(points) == 0:
+            return
         x0 = max(int(points[:, 0].min()), 0)
         y0 = max(int(points[:, 1].min()), 0)
         x1 = min(int(points[:, 0].max()) + 2, self.map.shape[1] - 1)
