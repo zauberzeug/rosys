@@ -55,7 +55,7 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1) -> st
     #log.info(f'running sh command "{cmd_str}"')
     try:
         proc = await asyncio.create_subprocess_shell(
-            f'{cmd_str}' if timeout is None else f'timeout {timeout} {cmd_str}',
+            cmd_str if timeout is None else f'timeout {timeout} {cmd_str}',
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
         )
@@ -75,7 +75,7 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1) -> st
     return stdout.decode()
 
 
-def tear_down():
+def tear_down() -> None:
     log.info('teardown thread_pool')
     thread_pool.shutdown(wait=True, cancel_futures=True)
     if not is_test:

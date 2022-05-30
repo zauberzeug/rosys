@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import math
-from typing import Union
 
-from numpy import isin
 from pydantic import BaseModel
 
 from .point import Point
@@ -27,14 +25,8 @@ class Point3d(BaseModel):
     def __str__(self) -> str:
         return f'Point3d({round(self.x, 2)}, {round(self.y, 2)}, {round(self.z, 2)})'
 
-    def __add__(self, other: Union[Point3d, Point]) -> Point3d:
-        if isinstance(other, Point3d):
-            return Point3d(x=self.x + other.x, y=self.y + other.y, z=self.z + other.z)
-        elif isinstance(other, Point):
-            return Point3d(x=self.x + other.x, y=self.y + other.y, z=self.z)
+    def __add__(self, other: Point3d) -> Point3d:
+        return Point3d(x=self.x + other.x, y=self.y + other.y, z=self.z + other.z)
 
-    def __sub__(self, other: Union[Point3d, Point]) -> Point3d:
-        if isinstance(other, Point3d):
-            return Point3d(x=self.x - other.x, y=self.y - other.y, z=self.z - other.z)
-        elif isinstance(other, Point):
-            return Point3d(x=self.x - other.x, y=self.y - other.y, z=self.z)
+    def __sub__(self, other: Point3d) -> Point3d:
+        return Point3d(x=self.x - other.x, y=self.y - other.y, z=self.z - other.z)

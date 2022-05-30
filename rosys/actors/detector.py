@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Coroutine, Optional
+from typing import Optional
 
 import socketio
 import socketio.exceptions
@@ -68,10 +68,10 @@ class Detector(Actor):
         except:
             return False
 
-    async def disconnect(self) -> Coroutine:
+    async def disconnect(self) -> None:
         await self.sio.disconnect()
 
-    async def try_start_one_upload(self) -> Coroutine:
+    async def try_start_one_upload(self) -> None:
         if datetime.now() < self.world.upload.last_upload + timedelta(minutes=self.world.upload.minimal_minutes_between_uploads):
             return
 
@@ -81,7 +81,7 @@ class Detector(Actor):
             self.world.upload.queue.clear()  # old images should not be uploaded later when the robot is inactive
             self.world.upload.last_upload = datetime.now()
 
-    async def upload_priority_queue(self) -> Coroutine:
+    async def upload_priority_queue(self) -> None:
         upload_images = self.world.upload.get_priority_queued(self.name)
         if upload_images:
             async def upload_priority_images():
@@ -90,14 +90,14 @@ class Detector(Actor):
             task_logger.create_task(upload_priority_images(), name='upload_priority_images')
             self.world.upload.priority_queue.clear()
 
-    async def upload(self, image: Image) -> Coroutine:
+    async def upload(self, image: Image) -> None:
         try:
             self.log.info(f'uploading to {self.name}')
             await self.sio.emit('upload', {'image': image.data, 'mac': image.camera_id})
         except:
             self.log.exception(f'could not upload {image.id}')
 
-    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Coroutine:
+    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> None:
         '''Runs detections on the image. Afterwards the `image.detections` property is filled.'''
         if not self.is_connected:
             return
@@ -114,13 +114,13 @@ class Detector(Actor):
                 result = await self.sio.call('detect', {
                     'image': image.data,
                     'mac': image.camera_id,
-                    'autoupload': autoupload.value
+                    'autoupload': autoupload.value,
                 }, timeout=3)
                 box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
                 point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
                 image.detections = Detections(boxes=box_detections, points=point_detections)
             except socketio.exceptions.TimeoutError:
-                self.log.exception(f'detection for {image.id} on {self.port} took to long')
+                self.log.exception(f'detection for {image.id} on {self.port} took too long')
                 self.timeout_count += 1
             except:
                 self.log.exception(f'could not detect {image.id}')

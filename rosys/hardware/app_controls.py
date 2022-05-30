@@ -35,7 +35,7 @@ class AppControls():
         self.extra_buttons: dict[str, AppButton] = {}
 
     async def set_info(self, msg: str) -> None:
-        '''replace constantly shown info text on mobile defice'''
+        '''replace constantly shown info text on mobile device'''
         await self.robot_brain.send(f'bluetooth.send("PUT /info {msg}")')
 
     async def notify(self, msg: str) -> None:
@@ -51,11 +51,9 @@ class AppControls():
                 await self.sync()
                 rosys.event.emit(rosys.event.Id.APP_CONNECTED)
             elif line.startswith('PUT /button/') and '/action' in line:
-                cmd = line.split(' ')
-                path = cmd[1].split('/')
-                name = path[-2]
-                group = path[-3]
-                action = cmd[2]
+                # line: "PUT /button/main/my_button/action pressed"
+                _, path, action = line.split(' ')
+                _, group, name, _ = path.split('/')
                 buttons = self.main_buttons if group == 'main' else self.extra_buttons
                 if action == 'pressed':
                     await self._invoke(buttons[name].pressed)
@@ -78,7 +76,7 @@ class AppControls():
                     cmd = f'bluetooth.send("{method} /button/{group}/{name}{prop}")'
                     await self.robot_brain.send(cmd)
         await run('main', self.main_buttons)
-        await run('exra', self.extra_buttons)
+        await run('extra', self.extra_buttons)
 
     async def _invoke(self, callback: Callable):
         if inspect.iscoroutinefunction(callback):

@@ -1,12 +1,11 @@
 import re
 import shutil
 from dataclasses import dataclass
-from typing import Any, Coroutine, Optional
+from typing import Any, Optional
 
 import cv2
 import rosys
 from numpy.typing import NDArray
-from rosys.helpers import measure
 
 from .. import event
 from ..world import Image, ImageSize, UsbCamera
@@ -18,7 +17,7 @@ SCAN_INTERVAL = 10
 
 @dataclass
 class Device:
-    '''devices specific infos are kept seperately (world should not be aware of them)'''
+    '''device-specific infos are kept separately (world should not be aware of them)'''
     uid: str
     video_id: int
     capture: Optional[Any] = None  # cv2.VideoCapture device
@@ -86,7 +85,7 @@ class UsbCameraCapture(Actor):
         _, image = capture.retrieve()
         return image
 
-    async def activate(self, uid: str) -> Coroutine:
+    async def activate(self, uid: str) -> None:
         camera = self.world.usb_cameras[uid]
         device = self.devices[uid]
         capture = await rosys.run.io_bound(self.get_capture_device, device.video_id)
@@ -96,7 +95,7 @@ class UsbCameraCapture(Actor):
         await rosys.run.io_bound(self.set_parameters, camera, device)
         self.log.info(f'activated {uid}')
 
-    async def deactivate(self, camera: UsbCamera) -> Coroutine:
+    async def deactivate(self, camera: UsbCamera) -> None:
         if camera.id not in self.devices:
             return
         if self.devices[camera.id].capture is not None:

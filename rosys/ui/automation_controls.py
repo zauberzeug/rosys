@@ -15,7 +15,7 @@ class AutomationControls:
     def __init__(self, *,
                  default_automation: Optional[Awaitable] = None,
                  can_start: Optional[Callable[[], Union[bool, Awaitable[bool]]]] = None,
-                 app_conntrols: AppControls = None,
+                 app_controls: AppControls = None,
                  ) -> None:
 
         async def start():
@@ -40,11 +40,11 @@ class AutomationControls:
         resume_button = self.ui.button(on_click=resume).props('icon=play_arrow outline').tooltip('resume automation')
         stop_button = self.ui.button(on_click=stop).props('icon=stop outline').tooltip('stop automation')
 
-        if app_conntrols is not None:
-            app_conntrols.main_buttons['play'] = AppButton('play_arrow', released=start)
-            app_conntrols.main_buttons['pause'] = AppButton('pause', released=pause)
-            app_conntrols.main_buttons['resume'] = AppButton('play_arrow', released=resume)
-            app_conntrols.main_buttons['stop'] = AppButton('stop', released=stop)
+        if app_controls is not None:
+            app_controls.main_buttons['play'] = AppButton('play_arrow', released=start)
+            app_controls.main_buttons['pause'] = AppButton('pause', released=pause)
+            app_controls.main_buttons['resume'] = AppButton('play_arrow', released=resume)
+            app_controls.main_buttons['stop'] = AppButton('stop', released=stop)
 
         async def refresh():
             play_button.visible = self.runtime.automator.is_stopped
@@ -52,13 +52,14 @@ class AutomationControls:
             resume_button.visible = self.runtime.automator.is_paused
             play_button.view.disable = default_automation is None or not self.runtime.automator.enabled
             stop_button.view.disable = self.runtime.automator.is_stopped
-            if app_conntrols is not None:
-                before = ' '.join([str(b) for b in app_conntrols.main_buttons.values()])
-                app_conntrols.main_buttons['play'].visible = play_button.visible
-                app_conntrols.main_buttons['pause'].visible = pause_button.visible
-                app_conntrols.main_buttons['resume'].visible = resume_button.visible
-                app_conntrols.main_buttons['play'].state = 'disabled' if play_button.view.disable else 'enabled'
-                app_conntrols.main_buttons['stop'].state = 'disabled' if stop_button.view.disable else 'enabled'
-                if ' '.join([str(b) for b in app_conntrols.main_buttons.values()]) != before:
-                    await app_conntrols.sync()
+            if app_controls is not None:
+                before = ' '.join(str(b) for b in app_controls.main_buttons.values())
+                app_controls.main_buttons['play'].visible = play_button.visible
+                app_controls.main_buttons['pause'].visible = pause_button.visible
+                app_controls.main_buttons['resume'].visible = resume_button.visible
+                app_controls.main_buttons['play'].state = 'disabled' if play_button.view.disable else 'enabled'
+                app_controls.main_buttons['stop'].state = 'disabled' if stop_button.view.disable else 'enabled'
+                after = ' '.join(str(b) for b in app_controls.main_buttons.values())
+                if after != before:
+                    await app_controls.sync()
         self.ui.timer(update_interval, refresh)

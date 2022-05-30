@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 from uuid import uuid4
 
@@ -15,7 +15,10 @@ class SimulatedObject:
     category_name: str
     position: rosys.world.Point3d
     size: Optional[tuple[float]] = None
-    uuid: str = str(uuid4())
+    uuid: str = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.uuid = str(uuid4())
 
 
 class DetectorSimulator(Detector):

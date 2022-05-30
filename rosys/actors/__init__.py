@@ -11,6 +11,6 @@ from .network_monitor import NetworkMonitor, NetworkStats
 from .odometer import Odometer
 from .path_planner import PathPlanner
 from .steerer import Steerer
-from .timelapse_recorder import TimelapsRecorder
+from .timelapse_recorder import TimelapseRecorder
 from .usb_camera_capture import UsbCameraCapture
 from .usb_camera_simulator import UsbCameraSimulator
