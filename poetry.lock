@@ -96,14 +96,6 @@ test = ["coverage[toml] (>=4.5)", "hypothesis (>=4.0)", "pytest (>=6.0)", "pytes
 trio = ["trio (>=0.16)"]
 
 [[package]]
-name = "approx"
-version = "0.0.1"
-description = "Set of tools for comparing complex objects"
-category = "dev"
-optional = false
-python-versions = "*"
-
-[[package]]
 name = "asgiref"
 version = "3.5.0"
 description = "ASGI specs, helper code, and adapters"
@@ -1392,7 +1384,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.9"
-content-hash = "9e26757230ead1b69cebe05fddd83fd28a8c18bde7ddbe207417ae363beef15d"
+content-hash = "9cbfe21083f8f4401e59208bf9103345b5a7ce9d76db48ce3095b6d6a4757607"
 
 [metadata.files]
 addict = [
@@ -1497,9 +1489,6 @@ aiosignal = [
 anyio = [
     {file = "anyio-3.5.0-py3-none-any.whl", hash = "sha256:b5fa16c5ff93fa1046f2eeb5bbff2dad4d3514d6cda61d02816dba34fa8c3c2e"},
     {file = "anyio-3.5.0.tar.gz", hash = "sha256:a0aeffe2fb1fdf374a8e4b471444f0f3ac4fb9f5a5b542b48824475e0042a5a6"},
-]
-approx = [
-    {file = "approx-0.0.1-py3-none-any.whl", hash = "sha256:1c9e12e73513b2d702582c8c526227924f0b036a80bd9f27feec2cb04d2f4f4a"},
 ]
 asgiref = [
     {file = "asgiref-3.5.0-py3-none-any.whl", hash = "sha256:88d59c13d634dcffe0510be048210188edd79aeccb6a6c9028cdad6f31d730a9"},
