@@ -25,12 +25,16 @@ class TimelapseRecorder(Actor):
     def __init__(self) -> None:
         super().__init__()
         os.makedirs(self.storage_path, exist_ok=True)
-        self.cover_font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 100)
+        self.big_cover_font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 100)
+        self.small_cover_font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 60)
 
     async def save(self, image: rosys.Image) -> None:
         await rosys.run.cpu_bound(save_image, image, self.storage_path)
 
-    async def compress_video(self) -> None:
+    async def compress_video(self, explenation: str = None) -> None:
+        old_infos = glob(f'{self.storage_path}/zzz*') + glob(f'{self.storage_path}/000*')
+        for f in old_infos:
+            os.remove(f)
         jpgs = sorted(glob(f'{self.storage_path}/*.jpg'))
         if len(jpgs) < 2:
             return
@@ -39,7 +43,11 @@ class TimelapseRecorder(Actor):
         self.log.info(f'creating video from {start} to {end}')
         duration = humanize.naturaldelta(end-start)
         for i in range(20):
-            self.create_cover(start.strftime('%d.%m.%Y %H:%M:%S'), duration, f'{self.storage_path}/0_cover_{i}.jpg')
+            self.create_info(start.strftime('%d.%m.%Y %H:%M:%S'), duration, f'{self.storage_path}/000_cover_{i}.jpg')
+        if explenation is not None:
+            title, sub = explenation.split('\n')
+            for i in range(20):
+                self.create_info(title, sub, f'{self.storage_path}/zzz_{i}.jpg')
         id = start.strftime('%Y%m%d_%H-%M-%S_' + duration.replace(' ', '_'))
         target_dir = self.storage_path + '/' + id
         os.mkdir(target_dir)
@@ -52,13 +60,14 @@ class TimelapseRecorder(Actor):
         for f in files:
             os.remove(f)
 
-    def create_cover(self, title: str, subtitle: str, filepath: str) -> None:
+    def create_info(self, title: str, subtitle: str, filepath: str) -> None:
         img = Image.new('RGB', (1600, 1200), 'black')
         draw = ImageDraw.Draw(img)
-        w, h = draw.textsize(title, font=self.cover_font)
-        draw.text((img.width / 2 - w / 2, img.height / 2 - h / 2 - 200), title, font=self.cover_font, fill='white')
-        w, h = draw.textsize(subtitle, font=self.cover_font)
-        draw.text((img.width / 2 - w / 2, img.height / 2 - h / 2 + 100), subtitle, font=self.cover_font, fill='white')
+        font = self.big_cover_font if len(subtitle) < 25 and len(title) < 25 else self.small_cover_font
+        w, h = draw.textsize(title, font=font)
+        draw.text((img.width / 2 - w / 2, img.height / 2 - h / 2 - 200), title, font=font, fill='white')
+        w, h = draw.textsize(subtitle, font=font)
+        draw.text((img.width / 2 - w / 2, img.height / 2 - h / 2 + 100), subtitle, font=font, fill='white')
         img.save(filepath)
 
 
