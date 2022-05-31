@@ -14,6 +14,7 @@ class Lizard(Actor):
         self.last_step = None
         event.register(event.Id.AUTOMATION_PAUSED, self._stop)
         event.register(event.Id.AUTOMATION_STOPPED, self._stop)
+        event.register(event.Id.AUTOMATION_FAILED, self._stop)
         self.responsiveness_stats: deque = deque(maxlen=100)
         self.update_stats: deque = deque(maxlen=100)
         self.processing_stats: deque = deque(maxlen=100)

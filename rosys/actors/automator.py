@@ -66,6 +66,7 @@ class Automator(Actor):
 
     def _handle_exception(self, e: Exception):
         self.stop(because='an exception occurred in an automation')
+        event.emit(event.Id.AUTOMATION_FAILED)
         if is_test:
             self.log.exception('automation failed', e)
 
