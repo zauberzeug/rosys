@@ -24,7 +24,7 @@ class TimelapseRecorder(Actor):
 
     def __init__(self) -> None:
         super().__init__()
-        os.makedirs(self.storage_path, exist_ok=True)
+        os.makedirs(self.storage_path + '/videos', exist_ok=True)
         self.big_cover_font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 100)
         self.small_cover_font = ImageFont.truetype(f'{rosys_dir}/RobotoMono-Medium.ttf', 60)
 
@@ -52,7 +52,7 @@ class TimelapseRecorder(Actor):
         target_dir = self.storage_path + '/' + id
         os.mkdir(target_dir)
         await rosys.run.sh(f'mv {self.storage_path}/*.jpg {target_dir}')
-        cmd = f'nice -n 19 ffmpeg -hide_banner -r 10 -pattern_type glob -i "{target_dir}/*.jpg" -s 1600x1200 -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{id}.mp4; mv {target_dir}/*mp4 {self.storage_path}; rm -r {target_dir};'
+        cmd = f'nice -n 19 ffmpeg -hide_banner -r 10 -pattern_type glob -i "{target_dir}/*.jpg" -s 1600x1200 -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{id}.mp4; mv {target_dir}/*mp4 {self.storage_path}/videos; rm -r {target_dir};'
         rosys.task_logger.create_task(rosys.run.sh(cmd, timeout=None), name='timelapse ffmpeg')
 
     def clear_jpegs(self) -> None:
