@@ -2,7 +2,7 @@ import psutil
 from nicegui.elements.chart import Chart
 from nicegui.ui import Ui
 
-from .settings import update_interval
+from .settings import Settings as settings
 
 
 class CpuUsage(Chart):
@@ -20,7 +20,7 @@ class CpuUsage(Chart):
             'legend': False,
             'credits': False,
         })
-        self.ui.timer(update_interval, self.update)
+        self.ui.timer(settings.update_interval, self.update)
 
     def update(self) -> bool:
         for i, v in enumerate(psutil.cpu_percent(percpu=True)):

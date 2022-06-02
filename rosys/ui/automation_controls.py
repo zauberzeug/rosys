@@ -5,7 +5,7 @@ from nicegui.ui import Ui
 from rosys.hardware import AppButton, AppControls
 
 from .. import Runtime
-from .settings import update_interval
+from .settings import Settings as settings
 
 
 class AutomationControls:
@@ -62,4 +62,4 @@ class AutomationControls:
                 after = ' '.join(str(b) for b in app_controls.main_buttons.values())
                 if after != before:
                     await app_controls.sync()
-        self.ui.timer(update_interval, refresh)
+        self.ui.timer(settings.update_interval, refresh)
