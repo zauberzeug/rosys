@@ -57,7 +57,7 @@ class RobotBrain(CommunicatingHardware):
                     continue
                 self.world.robot.hardware_time = millis / 1000 + self.world.robot.clock_offset
                 self.parse_core(words)
-            await self.parse_line(line)
+            self.parse_line(line)
         if millis is not None:
             self.world.robot.clock_offset = self.world.time - millis / 1000
 
@@ -68,9 +68,9 @@ class RobotBrain(CommunicatingHardware):
             time=self.world.robot.hardware_time,
         ))
 
-    async def parse_line(self, line: str) -> None:
+    def parse_line(self, line: str) -> None:
         if self.app_controls is not None:
-            await self.app_controls.parse(line)
+            self.app_controls.parse(line)
 
     async def send(self, msg: str):
         await self.communication.send_async(self.augment(msg))

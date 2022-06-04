@@ -42,13 +42,13 @@ class AppControls():
         '''show notification as Snackbar message on mobile device'''
         await self.robot_brain.send(f'bluetooth.send("POST /notification {msg}")')
 
-    async def parse(self, line: str) -> None:
+    def parse(self, line: str) -> None:
         if line.startswith('"'):
             line = line[1:-1]
         if line.startswith('app: '):
             line = line[5:]
             if line == 'connected':
-                await self.sync()
+                rosys.task_logger.create_task(self.sync(), name='sync app')
                 rosys.event.emit(rosys.event.Id.APP_CONNECTED)
             elif line.startswith('PUT /button/') and '/action' in line:
                 # line: "PUT /button/main/my_button/action pressed"
@@ -56,11 +56,11 @@ class AppControls():
                 _, group, name, _ = path.split('/')
                 buttons = self.main_buttons if group == 'main' else self.extra_buttons
                 if action == 'pressed':
-                    await self._invoke(buttons[name].pressed)
+                    self._invoke(buttons[name].pressed)
                 if action == 'released':
-                    await self._invoke(buttons[name].released)
+                    self._invoke(buttons[name].released)
                 if action == 'canceled':
-                    await self._invoke(buttons[name].canceled)
+                    self._invoke(buttons[name].canceled)
 
     async def sync(self):
         await self.send('PUT', lambda b: b.get_properties())
@@ -80,6 +80,6 @@ class AppControls():
 
     async def _invoke(self, callback: Callable):
         if inspect.iscoroutinefunction(callback):
-            await callback()
+            rosys.task_logger.create_task(callback(), name='app_controls._invoke')
         else:
             callback()
