@@ -77,8 +77,10 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1) -> st
 
 def tear_down() -> None:
     log.info('teardown thread_pool')
-    thread_pool.shutdown(wait=True, cancel_futures=True)
+    thread_pool.shutdown(wait=False, cancel_futures=True)
     if not is_test:
         log.info('teardown process_pool')
+        for _, process in process_pool._processes.items():
+            process.kill()
         process_pool.shutdown(wait=True, cancel_futures=True)
     log.info('teardown complete')
