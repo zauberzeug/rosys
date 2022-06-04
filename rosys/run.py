@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import uuid
+from asyncio.subprocess import Process
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from typing import Callable, Optional, Union
@@ -9,7 +10,9 @@ from .helpers import is_test
 
 process_pool = ProcessPoolExecutor()
 thread_pool = ThreadPoolExecutor(thread_name_prefix='run.py thread_pool')
-running_processes = []  # NOTE is used in rosys.test.Runtime to advance time slower until computation is done
+# NOTE is used in rosys.test.Runtime to advance time slower until computation is done
+running_cpu_bound_processes: list[int] = []
+running_sh_processes: list[Process] = []
 log = logging.getLogger('rosys.run')
 
 
@@ -39,11 +42,11 @@ async def cpu_bound(callback: Callable, *args: any):
 @contextmanager
 def cpu():
     id = str(uuid.uuid4())
-    running_processes.append(id)
+    running_cpu_bound_processes.append(id)
     try:
         yield
     finally:
-        running_processes.remove(id)
+        running_cpu_bound_processes.remove(id)
 
 
 async def sh(command: Union[list[str], str], timeout: Optional[float] = 1) -> str:
@@ -52,15 +55,16 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1) -> st
     returns: stdout
     '''
     cmd_str = command if isinstance(command, str) else ' '.join(command)
+    cmd_with_timeout = cmd_str if timeout is None else f'timeout {timeout} {cmd_str}'
     #log.info(f'running sh command "{cmd_str}"')
     try:
         proc = await asyncio.create_subprocess_shell(
-            cmd_str if timeout is None else f'timeout {timeout} {cmd_str}',
+            cmd_with_timeout,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
         )
+        running_sh_processes.append(proc)
     except:
-        log.exception(f'"{cmd_str}" failed')
         return 'could not execute "{cmd_str}"'
     else:
         try:
@@ -71,6 +75,8 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1) -> st
             log.exception(f'"{cmd_str}" failed; waiting for process to finish')
             proc.kill()
             return 'could not execute "{cmd_str}"'
+        finally:
+            running_sh_processes.remove(proc)
     #log.info(f'done executing "{cmd_str}"')
     return stdout.decode()
 
@@ -78,9 +84,9 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1) -> st
 def tear_down() -> None:
     log.info('teardown thread_pool')
     thread_pool.shutdown(wait=False, cancel_futures=True)
+    [p.kill() for p in running_sh_processes]
     if not is_test:
         log.info('teardown process_pool')
-        for _, process in process_pool._processes.items():
-            process.kill()
+        [p.kill() for p in process_pool._processes.values()]
         process_pool.shutdown(wait=True, cancel_futures=True)
     log.info('teardown complete')

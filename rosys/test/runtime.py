@@ -59,7 +59,7 @@ class TestRuntime(Runtime):
         while not condition():
             if self.world.time > start_time + timeout:
                 raise TimeoutError(f'condition took more than {timeout} s')
-            if not run.running_processes:
+            if not run.running_cpu_bound_processes:
                 self.world.set_time(self.world.time + dt)
                 await asyncio.sleep(0)
             else:
