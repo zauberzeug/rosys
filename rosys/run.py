@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import shlex
 import uuid
 from asyncio.subprocess import Process
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
@@ -54,12 +55,12 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1) -> st
     command: a sequence of program arguments as subprocess.Popen requires
     returns: stdout
     '''
-    cmd_str = command if isinstance(command, str) else ' '.join(command)
-    cmd_with_timeout = cmd_str if timeout is None else f'timeout {timeout} {cmd_str}'
-    #log.info(f'running sh command "{cmd_str}"')
+    command_list = shlex.split(command) if isinstance(command, str) else command
+    if timeout is not None:
+        command_list = ['timeout', str(timeout)] + command_list
     try:
         proc = await asyncio.create_subprocess_shell(
-            cmd_with_timeout,
+            ' '.join(command_list),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
         )
@@ -72,12 +73,11 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1) -> st
         except asyncio.exceptions.CancelledError:
             return
         except:
-            log.exception(f'"{cmd_str}" failed; waiting for process to finish')
+            log.exception(f'"{command_list}" failed; killing process')
             proc.kill()
-            return 'could not execute "{cmd_str}"'
+            return 'could not execute'
         finally:
             running_sh_processes.remove(proc)
-    #log.info(f'done executing "{cmd_str}"')
     return stdout.decode()
 
 
