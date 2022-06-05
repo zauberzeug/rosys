@@ -57,13 +57,19 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1, shell
     shell: weather a sub shell should be launched (default is False, for speed, use True if you need file globbing or other features);
     returns: stdout
     '''
-    command_list = shlex.split(command) if isinstance(command, str) else command
-    if timeout is not None:
-        command_list = ['timeout', str(timeout)] + command_list
-
     def popen() -> str:
+        if shell:  # convert to string
+            cmd = (' '.join(command)) if isinstance(command, list) else command
+        else:  # convert to list
+            cmd = shlex.split(command) if isinstance(command, str) else command
+        if timeout is not None:
+            if shell:
+                cmd = f'timeout {timeout} {cmd}'
+            else:
+                cmd = ['timeout', str(timeout)] + cmd
+        log.info(f'running sh: "{cmd}"')
         with subprocess.Popen(
-            ' '.join(command_list) if shell else command_list,
+            cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
             shell=shell,
