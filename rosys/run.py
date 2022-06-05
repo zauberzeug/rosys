@@ -61,8 +61,6 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1, shell
     if timeout is not None:
         command_list = ['timeout', str(timeout)] + command_list
 
-    ic(command_list)
-
     def popen() -> str:
         with subprocess.Popen(
             ' '.join(command_list) if shell else command_list,
