@@ -50,7 +50,7 @@ class TimelapseRecorder(Actor):
                 self.create_info(title, sub, f'{self.storage_path}/zzz_{i}.jpg')
         id = start.strftime('%Y%m%d_%H-%M-%S_' + duration.replace(' ', '_'))
         target_dir = self.storage_path + '/' + id
-        os.mkdir(target_dir)
+        os.makedirs(target_dir, exist_ok=True)
         await rosys.run.sh(f'mv {self.storage_path}/*.jpg {target_dir}')
         cmd = f'nice -n 19 ffmpeg -hide_banner -r 10 -pattern_type glob -i "{target_dir}/*.jpg" -s 1600x1200 -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{id}.mp4; mv {target_dir}/*mp4 {self.storage_path}/videos; rm -r {target_dir};'
         rosys.task_logger.create_task(rosys.run.sh(cmd, timeout=None), name='timelapse ffmpeg')
