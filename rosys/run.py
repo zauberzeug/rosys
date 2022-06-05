@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import shlex
+import subprocess
 import uuid
 from asyncio.subprocess import Process
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
@@ -58,27 +59,15 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1) -> st
     command_list = shlex.split(command) if isinstance(command, str) else command
     if timeout is not None:
         command_list = ['timeout', str(timeout)] + command_list
-    try:
-        proc = await asyncio.create_subprocess_shell(
-            ' '.join(command_list),
+    def popen() -> str:
+        with subprocess.Popen(
+            command_list,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
-        )
-        running_sh_processes.append(proc)
-    except:
-        return 'could not execute "{cmd_str}"'
-    else:
-        try:
-            stdout, *_ = await proc.communicate()
-        except asyncio.exceptions.CancelledError:
-            return
-        except:
-            log.exception(f'"{command_list}" failed; killing process')
-            proc.kill()
-            return 'could not execute'
-        finally:
-            running_sh_processes.remove(proc)
-    return stdout.decode()
+        ) as proc:
+            stdout, *_ = proc.communicate()
+            return stdout.decode('utf-8')
+    return await io_bound(popen)
 
 
 def tear_down() -> None:
