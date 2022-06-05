@@ -67,7 +67,7 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1, shell
                 cmd = f'timeout {timeout} {cmd}'
             else:
                 cmd = ['timeout', str(timeout)] + cmd
-        log.info(f'running sh: "{cmd}"')
+        #log.info(f'running sh: "{cmd}"')
         with subprocess.Popen(
             cmd,
             stdout=asyncio.subprocess.PIPE,
