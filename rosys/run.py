@@ -51,19 +51,24 @@ def cpu():
         running_cpu_bound_processes.remove(id)
 
 
-async def sh(command: Union[list[str], str], timeout: Optional[float] = 1) -> str:
+async def sh(command: Union[list[str], str], timeout: Optional[float] = 1, shell=False) -> str:
     '''executes a shell command
-    command: a sequence of program arguments as subprocess.Popen requires
+    command: a sequence of program arguments as subprocess.Popen requires or full string
+    shell: weather a sub shell should be launched (default is False, for speed, use True if you need file globbing or other features);
     returns: stdout
     '''
     command_list = shlex.split(command) if isinstance(command, str) else command
     if timeout is not None:
         command_list = ['timeout', str(timeout)] + command_list
+
+    ic(command_list)
+
     def popen() -> str:
         with subprocess.Popen(
-            command_list,
+            ' '.join(command_list) if shell else command_list,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
+            shell=shell,
         ) as proc:
             stdout, *_ = proc.communicate()
             return stdout.decode('utf-8')
