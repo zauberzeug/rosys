@@ -213,4 +213,4 @@ def _find_terminal_segment(obstacle_map: ObstacleMap, pose_groups: list[Delaunay
                         best_result = (PathSegment(spline=spline, backward=backward), g, p)
         if best_result is not None:
             return best_result
-    raise RuntimeError('could not find terminal segment')
+    raise RuntimeError(f'could not find terminal segment for {"start" if first else "end"}')
