@@ -20,7 +20,8 @@ class Lizard(Actor):
         self.processing_stats: deque = deque(maxlen=100)
 
     async def step(self):
-        await self.ensure_responsiveness()
+        if self.hardware.is_real:
+            await self.ensure_responsiveness()
         t = self.world.time
         await self.hardware.update()
         self.update_stats.append(self.world.time - t)
