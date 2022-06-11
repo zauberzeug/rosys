@@ -41,7 +41,7 @@ class Detector(Actor):
 
         @self.sio.on('connect_error')
         def on_sio_connect_error(err):
-            self.log.warning(f'sio connect error on {port}: {err.message}')
+            self.log.warning(f'sio connect error on {port}: {err}')
 
     @property
     def is_connected(self):
