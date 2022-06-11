@@ -2,6 +2,7 @@ import logging
 import os
 from typing import Optional
 
+import rosys
 import serial
 
 from .communication import Communication
@@ -51,7 +52,7 @@ class SerialCommunication(Communication):
     async def read(self) -> Optional[str]:
         if not self.serial.isOpen():
             return
-        self.buffer += self.serial.read_all().decode()
+        self.buffer += (await rosys.run.io_bound(self.serial.read_all)).decode()
         if '\n' in self.buffer:
             line, self.buffer = self.buffer.split('\r\n', 1)
             self.log.debug(f'read: {line}')
