@@ -1,7 +1,6 @@
 from typing import Optional
 
 from rosys import event
-from rosys.profiling import profile
 
 from ..communication import Communication
 from ..helpers import sleep
@@ -38,7 +37,6 @@ class RobotBrain(CommunicatingHardware):
         await super().stop()
         await self.send('wheels.off()')
 
-    @profile
     async def update(self):
         await super().update()
         millis = None
