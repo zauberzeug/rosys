@@ -47,11 +47,11 @@ class Runtime:
             self.odometer,
             self.steerer,
             self.automator,
-            self.asyncio_monitor,
+            # self.asyncio_monitor,
             GarbageCollector(),
         ]
-        if NetworkMonitor.is_operable():
-            self.with_actors(NetworkMonitor())
+        # if NetworkMonitor.is_operable():
+        #     self.with_actors(NetworkMonitor())
         if not is_test:
             self.with_actors(Backup(self.persistence))
         self.path_planner: Optional[PathPlanner] = None
