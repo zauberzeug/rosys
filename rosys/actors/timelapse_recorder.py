@@ -48,7 +48,7 @@ class TimelapseRecorder(Actor):
         os.makedirs(target_dir, exist_ok=True)
         os.makedirs(self.storage_path + '/videos', exist_ok=True)
         self.log.info(await rosys.run.sh(f'mv {self.storage_path}/*.jpg {target_dir}', shell=True))
-        cmd = f'nice -n 19 ffmpeg -hide_banner -r 10 -pattern_type glob -i "{target_dir}/*.jpg" -s 1600x1200 -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{id}.mp4; mv {target_dir}/*mp4 {self.storage_path}/videos; rm -r {target_dir};'
+        cmd = f'nice -n 19 ffmpeg -hide_banner -threads 1 -r 10 -pattern_type glob -i "{target_dir}/*.jpg" -s 1600x1200 -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{id}.mp4; mv {target_dir}/*mp4 {self.storage_path}/videos; rm -r {target_dir};'
         self.log.info(f'starting {cmd}')
         rosys.task_logger.create_task(rosys.run.sh(cmd, timeout=None, shell=True), name='timelapse ffmpeg')
 
