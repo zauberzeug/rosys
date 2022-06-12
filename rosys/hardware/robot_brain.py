@@ -1,6 +1,7 @@
 from typing import Optional
 
 from rosys import event
+from rosys.profiling import profile
 
 from ..communication import Communication
 from ..helpers import sleep
@@ -37,11 +38,13 @@ class RobotBrain(CommunicatingHardware):
         await super().stop()
         await self.send('wheels.off()')
 
+    @profile
     async def update(self):
         await super().update()
         millis = None
         while True:
-            line = self.check(await self.communication.read())
+            unchecked = await self.communication.read()
+            line = self.check(unchecked)
             if line is None or not line:
                 break
             words = line.split()
