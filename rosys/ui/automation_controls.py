@@ -47,12 +47,9 @@ class AutomationControls:
             app_controls.main_buttons['stop'] = AppButton('stop', released=stop)
 
         async def refresh():
-            if play_button.visible != self.runtime.automator.is_stopped:
-                play_button.visible = self.runtime.automator.is_stopped
-            if pause_button.visible != self.runtime.automator.is_running:
-                pause_button.visible = self.runtime.automator.is_running
-            if resume_button.visible != self.runtime.automator.is_paused:
-                resume_button.visible = self.runtime.automator.is_paused
+            play_button.visible = self.runtime.automator.is_stopped
+            pause_button.visible = self.runtime.automator.is_running
+            resume_button.visible = self.runtime.automator.is_paused
             play_button.view.disable = default_automation is None or not self.runtime.automator.enabled
             stop_button.view.disable = self.runtime.automator.is_stopped
             if app_controls is not None:

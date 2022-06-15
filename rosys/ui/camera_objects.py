@@ -4,8 +4,7 @@ from nicegui import ui
 from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Cylinder, Group, Texture
 from rosys.actors import CameraProjector
-from rosys.world import Camera
-from rosys.world.calibration import Calibration
+from rosys.world import Calibration, Camera
 
 from ..world import World
 
