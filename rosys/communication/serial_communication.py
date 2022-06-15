@@ -11,6 +11,7 @@ log = logging.getLogger('rosys.hardware.serial_communication')
 
 class SerialCommunication(Communication):
     baudrate: int = 115200
+    log_io: bool = False
 
     def __init__(self):
         super().__init__()
@@ -56,11 +57,13 @@ class SerialCommunication(Communication):
         self.buffer += s
         if '\n' in self.buffer:
             line, self.buffer = self.buffer.split('\r\n', 1)
-            #self.log.debug(f'read: {line}')
+            if self.log_io:
+                self.log.debug(f'read: {line}')
             return line
 
     async def send_async(self, line: str):
         if not self.serial.isOpen():
             return
         self.serial.write(f'{line}\n'.encode())
-        #self.log.debug(f'send: {line}')
+        if self.log_io:
+            self.log.debug(f'send: {line}')
