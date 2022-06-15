@@ -69,14 +69,17 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1, shell
                 cmd = ['timeout', str(timeout)] + cmd
         #log.info(f'running sh: "{cmd}"')
         try:
-            with subprocess.Popen(
+            proc = subprocess.Popen(
                 cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
                 shell=shell,
-            ) as proc:
-                stdout, *_ = proc.communicate()
-                return stdout.decode('utf-8')
+            )
+            running_sh_processes.append(proc)
+            stdout, *_ = proc.communicate()
+            proc.kill()
+            running_sh_processes.remove(proc)
+            return stdout.decode('utf-8')
         except:
             log.exception(f'unexpected exception with "{cmd}"')
     return await io_bound(popen)
