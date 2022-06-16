@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import shlex
 import subprocess
 import uuid
@@ -7,6 +8,8 @@ from asyncio.subprocess import Process
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from typing import Callable, Optional, Union
+
+import psutil
 
 from .helpers import is_test
 
@@ -51,13 +54,17 @@ def cpu():
         running_cpu_bound_processes.remove(id)
 
 
-async def sh(command: Union[list[str], str], timeout: Optional[float] = 1, shell: bool = False) -> str:
+async def sh(command: Union[list[str], str], timeout: Optional[float] = 1, shell: bool = False, nice: int = 0) -> str:
     '''executes a shell command
     command: a sequence of program arguments as subprocess.Popen requires or full string
     shell: whether a subshell should be launched (default is False, for speed, use True if you need file globbing or other features)
     returns: stdout
     '''
     def popen() -> str:
+        def preexec_fn():
+            pid = os.getpid()
+            ps = psutil.Process(pid)
+            ps.set_nice(nice)
         if shell:  # convert to string
             cmd = ' '.join(command) if isinstance(command, list) else command
         else:  # convert to list
@@ -74,6 +81,7 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1, shell
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
                 shell=shell,
+                preexec_fn=preexec_fn,
             )
             running_sh_processes.append(proc)
             stdout, *_ = proc.communicate()
