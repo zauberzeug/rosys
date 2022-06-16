@@ -1,4 +1,6 @@
 import asyncio
+import os
+import signal
 import time
 from multiprocessing import Pipe
 from typing import Any, Optional
@@ -26,9 +28,13 @@ class PathPlanner(Actor):
 
     async def tear_down(self):
         await super().tear_down()
+        self.log.info('stopping planner process...')
         if self.process.is_alive():
             self.process.kill()
-        self.log.info(f'teardown of {self.process} completed ({self.process.is_alive})')
+        # to really make sure it's gone (see https://trello.com/c/M9IvOg1c/698-reload-klappt-nicht-immer#comment-62aaeb74672e6759fba37b40)
+        os.kill(self.process.pid, signal.SIGKILL)
+        self.log.info(f'teardown of {self.process} completed ({self.process.is_alive()})')
+
         self.connection.close()
         self.process.connection.close()
 
