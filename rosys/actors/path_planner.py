@@ -5,6 +5,9 @@ import time
 from multiprocessing import Pipe
 from typing import Any, Optional
 
+import psutil
+import rosys
+
 from .. import run
 from ..helpers import is_test
 from ..world import PathSegment, Point, Pose, Spline
@@ -32,7 +35,10 @@ class PathPlanner(Actor):
         if self.process.is_alive():
             self.process.kill()
         # to really make sure it's gone (see https://trello.com/c/M9IvOg1c/698-reload-klappt-nicht-immer#comment-62aaeb74672e6759fba37b40)
-        os.kill(self.process.pid, signal.SIGKILL)
+        while psutil.pid_exists(self.process.pid):
+            self.log.info(f'{self.process.pid} still exists; killing again')
+            os.kill(self.process.pid, signal.SIGKILL)
+            await rosys.sleep(1)
         self.log.info(f'teardown of {self.process} completed ({self.process.is_alive()})')
 
         self.connection.close()
