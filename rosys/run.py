@@ -62,9 +62,12 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1, shell
     '''
     def popen() -> str:
         def preexec_fn():
-            pid = os.getpid()
-            ps = psutil.Process(pid)
-            ps.set_nice(nice)
+            try:
+                pid = os.getpid()
+                ps = psutil.Process(pid)
+                ps.nice = nice
+            except:
+                log.exception('prexec_fn failed')
         if shell:  # convert to string
             cmd = ' '.join(command) if isinstance(command, list) else command
         else:  # convert to list
@@ -88,8 +91,9 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1, shell
             proc.kill()
             running_sh_processes.remove(proc)
             return stdout.decode('utf-8')
-        except:
+        except e:
             log.exception(f'unexpected exception with "{cmd}"')
+            return 'unexpected exception: {e}'
     return await io_bound(popen)
 
 
