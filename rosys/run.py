@@ -54,20 +54,13 @@ def cpu():
         running_cpu_bound_processes.remove(id)
 
 
-async def sh(command: Union[list[str], str], timeout: Optional[float] = 1, shell: bool = False, nice: int = 0) -> str:
+async def sh(command: Union[list[str], str], timeout: Optional[float] = 1, shell: bool = False) -> str:
     '''executes a shell command
     command: a sequence of program arguments as subprocess.Popen requires or full string
     shell: whether a subshell should be launched (default is False, for speed, use True if you need file globbing or other features)
     returns: stdout
     '''
     def popen() -> str:
-        def preexec_fn():
-            try:
-                pid = os.getpid()
-                ps = psutil.Process(pid)
-                ps.nice = nice
-            except:
-                log.exception('prexec_fn failed')
         if shell:  # convert to string
             cmd = ' '.join(command) if isinstance(command, list) else command
         else:  # convert to list
@@ -84,7 +77,6 @@ async def sh(command: Union[list[str], str], timeout: Optional[float] = 1, shell
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
                 shell=shell,
-                preexec_fn=preexec_fn,
             )
             running_sh_processes.append(proc)
             stdout, *_ = proc.communicate()
