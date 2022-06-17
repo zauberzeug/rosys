@@ -50,3 +50,5 @@ class KeyboardControl:
             self.direction.y = 0
             self.direction.x = 0
             self.steerer.stop()
+
+        return False  # no page update
