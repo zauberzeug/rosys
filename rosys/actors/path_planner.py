@@ -32,12 +32,13 @@ class PathPlanner(Actor):
     async def tear_down(self):
         await super().tear_down()
         self.log.info('stopping planner process...')
+        pid = self.process.pid
         if self.process.is_alive():
             self.process.kill()
         # to really make sure it's gone (see https://trello.com/c/M9IvOg1c/698-reload-klappt-nicht-immer#comment-62aaeb74672e6759fba37b40)
-        while psutil.pid_exists(self.process.pid):
-            self.log.info(f'{self.process.pid} still exists; killing again')
-            os.kill(self.process.pid, signal.SIGKILL)
+        while pid is not None and psutil.pid_exists(pid):
+            self.log.info(f'{pid} still exists; killing again')
+            os.kill(pid, signal.SIGKILL)
             await rosys.sleep(1)
         self.log.info(f'teardown of {self.process} completed ({self.process.is_alive()})')
 
