@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import io
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from glob import glob
 from pathlib import Path
 from typing import Optional
@@ -35,7 +35,8 @@ class TimelapseRecorder(Actor):
 
     async def compress_video(self) -> None:
         jpgs = sorted(glob(f'{self.storage_path}/*.jpg'))
-        if len(jpgs) < 2:
+        if len(jpgs) < 20:
+            self.log.info(f'very few images ({len(jpgs)}); not creating video')
             return
         start_unix = int(Path(jpgs[0]).stem[:-4])
         start = datetime.fromtimestamp(start_unix)
