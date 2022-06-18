@@ -9,8 +9,6 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from typing import Callable, Optional, Union
 
-import psutil
-
 from .helpers import is_test
 
 process_pool = ProcessPoolExecutor()
