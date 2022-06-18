@@ -36,10 +36,11 @@ class PathPlanner(Actor):
         if self.process.is_alive():
             self.process.kill()
         # to really make sure it's gone (see https://trello.com/c/M9IvOg1c/698-reload-klappt-nicht-immer#comment-62aaeb74672e6759fba37b40)
-        while pid is not None and psutil.pid_exists(pid):
-            self.log.info(f'{pid} still exists; killing again')
-            os.kill(pid, signal.SIGKILL)
-            await rosys.sleep(1)
+        if not rosys.is_test:
+            while pid is not None and psutil.pid_exists(pid):
+                self.log.info(f'{pid} still exists; killing again')
+                os.kill(pid, signal.SIGKILL)
+                await rosys.sleep(1)
         self.log.info(f'teardown of {self.process} completed ({self.process.is_alive()})')
 
         self.connection.close()
