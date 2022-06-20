@@ -122,36 +122,40 @@ class DelaunayPlanner:
         path.append(last_segment)
 
         while True:
-            for s in range(len(path) - 1):
-                new_start = Pose(
-                    x=path[s].spline.start.x,
-                    y=path[s].spline.start.y,
-                    yaw=path[s].spline.yaw(0) + (np.pi if path[s].backward else 0),
-                )
-                new_end = Pose(
-                    x=path[s+1].spline.end.x,
-                    y=path[s+1].spline.end.y,
-                    yaw=path[s+1].spline.yaw(1) + (np.pi if path[s+1].backward else 0),
-                )
-                if abs(angle(new_start.yaw, new_end.yaw + np.pi)) < 0.01:
-                    continue
-                shortcuts = []
-                for new_backward in [False, True]:
-                    new_spline = Spline.from_poses(new_start, new_end, backward=new_backward)
-                    if not _is_healthy(new_spline):
+            shortcuts = []
+            for step_size in [1, 2]:
+                for s in range(len(path) - step_size):
+                    new_start = Pose(
+                        x=path[s].spline.start.x,
+                        y=path[s].spline.start.y,
+                        yaw=path[s].spline.yaw(0) + (np.pi if path[s].backward else 0),
+                    )
+                    new_end = Pose(
+                        x=path[s+step_size].spline.end.x,
+                        y=path[s+step_size].spline.end.y,
+                        yaw=path[s+step_size].spline.yaw(1) + (np.pi if path[s+step_size].backward else 0),
+                    )
+                    if abs(angle(new_start.yaw, new_end.yaw + np.pi)) < 0.01:
                         continue
-                    if self.obstacle_map.test_spline(new_spline, new_backward):
-                        continue
-                    combined_length = _estimate_length(path[s].spline) + _estimate_length(path[s + 1].spline)
-                    if .9 * _estimate_length(new_spline) > combined_length:
-                        continue
-                    shortcuts.append(PathSegment(spline=new_spline, backward=new_backward))
-                if any(shortcuts):
-                    lengths = [_estimate_length(segment.spline) for segment in shortcuts]
-                    path[s] = shortcuts[np.argmin(lengths)]
-                    del path[s+1]
+                    for new_backward in [False, True]:
+                        new_spline = Spline.from_poses(new_start, new_end, backward=new_backward)
+                        if not _is_healthy(new_spline):
+                            continue
+                        if self.obstacle_map.test_spline(new_spline, new_backward):
+                            continue
+                        combined_length = _estimate_length(path[s].spline) + _estimate_length(path[s+step_size].spline)
+                        if .9 * _estimate_length(new_spline) > combined_length:
+                            continue
+                        shortcuts.append(PathSegment(spline=new_spline, backward=new_backward))
+                    if shortcuts:
+                        lengths = [_estimate_length(segment.spline) for segment in shortcuts]
+                        path[s] = shortcuts[np.argmin(lengths)]
+                        for _ in range(step_size):
+                            del path[s+1]
+                        break  # restart while loop
+                if shortcuts:
                     break  # restart while loop
-            else:
+            if not shortcuts:
                 break  # exit while loop
 
         return path
