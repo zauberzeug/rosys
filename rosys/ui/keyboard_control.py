@@ -1,7 +1,9 @@
-import numpy as np
-from nicegui.ui import Ui
-from nicegui.events import KeyEventArguments
 import logging
+
+import numpy as np
+from nicegui.events import KeyEventArguments
+from nicegui.ui import Ui
+
 from ..actors import Steerer
 from ..world import Point
 
@@ -16,7 +18,7 @@ class KeyboardControl:
         self.direction = Point(x=0, y=0)
         self.speed = default_speed
 
-    def handle_keys(self, e: KeyEventArguments):
+    def handle_keys(self, e: KeyEventArguments) -> bool:
         self.log.debug(f'{e.key.name} -> {e.action} {e.modifiers}')
 
         # change speed via number key

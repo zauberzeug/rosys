@@ -69,12 +69,11 @@ class Spline(BaseModel):
         )
 
     @staticmethod
-    def from_points(start: Point, end: Point, *, backward: bool = False) -> Spline:
-        distance = 0.5 * start.distance(end) * (-1 if backward else 1)
+    def from_points(start: Point, end: Point) -> Spline:
         return Spline(
             start=start,
-            control1=start.interpolate(end, 0.3),
-            control2=start.interpolate(end, 0.7),
+            control1=start.interpolate(end, 0.5),
+            control2=start.interpolate(end, 0.5),
             end=end,
         )
 
@@ -111,20 +110,24 @@ class Spline(BaseModel):
 
     def max_curvature(self, t_min: float = 0.0, t_max: float = 1.0) -> float:
         poly = [
-            (1296 * self.m * self.p**2 + 1296 * self.m**3) * self.q -
-            1296 * self.n * self.p**3 - 1296 * self.m**2 * self.n * self.p,
-            (1620 * self.m * self.p**2 + 1620 * self.m**3) * self.r + 3240 * self.m * self.p * self.q**2 + (3240 * self.m**2 * self.n - 3240 *
-                                                                                                            self.n * self.p**2) * self.q - 1620 * self.o * self.p**3 + ((-1620 * self.m**2 * self.o) - 3240 * self.m * self.n**2) * self.p,
-            (5184 * self.m * self.p * self.q + 1296 * self.n * self.p**2 + 6480 * self.m**2 * self.n) * self.r + 1296 * self.m * self.q**3 - 1296 * self.n * self.p * self.q**2 +
-            ((-6480 * self.o * self.p**2) - 1296 * self.m**2 * self.o + 1296 * self.m * self.n**2) *
-            self.q + ((-5184 * self.m * self.n * self.o) - 1296 * self.n**3) * self.p,
-            1296 * self.m * self.p * self.r**2 + (1944 * self.m * self.q**2 + 6480 * self.n * self.p * self.q - 1296 * self.o * self.p**2 + 1296 * self.m**2 * self.o + 8424 * self.m *
-                                                  self.n**2) * self.r - 8424 * self.o * self.p * self.q**2 - 6480 * self.m * self.n * self.o * self.q + ((-1296 * self.m * self.o**2) - 1944 * self.n**2 * self.o) * self.p,
-            2592 * self.n * self.p * self.r**2 + (3888 * self.n * self.q**2 - 2592 * self.o * self.p * self.q + 2592 * self.m * self.n * self.o +
-                                                  3888 * self.n**3) * self.r - 3888 * self.o * self.q**3 + ((-2592 * self.m * self.o**2) - 3888 * self.n**2 * self.o) * self.q,
-            -324 * self.m * self.r**3 + (1944 * self.n * self.q + 324 * self.o * self.p) * self.r**2 + ((-1944 * self.o * self.q**2) - 324 *
-                                                                                                        self.m * self.o**2 + 1944 * self.n**2 * self.o) * self.r - 1944 * self.n * self.o**2 * self.q + 324 * self.o**3 * self.p,
-        ]
+            (1296 * self.m * self.p ** 2 + 1296 * self.m ** 3) * self.q - 1296 * self.n * self.p ** 3 - 1296 * self.m ** 2 *
+            self.n * self.p, (1620 * self.m * self.p ** 2 + 1620 * self.m ** 3) * self.r + 3240 * self.m * self.p * self.q
+            ** 2 + (3240 * self.m ** 2 * self.n - 3240 * self.n * self.p ** 2) * self.q - 1620 * self.o * self.p ** 3 +
+            ((-1620 * self.m ** 2 * self.o) - 3240 * self.m * self.n ** 2) * self.p,
+            (5184 * self.m * self.p * self.q + 1296 * self.n * self.p ** 2 + 6480 * self.m ** 2 * self.n) * self.r + 1296 *
+            self.m * self.q ** 3 - 1296 * self.n * self.p * self.q ** 2 +
+            ((-6480 * self.o * self.p ** 2) - 1296 * self.m ** 2 * self.o + 1296 * self.m * self.n ** 2) * self.q +
+            ((-5184 * self.m * self.n * self.o) - 1296 * self.n ** 3) * self.p, 1296 * self.m * self.p * self.r ** 2 +
+            (1944 * self.m * self.q ** 2 + 6480 * self.n * self.p * self.q - 1296 * self.o * self.p ** 2 + 1296 * self.m **
+             2 * self.o + 8424 * self.m * self.n ** 2) * self.r - 8424 * self.o * self.p * self.q ** 2 - 6480 * self.m *
+            self.n * self.o * self.q + ((-1296 * self.m * self.o ** 2) - 1944 * self.n ** 2 * self.o) * self.p, 2592 *
+            self.n * self.p * self.r ** 2 +
+            (3888 * self.n * self.q ** 2 - 2592 * self.o * self.p * self.q + 2592 * self.m * self.n * self.o + 3888 * self.
+             n ** 3) * self.r - 3888 * self.o * self.q ** 3 +
+            ((-2592 * self.m * self.o ** 2) - 3888 * self.n ** 2 * self.o) * self.q, -324 * self.m * self.r ** 3 +
+            (1944 * self.n * self.q + 324 * self.o * self.p) * self.r ** 2 +
+            ((-1944 * self.o * self.q ** 2) - 324 * self.m * self.o ** 2 + 1944 * self.n ** 2 * self.o) * self.r - 1944 *
+            self.n * self.o ** 2 * self.q + 324 * self.o ** 3 * self.p, ]
         roots = np.roots(poly)
         t = np.array([t0 for t0 in roots if np.isreal(t0) and t_min < t0 < t_max] + [t_min, t_max])
 

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import io
 import os
-from datetime import datetime, timedelta
+from datetime import datetime
 from glob import glob
 from pathlib import Path
 from typing import Optional
@@ -49,7 +49,7 @@ class TimelapseRecorder(Actor):
         os.makedirs(target_dir, exist_ok=True)
         os.makedirs(self.storage_path + '/videos', exist_ok=True)
         self.log.info(await rosys.run.sh(f'mv {self.storage_path}/*.jpg {target_dir}', shell=True))
-        # it seems that niceness of subprocess is relativ to own niceness, but we want an absolute niceness
+        # it seems that niceness of subprocess is relative to own niceness, but we want an absolute niceness
         absolute_niceness = 10 - os.nice(0)
         cmd = f'nice -n {absolute_niceness} ffmpeg -hide_banner -threads 1 -r 10 -pattern_type glob -i "{target_dir}/*.jpg" -s 1600x1200 -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{id}.mp4; mv {target_dir}/*mp4 {self.storage_path}/videos; rm -r {target_dir};'
         self.log.info(f'starting {cmd}')
