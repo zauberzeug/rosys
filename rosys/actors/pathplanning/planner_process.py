@@ -76,7 +76,7 @@ class PlannerProcess(Process):
                 return
             try:
                 if isinstance(cmd, PlannerSearchCommand):
-                    print(cmd, flush=True)
+                    self.log.info(cmd, flush=True)
                     additional_points = [cmd.start.point, cmd.goal.point]
                     self.planner.update_map(cmd.areas, cmd.obstacles, additional_points, cmd.deadline)
                     self.respond(cmd, self.planner.search(cmd.start, cmd.goal))
