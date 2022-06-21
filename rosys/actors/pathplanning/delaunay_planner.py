@@ -12,6 +12,9 @@ from .fast_spline import FastSpline
 from .grid import Grid
 from .obstacle_map import ObstacleMap
 
+GRID_RESOLUTION = 1.0
+MIN_MARGIN = 1.0
+
 
 class DelaunayPlanner:
     def __init__(self, robot_outline: list[tuple[float, float]]) -> None:
@@ -58,15 +61,23 @@ class DelaunayPlanner:
 
     def _create_graph(self):
         min_x, min_y, size_x, size_y = self.obstacle_map.grid.bbox
-        resolution = 1.0
-        X, Y = np.meshgrid(np.arange(min_x, min_x + size_x - resolution / 2, resolution),
-                           np.arange(min_y, min_y + size_y, resolution * np.sqrt(3) / 2))
-        X[::2] += resolution / 2
+        X, Y = np.meshgrid(np.arange(min_x, min_x + size_x - GRID_RESOLUTION / 2, GRID_RESOLUTION),
+                           np.arange(min_y, min_y + size_y, GRID_RESOLUTION * np.sqrt(3) / 2))
+        X[::2] += GRID_RESOLUTION / 2
+
         rows, cols = self.obstacle_map.grid.to_grid(X.flatten(), Y.flatten())
-        keep = np.reshape([not all(self.obstacle_map.stack[int(np.round(row)), int(np.round(col)), :])
-                           for row, col in zip(rows, cols)], X.shape)
         distance = ndimage.distance_transform_edt(1 - self.obstacle_map.map) * self.obstacle_map.grid.pixel_size
         D = ndimage.map_coordinates(distance, [[rows], [cols]], order=0).reshape(X.shape)
+        gradient_y, gradient_x = np.gradient(distance)
+        dD_dX = ndimage.map_coordinates(gradient_x, [[rows], [cols]], order=0).reshape(X.shape)
+        dD_dY = ndimage.map_coordinates(gradient_y, [[rows], [cols]], order=0).reshape(X.shape)
+        close = np.logical_and(0.0 < D, D < MIN_MARGIN)
+        dD = np.sqrt(dD_dX**2 + dD_dY**2)
+        X[close] += dD_dX[close] / dD[close] * (MIN_MARGIN - D[close])
+        Y[close] += dD_dY[close] / dD[close] * (MIN_MARGIN - D[close])
+
+        keep = np.reshape([not all(self.obstacle_map.stack[int(np.round(row)), int(np.round(col)), :])
+                           for row, col in zip(rows, cols)], X.shape)
         keep[1::2, :] = np.logical_and(keep[1::2, :], D[1::2, :] < 2)
         keep[::4, 1::2] = np.logical_and(keep[::4, 1::2], D[::4, 1::2] < 2)
         keep[2::4, ::2] = np.logical_and(keep[2::4, ::2], D[2::4, ::2] < 2)
@@ -81,7 +92,7 @@ class DelaunayPlanner:
                 poses=[
                     Pose(x=point[0], y=point[1], yaw=np.arctan2(neighbor[1] - point[1], neighbor[0] - point[0]))
                     for neighbor in self.tri_points[_tri_neighbors(self.tri_mesh, i)]
-                ]
+                ],
             )
             for i, point in enumerate(self.tri_points)
         ]
