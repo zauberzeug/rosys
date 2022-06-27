@@ -41,6 +41,7 @@ def process_image(image: NDArray, rotation: rosys.world.ImageRotation, crop: ros
 
 class UsbCameraCapture(Actor):
     interval: float = 0.3
+    lag_reduction: int = 1
 
     def __init__(self):
         super().__init__()
@@ -80,7 +81,7 @@ class UsbCameraCapture(Actor):
 
     def capture_image(self, id) -> Any:
         capture = self.devices[id].capture
-        for i in range(5):  # minimize lag (see https://stackoverflow.com/a/57309372/364388)
+        for i in range(self.lag_reduction):  # minimize lag (see https://stackoverflow.com/a/57309372/364388)
             capture.grab()
         _, image = capture.retrieve()
         return image
