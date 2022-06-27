@@ -114,6 +114,8 @@ class UsbCameraCapture(Actor):
             return
         self.last_scan = self.world.time
         output = await rosys.run.sh(['v4l2-ctl', '--list-devices'])
+        if output is None:
+            return
         output = '\n'.join([s for s in output.split('\n') if not s.startswith('Cannot open device')])
         for infos in output.split('\n\n'):
             match = re.search('\((.*)\)', infos)
