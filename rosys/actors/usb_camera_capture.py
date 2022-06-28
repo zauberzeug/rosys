@@ -1,9 +1,11 @@
+import io
 import re
 import shutil
 from dataclasses import dataclass
 from typing import Any, Optional
 
 import cv2
+import PIL
 import rosys
 from numpy.typing import NDArray
 
@@ -27,16 +29,19 @@ class Device:
     last_state: str = ''
 
 
-def process_image(image: NDArray, rotation: rosys.world.ImageRotation, crop: rosys.world.Rectangle = None) -> bytes:
+def process_image(data: bytes, rotation: rosys.world.ImageRotation, crop: rosys.world.Rectangle = None) -> bytes:
+    image = PIL.Image.open(io.BytesIO(data))
     if crop is not None:
-        image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]
+        image = image.crop((int(crop.x), int(crop.y), int(crop.x+crop.width), int(crop.y+crop.height)))
     if rotation == rosys.world.ImageRotation.LEFT:
         image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
     elif rotation == rosys.world.ImageRotation.RIGHT:
         image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
     elif rotation == rosys.world.ImageRotation.UPSIDE_DOWN:
         image = cv2.rotate(image, cv2.ROTATE_180)
-    return cv2.imencode('.jpg', image)[1].tobytes()
+    img_byte_arr = io.BytesIO()
+    image.save(img_byte_arr, format='JPEG')
+    return img_byte_arr.getvalue()
 
 
 class UsbCameraCapture(Actor):
@@ -71,7 +76,7 @@ class UsbCameraCapture(Actor):
                 if image is None:
                     await self.deactivate(camera)
                     continue
-                bytes = await rosys.run.cpu_bound(process_image, image, camera.rotation, camera.crop)
+                bytes = await rosys.run.cpu_bound(process_image, image[0].tobytes(), camera.rotation, camera.crop)
                 size = camera.resolution or ImageSize(width=800, height=600)
                 camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time, size=size))
             except:
@@ -80,10 +85,7 @@ class UsbCameraCapture(Actor):
         self.purge_old_images()
 
     def capture_image(self, id) -> Any:
-        capture = self.devices[id].capture
-        for i in range(self.lag_reduction):  # minimize lag (see https://stackoverflow.com/a/57309372/364388)
-            capture.grab()
-        _, image = capture.retrieve()
+        _, image = self.devices[id].capture.read()
         return image
 
     async def activate(self, uid: str) -> None:
@@ -164,6 +166,9 @@ class UsbCameraCapture(Actor):
         # NOTE enforcing motion jpeg for now
         if device.capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
             device.capture.set(cv2.CAP_PROP_FOURCC, MJPG)
+        # NOTE disable video decoding (see https://stackoverflow.com/questions/62664621/read-jpeg-frame-from-mjpeg-camera-without-decoding-in-python-opencv/70869738?noredirect=1#comment110818859_62664621)
+        if device.capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
+            device.capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
         # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
         if device.capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
             device.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
