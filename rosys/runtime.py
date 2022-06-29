@@ -5,11 +5,12 @@ import logging
 from asyncio.exceptions import CancelledError
 from typing import Optional, Type, TypeVar
 
-from . import Persistence, event, is_test, run, sleep, task_logger
+from . import Persistence, event, run, task_logger
 from .actors import (Actor, AsyncioMonitor, Automator, Backup, CameraProjector, Detector, DetectorSimulator,
                      GarbageCollector, Lizard, NetworkMonitor, Odometer, PathPlanner, Steerer, UsbCameraCapture,
                      UsbCameraSimulator)
 from .communication import CommunicationFactory
+from .core import is_test, sleep
 from .hardware import Hardware, RobotBrain, SimulatedHardware
 from .world import World
 

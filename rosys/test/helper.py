@@ -12,9 +12,7 @@ global_runtime: TestRuntime = None
 
 def set_global_runtime(runtime: TestRuntime):
     global global_runtime
-    global camera_count
     global_runtime = runtime
-    camera_count = 0
 
 
 def assert_pose(x: float, y: float, *, deg: float = None, linear_tolerance: float = 0.1, deg_tolerance: float = 1.0):

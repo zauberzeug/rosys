@@ -1,20 +1,19 @@
 import logging
 
 import numpy as np
+from nicegui import ui
 from nicegui.events import KeyEventArguments
-from nicegui.ui import Ui
 
 from ..actors import Steerer
 from ..world import Point
 
 
 class KeyboardControl:
-    steerer: Steerer  # will be set by rosys.ui.configure
-    ui: Ui  # will be set by rosys.ui.configure
 
-    def __init__(self, *, default_speed: float = 2.0):
+    def __init__(self, steerer: Steerer, *, default_speed: float = 2.0):
+        self.steerer = steerer
         self.log = logging.getLogger('rosys.ui.keyboard_control')
-        self.ui.keyboard(on_key=self.handle_keys, repeating=False)
+        ui.keyboard(on_key=self.handle_keys, repeating=False)
         self.direction = Point(x=0, y=0)
         self.speed = default_speed
 

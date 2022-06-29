@@ -1,21 +1,28 @@
 from typing import Optional
 
-from rosys import event
-from rosys.profiling import profile
-
+from .. import event
+from ..actors.odometer import Odometer
 from ..communication import Communication
+from ..core import core
 from ..helpers import sleep
-from ..world import Velocity, World
+from ..lifecycle import on_shutdown, on_startup
 from . import AppControls, CommunicatingHardware
 
 
 class RobotBrain(CommunicatingHardware):
 
-    def __init__(self, world: World, communication: Communication):
-        super().__init__(world, communication)
+    def __init__(self, odometer: Odometer, communication: Communication):
+        super().__init__(odometer, communication)
         self.app_controls = AppControls(self)
         event.register(event.Id.NEW_NOTIFICATION, self.app_controls.notify)
         self.waiting_list: dict[str, Optional[str]] = {}
+
+        self.clock_offset: Optional[float] = None
+        self.hardware_time: Optional[float] = None
+
+        on_startup(self.app_controls.sync)
+        on_shutdown(self.app_controls.clear)
+        on_shutdown(lambda: self.drive(0, 0))
 
     async def configure(self, filepath: str = 'lizard.txt'):
         await super().configure()
@@ -38,7 +45,6 @@ class RobotBrain(CommunicatingHardware):
         await super().stop()
         await self.send('wheels.off()')
 
-    @profile
     async def update(self):
         await super().update()
         millis = None
@@ -56,20 +62,16 @@ class RobotBrain(CommunicatingHardware):
                 continue
             if first == 'core':
                 millis = float(words.pop(0))
-                if self.world.robot.clock_offset is None:
+                if self.clock_offset is None:
                     continue
-                self.world.robot.hardware_time = millis / 1000 + self.world.robot.clock_offset
+                self.hardware_time = millis / 1000 + self.clock_offset
                 self.parse_core(words)
             self.parse_line(line)
         if millis is not None:
-            self.world.robot.clock_offset = self.world.time - millis / 1000
+            self.clock_offset = core.time - millis / 1000
 
-    def parse_core(self, words: list[str]):
-        self.world.robot.odometry.append(Velocity(
-            linear=float(words.pop(0)),
-            angular=float(words.pop(0)),
-            time=self.world.robot.hardware_time,
-        ))
+    def parse_core(self, words: list[str]) -> None:
+        self.odometer.add_odometry(float(words.pop(0)), float(words.pop(0)), self.hardware_time)
 
     def parse_line(self, line: str) -> None:
         if self.app_controls is not None:
@@ -78,21 +80,11 @@ class RobotBrain(CommunicatingHardware):
     async def send(self, msg: str):
         await self.communication.send_async(self.augment(msg))
 
-    async def startup(self):
-        await super().startup()
-        if self.app_controls is not None:
-            await self.app_controls.sync()
-
-    async def tear_down(self):
-        await super().tear_down()
-        if self.app_controls is not None:
-            await self.app_controls.clear()
-
     async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf')) -> Optional[str]:
         self.waiting_list[ack] = None
         await self.send(msg)
-        t0 = self.world.time
-        while self.waiting_list.get(ack) is None and self.world.time < t0 + timeout:
+        t0 = core.time
+        while self.waiting_list.get(ack) is None and core.time < t0 + timeout:
             await sleep(0.1)
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 

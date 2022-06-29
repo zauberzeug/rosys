@@ -1,17 +1,18 @@
+from nicegui import ui
 from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Extrusion, Group, Sphere, Stl
-from nicegui.ui import Ui
 
+from ..actors import Odometer
 from ..world import Robot
 from .settings import Settings as settings
 
 
 class RobotObject(Object3D):
-    robot: Robot = None  # will be set by rosys.ui.configure
-    ui: Ui = None  # will be set by rosys.ui.configure
 
-    def __init__(self, *, debug: bool = False):
+    def __init__(self, robot: Robot, odometer: Odometer, *, debug: bool = False):
         super().__init__('group')
+        self.robot = robot
+        self.odometer = odometer
         with self:
             with Group() as self.robot_group:
                 outline = list(map(list, self.robot.shape.outline))
@@ -23,7 +24,7 @@ class RobotObject(Object3D):
             with Group() as self.carrot_group:
                 Sphere(0.03).material('#ff8800')
                 Sphere(0.05).material('#ff8800').move(self.robot.parameters.carrot_offset)
-        self.ui.timer(settings.update_interval, self.update)
+        ui.timer(settings.update_interval, self.update)
 
     def with_stl(self, url: str, *,
                  x: float = 0, y: float = 0, z: float = 0,
@@ -36,8 +37,8 @@ class RobotObject(Object3D):
         return self
 
     def update(self) -> bool:
-        self.robot_group.move(self.robot.prediction.x, self.robot.prediction.y)
-        self.robot_group.rotate(0, 0, self.robot.prediction.yaw)
+        self.robot_group.move(self.odometer.prediction.x, self.odometer.prediction.y)
+        self.robot_group.rotate(0, 0, self.odometer.prediction.yaw)
         if self.robot.carrot is None:
             self.carrot_group.scale(0)
         else:

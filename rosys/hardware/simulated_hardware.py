@@ -1,11 +1,12 @@
-from ..world import Velocity, World
+from ..actors.odometer import Odometer
+from ..core import core
 from .hardware import Hardware
 
 
 class SimulatedHardware(Hardware):
 
-    def __init__(self, world: World):
-        super().__init__(world)
+    def __init__(self, odometer: Odometer):
+        super().__init__(odometer)
         self.linear_velocity: float = 0
         self.angular_velocity: float = 0
 
@@ -29,8 +30,4 @@ class SimulatedHardware(Hardware):
 
     async def update(self):
         await super().update()
-        self.world.robot.odometry.append(Velocity(
-            linear=self.linear_velocity,
-            angular=self.angular_velocity,
-            time=self.world.time,
-        ))
+        self.odometer.add_odometry(self.linear_velocity, self.angular_velocity, core.time)

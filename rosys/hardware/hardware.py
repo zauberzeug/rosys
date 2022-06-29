@@ -2,17 +2,17 @@ import abc
 import logging
 from typing import Optional
 
-from ..world import World
+from ..actors.odometer import Odometer
 from .app_controls import AppControls
 
 
 class Hardware(abc.ABC):
 
-    def __init__(self, world: World):
-        self.world = world
+    def __init__(self, odometer: Odometer):
         self.name = __name__[:-8] + self.__class__.__name__
         self.log = logging.getLogger(self.name)
         self.app_controls: Optional[AppControls] = None
+        self.odometer = odometer
 
     @abc.abstractmethod
     async def configure(self):
@@ -37,12 +37,6 @@ class Hardware(abc.ABC):
     @abc.abstractmethod
     async def update(self):
         '''Called by actors to update the world'''
-        return
-
-    async def startup(self):
-        return
-
-    async def tear_down(self):
         return
 
     @property

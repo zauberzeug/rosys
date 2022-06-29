@@ -1,5 +1,8 @@
+from typing import Optional
+
 from .. import event
-from ..world import PoseStep
+from ..core import core
+from ..world import Pose, PoseStep, Velocity
 from .actor import Actor
 
 
@@ -7,49 +10,56 @@ class Odometer(Actor):
 
     def __init__(self):
         super().__init__()
+        self.odometry: list[Velocity] = []
+        self.prediction: Pose = Pose()
+        self.detection: Optional[Pose] = None
+        self.current_velocity: Optional[Velocity] = None
+        self.last_movement: float = 0
 
-        self.last_time: float = None
-        self.steps: list[PoseStep] = []
-        event.register(event.Id.NEW_MACHINE_DATA, self.handle_velocity)
+        self._last_time: float = None
+        self._steps: list[PoseStep] = []
+        event.register(event.Id.NEW_MACHINE_DATA, self.process_odometry)
 
-    def handle_velocity(self):
-        if not self.world.robot.odometry:
+    def add_odometry(self, linear_velocity: float, angular_velocity: float, time: float) -> None:
+        self.odometry.append(Velocity(linear_velocity, angular_velocity, time))
+
+    def process_odometry(self) -> None:
+        if not self.odometry:
             return
-        while self.world.robot.odometry:
-            velocity = self.world.robot.odometry.pop(0)
+        while self.odometry:
+            velocity = self.odometry.pop(0)
 
-            if self.last_time is None:
-                self.last_time = velocity.time
+            if self._last_time is None:
+                self._last_time = velocity.time
                 continue
 
-            dt = velocity.time - self.last_time
-            self.last_time = velocity.time
+            dt = velocity.time - self._last_time
+            self._last_time = velocity.time
 
-            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=self.world.time)
-            self.steps.append(step)
-            self.world.robot.prediction += step
-            self.world.robot.simulation += step
+            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=core.time)
+            self._steps.append(step)
+            self.prediction += step
 
-            self.world.robot.current_velocity = velocity
+            self.current_velocity = velocity
 
             if step.linear or step.angular:
-                self.world.robot.last_movement = step.time
+                self.last_movement = step.time
                 event.emit(event.Id.ROBOT_MOVED)
 
-        self.prune_steps(self.world.time - 10.0)
+        self.prune_steps(core.time - 10.0)
 
-    def handle_detection(self):
-        if self.world.robot.detection is None:
+    def process_detection(self) -> None:
+        if self.detection is None:
             return
 
-        if self.steps and self.world.robot.detection.time < self.steps[0].time:
+        if self._steps and self.detection.time < self._steps[0].time:
             return
 
-        self.prune_steps(self.world.robot.detection.time)
-        self.world.robot.prediction = self.world.robot.detection.copy(deep=True)
-        for step in self.steps:
-            self.world.robot.prediction += step
+        self.prune_steps(self.detection.time)
+        self.prediction = self.detection.copy(deep=True)
+        for step in self._steps:
+            self.prediction += step
 
-    def prune_steps(self, cut_off_time: float):
-        while self.steps and self.steps[0].time < cut_off_time:
-            del self.steps[0]
+    def prune_steps(self, cut_off_time: float) -> None:
+        while self._steps and self._steps[0].time < cut_off_time:
+            del self._steps[0]

@@ -27,13 +27,5 @@ class Robot(BaseModel):
     name: Optional[str] = os.environ.get('ROBOT_ID')
     shape: RobotShape = RobotShape()
     parameters: RobotParameters = RobotParameters()
-    prediction: Pose = Pose()
-    detection: Optional[Pose]
-    simulation: Pose = Pose()
-    odometry: list[Velocity] = []
-    current_velocity: Optional[Velocity]
-    last_movement: float = 0
-    hardware_time: Optional[float]
     emergency_stop: bool = False
-    clock_offset: Optional[float]
     carrot: Optional[Pose]

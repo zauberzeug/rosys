@@ -2,6 +2,7 @@ from enum import Enum
 
 from .. import event
 from ..hardware import Hardware
+from ..lifecycle import on_repeat
 from . import Actor
 
 
@@ -12,7 +13,6 @@ class State(Enum):
 
 
 class Steerer(Actor):
-    interval: float = 0.05
     speed_scaling: float = 1
 
     def __init__(self, hardware: Hardware):
@@ -21,6 +21,8 @@ class Steerer(Actor):
         self.state = State.IDLE
         self.linear_speed = 0
         self.angular_speed = 0
+
+        on_repeat(self.step, 0.05)
 
     def start(self):
         self.log.info('start steering')
