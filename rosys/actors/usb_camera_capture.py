@@ -76,7 +76,11 @@ class UsbCameraCapture(Actor):
                 if image is None:
                     await self.deactivate(camera)
                     continue
-                bytes = await rosys.run.cpu_bound(process_image, image[0].tobytes(), camera.rotation, camera.crop)
+                if camera.crop is None and \
+                        (camera.rotation is None or camera.rotation == rosys.world.ImageRotation.NONE):
+                    bytes = image[0].tobytes()
+                else:
+                    bytes = await rosys.run.cpu_bound(process_image, image[0].tobytes(), camera.rotation, camera.crop)
                 size = camera.resolution or ImageSize(width=800, height=600)
                 camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time, size=size))
             except:
