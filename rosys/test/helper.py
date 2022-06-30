@@ -1,45 +1,91 @@
-from typing import Any, Union
+import asyncio
+import logging
+from typing import Any, Callable, Optional, Union
 
 import numpy as np
 import pytest
 
-from ..automations import drive_to
+from .. import core, run
+from ..actors import Automator, Driver, Odometer
 from ..world import Point, Point3d
-from .runtime import TestRuntime
 
-global_runtime: TestRuntime = None
+log = logging.getLogger(__name__)
 
-
-def set_global_runtime(runtime: TestRuntime):
-    global global_runtime
-    global_runtime = runtime
+automator: Optional[Automator] = None
+driver: Optional[Driver] = None
+odometer: Optional[Odometer] = None
 
 
-def assert_pose(x: float, y: float, *, deg: float = None, linear_tolerance: float = 0.1, deg_tolerance: float = 1.0):
-    pose = global_runtime.world.robot.prediction
-    assert pose.x == pytest.approx(x, abs=linear_tolerance)
-    assert pose.y == pytest.approx(y, abs=linear_tolerance)
+async def forward(seconds: Optional[float] = None,
+                  *,
+                  until: Optional[Union[int, float, Callable]] = None,
+                  x: Optional[float] = None,
+                  y: Optional[float] = None,
+                  tolerance: float = 0.1,
+                  dt: float = 0.01,
+                  timeout: float = 100):
+    start_time = core.time
+    if seconds is not None:
+        msg = f'forwarding {seconds=}'
+        def condition(): return core.time >= start_time + seconds
+        timeout = max(timeout, seconds)
+    elif isinstance(until, int) or isinstance(until, float):
+        msg = f'forwarding {until=}'
+        def condition(): return core.time >= until
+        timeout = max(timeout, until - start_time)
+    elif isinstance(until, Callable):
+        msg = f'forwarding {until=}'
+        condition = until
+    elif x is not None and y is not None:
+        assert odometer is not None
+        msg = f'forwarding to {x=} and {y=}'
+        def condition(): return (odometer.prediction.x - x)**2 + (odometer.prediction.y - y)**2 < tolerance**2
+    elif x is not None:
+        assert odometer is not None
+        msg = f'forwarding to {x=}'
+        def condition(): return abs(odometer.prediction.x - x) < tolerance
+    elif y is not None:
+        assert odometer is not None
+        msg = f'forwarding to {y=}'
+        def condition(): return abs(odometer.prediction.y - y) < tolerance
+    else:
+        raise Exception('invalid arguments')
 
+    log.info(f'\033[94m{msg}\033[0m')
+    while not condition():
+        if core.time > start_time + timeout:
+            raise TimeoutError(f'condition took more than {timeout} s')
+        if not run.running_cpu_bound_processes:
+            core.set_time(core.time + dt)
+            await asyncio.sleep(0)
+        else:
+            await asyncio.sleep(0.01)
+
+
+def assert_pose(x: float, y: float, *, deg: float = None, linear_tolerance: float = 0.1, deg_tolerance: float = 1.0) -> None:
+    assert odometer is not None
+    assert odometer.prediction.x == pytest.approx(x, abs=linear_tolerance)
+    assert odometer.prediction.y == pytest.approx(y, abs=linear_tolerance)
     if deg is not None:
-        assert np.rad2deg(pose.yaw) == pytest.approx(deg, abs=deg_tolerance)
+        assert np.rad2deg(odometer.prediction.yaw) == pytest.approx(deg, abs=deg_tolerance)
 
 
-def assert_point(actual: Union[Point, Point3d], expected: Union[Point, Point3d], tolerance=0.1):
+def assert_point(actual: Union[Point, Point3d], expected: Union[Point, Point3d], tolerance=0.1) -> None:
     assert type(actual) == type(expected)
-
     assert actual.x == pytest.approx(expected.x, abs=tolerance)
     assert actual.y == pytest.approx(expected.y, abs=tolerance)
-
     if type(actual) is Point3d:
         assert actual.z == pytest.approx(expected.z, abs=tolerance)
 
 
-async def automate_drive_to(x: float, y: float):
-    global_runtime.automator.start(drive_to(global_runtime.world, global_runtime.hardware, Point(x=x, y=y)))
+async def automate_drive_to(x: float, y: float) -> None:
+    assert automator is not None
+    assert driver is not None
+    automator.start(driver.drive_to(Point(x=x, y=y)))
 
 
 def approx(o1: Any, o2: Any) -> None:
-    # code is taken from https://github.com/pytest-dev/pytest/issues/6632#issuecomment-580507745
+    # https://github.com/pytest-dev/pytest/issues/6632#issuecomment-580507745
     assert type(o1) == type(o2)
 
     o1_keys = [v for v in dir(o1) if not v.startswith('__')]

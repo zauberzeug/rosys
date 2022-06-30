@@ -1,7 +1,8 @@
 import pytest
 from rosys import event, sleep
-from rosys.actors import Actor
-from rosys.test import TestRuntime
+from rosys.test import forward
+
+from conftest import TestRuntime
 
 
 @pytest.mark.asyncio
@@ -39,7 +40,7 @@ async def test_registering_same_handler_multiple_times():
 @pytest.mark.asyncio
 async def test_automatic_deregistering_if_reference_is_unused():
 
-    class Actor():
+    class Actor:
         def __init__(self) -> None:
             event.register('test', self.handler)
 
@@ -73,7 +74,7 @@ def test_id_enum_definition():
 @pytest.mark.asyncio
 async def test_fire_and_forget_with_emit(runtime: TestRuntime):
 
-    class TestActor(Actor):
+    class TestActor:
 
         async def handle_event(self, param):
             await sleep(1)
@@ -84,14 +85,13 @@ async def test_fire_and_forget_with_emit(runtime: TestRuntime):
     calls = []
 
     actor = TestActor()
-    runtime.with_actors(actor)
     event.register(event.Id.NEW_NOTIFICATION, actor.handle_event)
     event.emit(event.Id.NEW_NOTIFICATION, 42)
-    await runtime.forward(0.5)
+    await forward(0.5)
     assert len(calls) == 0
-    await runtime.forward(1.0)
+    await forward(1.0)
     assert calls[0] == 42
     with pytest.raises(RuntimeError) as ex_info:
-        await runtime.forward(1.0)
+        await forward(1.0)
     assert ex_info.value.__cause__ is not None
     assert 'some failure' in str(ex_info.value.__cause__)

@@ -4,6 +4,7 @@ from typing import Optional
 
 from .. import event
 from ..actors.odometer import Odometer
+from ..lifecycle import on_shutdown
 
 
 class Wheels(abc.ABC):
@@ -15,6 +16,8 @@ class Wheels(abc.ABC):
         event.register(event.Id.AUTOMATION_PAUSED, self.handle_stop_event)
         event.register(event.Id.AUTOMATION_STOPPED, self.handle_stop_event)
         event.register(event.Id.AUTOMATION_FAILED, self.handle_stop_event)
+
+        on_shutdown(self.stop)
 
     async def handle_stop_event(self, _: Optional[str]) -> None:
         await self.stop()

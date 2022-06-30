@@ -5,9 +5,10 @@ import uuid
 import numpy as np
 import pytest
 from rosys.actors.pathplanning.delaunay_planner import DelaunayPlanner
-from rosys.automations import drive_path
-from rosys.test import TestRuntime, assert_point
+from rosys.test import assert_point
 from rosys.world import Obstacle, Point, Pose, Spline
+
+from conftest import TestRuntime
 
 
 def create_obstacle(*, x: float, y: float, radius: float = 0.5) -> Obstacle:

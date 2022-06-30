@@ -2,7 +2,8 @@ import json
 
 import pytest
 from rosys import Persistence
-from rosys.test import TestRuntime
+
+from conftest import TestRuntime
 
 
 def test_dumping(runtime: TestRuntime):

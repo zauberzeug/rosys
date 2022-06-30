@@ -1,5 +1,5 @@
 from ..actors.odometer import Odometer
-from ..lifecycle import on_repeat, on_shutdown
+from ..lifecycle import on_repeat
 from .robot_brain import RobotBrain
 from .wheels import Wheels
 
@@ -11,7 +11,6 @@ class WheelsHardware(Wheels):
 
         self.robot_brain = robot_brain
 
-        on_shutdown(lambda: self.drive(0, 0))
         on_repeat(self.step, 0.01)
 
     async def drive(self, linear: float, angular: float) -> None:
