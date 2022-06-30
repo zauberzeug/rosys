@@ -1,7 +1,7 @@
 from enum import Enum
 
 from .. import event
-from ..hardware import Hardware
+from ..hardware import Wheels
 from ..lifecycle import on_repeat
 from . import Actor
 
@@ -15,9 +15,9 @@ class State(Enum):
 class Steerer(Actor):
     speed_scaling: float = 1
 
-    def __init__(self, hardware: Hardware):
+    def __init__(self, wheels: Wheels):
         super().__init__()
-        self.hardware = hardware
+        self.wheels = wheels
         self.state = State.IDLE
         self.linear_speed = 0
         self.angular_speed = 0
@@ -41,9 +41,9 @@ class Steerer(Actor):
 
     async def step(self):
         if self.state == State.STEERING:
-            await self.hardware.drive(self.linear_speed, self.angular_speed)
+            await self.wheels.drive(self.linear_speed, self.angular_speed)
         elif self.state == State.STOPPING:
-            await self.hardware.drive(0, 0)
+            await self.wheels.drive(0, 0)
             self.state = State.IDLE
 
     def __str__(self) -> str:

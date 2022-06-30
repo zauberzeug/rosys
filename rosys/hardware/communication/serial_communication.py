@@ -13,7 +13,7 @@ class SerialCommunication(Communication):
     baudrate: int = 115200
     log_io: bool = False
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.device_path = SerialCommunication.get_device_path()
         if self.device_path is None:
@@ -39,12 +39,12 @@ class SerialCommunication(Communication):
             if os.path.exists(device_path) and os.stat(device_path).st_gid > 0:
                 return device_path
 
-    def connect(self):
+    def connect(self) -> None:
         if not self.serial.isOpen():
             self.serial.open()
             self.log.debug(f'reconnected serial on {self.device_path}')
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         if self.serial.isOpen():
             self.serial.close()
             self.log.debug(f'disconnected serial on {self.device_path}')
@@ -61,7 +61,7 @@ class SerialCommunication(Communication):
                 self.log.debug(f'read: {line}')
             return line
 
-    async def send_async(self, line: str):
+    async def send(self, line: str) -> None:
         if not self.serial.isOpen():
             return
         self.serial.write(f'{line}\n'.encode())

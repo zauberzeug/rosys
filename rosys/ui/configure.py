@@ -1,8 +1,8 @@
 from nicegui.ui import Ui
-from rosys.ui.camera_objects import CameraObjects
 
 from .. import Runtime, event
-from ..hardware import CommunicatingHardware
+from ..hardware.wheels_hardware import WheelsHardware
+from ..ui.camera_objects import CameraObjects
 from . import routes
 from .asyncio_page import AsyncioPage
 from .automation_controls import AutomationControls
@@ -30,8 +30,8 @@ def configure(ui: Ui, runtime: Runtime):
     AutomationControls.runtime = runtime
     AutomationControls.ui = ui
     LizardSerialDebug.ui = ui
-    if isinstance(runtime.hardware, CommunicatingHardware):
-        LizardSerialDebug.communication = runtime.hardware.communication
+    if isinstance(runtime.wheels, WheelsHardware):
+        LizardSerialDebug.communication = runtime.wheels.robot_brain.communication
     ObjgraphPage.ui = ui
     PylootPage.ui = ui
     CpuUsage.ui = ui

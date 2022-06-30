@@ -3,17 +3,20 @@ from nicegui import ui
 
 import rosys
 import rosys.ui
-from rosys.actors import Lizard, Odometer, Steerer
-from rosys.communication import SerialCommunication
-from rosys.hardware import RobotBrain, SimulatedHardware
+from rosys.actors import Odometer, Steerer
+from rosys.hardware import RobotBrain, WheelsHardware, WheelSimulation, robot_brain
+from rosys.hardware.communication import SerialCommunication, communication
 
 # setup
 robot = rosys.world.Robot()
 odometer = Odometer()
-hardware = \
-    RobotBrain(odometer, SerialCommunication()) if SerialCommunication.is_possible() else SimulatedHardware(odometer)
-lizard = Lizard(hardware)
-steerer = Steerer(hardware)
+if SerialCommunication.is_possible():
+    communication = SerialCommunication()
+    robot_brain = RobotBrain(communication)
+    wheels = WheelsHardware(odometer, robot_brain)
+else:
+    wheels = WheelSimulation(odometer)
+steerer = Steerer(wheels)
 
 # keyboard control
 rosys.ui.keyboard_control(steerer)

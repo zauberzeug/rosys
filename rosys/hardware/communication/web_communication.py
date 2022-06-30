@@ -1,6 +1,8 @@
-from typing import Optional
-import socketio
 from collections import deque
+from typing import Optional
+
+import socketio
+
 from .communication import Communication
 
 
@@ -10,12 +12,11 @@ class WebCommunication(Communication):
     This makes it possible to keep developing on your fast computer
     while communicating with the hardware components connected to a physical Robot Brain.
     '''
-
     ip: str = '192.168.43.1'
     port: int = 8081
     host: str = f'ws://{ip}:{port}'
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.buffer: deque[str] = deque()
         self.sio = socketio.AsyncClient()
@@ -44,8 +45,8 @@ class WebCommunication(Communication):
         if self.buffer:
             return self.buffer.pop()
 
-    async def send_async(self, line: str):
+    async def send(self, line: str) -> None:
         await self.sio.emit('write', line)
 
-    async def tear_down(self):
+    async def tear_down(self) -> None:
         await self.sio.disconnect()

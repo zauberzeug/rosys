@@ -8,15 +8,15 @@ from typing import List
 
 from pydantic import BaseModel
 
-from ..communication import Communication
 from ..world import Velocity, World
-from . import CommunicatingHardware
+from .communication import Communication
 
 
-class RobotBrainLegacy(CommunicatingHardware):
+class RobotBrainLegacy:
 
     def __init__(self, world: World, configuration: List[HardwareGroup], communication: Communication):
-        super().__init__(world, communication=communication)
+        self.world = world
+        self.communication = communication
         self.configuration = configuration
 
     async def configure(self):

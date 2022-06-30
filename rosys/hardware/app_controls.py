@@ -27,20 +27,20 @@ class AppButton:
         return f'AppButton({self.icon},{self.state},{self.visible})'
 
 
-class AppControls():
+class AppControls:
 
-    def __init__(self, robot_brain: rosys.hardware.RobotBrain) -> None:
-        self.robot_brain = robot_brain
+    def __init__(self, communication: rosys.communication.Communication) -> None:
+        self.communication = communication
         self.main_buttons: dict[str, AppButton] = {}
         self.extra_buttons: dict[str, AppButton] = {}
 
     async def set_info(self, msg: str) -> None:
         '''replace constantly shown info text on mobile device'''
-        await self.robot_brain.send(f'bluetooth.send("PUT /info {msg}")')
+        await self.communication.send(f'bluetooth.send("PUT /info {msg}")')
 
     async def notify(self, msg: str) -> None:
         '''show notification as Snackbar message on mobile device'''
-        await self.robot_brain.send(f'bluetooth.send("POST /notification {msg}")')
+        await self.communication.send(f'bluetooth.send("POST /notification {msg}")')
 
     def parse(self, line: str) -> None:
         if line.startswith('"'):
@@ -74,7 +74,7 @@ class AppControls():
             for name, button in buttons.items():
                 for prop in get_properties(button):
                     cmd = f'bluetooth.send("{method} /button/{group}/{name}{prop}")'
-                    await self.robot_brain.send(cmd)
+                    await self.communication.send(cmd)
         await run('main', self.main_buttons)
         await run('extra', self.extra_buttons)
 

@@ -18,7 +18,6 @@ class Odometer(Actor):
 
         self._last_time: float = None
         self._steps: list[PoseStep] = []
-        event.register(event.Id.NEW_MACHINE_DATA, self.process_odometry)
 
     def add_odometry(self, linear_velocity: float, angular_velocity: float, time: float) -> None:
         self.odometry.append(Velocity(linear_velocity, angular_velocity, time))

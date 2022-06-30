@@ -1,13 +1,11 @@
 from nicegui.elements.chart import Chart
 from nicegui.ui import Ui
-from rosys.actors import Lizard
 
 from .settings import Settings as settings
 
 
 class LizardStats(Chart):
     ui: Ui
-    lizard: Lizard
 
     def __init__(self) -> None:
         super().__init__({

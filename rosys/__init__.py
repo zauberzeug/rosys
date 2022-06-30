@@ -1,4 +1,4 @@
-from . import actors, communication, event, hardware, run, task_logger, world
+from . import actors, event, hardware, run, task_logger, world
 from .core import core
 from .lifecycle import on_repeat, on_shutdown, on_startup, shutdown, startup
 from .persistence import Persistence

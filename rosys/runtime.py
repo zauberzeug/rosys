@@ -7,11 +7,9 @@ from typing import Optional, Type, TypeVar
 
 from . import Persistence, event, run, task_logger
 from .actors import (Actor, AsyncioMonitor, Automator, Backup, CameraProjector, Detector, DetectorSimulator,
-                     GarbageCollector, Lizard, NetworkMonitor, Odometer, PathPlanner, Steerer, UsbCameraCapture,
-                     UsbCameraSimulator)
-from .communication import CommunicationFactory
+                     GarbageCollector, Odometer, PathPlanner, Steerer, UsbCameraCapture, UsbCameraSimulator)
 from .core import is_test, sleep
-from .hardware import Hardware, RobotBrain, SimulatedHardware
+from .hardware import Wheels
 from .world import World
 
 T = TypeVar('T')
@@ -23,7 +21,7 @@ class Runtime:
     def __init__(self,
                  world: Optional[World] = None,
                  persistence: Optional[Persistence] = None,
-                 hardware: Optional[Hardware] = None):
+                 wheels: Wheels = None):
         self.world = world or World()
         Actor.world = self.world
         self.tasks = []
@@ -31,13 +29,12 @@ class Runtime:
             self.persistence = persistence or Persistence(self.world)
             self.persistence.restore()
 
-        self.hardware = hardware or self.create_hardware()
+        self.wheels = wheels
         if is_test:
             assert self.hardware.is_simulation, 'real hardware must not be used in tests'
-        self.lizard = Lizard(self.hardware)
         self.automator = Automator()
         self.odometer = Odometer()
-        self.steerer = Steerer(self.hardware)
+        self.steerer = Steerer(wheels)
         self.camera_projector = CameraProjector()
         self.asyncio_monitor = AsyncioMonitor()
         self.detector: Optional[Detector] = None  # NOTE can be set by runtime.with_detector()
@@ -56,13 +53,6 @@ class Runtime:
         if not is_test:
             self.with_actors(Backup(self.persistence))
         self.path_planner: Optional[PathPlanner] = None
-
-    def create_hardware(self):
-        communication = CommunicationFactory.create()
-        if communication is not None:
-            return RobotBrain(self.world, communication)
-        else:
-            return SimulatedHardware(self.world)
 
     def with_actors(self, *actors: list[Actor]) -> Runtime:
         '''Adds list of additional actors to runtime.'''

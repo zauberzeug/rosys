@@ -1,6 +1,6 @@
 import numpy as np
 
-from ..hardware import Hardware
+from ..hardware import Wheels
 from ..helpers import eliminate_pi, is_test, sleep
 from ..world import Point, Spline, World
 from .navigation import Carrot
@@ -14,7 +14,7 @@ def ramp(x: float, in_min: float, in_max: float, out_min: float, out_max: float,
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 
-async def drive_spline(spline: Spline, world: World, hardware: Hardware, *, flip_hook: bool = False, throttle_at_end: bool = True):
+async def drive_spline(spline: Spline, world: World, wheels: Wheels, *, flip_hook: bool = False, throttle_at_end: bool = True):
     if spline.start.distance(spline.end) < 0.01:
         return  # NOTE: skip tiny splines
 
@@ -39,11 +39,11 @@ async def drive_spline(spline: Spline, world: World, hardware: Hardware, *, flip
             linear *= ramp(carrot.target_distance, 0.5, 0.0, 1.0, 0.5)
         angular = linear * curvature
 
-        await hardware.drive(*throttle(world, linear, angular))
+        await wheels.drive(*throttle(world, linear, angular))
         await sleep(0.1)
 
     world.robot.carrot = None
-    await hardware.drive(0, 0)
+    await wheels.drive(0, 0)
 
 
 def throttle(world: World, linear: float, angular: float):
