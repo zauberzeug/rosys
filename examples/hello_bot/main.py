@@ -5,7 +5,7 @@ import rosys
 import rosys.ui
 from nicegui import ui
 from rosys.actors import Automator, Driver, Odometer, Steerer
-from rosys.hardware import RobotBrain, WheelsHardware, WheelSimulation
+from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
 from rosys.hardware.communication import SerialCommunication
 
 import log_configuration
@@ -20,7 +20,7 @@ if SerialCommunication.is_possible():
     robot_brain = RobotBrain(communication)
     wheels = WheelsHardware(odometer, robot_brain)
 else:
-    wheels = WheelSimulation(odometer)
+    wheels = WheelsSimulation(odometer)
 steerer = Steerer(wheels)
 driver = Driver(wheels)
 automator = Automator()

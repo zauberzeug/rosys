@@ -4,7 +4,7 @@ from ..lifecycle import on_repeat
 from .wheels import Wheels
 
 
-class WheelSimulation(Wheels):
+class WheelsSimulation(Wheels):
 
     def __init__(self, odometer: Odometer) -> None:
         super().__init__(odometer)
