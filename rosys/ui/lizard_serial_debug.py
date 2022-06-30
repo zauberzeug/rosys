@@ -1,16 +1,18 @@
 from nicegui.ui import Ui
+
 from .. import event
 from ..communication import Communication, SerialCommunication
 
 
 class LizardSerialDebug:
     ui: Ui = None  # will be set by rosys.ui.configure
-    communication: Communication = None  # will be set by rosys.ui.configure
+    communication: SerialCommunication = None  # will be set by rosys.ui.configure
 
     def __init__(self) -> None:
         if not isinstance(self.communication, SerialCommunication):
             return
         self.ui.switch('Lizard', value=self.communication.serial.isOpen(), on_change=self.toggle_communication)
+        self.ui.switch('Serial Log').bind_value(self.communication, 'log_io')
         self.input = self.ui.input(on_change=self.submit_message)
 
     async def submit_message(self):
