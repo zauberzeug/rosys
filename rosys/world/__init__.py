@@ -11,7 +11,7 @@ from .point import Point
 from .point3d import Point3d
 from .pose import Pose, PoseStep
 from .rectangle import Rectangle
-from .robot import Robot, RobotParameters, RobotShape
+from .robot import Robot, RobotShape
 from .rotation import Rotation
 from .spline import Spline
 from .upload import Upload

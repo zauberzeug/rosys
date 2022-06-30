@@ -1,9 +1,9 @@
+import logging
 from enum import Enum
 
 from .. import event
 from ..hardware import Wheels
 from ..lifecycle import on_repeat
-from . import Actor
 
 
 class State(Enum):
@@ -12,11 +12,12 @@ class State(Enum):
     STOPPING = 3
 
 
-class Steerer(Actor):
+class Steerer:
     speed_scaling: float = 1
 
     def __init__(self, wheels: Wheels):
-        super().__init__()
+        self.log = logging.getLogger(self.__class__.__name__)
+
         self.wheels = wheels
         self.state = State.IDLE
         self.linear_speed = 0

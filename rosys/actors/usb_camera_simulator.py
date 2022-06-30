@@ -5,18 +5,14 @@ from typing import Optional
 
 import PIL as pil
 import rosys
-from rosys.world.image import ImageSize
 
-from ..world import Image, UsbCamera
-from .actor import Actor
+from ..world import Image, ImageSize, UsbCamera
 
 
-class UsbCameraSimulator(Actor):
+class UsbCameraSimulator:
     interval: float = 1
 
     async def step(self):
-        await super().step()
-
         for camera in self.world.usb_cameras.values():
             if not camera.active:
                 continue

@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 import signal
 import time
@@ -9,18 +10,18 @@ import psutil
 import rosys
 
 from .. import run
-from ..helpers import is_test
+from ..core import is_test
 from ..world import PathSegment, Point, Pose, Spline
-from . import Actor
 from .pathplanning import (PlannerCommand, PlannerGrowMapCommand, PlannerObstacleDistanceCommand, PlannerProcess,
                            PlannerResponse, PlannerSearchCommand, PlannerTestCommand)
 
 
-class PathPlanner(Actor):
+class PathPlanner:
     interval: float = 0.1
 
     def __init__(self):
-        super().__init__()
+        self.log = logging.getLogger(self.__class__.__name__)
+
         self.connection, process_connection = Pipe()
         self.process = PlannerProcess(process_connection, self.world.robot.shape.outline)
         self.responses: dict[str, Any] = {}

@@ -36,7 +36,6 @@ def configure(ui: Ui, runtime: Runtime):
     PylootPage.ui = ui
     CpuUsage.ui = ui
     LizardStats.ui = ui
-    LizardStats.lizard = runtime.lizard
     AsyncioPage.ui = ui
     AsyncioPage.asyncio_monitor = runtime.asyncio_monitor
     CameraObjects.world = runtime.world

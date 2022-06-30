@@ -1,10 +1,11 @@
 from typing import Optional
+
 import numpy as np
+
 from ..world import Camera
-from .actor import Actor
 
 
-class CameraProjector(Actor):
+class CameraProjector:
     interval: float = 1.0
 
     async def step(self):

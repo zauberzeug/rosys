@@ -1,6 +1,6 @@
 import logging
+
 import icecream
-icecream.install()
 
 
 def setup():

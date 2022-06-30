@@ -1,10 +1,10 @@
-from .actor import Actor
 from .asyncio_monitor import AsyncioMonitor
 from .automator import Automator
 from .backup import Backup
 from .camera_projector import CameraProjector
 from .detector import Autoupload, Detector
 from .detector_simulator import DetectorSimulator, SimulatedObject
+from .driver import DriveParameters, Driver
 from .garbage_collector import GarbageCollector
 from .network_monitor import NetworkMonitor, NetworkStats
 from .odometer import Odometer

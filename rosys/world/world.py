@@ -5,7 +5,7 @@ import humanize
 from pydantic import BaseModel, PrivateAttr
 
 from .. import event
-from ..helpers import is_test
+from ..core import is_test
 from .area import Area
 from .camera import Camera
 from .obstacle import Obstacle

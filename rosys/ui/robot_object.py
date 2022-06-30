@@ -1,18 +1,21 @@
+from typing import Optional
+
 from nicegui import ui
 from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Extrusion, Group, Sphere, Stl
 
-from ..actors import Odometer
+from ..actors import Driver, Odometer
 from ..world import Robot
 from .settings import Settings as settings
 
 
 class RobotObject(Object3D):
 
-    def __init__(self, robot: Robot, odometer: Odometer, *, debug: bool = False):
+    def __init__(self, robot: Robot, odometer: Odometer, driver: Optional[Driver] = None, *, debug: bool = False):
         super().__init__('group')
         self.robot = robot
         self.odometer = odometer
+        self.driver = driver
         with self:
             with Group() as self.robot_group:
                 outline = list(map(list, self.robot.shape.outline))
@@ -20,10 +23,12 @@ class RobotObject(Object3D):
                 self.robot_object.material('#4488ff', 0.5)
                 if debug:
                     Sphere(0.03).material('#4488ff')
-                    Sphere(0.05).material('#4488ff').move(self.robot.parameters.hook_offset)
+                    if self.driver:
+                        Sphere(0.05).material('#4488ff').move(self.driver.parameters.hook_offset)
             with Group() as self.carrot_group:
                 Sphere(0.03).material('#ff8800')
-                Sphere(0.05).material('#ff8800').move(self.robot.parameters.carrot_offset)
+                if self.driver:
+                    Sphere(0.05).material('#ff8800').move(self.driver.parameters.carrot_offset)
         ui.timer(settings.update_interval, self.update)
 
     def with_stl(self, url: str, *,
@@ -39,10 +44,10 @@ class RobotObject(Object3D):
     def update(self) -> bool:
         self.robot_group.move(self.odometer.prediction.x, self.odometer.prediction.y)
         self.robot_group.rotate(0, 0, self.odometer.prediction.yaw)
-        if self.robot.carrot is None:
+        if self.driver is None or self.driver.carrot_pose is None:
             self.carrot_group.scale(0)
         else:
             self.carrot_group.scale(1)
-            self.carrot_group.move(self.robot.carrot.x, self.robot.carrot.y)
-            self.carrot_group.rotate(0, 0, self.robot.carrot.yaw)
+            self.carrot_group.move(self.driver.carrot_pose.x, self.driver.carrot_pose.y)
+            self.carrot_group.rotate(0, 0, self.driver.carrot_pose.yaw)
         return False  # NOTE: avoid JustPy page_update

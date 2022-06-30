@@ -1,12 +1,12 @@
 import gc
+import logging
 
 import psutil
 
-from ..helpers import sleep
-from .actor import Actor
+from ..core import sleep
 
 
-class GarbageCollector(Actor):
+class GarbageCollector:
     '''Disabling Python's automatic garbage collection to optimize performance.'''
     interval: float = 10 * 60
     mbyte_limit: float = 300
@@ -15,7 +15,7 @@ class GarbageCollector(Actor):
     finished_msg = 'finished garbage collection'
 
     def __init__(self) -> None:
-        super().__init__()
+        self.log = logging.getLogger(self.__class__.__name__)
         gc.disable()
 
     async def step(self):

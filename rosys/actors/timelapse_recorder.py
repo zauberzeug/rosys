@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import logging
 import os
 from datetime import datetime
 from glob import glob
@@ -10,7 +11,6 @@ from typing import Optional
 import humanize
 import rosys
 from PIL import Image, ImageDraw, ImageFont
-from rosys.actors import Actor
 
 from ..world import World
 
@@ -21,13 +21,14 @@ big_cover_font = ImageFont.truetype(font, 100)
 small_cover_font = ImageFont.truetype(font, 60)
 
 
-class TimelapseRecorder(Actor):
+class TimelapseRecorder:
     interval: float = 1
     world: World
     storage_path: str = os.path.expanduser('~/.rosys/timelapse')
 
     def __init__(self) -> None:
-        super().__init__()
+        self.log = logging.getLogger(self.__class__.__name__)
+
         os.makedirs(self.storage_path + '/videos', exist_ok=True)
 
     async def save(self, image: rosys.Image) -> None:

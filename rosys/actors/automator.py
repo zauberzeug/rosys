@@ -1,19 +1,25 @@
 import asyncio
+import logging
 from typing import Coroutine, Optional
 
 from .. import event, task_logger
-from ..automations import Automation
-from ..helpers import is_test
-from . import Actor
+from ..automation import Automation
+from ..core import is_test
+from ..lifecycle import on_shutdown
 
 
-class Automator(Actor):
+class Automator:
+
     def __init__(self) -> None:
-        super().__init__()
+        self.log = logging.getLogger(self.__class__.__name__)
+
         self.enabled: bool = True
         self.automation: Optional[Automation] = None
+
         event.register(event.Id.PAUSE_AUTOMATION, self.pause)
         event.register(event.Id.STOP_AUTOMATION, self.stop)
+
+        on_shutdown(lambda: self.stop(because='automator is shutting down'))
 
     @property
     def is_stopped(self) -> bool:
@@ -27,7 +33,7 @@ class Automator(Actor):
     def is_paused(self) -> bool:
         return self.automation is not None and self.automation.is_paused
 
-    def start(self, coro: Coroutine):
+    def start(self, coro: Coroutine) -> None:
         if not self.enabled:
             coro.close()
             return
@@ -37,13 +43,13 @@ class Automator(Actor):
         event.emit(event.Id.AUTOMATION_STARTED)
         event.emit(event.Id.NEW_NOTIFICATION, f'automation started')
 
-    def pause(self, because: str):
+    def pause(self, because: str) -> None:
         if self.is_running:
             self.automation.pause()
             event.emit(event.Id.AUTOMATION_PAUSED, because)
             event.emit(event.Id.NEW_NOTIFICATION, f'automation paused because {because}')
 
-    def resume(self):
+    def resume(self) -> None:
         if not self.enabled:
             return
         if self.is_paused:
@@ -51,30 +57,26 @@ class Automator(Actor):
             event.emit(event.Id.AUTOMATION_RESUMED)
             event.emit(event.Id.NEW_NOTIFICATION, f'automation resumed')
 
-    def stop(self, because: str):
+    def stop(self, because: str) -> None:
         if not self.is_stopped:
             self.automation.stop()
             event.emit(event.Id.AUTOMATION_STOPPED, because)
             event.emit(event.Id.NEW_NOTIFICATION, f'automation stopped because {because}')
 
-    def enable(self):
+    def enable(self) -> None:
         self.enabled = True
 
-    def disable(self, because: str):
+    def disable(self, because: str) -> None:
         self.stop(because)
         self.enabled = False
 
-    def _handle_exception(self, e: Exception):
+    def _handle_exception(self, e: Exception) -> None:
         self.stop(because='an exception occurred in an automation')
         event.emit(event.Id.AUTOMATION_FAILED, str(e))
         event.emit(event.Id.NEW_NOTIFICATION, f'automation failed')
         if is_test:
             self.log.exception('automation failed', e)
 
-    def _on_complete(self):
+    def _on_complete(self) -> None:
         event.emit(event.Id.AUTOMATION_COMPLETED)
         event.emit(event.Id.NEW_NOTIFICATION, f'automation completed')
-
-    async def tear_down(self):
-        await super().tear_down()
-        self.stop(because='automator is shutting down')

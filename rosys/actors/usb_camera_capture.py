@@ -1,4 +1,5 @@
 import io
+import logging
 import re
 import shutil
 from dataclasses import dataclass
@@ -7,11 +8,9 @@ from typing import Any, Optional
 import cv2
 import PIL
 import rosys
-from numpy.typing import NDArray
 
 from .. import event
 from ..world import Image, ImageSize, UsbCamera
-from .actor import Actor
 
 MJPG = cv2.VideoWriter_fourcc(*'MJPG')
 SCAN_INTERVAL = 10
@@ -44,17 +43,17 @@ def process_image(data: bytes, rotation: rosys.world.ImageRotation, crop: rosys.
     return img_byte_arr.getvalue()
 
 
-class UsbCameraCapture(Actor):
+class UsbCameraCapture:
     interval: float = 0.3
     lag_reduction: int = 1
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self) -> None:
+        self.log = logging.getLogger(self.__class__.__name__)
+
         self.devices: dict[str, Device] = {}
         self.last_scan: Optional[float] = None
 
-    async def step(self):
-        await super().step()
+    async def step(self) -> None:
         await self.update_device_list()
         for uid, camera in self.world.usb_cameras.items():
             if not camera.active:
@@ -153,8 +152,7 @@ class UsbCameraCapture(Actor):
         except:
             self.log.exception(f'{index} device failed')
 
-    async def tear_down(self):
-        await super().tear_down()
+    async def tear_down(self) -> None:
         for camera in self.world.usb_cameras.values():
             await self.deactivate(camera)
         self.devices.clear()
@@ -163,7 +161,7 @@ class UsbCameraCapture(Actor):
     def is_operable() -> bool:
         return shutil.which('v4l2-ctl') is not None
 
-    def set_parameters(self, camera: UsbCamera, device: Device):
+    def set_parameters(self, camera: UsbCamera, device: Device) -> None:
         camera.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
         if camera.exposure is None:
             camera.exposure = device.exposure_default / device.exposure_max
@@ -204,7 +202,7 @@ class UsbCameraCapture(Actor):
         device.exposure_max = int(match.group(2))
         device.exposure_default = int(match.group(3))
 
-    async def run_v4l(self, device: Device, *args):
+    async def run_v4l(self, device: Device, *args) -> None:
         cmd = ['v4l2-ctl', '-d', str(device.video_id)]
         cmd.extend(args)
         return await rosys.run.sh(cmd)

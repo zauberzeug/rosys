@@ -6,8 +6,8 @@ from asyncio.exceptions import CancelledError
 from typing import Optional, Type, TypeVar
 
 from . import Persistence, event, run, task_logger
-from .actors import (Actor, AsyncioMonitor, Automator, Backup, CameraProjector, Detector, DetectorSimulator,
-                     GarbageCollector, Odometer, PathPlanner, Steerer, UsbCameraCapture, UsbCameraSimulator)
+from .actors import (AsyncioMonitor, Automator, Backup, CameraProjector, Detector, DetectorSimulator, GarbageCollector,
+                     Odometer, PathPlanner, Steerer, UsbCameraCapture, UsbCameraSimulator)
 from .core import is_test, sleep
 from .hardware import Wheels
 from .world import World
@@ -23,7 +23,6 @@ class Runtime:
                  persistence: Optional[Persistence] = None,
                  wheels: Wheels = None):
         self.world = world or World()
-        Actor.world = self.world
         self.tasks = []
         if not is_test:
             self.persistence = persistence or Persistence(self.world)
@@ -41,7 +40,6 @@ class Runtime:
         self.usb_camera_simulator: Optional[UsbCameraSimulator] = None  # NOTE can be set by runtime.with_usb_cameras()
         self.actors = [
             self.camera_projector,
-            self.lizard,
             self.odometer,
             self.steerer,
             self.automator,

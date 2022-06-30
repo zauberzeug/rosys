@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -6,9 +7,8 @@ import socketio.exceptions
 from aenum import Enum, auto
 
 from .. import event, task_logger
-from ..helpers import sleep
+from ..core import sleep
 from ..world import BoxDetection, Detections, Image, PointDetection
-from .actor import Actor
 
 
 class Autoupload(Enum, init='value __doc__'):
@@ -23,11 +23,12 @@ class Autoupload(Enum, init='value __doc__'):
     ALL = auto(), 'submit all images which are run through the detector'
 
 
-class Detector(Actor):
+class Detector:
     interval: float = 1.0
 
     def __init__(self, port: int = 8004, name: str = 'detector'):
-        super().__init__()
+        self.log = logging.getLogger(self.__class__.__name__)
+
         self.sio = socketio.AsyncClient()
         self.is_detecting: bool = False
         self.next_image: Optional[Image] = None

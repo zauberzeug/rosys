@@ -1,9 +1,9 @@
+import logging
 import os
 import re
 from collections import defaultdict
 from dataclasses import dataclass
 
-from .actor import Actor
 from .garbage_collector import GarbageCollector
 
 
@@ -21,16 +21,15 @@ task_pattern = re.compile(r".*name=['\"](.*)['\"] coro=<(.*)> .*")
 coro_pattern = re.compile(r"(.*) (running at .*)")
 
 
-class AsyncioMonitor(Actor):
+class AsyncioMonitor:
     interval: float = 10
 
     def __init__(self) -> None:
-        super().__init__()
+        self.log = logging.getLogger(self.__class__.__name__)
         self.timings: dict[str, list[Measurement]] = defaultdict(list)
         self.log_position = None
 
     async def step(self):
-        await super().step()
         logfile = os.path.expanduser('~/.rosys/debug.log')
         if not os.path.isfile(logfile):
             return

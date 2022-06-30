@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 import shlex
 import subprocess
 import uuid
@@ -9,7 +8,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from typing import Callable, Optional, Union
 
-from .helpers import is_test
+from .core import is_test
 
 process_pool = ProcessPoolExecutor()
 thread_pool = ThreadPoolExecutor(thread_name_prefix='run.py thread_pool')

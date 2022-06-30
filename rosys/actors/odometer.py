@@ -1,15 +1,16 @@
+import logging
 from typing import Optional
 
 from .. import event
 from ..core import core
 from ..world import Pose, PoseStep, Velocity
-from .actor import Actor
 
 
-class Odometer(Actor):
+class Odometer:
 
     def __init__(self):
-        super().__init__()
+        self.log = logging.getLogger(self.__class__.__name__)
+
         self.odometry: list[Velocity] = []
         self.prediction: Pose = Pose()
         self.detection: Optional[Pose] = None

@@ -1,8 +1,7 @@
 from typing import Optional
 
 from .. import event
-from ..core import core
-from ..helpers import sleep
+from ..core import core, sleep
 from ..lifecycle import on_shutdown, on_startup
 from . import AppControls
 from .communication import Communication

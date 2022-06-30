@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from asyncio import CancelledError, Task
 from typing import Awaitable, Callable
@@ -31,7 +32,7 @@ async def startup() -> None:
 
     for handler in startup_handlers:
         try:
-            await handler()
+            await _invoke(handler)
         except:
             log.exception(f'error while starting handler "{handler.__qualname__}"')
             continue
@@ -46,7 +47,7 @@ async def _repeat_one_handler(handler: Callable | Awaitable, interval: float) ->
     while True:
         start = core.time
         try:
-            await handler()
+            await _invoke(handler)
             dt = core.time - start
         except (CancelledError, GeneratorExit):
             return
@@ -70,4 +71,11 @@ async def shutdown() -> None:
     run.tear_down()
     [t.cancel() for t in tasks]
     for handler in shutdown_handlers:
+        await _invoke(handler)
+
+
+async def _invoke(handler: Callable | Awaitable) -> None:
+    if asyncio.iscoroutinefunction(handler):
         await handler()
+    else:
+        handler()

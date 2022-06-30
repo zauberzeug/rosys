@@ -1,15 +1,16 @@
 import asyncio
+import logging
 import sys
 import time as system_time
 
 import numpy as np
-from rosys.actors import Actor
 from rosys.core.notification import Notification
 
 
-class Core(Actor):
+class Core:
 
     def __init__(self):
+        self.log = logging.getLogger(self.__class__.__name__)
         self._time = system_time.time()
         self.notifications: list[Notification] = []
         self.is_test = 'pytest' in sys.modules

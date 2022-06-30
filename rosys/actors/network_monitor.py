@@ -1,8 +1,9 @@
-from dataclasses import dataclass
+import logging
 import re
 import shutil
+from dataclasses import dataclass
+
 import rosys
-from .actor import Actor
 
 
 @dataclass
@@ -22,11 +23,11 @@ class NetworkStats:
         return f'{self.tx_errors}/{self.rx_errors} errors and {self.tx_dropped}/{self.rx_dropped} dropped'
 
 
-class NetworkMonitor(Actor):
+class NetworkMonitor:
     interval: float = 60
 
     def __init__(self) -> None:
-        super().__init__()
+        self.log = logging.getLogger(self.__class__.__name__)
         self.interfaces: dict[str, NetworkStats] = {}
 
     @staticmethod

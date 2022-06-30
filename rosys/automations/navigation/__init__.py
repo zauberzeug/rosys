@@ -1,1 +1,0 @@
-from .carrot import Carrot
