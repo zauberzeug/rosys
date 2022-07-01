@@ -3,10 +3,8 @@ import json
 import pytest
 from rosys import Persistence
 
-from conftest import TestRuntime
 
-
-def test_dumping(runtime: TestRuntime):
+def test_dumping():
     data = Persistence(runtime.world).dump()
     assert 'areas' in data
     assert 'obstacles' in data
@@ -14,7 +12,7 @@ def test_dumping(runtime: TestRuntime):
 
 
 @pytest.mark.asyncio
-async def test_json_view(runtime: TestRuntime):
+async def test_json_view():
     '''exporting whole world as json is needed for example for logging/inspection'''
     runtime.with_usb_cameras()
     await runtime.forward(1)

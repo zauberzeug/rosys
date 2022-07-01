@@ -1,8 +1,13 @@
 import inspect
+import sys
 import time
 from contextlib import contextmanager
 
 import numpy as np
+
+
+def is_test() -> bool:
+    return 'pytest' in sys.modules
 
 
 def measure(*, reset: bool = False, ms: bool = False):

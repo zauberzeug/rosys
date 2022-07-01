@@ -9,8 +9,7 @@ from typing import Any, Optional
 import psutil
 import rosys
 
-from .. import run
-from ..core import is_test
+from .. import run, runtime
 from ..world import PathSegment, Point, Pose, Spline
 from .pathplanning import (PlannerCommand, PlannerGrowMapCommand, PlannerObstacleDistanceCommand, PlannerProcess,
                            PlannerResponse, PlannerSearchCommand, PlannerTestCommand)
@@ -94,7 +93,7 @@ class PathPlanner:
             while command.id not in self.responses:
                 if time.time() > command.deadline:
                     raise TimeoutError(f'process call {command.id} did not respond in time')
-                if is_test:
+                if runtime.is_test:
                     await self.step()  # NOTE: otherwise step() is not called while awaiting response
                 await asyncio.sleep(self.interval)
             result = self.responses.pop(command.id)

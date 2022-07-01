@@ -5,8 +5,10 @@ from typing import Any, Callable, Optional, Union
 import numpy as np
 import pytest
 
-from .. import core, run
+from .. import run
 from ..actors import Automator, Driver, Odometer
+from ..hardware import Wheels
+from ..runtime import runtime
 from ..world import Point, Point3d
 
 log = logging.getLogger(__name__)
@@ -14,6 +16,7 @@ log = logging.getLogger(__name__)
 automator: Optional[Automator] = None
 driver: Optional[Driver] = None
 odometer: Optional[Odometer] = None
+wheels: Optional[Wheels] = None
 
 
 async def forward(seconds: Optional[float] = None,
@@ -24,14 +27,14 @@ async def forward(seconds: Optional[float] = None,
                   tolerance: float = 0.1,
                   dt: float = 0.01,
                   timeout: float = 100):
-    start_time = core.time
+    start_time = runtime.time
     if seconds is not None:
         msg = f'forwarding {seconds=}'
-        def condition(): return core.time >= start_time + seconds
+        def condition(): return runtime.time >= start_time + seconds
         timeout = max(timeout, seconds)
     elif isinstance(until, int) or isinstance(until, float):
         msg = f'forwarding {until=}'
-        def condition(): return core.time >= until
+        def condition(): return runtime.time >= until
         timeout = max(timeout, until - start_time)
     elif isinstance(until, Callable):
         msg = f'forwarding {until=}'
@@ -53,10 +56,10 @@ async def forward(seconds: Optional[float] = None,
 
     log.info(f'\033[94m{msg}\033[0m')
     while not condition():
-        if core.time > start_time + timeout:
+        if runtime.time > start_time + timeout:
             raise TimeoutError(f'condition took more than {timeout} s')
         if not run.running_cpu_bound_processes:
-            core.set_time(core.time + dt)
+            runtime.set_time(runtime.time + dt)
             await asyncio.sleep(0)
         else:
             await asyncio.sleep(0.01)

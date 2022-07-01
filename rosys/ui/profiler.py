@@ -5,7 +5,7 @@ import yappi
 from nicegui.ui import Ui
 from tabulate import tabulate
 
-from .. import sleep
+from .. import runtime
 from ..profiling import profile
 
 log = logging.getLogger('rosys.profiler')
@@ -21,7 +21,7 @@ def create_profiler(ui: Ui):
         profile.start()
         t = time.time()
         while yappi.is_running() and time.time() < t + duration:
-            await sleep(0.1)
+            await runtime.sleep(0.1)
         stop()
 
     def stop():

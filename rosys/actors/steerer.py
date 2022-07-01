@@ -3,7 +3,7 @@ from enum import Enum
 
 from .. import event
 from ..hardware import Wheels
-from ..lifecycle import on_repeat
+from ..runtime import runtime
 
 
 class State(Enum):
@@ -23,7 +23,7 @@ class Steerer:
         self.linear_speed = 0
         self.angular_speed = 0
 
-        on_repeat(self.step, 0.05)
+        runtime.on_repeat(self.step, 0.05)
 
     def start(self):
         self.log.info('start steering')

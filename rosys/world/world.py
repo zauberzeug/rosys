@@ -4,8 +4,7 @@ import time
 import humanize
 from pydantic import BaseModel, PrivateAttr
 
-from .. import event
-from ..core import is_test
+from .. import event, runtime
 from .area import Area
 from .camera import Camera
 from .obstacle import Obstacle
@@ -27,10 +26,10 @@ class World(BaseModel):
 
     @property
     def time(self) -> float:
-        return self._time if is_test else time.time()
+        return self._time if runtime.is_test else time.time()
 
     def set_time(self, value):
-        assert is_test
+        assert runtime.is_test
         self._time = value
 
     @property

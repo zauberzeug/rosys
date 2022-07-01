@@ -1,8 +1,6 @@
 import pytest
-from rosys import event, sleep
+from rosys import event, runtime
 from rosys.test import forward
-
-from conftest import TestRuntime
 
 
 @pytest.mark.asyncio
@@ -72,14 +70,14 @@ def test_id_enum_definition():
 
 
 @pytest.mark.asyncio
-async def test_fire_and_forget_with_emit(runtime: TestRuntime):
+async def test_fire_and_forget_with_emit():
 
     class TestActor:
 
         async def handle_event(self, param):
-            await sleep(1)
+            await runtime.sleep(1)
             calls.append(param)
-            await sleep(1)
+            await runtime.sleep(1)
             raise Exception('some failure which should be detected even when using "fire and forget"')
 
     calls = []

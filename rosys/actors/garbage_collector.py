@@ -3,7 +3,7 @@ import logging
 
 import psutil
 
-from ..core import sleep
+from .. import runtime
 
 
 class GarbageCollector:
@@ -23,5 +23,5 @@ class GarbageCollector:
         if psutil.virtual_memory().free < self.mbyte_limit * 1000000:
             self.log.warning(f'less than {self.mbyte_limit} mb of memory remaining -> {self.starting_msg}')
             gc.collect()
-            await sleep(1)  # NOTE yield execution to make sure all warnings appear before we send the "finish" message
+            await runtime.sleep(1)  # NOTE yield execution to ensure all warnings appear before sending "finish" message
             self.log.warning(self.finished_msg)

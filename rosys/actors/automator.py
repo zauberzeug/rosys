@@ -4,8 +4,7 @@ from typing import Coroutine, Optional
 
 from .. import event, task_logger
 from ..automation import Automation
-from ..core import is_test
-from ..lifecycle import on_shutdown
+from ..runtime import runtime
 
 
 class Automator:
@@ -19,7 +18,7 @@ class Automator:
         event.register(event.Id.PAUSE_AUTOMATION, self.pause)
         event.register(event.Id.STOP_AUTOMATION, self.stop)
 
-        on_shutdown(lambda: self.stop(because='automator is shutting down'))
+        runtime.on_shutdown(lambda: self.stop(because='automator is shutting down'))
 
     @property
     def is_stopped(self) -> bool:
@@ -74,7 +73,7 @@ class Automator:
         self.stop(because='an exception occurred in an automation')
         event.emit(event.Id.AUTOMATION_FAILED, str(e))
         event.emit(event.Id.NEW_NOTIFICATION, f'automation failed')
-        if is_test:
+        if runtime.is_test:
             self.log.exception('automation failed', e)
 
     def _on_complete(self) -> None:

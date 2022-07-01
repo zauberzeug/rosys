@@ -1,37 +1,39 @@
 from typing import Generator
 
 import pytest
-from rosys import event, lifecycle
+from rosys import event, runtime
 from rosys.actors import Automator, Driver, Odometer
-from rosys.core import set_time
 from rosys.hardware import WheelsSimulation
-from rosys.test import helper
+from rosys.test import helpers
 
 import log_configuration
 
 log_configuration.setup()
 
 
-class TestRuntime:
-    __test__ = False
-
-    def __init__(self) -> None:
-        self.odometer = Odometer()
-        self.wheels = WheelsSimulation(self.odometer)
-        self.driver = Driver(self.wheels)
-        self.automator = Automator()
-
-        helper.odometer = self.odometer
-        helper.automator = self.automator
-        helper.driver = self.driver
+@pytest.fixture(autouse=True)
+async def run_around_tests():
+    runtime.set_time(0)  # NOTE in tests we start at zero for better readability
+    event.listeners.clear()
+    helpers.odometer = Odometer()
+    helpers.wheels = WheelsSimulation(helpers.odometer)
+    helpers.driver = Driver(helpers.wheels)
+    helpers.automator = Automator()
+    await runtime.startup()
+    yield
+    await runtime.shutdown()
 
 
 @pytest.fixture
-async def runtime() -> Generator:
-    event.listeners.clear()
-    lifecycle.tasks.clear()
-    runtime = TestRuntime()
-    set_time(0)  # NOTE in tests we start at zero for better readability
-    await lifecycle.startup()
-    yield runtime
-    await lifecycle.shutdown()
+async def driver() -> Generator:
+    return helpers.driver
+
+
+@pytest.fixture
+async def automator() -> Generator:
+    return helpers.automator
+
+
+@pytest.fixture
+async def wheels() -> Generator:
+    return helpers.wheels

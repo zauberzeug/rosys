@@ -1,172 +1,121 @@
-from __future__ import annotations
-
 import asyncio
 import logging
-from asyncio.exceptions import CancelledError
-from typing import Optional, Type, TypeVar
+import time
+from dataclasses import dataclass
+from typing import Awaitable, Callable
 
-from . import Persistence, event, run, task_logger
-from .actors import (AsyncioMonitor, Automator, Backup, CameraProjector, Detector, DetectorSimulator, GarbageCollector,
-                     Odometer, PathPlanner, Steerer, UsbCameraCapture, UsbCameraSimulator)
-from .core import is_test, sleep
-from .hardware import Wheels
-from .world import World
+import numpy as np
 
-T = TypeVar('T')
+from . import run
+from .helpers import is_test
+from .task_logger import create_task
+
+
+@dataclass
+class Notification:
+    time: float
+    message: str
 
 
 class Runtime:
-    log = logging.getLogger(__name__)
 
-    def __init__(self,
-                 world: Optional[World] = None,
-                 persistence: Optional[Persistence] = None,
-                 wheels: Wheels = None):
-        self.world = world or World()
-        self.tasks = []
-        if not is_test:
-            self.persistence = persistence or Persistence(self.world)
-            self.persistence.restore()
+    def __init__(self) -> None:
+        self.log = logging.getLogger(self.__class__.__name__)
 
-        self.wheels = wheels
-        if is_test:
-            assert self.hardware.is_simulation, 'real hardware must not be used in tests'
-        self.automator = Automator()
-        self.odometer = Odometer()
-        self.steerer = Steerer(wheels)
-        self.camera_projector = CameraProjector()
-        self.asyncio_monitor = AsyncioMonitor()
-        self.detector: Optional[Detector] = None  # NOTE can be set by runtime.with_detector()
-        self.usb_camera_simulator: Optional[UsbCameraSimulator] = None  # NOTE can be set by runtime.with_usb_cameras()
-        self.actors = [
-            self.camera_projector,
-            self.odometer,
-            self.steerer,
-            self.automator,
-            # self.asyncio_monitor,
-            GarbageCollector(),
-        ]
-        # if NetworkMonitor.is_operable():
-        #     self.with_actors(NetworkMonitor())
-        if not is_test:
-            self.with_actors(Backup(self.persistence))
-        self.path_planner: Optional[PathPlanner] = None
+        self.is_test = is_test()
+        self._time = time.time()
+        self.notifications: list[Notification] = []
 
-    def with_actors(self, *actors: list[Actor]) -> Runtime:
-        '''Adds list of additional actors to runtime.'''
-        self.actors += actors
-        return self
+        self.repeat_handlers: list[tuple[Callable | Awaitable, float]] = []
+        self.startup_handlers: list[Callable | Awaitable] = []
+        self.shutdown_handlers: list[Callable | Awaitable] = []
+        self.tasks: list[asyncio.Task] = []
 
-    def with_usb_cameras(self) -> Runtime:
-        '''Adds USB camera capture actor to runtime.'''
-        if UsbCameraCapture.is_operable() and not is_test:
-            self.with_actors(UsbCameraCapture())
+    def notify(self, message: str) -> None:
+        self.log.info(message)
+        self.notifications.append(Notification(self.time, message))
+
+    @property
+    def time(self) -> float:
+        return self._time if self.is_test else time.time()
+
+    def set_time(self, value: float) -> None:
+        assert self.is_test, 'only tests can change the time'
+        self._time = value
+
+    async def sleep(self, seconds: float) -> None:
+        if self.is_test:
+            sleep_end_time = self.time + seconds
+            while self.time <= sleep_end_time:
+                await asyncio.sleep(0)
         else:
-            self.usb_camera_simulator = UsbCameraSimulator()
-            self.with_actors(self.usb_camera_simulator)
-        return self
+            count = int(np.ceil(seconds))
+            if count > 0:
+                for _ in range(count):
+                    await asyncio.sleep(seconds / count)
+            else:
+                await asyncio.sleep(0)
 
-    def with_detector(self, real: Optional[Detector] = None, simulation: Optional[DetectorSimulator] = None) -> Runtime:
-        '''Adds detector to runtime.'''
-        if self.hardware.is_real and not is_test:
-            self.detector = real or Detector()
-        else:
-            self.detector = simulation or DetectorSimulator()
-        self.with_actors(self.detector)
-        return self
+    def on_repeat(self, handler: Callable | Awaitable, interval: float) -> None:
+        self.repeat_handlers.append((handler, interval))
 
-    def with_path_planner(self) -> Runtime:
-        '''Adds path planning actor to runtime.'''
-        self.path_planner = PathPlanner()
-        self.with_actors(self.path_planner)
-        return self
+    def on_startup(self, handler: Callable | Awaitable) -> None:
+        self.startup_handlers.append(handler)
+
+    def on_shutdown(self, handler: Callable | Awaitable) -> None:
+        self.shutdown_handlers.append(handler)
 
     async def startup(self) -> None:
         if self.tasks:
             raise Exception('should be only executed once')
 
-        event.register(event.Id.NEW_NOTIFICATION, self.store_notification)
-        for actor in self.actors:
+        for handler in self.startup_handlers:
             try:
-                await actor.startup()
+                await self._invoke(handler)
             except:
-                self.log.exception(f'error while starting {actor}')
+                self.log.exception(f'error while starting handler "{handler.__qualname__}"')
                 continue
-            if actor.interval is not None:
-                self.log.debug(f'starting actor {actor.name} with interval {actor.interval}s')
-                self.tasks.append(task_logger.create_task(self.repeat(actor), name=actor.name))
-        self.tasks.append(asyncio.create_task(self.watch_emitted_events(), name='watch_emitted_events'))
-        await self.hardware.startup()
-        if not is_test:
-            await asyncio.sleep(1)  # NOTE we wait for RoSys to start up before analyzing async debugging
-        self.activate_async_debugging()
-        self.log.info('startup completed')
-        self.world.start_time = self.world.time
 
-    async def shutdown(self) -> None:
-        try:
-            await self.hardware.drive(0, 0)
-        except:
-            pass
-        if not is_test:
-            self.persistence.backup()
-        run.tear_down()
-        [t.cancel() for t in self.tasks]
-        for a in self.actors:
-            await a.tear_down()
-        await self.hardware.tear_down()
+        for handler, interval in self.repeat_handlers:
+            self.log.debug(f'starting loop "{handler.__qualname__}" with interval {interval:.3f}s')
+            self.tasks.append(create_task(self._repeat_one_handler(handler, interval), name=handler.__qualname__))
 
-    async def repeat(self, actor: Actor):
-        await sleep(actor.interval)  # NOTE delaying first execution so not all actors rush in at the same time
+    async def _repeat_one_handler(self, handler: Callable | Awaitable, interval: float) -> None:
+        await self.sleep(interval)  # NOTE delaying first execution so not all actors rush in at the same time
         while True:
-            start = self.world.time
+            start = self.time
             try:
-                await actor.step()
-                dt = self.world.time - start
-            except (CancelledError, GeneratorExit):
+                await self._invoke(handler)
+                dt = self.time - start
+            except (asyncio.CancelledError, GeneratorExit):
                 return
             except:
-                dt = self.world.time - start
-                self.log.exception(f'error in {actor}')
-                if actor.interval == 0 and dt < 0.1:
+                dt = self.time - start
+                self.log.exception(f'error in "{handler.__qualname__}"')
+                if interval == 0 and dt < 0.1:
                     delay = 0.1 - dt
                     self.log.warning(
-                        f'{actor} would be called to frequently ' +
+                        f'"{handler.__qualname__}" would be called to frequently ' +
                         f'because it only took {dt*1000:.0f} ms; ' +
                         f'delaying this step for {delay*1000:.0f} ms')
-                    await sleep(delay)
+                    await self.sleep(delay)
             try:
-                await sleep(actor.interval - dt)
-            except (CancelledError, GeneratorExit):
+                await self.sleep(interval - dt)
+            except (asyncio.CancelledError, GeneratorExit):
                 return
 
-    def get_actor(self, _type: Type[T]) -> T:
-        return next((a for a in self.actors if type(a) is _type), None)
+    async def shutdown(self) -> None:
+        run.tear_down()
+        [t.cancel() for t in self.tasks]
+        self.tasks.clear()
+        for handler in self.shutdown_handlers:
+            await self._invoke(handler)
 
-    def store_notification(self, message: str):
-        self.log.info(message)
-        self.world.notifications.append((self.world.time, message))
+    async def _invoke(self, handler: Callable | Awaitable) -> None:
+        if asyncio.iscoroutinefunction(handler):
+            await handler()
+        else:
+            handler()
 
-    def activate_async_debugging(self):
-        '''Produce warnings for coroutines which take too long on the main loop and hence clog the event loop'''
-        try:
-            loop = asyncio.get_running_loop()
-            loop.set_debug(True)
-            loop.slow_callback_duration = 0.05
-        except:
-            self.log.exception('could not activate async debugging')
 
-    async def watch_emitted_events(self):
-        while True:
-            try:
-                for task in event.tasks:
-                    if task.done() and task.exception():
-                        self.handle_exception(task.exception())
-                # cleanup finished tasks
-                event.tasks = [t for t in event.tasks if not t.done()]
-            except:
-                self.log.exception('failing to watch emitted events')
-            await sleep(0 if is_test else 0.1)
-
-    def handle_exception(self, ex: Exception):
-        self.log.exception('task failed to execute', exc_info=ex)
+runtime = Runtime()

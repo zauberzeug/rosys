@@ -1,8 +1,6 @@
 from typing import Optional
 
-from .. import event
-from ..core import core, sleep
-from ..lifecycle import on_shutdown, on_startup
+from .. import event, runtime
 from . import AppControls
 from .communication import Communication
 
@@ -18,8 +16,8 @@ class RobotBrain:
         self.clock_offset: Optional[float] = None
         self.hardware_time: Optional[float] = None
 
-        on_startup(self.app_controls.sync)
-        on_shutdown(self.app_controls.clear)
+        runtime.on_startup(self.app_controls.sync)
+        runtime.on_shutdown(self.app_controls.clear)
 
     async def configure(self, filepath: str = 'lizard.txt') -> None:
         await self.send(f'!-')
@@ -54,7 +52,7 @@ class RobotBrain:
             self.app_controls.parse(line)
             lines.append(self.hardware_time, line)
         if millis is not None:
-            self.clock_offset = core.time - millis / 1000
+            self.clock_offset = runtime.time - millis / 1000
         return lines
 
     async def send(self, msg: str) -> None:
@@ -63,9 +61,9 @@ class RobotBrain:
     async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf')) -> Optional[str]:
         self.waiting_list[ack] = None
         await self.send(msg)
-        t0 = core.time
-        while self.waiting_list.get(ack) is None and core.time < t0 + timeout:
-            await sleep(0.1)
+        t0 = runtime.time
+        while self.waiting_list.get(ack) is None and runtime.time < t0 + timeout:
+            await runtime.sleep(0.1)
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
 

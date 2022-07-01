@@ -6,8 +6,7 @@ import socketio
 import socketio.exceptions
 from aenum import Enum, auto
 
-from .. import event, task_logger
-from ..core import sleep
+from .. import event, runtime, task_logger
 from ..world import BoxDetection, Detections, Image, PointDetection
 
 
@@ -53,7 +52,7 @@ class Detector:
             self.log.info(f'trying reconnect {self.port}')
             if not await self.connect():
                 self.log.exception(f'connection to {self.port} failed; trying again')
-                await sleep(3.0)
+                await runtime.sleep(3.0)
                 return
 
         await self.try_start_one_upload()

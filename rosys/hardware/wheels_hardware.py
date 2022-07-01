@@ -1,5 +1,5 @@
+from .. import runtime
 from ..actors.odometer import Odometer
-from ..lifecycle import on_repeat
 from .robot_brain import RobotBrain
 from .wheels import Wheels
 
@@ -11,7 +11,7 @@ class WheelsHardware(Wheels):
 
         self.robot_brain = robot_brain
 
-        on_repeat(self.step, 0.01)
+        runtime.on_repeat(self.step, 0.01)
 
     async def drive(self, linear: float, angular: float) -> None:
         await self.robot_brain.send(f'wheels.speed({linear}, {angular})')

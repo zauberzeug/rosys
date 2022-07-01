@@ -8,8 +8,6 @@ from rosys.actors.pathplanning.delaunay_planner import DelaunayPlanner
 from rosys.test import assert_point
 from rosys.world import Obstacle, Point, Pose, Spline
 
-from conftest import TestRuntime
-
 
 def create_obstacle(*, x: float, y: float, radius: float = 0.5) -> Obstacle:
     return Obstacle(id=str(uuid.uuid4()), outline=[
@@ -21,7 +19,7 @@ def create_obstacle(*, x: float, y: float, radius: float = 0.5) -> Obstacle:
 
 
 @pytest.mark.asyncio
-async def test_basic_path_planning(runtime: TestRuntime):
+async def test_basic_path_planning():
     await runtime.forward(1.0)
 
     goal = Pose(x=1.0, y=1.0)
@@ -34,7 +32,7 @@ async def test_basic_path_planning(runtime: TestRuntime):
 
 
 @pytest.mark.asyncio
-async def test_driving_to_planned_point(runtime: TestRuntime):
+async def test_driving_to_planned_point():
     await runtime.forward(1.0)
     path = await runtime.path_planner.search(goal=Pose(x=5, y=2), timeout=3.0)
     runtime.automator.start(drive_path(runtime.world, runtime.hardware, path))
@@ -42,13 +40,13 @@ async def test_driving_to_planned_point(runtime: TestRuntime):
 
 
 @pytest.mark.asyncio
-async def test_planning_to_problematic_location(runtime: TestRuntime):
+async def test_planning_to_problematic_location():
     await runtime.forward(1.0)
     await runtime.path_planner.search(goal=Pose(x=2.250, y=1.299, yaw=np.deg2rad(-60.0)), timeout=3.0)
 
 
 @pytest.mark.asyncio
-async def test_not_finding_a_path(runtime: TestRuntime):
+async def test_not_finding_a_path():
     await runtime.forward(1.0)
     obstacle = create_obstacle(x=2, y=0)
     runtime.world.obstacles[obstacle.id] = obstacle
@@ -59,7 +57,7 @@ async def test_not_finding_a_path(runtime: TestRuntime):
 
 
 @pytest.mark.asyncio
-async def test_test_spline(runtime: TestRuntime):
+async def test_test_spline():
     await runtime.forward(1.0)
 
     spline = Spline.from_poses(Pose(x=0, y=0), Pose(x=2, y=1))
@@ -70,7 +68,7 @@ async def test_test_spline(runtime: TestRuntime):
     assert await runtime.path_planner.test_spline(spline) == True
 
 
-def test_grow_map(runtime: TestRuntime):
+def test_grow_map():
     planner = DelaunayPlanner(runtime.world.robot.shape.outline)
     assert planner.obstacle_map is None
 
@@ -86,7 +84,7 @@ def test_grow_map(runtime: TestRuntime):
 
 
 @pytest.mark.asyncio
-async def test_overlapping_commands(runtime: TestRuntime):
+async def test_overlapping_commands():
     await runtime.forward(1.0)
 
     start = Pose()

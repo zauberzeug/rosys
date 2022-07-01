@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 
 from .. import event
-from ..core import core
+from ..runtime import runtime
 from ..world import Pose, PoseStep, Velocity
 
 
@@ -36,7 +36,7 @@ class Odometer:
             dt = velocity.time - self._last_time
             self._last_time = velocity.time
 
-            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=core.time)
+            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=runtime.time)
             self._steps.append(step)
             self.prediction += step
 
@@ -46,7 +46,7 @@ class Odometer:
                 self.last_movement = step.time
                 event.emit(event.Id.ROBOT_MOVED)
 
-        self.prune_steps(core.time - 10.0)
+        self.prune_steps(runtime.time - 10.0)
 
     def process_detection(self) -> None:
         if self.detection is None:

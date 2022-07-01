@@ -8,7 +8,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from typing import Callable, Optional, Union
 
-from .core import is_test
+from .helpers import is_test
 
 process_pool = ProcessPoolExecutor()
 thread_pool = ThreadPoolExecutor(thread_name_prefix='run.py thread_pool')
@@ -86,7 +86,7 @@ def tear_down() -> None:
     log.info('teardown thread_pool')
     thread_pool.shutdown(wait=False, cancel_futures=True)
     [p.kill() for p in running_sh_processes]
-    if not is_test:
+    if not is_test():
         log.info('teardown process_pool')
         [p.kill() for p in process_pool._processes.values()]
         process_pool.shutdown(wait=True, cancel_futures=True)
