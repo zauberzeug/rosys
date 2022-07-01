@@ -3,6 +3,8 @@ import logging
 import os.path
 from typing import Any, Protocol
 
+from .helpers import is_test
+
 backup_path = os.path.expanduser('~/.rosys')
 log = logging.getLogger('rosys.persistence')
 
@@ -21,7 +23,8 @@ actors: list[PersistentActor] = []
 
 
 def register(actor: PersistentActor):
-    actors.append(actor)
+    if not is_test():
+        actors.append(actor)
 
 
 def backup() -> None:
