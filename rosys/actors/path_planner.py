@@ -30,6 +30,8 @@ class PathPlanner:
         runtime.on_startup(self.startup)
         runtime.on_shutdown(self.shutdown)
         runtime.on_repeat(self.step, 0.1)
+
+        self.needs_backup: bool = False
         persistence.register(self)
 
     def backup(self) -> dict:

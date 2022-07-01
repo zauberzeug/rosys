@@ -71,10 +71,12 @@ with ui.card():
                     Point(x=hit.point.x+0.5, y=hit.point.y+0.5),
                     Point(x=hit.point.x-0.5, y=hit.point.y+0.5),
                 ])
+                path_planner.needs_backup = True
                 obstacles3d.update()
                 return
             if object_type == 'obstacle' and click_mode.value == 'obstacles':
                 del path_planner.obstacles[hit.object.name.split('_')[1]]
+                path_planner.needs_backup = True
                 obstacles3d.update()
                 return
 

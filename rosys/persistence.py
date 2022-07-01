@@ -8,6 +8,7 @@ log = logging.getLogger('rosys.persistence')
 
 
 class PersistentActor(Protocol):
+    needs_backup: bool
 
     def backup(self, data: dict[str, Any]) -> None:
         ...
@@ -25,9 +26,12 @@ def register(actor: PersistentActor):
 
 def backup() -> None:
     for actor in actors:
+        if not actor.needs_backup:
+            continue
         filepath = f'{backup_path}/{actor.__module__}.json'
         with open(filepath, 'w') as f:
             json.dump(actor.backup(), f)
+        actor.needs_backup = False
 
 
 def restore() -> None:

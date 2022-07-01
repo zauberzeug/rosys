@@ -39,6 +39,7 @@ class Runtime:
         gc.disable()  # NOTE disable automatic garbage collection to optimize performance
         self.on_repeat(self._garbage_collection, 10 * 60)
         self.on_repeat(self._watch_emitted_events, 0.1)
+        self.on_repeat(persistence.backup, 10)
 
     def notify(self, message: str) -> None:
         self.log.info(message)
