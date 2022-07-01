@@ -7,7 +7,6 @@ from multiprocessing import Pipe
 from typing import Any
 
 import psutil
-import rosys
 
 from .. import run
 from ..runtime import runtime

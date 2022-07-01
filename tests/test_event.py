@@ -1,6 +1,9 @@
 import pytest
-from rosys import event, runtime
+from rosys import runtime
+from rosys.event import Event
 from rosys.test import forward
+
+TEST_EVENT = Event()
 
 
 @pytest.mark.asyncio
@@ -8,9 +11,9 @@ async def test_registering_multiple_handlers():
     def handler1(number: int) -> None: numbers.append(number)
     def handler2(number: int) -> None: numbers.append(number)
     numbers = []
-    runtime.NEW_NOTIFICATION.register(handler1)
-    runtime.NEW_NOTIFICATION.register(handler2)
-    await runtime.NEW_NOTIFICATION.call(42)
+    TEST_EVENT.register(handler1)
+    TEST_EVENT.register(handler2)
+    await TEST_EVENT.call(42)
     assert numbers == [42, 42], 'all registered handlers have been called'
 
 
@@ -18,9 +21,9 @@ async def test_registering_multiple_handlers():
 async def test_registering_same_handler_multiple_times():
     def handler(number: int) -> None: numbers.append(number)
     numbers = []
-    runtime.NEW_NOTIFICATION.register(handler)
-    runtime.NEW_NOTIFICATION.register(handler)
-    await runtime.NEW_NOTIFICATION.call(42)
+    TEST_EVENT.register(handler)
+    TEST_EVENT.register(handler)
+    await TEST_EVENT.call(42)
     assert numbers == [42], 'the same handler should only be registered once'
 
 
@@ -29,25 +32,25 @@ async def test_automatic_deregistering_if_reference_is_unused():
 
     class Actor:
         def __init__(self) -> None:
-            runtime.NEW_NOTIFICATION.register(self.handler)
+            TEST_EVENT.register(self.handler)
 
         def handler(self, number: int) -> None:
             numbers.append(number)
 
     numbers = []
     actor = Actor()
-    await runtime.NEW_NOTIFICATION.call(42)
+    await TEST_EVENT.call(42)
     assert numbers == [42]
     actor = Actor()
-    await runtime.NEW_NOTIFICATION.call(42)
+    await TEST_EVENT.call(42)
     assert numbers == [42, 42]
 
 
 @pytest.mark.asyncio
 async def test_registering_lambdas():
     numbers = []
-    runtime.NEW_NOTIFICATION.register(lambda number: numbers.append(number))
-    await runtime.NEW_NOTIFICATION.call(42)
+    TEST_EVENT.register(lambda number: numbers.append(number))
+    await TEST_EVENT.call(42)
     assert numbers == [42]
 
 
@@ -64,8 +67,8 @@ async def test_fire_and_forget_with_emit():
 
     numbers = []
     actor = TestActor()
-    runtime.NEW_NOTIFICATION.register(actor.handle_event)
-    runtime.NEW_NOTIFICATION.emit(42)
+    TEST_EVENT.register(actor.handle_event)
+    TEST_EVENT.emit(42)
     await forward(0.5)
     assert numbers == []
     await forward(1.0)

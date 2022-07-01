@@ -16,7 +16,10 @@ log = logging.getLogger('rosys.event')
 class Event:
 
     def __init__(self) -> None:
-        self.name = Source.executing(inspect.currentframe().f_back).node.parent.targets[0].id
+        try:
+            self.name = Source.executing(inspect.currentframe().f_back).node.parent.targets[0].id
+        except:
+            self.name = 'noname_event'
         self.listeners = set()
 
     def register(self, listener: Callable) -> Event:
