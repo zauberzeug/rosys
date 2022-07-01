@@ -8,7 +8,7 @@ from typing import Awaitable, Callable, Optional
 import numpy as np
 import psutil
 
-from . import event, run
+from . import event, persistence, run
 from .helpers import is_test
 from .task_logger import create_task
 
@@ -79,6 +79,8 @@ class Runtime:
         if self.tasks:
             raise Exception('should be only executed once')
 
+        persistence.restore()
+
         for handler in self.startup_handlers:
             try:
                 await self._invoke(handler)
@@ -132,6 +134,7 @@ class Runtime:
                 return
 
     async def shutdown(self) -> None:
+        persistence.backup()
         run.tear_down()
         [t.cancel() for t in self.tasks]
         self.tasks.clear()

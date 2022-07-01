@@ -1,5 +1,7 @@
 from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Extrusion
+
+from ..runtime import runtime
 from ..world import Obstacle
 
 
@@ -8,7 +10,7 @@ class ObstacleObject(Object3D):
     def __init__(self, obstacles: dict[str, Obstacle]):
         super().__init__('group')
         self.obstacles = obstacles
-        self.update()
+        runtime.on_startup(self.update)
 
     def update(self) -> bool:
         [obj.delete() for obj in list(self.view.objects.values()) if (obj.name or '').startswith('obstacle_')]

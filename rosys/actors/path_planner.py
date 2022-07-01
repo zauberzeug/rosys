@@ -8,7 +8,7 @@ from typing import Any
 
 import psutil
 
-from .. import run
+from .. import persistence, run
 from ..runtime import runtime
 from ..world import Area, Obstacle, PathSegment, Point, Pose, RobotShape, Spline
 from .pathplanning import (PlannerCommand, PlannerGrowMapCommand, PlannerObstacleDistanceCommand, PlannerProcess,
@@ -30,6 +30,17 @@ class PathPlanner:
         runtime.on_startup(self.startup)
         runtime.on_shutdown(self.shutdown)
         runtime.on_repeat(self.step, 0.1)
+        persistence.register(self)
+
+    def backup(self) -> dict:
+        return {
+            'obstacles': {id: obstacle.dict() for id, obstacle in self.obstacles.items()},
+            'areas': {id: area.dict() for id, area in self.areas.items()},
+        }
+
+    def restore(self, data: dict[str, Any]) -> None:
+        self.obstacles |= {id: Obstacle.parse_obj(obstacle) for id, obstacle in data.get('obstacles', {}).items()}
+        self.areas |= {id: Area.parse_obj(area) for id, area in data.get('areas', {}).items()}
 
     def startup(self) -> None:
         self.process.start()
