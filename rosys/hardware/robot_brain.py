@@ -1,6 +1,6 @@
 from typing import Optional
 
-from .. import event, runtime
+from ..runtime import runtime
 from . import AppControls
 from .communication import Communication
 
@@ -10,7 +10,7 @@ class RobotBrain:
     def __init__(self, communication: Communication) -> None:
         self.communication = communication
         self.app_controls = AppControls(communication)
-        event.register(event.Id.NEW_NOTIFICATION, self.app_controls.notify)
+        runtime.NEW_NOTIFICATION.register(self.app_controls.notify)
         self.waiting_list: dict[str, Optional[str]] = {}
 
         self.clock_offset: Optional[float] = None

@@ -1,5 +1,5 @@
-from .. import runtime
 from ..actors.odometer import Odometer
+from ..runtime import runtime
 from .robot_brain import RobotBrain
 from .wheels import Wheels
 

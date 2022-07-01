@@ -5,8 +5,8 @@ import yappi
 from nicegui.ui import Ui
 from tabulate import tabulate
 
-from .. import runtime
 from ..profiling import profile
+from ..runtime import runtime
 
 log = logging.getLogger('rosys.profiler')
 
