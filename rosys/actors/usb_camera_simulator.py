@@ -6,19 +6,29 @@ from typing import Optional
 import PIL as pil
 import rosys
 
+from ..runtime import runtime
 from ..world import Image, ImageSize, UsbCamera
+from .camera_provider import CameraProvider
 
 
-class UsbCameraSimulator:
-    interval: float = 1
+class UsbCameraSimulator(CameraProvider):
 
-    async def step(self):
-        for camera in self.world.usb_cameras.values():
+    def __init__(self) -> None:
+        self._cameras: dict[str, UsbCamera] = {}
+
+        runtime.on_repeat(self.step, 1.0)
+
+    @property
+    def cameras(self) -> dict[str, UsbCamera]:
+        return self._cameras
+
+    async def step(self) -> None:
+        for camera in self._cameras.values():
             if not camera.active:
                 continue
             assert camera.image_resolution is not None, 'simulated USB cameras should have an image resolution'
-            image = Image(time=self.world.time, camera_id=camera.id, size=camera.image_resolution)
-            if rosys.is_test:
+            image = Image(time=runtime.time, camera_id=camera.id, size=camera.image_resolution)
+            if runtime.is_test:
                 image.data = b'test data'
             else:
                 image.data = await rosys.run.cpu_bound(self.create_image_data, camera)

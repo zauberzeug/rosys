@@ -8,7 +8,7 @@ from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation, robot_b
 from rosys.hardware.communication import SerialCommunication, communication
 from rosys.world import Robot
 
-# actors
+# setup
 robot = Robot()
 odometer = Odometer()
 if SerialCommunication.is_possible():
@@ -27,6 +27,6 @@ with ui.scene():
 ui.label('hold SHIFT to steer with the keyboard arrow keys')
 
 # start
-ui.on_startup(runtime.startup())
-ui.on_shutdown(runtime.shutdown())
+ui.on_startup(runtime.startup)
+ui.on_shutdown(runtime.shutdown)
 ui.run(title='RoSys')

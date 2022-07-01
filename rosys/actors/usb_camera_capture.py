@@ -9,8 +9,9 @@ import cv2
 import PIL
 import rosys
 
-from .. import event
+from ..runtime import runtime
 from ..world import Image, ImageSize, UsbCamera
+from .camera_provider import CameraProvider
 
 MJPG = cv2.VideoWriter_fourcc(*'MJPG')
 SCAN_INTERVAL = 10
@@ -43,19 +44,25 @@ def process_image(data: bytes, rotation: rosys.world.ImageRotation, crop: rosys.
     return img_byte_arr.getvalue()
 
 
-class UsbCameraCapture:
-    interval: float = 0.3
-    lag_reduction: int = 1
+class UsbCameraCapture(CameraProvider):
 
     def __init__(self) -> None:
         self.log = logging.getLogger('rosys.usb_camera_capture')
 
         self.devices: dict[str, Device] = {}
         self.last_scan: Optional[float] = None
+        self._cameras: dict[str, UsbCamera] = {}
+
+        runtime.on_shutdown(self.shutdown)
+        runtime.on_repeat(self.step, 0.3)
+
+    @property
+    def cameras(self) -> dict[str, UsbCamera]:
+        return self._cameras
 
     async def step(self) -> None:
         await self.update_device_list()
-        for uid, camera in self.world.usb_cameras.items():
+        for uid, camera in self._cameras.items():
             if not camera.active:
                 if uid in self.devices and self.devices[uid].capture is not None:
                     await self.deactivate(camera)
@@ -81,7 +88,7 @@ class UsbCameraCapture:
                 else:
                     bytes = await rosys.run.cpu_bound(process_image, image[0].tobytes(), camera.rotation, camera.crop)
                 size = camera.resolution or ImageSize(width=800, height=600)
-                camera.images.append(Image(camera_id=uid, data=bytes, time=self.world.time, size=size))
+                camera.images.append(Image(camera_id=uid, data=bytes, time=runtime.time, size=size))
             except:
                 self.log.exception(f'could not capture image from {uid}')
                 await self.deactivate(camera)
@@ -92,7 +99,7 @@ class UsbCameraCapture:
         return image
 
     async def activate(self, uid: str) -> None:
-        camera = self.world.usb_cameras[uid]
+        camera = self._cameras[uid]
         device = self.devices[uid]
         capture = await rosys.run.io_bound(self.get_capture_device, device.video_id)
         if capture is None:
@@ -109,15 +116,15 @@ class UsbCameraCapture:
             await rosys.run.io_bound(self.devices[camera.id].capture.release)
         del self.devices[camera.id]
 
-    def purge_old_images(self):
-        for camera in self.world.usb_cameras.values():
-            while camera.images and camera.images[0].time < self.world.time - 5 * 60.0:
+    def purge_old_images(self) -> None:
+        for camera in self._cameras.values():
+            while camera.images and camera.images[0].time < runtime.time - 5 * 60.0:
                 del camera.images[0]
 
-    async def update_device_list(self):
-        if self.last_scan is not None and self.world.time < self.last_scan + SCAN_INTERVAL:
+    async def update_device_list(self) -> None:
+        if self.last_scan is not None and runtime.time < self.last_scan + SCAN_INTERVAL:
             return
-        self.last_scan = self.world.time
+        self.last_scan = runtime.time
         output = await rosys.run.sh(['v4l2-ctl', '--list-devices'])
         if output is None:
             return
@@ -127,10 +134,10 @@ class UsbCameraCapture:
             if match is None:
                 continue
             uid = match.group(1)
-            if uid not in self.world.usb_cameras:
-                self.world.usb_cameras[uid] = UsbCamera(id=uid)
+            if uid not in self._cameras:
+                self._cameras[uid] = UsbCamera(id=uid)
                 self.log.info(f'adding camera {uid}')
-                await event.call(event.Id.NEW_CAMERA, self.world.usb_cameras[uid])
+                await CameraProvider.CAMERA_ADDED.call(self._cameras[uid])
             lines = infos.splitlines()
             if 'dev/video' not in lines[1]:
                 continue
@@ -139,7 +146,7 @@ class UsbCameraCapture:
                 self.devices[uid] = Device(uid=uid, video_id=num)
                 await self.load_value_ranges(self.devices[uid])
 
-    def get_capture_device(self, index: int):
+    def get_capture_device(self, index: int) -> None:
         try:
             capture = cv2.VideoCapture(index)
             if capture is None:
@@ -152,8 +159,8 @@ class UsbCameraCapture:
         except:
             self.log.exception(f'{index} device failed')
 
-    async def tear_down(self) -> None:
-        for camera in self.world.usb_cameras.values():
+    async def shutdown(self) -> None:
+        for camera in self._cameras.values():
             await self.deactivate(camera)
         self.devices.clear()
 

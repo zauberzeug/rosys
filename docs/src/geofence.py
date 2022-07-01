@@ -40,6 +40,6 @@ async def automation():
 rosys.ui.automation_controls(automator, default_automation=automation)
 
 # start
-ui.on_startup(runtime.startup())
-ui.on_shutdown(runtime.shutdown())
+ui.on_startup(runtime.startup)
+ui.on_shutdown(runtime.shutdown)
 ui.run(title='RoSys')

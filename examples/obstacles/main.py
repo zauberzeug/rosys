@@ -10,7 +10,7 @@ from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
 from rosys.hardware.communication import SerialCommunication
 from rosys.world import Obstacle, PathSegment, Point, Pose, Robot, RobotShape, Spline
 
-# actors
+# setup
 shape = RobotShape(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])
 robot = Robot(shape=shape)
 odometer = Odometer()
@@ -88,6 +88,6 @@ with ui.card():
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
 # start
-ui.on_startup(runtime.startup())
-ui.on_shutdown(runtime.shutdown())
+ui.on_startup(runtime.startup)
+ui.on_shutdown(runtime.shutdown)
 ui.run(title='obstacles', port=8080)

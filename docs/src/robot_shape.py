@@ -18,6 +18,6 @@ with ui.scene():
     rosys.ui.robot_object(robot, odometer, debug=True)
 
 # start
-ui.on_startup(runtime.startup())
-ui.on_shutdown(runtime.shutdown())
+ui.on_startup(runtime.startup)
+ui.on_shutdown(runtime.shutdown)
 ui.run(port=8080)

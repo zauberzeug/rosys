@@ -13,7 +13,7 @@ import log_configuration
 
 log_configuration.setup()
 
-# actors
+# setup
 robot = Robot()
 odometer = Odometer()
 if SerialCommunication.is_possible():
@@ -46,6 +46,6 @@ with ui.card():
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
 # start
-ui.on_startup(runtime.startup())
-ui.on_shutdown(runtime.shutdown())
+ui.on_startup(runtime.startup)
+ui.on_shutdown(runtime.shutdown)
 ui.run(title='hello_bot')

@@ -29,6 +29,6 @@ with ui.row():
 ui.label('you can also pause/resume or stop the running automation')
 
 # start
-ui.on_startup(runtime.startup())
-ui.on_shutdown(runtime.shutdown())
-ui.run(title='RoSys', port=8080)
+ui.on_startup(runtime.startup)
+ui.on_shutdown(runtime.shutdown)
+ui.run(title='RoSys')

@@ -26,6 +26,6 @@ with ui.scene(on_click=handle_click):
 ui.label('click into the scene to drive the robot')
 
 # start
-ui.on_startup(runtime.startup())
-ui.on_shutdown(runtime.shutdown())
-ui.run(title='RoSys', port=8080)
+ui.on_startup(runtime.startup)
+ui.on_shutdown(runtime.shutdown)
+ui.run(title='RoSys')

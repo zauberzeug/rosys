@@ -31,9 +31,9 @@ class Runtime:
         self.notifications: list[Notification] = []
         self._exception: Optional[Exception] = None  # NOTE: used for tests
 
-        self.repeat_handlers: list[tuple[Callable | Awaitable, float]] = []
-        self.startup_handlers: list[Callable | Awaitable] = []
-        self.shutdown_handlers: list[Callable | Awaitable] = []
+        self.repeat_handlers: list[tuple[Callable, float]] = []
+        self.startup_handlers: list[Callable] = []
+        self.shutdown_handlers: list[Callable] = []
         self.tasks: list[asyncio.Task] = []
 
         gc.disable()  # NOTE disable automatic garbage collection to optimize performance
@@ -66,13 +66,13 @@ class Runtime:
             else:
                 await asyncio.sleep(0)
 
-    def on_repeat(self, handler: Callable | Awaitable, interval: float) -> None:
+    def on_repeat(self, handler: Callable, interval: float) -> None:
         self.repeat_handlers.append((handler, interval))
 
-    def on_startup(self, handler: Callable | Awaitable) -> None:
+    def on_startup(self, handler: Callable) -> None:
         self.startup_handlers.append(handler)
 
-    def on_shutdown(self, handler: Callable | Awaitable) -> None:
+    def on_shutdown(self, handler: Callable) -> None:
         self.shutdown_handlers.append(handler)
 
     async def startup(self) -> None:
@@ -107,7 +107,7 @@ class Runtime:
         except:
             self.log.exception('failed to watch emitted events')
 
-    async def _repeat_one_handler(self, handler: Callable | Awaitable, interval: float) -> None:
+    async def _repeat_one_handler(self, handler: Callable, interval: float) -> None:
         await self.sleep(interval)  # NOTE delaying first execution so not all actors rush in at the same time
         while True:
             start = self.time
@@ -138,11 +138,10 @@ class Runtime:
         for handler in self.shutdown_handlers:
             await self._invoke(handler)
 
-    async def _invoke(self, handler: Callable | Awaitable) -> None:
-        if asyncio.iscoroutinefunction(handler):
-            await handler()
-        else:
-            handler()
+    async def _invoke(self, handler: Callable) -> None:
+        result = handler()
+        if isinstance(result, Awaitable):
+            await result
 
     def reset_for_test(self) -> None:
         self.set_time(0)  # NOTE in tests we start at zero for better readability

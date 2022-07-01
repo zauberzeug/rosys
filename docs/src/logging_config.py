@@ -48,6 +48,6 @@ steerer = Steerer(wheels)
 rosys.ui.joystick(steerer)
 
 # start
-ui.on_startup(runtime.startup())
-ui.on_shutdown(runtime.shutdown())
-ui.run(title='RoSys', port=8080)
+ui.on_startup(runtime.startup)
+ui.on_shutdown(runtime.shutdown)
+ui.run(title='RoSys')

@@ -1,29 +1,29 @@
 #!/usr/bin/env python3
-import rosys
-import rosys.ui
 from nicegui import ui
-from rosys.actors import UsbCameraSimulator
+from rosys import runtime
+from rosys.actors import CameraServer, UsbCameraCapture, UsbCameraSimulator, camera_provider
 
 # setup
-runtime = rosys.Runtime()
-runtime.with_usb_cameras()
-rosys.ui.configure(ui, runtime)
+if UsbCameraCapture.is_operable():
+    camera_provider = UsbCameraCapture()
+else:
+    camera_provider = UsbCameraSimulator()
+    camera_provider.add_camera(camera_provider.create_calibrated('test_cam', width=800, height=600))
+CameraServer(camera_provider)
 
 
-async def refresh():
-    for uid, camera in runtime.world.usb_cameras.items():
+async def refresh() -> None:
+    for uid, camera in camera_provider.cameras.items():
         if uid not in feeds:
             feeds[uid] = ui.interactive_image('', cross=False)
         await feeds[uid].set_source(camera.latest_image_uri)
 
 
-# refresh timer
+# ui
 feeds = {}
 ui.timer(0.3, refresh)
 
-camsim = runtime.get_actor(UsbCameraSimulator)
-if camsim is not None and 'testcam' not in runtime.world.usb_cameras:
-    runtime.world.usb_cameras['testcam'] = \
-        camsim.create_calibrated('testcam', width=800, height=600)
-
-ui.run(title='RoSys', port=8080)
+# start
+ui.on_startup(runtime.startup)
+ui.on_shutdown(runtime.shutdown)
+ui.run(title='RoSys')

@@ -17,8 +17,8 @@ from .robot_object import RobotObject
 
 
 def configure(ui: Ui, runtime: Runtime):
-    ui.on_startup(runtime.startup())
-    ui.on_shutdown(runtime.shutdown())
+    ui.on_startup(runtime.startup)
+    ui.on_shutdown(runtime.shutdown)
     event.register(event.Id.NEW_NOTIFICATION, ui.notify)
     routes.setup(ui, runtime)
 
