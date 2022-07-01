@@ -13,7 +13,7 @@ import log_configuration
 
 log_configuration.setup()
 
-# setup
+# actors
 robot = rosys.world.Robot()
 odometer = Odometer()
 if SerialCommunication.is_possible():
@@ -26,10 +26,9 @@ steerer = Steerer(wheels)
 driver = Driver(wheels)
 automator = Automator()
 
-# keyboard control
+# ui
+runtime.NEW_NOTIFICATION.register(ui.notify)
 rosys.ui.keyboard_control(steerer)
-
-# 3d scene, joystick and automation controls
 with ui.card():
     with ui.row():
         state = ui.label()
@@ -46,7 +45,7 @@ with ui.card():
             ui.button('configure microcontroller', on_click=robot_brain.configure).props('outline')
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
+# start
 ui.on_startup(runtime.startup())
 ui.on_shutdown(runtime.shutdown())
-
 ui.run(title='hello_bot')

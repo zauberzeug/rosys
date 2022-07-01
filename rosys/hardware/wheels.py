@@ -2,7 +2,7 @@ import abc
 import logging
 from typing import Optional
 
-from .. import event
+from ..actors.automator import Automator
 from ..actors.odometer import Odometer
 from ..runtime import runtime
 
@@ -13,9 +13,9 @@ class Wheels(abc.ABC):
         self.log = logging.getLogger(__name__)
         self.odometer = odometer
 
-        event.register(event.Id.AUTOMATION_PAUSED, self.handle_stop_event)
-        event.register(event.Id.AUTOMATION_STOPPED, self.handle_stop_event)
-        event.register(event.Id.AUTOMATION_FAILED, self.handle_stop_event)
+        Automator.AUTOMATION_PAUSED.register(self.handle_stop_event)
+        Automator.AUTOMATION_STOPPED.register(self.handle_stop_event)
+        Automator.AUTOMATION_FAILED.register(self.handle_stop_event)
 
         runtime.on_shutdown(self.stop)
 

@@ -1,12 +1,13 @@
 import logging
 from typing import Optional
 
-from .. import event
+from ..event import Event
 from ..runtime import runtime
 from ..world import Pose, PoseStep, Velocity
 
 
 class Odometer:
+    ROBOT_MOVED = Event('a robot movement is detected')
 
     def __init__(self):
         self.log = logging.getLogger(self.__class__.__name__)
@@ -44,7 +45,7 @@ class Odometer:
 
             if step.linear or step.angular:
                 self.last_movement = step.time
-                event.emit(event.Id.ROBOT_MOVED)
+                self.ROBOT_MOVED.emit()
 
         self.prune_steps(runtime.time - 10.0)
 

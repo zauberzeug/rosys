@@ -4,7 +4,9 @@ import inspect
 from dataclasses import dataclass
 from typing import Callable
 
-import rosys
+from rosys.event import Event
+from rosys.hardware.communication import Communication
+from rosys.task_logger import create_task
 
 
 @dataclass
@@ -28,8 +30,9 @@ class AppButton:
 
 
 class AppControls:
+    APP_CONNECTED = Event('called after app connected via bluetooth; use this to refresh infos or similar')
 
-    def __init__(self, communication: rosys.communication.Communication) -> None:
+    def __init__(self, communication: Communication) -> None:
         self.communication = communication
         self.main_buttons: dict[str, AppButton] = {}
         self.extra_buttons: dict[str, AppButton] = {}
@@ -48,8 +51,8 @@ class AppControls:
         if line.startswith('app: '):
             line = line[5:]
             if line == 'connected':
-                rosys.task_logger.create_task(self.sync(), name='sync app')
-                rosys.event.emit(rosys.event.Id.APP_CONNECTED)
+                create_task(self.sync(), name='sync app')
+                self.APP_CONNECTED.emit()
             elif line.startswith('PUT /button/') and '/action' in line:
                 # line: "PUT /button/main/my_button/action pressed"
                 _, path, action = line.split(' ')
@@ -69,8 +72,8 @@ class AppControls:
         await self.send('DELETE')
         self.main_buttons.clear()
 
-    async def send(self, method: str, get_properties: Callable[[AppButton], list[str]] = lambda b: ['']):
-        async def run(group: str, buttons: list[AppButton]) -> None:
+    async def send(self, method: str, get_properties: Callable[[AppButton], list[str]] = lambda _: ['']):
+        async def run(group: str, buttons: dict[str, AppButton]) -> None:
             for name, button in buttons.items():
                 for prop in get_properties(button):
                     cmd = f'bluetooth.send("{method} /button/{group}/{name}{prop}")'
@@ -80,6 +83,6 @@ class AppControls:
 
     async def _invoke(self, callback: Callable):
         if inspect.iscoroutinefunction(callback):
-            rosys.task_logger.create_task(callback(), name='app_controls._invoke')
+            create_task(callback(), name='app_controls._invoke')
         else:
             callback()

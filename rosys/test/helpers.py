@@ -63,6 +63,8 @@ async def forward(seconds: Optional[float] = None,
             await asyncio.sleep(0)
         else:
             await asyncio.sleep(0.01)
+        if runtime._exception is not None:
+            raise RuntimeError(f'error while forwarding time {dt} s') from runtime._exception
 
 
 def assert_pose(x: float, y: float, *, deg: float = None, linear_tolerance: float = 0.1, deg_tolerance: float = 1.0) -> None:

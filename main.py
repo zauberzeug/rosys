@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 from nicegui import ui
 
-import rosys
 import rosys.ui
 from rosys import runtime
 from rosys.actors import Odometer, Steerer
 from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation, robot_brain
 from rosys.hardware.communication import SerialCommunication, communication
+from rosys.world import Robot
 
-# setup
-robot = rosys.world.Robot()
+# actors
+robot = Robot()
 odometer = Odometer()
 if SerialCommunication.is_possible():
     communication = SerialCommunication()
@@ -19,16 +19,14 @@ else:
     wheels = WheelsSimulation(odometer)
 steerer = Steerer(wheels)
 
-# keyboard control
+# ui
+runtime.NEW_NOTIFICATION.register(ui.notify)
 rosys.ui.keyboard_control(steerer)
-
-# 3d scene
 with ui.scene():
     rosys.ui.robot_object(robot, odometer)
 ui.label('hold SHIFT to steer with the keyboard arrow keys')
 
+# start
 ui.on_startup(runtime.startup())
 ui.on_shutdown(runtime.shutdown())
-
-# start
 ui.run(title='RoSys')
