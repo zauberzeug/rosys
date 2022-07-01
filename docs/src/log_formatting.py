@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-from nicegui import ui
 import logging
 import logging.config
 import os
 import sys
-import rosys
+
 import rosys.ui
+from nicegui import ui
+from rosys import runtime
+from rosys.actors import Odometer, Steerer
+from rosys.hardware import WheelsSimulation
 
 
 class PackagePathFilter(logging.Filter):
@@ -13,15 +16,15 @@ class PackagePathFilter(logging.Filter):
     Original code borrowed from https://stackoverflow.com/a/52582536/3419103
     '''
 
-    def filter(self, record):
+    def filter(self, record: logging.LogRecord) -> bool:
         pathname = record.pathname
-        record.relativepath = None
+        record.relative_path = None
         abs_sys_paths = map(os.path.abspath, sys.path)
         for path in sorted(abs_sys_paths, key=len, reverse=True):  # longer paths first
             if not path.endswith(os.sep):
                 path += os.sep
             if pathname.startswith(path):
-                record.relativepath = os.path.relpath(pathname, path)
+                record.relative_path = os.path.relpath(pathname, path)
                 break
         return True
 
@@ -31,7 +34,7 @@ logging.config.dictConfig({
     'disable_existing_loggers': True,  # to make sure this config is used
     'formatters': {
         'default': {
-            'format': '%(asctime)s.%(msecs)03d [%(levelname)s] %(relativepath)s:%(lineno)d: %(message)s',
+            'format': '%(asctime)s.%(msecs)03d [%(levelname)s] %(relative_path)s:%(lineno)d: %(message)s',
             'datefmt': '%Y-%m-%d %H:%M:%S',
         },
     },
@@ -57,16 +60,21 @@ logging.config.dictConfig({
         },
         'rosys': {
             'handlers': ['console'],
-            'level': 'DEBUG',
+            'level': 'INFO',
             'propagate': False,
         },
     },
 })
 
 # setup
-runtime = rosys.Runtime()
-rosys.ui.configure(ui, runtime)
+odometer = Odometer()
+wheels = WheelsSimulation(odometer)
+steerer = Steerer(wheels)
 
-rosys.ui.joystick()
+# ui
+rosys.ui.joystick(steerer)
 
+# start
+ui.on_startup(runtime.startup())
+ui.on_shutdown(runtime.shutdown())
 ui.run(title='RoSys', port=8080)

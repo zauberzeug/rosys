@@ -1,28 +1,36 @@
 #!/usr/bin/env python3
-import rosys
 import rosys.ui
 from nicegui import ui
-from rosys.automations import drive_path
-from rosys.world import Pose
+from rosys import runtime
+from rosys.actors import Automator, Driver, Odometer, PathPlanner
+from rosys.hardware import WheelsSimulation
+from rosys.world import Pose, Robot
 
 # setup
-runtime = rosys.Runtime().with_path_planner()
-rosys.ui.configure(ui, runtime)
+robot = Robot()
+odometer = Odometer()
+path_planner = PathPlanner(robot.shape)
+wheels = WheelsSimulation(odometer)
+driver = Driver(wheels)
+automator = Automator()
 
 
 async def handle_click(msg):
     for hit in msg.hits:
-        yaw = runtime.world.robot.prediction.point.direction(hit.point)
-        path = await runtime.path_planner.search(goal=Pose(x=hit.point.x, y=hit.point.y, yaw=yaw), timeout=3.0)
+        yaw = odometer.prediction.point.direction(hit.point)
+        path = await path_planner.search(start=odometer.prediction, goal=Pose(x=hit.point.x, y=hit.point.y, yaw=yaw))
         path3d.update(path)
-        runtime.automator.start(drive_path(runtime.world, runtime.hardware, path))
+        automator.start(driver.drive_path(path))
 
-# 3d scene
-with ui.scene(on_click=handle_click, width=600) as scene:
-    rosys.ui.robot_object()
+# ui
+runtime.NEW_NOTIFICATION.register(ui.notify)
+with ui.scene(on_click=handle_click, width=600):
+    rosys.ui.robot_object(robot, odometer)
     path3d = rosys.ui.path_object()
 
 ui.label('click into the scene to drive the robot')
 
 # start
+ui.on_startup(runtime.startup())
+ui.on_shutdown(runtime.shutdown())
 ui.run(title='RoSys', port=8080)

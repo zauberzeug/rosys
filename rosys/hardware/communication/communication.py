@@ -6,8 +6,7 @@ from typing import Optional
 class Communication(abc.ABC):
 
     def __init__(self) -> None:
-        self.name = __name__[:-13] + self.__class__.__name__
-        self.log = logging.getLogger(self.name)
+        self.log = logging.getLogger('rosys.communication')
 
     @classmethod
     @abc.abstractmethod

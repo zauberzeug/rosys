@@ -26,7 +26,7 @@ class Detector:
     interval: float = 1.0
 
     def __init__(self, port: int = 8004, name: str = 'detector'):
-        self.log = logging.getLogger(self.__class__.__name__)
+        self.log = logging.getLogger('rosys.detector')
 
         self.sio = socketio.AsyncClient()
         self.is_detecting: bool = False

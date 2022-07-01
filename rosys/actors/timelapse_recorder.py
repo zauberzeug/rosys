@@ -27,7 +27,7 @@ class TimelapseRecorder:
     storage_path: str = os.path.expanduser('~/.rosys/timelapse')
 
     def __init__(self) -> None:
-        self.log = logging.getLogger(self.__class__.__name__)
+        self.log = logging.getLogger('rosys.timelapse_recorder')
 
         os.makedirs(self.storage_path + '/videos', exist_ok=True)
 

@@ -8,7 +8,7 @@ class Backup:
     interval: float = 10
 
     def __init__(self, persistance: Persistence) -> None:
-        self.log = logging.getLogger(self.__class__.__name__)
+        self.log = logging.getLogger('rosys.backup')
         self.persistance = persistance
 
     async def step(self):

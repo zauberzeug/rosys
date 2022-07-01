@@ -18,7 +18,7 @@ from .pathplanning import (PlannerCommand, PlannerGrowMapCommand, PlannerObstacl
 class PathPlanner:
 
     def __init__(self, robot_shape: RobotShape) -> None:
-        self.log = logging.getLogger(self.__class__.__name__)
+        self.log = logging.getLogger('rosys.path_planner')
 
         self.connection, process_connection = Pipe()
         self.process = PlannerProcess(process_connection, robot_shape.outline)

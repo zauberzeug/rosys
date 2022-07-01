@@ -3,9 +3,11 @@ import logging
 import logging.config
 import os
 
-import rosys
 import rosys.ui
 from nicegui import ui
+from rosys import runtime
+from rosys.actors import Odometer, Steerer
+from rosys.hardware import WheelsSimulation
 
 if not os.path.exists(os.path.expanduser('~/.rosys/')):
     os.makedirs(os.path.expanduser('~/.rosys/'))
@@ -60,9 +62,14 @@ logging.config.dictConfig({
 })
 
 # setup
-runtime = rosys.Runtime()
-rosys.ui.configure(ui, runtime)
+odometer = Odometer()
+wheels = WheelsSimulation(odometer)
+steerer = Steerer(wheels)
 
-rosys.ui.joystick()
+# ui
+rosys.ui.joystick(steerer)
 
+# start
+ui.on_startup(runtime.startup())
+ui.on_shutdown(runtime.shutdown())
 ui.run(title='RoSys', port=8080)

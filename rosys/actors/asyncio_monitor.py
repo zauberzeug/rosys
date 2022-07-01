@@ -23,7 +23,7 @@ class AsyncioMonitor:
     interval: float = 10
 
     def __init__(self) -> None:
-        self.log = logging.getLogger(self.__class__.__name__)
+        self.log = logging.getLogger('rosys.asyncio_monitor')
         self.timings: dict[str, list[Measurement]] = defaultdict(list)
         self.log_position = None
 

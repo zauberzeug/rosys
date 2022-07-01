@@ -34,7 +34,7 @@ class Automator:
     '''an automation has been completed'''
 
     def __init__(self) -> None:
-        self.log = logging.getLogger(self.__class__.__name__)
+        self.log = logging.getLogger('rosys.automator')
 
         self.enabled: bool = True
         self.automation: Optional[Automation] = None

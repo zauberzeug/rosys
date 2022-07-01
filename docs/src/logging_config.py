@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-from nicegui import ui
 import logging
 import logging.config
-import rosys
+
 import rosys.ui
+from nicegui import ui
+from rosys import runtime
+from rosys.actors import Odometer, Steerer
+from rosys.hardware import WheelsSimulation
 
 logging.config.dictConfig({
     'version': 1,
@@ -37,9 +40,14 @@ logging.config.dictConfig({
 })
 
 # setup
-runtime = rosys.Runtime()
-rosys.ui.configure(ui, runtime)
+odometer = Odometer()
+wheels = WheelsSimulation(odometer)
+steerer = Steerer(wheels)
 
-rosys.ui.joystick()
+# ui
+rosys.ui.joystick(steerer)
 
+# start
+ui.on_startup(runtime.startup())
+ui.on_shutdown(runtime.shutdown())
 ui.run(title='RoSys', port=8080)

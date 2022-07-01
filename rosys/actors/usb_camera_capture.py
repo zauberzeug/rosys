@@ -48,7 +48,7 @@ class UsbCameraCapture:
     lag_reduction: int = 1
 
     def __init__(self) -> None:
-        self.log = logging.getLogger(self.__class__.__name__)
+        self.log = logging.getLogger('rosys.usb_camera_capture')
 
         self.devices: dict[str, Device] = {}
         self.last_scan: Optional[float] = None

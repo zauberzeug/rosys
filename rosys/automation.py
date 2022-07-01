@@ -8,7 +8,7 @@ class Automation:
                  coro: Coroutine,
                  exception_handler: Optional[Callable] = None,
                  on_complete: Optional[Callable] = None):
-        self.log = logging.getLogger(self.__class__.__name__)
+        self.log = logging.getLogger('rosys.automation')
         self.coro = coro
         self.exception_handler = exception_handler
         self.on_complete = on_complete

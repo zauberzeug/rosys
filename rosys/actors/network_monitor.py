@@ -27,7 +27,7 @@ class NetworkMonitor:
     interval: float = 60
 
     def __init__(self) -> None:
-        self.log = logging.getLogger(self.__class__.__name__)
+        self.log = logging.getLogger('rosys.network_monitor')
         self.interfaces: dict[str, NetworkStats] = {}
 
     @staticmethod

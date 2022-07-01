@@ -16,7 +16,7 @@ class Steerer:
     speed_scaling: float = 1
 
     def __init__(self, wheels: Wheels) -> None:
-        self.log = logging.getLogger(self.__class__.__name__)
+        self.log = logging.getLogger('rosys.steerer')
 
         self.wheels = wheels
         self.state = State.IDLE

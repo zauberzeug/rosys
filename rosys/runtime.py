@@ -24,7 +24,7 @@ class Runtime:
     '''notify the user (string argument: message)'''
 
     def __init__(self) -> None:
-        self.log = logging.getLogger(self.__class__.__name__)
+        self.log = logging.getLogger('rosys.runtime')
 
         self.is_test = is_test()
         self._time = time.time()
