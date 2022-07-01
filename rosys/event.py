@@ -5,16 +5,18 @@ import functools
 import inspect
 import logging
 import weakref
-from asyncio.tasks import Task
 from typing import Callable, Optional
 
-tasks: list[Task] = []
+from executing import Source
+
+tasks: list[asyncio.Task] = []
 log = logging.getLogger('rosys.event')
 
 
 class Event:
 
     def __init__(self, description: Optional[str] = None) -> None:
+        self.name = Source.executing(inspect.currentframe().f_back).node.parent.targets[0].id
         self.description = description
         self.listeners = set()
 
@@ -55,7 +57,7 @@ class Event:
                 else:
                     callback(*args)
             except:
-                log.exception(f'could not call {listener=} for event {self}')
+                log.exception(f'could not call {listener=} for event {self.name}')
 
     def emit(self, *args) -> None:
         '''Fires event without waiting for the result.'''
@@ -72,11 +74,11 @@ class Event:
                     self.unregistered(listener)
                     continue
                 if iscoroutinefunction(listener):
-                    tasks.append(loop.create_task(callback(*args), name=f'handle {self}'))
+                    tasks.append(loop.create_task(callback(*args), name=f'handle {self.name}'))
                 else:
                     callback(*args)
             except:
-                log.exception(f'could not call {listener=} for event {self}')
+                log.exception(f'could not call {listener=} for event {self.name}')
 
 
 @functools.lru_cache(maxsize=100)
