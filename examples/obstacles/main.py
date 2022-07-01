@@ -2,21 +2,37 @@
 import os
 import uuid
 
-import rosys
 import rosys.ui
 from nicegui import ui
-from rosys.automations import drive_path
-from rosys.world import Obstacle, PathSegment, Point, Pose, Robot, RobotShape, Spline, World
+from rosys import runtime
+from rosys.actors import Automator, Driver, Odometer, PathPlanner, Steerer
+from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
+from rosys.hardware.communication import SerialCommunication
+from rosys.world import Obstacle, PathSegment, Point, Pose, Robot, RobotShape, Spline
 
+# actors
 shape = RobotShape(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])
-world = World(robot=Robot(shape=shape))
-runtime = rosys.Runtime(world, rosys.Persistence(world, '~/.rosys/obstacles/world.json')).with_path_planner()
-rosys.ui.configure(ui, runtime)
-rosys.ui.keyboard_control()
+robot = Robot(shape=shape)
+odometer = Odometer()
+if SerialCommunication.is_possible():
+    communication = SerialCommunication()
+    robot_brain = RobotBrain(communication)
+    wheels = WheelsHardware(odometer, robot_brain)
+else:
+    wheels = WheelsSimulation(odometer)
+steerer = Steerer(wheels)
+driver = Driver(wheels)
+automator = Automator()
+path_planner = PathPlanner(shape)
+
+
+# ui
+runtime.NEW_NOTIFICATION.register(ui.notify)
+rosys.ui.keyboard_control(steerer)
 
 with ui.card():
     state = ui.label()
-    ui.timer(0.1, lambda: state.set_text(f'{world.time:.3f} s, {world.robot.prediction}'))
+    ui.timer(0.1, lambda: state.set_text(f'{runtime.time:.3f} s, {odometer.prediction}'))
 
     click_mode = ui.toggle({
         'drive': 'Drive',
@@ -30,7 +46,7 @@ with ui.card():
         for hit in msg.hits:
             object_type = hit.object_id if hit.object is None else (hit.object.name or '').split('_')[0]
             if object_type == 'ground' and click_mode.value == 'drive':
-                start = world.robot.prediction.point
+                start = odometer.prediction.point
                 target = Point(x=hit.point.x, y=hit.point.y)
                 path = [PathSegment(spline=Spline(
                     start=start,
@@ -39,37 +55,39 @@ with ui.card():
                     end=hit.point,
                 ))]
                 path3d.update(path)
-                runtime.automator.start(drive_path(world, runtime.hardware, path))
+                automator.start(driver.drive_path(path))
                 return
             if object_type == 'ground' and click_mode.value == 'navigate':
-                goal = Pose(x=hit.point.x, y=hit.point.y, yaw=world.robot.prediction.point.direction(hit.point))
-                path = await runtime.path_planner.search(goal=goal, timeout=3.0)
+                goal = Pose(x=hit.point.x, y=hit.point.y, yaw=odometer.prediction.point.direction(hit.point))
+                path = await path_planner.search(start=odometer.prediction, goal=goal, timeout=3.0)
                 path3d.update(path)
-                runtime.automator.start(drive_path(world, runtime.hardware, path))
+                automator.start(driver.drive_path(path))
                 return
             if object_type == 'ground' and click_mode.value == 'obstacles':
                 id = str(uuid.uuid4())
-                world.obstacles[id] = Obstacle(id=id, outline=[
+                path_planner.obstacles[id] = Obstacle(id=id, outline=[
                     Point(x=hit.point.x-0.5, y=hit.point.y-0.5),
                     Point(x=hit.point.x+0.5, y=hit.point.y-0.5),
                     Point(x=hit.point.x+0.5, y=hit.point.y+0.5),
                     Point(x=hit.point.x-0.5, y=hit.point.y+0.5),
                 ])
-                obstacles.update()
+                obstacles3d.update()
                 return
             if object_type == 'obstacle' and click_mode.value == 'obstacles':
-                del world.obstacles[hit.object.name.split('_')[1]]
-                hit.object.delete()
+                del path_planner.obstacles[hit.object.name.split('_')[1]]
+                obstacles3d.update()
                 return
 
     with ui.scene(640, 480, on_click=handle_click) as scene:
-        rosys.ui.robot_object(debug=True)
-        obstacles = rosys.ui.obstacle_object(world.obstacles)
+        rosys.ui.robot_object(robot, odometer, debug=True)
+        obstacles3d = rosys.ui.obstacle_object(path_planner.obstacles)
         path3d = rosys.ui.path_object()
 
     with ui.row():
-        rosys.ui.automation_controls()
+        rosys.ui.automation_controls(automator)
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
-
+# start
+ui.on_startup(runtime.startup())
+ui.on_shutdown(runtime.shutdown())
 ui.run(title='obstacles', port=8080)

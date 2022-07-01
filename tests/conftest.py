@@ -1,10 +1,11 @@
 from typing import Generator
 
 import pytest
-from rosys import event, runtime
-from rosys.actors import Automator, Driver, Odometer
+from rosys import runtime
+from rosys.actors import Automator, Driver, Odometer, PathPlanner
 from rosys.hardware import WheelsSimulation
 from rosys.test import helpers
+from rosys.world import RobotShape
 
 import log_configuration
 
@@ -18,6 +19,7 @@ async def run_around_tests():
     helpers.wheels = WheelsSimulation(helpers.odometer)
     helpers.driver = Driver(helpers.wheels)
     helpers.automator = Automator()
+    helpers.path_planner = PathPlanner(RobotShape())
     await runtime.startup()
     yield
     await runtime.shutdown()
@@ -36,3 +38,8 @@ async def automator() -> Generator:
 @pytest.fixture
 async def wheels() -> Generator:
     return helpers.wheels
+
+
+@pytest.fixture
+async def path_planner() -> Generator:
+    return helpers.path_planner

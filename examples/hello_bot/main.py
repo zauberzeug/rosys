@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 import os
 
-import rosys
 import rosys.ui
 from nicegui import ui
 from rosys import runtime
 from rosys.actors import Automator, Driver, Odometer, Steerer
 from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
 from rosys.hardware.communication import SerialCommunication
+from rosys.world import Robot
 
 import log_configuration
 
 log_configuration.setup()
 
 # actors
-robot = rosys.world.Robot()
+robot = Robot()
 odometer = Odometer()
 if SerialCommunication.is_possible():
     communication = SerialCommunication()
