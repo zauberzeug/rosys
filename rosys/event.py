@@ -5,7 +5,7 @@ import functools
 import inspect
 import logging
 import weakref
-from typing import Callable, Optional
+from typing import Callable
 
 from executing import Source
 
@@ -15,9 +15,8 @@ log = logging.getLogger('rosys.event')
 
 class Event:
 
-    def __init__(self, description: Optional[str] = None) -> None:
+    def __init__(self) -> None:
         self.name = Source.executing(inspect.currentframe().f_back).node.parent.targets[0].id
-        self.description = description
         self.listeners = set()
 
     def register(self, listener: Callable) -> Event:

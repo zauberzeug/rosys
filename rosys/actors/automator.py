@@ -9,14 +9,29 @@ from ..runtime import runtime
 
 
 class Automator:
-    AUTOMATION_STARTED = Event('an automation has been started')
-    PAUSE_AUTOMATION = Event('pause a running automation (string argument: description of the cause)')
-    STOP_AUTOMATION = Event('stop a running automation (string argument: description of the cause)')
-    AUTOMATION_PAUSED = Event('an automation has been paused (string argument: description of the cause)')
-    AUTOMATION_RESUMED = Event('an automation has been resumed')
-    AUTOMATION_STOPPED = Event('an automation has been stopped (string argument: description of the cause)')
-    AUTOMATION_FAILED = Event('an automation has failed to complete (string argument: description of the cause)')
-    AUTOMATION_COMPLETED = Event('an automation has been completed')
+    AUTOMATION_STARTED = Event()
+    '''an automation has been started'''
+
+    PAUSE_AUTOMATION = Event()
+    '''pause a running automation (string argument: description of the cause)'''
+
+    STOP_AUTOMATION = Event()
+    '''stop a running automation (string argument: description of the cause)'''
+
+    AUTOMATION_PAUSED = Event()
+    '''an automation has been paused (string argument: description of the cause)'''
+
+    AUTOMATION_RESUMED = Event()
+    '''an automation has been resumed'''
+
+    AUTOMATION_STOPPED = Event()
+    '''an automation has been stopped (string argument: description of the cause)'''
+
+    AUTOMATION_FAILED = Event()
+    '''an automation has failed to complete (string argument: description of the cause)'''
+
+    AUTOMATION_COMPLETED = Event()
+    '''an automation has been completed'''
 
     def __init__(self) -> None:
         self.log = logging.getLogger(self.__class__.__name__)

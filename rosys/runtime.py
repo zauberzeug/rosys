@@ -18,7 +18,8 @@ class Notification:
 
 
 class Runtime:
-    NEW_NOTIFICATION = event.Event('notify the user (string argument: message)')
+    NEW_NOTIFICATION = event.Event()
+    '''notify the user (string argument: message)'''
 
     def __init__(self) -> None:
         self.log = logging.getLogger(self.__class__.__name__)

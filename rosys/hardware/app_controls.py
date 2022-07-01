@@ -30,7 +30,8 @@ class AppButton:
 
 
 class AppControls:
-    APP_CONNECTED = Event('called after app connected via bluetooth; use this to refresh infos or similar')
+    APP_CONNECTED = Event()
+    '''an app connected via bluetooth (used to refresh information or similar)'''
 
     def __init__(self, communication: Communication) -> None:
         self.communication = communication

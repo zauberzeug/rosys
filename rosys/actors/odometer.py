@@ -7,7 +7,8 @@ from ..world import Pose, PoseStep, Velocity
 
 
 class Odometer:
-    ROBOT_MOVED = Event('a robot movement is detected')
+    ROBOT_MOVED = Event()
+    '''a robot movement is detected'''
 
     def __init__(self):
         self.log = logging.getLogger(self.__class__.__name__)
