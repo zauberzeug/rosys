@@ -5,7 +5,6 @@ from .camera_projector import CameraProjector
 from .detector import Autoupload, Detector
 from .detector_simulator import DetectorSimulator, SimulatedObject
 from .driver import DriveParameters, Driver
-from .garbage_collector import GarbageCollector
 from .network_monitor import NetworkMonitor, NetworkStats
 from .odometer import Odometer
 from .path_planner import PathPlanner

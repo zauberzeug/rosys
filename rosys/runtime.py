@@ -1,10 +1,12 @@
 import asyncio
+import gc
 import logging
 import time
 from dataclasses import dataclass
 from typing import Awaitable, Callable, Optional
 
 import numpy as np
+import psutil
 
 from . import event, run
 from .helpers import is_test
@@ -33,6 +35,10 @@ class Runtime:
         self.startup_handlers: list[Callable | Awaitable] = []
         self.shutdown_handlers: list[Callable | Awaitable] = []
         self.tasks: list[asyncio.Task] = []
+
+        gc.disable()  # NOTE disable automatic garbage collection to optimize performance
+        self.on_repeat(self._garbage_collection, 10 * 60)
+        self.on_repeat(self._watch_emitted_events, 0.1)
 
     def notify(self, message: str) -> None:
         self.log.info(message)
@@ -80,23 +86,26 @@ class Runtime:
                 self.log.exception(f'error while starting handler "{handler.__qualname__}"')
                 continue
 
-        self.tasks.append(create_task(self._watch_emitted_events(), name='watch_emitted_events'))
-
         for handler, interval in self.repeat_handlers:
             self.log.debug(f'starting loop "{handler.__qualname__}" with interval {interval:.3f}s')
             self.tasks.append(create_task(self._repeat_one_handler(handler, interval), name=handler.__qualname__))
 
+    async def _garbage_collection(self, mbyte_limit: float = 300) -> None:
+        if psutil.virtual_memory().free < mbyte_limit * 1_000_000:
+            self.log.warning(f'less than {mbyte_limit} mb of memory remaining -> start garbage collection')
+            gc.collect()
+            await runtime.sleep(1)  # NOTE ensure all warnings appear before sending "finished" message
+            self.log.warning('finished garbage collection')
+
     async def _watch_emitted_events(self) -> None:
-        while True:
-            try:
-                for task in event.tasks:
-                    if task.done() and task.exception():
-                        self._exception = task.exception()
-                        self.log.exception('task failed to execute', exc_info=task.exception())
-                event.tasks = [t for t in event.tasks if not t.done()]
-            except:
-                self.log.exception('failed to watch emitted events')
-            await runtime.sleep(0 if self.is_test else 0.1)
+        try:
+            for task in event.tasks:
+                if task.done() and task.exception():
+                    self._exception = task.exception()
+                    self.log.exception('task failed to execute', exc_info=task.exception())
+            event.tasks = [t for t in event.tasks if not t.done()]
+        except:
+            self.log.exception('failed to watch emitted events')
 
     async def _repeat_one_handler(self, handler: Callable | Awaitable, interval: float) -> None:
         await self.sleep(interval)  # NOTE delaying first execution so not all actors rush in at the same time

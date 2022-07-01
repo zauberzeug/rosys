@@ -4,8 +4,6 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 
-from .garbage_collector import GarbageCollector
-
 
 @dataclass
 class Measurement:
@@ -45,9 +43,9 @@ class AsyncioMonitor:
             f.seek(self.log_position)
             for line in f:
                 line = color_pattern.sub('', line)
-                if GarbageCollector.starting_msg in line:
+                if 'start garbage collection' in line:
                     ignore_warnings = True
-                if GarbageCollector.finished_msg in line:
+                if 'finished garbage collection' in line:
                     ignore_warnings = False
                 if not ignore_warnings:
                     message = self.parse_async_warning(line)
