@@ -1,12 +1,11 @@
 import io
 import random
 import time
-from typing import Optional
+from typing import Any, Optional
 
 import PIL as pil
-import rosys
 
-from ..runtime import runtime
+from ..runtime import persistence, run, runtime
 from ..world import Image, ImageSize, UsbCamera
 from .camera_provider import CameraProvider
 
@@ -14,6 +13,8 @@ from .camera_provider import CameraProvider
 class UsbCameraSimulator(CameraProvider):
 
     def __init__(self) -> None:
+        super().__init__()
+
         self._cameras: dict[str, UsbCamera] = {}
 
         runtime.on_repeat(self.step, 1.0)
@@ -21,6 +22,12 @@ class UsbCameraSimulator(CameraProvider):
     @property
     def cameras(self) -> dict[str, UsbCamera]:
         return self._cameras
+
+    def backup(self) -> dict:
+        return {'cameras': persistence.to_dict(self._cameras)}
+
+    def restore(self, data: dict[str, Any]) -> None:
+        persistence.replace_dict(self._cameras, UsbCamera, data.get('cameras', {}))
 
     async def step(self) -> None:
         for camera in self._cameras.values():
@@ -31,13 +38,13 @@ class UsbCameraSimulator(CameraProvider):
             if runtime.is_test:
                 image.data = b'test data'
             else:
-                image.data = await rosys.run.cpu_bound(self.create_image_data, camera)
+                image.data = await run.cpu_bound(self.create_image_data, camera)
             camera.images.append(image)
 
     @staticmethod
     def create(uid: str, width: int = 800, height: int = 600, color: Optional[str] = None) -> UsbCamera:
         color = color or f'#{random.randint(0, 0xffffff):06x}'
-        return UsbCamera(id=uid, resolution=ImageSize(width=width, height=height), connected=True, color=color)
+        return UsbCamera(id=uid, resolution=ImageSize(width=width, height=height), color=color)
 
     @staticmethod
     def create_calibrated(uid: str, width: int = 800, height: int = 600, color: Optional[str] = None,

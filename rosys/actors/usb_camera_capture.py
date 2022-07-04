@@ -9,6 +9,7 @@ import cv2
 import PIL
 import rosys
 
+from .. import persistence
 from ..runtime import runtime
 from ..world import Image, ImageSize, UsbCamera
 from .camera_provider import CameraProvider
@@ -47,6 +48,8 @@ def process_image(data: bytes, rotation: rosys.world.ImageRotation, crop: rosys.
 class UsbCameraCapture(CameraProvider):
 
     def __init__(self) -> None:
+        super().__init__()
+
         self.log = logging.getLogger('rosys.usb_camera_capture')
 
         self.devices: dict[str, Device] = {}
@@ -59,6 +62,12 @@ class UsbCameraCapture(CameraProvider):
     @property
     def cameras(self) -> dict[str, UsbCamera]:
         return self._cameras
+
+    def backup(self) -> dict:
+        return {'cameras': persistence.to_dict(self._cameras)}
+
+    def restore(self, data: dict[str, Any]) -> None:
+        persistence.replace_dict(self._cameras, UsbCamera, data.get('cameras', {}))
 
     async def step(self) -> None:
         await self.update_device_list()
