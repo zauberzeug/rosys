@@ -11,7 +11,7 @@ from .lizard_stats import LizardStats as lizard_stats
 from .objgraph_page import ObjgraphPage as objgraph_page
 from .obstacle_object import ObstacleObject as obstacle_object
 from .path_object import PathObject as path_object
-from .profiler import create_profiler
+from .profiler import profile_button
 from .pyloot_page import PylootPage as pyloot_page
 from .robot_object import RobotObject as robot_object
 from .settings import Settings as settings

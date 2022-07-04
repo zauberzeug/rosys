@@ -2,7 +2,7 @@ import logging
 import time
 
 import yappi
-from nicegui.ui import Ui
+from nicegui import ui
 from tabulate import tabulate
 
 from ..profiling import profile
@@ -11,11 +11,11 @@ from ..runtime import runtime
 log = logging.getLogger('rosys.profiler')
 
 
-def create_profiler(ui: Ui):
+def profile_button() -> ui.button:
 
     async def start(duration: float = 10.0):
         ui.notify('start profiling')
-        profile_button.props(replace='icon=stop')
+        button.props(replace='icon=stop')
         yappi.clear_stats()
         yappi.start()
         profile.start()
@@ -26,7 +26,7 @@ def create_profiler(ui: Ui):
 
     def stop():
         ui.notify('stop profiling')
-        profile_button.props(replace='icon=play_arrow')
+        button.props(replace='icon=play_arrow')
         profile.stop(print=False)
         yappi.stop()
         table = [
@@ -50,4 +50,5 @@ def create_profiler(ui: Ui):
             await start()
         return False  # do not refresh UI
 
-    profile_button = ui.button('Profiler', on_click=toggle).props('icon=play_arrow').tooltip('run profiling')
+    button = ui.button('Profiler', on_click=toggle).props('icon=play_arrow').tooltip('run profiling')
+    return button
