@@ -1,11 +1,15 @@
+import asyncio
 import logging
-import os
+import os.path
 import re
 from collections import defaultdict
 from dataclasses import dataclass
+from typing import Optional
+
+from ..runtime import runtime
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class Measurement:
     time: str
     duration: float
@@ -20,26 +24,36 @@ coro_pattern = re.compile(r"(.*) (running at .*)")
 
 
 class AsyncioMonitor:
-    interval: float = 10
 
-    def __init__(self) -> None:
+    def __init__(self, log_filepath: str = os.path.expanduser('~/.rosys/debug.log')) -> None:
         self.log = logging.getLogger('rosys.asyncio_monitor')
+
+        self.log_filepath = log_filepath
         self.timings: dict[str, list[Measurement]] = defaultdict(list)
-        self.log_position = None
+        self.log_position: Optional[int] = None
 
-    async def step(self):
-        logfile = os.path.expanduser('~/.rosys/debug.log')
-        if not os.path.isfile(logfile):
+        runtime.on_startup(self.activate_async_debugging)
+        runtime.on_repeat(self.step, 10)
+
+    def activate_async_debugging(self):
+        '''Produce warnings for coroutines which take too long on the main loop and hence clog the event loop'''
+        try:
+            loop = asyncio.get_running_loop()
+            loop.set_debug(True)
+            loop.slow_callback_duration = 0.05
+        except:
+            self.log.exception('could not activate async debugging')
+
+    async def step(self) -> None:
+        if not os.path.isfile(self.log_filepath):
             return
-        self.parse_log(logfile)
 
-    def parse_log(self, log):
-        if self.log_position is None:  # NOTE only messgages generated after startup should be analyzed
-            self.log_position = os.path.getsize(log)
-        if os.path.getsize(log) < self.log_position:  # NOTE detect beginning of new log file
+        if self.log_position is None:  # NOTE only messages generated after startup should be analyzed
+            self.log_position = os.path.getsize(self.log_filepath)
+        if os.path.getsize(self.log_filepath) < self.log_position:  # NOTE detect beginning of new log file
             self.log_position = 0
         ignore_warnings = False
-        with open(log, 'r') as f:
+        with open(self.log_filepath, 'r') as f:
             f.seek(self.log_position)
             for line in f:
                 line = color_pattern.sub('', line)
@@ -53,7 +67,7 @@ class AsyncioMonitor:
                         self.timings[message.name].append(message)
             self.log_position = f.tell()
 
-    def parse_async_warning(self, msg: str):
+    def parse_async_warning(self, msg: str) -> Measurement:
         if 'rosys/actors/asyncio_monitor.py' in msg:
             return  # NOTE we ignore our own messages
         match_warning = warning_pattern.match(msg)

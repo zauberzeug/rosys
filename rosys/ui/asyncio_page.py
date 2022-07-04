@@ -1,11 +1,13 @@
-from nicegui.ui import Ui
-import logging
 import html
-import numpy as np
-from ..actors import AsyncioMonitor
-from .. import run
+import logging
 
-log = logging.getLogger('rosys.asyncio')
+import numpy as np
+from nicegui import ui
+
+from .. import run
+from ..actors import AsyncioMonitor
+
+log = logging.getLogger('rosys.asyncio_page')
 
 
 def prepare_data(timings):
@@ -22,16 +24,18 @@ def prepare_data(timings):
     return names, [calc_box([w.duration * 1000 for w in t]) for t in timings.values()]
 
 
-class AsyncioPage:
-    ui: Ui = None
-    asyncio_monitor: AsyncioMonitor
+class AsyncioPage(ui.page):
 
-    def __init__(self) -> None:
-        with self.ui.page('/asyncio'):
-            with self.ui.row():
-                self.ui.button('load', on_click=self.update)
-                self.info_label = self.ui.label()
-            self.chart = self.ui.chart(options={
+    def __init__(self, asyncio_monitor: AsyncioMonitor) -> None:
+        super().__init__('/asyncio')
+
+        self.asyncio_monitor = asyncio_monitor
+
+        with self:
+            with ui.row():
+                ui.button('load', on_click=self.update)
+                self.info_label = ui.label()
+            self.chart = ui.chart(options={
                 'title': False,
                 'chart': {'type': 'boxplot'},
                 'xAxis': {'categories': []},
