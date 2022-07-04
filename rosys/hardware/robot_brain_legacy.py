@@ -2,11 +2,9 @@ from __future__ import annotations
 
 import abc
 import asyncio
+from dataclasses import dataclass
 from functools import reduce
 from operator import ixor
-from typing import List
-
-from pydantic import BaseModel
 
 from ..world import Velocity, World
 from .communication import Communication
@@ -14,7 +12,7 @@ from .communication import Communication
 
 class RobotBrainLegacy:
 
-    def __init__(self, world: World, configuration: List[HardwareGroup], communication: Communication):
+    def __init__(self, world: World, configuration: list[HardwareGroup], communication: Communication):
         self.world = world
         self.communication = communication
         self.configuration = configuration
@@ -86,7 +84,8 @@ class RobotBrainLegacy:
         await self.communication.send_async(f'{msg}^{reduce(ixor, map(ord, msg))}')
 
 
-class HardwareGroup(BaseModel, abc.ABC):
+@dataclass(slots=True, kw_only=True)
+class HardwareGroup(abc.ABC):
     name: str
     output: bool = False
 

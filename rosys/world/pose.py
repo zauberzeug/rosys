@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Any
 
 import numpy as np
-from pydantic import BaseModel
 
 from .point import Point
 from .point3d import Point3d
@@ -17,7 +16,8 @@ class PoseStep:
     time: float
 
 
-class Pose(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class Pose:
     x: float = 0
     y: float = 0
     yaw: float = 0

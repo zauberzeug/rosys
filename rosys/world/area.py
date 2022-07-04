@@ -1,12 +1,12 @@
+from dataclasses import dataclass
 from typing import Optional
-
-from pydantic import BaseModel
 
 from .point import Point
 
 
-class Area(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class Area:
     id: str
-    type: Optional[str]
+    type: Optional[str] = None
     color: str = 'green'
     outline: list[Point]

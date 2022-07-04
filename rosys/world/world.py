@@ -1,7 +1,8 @@
-from pydantic import BaseModel
+from dataclasses import dataclass
 
 from .upload import Upload
 
 
-class World(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class World:
     upload: Upload = Upload()

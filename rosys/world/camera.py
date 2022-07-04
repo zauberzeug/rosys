@@ -1,25 +1,27 @@
 from __future__ import annotations
 
 import abc
-from typing import Any, Optional
+from dataclasses import dataclass, field
+from typing import Optional
 
 import numpy as np
-from pydantic import BaseModel, Field
+from rosys import persistence
 
 from .calibration import Calibration, Extrinsics, Intrinsics
 from .image import Image, ImageSize
 from .rotation import Rotation
 
 
-class Camera(BaseModel, abc.ABC):
+@dataclass(slots=True, kw_only=True)
+class Camera(abc.ABC):
     id: str
     calibration: Optional[Calibration] = None
-    calibration_simulation: Optional[Calibration] = Field(None, description='only needed for simulation')
-    projection: Optional[list[list[Optional[list[float]]]]] = Field(None, exclude=True)
-    images: list[Image] = Field([], exclude=True)
 
-    def __init__(self, **data: Any) -> None:
-        super().__init__(**data)
+    calibration_simulation: Optional[Calibration] = None
+    '''only needed for simulation'''
+
+    projection: Optional[list[list[Optional[list[float]]]]] = field(default=None, metadata=persistence.exclude)
+    images: list[Image] = field(default_factory=list, metadata=persistence.exclude)
 
     @property
     def latest_image_uri(self) -> str:
@@ -43,16 +45,18 @@ class Camera(BaseModel, abc.ABC):
 
     def set_perfect_calibration(
         self,
-        x: float = 0, y: float = 0, z: float = 1,
-        yaw: float = 0, tilt_x: float = 0, tilt_y: float = 0,
+        x: float = 0.0, y: float = 0.0, z: float = 1.0,
+        yaw: float = 0.0, tilt_x: float = 0.0, tilt_y: float = 0.0,
         image_width=800, image_height=600,
     ) -> None:
-        calibration = Calibration(
+        self.calibration_simulation = Calibration(
             intrinsics=Camera.create_intrinsics(image_width, image_height),
             extrinsics=Extrinsics(tilt=Rotation.from_euler(tilt_x, np.pi + tilt_y, 0), yaw=yaw, translation=[x, y, z]),
         )
-        self.calibration_simulation = calibration
-        self.calibration = calibration.copy(deep=True)
+        self.calibration = Calibration(
+            intrinsics=Camera.create_intrinsics(image_width, image_height),
+            extrinsics=Extrinsics(tilt=Rotation.from_euler(tilt_x, np.pi + tilt_y, 0), yaw=yaw, translation=[x, y, z]),
+        )
 
     @staticmethod
     def create_intrinsics(image_width: int = 800, image_height: int = 600) -> Intrinsics:

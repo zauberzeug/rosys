@@ -1,9 +1,32 @@
 import json
 import logging
 import os.path
-from typing import Any, Protocol
+from typing import Any, Protocol, TypeVar
+
+from dataclasses_json import Exclude, config
+from dataclasses_json.core import _asdict, _decode_dataclass
 
 from .helpers import is_test
+
+exclude = config(exclude=Exclude.ALWAYS)
+
+
+def to_dict(obj: Any) -> dict[str, Any]:
+    return _asdict(obj, False)
+
+
+def from_dict(cls: type, d: dict[str, Any]) -> Any:
+    return _decode_dataclass(cls, d, False)
+
+
+T = TypeVar('T')
+
+
+def replace_dict(old_dict: dict[str, T], cls: type, new_dict: dict[str, T]) -> None:
+    '''Replace content of `old_dict` with keys and values from `new_dict`.'''
+    old_dict.clear()
+    old_dict.update({key: from_dict(cls, value) for key, value in new_dict.items()})
+
 
 backup_path = os.path.expanduser('~/.rosys')
 log = logging.getLogger('rosys.persistence')

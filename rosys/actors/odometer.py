@@ -1,4 +1,5 @@
 import logging
+from copy import deepcopy
 from typing import Optional
 
 from ..event import Event
@@ -23,7 +24,7 @@ class Odometer:
         self._steps: list[PoseStep] = []
 
     def add_odometry(self, linear_velocity: float, angular_velocity: float, time: float) -> None:
-        self.odometry.append(Velocity(linear_velocity, angular_velocity, time))
+        self.odometry.append(Velocity(linear=linear_velocity, angular=angular_velocity, time=time))
 
     def process_odometry(self) -> None:
         if not self.odometry:
@@ -58,7 +59,7 @@ class Odometer:
             return
 
         self.prune_steps(self.detection.time)
-        self.prediction = self.detection.copy(deep=True)
+        self.prediction = deepcopy(self.detection)
         for step in self._steps:
             self.prediction += step
 

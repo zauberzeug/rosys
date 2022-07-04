@@ -1,15 +1,16 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-from pydantic import BaseModel
 
 from .point import Point
 from .pose import Pose
 
 
-class Spline(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class Spline:
     start: Point
     control1: Point
     control2: Point
@@ -31,9 +32,7 @@ class Spline(BaseModel):
     q: float = 0
     r: float = 0
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
+    def __post_init__(self):
         self.a = self.start.x
         self.e = self.start.y
         self.b = self.control1.x

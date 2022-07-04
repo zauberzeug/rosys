@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import math
-
-from pydantic import BaseModel
+from dataclasses import dataclass
 
 from .point import Point
 
 
-class Point3d(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class Point3d:
     x: float
     y: float
     z: float

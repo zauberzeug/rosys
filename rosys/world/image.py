@@ -2,16 +2,17 @@ from __future__ import annotations
 
 import io
 import urllib.parse
+from dataclasses import dataclass
 from typing import Optional
 
 import PIL.Image
 import PIL.ImageDraw
-from pydantic import BaseModel
 
 from .detections import Detections
 
 
-class ImageSize(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class ImageSize:
     width: int
     height: int
 
@@ -20,7 +21,8 @@ class ImageSize(BaseModel):
         return (self.width, self.height)
 
 
-class Image(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class Image:
     camera_id: str
     size: ImageSize
     time: float  # world time of recording

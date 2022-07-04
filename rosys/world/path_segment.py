@@ -1,7 +1,9 @@
-from pydantic import BaseModel
+from dataclasses import dataclass
+
 from .spline import Spline
 
 
-class PathSegment(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class PathSegment:
     spline: Spline
     backward: bool = False

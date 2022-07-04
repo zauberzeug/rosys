@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import numpy as np
-from pydantic import BaseModel
 
 
-class Point(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class Point:
     x: float
     y: float
 

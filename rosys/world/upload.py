@@ -1,12 +1,14 @@
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from rosys import persistence
 
 from .image import Image
 
 
-class UploadData(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class UploadData:
     image: Image
     detector_name: str
 
@@ -14,11 +16,12 @@ class UploadData(BaseModel):
         return hash(self.image)
 
 
-class Upload(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class Upload:
     minimal_minutes_between_uploads: float = 1.0
     last_upload: datetime = datetime.fromtimestamp(0)
-    queue: set[UploadData] = Field(set(), exclude=True)
-    priority_queue: set[UploadData] = Field(set(), exclude=True)
+    queue: set[UploadData] = field(default_factory=set, metadata=persistence.exclude)
+    priority_queue: set[UploadData] = field(default_factory=set, metadata=persistence.exclude)
 
     def mark(self, image: Image, *, force: bool = False, detector_name: Optional[str] = None):
         '''Mark an image for upload. Set force=True to circumvent minimal_minutes_between_uploads.'''

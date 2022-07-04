@@ -1,7 +1,9 @@
-from pydantic import BaseModel
+from dataclasses import dataclass
+
 from .point import Point
 
 
-class Obstacle(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class Obstacle:
     id: str
     outline: list[Point]

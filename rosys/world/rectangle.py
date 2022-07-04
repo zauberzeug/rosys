@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from dataclasses import dataclass
 
 from .point import Point
 
 
-class Rectangle(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class Rectangle:
     x: float
     y: float
     width: float

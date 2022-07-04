@@ -1,9 +1,10 @@
-from pydantic import BaseModel
+from dataclasses import dataclass, field
 
 from .point import Point
 
 
-class Detection(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class Detection:
     category_name: str
     model_name: str
     confidence: float
@@ -24,6 +25,7 @@ class Detection(BaseModel):
         return Point(x=self.cx, y=self.cy)
 
 
+@dataclass(slots=True, kw_only=True)
 class BoxDetection(Detection):
     width: float
     height: float
@@ -47,6 +49,7 @@ class BoxDetection(Detection):
             f'<text x="{x}" y="{y - 7}" text-anchor="start" stroke="{color}" fill="{color}" font-size="10">{self.category_name} ({int(self.confidence*100)}%)</text>'
 
 
+@dataclass(slots=True, kw_only=True)
 class PointDetection(Detection):
 
     @property
@@ -68,9 +71,10 @@ class PointDetection(Detection):
             f'<text x="{x + 10}" y="{y + 4}" text-anchor="start" stroke="{color}" fill="{color}" font-size="12" font-weight="light">{self.category_name} ({int(self.confidence*100)}%)</text>'
 
 
-class Detections(BaseModel):
-    boxes: list[BoxDetection] = []
-    points: list[PointDetection] = []
+@dataclass(slots=True, kw_only=True)
+class Detections:
+    boxes: list[BoxDetection] = field(default_factory=list)
+    points: list[PointDetection] = field(default_factory=list)
 
     def to_svg(self, shrink: int = 1) -> str:
         return '\n'.join(b.to_svg(shrink) for b in self.boxes) + '\n' + '\n'.join(p.to_svg(shrink) for p in self.points)

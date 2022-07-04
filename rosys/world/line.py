@@ -1,6 +1,9 @@
 from __future__ import annotations
-from pydantic import BaseModel
+
+from dataclasses import dataclass
+
 import numpy as np
+
 from .point import Point
 
 
@@ -8,7 +11,8 @@ def skew(a, b, c):
     return np.array([[0, -c, b], [c, 0, -a], [-b, a, 0]])
 
 
-class Line(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class Line:
     a: float
     b: float
     c: float

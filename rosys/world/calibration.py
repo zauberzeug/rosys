@@ -1,9 +1,9 @@
 import logging
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 import cv2
 import numpy as np
-from pydantic import BaseModel
 
 from .image import ImageSize
 from .point import Point
@@ -11,7 +11,8 @@ from .point3d import Point3d
 from .rotation import Rotation
 
 
-class Intrinsics(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class Intrinsics:
     matrix: list[list[float]]
     distortion: list[float]
     rotation: Rotation
@@ -21,13 +22,15 @@ class Intrinsics(BaseModel):
 log = logging.getLogger('rosys.world.calibration')
 
 
-class Extrinsics(BaseModel):
-    tilt: Optional[Rotation]
+@dataclass(slots=True, kw_only=True)
+class Extrinsics:
+    tilt: Optional[Rotation] = None
     yaw: float = 0.0
-    translation: list[float] = [0.0, 0.0, 1.0]
+    translation: list[float] = field(default_factory=lambda: [0.0, 0.0, 1.0])
 
 
-class Calibration(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class Calibration:
     intrinsics: Intrinsics
     extrinsics: Extrinsics = Extrinsics()
 
@@ -52,7 +55,7 @@ class Calibration(BaseModel):
         Rod = cv2.Rodrigues(R.T)[0]
         t = -R.T @ self.extrinsics.translation
         K = np.array(self.intrinsics.matrix)
-        D = np.array(self.intrinsics.distortion)
+        D = np.array(self.intrinsics.distortion, dtype=float)
         image_points, _ = cv2.projectPoints(world_points, Rod, t, K, D)
         return Point(x=image_points[0, 0, 0], y=image_points[0, 0, 1])
 
@@ -61,7 +64,7 @@ class Calibration(BaseModel):
         Rod = cv2.Rodrigues(R.T)[0]
         t = -R.T @ self.extrinsics.translation
         K = np.array(self.intrinsics.matrix)
-        D = np.array(self.intrinsics.distortion)
+        D = np.array(self.intrinsics.distortion, dtype=float)
         image_points, _ = cv2.projectPoints(world_points, Rod, t, K, D)
         return image_points.reshape(-1, 2)
 

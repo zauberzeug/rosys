@@ -1,11 +1,14 @@
 from __future__ import annotations
-from pydantic import BaseModel
+
+from dataclasses import dataclass
 from typing import Optional
-from .point import Point
+
 from .line import Line
+from .point import Point
 
 
-class LineSegment(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class LineSegment:
 
     point1: Point
     point2: Point

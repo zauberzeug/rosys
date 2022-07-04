@@ -1,3 +1,4 @@
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Optional
 
@@ -29,7 +30,7 @@ class Driver:
         self.carrot_pose: Optional[Pose] = None
 
     async def drive_square(self) -> None:
-        start_pose = self.odometer.prediction.copy()
+        start_pose = deepcopy(self.odometer.prediction)
         for x, y in [(1, 0), (1, 1), (0, 1), (0, 0)]:
             await self.drive_to(start_pose.transform(Point(x=x, y=y)))
 

@@ -1,10 +1,13 @@
 from __future__ import annotations
-from pydantic import BaseModel
-import numpy as np
+
+from dataclasses import dataclass
+
 import cv2
+import numpy as np
 
 
-class Rotation(BaseModel):
+@dataclass(slots=True, kw_only=True)
+class Rotation:
     R: list[list[float]]
 
     @staticmethod

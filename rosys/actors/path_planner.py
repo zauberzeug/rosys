@@ -36,13 +36,13 @@ class PathPlanner:
 
     def backup(self) -> dict:
         return {
-            'obstacles': {id: obstacle.dict() for id, obstacle in self.obstacles.items()},
-            'areas': {id: area.dict() for id, area in self.areas.items()},
+            'obstacles': persistence.to_dict(self.obstacles),
+            'areas': persistence.to_dict(self.areas),
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.obstacles |= {id: Obstacle.parse_obj(obstacle) for id, obstacle in data.get('obstacles', {}).items()}
-        self.areas |= {id: Area.parse_obj(area) for id, area in data.get('areas', {}).items()}
+        persistence.replace_dict(self.obstacles, Obstacle, data.get('obstacles', {}))
+        persistence.replace_dict(self.areas, Area, data.get('areas', {}))
 
     def startup(self) -> None:
         self.process.start()
