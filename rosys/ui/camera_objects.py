@@ -1,28 +1,29 @@
 import numpy as np
-import rosys
 from nicegui import ui
 from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Cylinder, Group, Texture
-from rosys.actors import CameraProjector
-from rosys.world import Calibration, Camera
 
-from ..world import World
+from .. import run
+from ..actors import CameraProjector, CameraProvider
+from ..world import Calibration, Camera
 
 
-class CameraObjects(Object3D):
-    world: World = None
+class CameraObjects(Group):
 
-    def __init__(self, *, px_per_m: float = 10000):
-        super().__init__('group')
+    def __init__(self, camera_provider: CameraProvider, *, px_per_m: float = 10000):
+        super().__init__()
+
+        self.camera_provider = camera_provider
         self.px_per_m = px_per_m
         self.textures: dict[str, Texture] = {}
+
         ui.timer(1.0, self.update)
 
     @property
     def calibrated_cameras(self) -> dict[str, Camera]:
         return {
             id: camera
-            for id, camera in self.world.cameras.items()
+            for id, camera in self.camera_provider.cameras.items()
             if camera.calibration is not None and camera.calibration.is_complete
         }
 
@@ -57,7 +58,7 @@ class CameraObjects(Object3D):
                         camera.calibration.intrinsics.matrix[0][0] / self.px_per_m,
                     )
             camera_groups[uid].move(*camera.calibration.extrinsics.translation)
-            camera_groups[uid].rotate_R(await rosys.run.cpu_bound(self.get_rotation, camera.calibration))
+            camera_groups[uid].rotate_R(await run.cpu_bound(self.get_rotation, camera.calibration))
         return False  # NOTE: avoid JustPy page_update
 
     @staticmethod
@@ -90,6 +91,6 @@ class CameraObjects(Object3D):
             if texture.args[0] != image.url:
                 url = image.url
                 await texture.set_url(url)
-            if not await rosys.run.cpu_bound(CameraProjector.allclose, texture.args[1], coordinates):
+            if not await run.cpu_bound(CameraProjector.allclose, texture.args[1], coordinates):
                 await texture.set_coordinates(coordinates)
         return False  # NOTE: avoid JustPy page_update
