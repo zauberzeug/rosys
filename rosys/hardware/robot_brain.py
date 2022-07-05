@@ -50,7 +50,7 @@ class RobotBrain:
                     continue
                 self.hardware_time = millis / 1000 + self.clock_offset
             self.app_controls.parse(line)
-            lines.append(self.hardware_time, line)
+            lines.append((self.hardware_time, line))
         if millis is not None:
             self.clock_offset = runtime.time - millis / 1000
         return lines
