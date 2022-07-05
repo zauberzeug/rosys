@@ -11,7 +11,9 @@ from ..world import Camera
 class CameraProvider(abc.ABC):
 
     CAMERA_ADDED = Event()
-    '''a new camera has been discoverd (argument: new camera)'''
+    '''a new camera has been added (argument: camera)'''
+    CAMERA_REMOVED = Event()
+    '''a camera has been removed (argument: camera id)'''
 
     def __init__(self) -> None:
         self.needs_backup: bool = False
@@ -22,9 +24,14 @@ class CameraProvider(abc.ABC):
     def cameras(self) -> dict[str, Camera]:
         return {}
 
-    def add_camera(self, camera) -> None:
+    def add_camera(self, camera: Camera) -> None:
         self.cameras[camera.id] = camera
         self.CAMERA_ADDED.emit(camera)
+        self.needs_backup = True
+
+    def remove_camera(self, camera_id: str) -> None:
+        del self.cameras[camera_id]
+        self.CAMERA_REMOVED.emit(camera_id)
         self.needs_backup = True
 
     def prune_images(self, max_age_seconds: Optional[float] = None):
