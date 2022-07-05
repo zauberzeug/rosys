@@ -36,6 +36,16 @@ class CameraProvider(abc.ABC):
         self.CAMERA_REMOVED.emit(camera_id)
         self.needs_backup = True
 
+    def remove_all_cameras(self) -> None:
+        [self.remove_camera(camera_id) for camera_id in self.cameras]
+
+    def remove_calibration(self, camera_id: str) -> None:
+        self.cameras[camera_id].calibration = None
+        self.needs_backup = True
+
+    def remove_all_calibrations(self) -> None:
+        [self.remove_calibration(camera_id) for camera_id in self.cameras]
+
     def add_image(self, camera: Camera, image: Image) -> None:
         camera.images.append(image)
         self.NEW_IMAGE.emit(camera, image)
