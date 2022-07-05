@@ -53,7 +53,7 @@ class DetectorSimulator(Detector):
             return
         camera = self.world.cameras[image.camera_id]
         for object in self.simulated_objects:
-            image_point = camera.calibration_simulation.project_to_image(object.position)
+            image_point = camera.calibration.project_to_image(object.position)
             if not (0 <= image_point.x < image.size.width and 0 <= image_point.y < image.size.height):
                 continue
 
@@ -78,7 +78,7 @@ class DetectorSimulator(Detector):
                     for dy in [-object.size[1] / 2, object.size[1] / 2]
                     for dz in [-object.size[2] / 2, object.size[2] / 2]
                 ])
-                image_points = camera.calibration_simulation.project_array_to_image(world_points)
+                image_points = camera.calibration.project_array_to_image(world_points)
                 detection = rosys.world.BoxDetection(
                     category_name=object.category_name,
                     model_name='simulation',

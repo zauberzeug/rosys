@@ -16,10 +16,6 @@ from .rotation import Rotation
 class Camera(abc.ABC):
     id: str
     calibration: Optional[Calibration] = None
-
-    calibration_simulation: Optional[Calibration] = None
-    '''only needed for simulation'''
-
     projection: Optional[list[list[Optional[list[float]]]]] = field(default=None, metadata=persistence.exclude)
     images: list[Image] = field(default_factory=list, metadata=persistence.exclude)
 
@@ -49,10 +45,6 @@ class Camera(abc.ABC):
         yaw: float = 0.0, tilt_x: float = 0.0, tilt_y: float = 0.0,
         image_width=800, image_height=600,
     ) -> None:
-        self.calibration_simulation = Calibration(
-            intrinsics=Camera.create_intrinsics(image_width, image_height),
-            extrinsics=Extrinsics(tilt=Rotation.from_euler(tilt_x, np.pi + tilt_y, 0), yaw=yaw, translation=[x, y, z]),
-        )
         self.calibration = Calibration(
             intrinsics=Camera.create_intrinsics(image_width, image_height),
             extrinsics=Extrinsics(tilt=Rotation.from_euler(tilt_x, np.pi + tilt_y, 0), yaw=yaw, translation=[x, y, z]),
@@ -66,6 +58,3 @@ class Camera(abc.ABC):
         D = [0, 0, 0, 0, 0]
         rotation = Rotation.zero()
         return Intrinsics(matrix=K, distortion=D, rotation=rotation, size=size)
-
-    def __str__(self) -> str:
-        return self.title
