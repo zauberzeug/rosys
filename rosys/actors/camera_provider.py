@@ -5,7 +5,7 @@ from rosys import persistence
 
 from ..event import Event
 from ..runtime import runtime
-from ..world import Camera
+from ..world import Camera, Image
 
 
 class CameraProvider(abc.ABC):
@@ -14,6 +14,8 @@ class CameraProvider(abc.ABC):
     '''a new camera has been added (argument: camera)'''
     CAMERA_REMOVED = Event()
     '''a camera has been removed (argument: camera id)'''
+    NEW_IMAGE = Event()
+    '''an new image is available (arguments: camera, image)'''
 
     def __init__(self) -> None:
         self.needs_backup: bool = False
@@ -33,6 +35,10 @@ class CameraProvider(abc.ABC):
         del self.cameras[camera_id]
         self.CAMERA_REMOVED.emit(camera_id)
         self.needs_backup = True
+
+    def add_image(self, camera: Camera, image: Image) -> None:
+        camera.images.append(image)
+        self.NEW_IMAGE.emit(camera, image)
 
     def prune_images(self, max_age_seconds: Optional[float] = None):
         for camera in self.cameras.values():
