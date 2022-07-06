@@ -22,6 +22,6 @@ class WheelsHardware(Wheels):
     async def step(self) -> None:
         for time, line in await self.robot_brain.read_lines():
             words = line.split()
-            if words.pop(0) == 'core':
-                self.odometer.add_odometry(float(words.pop(0)), float(words.pop(0)), time)
+            if words[0] == 'core':
+                self.odometer.add_odometry(float(words[2]), float(words[3]), time)
         self.odometer.process_odometry()
