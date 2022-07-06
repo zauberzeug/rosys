@@ -2,7 +2,7 @@
 import rosys.ui
 from nicegui import ui
 from rosys import runtime
-from rosys.actors import CameraProvider, CameraServer, Odometer, Steerer, UsbCameraCapture, UsbCameraSimulator
+from rosys.actors import CameraProvider, CameraServer, Odometer, Steerer, UsbCameraProviderHardware, UsbCameraProviderSimulation
 from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
 from rosys.hardware.communication import SerialCommunication
 from rosys.world import Camera, Robot
@@ -14,10 +14,10 @@ if SerialCommunication.is_possible():
     communication = SerialCommunication()
     robot_brain = RobotBrain(communication)
     wheels = WheelsHardware(odometer, robot_brain)
-    camera_provider = UsbCameraCapture()
+    camera_provider = UsbCameraProviderHardware()
 else:
     wheels = WheelsSimulation(odometer)
-    camera_provider = UsbCameraSimulator()
+    camera_provider = UsbCameraProviderSimulation()
 CameraServer(camera_provider)
 steerer = Steerer(wheels)
 

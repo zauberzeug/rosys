@@ -11,5 +11,5 @@ from .odometer import Odometer
 from .path_planner import PathPlanner
 from .steerer import Steerer
 from .timelapse_recorder import TimelapseRecorder
-from .usb_camera_capture import UsbCameraCapture
-from .usb_camera_simulator import UsbCameraSimulator
+from .usb_camera_provider_hardware import UsbCameraProviderHardware
+from .usb_camera_provider_simulation import UsbCameraProviderSimulation

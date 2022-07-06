@@ -45,12 +45,12 @@ def process_image(data: bytes, rotation: rosys.world.ImageRotation, crop: rosys.
     return img_byte_arr.getvalue()
 
 
-class UsbCameraCapture(CameraProvider):
+class UsbCameraProviderHardware(CameraProvider):
 
     def __init__(self) -> None:
         super().__init__()
 
-        self.log = logging.getLogger('rosys.usb_camera_capture')
+        self.log = logging.getLogger('rosys.usb_camera_provider')
 
         self.devices: dict[str, Device] = {}
         self.last_scan: Optional[float] = None

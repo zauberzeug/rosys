@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 from nicegui import ui
 from rosys import runtime
-from rosys.actors import CameraServer, UsbCameraCapture, UsbCameraSimulator, camera_provider
+from rosys.actors import CameraServer, UsbCameraProviderHardware, UsbCameraProviderSimulation, camera_provider
 
 # setup
-if UsbCameraCapture.is_operable():
-    camera_provider = UsbCameraCapture()
+if UsbCameraProviderHardware.is_operable():
+    camera_provider = UsbCameraProviderHardware()
 else:
-    camera_provider = UsbCameraSimulator()
+    camera_provider = UsbCameraProviderSimulation()
     camera_provider.add_camera(camera_provider.create_calibrated('test_cam', width=800, height=600))
 CameraServer(camera_provider)
 
