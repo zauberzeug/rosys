@@ -6,7 +6,7 @@ import numpy as np
 import rosys
 from rosys.actors.detector import Autoupload
 
-from ..world import Detections, Image, World
+from ..world import Detections, Image
 from . import Detector
 
 
@@ -22,7 +22,6 @@ class SimulatedObject:
 
 
 class DetectorSimulator(Detector):
-    world: World
     noisy_image_points: bool = True
 
     def __init__(self) -> None:

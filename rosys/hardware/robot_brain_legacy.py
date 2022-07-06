@@ -6,14 +6,13 @@ from dataclasses import dataclass
 from functools import reduce
 from operator import ixor
 
-from ..world import Velocity, World
+from ..world import Velocity
 from .communication import Communication
 
 
 class RobotBrainLegacy:
 
-    def __init__(self, world: World, configuration: list[HardwareGroup], communication: Communication):
-        self.world = world
+    def __init__(self, configuration: list[HardwareGroup], communication: Communication):
         self.communication = communication
         self.configuration = configuration
 

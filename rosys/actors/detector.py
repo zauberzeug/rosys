@@ -6,8 +6,10 @@ import socketio
 import socketio.exceptions
 from aenum import Enum, auto
 
-from .. import event, runtime, task_logger
-from ..world import BoxDetection, Detections, Image, PointDetection
+from .. import persistence, task_logger
+from ..event import Event
+from ..runtime import runtime
+from ..world import BoxDetection, Detections, Image, PointDetection, Uploads
 
 
 class Autoupload(Enum, init='value __doc__'):
@@ -23,9 +25,10 @@ class Autoupload(Enum, init='value __doc__'):
 
 
 class Detector:
-    interval: float = 1.0
+    NEW_DETECTIONS = Event()
+    'detection on an image is completed (argument: image)'
 
-    def __init__(self, port: int = 8004, name: str = 'detector'):
+    def __init__(self, port: int = 8004, name: str = 'detector') -> None:
         self.log = logging.getLogger('rosys.detector')
 
         self.sio = socketio.AsyncClient()
@@ -34,6 +37,7 @@ class Detector:
         self.port = port
         self.name = name
         self.timeout_count = 0
+        self.uploads = Uploads()
 
         @self.sio.on('disconnect')
         def on_sio_disconnect():
@@ -42,6 +46,8 @@ class Detector:
         @self.sio.on('connect_error')
         def on_sio_connect_error(err):
             self.log.warning(f'sio connect error on {port}: {err}')
+
+        runtime.on_repeat(self.step, 1.0)
 
     @property
     def is_connected(self):
@@ -72,23 +78,23 @@ class Detector:
         await self.sio.disconnect()
 
     async def try_start_one_upload(self) -> None:
-        if datetime.now() < self.world.upload.last_upload + timedelta(minutes=self.world.upload.minimal_minutes_between_uploads):
+        if datetime.now() < self.uploads.last_upload + timedelta(minutes=self.uploads.minimal_minutes_between_uploads):
             return
 
-        upload_images = self.world.upload.get_queued(self.name)
+        upload_images = self.uploads.get_queued(self.name)
         if upload_images:
             task_logger.create_task(self.upload(upload_images[0]), name='upload_image')
-            self.world.upload.queue.clear()  # old images should not be uploaded later when the robot is inactive
-            self.world.upload.last_upload = datetime.now()
+            self.uploads.queue.clear()  # old images should not be uploaded later when the robot is inactive
+            self.uploads.last_upload = datetime.now()
 
     async def upload_priority_queue(self) -> None:
-        upload_images = self.world.upload.get_priority_queued(self.name)
+        upload_images = self.uploads.get_priority_queued(self.name)
         if upload_images:
             async def upload_priority_images():
                 for image in upload_images:
                     await self.upload(image)
             task_logger.create_task(upload_priority_images(), name='upload_priority_images')
-            self.world.upload.priority_queue.clear()
+            self.uploads.priority_queue.clear()
 
     async def upload(self, image: Image) -> None:
         try:
@@ -111,14 +117,15 @@ class Detector:
                 image = self.next_image
                 self.next_image = None
                 self.is_detecting = True
-                result = await self.sio.call('detect', {
+                result: dict = await self.sio.call('detect', {
                     'image': image.data,
                     'mac': image.camera_id,
                     'autoupload': autoupload.value,
                 }, timeout=3)
-                box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
-                point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
-                image.detections = Detections(boxes=box_detections, points=point_detections)
+                image.detections = Detections(
+                    boxes=[persistence.from_dict(BoxDetection, d) for d in result.get('box_detections', [])],
+                    points=[persistence.from_dict(PointDetection, d) for d in result.get('point_detections', [])],
+                )
             except socketio.exceptions.TimeoutError:
                 self.log.exception(f'detection for {image.id} on {self.port} took too long')
                 self.timeout_count += 1
@@ -126,7 +133,7 @@ class Detector:
                 self.log.exception(f'could not detect {image.id}')
             else:
                 self.timeout_count = 0
-                event.emit(event.Id.NEW_DETECTIONS, image)
+                self.NEW_DETECTIONS.emit(image)
             finally:
                 self.is_detecting = False
                 if self.timeout_count > 5:

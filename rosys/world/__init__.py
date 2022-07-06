@@ -14,7 +14,6 @@ from .rectangle import Rectangle
 from .robot import Robot, RobotShape
 from .rotation import Rotation
 from .spline import Spline
-from .upload import Upload
+from .uploads import Uploads
 from .usb_camera import ImageRotation, UsbCamera
 from .velocity import Velocity
-from .world import World

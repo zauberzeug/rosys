@@ -12,8 +12,6 @@ import humanize
 import rosys
 from PIL import Image, ImageDraw, ImageFont
 
-from ..world import World
-
 rosys_dir = os.path.dirname(os.path.dirname(__file__))
 font = f'{rosys_dir}/RobotoMono-Medium.ttf'
 image_font = ImageFont.truetype(font, 12)
@@ -23,7 +21,6 @@ small_cover_font = ImageFont.truetype(font, 60)
 
 class TimelapseRecorder:
     interval: float = 1
-    world: World
     storage_path: str = os.path.expanduser('~/.rosys/timelapse')
 
     def __init__(self) -> None:

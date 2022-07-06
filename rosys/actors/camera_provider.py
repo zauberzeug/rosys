@@ -15,7 +15,7 @@ class CameraProvider(abc.ABC):
     CAMERA_REMOVED = Event()
     '''a camera has been removed (argument: camera id)'''
     NEW_IMAGE = Event()
-    '''an new image is available (arguments: camera, image)'''
+    '''an new image is available (argument: image)'''
 
     def __init__(self) -> None:
         self.needs_backup: bool = False
@@ -48,7 +48,7 @@ class CameraProvider(abc.ABC):
 
     def add_image(self, camera: Camera, image: Image) -> None:
         camera.images.append(image)
-        self.NEW_IMAGE.emit(camera, image)
+        self.NEW_IMAGE.emit(image)
 
     def prune_images(self, max_age_seconds: Optional[float] = None):
         for camera in self.cameras.values():
