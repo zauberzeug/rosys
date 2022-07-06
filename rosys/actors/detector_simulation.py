@@ -3,17 +3,17 @@ from typing import Optional
 from uuid import uuid4
 
 import numpy as np
-import rosys
-from rosys.actors.detector import Autoupload
 
-from ..world import Detections, Image
-from . import Detector
+from ..runtime import runtime
+from ..world import BoxDetection, Detections, Image, Point3d, PointDetection
+from .camera_provider import CameraProvider
+from .detector import Autoupload, Detector
 
 
 @dataclass
 class SimulatedObject:
     category_name: str
-    position: rosys.world.Point3d
+    position: Point3d
     size: Optional[tuple[float]] = None
     uuid: str = field(init=False)
 
@@ -21,55 +21,47 @@ class SimulatedObject:
         self.uuid = str(uuid4())
 
 
-class DetectorSimulator(Detector):
-    noisy_image_points: bool = True
+class DetectorSimulation(Detector):
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, camera_provider: CameraProvider, *, noise: float = 1.0) -> None:
+        self.camera_provider = camera_provider
+        self.noise = noise
+
         self.blocked_cameras: set[str] = set()
         self.simulated_objects: list[SimulatedObject] = []
-        self.uploaded: list[rosys.world.Image] = []
-
-    @property
-    def is_connected(self):
-        return True
+        self.uploaded: list[Image] = []
 
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Optional[Detections]:
         is_blocked = image.camera_id in self.blocked_cameras
-        await rosys.sleep(0.4)
+        await runtime.sleep(0.4)
         image.detections = Detections()
         if not is_blocked:
             self.update_simulated_objects(image)
             self.detect_from_simulated_objects(image)
-        rosys.event.emit(rosys.event.Id.NEW_DETECTIONS, image)
+        self.NEW_DETECTIONS.emit(image)
         return image.detections
 
     def update_simulated_objects(self, image: Image) -> None:
         pass
 
-    def detect_from_simulated_objects(self, image: Image):
-        if image.camera_id not in self.world.cameras:
+    def detect_from_simulated_objects(self, image: Image) -> None:
+        if image.camera_id not in self.camera_provider.cameras:
             return
-        camera = self.world.cameras[image.camera_id]
+        camera = self.camera_provider.cameras[image.camera_id]
         for object in self.simulated_objects:
             image_point = camera.calibration.project_to_image(object.position)
             if not (0 <= image_point.x < image.size.width and 0 <= image_point.y < image.size.height):
                 continue
 
             if object.size is None:
-                detection = rosys.world.PointDetection(
+                image.detections.points.append(PointDetection(
                     category_name=object.category_name,
                     model_name='simulation',
                     confidence=1.0,
-                    x=image_point.x,
-                    y=image_point.y,
+                    x=image_point.x + self.noise * np.random.randn(),
+                    y=image_point.y + self.noise * np.random.randn(),
                     uuid=object.uuid,
-                )
-                if self.noisy_image_points:
-                    detection.x += np.random.randn()
-                    detection.y += np.random.randn()
-                image.detections.points.append(detection)
-
+                ))
             else:
                 world_points = np.array([
                     [object.position.x + dx, object.position.y + dy, object.position.z + dz]
@@ -78,22 +70,16 @@ class DetectorSimulator(Detector):
                     for dz in [-object.size[2] / 2, object.size[2] / 2]
                 ])
                 image_points = camera.calibration.project_array_to_image(world_points)
-                detection = rosys.world.BoxDetection(
+                image.detections.boxes.append(BoxDetection(
                     category_name=object.category_name,
                     model_name='simulation',
                     confidence=1.0,
-                    x=image_points[:, 0].min(),
-                    y=image_points[:, 1].min(),
-                    width=image_points[:, 0].max() - image_points[:, 0].min(),
-                    height=image_points[:, 1].max() - image_points[:, 1].min(),
+                    x=image_points[:, 0].min() + self.noise * np.random.randn(),
+                    y=image_points[:, 1].min() + self.noise * np.random.randn(),
+                    width=image_points[:, 0].max() - image_points[:, 0].min() + self.noise * np.random.randn(),
+                    height=image_points[:, 1].max() - image_points[:, 1].min() + self.noise * np.random.randn(),
                     uuid=object.uuid,
-                )
-                if self.noisy_image_points:
-                    detection.x += np.random.randn()
-                    detection.y += np.random.randn()
-                    detection.width += np.random.randn()
-                    detection.height += np.random.randn()
-                image.detections.boxes.append(detection)
+                ))
 
-    async def upload(self, image: rosys.world.Image):
+    async def upload(self, image: Image) -> None:
         self.uploaded.append(image)
