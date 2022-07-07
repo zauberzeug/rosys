@@ -10,10 +10,11 @@ from ..world import Calibration, Camera
 
 class CameraObjects(Group):
 
-    def __init__(self, camera_provider: CameraProvider, *, px_per_m: float = 10000):
+    def __init__(self, camera_provider: CameraProvider, camera_projector: CameraProjector, *, px_per_m: float = 10000):
         super().__init__()
 
         self.camera_provider = camera_provider
+        self.camera_projector = camera_projector
         self.px_per_m = px_per_m
         self.textures: dict[str, Texture] = {}
 
@@ -78,9 +79,12 @@ class CameraObjects(Group):
         z = 0
         for image in reversed(sorted(newest_images, key=lambda i: i.time)):
             camera = self.calibrated_cameras.get(image.camera_id)
-            if camera is None or camera.projection is None:
+            if camera is None:
                 continue
-            coordinates = [[point and [point[0], point[1], 0] for point in row] for row in camera.projection]
+            projection = self.camera_projector.projections.get(camera.id)
+            if projection is None:
+                continue
+            coordinates = [[point and [point[0], point[1], 0] for point in row] for row in projection.coordinates]
 
             if image.camera_id not in self.textures:
                 self.textures[image.camera_id] = Texture(image.url, coordinates).with_name(f'image_{image.id}')

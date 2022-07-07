@@ -16,7 +16,6 @@ from .rotation import Rotation
 class Camera(abc.ABC):
     id: str
     calibration: Optional[Calibration] = None
-    projection: Optional[list[list[Optional[list[float]]]]] = field(default=None, metadata=persistence.exclude)
     images: list[Image] = field(default_factory=list, metadata=persistence.exclude)
 
     @property
