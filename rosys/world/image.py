@@ -25,7 +25,7 @@ class ImageSize:
 class Image:
     camera_id: str
     size: ImageSize
-    time: float  # world time of recording
+    time: float  # time of recording
     data: Optional[bytes] = None
     detections: Optional[Detections] = None
 

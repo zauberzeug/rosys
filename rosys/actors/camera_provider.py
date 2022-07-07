@@ -26,6 +26,10 @@ class CameraProvider(abc.ABC):
     def cameras(self) -> dict[str, Camera]:
         return {}
 
+    @property
+    def images(self) -> list[Image]:
+        return sorted((i for c in self.cameras.values() for i in c.images), key=lambda i: i.time)
+
     def add_camera(self, camera: Camera) -> None:
         self.cameras[camera.id] = camera
         self.CAMERA_ADDED.emit(camera)
