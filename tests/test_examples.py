@@ -37,7 +37,7 @@ def check(path: str):
     if 'Error' in output:
         fail(output, 3)
 
-    if 'JustPy ready to go' in output:
+    if 'NiceGUI ready to go' in output:
         print(f' is ok', flush=True)
     else:
         fail(output, 4)
