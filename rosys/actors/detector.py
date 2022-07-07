@@ -4,7 +4,7 @@ from typing import Optional
 from aenum import Enum, auto
 
 from ..event import Event
-from ..world import Detections, Image
+from ..world import Detections, Image, Uploads
 
 
 class Autoupload(Enum, init='value __doc__'):
@@ -25,4 +25,8 @@ class Detector(abc.ABC):
 
     @abc.abstractmethod
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Optional[Detections]:
+        return
+
+    @property
+    def uploads(self) -> Uploads:
         return

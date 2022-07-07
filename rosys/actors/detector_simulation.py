@@ -5,7 +5,7 @@ from uuid import uuid4
 import numpy as np
 
 from ..runtime import runtime
-from ..world import BoxDetection, Detections, Image, Point3d, PointDetection
+from ..world import BoxDetection, Detections, Image, Point3d, PointDetection, Uploads
 from .camera_provider import CameraProvider
 from .detector import Autoupload, Detector
 
@@ -29,7 +29,11 @@ class DetectorSimulation(Detector):
 
         self.blocked_cameras: set[str] = set()
         self.simulated_objects: list[SimulatedObject] = []
-        self.uploaded: list[Image] = []
+        self._uploads = Uploads()
+
+    @property
+    def uploads(self) -> Uploads:
+        return self._uploads
 
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Optional[Detections]:
         is_blocked = image.camera_id in self.blocked_cameras
@@ -80,6 +84,3 @@ class DetectorSimulation(Detector):
                     height=image_points[:, 1].max() - image_points[:, 1].min() + self.noise * np.random.randn(),
                     uuid=object.uuid,
                 ))
-
-    async def upload(self, image: Image) -> None:
-        self.uploaded.append(image)

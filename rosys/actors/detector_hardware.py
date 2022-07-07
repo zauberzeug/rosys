@@ -22,7 +22,7 @@ class DetectorHardware(Detector):
         self.port = port
         self.name = name
         self.timeout_count = 0
-        self.uploads = Uploads()
+        self._uploads = Uploads()
 
         @self.sio.on('disconnect')
         def on_sio_disconnect():
@@ -33,6 +33,10 @@ class DetectorHardware(Detector):
             self.log.warning(f'sio connect error on {port}: {err}')
 
         runtime.on_repeat(self.step, 1.0)
+
+    @property
+    def uploads(self) -> Uploads:
+        return self._uploads
 
     @property
     def is_connected(self):
@@ -111,7 +115,6 @@ class DetectorHardware(Detector):
                     boxes=[persistence.from_dict(BoxDetection, d) for d in result.get('box_detections', [])],
                     points=[persistence.from_dict(PointDetection, d) for d in result.get('point_detections', [])],
                 )
-                return image.detections
             except socketio.exceptions.TimeoutError:
                 self.log.exception(f'detection for {image.id} on {self.port} took too long')
                 self.timeout_count += 1
@@ -120,6 +123,7 @@ class DetectorHardware(Detector):
             else:
                 self.timeout_count = 0
                 self.NEW_DETECTIONS.emit(image)
+                return image.detections
             finally:
                 self.is_detecting = False
                 if self.timeout_count > 5:
