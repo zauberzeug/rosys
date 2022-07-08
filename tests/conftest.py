@@ -4,10 +4,8 @@ import pytest
 from rosys import runtime
 from rosys.actors import Automator, Driver, Odometer, PathPlanner
 from rosys.hardware import WheelsSimulation
-from rosys.test import helpers
+from rosys.test import helpers, log_configuration
 from rosys.world import RobotShape
-
-import log_configuration
 
 log_configuration.setup()
 
