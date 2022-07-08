@@ -62,7 +62,7 @@ def backup() -> None:
             continue
         filepath = f'{backup_path}/{actor.__module__}.json'
         with open(filepath, 'w') as f:
-            json.dump(actor.backup(), f)
+            json.dump(actor.backup(), f, indent=4)
         actor.needs_backup = False
 
 

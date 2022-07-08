@@ -37,7 +37,7 @@ class CameraObjects(Group):
 
     async def update(self) -> bool:
         await self.update_cameras()
-        await self.update_images(None)
+        await self.update_images()
         return False  # NOTE: avoid JustPy page_update
 
     async def update_cameras(self) -> bool:
@@ -66,7 +66,7 @@ class CameraObjects(Group):
     def get_rotation(calibration: Calibration) -> list[list[float]]:
         return calibration.rotation.R  # computing euler rotation is cpu expensive
 
-    async def update_images(self, _) -> bool:
+    async def update_images(self) -> bool:
         newest_images = [camera.latest_captured_image for camera in self.calibrated_cameras.values()]
         newest_images = [i for i in newest_images if i is not None]
 

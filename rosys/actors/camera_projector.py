@@ -28,7 +28,7 @@ class CameraProjector:
         runtime.on_repeat(self.step, 1.0)
 
     async def step(self) -> None:
-        for id in self.projections:
+        for id in list(self.projections):
             if id not in self.camera_provider.cameras:
                 del self.projections[id]
 
