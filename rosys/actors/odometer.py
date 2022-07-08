@@ -51,15 +51,14 @@ class Odometer:
 
         self.prune_steps(runtime.time - 10.0)
 
-    def process_detection(self) -> None:
-        if self.detection is None:
+    def handle_detection(self, detection: Pose) -> None:
+        self.detection = detection
+
+        if self._steps and detection.time < self._steps[0].time:
             return
 
-        if self._steps and self.detection.time < self._steps[0].time:
-            return
-
-        self.prune_steps(self.detection.time)
-        self.prediction = deepcopy(self.detection)
+        self.prune_steps(detection.time)
+        self.prediction = deepcopy(detection)
         for step in self._steps:
             self.prediction += step
 
