@@ -6,8 +6,7 @@ import numpy as np
 import pytest
 
 from .. import run
-from ..actors import Automator, Driver, Odometer, PathPlanner
-from ..hardware import Wheels
+from ..actors import Automator, Driver, Odometer
 from ..runtime import runtime
 from ..world import Point, Point3d
 
@@ -16,8 +15,6 @@ log = logging.getLogger(__name__)
 automator: Optional[Automator] = None
 driver: Optional[Driver] = None
 odometer: Optional[Odometer] = None
-path_planner: Optional[PathPlanner] = None
-wheels: Optional[Wheels] = None
 
 
 async def forward(seconds: Optional[float] = None,
