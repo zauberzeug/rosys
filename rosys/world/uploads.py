@@ -13,7 +13,7 @@ class UploadItem:
     detector_name: str
 
     def __hash__(self) -> int:
-        return hash(self.image)
+        return hash(self.image.id)
 
 
 @dataclass(slots=True, kw_only=True)

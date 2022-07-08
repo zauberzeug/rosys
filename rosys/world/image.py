@@ -51,6 +51,3 @@ class Image:
         )
         image.data = bytesio.getvalue()
         return image
-
-    def __hash__(self) -> int:
-        return hash(self.id)
