@@ -31,9 +31,15 @@ class DetectorSimulation(Detector):
         self.simulated_objects: list[SimulatedObject] = []
         self._uploads = Uploads()
 
+        runtime.on_repeat(self.step, 0.1)
+
     @property
     def uploads(self) -> Uploads:
         return self._uploads
+
+    def step(self) -> None:
+        self._uploads.queue.clear()
+        self._uploads.priority_queue.clear()
 
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Optional[Detections]:
         is_blocked = image.camera_id in self.blocked_cameras
