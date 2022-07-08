@@ -13,14 +13,13 @@ from .detector import Autoupload, Detector
 
 class DetectorHardware(Detector):
 
-    def __init__(self, port: int = 8004, name: str = 'detector') -> None:
+    def __init__(self, *, port: int = 8004) -> None:
         self.log = logging.getLogger('rosys.detector')
 
         self.sio = socketio.AsyncClient()
         self.is_detecting: bool = False
         self.next_image: Optional[Image] = None
         self.port = port
-        self.name = name
         self.timeout_count = 0
         self._uploads = Uploads()
 
@@ -70,14 +69,14 @@ class DetectorHardware(Detector):
         if datetime.now() < self.uploads.last_upload + timedelta(minutes=self.uploads.minimal_minutes_between_uploads):
             return
 
-        upload_images = self.uploads.get_queued(self.name)
+        upload_images = self.uploads.get_queued()
         if upload_images:
             task_logger.create_task(self.upload(upload_images[0]), name='upload_image')
             self.uploads.queue.clear()  # old images should not be uploaded later when the robot is inactive
             self.uploads.last_upload = datetime.now()
 
     async def upload_priority_queue(self) -> None:
-        upload_images = self.uploads.get_priority_queued(self.name)
+        upload_images = self.uploads.get_priority_queued()
         if upload_images:
             async def upload_priority_images():
                 for image in upload_images:
@@ -87,7 +86,7 @@ class DetectorHardware(Detector):
 
     async def upload(self, image: Image) -> None:
         try:
-            self.log.info(f'uploading to {self.name}')
+            self.log.info(f'uploading to port {self.port}')
             await self.sio.emit('upload', {'image': image.data, 'mac': image.camera_id})
         except:
             self.log.exception(f'could not upload {image.id}')
