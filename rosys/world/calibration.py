@@ -50,7 +50,7 @@ class Calibration:
         return self.extrinsics.tilt is not None
 
     def project_to_image(self, world_point: Point3d) -> Point:
-        world_points = np.array([world_point.tuple])
+        world_points = np.array([world_point.tuple], dtype=np.float32)
         R = self.rotation_array
         Rod = cv2.Rodrigues(R.T)[0]
         t = -R.T @ self.extrinsics.translation
