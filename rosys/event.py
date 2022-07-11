@@ -34,7 +34,7 @@ class Event:
         self.listeners.add(ref)
         return self
 
-    def unregistered(self, listener: Callable) -> None:
+    def unregister(self, listener: Callable) -> None:
         marked = []
         for registered in self.listeners:
             if hasattr(listener, '__name__') and listener.__name__ == '<lambda>' and listener == registered:
@@ -73,7 +73,7 @@ class Event:
                     continue
                 callback = listener()
                 if callback is None:
-                    self.unregistered(listener)
+                    self.listeners.remove(listener)
                     continue
                 if iscoroutinefunction(listener):
                     tasks.append(loop.create_task(callback(*args), name=f'handle {self.name}'))
