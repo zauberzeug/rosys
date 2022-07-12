@@ -64,4 +64,4 @@ class Camera(BaseModel, abc.ABC):
         return Intrinsics(matrix=K, distortion=D, rotation=rotation, size=size)
 
     def __str__(self) -> str:
-        return self.title
+        return self.id
