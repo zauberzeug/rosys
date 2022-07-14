@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import importlib
+import sys
 import time
 
 import numpy as np
@@ -27,6 +29,13 @@ cmd = PlannerSearchCommand(
     deadline=np.inf,
 )
 robot_outline = [(-0.5, -0.5), (0.5, -0.5), (0.75, 0), (0.5, 0.5), (-0.5, 0.5)]
+
+demo = sys.argv[1] if len(sys.argv) > 1 else ''
+if demo:
+    i = importlib.import_module(demo.rstrip('.py').replace('/', '.'))
+    cmd = i.cmd
+    robot_outline = i.robot_outline
+
 planner = DelaunayPlanner(robot_outline)
 
 
@@ -59,7 +68,9 @@ def run():
 
 with ui.row():
     plot = ui.plot(figsize=(8, 8))
-    ui.button('Re-run', on_click=run).props('icon=replay outline')
+    with ui.column():
+        ui.button('Re-run', on_click=run).props('icon=replay outline')
+        ui.label(demo)
 run()
 
 ui.run()
