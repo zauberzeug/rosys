@@ -1,3 +1,4 @@
+import logging
 from functools import lru_cache
 from typing import Optional
 
@@ -26,6 +27,7 @@ class DelaunayPlanner:
         self.tri_mesh: Optional[spatial.Delaunay] = None
         self.pose_groups: Optional[list[DelaunayPoseGroup]] = None
         self.graph: Optional[nx.DiGraph] = None
+        self.log = logging.getLogger('rosys.delauny_planner')
 
     def update_map(self, areas: list[Area], obstacles: list[Obstacle], additional_points: list[Point],
                    deadline: float) -> None:
@@ -114,6 +116,12 @@ class DelaunayPlanner:
                             self.graph.add_edge((g_, p_), (g, p), backward=True, weight=1.2*length)
 
     def search(self, start: Pose, goal: Pose) -> list[PathSegment]:
+        for backward in [False, True]:
+            simple_spline = Spline.from_poses(start, goal, backward=backward)
+            if _is_healthy(simple_spline) and not self.obstacle_map.test_spline(simple_spline, backward):
+                self.log.info('found single spline to reach goal')
+                return [PathSegment(spline=simple_spline, backward=backward)]
+
         first_segment, g, p = _find_terminal_segment(self.obstacle_map, self.pose_groups, start, True)
         last_segment, g_, p_ = _find_terminal_segment(self.obstacle_map, self.pose_groups, goal, False)
 
