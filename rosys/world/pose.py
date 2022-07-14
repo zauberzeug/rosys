@@ -94,3 +94,10 @@ class Pose(BaseModel):
 
     def rotate(self, angle: float) -> Pose:
         return Pose(x=self.x, y=self.y, yaw=self.yaw+angle, time=self.time)
+
+    def advance(self, distance: float) -> Point:
+        return Pose(
+            x=self.x + distance * np.cos(self.yaw),
+            y=self.y + distance * np.sin(self.yaw),
+            yaw=self.yaw,
+        )
