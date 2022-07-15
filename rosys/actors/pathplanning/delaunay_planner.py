@@ -147,11 +147,12 @@ class DelaunayPlanner:
                             PathSegment(spline=spline, backward=not backward)
                         ]
 
-        first_segment, g, p = _find_terminal_segment(self.obstacle_map, self.pose_groups, start, True)
-        last_segment, g_, p_ = _find_terminal_segment(self.obstacle_map, self.pose_groups, goal, False)
+        grid_enter = _find_terminal_segment(self.obstacle_map, self.pose_groups, start, True)
+        grid_exit = _find_terminal_segment(self.obstacle_map, self.pose_groups, goal, False)
 
-        path: list[PathSegment] = []
-        path.append(first_segment)
+        g, p = grid_enter.coordinate
+        g_, p_ = grid_exit.coordinate
+        path: list[PathSegment] = [grid_enter.segment]
         last_g, last_p = g, p
         try:
             for next_g, next_p in nx.shortest_path(self.graph, (g, p), (g_, p_), weight='weight')[1:]:
@@ -163,7 +164,7 @@ class DelaunayPlanner:
                 last_g, last_p = next_g, next_p
         except nx.exception.NetworkXNoPath:
             pass
-        path.append(last_segment)
+        path.append(grid_exit.coordinate)
 
         while True:
             shortcuts = []
@@ -242,13 +243,24 @@ def _is_healthy(spline: Spline, curvature_limit: float = 10.0) -> bool:
     return np.abs(spline.max_curvature()) < curvature_limit
 
 
+@dataclass
+class GridCoordinate:
+    pose_group: int
+    pose: int
+
+
+@dataclass
+class NodeApproach:
+    segment: PathSegment
+    coordinate: GridCoordinate
+
+
 def _find_terminal_segment(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPoseGroup],
-                           terminal_pose: Pose, first: bool) -> tuple[PathSegment, int, int]:
-    terminal_point = terminal_pose
-    group_distances = [g.point.distance(terminal_point) for g in pose_groups]
+                           terminal_pose: Pose, first: bool) -> NodeApproach:
+    group_distances = [g.point.distance(terminal_pose) for g in pose_groups]
     group_indices = np.argsort(group_distances)
     for g, group in zip(group_indices, np.array(pose_groups)[group_indices]):
-        best_result = None
+        best_result: NodeApproach = None
         best_length = np.inf
         for p, pose in enumerate(group.poses):
             for backward in [False, True]:
@@ -258,7 +270,7 @@ def _find_terminal_segment(obstacle_map: ObstacleMap, pose_groups: list[Delaunay
                     length = _estimate_length(spline)
                     if length < best_length:
                         best_length = length
-                        best_result = (PathSegment(spline=spline, backward=backward), g, p)
+                        best_result = NodeApproach(PathSegment(spline, backward), GridCoordinate(p, g))
         if best_result is not None:
             return best_result
     raise RuntimeError(f'could not find terminal segment for {"start" if first else "end"}')
