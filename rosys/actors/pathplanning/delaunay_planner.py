@@ -1,3 +1,4 @@
+import dataclasses
 import logging
 from dataclasses import dataclass
 from functools import lru_cache
@@ -23,7 +24,7 @@ class Features:
     # try to find a collision free simple path between start and goal (see https://trello.com/c/FtP4yHqA/777#comment-62d0323e97ba19392bcbceb8)
     try_single_path = True
     # try to find collision free path with minimal switching (single shunting)
-    try_single_shunting = True
+    try_single_shunting = False
 
 
 class DelaunayPlanner:
@@ -147,11 +148,11 @@ class DelaunayPlanner:
                             PathSegment(spline=spline, backward=not backward)
                         ]
 
-        grid_enter = _find_grid_passage(self.obstacle_map, self.pose_groups, start, True)
-        grid_exit = _find_grid_passage(self.obstacle_map, self.pose_groups, goal, False)
+        grid_enter = _find_grid_passages(self.obstacle_map, self.pose_groups, start, True)
+        grid_exit = _find_grid_passages(self.obstacle_map, self.pose_groups, goal, False)
 
-        g, p = grid_enter.coordinate
-        g_, p_ = grid_exit.coordinate
+        p, g = dataclasses.astuple(grid_enter.coordinate)
+        p_, g_ = dataclasses.astuple(grid_exit.coordinate)
         path: list[PathSegment] = [grid_enter.segment]
         last_g, last_p = g, p
         try:
@@ -164,7 +165,7 @@ class DelaunayPlanner:
                 last_g, last_p = next_g, next_p
         except nx.exception.NetworkXNoPath:
             pass
-        path.append(grid_exit.coordinate)
+        path.append(grid_exit.segment)
 
         while True:
             shortcuts = []
@@ -245,32 +246,35 @@ def _is_healthy(spline: Spline, curvature_limit: float = 10.0) -> bool:
 
 @dataclass
 class GridCoordinate:
-    pose_group: int
+    node: int
     pose: int
 
 
 @dataclass
-class NodeApproach:
+class Passage:
     segment: PathSegment
     coordinate: GridCoordinate
+    length: float
 
 
-def _find_grid_passage(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPoseGroup],
-                       pose: Pose, entering: bool) -> NodeApproach:
+def _find_grid_passages(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPoseGroup],
+                        pose: Pose, entering: bool) -> Passage:
     group_distances = [g.point.distance(pose) for g in pose_groups]
     group_indices = np.argsort(group_distances)
     for g, group in zip(group_indices, np.array(pose_groups)[group_indices]):
-        best_result: NodeApproach = None
-        best_length = np.inf
-        for p, pose in enumerate(group.poses):
+        best_result: Passage = None
+        for p, node_pose in enumerate(group.poses):
             for backward in [False, True]:
-                poses = (pose, pose) if entering else (pose, pose)
+                poses = (pose, node_pose) if entering else (node_pose, pose)
                 spline = Spline.from_poses(*poses, backward=backward)
                 if _is_healthy(spline) and not obstacle_map.test_spline(spline, backward):
-                    length = _estimate_length(spline)
-                    if length < best_length:
-                        best_length = length
-                        best_result = NodeApproach(PathSegment(spline, backward), GridCoordinate(p, g))
+                    passage = Passage(
+                        PathSegment(spline=spline, backward=backward),
+                        coordinate=GridCoordinate(node=p, pose=g),
+                        length=_estimate_length(spline)
+                    )
+                    if best_result is None or passage.length < best_result.length:
+                        best_result = passage
         if best_result is not None:
             return best_result
     raise RuntimeError(f'could not find terminal segment for {"start" if entering else "end"}')
