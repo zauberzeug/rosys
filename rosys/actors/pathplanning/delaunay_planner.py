@@ -259,8 +259,7 @@ def _find_grid_passages(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPos
     group_indices = np.argsort(group_distances)
     results: list[Passage] = []
     for backward in [False, True]:
-        best: Passage = None
-        for g, group in zip(group_indices, np.array(pose_groups)[group_indices]):
+        for g, group in zip(group_indices, np.array(pose_groups)[group_indices][:3]):
             for p, node_pose in enumerate(group.poses):
                 poses = (pose, node_pose) if entering else (node_pose, pose)
                 spline = Spline.from_poses(*poses, backward=backward)
@@ -270,10 +269,7 @@ def _find_grid_passages(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPos
                         coordinate=(p, g),
                         length=_estimate_length(spline)
                     )
-                    if best is None or passage.length < best.length:
-                        best = passage
-        if best is not None:
-            results.append(best)
+                    results.append(passage)
     if results:
         return results
     raise RuntimeError(f'could not find terminal segment for {"start" if entering else "end"}')
