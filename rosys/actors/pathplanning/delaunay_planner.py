@@ -152,8 +152,8 @@ class DelaunayPlanner:
         grid_entries = _find_grid_passages(self.obstacle_map, self.pose_groups, start, True)
         grid_exits = _find_grid_passages(self.obstacle_map, self.pose_groups, goal, False)
         for enter, exit in itertools.product(grid_entries, grid_exits):
-            p, g = dataclasses.astuple(enter.coordinate)
-            p_, g_ = dataclasses.astuple(exit.coordinate)
+            p, g = enter.coordinate
+            p_, g_ = exit.coordinate
             path: list[PathSegment] = [enter.segment]
             last_g, last_p = g, p
             try:
@@ -247,15 +247,9 @@ def _is_healthy(spline: Spline, curvature_limit: float = 10.0) -> bool:
 
 
 @dataclass
-class GridCoordinate:
-    node: int
-    pose: int
-
-
-@dataclass
 class Passage:
     segment: PathSegment
-    coordinate: GridCoordinate
+    coordinate: tuple[int, int]
     length: float
 
 
@@ -273,7 +267,7 @@ def _find_grid_passages(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPos
                 if _is_healthy(spline) and not obstacle_map.test_spline(spline, backward):
                     passage = Passage(
                         PathSegment(spline=spline, backward=backward),
-                        coordinate=GridCoordinate(node=p, pose=g),
+                        coordinate=(p, g),
                         length=_estimate_length(spline)
                     )
                     if best is None or passage.length < best.length:
