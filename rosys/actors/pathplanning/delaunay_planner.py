@@ -1,4 +1,5 @@
 import logging
+from dataclasses import dataclass
 from functools import lru_cache
 from typing import Optional
 
@@ -17,7 +18,17 @@ GRID_RESOLUTION = 1.0
 MIN_MARGIN = 1.0
 
 
+@dataclass
+class Features:
+    # try to find a collision free simple path between start and goal (see https://trello.com/c/FtP4yHqA/777#comment-62d0323e97ba19392bcbceb8)
+    try_single_path = True
+    # try to find collision free path with minimal switching (single shunting)
+    try_single_shunting = True
+
+
 class DelaunayPlanner:
+    features = Features()
+
     def __init__(self, robot_outline: list[tuple[float, float]]) -> None:
         self.robot_outline = robot_outline
         self.areas: list[Area] = []
@@ -116,25 +127,25 @@ class DelaunayPlanner:
                             self.graph.add_edge((g_, p_), (g, p), backward=True, weight=1.2*length)
 
     def search(self, start: Pose, goal: Pose) -> list[PathSegment]:
-        # try to find a collision free simple path between start and goal (see https://trello.com/c/FtP4yHqA/777#comment-62d0323e97ba19392bcbceb8)
-        for backward in [True, False]:
-            simple_spline = Spline.from_poses(start, goal, backward=backward)
-            if _is_healthy(simple_spline) and not self.obstacle_map.test_spline(simple_spline, backward):
-                self.log.info('found single spline to reach goal')
-                return [PathSegment(spline=simple_spline, backward=backward)]
-        # try to find collision free path with minimal switching (single shunting)
-        for backward in [True, False]:
-            for length in [1, 1.5, 2]:
-                y_outline = [p[1] for p in self.robot_outline]
-                robot_length = max(y_outline) - min(y_outline)
-                intermediate = start.advance(robot_length * (-length if backward else length))
-                shunt = Spline.from_poses(start, intermediate, backward=backward)
-                if _is_healthy(shunt) and not self.obstacle_map.test_spline(shunt, backward):
-                    spline = Spline.from_poses(intermediate, goal, backward=not backward)
-                    return [
-                        PathSegment(spline=shunt, backward=backward),
-                        PathSegment(spline=spline, backward=not backward)
-                    ]
+        if self.features.try_single_path:
+            for backward in [True, False]:
+                simple_spline = Spline.from_poses(start, goal, backward=backward)
+                if _is_healthy(simple_spline) and not self.obstacle_map.test_spline(simple_spline, backward):
+                    self.log.info('found single spline to reach goal')
+                    return [PathSegment(spline=simple_spline, backward=backward)]
+        if self.features.try_single_shunting:
+            for backward in [True, False]:
+                for length in [1, 1.5, 2]:
+                    y_outline = [p[1] for p in self.robot_outline]
+                    robot_length = max(y_outline) - min(y_outline)
+                    intermediate = start.advance(robot_length * (-length if backward else length))
+                    shunt = Spline.from_poses(start, intermediate, backward=backward)
+                    if _is_healthy(shunt) and not self.obstacle_map.test_spline(shunt, backward):
+                        spline = Spline.from_poses(intermediate, goal, backward=not backward)
+                        return [
+                            PathSegment(spline=shunt, backward=backward),
+                            PathSegment(spline=spline, backward=not backward)
+                        ]
 
         first_segment, g, p = _find_terminal_segment(self.obstacle_map, self.pose_groups, start, True)
         last_segment, g_, p_ = _find_terminal_segment(self.obstacle_map, self.pose_groups, goal, False)
