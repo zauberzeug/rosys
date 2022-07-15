@@ -190,13 +190,13 @@ class DelaunayPlanner:
                                 continue
                             if self.obstacle_map.test_spline(new_spline, new_backward):
                                 continue
-                            combined_length = _estimate_length(
-                                path[s].spline) + _estimate_length(path[s+step_size].spline)
-                            if .9 * _estimate_length(new_spline) > combined_length:
+                            combined_length = path[s].spline.estimated_length() + \
+                                path[s+step_size].spline.estimated_length()
+                            if .9 * new_spline.estimated_length() > combined_length:
                                 continue
                             shortcuts.append(PathSegment(spline=new_spline, backward=new_backward))
                         if shortcuts:
-                            lengths = [_estimate_length(segment.spline) for segment in shortcuts]
+                            lengths = [segment.spline.estimated_length() for segment in shortcuts]
                             path[s] = shortcuts[np.argmin(lengths)]
                             for _ in range(step_size):
                                 del path[s+1]
@@ -236,12 +236,6 @@ def _generate_poses(grid: Grid, pose: Pose, pose_: Pose) -> tuple:
     return pose.x + dx, pose.y + dy, yaw
 
 
-def _estimate_length(spline: Spline) -> float:
-    dx = np.diff([spline.x(t) for t in np.linspace(0, 1, 10)])
-    dy = np.diff([spline.y(t) for t in np.linspace(0, 1, 10)])
-    return np.sum(np.sqrt(dx**2 + dy**2))
-
-
 def _is_healthy(spline: Spline, curvature_limit: float = 10.0) -> bool:
     return np.abs(spline.max_curvature()) < curvature_limit
 
@@ -267,7 +261,7 @@ def _find_grid_passages(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPos
                     passage = Passage(
                         PathSegment(spline=spline, backward=backward),
                         coordinate=(p, g),
-                        length=_estimate_length(spline)
+                        length=spline.estimated_length()
                     )
                     results.append(passage)
     if results:

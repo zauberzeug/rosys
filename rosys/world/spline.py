@@ -178,3 +178,8 @@ class Spline(BaseModel):
             -(np.sqrt(inner) + self.m * self.r - self.o * self.p) / denominator,
         ]
         return np.array([t_ for t_ in t if t_min <= t_ <= t_max])
+
+    def estimated_length(self) -> float:
+        dx = np.diff([self.x(t) for t in np.linspace(0, 1, 10)])
+        dy = np.diff([self.y(t) for t in np.linspace(0, 1, 10)])
+        return np.sum(np.sqrt(dx**2 + dy**2))
