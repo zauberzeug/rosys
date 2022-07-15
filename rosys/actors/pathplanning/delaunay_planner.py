@@ -147,8 +147,8 @@ class DelaunayPlanner:
                             PathSegment(spline=spline, backward=not backward)
                         ]
 
-        grid_enter = _find_terminal_segment(self.obstacle_map, self.pose_groups, start, True)
-        grid_exit = _find_terminal_segment(self.obstacle_map, self.pose_groups, goal, False)
+        grid_enter = _find_grid_passage(self.obstacle_map, self.pose_groups, start, True)
+        grid_exit = _find_grid_passage(self.obstacle_map, self.pose_groups, goal, False)
 
         g, p = grid_enter.coordinate
         g_, p_ = grid_exit.coordinate
@@ -255,16 +255,16 @@ class NodeApproach:
     coordinate: GridCoordinate
 
 
-def _find_terminal_segment(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPoseGroup],
-                           terminal_pose: Pose, first: bool) -> NodeApproach:
-    group_distances = [g.point.distance(terminal_pose) for g in pose_groups]
+def _find_grid_passage(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPoseGroup],
+                       pose: Pose, entering: bool) -> NodeApproach:
+    group_distances = [g.point.distance(pose) for g in pose_groups]
     group_indices = np.argsort(group_distances)
     for g, group in zip(group_indices, np.array(pose_groups)[group_indices]):
         best_result: NodeApproach = None
         best_length = np.inf
         for p, pose in enumerate(group.poses):
             for backward in [False, True]:
-                poses = (terminal_pose, pose) if first else (pose, terminal_pose)
+                poses = (pose, pose) if entering else (pose, pose)
                 spline = Spline.from_poses(*poses, backward=backward)
                 if _is_healthy(spline) and not obstacle_map.test_spline(spline, backward):
                     length = _estimate_length(spline)
@@ -273,4 +273,4 @@ def _find_terminal_segment(obstacle_map: ObstacleMap, pose_groups: list[Delaunay
                         best_result = NodeApproach(PathSegment(spline, backward), GridCoordinate(p, g))
         if best_result is not None:
             return best_result
-    raise RuntimeError(f'could not find terminal segment for {"start" if first else "end"}')
+    raise RuntimeError(f'could not find terminal segment for {"start" if entering else "end"}')
