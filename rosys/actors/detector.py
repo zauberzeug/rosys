@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import List, Optional
 
 import socketio
 import socketio.exceptions
@@ -97,7 +97,7 @@ class Detector(Actor):
         except:
             self.log.exception(f'could not upload {image.id}')
 
-    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> None:
+    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED, tags: List[str] = []) -> None:
         '''Runs detections on the image. Afterwards the `image.detections` property is filled.'''
         if not self.is_connected:
             return
@@ -115,6 +115,7 @@ class Detector(Actor):
                     'image': image.data,
                     'mac': image.camera_id,
                     'autoupload': autoupload.value,
+                    'tags': tags,
                 }, timeout=3)
                 box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
                 point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
