@@ -147,9 +147,17 @@ class Runtime:
         if isinstance(result, Awaitable):
             await result
 
-    def reset_for_test(self) -> None:
-        self.set_time(0)  # NOTE in tests we start at zero for better readability
+    def reset_before_test(self) -> None:
+        assert is_test()
+        self.set_time(0)  # NOTE: in tests we start at zero for better readability
         self._exception = None
+
+    def reset_after_test(self) -> None:
+        assert is_test()
+        runtime.startup_handlers.clear()
+        runtime.repeat_handlers[3:] = []  # NOTE: remove all but internal handlers
+        runtime.shutdown_handlers.clear()
+        event.reset()
 
 
 runtime = Runtime()

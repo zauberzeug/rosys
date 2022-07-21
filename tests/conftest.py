@@ -10,42 +10,43 @@ from rosys.world import Robot
 log_configuration.setup()
 
 
-@pytest.fixture(autouse=True)  # HACK: use smallest scope to postpone runtime.startup until other fixtures are created
+@pytest.fixture(autouse=True)
 async def run_around_tests(odometer: Odometer, driver: Driver, automator: Automator) -> Generator:
-    runtime.reset_for_test()
+    runtime.reset_before_test()
     helpers.odometer = odometer
     helpers.driver = driver
     helpers.automator = automator
     await runtime.startup()
     yield
     await runtime.shutdown()
+    runtime.reset_after_test()
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(autouse=True)
 def odometer() -> Odometer:
     return Odometer()
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(autouse=True)
 def wheels(odometer: Odometer) -> Wheels:
     return WheelsSimulation(odometer)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(autouse=True)
 def driver(wheels: Wheels) -> Driver:
     return Driver(wheels)
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(autouse=True)
 def automator() -> Automator:
     return Automator()
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(autouse=True)
 def robot() -> Robot:
     return Robot()
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(autouse=True)
 def path_planner(robot: Robot) -> PathPlanner:
     return PathPlanner(robot.shape)

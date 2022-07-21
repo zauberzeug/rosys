@@ -11,6 +11,7 @@ from executing import Source
 
 tasks: list[asyncio.Task] = []
 log = logging.getLogger('rosys.event')
+events: list[Event] = []
 
 
 class Event:
@@ -21,6 +22,7 @@ class Event:
         except:
             self.name = 'noname_event'
         self.listeners = set()
+        events.append(self)
 
     def register(self, listener: Callable) -> Event:
         if not callable(listener):
@@ -86,3 +88,11 @@ class Event:
 @functools.lru_cache(maxsize=100)
 def iscoroutinefunction(listener):
     return inspect.iscoroutinefunction(listener())
+
+
+def reset() -> None:
+    for event in events:
+        event.listeners.clear()
+    for task in tasks:
+        task.cancel()
+    tasks.clear()

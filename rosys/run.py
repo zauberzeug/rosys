@@ -86,6 +86,7 @@ def tear_down() -> None:
     log.info('teardown thread_pool')
     thread_pool.shutdown(wait=False, cancel_futures=True)
     [p.kill() for p in running_sh_processes]
+    running_sh_processes.clear()
     if not is_test():
         log.info('teardown process_pool')
         [p.kill() for p in process_pool._processes.values()]
