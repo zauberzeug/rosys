@@ -7,7 +7,7 @@ from aenum import Enum, auto
 
 from .. import event, task_logger
 from ..helpers import sleep
-from ..world import BoxDetection, Detections, Image, PointDetection
+from ..world import BoxDetection, Detections, Image, PointDetection, SegmentationDetection
 from .actor import Actor
 
 
@@ -119,7 +119,10 @@ class Detector(Actor):
                 }, timeout=3)
                 box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
                 point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
-                image.detections = Detections(boxes=box_detections, points=point_detections)
+                segmentation_detections = [SegmentationDetection.from_dict(
+                    d) for d in result.get('segmentation_detections', [])]
+                image.detections = Detections(boxes=box_detections, points=point_detections,
+                                              segmentations=segmentation_detections)
             except socketio.exceptions.TimeoutError:
                 self.log.exception(f'detection for {image.id} on {self.port} took too long')
                 self.timeout_count += 1

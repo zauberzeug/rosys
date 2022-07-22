@@ -1,7 +1,7 @@
 from .area import Area
 from .calibration import Calibration, Extrinsics, Intrinsics
 from .camera import Camera
-from .detections import BoxDetection, Detection, Detections, PointDetection
+from .detections import BoxDetection, Detection, Detections, PointDetection, SegmentationDetection
 from .image import Image, ImageSize
 from .line import Line
 from .line_segment import LineSegment
