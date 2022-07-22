@@ -56,9 +56,9 @@ def register(actor: PersistentActor):
         actors.append(actor)
 
 
-def backup() -> None:
+def backup(force: bool = False) -> None:
     for actor in actors:
-        if not actor.needs_backup:
+        if not actor.needs_backup and not force:
             continue
         filepath = f'{backup_path}/{actor.__module__}.json'
         with open(filepath, 'w') as f:
