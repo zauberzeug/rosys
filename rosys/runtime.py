@@ -135,7 +135,7 @@ class Runtime:
                 return
 
     async def shutdown(self) -> None:
-        persistence.backup()
+        persistence.backup(force=True)
         run.tear_down()
         [t.cancel() for t in self.tasks]
         self.tasks.clear()
