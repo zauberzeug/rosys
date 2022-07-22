@@ -117,12 +117,13 @@ class Detector(Actor):
                     'autoupload': autoupload.value,
                     'tags': tags,
                 }, timeout=3)
-                box_detections = [BoxDetection.parse_obj(d) for d in result.get('box_detections', [])]
-                point_detections = [PointDetection.parse_obj(d) for d in result.get('point_detections', [])]
-                segmentation_detections = [SegmentationDetection.from_dict(
-                    d) for d in result.get('segmentation_detections', [])]
-                image.detections = Detections(boxes=box_detections, points=point_detections,
-                                              segmentations=segmentation_detections)
+                image.detections = Detections(
+                    boxes=[BoxDetection.parse_obj(d) for d in result.get('box_detections', [])],
+                    points=[PointDetection.parse_obj(d) for d in result.get('point_detections', [])],
+                    segmentations=[
+                        SegmentationDetection.from_dict(d) for d in result.get('segmentation_detections', [])
+                    ],
+                )
             except socketio.exceptions.TimeoutError:
                 self.log.exception(f'detection for {image.id} on {self.port} took too long')
                 self.timeout_count += 1

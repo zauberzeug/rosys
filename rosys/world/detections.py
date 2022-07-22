@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 
 from pydantic import BaseModel
@@ -50,37 +52,37 @@ class BoxDetection(Detection):
 
 
 @dataclass
-class Point():
+class Point:
     x: float
     y: float
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'x:{self.x:.0f} y: {self.y:.0f}'
 
 
 @dataclass
-class Shape():
+class Shape:
     points: list[Point]
 
     @staticmethod
-    def from_str(points: str):
+    def from_str(points: str) -> Shape:
         p = points.split(',')
         points = [Point(int(p[i]), int(p[i+1])) for i in range(0, len(p), 2)]
         return Shape(points=points)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return ', '. join([p.__str__ for p in self.points])
 
 
 @dataclass
-class SegmentationDetection():
+class SegmentationDetection:
     category_name: str
     model_name: str
     confidence: float
     shape: Shape
 
     @staticmethod
-    def from_dict(detection: dict):
+    def from_dict(detection: dict) -> SegmentationDetection:
         return SegmentationDetection(
             detection['category_name'],
             detection['model_name'],
@@ -121,7 +123,7 @@ class PointDetection(Detection):
 
 
 @dataclass
-class Detections():
+class Detections:
     boxes: list[BoxDetection] = field(default_factory=list)
     points: list[PointDetection] = field(default_factory=list)
     segmentations: list[SegmentationDetection] = field(default_factory=list)
