@@ -63,7 +63,7 @@ class Shape():
     points: list[Point]
 
     @staticmethod
-    def from_dict(points: dict):
+    def from_str(points: str):
         p = points.split(',')
         points = [Point(int(p[i]), int(p[i+1])) for i in range(0, len(p), 2)]
         return Shape(points=points)
@@ -85,7 +85,7 @@ class SegmentationDetection():
             detection['category_name'],
             detection['model_name'],
             detection['confidence'],
-            Shape.from_dict(detection['shape']))
+            Shape.from_str(detection['shape']))
 
     def __str__(self) -> str:
         return f'shape: {self.shape.__str__} cat: {self.category_name} conf: {self.confidence:.2f}'
