@@ -1,4 +1,3 @@
-import dataclasses
 import itertools
 import logging
 from dataclasses import dataclass
@@ -18,18 +17,12 @@ from .obstacle_map import ObstacleMap
 
 GRID_RESOLUTION = 1.0
 MIN_MARGIN = 1.0
-
-
-@dataclass
-class Features:
-    # try to find a collision free simple path between start and goal (see https://trello.com/c/FtP4yHqA/777#comment-62d0323e97ba19392bcbceb8)
-    try_single_path = True
-    # try to find collision free path with minimal switching (single shunting)
-    try_single_shunting = False
+# try to find a collision-free simple path between start and goal (see https://trello.com/c/FtP4yHqA/777#comment-62d0323e97ba19392bcbceb8)
+TRY_SINGLE_PATH = True
+TRY_SINGLE_SHUNTING = True  # try to find collision-free path with minimal switching (single shunting)
 
 
 class DelaunayPlanner:
-    features = Features()
 
     def __init__(self, robot_outline: list[tuple[float, float]]) -> None:
         self.robot_outline = robot_outline
@@ -40,7 +33,7 @@ class DelaunayPlanner:
         self.tri_mesh: Optional[spatial.Delaunay] = None
         self.pose_groups: Optional[list[DelaunayPoseGroup]] = None
         self.graph: Optional[nx.DiGraph] = None
-        self.log = logging.getLogger('rosys.delauny_planner')
+        self.log = logging.getLogger('rosys.delaunay_planner')
 
     def update_map(self, areas: list[Area], obstacles: list[Obstacle], additional_points: list[Point],
                    deadline: float) -> None:
@@ -129,14 +122,14 @@ class DelaunayPlanner:
                             self.graph.add_edge((g_, p_), (g, p), backward=True, weight=1.2*length)
 
     def search(self, start: Pose, goal: Pose) -> list[PathSegment]:
-        if self.features.try_single_path:
+        if TRY_SINGLE_PATH:
             for backward in [True, False]:
                 simple_spline = Spline.from_poses(start, goal, backward=backward)
                 if _is_healthy(simple_spline) and not self.obstacle_map.test_spline(simple_spline, backward):
                     self.log.info('found single spline to reach goal')
                     return [PathSegment(spline=simple_spline, backward=backward)]
         paths: list[list[PathSegment]] = []
-        if self.features.try_single_shunting:
+        if TRY_SINGLE_SHUNTING:
             for backward in [True, False]:
                 for length in [1, 1.5, 2]:
                     y_outline = [p[1] for p in self.robot_outline]
@@ -147,7 +140,7 @@ class DelaunayPlanner:
                         spline = Spline.from_poses(intermediate, goal, backward=not backward)
                         paths.append([
                             PathSegment(spline=shunt, backward=backward),
-                            PathSegment(spline=spline, backward=not backward)
+                            PathSegment(spline=spline, backward=not backward),
                         ])
         grid_entries = _find_grid_passages(self.obstacle_map, self.pose_groups, start, True)
         grid_exits = _find_grid_passages(self.obstacle_map, self.pose_groups, goal, False)
@@ -254,14 +247,14 @@ def _find_grid_passages(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPos
     results: list[Passage] = []
     for backward in [False, True]:
         for g, group in zip(group_indices, np.array(pose_groups)[group_indices][:3]):
-            for p, node_pose in enumerate(group.poses):
-                poses = (pose, node_pose) if entering else (node_pose, pose)
+            for p, group_pose in enumerate(group.poses):
+                poses = (pose, group_pose) if entering else (group_pose, pose)
                 spline = Spline.from_poses(*poses, backward=backward)
                 if _is_healthy(spline) and not obstacle_map.test_spline(spline, backward):
                     passage = Passage(
                         PathSegment(spline=spline, backward=backward),
                         coordinate=(p, g),
-                        length=spline.estimated_length()
+                        length=spline.estimated_length(),
                     )
                     results.append(passage)
     if results:
