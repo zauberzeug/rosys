@@ -15,5 +15,6 @@ from .profiler import profile_button
 from .pyloot_page import PylootPage as pyloot_page
 from .robot_object import RobotObject as robot_object
 from .settings import Settings as settings
+from .time_schedule import TimeSchedule as time_schedule
 from .videos_page import VideosPage as videos_page
 from .wifi import wifi_button
