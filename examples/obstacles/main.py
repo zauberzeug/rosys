@@ -20,7 +20,7 @@ if SerialCommunication.is_possible():
 else:
     wheels = WheelsSimulation(odometer)
 steerer = Steerer(wheels)
-driver = Driver(wheels)
+driver = Driver(wheels, odometer)
 automator = Automator()
 path_planner = PathPlanner(shape)
 

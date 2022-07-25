@@ -23,7 +23,7 @@ class GeoFenceGuard:
 shape = RobotShape()
 odometer = Odometer()
 wheels = WheelsSimulation(odometer)
-driver = Driver(wheels)
+driver = Driver(wheels, odometer)
 automator = Automator()
 geo_fence_guard = GeoFenceGuard(odometer, automator)
 

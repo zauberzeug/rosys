@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
+from rosys.actors.odometer import Odometer
 
 from ..helpers import ModificationContext, eliminate_2pi, eliminate_pi, ramp
 from ..runtime import runtime
@@ -23,9 +24,9 @@ class DriveParameters(ModificationContext):
 
 class Driver:
 
-    def __init__(self, wheels: Drivable) -> None:
+    def __init__(self, wheels: Drivable, odometer: Odometer) -> None:
         self.wheels = wheels
-        self.odometer = wheels.odometer
+        self.odometer = odometer
         self.parameters = DriveParameters()
         self.carrot_pose: Optional[Pose] = None
 

@@ -11,7 +11,7 @@ shape = RobotShape()
 odometer = Odometer()
 path_planner = PathPlanner(shape)
 wheels = WheelsSimulation(odometer)
-driver = Driver(wheels)
+driver = Driver(wheels, odometer)
 automator = Automator()
 
 

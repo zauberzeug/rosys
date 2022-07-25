@@ -33,8 +33,8 @@ def wheels(odometer: Odometer) -> Wheels:
 
 
 @pytest.fixture(autouse=True)
-def driver(wheels: Wheels) -> Driver:
-    return Driver(wheels)
+def driver(wheels: Wheels, odometer: Odometer) -> Driver:
+    return Driver(wheels, odometer)
 
 
 @pytest.fixture(autouse=True)

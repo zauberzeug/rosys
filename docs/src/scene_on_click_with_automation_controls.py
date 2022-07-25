@@ -10,7 +10,7 @@ from rosys.world import Point, RobotShape
 shape = RobotShape()
 odometer = Odometer()
 wheels = WheelsSimulation(odometer)
-driver = Driver(wheels)
+driver = Driver(wheels, odometer)
 automator = Automator()
 
 
