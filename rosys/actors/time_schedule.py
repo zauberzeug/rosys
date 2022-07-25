@@ -50,18 +50,34 @@ class TimeSchedule:
 
     def __init__(self,
                  automator: Automator, *,
-                 automation: Optional[Awaitable],
+                 on_enable: Optional[Awaitable],
+                 on_disable: Optional[Awaitable],
                  ) -> None:
+        '''Schedules automations according to a time plan.
+
+        param on_enable: automation to execute when entering an time frame marked as active
+        param on_disable: automation to execute when entering an time frame marked as inactive'''
+
         self.automator: Automator = automator
-        self.automation = automation
+        self.on_enable = on_enable
+        self.on_disable = on_disable
         self.plan: Plan = Plan()
+        self.enabled: bool = False
         self.buttons: list[tuple(ui.button, ui.button, ui.button)] = []
         runtime.on_repeat(self.step, 1)
 
     def step(self):
         time = datetime.fromtimestamp(runtime.time)
-        if self.automator.is_stopped and self.plan.is_enabled(time.hour, time.minute):
-            self.automator.start(self.automation())
+        if not self.enabled and \
+                self.plan.is_enabled(time.hour, time.minute) and \
+                self.on_enable is not None:
+            self.automator.start(self.on_enable())
+            self.enabled = True
+        if self.enabled and \
+                not self.plan.is_enabled(time.hour, time.minute) and \
+                self.on_disable is not None:
+            self.automator.start(self.on_disable())
+            self.enabled = False
 
     def ui(self):
         with ui.row().style(replace='gap: 0.3em'):
