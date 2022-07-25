@@ -135,13 +135,16 @@ class DelaunayPlanner:
                     y_outline = [p[1] for p in self.robot_outline]
                     robot_length = max(y_outline) - min(y_outline)
                     intermediate = start.advance(robot_length * (-length if backward else length))
-                    shunt = Spline.from_poses(start, intermediate, backward=backward)
-                    if _is_healthy(shunt) and not self.obstacle_map.test_spline(shunt, backward):
-                        spline = Spline.from_poses(intermediate, goal, backward=not backward)
-                        paths.append([
-                            PathSegment(spline=shunt, backward=backward),
-                            PathSegment(spline=spline, backward=not backward),
-                        ])
+                    spline1 = Spline.from_poses(start, intermediate, backward=backward)
+                    if not _is_healthy(spline1) or self.obstacle_map.test_spline(spline1, backward):
+                        continue
+                    spline2 = Spline.from_poses(intermediate, goal, backward=not backward)
+                    if not _is_healthy(spline2) or self.obstacle_map.test_spline(spline2, not backward):
+                        continue
+                    paths.append([
+                        PathSegment(spline=spline1, backward=backward),
+                        PathSegment(spline=spline2, backward=not backward),
+                    ])
         grid_entries = _find_grid_passages(self.obstacle_map, self.pose_groups, start, True)
         grid_exits = _find_grid_passages(self.obstacle_map, self.pose_groups, goal, False)
         for enter, exit in itertools.product(grid_entries, grid_exits):

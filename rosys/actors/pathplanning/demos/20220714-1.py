@@ -1,4 +1,4 @@
-from rosys.actors.pathplanning.planner_process import PlannerSearchCommand
+from rosys.actors.pathplanning import PlannerSearchCommand
 from rosys.world import Area, Point, Pose
 
 cmd = PlannerSearchCommand(
