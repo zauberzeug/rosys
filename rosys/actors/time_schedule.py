@@ -50,8 +50,8 @@ class TimeSchedule:
 
     def __init__(self,
                  automator: Automator, *,
-                 on_enable: Optional[Awaitable],
-                 on_disable: Optional[Awaitable],
+                 on_enable: Optional[Awaitable] = None,
+                 on_disable: Optional[Awaitable] = None,
                  ) -> None:
         '''Schedules automations according to a time plan.
 
