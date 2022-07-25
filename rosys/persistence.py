@@ -1,6 +1,6 @@
 import json
 import logging
-import os.path
+import os
 from typing import Any, Protocol, TypeVar
 
 from dataclasses_json import Exclude, config
@@ -60,6 +60,8 @@ def backup(force: bool = False) -> None:
     for actor in actors:
         if not actor.needs_backup and not force:
             continue
+        if not os.path.exists(backup_path):
+            os.makedirs(backup_path)
         filepath = f'{backup_path}/{actor.__module__}.json'
         with open(filepath, 'w') as f:
             json.dump(actor.backup(), f, indent=4)
