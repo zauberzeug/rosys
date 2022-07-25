@@ -4,10 +4,10 @@ from typing import Optional
 
 import numpy as np
 
-from ..hardware import Wheels
 from ..helpers import ModificationContext, eliminate_2pi, eliminate_pi, ramp
 from ..runtime import runtime
 from ..world import PathSegment, Point, Pose, Spline
+from .drivable import Drivable
 
 
 @dataclass
@@ -23,7 +23,7 @@ class DriveParameters(ModificationContext):
 
 class Driver:
 
-    def __init__(self, wheels: Wheels) -> None:
+    def __init__(self, wheels: Drivable) -> None:
         self.wheels = wheels
         self.odometer = wheels.odometer
         self.parameters = DriveParameters()

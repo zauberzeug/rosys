@@ -1,9 +1,9 @@
 import logging
 from enum import Enum
 
-from ..hardware import Wheels
 from ..runtime import runtime
 from .automator import Automator
+from .drivable import Drivable
 
 
 class State(Enum):
@@ -15,7 +15,7 @@ class State(Enum):
 class Steerer:
     speed_scaling: float = 1
 
-    def __init__(self, wheels: Wheels) -> None:
+    def __init__(self, wheels: Drivable) -> None:
         self.log = logging.getLogger('rosys.steerer')
 
         self.wheels = wheels
