@@ -4,7 +4,7 @@ from nicegui import ui
 from rosys import runtime
 from rosys.actors import Automator, Driver, Odometer
 from rosys.hardware import WheelsSimulation
-from rosys.world import PathSegment, Pose, Robot, Spline
+from rosys.world import PathSegment, Pose, RobotShape, Spline
 
 
 class GeoFenceGuard:
@@ -20,7 +20,7 @@ class GeoFenceGuard:
 
 
 # setup
-robot = Robot()
+shape = RobotShape()
 odometer = Odometer()
 wheels = WheelsSimulation(odometer)
 driver = Driver(wheels)
@@ -30,7 +30,7 @@ geo_fence_guard = GeoFenceGuard(odometer, automator)
 # ui
 runtime.NEW_NOTIFICATION.register(ui.notify)
 with ui.scene():
-    rosys.ui.robot_object(robot, odometer)
+    rosys.ui.robot_object(shape, odometer)
 label = ui.label()
 ui.timer(0.1, lambda: label.set_text(f'pose: {odometer.prediction}'))
 

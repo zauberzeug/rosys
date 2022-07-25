@@ -8,11 +8,10 @@ from rosys import runtime
 from rosys.actors import Automator, Driver, Odometer, PathPlanner, Steerer
 from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
 from rosys.hardware.communication import SerialCommunication
-from rosys.world import Obstacle, PathSegment, Point, Pose, Robot, RobotShape, Spline
+from rosys.world import Obstacle, PathSegment, Point, Pose, RobotShape, Spline
 
 # setup
 shape = RobotShape(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])
-robot = Robot(shape=shape)
 odometer = Odometer()
 if SerialCommunication.is_possible():
     communication = SerialCommunication()
@@ -81,7 +80,7 @@ with ui.card():
                 return
 
     with ui.scene(640, 480, on_click=handle_click) as scene:
-        rosys.ui.robot_object(robot, odometer, debug=True)
+        rosys.ui.robot_object(shape, odometer, debug=True)
         obstacles3d = rosys.ui.obstacle_object(path_planner.obstacles)
         path3d = rosys.ui.path_object()
 

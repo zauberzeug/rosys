@@ -2,13 +2,13 @@
 import rosys.ui
 from nicegui import ui
 from rosys import runtime
-from rosys.actors import CameraProvider, CameraServer, Odometer, Steerer, UsbCameraProviderHardware, UsbCameraProviderSimulation
+from rosys.actors import (CameraProvider, CameraServer, Odometer, Steerer, UsbCameraProviderHardware,
+                          UsbCameraProviderSimulation)
 from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
 from rosys.hardware.communication import SerialCommunication
-from rosys.world import Camera, Robot
+from rosys.world import Camera
 
 # setup
-robot = Robot()
 odometer = Odometer()
 if SerialCommunication.is_possible():
     communication = SerialCommunication()

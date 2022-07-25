@@ -4,12 +4,12 @@ from nicegui import ui
 from rosys import runtime
 from rosys.actors import Automator, Driver, Odometer, PathPlanner
 from rosys.hardware import WheelsSimulation
-from rosys.world import Pose, Robot
+from rosys.world import Pose, RobotShape
 
 # setup
-robot = Robot()
+shape = RobotShape()
 odometer = Odometer()
-path_planner = PathPlanner(robot.shape)
+path_planner = PathPlanner(shape)
 wheels = WheelsSimulation(odometer)
 driver = Driver(wheels)
 automator = Automator()
@@ -25,7 +25,7 @@ async def handle_click(msg):
 # ui
 runtime.NEW_NOTIFICATION.register(ui.notify)
 with ui.scene(on_click=handle_click, width=600):
-    rosys.ui.robot_object(robot, odometer)
+    rosys.ui.robot_object(shape, odometer)
     path3d = rosys.ui.path_object()
 
 ui.label('click into the scene to drive the robot')

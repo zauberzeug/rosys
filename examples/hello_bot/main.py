@@ -7,14 +7,14 @@ from rosys import runtime
 from rosys.actors import Automator, Driver, Odometer, Steerer
 from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
 from rosys.hardware.communication import SerialCommunication
-from rosys.world import Robot
+from rosys.world import RobotShape
 
 import log_configuration
 
 log_configuration.setup()
 
 # setup
-robot = Robot()
+shape = RobotShape()
 odometer = Odometer()
 if SerialCommunication.is_possible():
     communication = SerialCommunication()
@@ -36,7 +36,7 @@ with ui.card():
 
     with ui.row():
         with ui.scene():
-            rosys.ui.robot_object(robot, odometer)
+            rosys.ui.robot_object(shape, odometer)
         rosys.ui.joystick(steerer, size=50, color='blue')
 
     with ui.row():

@@ -6,10 +6,10 @@ from rosys import runtime
 from rosys.actors import Odometer, Steerer
 from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation, robot_brain
 from rosys.hardware.communication import SerialCommunication, communication
-from rosys.world import Robot
+from rosys.world import RobotShape
 
 # setup
-robot = Robot()
+shape = RobotShape()
 odometer = Odometer()
 if SerialCommunication.is_possible():
     communication = SerialCommunication()
@@ -23,7 +23,7 @@ steerer = Steerer(wheels)
 runtime.NEW_NOTIFICATION.register(ui.notify)
 rosys.ui.keyboard_control(steerer)
 with ui.scene():
-    rosys.ui.robot_object(robot, odometer)
+    rosys.ui.robot_object(shape, odometer)
 ui.label('hold SHIFT to steer with the keyboard arrow keys')
 
 # start

@@ -5,7 +5,7 @@ from rosys.actors import Automator, Driver, Odometer, PathPlanner
 from rosys.hardware import Wheels, WheelsSimulation
 from rosys.runtime import runtime
 from rosys.test import helpers, log_configuration
-from rosys.world import Robot
+from rosys.world import RobotShape
 
 log_configuration.setup()
 
@@ -43,10 +43,10 @@ def automator() -> Automator:
 
 
 @pytest.fixture(autouse=True)
-def robot() -> Robot:
-    return Robot()
+def shape() -> RobotShape:
+    return RobotShape()
 
 
 @pytest.fixture(autouse=True)
-def path_planner(robot: Robot) -> PathPlanner:
-    return PathPlanner(robot.shape)
+def path_planner(shape: RobotShape) -> PathPlanner:
+    return PathPlanner(shape)

@@ -7,7 +7,7 @@ import pytest
 from rosys.actors import Automator, Driver, PathPlanner
 from rosys.actors.pathplanning.delaunay_planner import DelaunayPlanner
 from rosys.test import assert_point, forward
-from rosys.world import Obstacle, Point, Pose, Robot, Spline
+from rosys.world import Obstacle, Point, Pose, RobotShape, Spline
 
 
 def create_obstacle(*, x: float, y: float, radius: float = 0.5) -> Obstacle:
@@ -69,9 +69,8 @@ async def test_test_spline(path_planner: PathPlanner) -> None:
     assert await path_planner.test_spline(spline) == True
 
 
-def test_grow_map() -> None:
-    robot = Robot()
-    planner = DelaunayPlanner(robot.shape.outline)
+def test_grow_map(shape: RobotShape) -> None:
+    planner = DelaunayPlanner(shape.outline)
     assert planner.obstacle_map is None
 
     start = Pose(x=0, y=0)
