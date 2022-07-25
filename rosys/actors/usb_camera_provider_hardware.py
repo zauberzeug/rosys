@@ -139,7 +139,7 @@ class UsbCameraProviderHardware(CameraProvider):
             return
         output = '\n'.join([s for s in output.split('\n') if not s.startswith('Cannot open device')])
         for infos in output.split('\n\n'):
-            match = re.search('\((.*)\)', infos)
+            match = re.search(r'\((.*)\)', infos)
             if match is None:
                 continue
             uid = match.group(1)
@@ -213,7 +213,7 @@ class UsbCameraProviderHardware(CameraProvider):
 
     async def load_value_ranges(self, device: Device) -> None:
         output = await self.run_v4l(device, '--all')
-        match = re.search('exposure_absolute.*: min=(\d*).*max=(\d*).*default=(\d*).*', output)
+        match = re.search(r'exposure_absolute.*: min=(\d*).*max=(\d*).*default=(\d*).*', output)
         device.exposure_min = int(match.group(1))
         device.exposure_max = int(match.group(2))
         device.exposure_default = int(match.group(3))

@@ -34,13 +34,15 @@ def check(path: str):
 
     if 'Traceback' in output:
         fail(output, 2)
+        return
     if 'Error' in output:
         fail(output, 3)
-
-    if 'JustPy ready to go' in output:
-        print(f' is ok', flush=True)
-    else:
+        return
+    if 'NiceGUI ready to go' not in output:
         fail(output, 4)
+        return
+
+    print(f' is ok', flush=True)
 
 
 if __name__ == '__main__':
