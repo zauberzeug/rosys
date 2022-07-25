@@ -10,7 +10,7 @@ keywords = ["robot", "framework", "automation", "control", "steer"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
-nicegui = "0.7.27"
+nicegui = "0.8.0"
 asyncio = "^3.4.3"
 retry = "^0.9.2"
 aenum = "^3.1.5"
