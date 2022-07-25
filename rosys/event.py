@@ -5,10 +5,11 @@ import functools
 import inspect
 import logging
 import weakref
-from typing import Callable
+from typing import Awaitable, Callable
 
 from executing import Source
 
+startup_coroutines: list[Awaitable] = []
 tasks: list[asyncio.Task] = []
 log = logging.getLogger('rosys.event')
 events: list[Event] = []
@@ -65,8 +66,6 @@ class Event:
 
     def emit(self, *args) -> None:
         '''Fires event without waiting for the result.'''
-        assert asyncio.get_running_loop()
-
         loop = asyncio.get_event_loop()
         for listener in list(self.listeners):
             try:
@@ -78,7 +77,10 @@ class Event:
                     self.listeners.remove(listener)
                     continue
                 if iscoroutinefunction(listener):
-                    tasks.append(loop.create_task(callback(*args), name=f'handle {self.name}'))
+                    if loop.is_running:
+                        tasks.append(loop.create_task(callback(*args), name=f'handle {self.name}'))
+                    else:
+                        startup_coroutines.append(callback(*args))
                 else:
                     callback(*args)
             except:

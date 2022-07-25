@@ -89,6 +89,9 @@ class Runtime:
                 self.log.exception(f'error while starting handler "{handler.__qualname__}"')
                 continue
 
+        for coroutine in event.startup_coroutines:
+            await coroutine
+
         for handler, interval in self.repeat_handlers:
             self.log.debug(f'starting loop "{handler.__qualname__}" with interval {interval:.3f}s')
             self.tasks.append(create_task(self._repeat_one_handler(handler, interval), name=handler.__qualname__))
