@@ -17,7 +17,7 @@ class FastSpline:
     end_yaw: float
     backward: bool
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         distance = -0.5 if self.backward else 0.5
         distance *= np.sqrt((self.end_x - self.start_x)**2 + (self.end_y - self.start_y)**2)
         self.a = self.start_x

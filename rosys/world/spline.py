@@ -32,7 +32,7 @@ class Spline:
     q: float = 0
     r: float = 0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.a = self.start.x
         self.e = self.start.y
         self.b = self.control1.x

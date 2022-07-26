@@ -11,7 +11,7 @@ from ..world import PathSegment, Point, Pose, Spline
 from .drivable import Drivable
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class DriveParameters(ModificationContext):
     linear_speed_limit: float = 0.5
     angular_speed_limit: float = 0.5
@@ -129,7 +129,7 @@ class Driver:
         return linear, angular
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class Carrot:
     spline: Spline
     offset: Point = Point(x=0, y=0)

@@ -1,36 +1,36 @@
-from nicegui.ui import Ui
-from nicegui.elements.image import Image
-import objgraph
-import random
-import base64
 import asyncio
-import logging
+import base64
 import gc
+import logging
+import random
 from collections import Counter
+from typing import Optional
+
+import objgraph
+from nicegui import ui
 
 log = logging.getLogger('rosys.objgraph_page')
 
 
 class ObjgraphPage:
-    ui: Ui = None  # will be set by rosys.ui.configure
 
     def __init__(self) -> None:
-        with self.ui.page('/objgraph'):
-            t = self.ui.timer(10, self.refresh_stats, active=False)
-            self.ui.switch('track objects (every 10 s)').bind_value_to(t, 'active')
-            with self.ui.column():
-                self.growth = self.ui.label()
-                self.leaking = self.ui.label()
-                self.overall = self.ui.label()
-                self.counts = self.ui.markdown()
+        with ui.page('/objgraph'):
+            t = ui.timer(10, self.refresh_stats, active=False)
+            ui.switch('track objects (every 10 s)').bind_value_to(t, 'active')
+            with ui.column():
+                self.growth = ui.label()
+                self.leaking = ui.label()
+                self.overall = ui.label()
+                self.counts = ui.markdown()
 
-            self.class_search = self.ui.input('Search Class', on_change=self.update_graph)
-            self.class_search_result = self.ui.image().props('contain').style('height:400px;width:100%')
+            self.class_search = ui.input('Search Class', on_change=self.update_graph)
+            self.class_search_result = ui.image().props('contain').style('height:400px;width:100%')
             self.class_search_result.visible = False
-            self.most_common_search_result = self.ui.image().props('contain').style('height:400px;width:100%')
+            self.most_common_search_result = ui.image().props('contain').style('height:400px;width:100%')
             self.most_common_search_result.visible = False
 
-    def update_graph(self, _=None):
+    def update_graph(self, _=None) -> None:
         if not self.class_search.value:
             return
         objgraph.show_chain(objgraph.find_backref_chain(
@@ -39,7 +39,7 @@ class ObjgraphPage:
             filename='/tmp/rosys_objgraph_class_search.png')
         self.load_image('/tmp/rosys_objgraph_class_search.png', self.class_search_result)
 
-    def load_image(self, file: str, img: Image):
+    def load_image(self, file: str, img: ui.image) -> None:
         try:
             with open(file, 'rb') as f:
                 data = base64.b64encode(f.read()).decode('utf-8')
@@ -49,7 +49,7 @@ class ObjgraphPage:
         except:
             log.exception('could not load image ' + file)
 
-    def get_objgraph_stats(self):
+    def get_objgraph_stats(self) -> tuple[str, str, str, Optional[Counter[str]]]:
         gc.collect()
         growth_objs = objgraph.growth(4)
         growth = 'object growth every 10 sec: '
@@ -74,10 +74,12 @@ class ObjgraphPage:
                     objgraph.is_proper_module),
                     filename='/tmp/rosys_objgraph_most_common.png'
                 )
+        else:
+            counts = None
 
         return growth, leaking, overall, counts
 
-    async def refresh_stats(self):
+    async def refresh_stats(self) -> None:
         loop = asyncio.get_running_loop()
         growth, leaking, overall, counts = await loop.run_in_executor(None, self.get_objgraph_stats)
         await loop.run_in_executor(None, self.update_graph)

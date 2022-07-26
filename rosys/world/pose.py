@@ -9,7 +9,7 @@ from .point import Point
 from .point3d import Point3d
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class PoseStep:
     linear: float
     angular: float

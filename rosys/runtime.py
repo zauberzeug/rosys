@@ -13,7 +13,7 @@ from .helpers import is_test
 from .task_logger import create_task
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class Notification:
     time: float
     message: str
@@ -44,7 +44,7 @@ class Runtime:
 
     def notify(self, message: str) -> None:
         self.log.info(message)
-        self.notifications.append(Notification(self.time, message))
+        self.notifications.append(Notification(time=self.time, message=message))
         self.NEW_NOTIFICATION.emit(message)
 
     @property

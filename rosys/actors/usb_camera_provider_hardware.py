@@ -18,7 +18,7 @@ MJPG = cv2.VideoWriter_fourcc(*'MJPG')
 SCAN_INTERVAL = 10
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class Device:
     '''device-specific infos are kept separately (world should not be aware of them)'''
     uid: str
@@ -84,9 +84,9 @@ class UsbCameraProviderHardware(CameraProvider):
                 if self.devices[uid].capture is None:
                     self.log.warn(f'unexpected missing capture handle for {uid}')
                     continue
-                elif self.devices[uid].last_state != camera.json():
+                elif self.devices[uid].last_state != camera.json():  # TODO
                     await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
-                    self.devices[uid].last_state = camera.json()
+                    self.devices[uid].last_state = camera.json()  # TODO
                 image = await rosys.run.io_bound(self.capture_image, uid)
                 if image is None:
                     await self.deactivate(camera)

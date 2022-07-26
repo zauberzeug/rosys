@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import rosys
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class NetworkStats:
     tx_errors: int
     tx_dropped: int

@@ -18,7 +18,7 @@ class PlannerCommand(abc.ABC):
     id: str = field(init=False, repr=False)
     deadline: float
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.id = str(uuid.uuid4())
 
 

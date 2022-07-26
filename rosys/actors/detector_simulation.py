@@ -10,7 +10,7 @@ from .camera_provider import CameraProvider
 from .detector import Autoupload, Detector
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class SimulatedObject:
     category_name: str
     position: Point3d
