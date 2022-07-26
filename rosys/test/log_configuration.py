@@ -9,6 +9,7 @@ from rosys import runtime
 
 
 class PackagePathFilter(logging.Filter):
+
     # https://stackoverflow.com/a/52582536/3419103
     def filter(self, record: logging.LogRecord) -> bool:
         pathname = record.pathname
@@ -24,6 +25,7 @@ class PackagePathFilter(logging.Filter):
 
 
 class RuntimeFilter(logging.Filter):
+
     def filter(self, record: logging.LogRecord) -> bool:
         from rosys.test.helpers import odometer as odo
         if odo:

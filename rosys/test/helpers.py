@@ -87,7 +87,7 @@ async def automate_drive_to(x: float, y: float) -> None:
     automator.start(driver.drive_to(Point(x=x, y=y)))
 
 
-def approx(o1: Any, o2: Any) -> None:
+def approx(o1: Any, o2: Any, *, rel: Optional[float] = None, abs: Optional[float] = None, nan_ok: bool = False) -> None:
     # https://github.com/pytest-dev/pytest/issues/6632#issuecomment-580507745
     assert type(o1) == type(o2)
 
@@ -100,7 +100,7 @@ def approx(o1: Any, o2: Any) -> None:
         v1 = getattr(o1, k)
         v2 = getattr(o2, k)
         if isinstance(v1, int) or isinstance(v1, float):
-            assert v1 == pytest.approx(v2)
+            assert v1 == pytest.approx(v2, rel=rel, abs=abs, nan_ok=nan_ok)
             continue
 
         if isinstance(v1, bool) or isinstance(v1, str):
