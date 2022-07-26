@@ -28,6 +28,7 @@ class Runtime:
 
         self.is_test = is_test()
         self._time = time.time()
+        self._start_time = self.time
         self.notifications: list[Notification] = []
         self._exception: Optional[Exception] = None  # NOTE: used for tests
 
@@ -53,6 +54,10 @@ class Runtime:
     def set_time(self, value: float) -> None:
         assert self.is_test, 'only tests can change the time'
         self._time = value
+
+    @property
+    def uptime(self) -> float:
+        return self.time - self._start_time
 
     async def sleep(self, seconds: float) -> None:
         if self.is_test:
