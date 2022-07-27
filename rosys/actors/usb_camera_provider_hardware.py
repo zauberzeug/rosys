@@ -2,7 +2,7 @@ import io
 import logging
 import re
 import shutil
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 import cv2
@@ -27,7 +27,7 @@ class Device:
     exposure_min: int = 0
     exposure_max: int = 0
     exposure_default: int = 0
-    last_state: str = ''
+    last_state: dict = field(default_factory=dict)
 
 
 def process_image(data: bytes, rotation: rosys.world.ImageRotation, crop: rosys.world.Rectangle = None) -> bytes:
@@ -84,9 +84,9 @@ class UsbCameraProviderHardware(CameraProvider):
                 if self.devices[uid].capture is None:
                     self.log.warn(f'unexpected missing capture handle for {uid}')
                     continue
-                elif self.devices[uid].last_state != camera.json():  # TODO
+                elif self.devices[uid].last_state != persistence.to_dict(camera):
                     await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
-                    self.devices[uid].last_state = camera.json()  # TODO
+                    self.devices[uid].last_state = persistence.to_dict(camera)
                 image = await rosys.run.io_bound(self.capture_image, uid)
                 if image is None:
                     await self.deactivate(camera)
