@@ -1,4 +1,4 @@
-from __future__ import annotations  # NOTE: for PEP 563 (postponed evaluation of annotations)
+from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any

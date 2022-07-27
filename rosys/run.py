@@ -12,8 +12,7 @@ from .helpers import is_test
 
 process_pool = ProcessPoolExecutor()
 thread_pool = ThreadPoolExecutor(thread_name_prefix='run.py thread_pool')
-# NOTE is used in rosys.test.Runtime to advance time slower until computation is done
-running_cpu_bound_processes: list[int] = []
+running_cpu_bound_processes: list[int] = []  # NOTE is used in tests to advance time slower until computation is done
 running_sh_processes: list[Process] = []
 log = logging.getLogger('rosys.run')
 
