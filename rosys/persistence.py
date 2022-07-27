@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from dataclasses import fields
 from typing import Any, Protocol, TypeVar
 
 from dataclasses_json import Exclude, config
@@ -32,6 +33,12 @@ def replace_list(old_list: list[T], cls: type, new_list: list[T]) -> None:
     '''Replace content of `old_list` with items from `new_list`.'''
     old_list.clear()
     old_list.extend(from_dict(cls, value) for value in new_list)
+
+
+def replace_dataclass(old_dataclass: Any, new_dict: dict[str, Any]) -> None:
+    '''Replace content of `old_dataclass` with content from `new_dict`.'''
+    for field in fields(old_dataclass):
+        setattr(old_dataclass, field.name, new_dict.get(field.name))
 
 
 backup_path = os.path.expanduser('~/.rosys')
