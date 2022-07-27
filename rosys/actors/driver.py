@@ -102,17 +102,16 @@ class Driver:
         await self.wheels.drive(0, 0)
 
     def _throttle(self, linear: float, angular: float) -> tuple[float, float]:
-        if not runtime.is_test:  # TODO: require camera tracking in tests as well
-            if self.parameters.max_detection_age_ramp is None:
-                factor = 1
-            elif self.odometer.detection is None:
-                factor = 0
-            else:
-                age_ramp = self.parameters.max_detection_age_ramp
-                age = runtime.time - self.odometer.detection.time
-                factor = ramp(age, age_ramp[0], age_ramp[1], 1.0, 0.0, clip=True)
-            linear *= factor
-            angular *= factor
+        if self.parameters.max_detection_age_ramp is None:
+            factor = 1
+        elif self.odometer.detection is None:
+            factor = 0
+        else:
+            age_ramp = self.parameters.max_detection_age_ramp
+            age = runtime.time - self.odometer.detection.time
+            factor = ramp(age, age_ramp[0], age_ramp[1], 1.0, 0.0, clip=True)
+        linear *= factor
+        angular *= factor
 
         linear_limit = self.parameters.linear_speed_limit
         angular_limit = self.parameters.angular_speed_limit
