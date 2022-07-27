@@ -1,2 +1,2 @@
 class Settings:
-    update_interval: float = 0.3
+    update_interval: float = 0.1
