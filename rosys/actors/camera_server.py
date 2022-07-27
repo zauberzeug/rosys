@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 import cv2
@@ -21,6 +22,7 @@ def shrink(factor: int, array: np.ndarray) -> bytes:
 class CameraServer:
 
     def __init__(self, camera_module: CameraProvider) -> None:
+        self.log = logging.getLogger('rosys.camera_server')
         self.camera_module = camera_module
 
         ui.add_route(Route('/camera/{id}/{timestamp}', self.get_image))
