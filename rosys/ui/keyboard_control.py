@@ -10,14 +10,14 @@ from ..world import Point
 
 class KeyboardControl:
 
-    def __init__(self, steerer: Steerer, *, default_speed: float = 2.0):
+    def __init__(self, steerer: Steerer, *, default_speed: float = 2.0) -> None:
         self.steerer = steerer
         self.log = logging.getLogger('rosys.ui.keyboard_control')
         ui.keyboard(on_key=self.handle_keys, repeating=False)
         self.direction = Point(x=0, y=0)
         self.speed = default_speed
 
-    def handle_keys(self, e: KeyEventArguments) -> bool:
+    def handle_keys(self, e: KeyEventArguments) -> None:
         self.log.debug(f'{e.key.name} -> {e.action} {e.modifiers}')
 
         # change speed via number key
@@ -51,5 +51,3 @@ class KeyboardControl:
             self.direction.y = 0
             self.direction.x = 0
             self.steerer.stop()
-
-        return False  # no page update

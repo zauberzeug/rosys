@@ -43,12 +43,11 @@ def profile_button() -> ui.button:
         yappi.get_thread_stats().print_all()
         profile.print()
 
-    async def toggle() -> bool:
+    async def toggle() -> None:
         if yappi.is_running():
             stop()
         else:
             await start()
-        return False  # do not refresh UI
 
     button = ui.button('Profiler', on_click=toggle).props('icon=play_arrow').tooltip('run profiling')
     return button

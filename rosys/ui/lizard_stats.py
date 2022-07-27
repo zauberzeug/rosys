@@ -24,9 +24,8 @@ class LizardStats(Chart):
         })
         self.ui.timer(settings.update_interval, self.update)
 
-    def update(self) -> bool:
+    def update(self) -> None:
         self.options.series[0].data.append(max(self.lizard.responsiveness_stats or [0]) * 1000)
         self.options.series[1].data.append(max(self.lizard.update_stats or [0]) * 1000)
         self.options.series[2].data.append(max(self.lizard.processing_stats or [0]) * 1000)
         [s.data.pop(0) for s in self.options.series if len(s.data) > 20]
-        return False  # NOTE: avoid JustPy page_update

@@ -22,8 +22,7 @@ class CpuUsage(Chart):
         })
         self.ui.timer(settings.update_interval, self.update)
 
-    def update(self) -> bool:
+    def update(self) -> None:
         for i, v in enumerate(psutil.cpu_percent(percpu=True)):
             self.options.series[i].data.append(v)
         [s.data.pop(0) for s in self.options.series if len(s.data) > 20]
-        return False  # NOTE: avoid JustPy page_update

@@ -38,7 +38,7 @@ def has_internet() -> bool:
 
 def wifi_button() -> Button:
 
-    def add(ssid: str, password: str):
+    def add(ssid: str, password: str) -> None:
         log.info(f'adding {ssid}, {password}')
         wifi_configs = os.path.expanduser(f'~/.rosys/wifi')
         os.makedirs(wifi_configs, exist_ok=True)
@@ -47,14 +47,13 @@ def wifi_button() -> Button:
             f.write(password)
         dialog.close()
 
-    async def update_wifi_status():
+    async def update_wifi_status() -> None:
         if await asyncio.get_event_loop().run_in_executor(None, has_internet):
             wifi_button.props(replace='color=green')
             status.set_text(f'Robot is connected to the internet.')
         else:
             wifi_button.props(replace='color=red')
             status.set_text(f'Robot is not connected to the internet.')
-        return False  # do not refresh UI
 
     with ui.dialog() as dialog, ui.card():
         status = ui.label()

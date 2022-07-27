@@ -44,7 +44,7 @@ class RobotObject(Object3D):
             self.robot_object = Stl(url).move(x, y, z).rotate(omega, phi, kappa).scale(scale).material(color, opacity)
         return self
 
-    def update(self) -> bool:
+    def update(self) -> None:
         self.robot_group.move(self.odometer.prediction.x, self.odometer.prediction.y)
         self.robot_group.rotate(0, 0, self.odometer.prediction.yaw)
         if self.driver is None or self.driver.carrot_pose is None:
@@ -53,4 +53,3 @@ class RobotObject(Object3D):
             self.carrot_group.scale(1)
             self.carrot_group.move(self.driver.carrot_pose.x, self.driver.carrot_pose.y)
             self.carrot_group.rotate(0, 0, self.driver.carrot_pose.yaw)
-        return False  # NOTE: avoid JustPy page_update

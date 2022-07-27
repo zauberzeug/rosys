@@ -10,7 +10,7 @@ from ..world import Calibration, Camera
 
 class CameraObjects(Group):
 
-    def __init__(self, camera_provider: CameraProvider, camera_projector: CameraProjector, *, px_per_m: float = 10000):
+    def __init__(self, camera_provider: CameraProvider, camera_projector: CameraProjector, *, px_per_m: float = 10000) -> None:
         super().__init__()
 
         self.camera_provider = camera_provider
@@ -35,12 +35,11 @@ class CameraObjects(Group):
             if (obj.name or '').split('_', 1)[0] == type
         }
 
-    async def update(self) -> bool:
+    async def update(self) -> None:
         await self.update_cameras()
         await self.update_images()
-        return False  # NOTE: avoid JustPy page_update
 
-    async def update_cameras(self) -> bool:
+    async def update_cameras(self) -> None:
         camera_groups = self.find_objects('camera')
         for uid, camera_group in camera_groups.items():
             if uid not in self.calibrated_cameras:
@@ -60,13 +59,12 @@ class CameraObjects(Group):
                     )
             camera_groups[uid].move(*camera.calibration.extrinsics.translation)
             camera_groups[uid].rotate_R(await run.cpu_bound(self.get_rotation, camera.calibration))
-        return False  # NOTE: avoid JustPy page_update
 
     @staticmethod
     def get_rotation(calibration: Calibration) -> list[list[float]]:
         return calibration.rotation.R  # computing euler rotation is cpu expensive
 
-    async def update_images(self) -> bool:
+    async def update_images(self) -> None:
         newest_images = [camera.latest_captured_image for camera in self.calibrated_cameras.values()]
         newest_images = [i for i in newest_images if i is not None]
 
@@ -97,4 +95,3 @@ class CameraObjects(Group):
                 await texture.set_url(url)
             if not await run.cpu_bound(CameraProjector.allclose, texture.args[1], coordinates):
                 await texture.set_coordinates(coordinates)
-        return False  # NOTE: avoid JustPy page_update
