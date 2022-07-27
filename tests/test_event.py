@@ -28,25 +28,6 @@ async def test_registering_same_handler_multiple_times():
 
 
 @pytest.mark.asyncio
-async def test_automatic_deregistering_if_reference_is_unused():
-
-    class Actor:
-        def __init__(self) -> None:
-            TEST_EVENT.register(self.handler)
-
-        def handler(self, number: int) -> None:
-            numbers.append(number)
-
-    numbers = []
-    actor = Actor()
-    await TEST_EVENT.call(42)
-    assert numbers == [42]
-    actor = Actor()
-    await TEST_EVENT.call(42)
-    assert numbers == [42, 42]
-
-
-@pytest.mark.asyncio
 async def test_registering_lambdas():
     numbers = []
     TEST_EVENT.register(lambda number: numbers.append(number))

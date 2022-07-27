@@ -3,13 +3,13 @@ import gc
 import logging
 import time
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Optional
+from typing import Callable, Optional
 
 import numpy as np
 import psutil
 
 from . import event, persistence, run
-from .helpers import is_test
+from .helpers import invoke, is_test
 from .task_logger import create_task
 
 
@@ -89,7 +89,7 @@ class Runtime:
 
         for handler in self.startup_handlers:
             try:
-                await self._invoke(handler)
+                await invoke(handler)
             except:
                 self.log.exception(f'error while starting handler "{handler.__qualname__}"')
                 continue
@@ -123,7 +123,7 @@ class Runtime:
         while True:
             start = self.time
             try:
-                await self._invoke(handler)
+                await invoke(handler)
                 dt = self.time - start
             except (asyncio.CancelledError, GeneratorExit):
                 return
@@ -148,12 +148,7 @@ class Runtime:
         [t.cancel() for t in self.tasks]
         self.tasks.clear()
         for handler in self.shutdown_handlers:
-            await self._invoke(handler)
-
-    async def _invoke(self, handler: Callable) -> None:
-        result = handler()
-        if isinstance(result, Awaitable):
-            await result
+            await invoke(handler)
 
     def reset_before_test(self) -> None:
         assert is_test()
