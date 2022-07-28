@@ -13,10 +13,7 @@ from . import event, persistence, run
 from .helpers import invoke
 from .task_logger import create_task
 
-repeat_handlers: list[tuple[Callable, float]] = []
-
-
-log = logging.getLogger('rosys')
+log = logging.getLogger('rosys.core')
 
 
 @dataclass(slots=True, kw_only=True)
@@ -30,16 +27,13 @@ NEW_NOTIFICATION = event.Event()
 
 is_test = 'pytest' in sys.modules
 
-_time = 0
+_time = pytime.time()
 notifications: list[Notification] = []
 _exception: Optional[Exception] = None  # NOTE: used for tests
+repeat_handlers: list[tuple[Callable, float]] = []
 startup_handlers: list[Callable] = []
 shutdown_handlers: list[Callable] = []
 tasks: list[asyncio.Task] = []
-
-
-def on_repeat(handler: Callable, interval: float) -> None:
-    repeat_handlers.append((handler, interval))
 
 
 def notify(message: str) -> None:
@@ -74,6 +68,10 @@ async def sleep(seconds: float) -> None:
                 await asyncio.sleep(seconds / count)
         else:
             await asyncio.sleep(0)
+
+
+def on_repeat(handler: Callable, interval: float) -> None:
+    repeat_handlers.append((handler, interval))
 
 
 def on_startup(handler: Callable) -> None:
@@ -114,10 +112,10 @@ async def _garbage_collection(mbyte_limit: float = 300) -> None:
 
 
 async def _watch_emitted_events() -> None:
-    global _exception
     try:
         for task in event.tasks:
             if task.done() and task.exception():
+                global _exception
                 _exception = task.exception()
                 log.exception('task failed to execute', exc_info=task.exception())
         event.tasks = [t for t in event.tasks if not t.done()]
@@ -160,9 +158,9 @@ async def shutdown() -> None:
 
 
 def reset_before_test() -> None:
-    global _exception
     assert is_test
     set_time(0)  # NOTE: in tests we start at zero for better readability
+    global _exception
     _exception = None
 
 

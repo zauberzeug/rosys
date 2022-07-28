@@ -53,6 +53,11 @@ logging.config.dictConfig({
             'level': 'DEBUG',
             'propagate': False,
         },
+        'rosys.core': {
+            'handlers': ['file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
     },
 })
 

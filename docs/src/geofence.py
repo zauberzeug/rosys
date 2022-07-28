@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import rosys
 import rosys.ui
 from nicegui import ui
 from rosys.actors import Automator, Driver, Odometer

@@ -24,15 +24,15 @@ class PackagePathFilter(logging.Filter):
         return True
 
 
-class RuntimeFilter(logging.Filter):
+class RosysFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
         from rosys.test.helpers import odometer as odo
         if odo:
-            record.world_time = rosys.time()
+            record.rosys_time = rosys.time()
             record.robot_pose = f'{odo.prediction.x:.2f}, {odo.prediction.y:1.2f}, {odo.prediction.yaw_deg:1.2f}'
         else:
-            record.world_time = 0
+            record.rosys_time = 0
             record.robot_pose = 'no robot pose yet'
         return True
 
@@ -46,7 +46,7 @@ def setup() -> None:
         'formatters': {
             'default': {
                 '()': coloredlogs.ColoredFormatter,
-                'format': '%(world_time).2f [%(levelname)s] %(robot_pose)s %(relative_path)s:%(lineno)d: %(message)s',
+                'format': '%(rosys_time).2f [%(levelname)s] %(robot_pose)s %(relative_path)s:%(lineno)d: %(message)s',
                 'datefmt': '%Y-%m-%d %H:%M:%S',
             },
         },
@@ -54,15 +54,15 @@ def setup() -> None:
             'package_path_filter': {
                 '()': PackagePathFilter,
             },
-            'runtime_filter': {
-                '()': RuntimeFilter,
+            'rosys_filter': {
+                '()': RosysFilter,
             }
         },
         'handlers': {
             'console': {
                 'class': 'logging.StreamHandler',
                 'formatter': 'default',
-                'filters': ['package_path_filter', 'runtime_filter'],
+                'filters': ['package_path_filter', 'rosys_filter'],
                 'level': 'INFO',
                 'stream': 'ext://sys.stdout'
             },
