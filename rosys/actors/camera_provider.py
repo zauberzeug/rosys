@@ -2,7 +2,6 @@ import abc
 from typing import Optional
 
 import rosys
-from rosys import persistence
 
 from ..event import Event
 from ..world import Camera, Image
@@ -16,10 +15,6 @@ class CameraProvider(abc.ABC):
     '''a camera has been removed (argument: camera id)'''
     NEW_IMAGE = Event()
     '''an new image is available (argument: image)'''
-
-    def __init__(self) -> None:
-        self.needs_backup: bool = False
-        persistence.register(self)
 
     @property
     @abc.abstractmethod

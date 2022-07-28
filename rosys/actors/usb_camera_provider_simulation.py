@@ -20,6 +20,9 @@ class UsbCameraProviderSimulation(CameraProvider):
 
         rosys.on_repeat(self.step, 1.0)
 
+        self.needs_backup: bool = False
+        persistence.register(self)
+
     @property
     def cameras(self) -> dict[str, UsbCamera]:
         return self._cameras

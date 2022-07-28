@@ -58,6 +58,9 @@ class UsbCameraProviderHardware(CameraProvider):
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.step, 0.3)
 
+        self.needs_backup: bool = False
+        persistence.register(self)
+
     @property
     def cameras(self) -> dict[str, UsbCamera]:
         return self._cameras
