@@ -7,6 +7,7 @@ from .detector import Detector
 from .detector_hardware import Autoupload, DetectorHardware
 from .detector_simulation import DetectorSimulation, SimulatedObject
 from .driver import DriveParameters, Driver
+from .multi_camera_provider import MultiCameraProvider
 from .network_monitor import NetworkMonitor, NetworkStats
 from .odometer import Odometer
 from .path_planner import PathPlanner
