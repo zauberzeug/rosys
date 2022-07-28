@@ -27,7 +27,9 @@ NEW_NOTIFICATION = event.Event()
 
 is_test = 'pytest' in sys.modules
 
-_time = pytime.time()
+_start_time: float = 0.0 if is_test else pytime.time()
+_time = _start_time
+
 notifications: list[Notification] = []
 _exception: Optional[Exception] = None  # NOTE: used for tests
 repeat_handlers: list[tuple[Callable, float]] = []
@@ -171,8 +173,6 @@ def reset_after_test() -> None:
     shutdown_handlers.clear()
     event.reset()
 
-
-_start_time = time
 
 gc.disable()  # NOTE disable automatic garbage collection to optimize performance
 on_repeat(_garbage_collection, 10 * 60)
