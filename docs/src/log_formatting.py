@@ -6,7 +6,7 @@ import sys
 
 import rosys.ui
 from nicegui import ui
-from rosys import runtime
+import rosys
 from rosys.actors import Odometer, Steerer
 from rosys.hardware import WheelsSimulation
 
@@ -75,6 +75,6 @@ steerer = Steerer(wheels)
 rosys.ui.joystick(steerer)
 
 # start
-ui.on_startup(runtime.startup)
-ui.on_shutdown(runtime.shutdown)
+ui.on_startup(rosys.startup)
+ui.on_shutdown(rosys.shutdown)
 ui.run(title='RoSys')

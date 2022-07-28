@@ -2,10 +2,11 @@ import asyncio
 import logging
 from typing import Coroutine, Optional
 
+import rosys
+
 from .. import task_logger
 from ..automation import Automation
 from ..event import Event
-from ..runtime import runtime
 
 
 class Automator:
@@ -42,7 +43,7 @@ class Automator:
         self.PAUSE_AUTOMATION.register(self.pause)
         self.STOP_AUTOMATION.register(self.stop)
 
-        runtime.on_shutdown(lambda: self.stop(because='automator is shutting down'))
+        rosys.on_shutdown(lambda: self.stop(because='automator is shutting down'))
 
     @property
     def is_stopped(self) -> bool:
@@ -64,13 +65,13 @@ class Automator:
         self.automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
         task_logger.create_task(asyncio.wait([self.automation]), name='automation')
         self.AUTOMATION_STARTED.emit()
-        runtime.notify('automation started')
+        rosys.notify('automation started')
 
     def pause(self, because: str) -> None:
         if self.is_running:
             self.automation.pause()
             self.AUTOMATION_PAUSED.emit(because)
-            runtime.notify(f'automation paused because {because}')
+            rosys.notify(f'automation paused because {because}')
 
     def resume(self) -> None:
         if not self.enabled:
@@ -78,13 +79,13 @@ class Automator:
         if self.is_paused:
             self.automation.resume()
             self.AUTOMATION_RESUMED.emit()
-            runtime.notify('automation resumed')
+            rosys.notify('automation resumed')
 
     def stop(self, because: str) -> None:
         if not self.is_stopped:
             self.automation.stop()
             self.AUTOMATION_STOPPED.emit(because)
-            runtime.notify(f'automation stopped because {because}')
+            rosys.notify(f'automation stopped because {because}')
 
     def enable(self) -> None:
         self.enabled = True
@@ -96,10 +97,10 @@ class Automator:
     def _handle_exception(self, e: Exception) -> None:
         self.stop(because='an exception occurred in an automation')
         self.AUTOMATION_FAILED.emit(str(e))
-        runtime.notify('automation failed')
-        if runtime.is_test:
+        rosys.notify('automation failed')
+        if rosys.is_test:
             self.log.exception('automation failed', e)
 
     def _on_complete(self) -> None:
         self.AUTOMATION_COMPLETED.emit()
-        runtime.notify('automation completed')
+        rosys.notify('automation completed')

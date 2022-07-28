@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import rosys.ui
 from nicegui import ui
-from rosys import runtime
 from rosys.actors import Automator, Driver, Odometer
 from rosys.hardware import WheelsSimulation
 from rosys.world import PathSegment, Pose, RobotShape, Spline
@@ -12,7 +11,7 @@ class GeoFenceGuard:
     def __init__(self, odometer: Odometer, automator: Automator) -> None:
         self.odometer = odometer
         self.automator = automator
-        runtime.on_repeat(self.check_position, 0.1)
+        rosys.on_repeat(self.check_position, 0.1)
 
     def check_position(self) -> None:
         if abs(self.odometer.prediction.x) > 3 or abs(self.odometer.prediction.y) > 3:
@@ -28,7 +27,7 @@ automator = Automator()
 geo_fence_guard = GeoFenceGuard(odometer, automator)
 
 # ui
-runtime.NEW_NOTIFICATION.register(ui.notify)
+rosys.NEW_NOTIFICATION.register(ui.notify)
 with ui.scene():
     rosys.ui.robot_object(shape, odometer)
 label = ui.label()
@@ -40,6 +39,6 @@ async def automation():
 rosys.ui.automation_controls(automator, default_automation=automation)
 
 # start
-ui.on_startup(runtime.startup)
-ui.on_shutdown(runtime.shutdown)
+ui.on_startup(rosys.startup)
+ui.on_shutdown(rosys.shutdown)
 ui.run(title='RoSys')

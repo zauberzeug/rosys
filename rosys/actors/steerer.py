@@ -1,7 +1,8 @@
 import logging
 from enum import Enum
 
-from ..runtime import runtime
+import rosys
+
 from .automator import Automator
 from .drivable import Drivable
 
@@ -23,7 +24,7 @@ class Steerer:
         self.linear_speed = 0
         self.angular_speed = 0
 
-        runtime.on_repeat(self.step, 0.05)
+        rosys.on_repeat(self.step, 0.05)
 
     def start(self) -> None:
         self.log.info('start steering')

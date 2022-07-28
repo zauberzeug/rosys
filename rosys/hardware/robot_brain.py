@@ -1,6 +1,7 @@
 from typing import Optional
 
-from ..runtime import runtime
+import rosys
+
 from . import AppControls
 from .communication import Communication
 
@@ -10,14 +11,14 @@ class RobotBrain:
     def __init__(self, communication: Communication) -> None:
         self.communication = communication
         self.app_controls = AppControls(communication)
-        runtime.NEW_NOTIFICATION.register(self.app_controls.notify)
+        rosys.NEW_NOTIFICATION.register(self.app_controls.notify)
         self.waiting_list: dict[str, Optional[str]] = {}
 
         self.clock_offset: Optional[float] = None
         self.hardware_time: Optional[float] = None
 
-        runtime.on_startup(self.app_controls.sync)
-        runtime.on_shutdown(self.app_controls.clear)
+        rosys.on_startup(self.app_controls.sync)
+        rosys.on_shutdown(self.app_controls.clear)
 
     async def configure(self, filepath: str = 'lizard.txt') -> None:
         await self.send(f'!-')
@@ -52,7 +53,7 @@ class RobotBrain:
             self.app_controls.parse(line)
             lines.append((self.hardware_time, line))
         if millis is not None:
-            self.clock_offset = runtime.time - millis / 1000
+            self.clock_offset = rosys.time() - millis / 1000
         return lines
 
     async def send(self, msg: str) -> None:
@@ -61,9 +62,9 @@ class RobotBrain:
     async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf')) -> Optional[str]:
         self.waiting_list[ack] = None
         await self.send(msg)
-        t0 = runtime.time
-        while self.waiting_list.get(ack) is None and runtime.time < t0 + timeout:
-            await runtime.sleep(0.1)
+        t0 = rosys.time()
+        while self.waiting_list.get(ack) is None and rosys.time() < t0 + timeout:
+            await rosys.sleep(0.1)
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
 

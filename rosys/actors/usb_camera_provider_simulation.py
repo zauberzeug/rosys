@@ -4,8 +4,9 @@ import time
 from typing import Any, Optional
 
 import PIL as pil
+import rosys
+from rosys import persistence
 
-from ..runtime import persistence, run, runtime
 from ..world import Image, ImageSize, UsbCamera
 from .camera_provider import CameraProvider
 
@@ -17,7 +18,7 @@ class UsbCameraProviderSimulation(CameraProvider):
 
         self._cameras: dict[str, UsbCamera] = {}
 
-        runtime.on_repeat(self.step, 1.0)
+        rosys.on_repeat(self.step, 1.0)
 
     @property
     def cameras(self) -> dict[str, UsbCamera]:
@@ -34,11 +35,11 @@ class UsbCameraProviderSimulation(CameraProvider):
             if not camera.active:
                 continue
             assert camera.image_resolution is not None, 'simulated USB cameras should have an image resolution'
-            image = Image(time=runtime.time, camera_id=camera.id, size=camera.image_resolution)
-            if runtime.is_test:
+            image = Image(time=rosys.time(), camera_id=camera.id, size=camera.image_resolution)
+            if rosys.is_test:
                 image.data = b'test data'
             else:
-                image.data = await run.cpu_bound(self.create_image_data, camera)
+                image.data = await rosys.run.cpu_bound(self.create_image_data, camera)
             camera.images.append(image)
 
     @staticmethod

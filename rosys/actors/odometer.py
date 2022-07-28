@@ -2,8 +2,9 @@ import logging
 from copy import deepcopy
 from typing import Optional
 
+import rosys
+
 from ..event import Event
-from ..runtime import runtime
 from ..world import Pose, PoseStep, Velocity
 
 
@@ -39,7 +40,7 @@ class Odometer:
             dt = velocity.time - self._last_time
             self._last_time = velocity.time
 
-            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=runtime.time)
+            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=rosys.time())
             self._steps.append(step)
             self.prediction += step
 
@@ -49,7 +50,7 @@ class Odometer:
                 self.last_movement = step.time
                 self.ROBOT_MOVED.emit()
 
-        self.prune_steps(runtime.time - 10.0)
+        self.prune_steps(rosys.time() - 10.0)
 
     def handle_detection(self, detection: Pose) -> None:
         self.detection = detection

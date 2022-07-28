@@ -7,9 +7,9 @@ from multiprocessing import Pipe
 from typing import Any
 
 import psutil
+import rosys
 
 from .. import persistence, run
-from ..runtime import runtime
 from ..world import Area, Obstacle, PathSegment, Point, Pose, RobotShape, Spline
 from .pathplanning import (PlannerCommand, PlannerGrowMapCommand, PlannerObstacleDistanceCommand, PlannerProcess,
                            PlannerResponse, PlannerSearchCommand, PlannerTestCommand)
@@ -27,9 +27,9 @@ class PathPlanner:
         self.obstacles: dict[str, Obstacle] = {}
         self.areas: dict[str, Area] = {}
 
-        runtime.on_startup(self.startup)
-        runtime.on_shutdown(self.shutdown)
-        runtime.on_repeat(self.step, 0.1)
+        rosys.on_startup(self.startup)
+        rosys.on_shutdown(self.shutdown)
+        rosys.on_repeat(self.step, 0.1)
 
         self.needs_backup: bool = False
         persistence.register(self)
@@ -53,11 +53,11 @@ class PathPlanner:
         if self.process.is_alive():
             self.process.kill()
         # to really make sure it's gone (see https://trello.com/c/M9IvOg1c/698-reload-klappt-nicht-immer#comment-62aaeb74672e6759fba37b40)
-        if not runtime.is_test:
+        if not rosys.is_test:
             while pid is not None and psutil.pid_exists(pid):
                 self.log.info(f'{pid} still exists; killing again')
                 os.kill(pid, signal.SIGKILL)
-                await runtime.sleep(1)
+                await rosys.sleep(1)
         self.log.info(f'teardown of {self.process} completed ({self.process.is_alive()})')
 
         self.connection.close()
@@ -110,7 +110,7 @@ class PathPlanner:
             while command.id not in self.responses:
                 if time.time() > command.deadline:
                     raise TimeoutError(f'process call {command.id} did not respond in time')
-                if runtime.is_test:
+                if rosys.is_test:
                     await self.step()  # NOTE: otherwise step() is not called while awaiting response
                 await asyncio.sleep(check_interval)
             result = self.responses.pop(command.id)

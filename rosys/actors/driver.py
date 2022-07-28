@@ -3,10 +3,10 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
+import rosys
 from rosys.actors.odometer import Odometer
 
 from ..helpers import ModificationContext, eliminate_2pi, eliminate_pi, ramp
-from ..runtime import runtime
 from ..world import PathSegment, Point, Pose, Spline
 from .drivable import Drivable
 
@@ -38,7 +38,7 @@ class Driver:
     async def drive_arc(self) -> None:
         while self.odometer.prediction.x < 2:
             await self.wheels.drive(1, np.deg2rad(25))
-            await runtime.sleep(0.1)
+            await rosys.sleep(0.1)
         await self.wheels.stop()
 
     async def drive_path(self, path: list[PathSegment]) -> None:
@@ -68,7 +68,7 @@ class Driver:
             sign = 1 if angle > 0 else -1
             angular = linear / self.parameters.minimum_turning_radius * sign
             await self.wheels.drive(*self._throttle(linear, angular))
-            await runtime.sleep(0.1)
+            await rosys.sleep(0.1)
 
     async def drive_spline(self, spline: Spline, *, flip_hook: bool = False, throttle_at_end: bool = True) -> None:
         if spline.start.distance(spline.end) < 0.01:
@@ -96,7 +96,7 @@ class Driver:
             angular = linear * curvature
 
             await self.wheels.drive(*self._throttle(linear, angular))
-            await runtime.sleep(0.1)
+            await rosys.sleep(0.1)
 
         self.carrot_pose = None
         await self.wheels.drive(0, 0)
@@ -108,7 +108,7 @@ class Driver:
             factor = 0
         else:
             age_ramp = self.parameters.max_detection_age_ramp
-            age = runtime.time - self.odometer.detection.time
+            age = rosys.time() - self.odometer.detection.time
             factor = ramp(age, age_ramp[0], age_ramp[1], 1.0, 0.0, clip=True)
         linear *= factor
         angular *= factor

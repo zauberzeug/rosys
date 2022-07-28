@@ -6,7 +6,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Optional
 
-from ..runtime import runtime
+import rosys
 
 
 @dataclass(slots=True, kw_only=True)
@@ -32,8 +32,8 @@ class AsyncioMonitor:
         self.timings: dict[str, list[Measurement]] = defaultdict(list)
         self.log_position: Optional[int] = None
 
-        runtime.on_startup(self.activate_async_debugging)
-        runtime.on_repeat(self.step, 10)
+        rosys.on_startup(self.activate_async_debugging)
+        rosys.on_repeat(self.step, 10)
 
     def activate_async_debugging(self):
         '''Produce warnings for coroutines which take too long on the main loop and hence clog the event loop'''

@@ -7,10 +7,6 @@ from typing import Any, Awaitable, Callable
 import numpy as np
 
 
-def is_test() -> bool:
-    return 'pytest' in sys.modules
-
-
 async def invoke(handler: Callable, *args: Any) -> Any:
     result = handler(*args)
     if isinstance(result, Awaitable):

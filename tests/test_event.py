@@ -1,5 +1,5 @@
 import pytest
-from rosys import runtime
+import rosys
 from rosys.event import Event
 from rosys.test import forward
 
@@ -41,9 +41,9 @@ async def test_fire_and_forget_with_emit():
     class TestActor:
 
         async def handle_event(self, number: int) -> None:
-            await runtime.sleep(1)
+            await rosys.sleep(1)
             numbers.append(number)
-            await runtime.sleep(1)
+            await rosys.sleep(1)
             raise Exception('some failure which should be detected even when using "fire and forget"')
 
     numbers = []

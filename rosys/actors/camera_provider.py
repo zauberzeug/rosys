@@ -1,10 +1,10 @@
 import abc
 from typing import Optional
 
+import rosys
 from rosys import persistence
 
 from ..event import Event
-from ..runtime import runtime
 from ..world import Camera, Image
 
 
@@ -59,5 +59,5 @@ class CameraProvider(abc.ABC):
             if max_age_seconds is None:
                 camera.images.clear()
             else:
-                while camera.images and camera.images[0].time < runtime.time - max_age_seconds:
+                while camera.images and camera.images[0].time < rosys.time() - max_age_seconds:
                     del camera.images[0]

@@ -3,7 +3,7 @@ import os
 
 import rosys.ui
 from nicegui import ui
-from rosys import runtime
+import rosys
 from rosys.actors import Automator, Driver, Odometer, Steerer
 from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
 from rosys.hardware.communication import SerialCommunication
@@ -27,12 +27,12 @@ driver = Driver(wheels, odometer)
 automator = Automator()
 
 # ui
-runtime.NEW_NOTIFICATION.register(ui.notify)
+rosys.NEW_NOTIFICATION.register(ui.notify)
 rosys.ui.keyboard_control(steerer)
 with ui.card():
     with ui.row():
         state = ui.label()
-        ui.timer(0.1, lambda: state.set_text(f'{runtime.time:.3f} s, {odometer.prediction}'))
+        ui.timer(0.1, lambda: state.set_text(f'{rosys.time():.3f} s, {odometer.prediction}'))
 
     with ui.row():
         with ui.scene():
@@ -46,6 +46,6 @@ with ui.card():
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
 # start
-ui.on_startup(runtime.startup)
-ui.on_shutdown(runtime.shutdown)
+ui.on_startup(rosys.startup)
+ui.on_shutdown(rosys.shutdown)
 ui.run(title='hello_bot')

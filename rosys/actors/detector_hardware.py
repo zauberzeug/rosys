@@ -2,11 +2,11 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
+import rosys
 import socketio
 import socketio.exceptions
 
 from .. import persistence, task_logger
-from ..runtime import runtime
 from ..world import BoxDetection, Detections, Image, PointDetection, Uploads
 from .detector import Autoupload, Detector
 
@@ -31,7 +31,7 @@ class DetectorHardware(Detector):
         def on_sio_connect_error(err):
             self.log.warning(f'sio connect error on {port}: {err}')
 
-        runtime.on_repeat(self.step, 1.0)
+        rosys.on_repeat(self.step, 1.0)
 
     @property
     def uploads(self) -> Uploads:
@@ -46,7 +46,7 @@ class DetectorHardware(Detector):
             self.log.info(f'trying reconnect {self.port}')
             if not await self.connect():
                 self.log.exception(f'connection to {self.port} failed; trying again')
-                await runtime.sleep(3.0)
+                await rosys.sleep(3.0)
                 return
 
         await self.try_start_one_upload()

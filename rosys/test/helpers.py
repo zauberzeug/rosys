@@ -7,7 +7,7 @@ import pytest
 
 from .. import run
 from ..actors import Automator, Driver, Odometer
-from ..runtime import runtime
+import rosys
 from ..world import Point, Point3d
 
 log = logging.getLogger(__name__)
@@ -25,14 +25,14 @@ async def forward(seconds: Optional[float] = None,
                   tolerance: float = 0.1,
                   dt: float = 0.01,
                   timeout: float = 100):
-    start_time = runtime.time
+    start_time = rosys.time()
     if seconds is not None:
         msg = f'forwarding {seconds=}'
-        def condition(): return runtime.time >= start_time + seconds
+        def condition(): return rosys.time() >= start_time + seconds
         timeout = max(timeout, seconds)
     elif isinstance(until, int) or isinstance(until, float):
         msg = f'forwarding {until=}'
-        def condition(): return runtime.time >= until
+        def condition(): return rosys.time() >= until
         timeout = max(timeout, until - start_time)
     elif isinstance(until, Callable):
         msg = f'forwarding {until=}'
@@ -54,15 +54,15 @@ async def forward(seconds: Optional[float] = None,
 
     log.info(f'\033[94m{msg}\033[0m')
     while not condition():
-        if runtime.time > start_time + timeout:
+        if rosys.time() > start_time + timeout:
             raise TimeoutError(f'condition took more than {timeout} s')
         if not run.running_cpu_bound_processes:
-            runtime.set_time(runtime.time + dt)
+            rosys.set_time(rosys.time() + dt)
             await asyncio.sleep(0)
         else:
             await asyncio.sleep(0.01)
-        if runtime._exception is not None:
-            raise RuntimeError(f'error while forwarding time {dt} s') from runtime._exception
+        if rosys._exception is not None:
+            raise RuntimeError(f'error while forwarding time {dt} s') from rosys._exception
 
 
 def assert_pose(x: float, y: float, *, deg: float = None, linear_tolerance: float = 0.1, deg_tolerance: float = 1.0) -> None:

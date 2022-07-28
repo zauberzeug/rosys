@@ -1,13 +1,12 @@
 import json
 import logging
 import os
+import sys
 from dataclasses import fields
 from typing import Any, Protocol, TypeVar
 
 from dataclasses_json import Exclude, config
 from dataclasses_json.core import _asdict, _decode_dataclass
-
-from .helpers import is_test
 
 exclude = config(exclude=Exclude.ALWAYS)
 
@@ -44,6 +43,8 @@ def replace_dataclass(old_dataclass: Any, new_dict: dict[str, Any]) -> None:
 backup_path = os.path.expanduser('~/.rosys')
 log = logging.getLogger('rosys.persistence')
 
+is_test = 'pytest' in sys.modules
+
 
 class PersistentActor(Protocol):
     needs_backup: bool
@@ -59,7 +60,7 @@ actors: list[PersistentActor] = []
 
 
 def register(actor: PersistentActor):
-    if not is_test():
+    if not is_test:
         actors.append(actor)
 
 

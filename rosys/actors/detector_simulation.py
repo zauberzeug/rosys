@@ -3,8 +3,8 @@ from typing import Optional
 from uuid import uuid4
 
 import numpy as np
+import rosys
 
-from ..runtime import runtime
 from ..world import BoxDetection, Detections, Image, Point3d, PointDetection, Uploads
 from .camera_provider import CameraProvider
 from .detector import Autoupload, Detector
@@ -31,7 +31,7 @@ class DetectorSimulation(Detector):
         self.simulated_objects: list[SimulatedObject] = []
         self._uploads = Uploads()
 
-        runtime.on_repeat(self.step, 0.1)
+        rosys.on_repeat(self.step, 0.1)
 
     @property
     def uploads(self) -> Uploads:
@@ -43,7 +43,7 @@ class DetectorSimulation(Detector):
 
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Optional[Detections]:
         is_blocked = image.camera_id in self.blocked_cameras
-        await runtime.sleep(0.4)
+        await rosys.sleep(0.4)
         image.detections = Detections()
         if not is_blocked:
             self.update_simulated_objects(image)

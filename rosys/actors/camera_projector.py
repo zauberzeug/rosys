@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
+import rosys
 
-from ..runtime import runtime
 from ..world import Calibration, Camera
 from .camera_provider import CameraProvider
 
@@ -25,7 +25,7 @@ class CameraProjector:
 
         self.projections: dict[str, Projection] = {}
 
-        runtime.on_repeat(self.step, 1.0)
+        rosys.on_repeat(self.step, 1.0)
 
     async def step(self) -> None:
         for id in list(self.projections):

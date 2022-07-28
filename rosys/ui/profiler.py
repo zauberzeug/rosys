@@ -6,7 +6,7 @@ from nicegui import ui
 from tabulate import tabulate
 
 from ..profiling import profile
-from ..runtime import runtime
+import rosys
 
 log = logging.getLogger('rosys.profiler')
 
@@ -21,7 +21,7 @@ def profile_button() -> ui.button:
         profile.start()
         t = time.time()
         while yappi.is_running() and time.time() < t + duration:
-            await runtime.sleep(0.1)
+            await rosys.sleep(0.1)
         stop()
 
     def stop():

@@ -5,7 +5,7 @@ import sys
 
 import coloredlogs
 import icecream
-from rosys import runtime
+import rosys
 
 
 class PackagePathFilter(logging.Filter):
@@ -29,7 +29,7 @@ class RuntimeFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         from rosys.test.helpers import odometer as odo
         if odo:
-            record.world_time = runtime.time
+            record.world_time = rosys.time()
             record.robot_pose = f'{odo.prediction.x:.2f}, {odo.prediction.y:1.2f}, {odo.prediction.yaw_deg:1.2f}'
         else:
             record.world_time = 0

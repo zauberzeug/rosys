@@ -10,7 +10,6 @@ import PIL
 import rosys
 
 from .. import persistence
-from ..runtime import runtime
 from ..world import Image, ImageSize, UsbCamera
 from .camera_provider import CameraProvider
 
@@ -56,8 +55,8 @@ class UsbCameraProviderHardware(CameraProvider):
         self.last_scan: Optional[float] = None
         self._cameras: dict[str, UsbCamera] = {}
 
-        runtime.on_shutdown(self.shutdown)
-        runtime.on_repeat(self.step, 0.3)
+        rosys.on_shutdown(self.shutdown)
+        rosys.on_repeat(self.step, 0.3)
 
     @property
     def cameras(self) -> dict[str, UsbCamera]:
@@ -97,7 +96,7 @@ class UsbCameraProviderHardware(CameraProvider):
                 else:
                     bytes = await rosys.run.cpu_bound(process_image, image[0].tobytes(), camera.rotation, camera.crop)
                 size = camera.resolution or ImageSize(width=800, height=600)
-                camera.images.append(Image(camera_id=uid, data=bytes, time=runtime.time, size=size))
+                camera.images.append(Image(camera_id=uid, data=bytes, time=rosys.time(), size=size))
             except:
                 self.log.exception(f'could not capture image from {uid}')
                 await self.deactivate(camera)
@@ -127,13 +126,13 @@ class UsbCameraProviderHardware(CameraProvider):
 
     def purge_old_images(self) -> None:
         for camera in self._cameras.values():
-            while camera.images and camera.images[0].time < runtime.time - 5 * 60.0:
+            while camera.images and camera.images[0].time < rosys.time() - 5 * 60.0:
                 del camera.images[0]
 
     async def update_device_list(self) -> None:
-        if self.last_scan is not None and runtime.time < self.last_scan + SCAN_INTERVAL:
+        if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
             return
-        self.last_scan = runtime.time
+        self.last_scan = rosys.time()
         output = await rosys.run.sh(['v4l2-ctl', '--list-devices'])
         if output is None:
             return

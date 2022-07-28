@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from rosys import runtime
+import rosys
 from rosys.hardware import Wheels, WheelsSimulation
 from rosys.test import assert_pose, forward
 
@@ -26,10 +26,10 @@ async def test_drive(wheels: Wheels) -> None:
 
 
 @pytest.mark.asyncio
-async def test_stopping_robot_when_runtime_stops(wheels: Wheels) -> None:
+async def test_stopping_robot_when_rosys_stops(wheels: Wheels) -> None:
     await wheels.drive(1, 0)
     await forward(x=1.0, y=0.0)
-    await runtime.shutdown()
+    await rosys.shutdown()
     assert isinstance(wheels, WheelsSimulation)
     assert wheels.linear_velocity == 0
     assert wheels.angular_velocity == 0

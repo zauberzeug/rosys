@@ -2,9 +2,10 @@ import abc
 import logging
 from typing import Optional
 
+import rosys
+
 from ..actors.automator import Automator
 from ..actors.odometer import Odometer
-from ..runtime import runtime
 
 
 class Wheels(abc.ABC):
@@ -17,7 +18,7 @@ class Wheels(abc.ABC):
         Automator.AUTOMATION_STOPPED.register(self.handle_stop_event)
         Automator.AUTOMATION_FAILED.register(self.handle_stop_event)
 
-        runtime.on_shutdown(self.stop)
+        rosys.on_shutdown(self.stop)
 
     async def handle_stop_event(self, _: Optional[str]) -> None:
         await self.stop()
