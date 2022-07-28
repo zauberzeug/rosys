@@ -32,7 +32,7 @@ def has_internet() -> bool:
         except socket.error:
             pass
     else:
-        log.exception('No internet connection')
+        log.warning('No internet connection')
         return False
 
 
