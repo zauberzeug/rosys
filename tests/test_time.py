@@ -1,9 +1,7 @@
-import pytest
 import rosys
 from rosys.test import forward
 
 
-@pytest.mark.asyncio
 async def test_time():
     assert rosys.time() == 0.0
 

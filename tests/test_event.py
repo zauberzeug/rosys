@@ -6,7 +6,6 @@ from rosys.test import forward
 TEST_EVENT = Event()
 
 
-@pytest.mark.asyncio
 async def test_registering_multiple_handlers():
     def handler1(number: int) -> None: numbers.append(number)
     def handler2(number: int) -> None: numbers.append(number)
@@ -17,7 +16,6 @@ async def test_registering_multiple_handlers():
     assert numbers == [42, 42], 'all registered handlers have been called'
 
 
-@pytest.mark.asyncio
 async def test_registering_same_handler_multiple_times():
     def handler(number: int) -> None: numbers.append(number)
     numbers = []
@@ -27,7 +25,6 @@ async def test_registering_same_handler_multiple_times():
     assert numbers == [42], 'the same handler should only be registered once'
 
 
-@pytest.mark.asyncio
 async def test_registering_lambdas():
     numbers = []
     TEST_EVENT.register(lambda number: numbers.append(number))
@@ -35,7 +32,6 @@ async def test_registering_lambdas():
     assert numbers == [42]
 
 
-@pytest.mark.asyncio
 async def test_fire_and_forget_with_emit():
 
     class TestActor:

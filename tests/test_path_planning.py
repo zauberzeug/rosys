@@ -19,7 +19,6 @@ def create_obstacle(*, x: float, y: float, radius: float = 0.5) -> Obstacle:
     ])
 
 
-@pytest.mark.asyncio
 async def test_basic_path_planning(path_planner: PathPlanner) -> None:
     await forward(1.0)
 
@@ -32,7 +31,6 @@ async def test_basic_path_planning(path_planner: PathPlanner) -> None:
     assert_point(path[-1].spline.end, goal.point)
 
 
-@pytest.mark.asyncio
 async def test_driving_to_planned_point(path_planner: PathPlanner, driver: Driver, automator: Automator) -> None:
     await forward(1.0)
     path = await path_planner.search(start=Pose(), goal=Pose(x=5, y=2), timeout=3.0)
@@ -40,13 +38,11 @@ async def test_driving_to_planned_point(path_planner: PathPlanner, driver: Drive
     await forward(x=5, y=2, tolerance=0.15)
 
 
-@pytest.mark.asyncio
 async def test_planning_to_problematic_location(path_planner: PathPlanner) -> None:
     await forward(1.0)
     await path_planner.search(start=Pose(), goal=Pose(x=2.250, y=1.299, yaw=np.deg2rad(-60.0)), timeout=3.0)
 
 
-@pytest.mark.asyncio
 async def test_not_finding_a_path(path_planner: PathPlanner) -> None:
     await forward(1.0)
     obstacle = create_obstacle(x=2, y=0)
@@ -57,7 +53,6 @@ async def test_not_finding_a_path(path_planner: PathPlanner) -> None:
         await path_planner.search(start=Pose(), goal=Pose(x=2, y=0))
 
 
-@pytest.mark.asyncio
 async def test_test_spline(path_planner: PathPlanner) -> None:
     await forward(1.0)
 
@@ -84,7 +79,6 @@ def test_grow_map(shape: RobotShape) -> None:
     assert planner.obstacle_map.grid.bbox == pytest.approx((-2.4, -2.4, 8.6, 5.8))
 
 
-@pytest.mark.asyncio
 async def test_overlapping_commands(path_planner: PathPlanner) -> None:
     await forward(1.0)
 
