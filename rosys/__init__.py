@@ -54,17 +54,18 @@ def time() -> float:
 
 def set_time(value: float) -> None:
     assert is_test, 'only tests can change the time'
+    global _time
     _time = value
 
 
 def uptime() -> float:
-    return time - _start_time
+    return time() - _start_time
 
 
 async def sleep(seconds: float) -> None:
     if is_test:
-        sleep_end_time = time + seconds
-        while time <= sleep_end_time:
+        sleep_end_time = time() + seconds
+        while time() <= sleep_end_time:
             await asyncio.sleep(0)
     else:
         count = int(np.ceil(seconds))
@@ -113,6 +114,7 @@ async def _garbage_collection(mbyte_limit: float = 300) -> None:
 
 
 async def _watch_emitted_events() -> None:
+    global _exception
     try:
         for task in event.tasks:
             if task.done() and task.exception():
@@ -158,13 +160,14 @@ async def shutdown() -> None:
 
 
 def reset_before_test() -> None:
-    assert is_test()
+    global _exception
+    assert is_test
     set_time(0)  # NOTE: in tests we start at zero for better readability
     _exception = None
 
 
 def reset_after_test() -> None:
-    assert is_test()
+    assert is_test
     startup_handlers.clear()
     repeat_handlers[3:] = []  # NOTE: remove all but internal handlers
     shutdown_handlers.clear()
