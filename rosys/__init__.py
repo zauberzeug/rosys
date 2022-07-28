@@ -10,10 +10,13 @@ import numpy as np
 import psutil
 
 from . import event, persistence, run
+from .config import Config
 from .helpers import invoke
 from .task_logger import create_task
 
 log = logging.getLogger('rosys.core')
+
+config = Config()
 
 
 @dataclass(slots=True, kw_only=True)

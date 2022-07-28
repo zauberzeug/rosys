@@ -1,6 +1,5 @@
 import numpy as np
-from rosys.actors import CameraProjector
-from rosys.world import Camera
+from rosys.vision import Camera, CameraProjector
 
 
 def test_projection():

@@ -1,5 +1,6 @@
-from ..actors.odometer import Odometer
 import rosys
+
+from ..driving import Odometer
 from .robot_brain import RobotBrain
 from .wheels import Wheels
 

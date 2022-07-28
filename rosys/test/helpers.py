@@ -1,14 +1,15 @@
 import asyncio
 import logging
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Optional
 
 import numpy as np
 import pytest
+import rosys
 
 from .. import run
-from ..actors import Automator, Driver, Odometer
-import rosys
-from ..world import Point, Point3d
+from ..automation import Automator
+from ..driving import Driver, Odometer
+from ..geometry import Point, Point3d
 
 log = logging.getLogger(__name__)
 
@@ -19,7 +20,7 @@ odometer: Optional[Odometer] = None
 
 async def forward(seconds: Optional[float] = None,
                   *,
-                  until: Optional[Union[int, float, Callable]] = None,
+                  until: Optional[int | float | Callable] = None,
                   x: Optional[float] = None,
                   y: Optional[float] = None,
                   tolerance: float = 0.1,
@@ -65,15 +66,15 @@ async def forward(seconds: Optional[float] = None,
             raise RuntimeError(f'error while forwarding time {dt} s') from rosys._exception
 
 
-def assert_pose(x: float, y: float, *, deg: float = None, linear_tolerance: float = 0.1, deg_tolerance: float = 1.0) -> None:
+def assert_pose(x: float, y: float, *, deg: float = None, position_tolerance: float = 0.1, deg_tolerance: float = 1.0) -> None:
     assert odometer is not None
-    assert odometer.prediction.x == pytest.approx(x, abs=linear_tolerance)
-    assert odometer.prediction.y == pytest.approx(y, abs=linear_tolerance)
+    assert odometer.prediction.x == pytest.approx(x, abs=position_tolerance)
+    assert odometer.prediction.y == pytest.approx(y, abs=position_tolerance)
     if deg is not None:
         assert np.rad2deg(odometer.prediction.yaw) == pytest.approx(deg, abs=deg_tolerance)
 
 
-def assert_point(actual: Union[Point, Point3d], expected: Union[Point, Point3d], tolerance=0.1) -> None:
+def assert_point(actual: Point | Point3d, expected: Point | Point3d, tolerance=0.1) -> None:
     assert type(actual) == type(expected)
     assert actual.x == pytest.approx(expected.x, abs=tolerance)
     assert actual.y == pytest.approx(expected.y, abs=tolerance)

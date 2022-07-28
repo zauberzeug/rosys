@@ -4,10 +4,12 @@ import uuid
 
 import numpy as np
 import pytest
-from rosys.actors import Automator, Driver, PathPlanner
-from rosys.actors.pathplanning.delaunay_planner import DelaunayPlanner
+from rosys.automation import Automator
+from rosys.driving import Driver, RobotShape
+from rosys.geometry import Point, Pose, Spline
+from rosys.pathplanning import Obstacle, PathPlanner
+from rosys.pathplanning.delaunay_planner import DelaunayPlanner
 from rosys.test import assert_point, forward
-from rosys.world import Obstacle, Point, Pose, RobotShape, Spline
 
 
 def create_obstacle(*, x: float, y: float, radius: float = 0.5) -> Obstacle:

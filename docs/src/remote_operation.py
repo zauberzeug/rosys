@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-import rosys.ui
-from nicegui import ui
 import rosys
-from rosys.actors import (CameraProvider, CameraServer, Odometer, Steerer, UsbCameraProviderHardware,
-                          UsbCameraProviderSimulation)
+from nicegui import ui
+from rosys.driving import Joystick, KeyboardControl, Odometer, Steerer
 from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
 from rosys.hardware.communication import SerialCommunication
-from rosys.world import Camera
+from rosys.vision import Camera, CameraProvider, CameraServer, UsbCameraProviderHardware, UsbCameraProviderSimulation
 
 # setup
 odometer = Odometer()
@@ -38,8 +36,8 @@ with ui.card().tight().style('width:30em') as camera_card:
 with ui.card().tight().style('width:30em'):
     with ui.row():
         with ui.card().tight():
-            rosys.ui.joystick(steerer)
-            rosys.ui.keyboard_control(steerer)
+            Joystick(steerer)
+            KeyboardControl(steerer)
         ui.markdown('steer with joystick on the left or<br />SHIFT + arrow keys').classes('m-8 text-center')
 
 # start

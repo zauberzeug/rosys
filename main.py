@@ -2,11 +2,9 @@
 from nicegui import ui
 
 import rosys
-import rosys.ui
-from rosys.actors import Odometer, Steerer
+from rosys.driving import KeyboardControl, Odometer, RobotObject, RobotShape, Steerer
 from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation, robot_brain
 from rosys.hardware.communication import SerialCommunication, communication
-from rosys.world import RobotShape
 
 # setup
 shape = RobotShape()
@@ -21,9 +19,9 @@ steerer = Steerer(wheels)
 
 # ui
 rosys.NEW_NOTIFICATION.register(ui.notify)
-rosys.ui.keyboard_control(steerer)
+KeyboardControl(steerer)
 with ui.scene():
-    rosys.ui.robot_object(shape, odometer)
+    RobotObject(shape, odometer)
 ui.label('hold SHIFT to steer with the keyboard arrow keys')
 
 # start

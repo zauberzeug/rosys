@@ -1,6 +1,7 @@
 import numpy as np
+from rosys.geometry import Point3d
 from rosys.test import approx
-from rosys.world import Calibration, Camera, Point3d
+from rosys.vision import Calibration, Camera
 
 
 def demo_data() -> tuple[Camera, list[Point3d]]:

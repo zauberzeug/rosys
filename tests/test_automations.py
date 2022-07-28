@@ -1,6 +1,7 @@
-from rosys.actors import Automator, Driver
+from rosys.automation import Automator
+from rosys.driving import Driver
+from rosys.geometry import Pose, Spline
 from rosys.test import assert_pose, forward
-from rosys.world import Pose, Spline
 
 
 async def test_driving_an_arc(driver: Driver, automator: Automator):

@@ -36,7 +36,7 @@ class Event:
 
     async def call(self, *args) -> None:
         '''Fires event and waits async until all registered listeners are completed'''
-        for listener in list(self.listeners):
+        for listener in self.listeners:
             try:
                 await invoke(listener, *args)
             except:
@@ -45,7 +45,7 @@ class Event:
     def emit(self, *args) -> None:
         '''Fires event without waiting for the result.'''
         loop = asyncio.get_event_loop()
-        for listener in list(self.listeners):
+        for listener in self.listeners:
             try:
                 result = invoke(listener, *args)
                 if isinstance(result, Awaitable):

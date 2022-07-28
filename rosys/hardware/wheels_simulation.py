@@ -1,8 +1,9 @@
 from typing import Optional
 
-from ..actors.odometer import Odometer
 import rosys
-from ..world import Pose, PoseStep
+
+from ..driving import Odometer
+from ..geometry import Pose, PoseStep
 from .wheels import Wheels
 
 

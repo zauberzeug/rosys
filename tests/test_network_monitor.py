@@ -1,4 +1,4 @@
-from rosys.actors import NetworkMonitor, NetworkStats
+from rosys.debugging import NetworkMonitor, NetworkStats
 
 
 def test_parsing_ip_stats():

@@ -22,11 +22,11 @@ class WebCommunication(Communication):
         self.sio = socketio.AsyncClient()
 
         @self.sio.event
-        def connect():
+        def connect() -> None:
             assert self.sio.transport() == 'websocket'
 
         @self.sio.event
-        def read(msg):
+        def read(msg) -> None:
             self.buffer.append(msg)
 
     @classmethod

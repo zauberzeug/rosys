@@ -1,9 +1,7 @@
 #!/usr/bin/env python3
-import rosys.ui
-from nicegui import ui
 import rosys
-from rosys.actors import Odometer
-from rosys.world import RobotShape
+from nicegui import ui
+from rosys.driving import Odometer, RobotObject, RobotShape
 
 # setup
 shape = RobotShape(outline=[
@@ -14,7 +12,7 @@ odometer = Odometer()
 # ui
 with ui.scene():
     # `debug=True` turns on a wireframe, the axes-center and follow-the-line target
-    rosys.ui.robot_object(shape, odometer, debug=True)
+    RobotObject(shape, odometer, debug=True)
 
 # start
 ui.on_startup(rosys.startup)

@@ -6,7 +6,7 @@ import uuid
 from asyncio.subprocess import Process
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
-from typing import Callable, Optional, Union
+from typing import Callable, Generator, Optional
 
 import rosys
 
@@ -41,7 +41,7 @@ async def cpu_bound(callback: Callable, *args: any):
 
 
 @contextmanager
-def cpu():
+def cpu() -> Generator[None, None, None]:
     id = str(uuid.uuid4())
     running_cpu_bound_processes.append(id)
     try:
@@ -50,7 +50,7 @@ def cpu():
         running_cpu_bound_processes.remove(id)
 
 
-async def sh(command: Union[list[str], str], timeout: Optional[float] = 1, shell: bool = False) -> str:
+async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool = False) -> str:
     '''executes a shell command
     command: a sequence of program arguments as subprocess.Popen requires or full string
     shell: whether a subshell should be launched (default is False, for speed, use True if you need file globbing or other features)

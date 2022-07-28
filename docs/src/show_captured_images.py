@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-from nicegui import ui
 import rosys
-from rosys.actors import CameraServer, UsbCameraProviderHardware, UsbCameraProviderSimulation, camera_provider
+from nicegui import ui
+from rosys.vision import CameraServer, UsbCameraProviderHardware, UsbCameraProviderSimulation, camera_provider
 
 # setup
 if UsbCameraProviderHardware.is_operable():

@@ -1,24 +1,21 @@
 from typing import Optional
 
 import rosys
+from rosys.event import Event
 
-from . import AppControls
 from .communication import Communication
 
 
 class RobotBrain:
+    LINE_RECEIVED = Event()
+    '''a line has been received from the microcontroller (argument: line as string)'''
 
     def __init__(self, communication: Communication) -> None:
         self.communication = communication
-        self.app_controls = AppControls(communication)
-        rosys.NEW_NOTIFICATION.register(self.app_controls.notify)
         self.waiting_list: dict[str, Optional[str]] = {}
 
         self.clock_offset: Optional[float] = None
         self.hardware_time: Optional[float] = None
-
-        rosys.on_startup(self.app_controls.sync)
-        rosys.on_shutdown(self.app_controls.clear)
 
     async def configure(self, filepath: str = 'lizard.txt') -> None:
         await self.send(f'!-')
@@ -50,7 +47,7 @@ class RobotBrain:
                 if self.clock_offset is None:
                     continue
                 self.hardware_time = millis / 1000 + self.clock_offset
-            self.app_controls.parse(line)
+            self.LINE_RECEIVED.emit(line)
             lines.append((self.hardware_time, line))
         if millis is not None:
             self.clock_offset = rosys.time() - millis / 1000

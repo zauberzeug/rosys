@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 import os
 
-import rosys.ui
-from nicegui import ui
 import rosys
-from rosys.actors import Automator, Driver, Odometer, Steerer
+from nicegui import ui
+from rosys.automation import AutomationControls, Automator
+from rosys.driving import Driver, Joystick, KeyboardControl, Odometer, RobotObject, RobotShape, Steerer
 from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
 from rosys.hardware.communication import SerialCommunication
-from rosys.world import RobotShape
 
 import log_configuration
 
@@ -24,11 +23,11 @@ else:
     wheels = WheelsSimulation(odometer)
 steerer = Steerer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator()
+automator = Automator(wheels, steerer, default_automation=driver.drive_square)
 
 # ui
 rosys.NEW_NOTIFICATION.register(ui.notify)
-rosys.ui.keyboard_control(steerer)
+KeyboardControl(steerer)
 with ui.card():
     with ui.row():
         state = ui.label()
@@ -36,11 +35,11 @@ with ui.card():
 
     with ui.row():
         with ui.scene():
-            rosys.ui.robot_object(shape, odometer)
-        rosys.ui.joystick(steerer, size=50, color='blue')
+            RobotObject(shape, odometer)
+        Joystick(steerer, size=50, color='blue')
 
     with ui.row():
-        rosys.ui.automation_controls(automator, default_automation=driver.drive_square)
+        AutomationControls(automator)
         if isinstance(wheels, WheelsHardware):
             ui.button('configure microcontroller', on_click=robot_brain.configure).props('outline')
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')

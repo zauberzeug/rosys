@@ -59,7 +59,7 @@ class PersistentActor(Protocol):
 actors: list[PersistentActor] = []
 
 
-def register(actor: PersistentActor):
+def register(actor: PersistentActor) -> None:
     if not is_test:
         actors.append(actor)
 

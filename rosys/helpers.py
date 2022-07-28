@@ -1,8 +1,7 @@
 import inspect
-import sys
 import time
 from contextlib import contextmanager
-from typing import Any, Awaitable, Callable
+from typing import Any, Awaitable, Callable, Generator
 
 import numpy as np
 
@@ -14,7 +13,7 @@ async def invoke(handler: Callable, *args: Any) -> Any:
     return result
 
 
-def measure(*, reset: bool = False, ms: bool = False):
+def measure(*, reset: bool = False, ms: bool = False) -> None:
     global t
     if 't' in globals() and not reset:
         dt = time.perf_counter() - t
@@ -38,7 +37,7 @@ def eliminate_2pi(angle: float) -> float:
     return (angle + np.pi) % (2 * np.pi) - np.pi
 
 
-def ramp(x: float, in_min: float, in_max: float, out_min: float, out_max: float, clip: bool = False):
+def ramp(x: float, in_min: float, in_max: float, out_min: float, out_max: float, clip: bool = False) -> float:
     if clip and x < in_min:
         return out_min
     if clip and x > in_max:
@@ -49,7 +48,7 @@ def ramp(x: float, in_min: float, in_max: float, out_min: float, out_max: float,
 class ModificationContext:
 
     @contextmanager
-    def set(self, **kwargs):
+    def set(self, **kwargs) -> Generator[None, None, None]:
         backup = {key: getattr(self, key) for key in kwargs.keys()}
         for key, value in kwargs.items():
             setattr(self, key, value)

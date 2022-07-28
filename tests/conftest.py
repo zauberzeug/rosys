@@ -2,10 +2,11 @@ from typing import Generator
 
 import pytest
 import rosys
-from rosys.actors import Automator, Driver, Odometer, PathPlanner
+from rosys.automation import Automator
+from rosys.driving import Driver, Odometer, RobotShape
 from rosys.hardware import Wheels, WheelsSimulation
+from rosys.pathplanning import PathPlanner
 from rosys.test import helpers, log_configuration
-from rosys.world import RobotShape
 
 log_configuration.setup()
 
@@ -38,8 +39,8 @@ def driver(wheels: Wheels, odometer: Odometer) -> Driver:
 
 
 @pytest.fixture(autouse=True)
-def automator() -> Automator:
-    return Automator()
+def automator(wheels: Wheels) -> Automator:
+    return Automator(wheels, None)
 
 
 @pytest.fixture(autouse=True)

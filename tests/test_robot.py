@@ -20,7 +20,7 @@ async def test_drive(wheels: Wheels) -> None:
 
     await wheels.drive(1.0, 0.0)
     await forward(seconds=np.sqrt(2))
-    assert_pose(2.0, 1.0, deg=45, linear_tolerance=0.1)
+    assert_pose(2.0, 1.0, deg=45, position_tolerance=0.1)
 
 
 async def test_stopping_robot_when_rosys_stops(wheels: Wheels) -> None:

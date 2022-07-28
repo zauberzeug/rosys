@@ -4,10 +4,9 @@ import logging.config
 import os
 import sys
 
-import rosys.ui
-from nicegui import ui
 import rosys
-from rosys.actors import Odometer, Steerer
+from nicegui import ui
+from rosys.driving import Joystick, Odometer, Steerer
 from rosys.hardware import WheelsSimulation
 
 
@@ -72,7 +71,7 @@ wheels = WheelsSimulation(odometer)
 steerer = Steerer(wheels)
 
 # ui
-rosys.ui.joystick(steerer)
+Joystick(steerer)
 
 # start
 ui.on_startup(rosys.startup)

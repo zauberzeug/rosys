@@ -2,13 +2,15 @@
 import os
 import uuid
 
-import rosys.ui
-from nicegui import ui
 import rosys
-from rosys.actors import Automator, Driver, Odometer, PathPlanner, Steerer
+from nicegui import ui
+from rosys.automation import AutomationControls, Automator
+from rosys.driving import Driver, KeyboardControl, Odometer, PathSegment, RobotObject, RobotShape, Steerer
+from rosys.geometry import Point, Pose, Spline
 from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
 from rosys.hardware.communication import SerialCommunication
-from rosys.world import Obstacle, PathSegment, Point, Pose, RobotShape, Spline
+from rosys.pathplanning import Obstacle, ObstacleObject, PathPlanner
+from rosys.pathplanning.path_object import PathObject
 
 # setup
 shape = RobotShape(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])
@@ -21,13 +23,13 @@ else:
     wheels = WheelsSimulation(odometer)
 steerer = Steerer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator()
+automator = Automator(wheels, steerer)
 path_planner = PathPlanner(shape)
 
 
 # ui
 rosys.NEW_NOTIFICATION.register(ui.notify)
-rosys.ui.keyboard_control(steerer)
+KeyboardControl(steerer)
 
 with ui.card():
     state = ui.label()
@@ -80,12 +82,12 @@ with ui.card():
                 return
 
     with ui.scene(640, 480, on_click=handle_click) as scene:
-        rosys.ui.robot_object(shape, odometer, debug=True)
-        obstacles3d = rosys.ui.obstacle_object(path_planner.obstacles)
-        path3d = rosys.ui.path_object()
+        RobotObject(shape, odometer, debug=True)
+        obstacles3d = ObstacleObject(path_planner.obstacles)
+        path3d = PathObject()
 
     with ui.row():
-        rosys.ui.automation_controls(automator)
+        AutomationControls(automator)
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
 # start
