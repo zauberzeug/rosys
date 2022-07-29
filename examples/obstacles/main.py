@@ -7,8 +7,7 @@ from nicegui import ui
 from rosys.automation import AutomationControls, Automator
 from rosys.driving import Driver, KeyboardControl, Odometer, PathSegment, RobotObject, RobotShape, Steerer
 from rosys.geometry import Point, Pose, Spline
-from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
-from rosys.hardware.communication import SerialCommunication
+from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, WheelsSimulation
 from rosys.pathplanning import Obstacle, ObstacleObject, PathPlanner
 from rosys.pathplanning.path_object import PathObject
 

@@ -3,8 +3,7 @@ from nicegui import ui
 
 import rosys
 from rosys.driving import KeyboardControl, Odometer, RobotObject, RobotShape, Steerer
-from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation, robot_brain
-from rosys.hardware.communication import SerialCommunication, communication
+from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, WheelsSimulation, communication
 
 # setup
 shape = RobotShape()

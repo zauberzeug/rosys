@@ -1,4 +1,3 @@
-import logging
 import time
 
 import rosys
@@ -8,25 +7,28 @@ from tabulate import tabulate
 
 from .profiling import profile
 
-log = logging.getLogger('rosys.profiler')
 
+class ProfileButton(ui.button):
 
-def profile_button() -> ui.button:
+    def __init__(self) -> None:
+        super().__init__('Profiler', on_click=self.toggle)
+        self.props('icon=play_arrow')
+        self.tooltip('run profiling')
 
-    async def start(duration: float = 10.0) -> None:
+    async def start(self, duration: float = 10.0) -> None:
         ui.notify('start profiling')
-        button.props(replace='icon=stop')
+        self.props(replace='icon=stop')
         yappi.clear_stats()
         yappi.start()
         profile.start()
         t = time.time()
         while yappi.is_running() and time.time() < t + duration:
             await rosys.sleep(0.1)
-        stop()
+        self.stop()
 
-    def stop() -> None:
+    def stop(self) -> None:
         ui.notify('stop profiling')
-        button.props(replace='icon=play_arrow')
+        self.props(replace='icon=play_arrow')
         profile.stop(print=False)
         yappi.stop()
         table = [
@@ -34,20 +36,13 @@ def profile_button() -> ui.button:
             for stat in yappi.get_func_stats()
             if 'python' not in stat.module
         ]
-        output = tabulate(
-            table[:15],
-            headers=['function', 'total', 'excl. sub', 'avg', 'ncall'],
-            floatfmt='.4f'
-        )
+        output = tabulate(table[:15], headers=['function', 'total', 'excl. sub', 'avg', 'ncall'], floatfmt='.4f')
         print(output, flush=True)
         yappi.get_thread_stats().print_all()
         profile.print()
 
-    async def toggle() -> None:
+    async def toggle(self) -> None:
         if yappi.is_running():
-            stop()
+            self.stop()
         else:
-            await start()
-
-    button = ui.button('Profiler', on_click=toggle).props('icon=play_arrow').tooltip('run profiling')
-    return button
+            await self.start()

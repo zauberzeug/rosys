@@ -2,7 +2,7 @@ import rosys
 from nicegui import ui
 
 from ...automation import Automator
-from ...hardware.communication import SerialCommunication
+from ...hardware import SerialCommunication
 
 
 class LizardSerialDebug:

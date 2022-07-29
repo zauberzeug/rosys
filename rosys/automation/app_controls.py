@@ -7,8 +7,7 @@ from typing import Callable
 import rosys
 
 from ..event import Event
-from ..hardware import RobotBrain
-from ..hardware.communication import Communication
+from ..hardware import Communication, RobotBrain
 from ..task_logger import create_task
 from .automator import Automator
 

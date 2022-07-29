@@ -5,8 +5,7 @@ import rosys
 from nicegui import ui
 from rosys.automation import AutomationControls, Automator
 from rosys.driving import Driver, Joystick, KeyboardControl, Odometer, RobotObject, RobotShape, Steerer
-from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
-from rosys.hardware.communication import SerialCommunication
+from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, WheelsSimulation
 
 import log_configuration
 

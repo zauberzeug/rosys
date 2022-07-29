@@ -2,8 +2,7 @@
 import rosys
 from nicegui import ui
 from rosys.driving import Joystick, KeyboardControl, Odometer, Steerer
-from rosys.hardware import RobotBrain, WheelsHardware, WheelsSimulation
-from rosys.hardware.communication import SerialCommunication
+from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, WheelsSimulation
 from rosys.vision import Camera, CameraProvider, CameraServer, UsbCameraProviderHardware, UsbCameraProviderSimulation
 
 # setup
