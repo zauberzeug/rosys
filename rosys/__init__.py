@@ -8,6 +8,7 @@ from typing import Callable, Optional
 
 import numpy as np
 import psutil
+from nicegui import ui
 
 from . import event, persistence, run
 from .config import Config
@@ -45,6 +46,7 @@ def notify(message: str) -> None:
     log.info(message)
     notifications.append(Notification(time=time, message=message))
     NEW_NOTIFICATION.emit(message)
+    ui.notify(message)
 
 
 def time() -> float:
@@ -181,3 +183,6 @@ gc.disable()  # NOTE disable automatic garbage collection to optimize performanc
 on_repeat(_garbage_collection, 10 * 60)
 on_repeat(_watch_emitted_events, 0.1)
 on_repeat(persistence.backup, 10)
+
+ui.on_startup(startup)
+ui.on_shutdown(shutdown)

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import rosys
 from nicegui import ui
 from rosys.automation import AutomationControls, Automator
 from rosys.driving import Driver, Odometer, RobotObject, RobotShape
@@ -20,7 +19,6 @@ async def handle_click(msg):
         automator.start(driver.drive_to(target))
 
 # ui
-rosys.NEW_NOTIFICATION.register(ui.notify)
 with ui.scene(on_click=handle_click):
     RobotObject(shape, odometer, debug=True)
 ui.label('click into the scene to drive the robot')
@@ -29,6 +27,4 @@ with ui.row():
 ui.label('you can also pause/resume or stop the running automation')
 
 # start
-ui.on_startup(rosys.startup)
-ui.on_shutdown(rosys.shutdown)
 ui.run(title='RoSys')

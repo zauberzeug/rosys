@@ -30,7 +30,6 @@ automator = Automator(wheels, None, default_automation=automation)
 geo_fence_guard = GeoFenceGuard(odometer, automator)
 
 # ui
-rosys.NEW_NOTIFICATION.register(ui.notify)
 with ui.scene():
     RobotObject(shape, odometer)
 label = ui.label()
@@ -38,6 +37,4 @@ ui.timer(0.1, lambda: label.set_text(f'pose: {odometer.prediction}'))
 AutomationControls(automator)
 
 # start
-ui.on_startup(rosys.startup)
-ui.on_shutdown(rosys.shutdown)
 ui.run(title='RoSys')

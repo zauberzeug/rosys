@@ -25,12 +25,10 @@ driver = Driver(wheels, odometer)
 automator = Automator(wheels, steerer)
 path_planner = PathPlanner(shape)
 
-
 # ui
-rosys.NEW_NOTIFICATION.register(ui.notify)
-KeyboardControl(steerer)
-
 with ui.card():
+    KeyboardControl(steerer)
+
     state = ui.label()
     ui.timer(0.1, lambda: state.set_text(f'{rosys.time():.3f} s, {odometer.prediction}'))
 
@@ -90,6 +88,4 @@ with ui.card():
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
 # start
-ui.on_startup(rosys.startup)
-ui.on_shutdown(rosys.shutdown)
 ui.run(title='obstacles', port=8080)
