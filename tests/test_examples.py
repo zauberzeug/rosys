@@ -58,7 +58,7 @@ if __name__ == '__main__':
     check('../docs/src/logging_to_file.py')
     check('../examples/hello_bot/main.py')
     check('../examples/obstacles/main.py')
-    check('../rosys/actors/pathplanning/planner_demo.py')
+    check('../rosys/pathplanning/planner_demo.py')
 
     if has_failures:
         sys.exit(1)
