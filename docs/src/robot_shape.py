@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import rosys
 from nicegui import ui
 from rosys.driving import Odometer, RobotObject, RobotShape
 
@@ -15,6 +14,4 @@ with ui.scene():
     RobotObject(shape, odometer, debug=True)
 
 # start
-ui.on_startup(rosys.startup)
-ui.on_shutdown(rosys.shutdown)
 ui.run(port=8080)

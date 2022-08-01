@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import rosys
 from nicegui import ui
 from rosys.vision import CameraServer, UsbCameraProviderHardware, UsbCameraProviderSimulation, camera_provider
 
@@ -24,6 +23,4 @@ feeds = {}
 ui.timer(0.3, refresh)
 
 # start
-ui.on_startup(rosys.startup)
-ui.on_shutdown(rosys.shutdown)
 ui.run(title='RoSys')

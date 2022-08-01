@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-import rosys
 from nicegui import ui
 from rosys.driving import Joystick, KeyboardControl, Odometer, Steerer
 from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, WheelsSimulation
@@ -40,6 +39,4 @@ with ui.card().tight().style('width:30em'):
         ui.markdown('steer with joystick on the left or<br />SHIFT + arrow keys').classes('m-8 text-center')
 
 # start
-ui.on_startup(rosys.startup)
-ui.on_shutdown(rosys.shutdown)
 ui.run(title='RoSys')
