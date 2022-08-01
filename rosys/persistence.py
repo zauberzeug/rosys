@@ -5,6 +5,7 @@ import sys
 from dataclasses import fields
 from typing import Any, Protocol, TypeVar
 
+import numpy as np
 from dataclasses_json import Exclude, config
 from dataclasses_json.core import _asdict, _decode_dataclass
 
@@ -64,6 +65,13 @@ def register(actor: PersistentActor) -> None:
         actors.append(actor)
 
 
+class Encoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.floating):
+            return float(obj)
+        return json.JSONEncoder.default(self, obj)
+
+
 def backup(force: bool = False) -> None:
     for actor in actors:
         if not actor.needs_backup and not force:
@@ -72,7 +80,7 @@ def backup(force: bool = False) -> None:
             os.makedirs(backup_path)
         filepath = f'{backup_path}/{actor.__module__}.json'
         with open(filepath, 'w') as f:
-            json.dump(actor.backup(), f, indent=4)
+            json.dump(actor.backup(), f, indent=4, cls=Encoder)
         actor.needs_backup = False
 
 
