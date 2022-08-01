@@ -15,8 +15,9 @@ automator = Automator(wheels, None)
 
 async def handle_click(msg):
     for hit in msg.hits:
-        target = Point(x=hit.point.x, y=hit.point.y)
-        automator.start(driver.drive_to(target))
+        if hit.object_id == 'ground':
+            target = Point(x=hit.point.x, y=hit.point.y)
+            automator.start(driver.drive_to(target))
 
 # ui
 with ui.scene(on_click=handle_click):

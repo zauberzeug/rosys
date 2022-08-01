@@ -17,10 +17,12 @@ automator = Automator(wheels, None)
 
 async def handle_click(msg):
     for hit in msg.hits:
-        yaw = odometer.prediction.point.direction(hit.point)
-        path = await path_planner.search(start=odometer.prediction, goal=Pose(x=hit.point.x, y=hit.point.y, yaw=yaw))
-        path3d.update(path)
-        automator.start(driver.drive_path(path))
+        if hit.object_id == 'ground':
+            yaw = odometer.prediction.point.direction(hit.point)
+            goal = Pose(x=hit.point.x, y=hit.point.y, yaw=yaw)
+            path = await path_planner.search(start=odometer.prediction, goal=goal)
+            path3d.update(path)
+            automator.start(driver.drive_path(path))
 
 # ui
 with ui.scene(on_click=handle_click, width=600):
