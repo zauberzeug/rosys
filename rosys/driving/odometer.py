@@ -40,7 +40,7 @@ class Odometer:
             dt = velocity.time - self._last_time
             self._last_time = velocity.time
 
-            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=rosys.time())
+            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=velocity.time)
             self._steps.append(step)
             self.prediction += step
 
