@@ -67,5 +67,5 @@ class Odometer:
             self.prediction += step
 
     def prune_steps(self, cut_off_time: float) -> None:
-        while self._steps and self._steps[0].time < cut_off_time:
+        while self._steps and self._steps[0].time <= cut_off_time:
             del self._steps[0]
