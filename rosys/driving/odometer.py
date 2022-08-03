@@ -1,19 +1,22 @@
 import logging
 from copy import deepcopy
-from typing import Optional
+from typing import Optional, Protocol
 
 import rosys
 
 from ..event import Event
 from ..geometry import Pose, PoseStep, Velocity
-from ..hardware import Wheels
+
+
+class VelocityProvider(Protocol):
+    VELOCITY_MEASURED: Event
 
 
 class Odometer:
     ROBOT_MOVED = Event()
     '''a robot movement is detected'''
 
-    def __init__(self, wheels: Wheels) -> None:
+    def __init__(self, wheels: VelocityProvider) -> None:
         self.log = logging.getLogger('rosys.odometer')
 
         wheels.VELOCITY_MEASURED.register(self.handle_velocities)
