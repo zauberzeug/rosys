@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 from nicegui import ui
 from rosys.automation import AutomationControls, Automator
-from rosys.driving import Driver, Odometer, RobotObject, RobotShape
-from rosys.geometry import Point
+from rosys.driving import Driver, Odometer, RobotObject
+from rosys.geometry import Point, Prism
 from rosys.hardware import WheelsSimulation
 
 # setup
-shape = RobotShape()
-odometer = Odometer()
-wheels = WheelsSimulation(odometer)
+shape = Prism.default_robot_shape()
+wheels = WheelsSimulation()
+odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
 automator = Automator(wheels, None)
 

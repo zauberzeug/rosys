@@ -38,9 +38,9 @@ logging.config.dictConfig({
 })
 
 # setup
-odometer = Odometer()
-wheels = WheelsSimulation(odometer)
+wheels = WheelsSimulation()
 steerer = Steerer(wheels)
+odometer = Odometer(wheels)
 
 # ui
 Joystick(steerer)

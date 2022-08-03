@@ -3,15 +3,15 @@ import logging
 
 import rosys
 
-from ..driving import Odometer
+from ..event import Event
 
 
 class Wheels(abc.ABC):
+    VELOCITY_MEASURED = Event()
+    '''new velocity measurements are available for processing (argument: list of velocities)'''
 
-    def __init__(self, odometer: Odometer) -> None:
+    def __init__(self) -> None:
         self.log = logging.getLogger(__name__)
-
-        self.odometer = odometer
 
         rosys.on_shutdown(self.stop)
 

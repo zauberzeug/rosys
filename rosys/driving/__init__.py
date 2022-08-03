@@ -5,6 +5,4 @@ from .keyboard_control import KeyboardControl
 from .odometer import Odometer
 from .path_segment import PathSegment
 from .robot_object import RobotObject
-from .robot_shape import RobotShape
 from .steerer import Steerer
-from .velocity import Velocity

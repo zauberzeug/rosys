@@ -10,8 +10,8 @@ import psutil
 import rosys
 
 from .. import persistence, run
-from ..driving import PathSegment, RobotShape
-from ..geometry import Point, Pose, Spline
+from ..driving import PathSegment
+from ..geometry import Point, Pose, Prism, Spline
 from .area import Area
 from .obstacle import Obstacle
 from .planner_process import (PlannerCommand, PlannerGrowMapCommand, PlannerObstacleDistanceCommand, PlannerProcess,
@@ -20,7 +20,7 @@ from .planner_process import (PlannerCommand, PlannerGrowMapCommand, PlannerObst
 
 class PathPlanner:
 
-    def __init__(self, robot_shape: RobotShape) -> None:
+    def __init__(self, robot_shape: Prism) -> None:
         self.log = logging.getLogger('rosys.path_planner')
 
         self.connection, process_connection = Pipe()

@@ -5,17 +5,18 @@ from typing import Optional
 import rosys
 
 from ..event import Event
-from ..geometry import Pose, PoseStep
-from .velocity import Velocity
+from ..geometry import Pose, PoseStep, Velocity
+from ..hardware import Wheels
 
 
 class Odometer:
     ROBOT_MOVED = Event()
     '''a robot movement is detected'''
 
-    def __init__(self):
+    def __init__(self, wheels: Wheels) -> None:
         self.log = logging.getLogger('rosys.odometer')
 
+        wheels.VELOCITY_MEASURED.register(self.handle_velocities)
         self.odometry: list[Velocity] = []
         self.prediction: Pose = Pose()
         self.detection: Optional[Pose] = None
@@ -25,10 +26,8 @@ class Odometer:
         self._last_time: float = None
         self._steps: list[PoseStep] = []
 
-    def add_odometry(self, linear_velocity: float, angular_velocity: float, time: float) -> None:
-        self.odometry.append(Velocity(linear=linear_velocity, angular=angular_velocity, time=time))
-
-    def process_odometry(self) -> None:
+    def handle_velocities(self, velocities: list[Velocity]) -> None:
+        self.odometry.extend(velocities)
         if not self.odometry:
             return
         while self.odometry:

@@ -1,14 +1,14 @@
 import rosys
 
-from ..driving import Odometer
+from ..geometry import Velocity
 from .robot_brain import RobotBrain
 from .wheels import Wheels
 
 
 class WheelsHardware(Wheels):
 
-    def __init__(self, odometer: Odometer, robot_brain: RobotBrain) -> None:
-        super().__init__(odometer)
+    def __init__(self, robot_brain: RobotBrain) -> None:
+        super().__init__()
 
         self.robot_brain = robot_brain
 
@@ -21,8 +21,9 @@ class WheelsHardware(Wheels):
         await self.robot_brain.send('wheels.off()')
 
     async def step(self) -> None:
+        velocities: list[Velocity] = []
         for time, line in await self.robot_brain.read_lines():
             words = line.split()
             if words[0] == 'core':
-                self.odometer.add_odometry(float(words[2]), float(words[3]), time)
-        self.odometer.process_odometry()
+                velocities.append(Velocity(linear=float(words[2]), angular=float(words[3]), time=time))
+        self.VELOCITY_MEASURED.emit(velocities)

@@ -5,17 +5,17 @@ from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, Whee
 from rosys.vision import Camera, CameraProvider, CameraServer, UsbCameraProviderHardware, UsbCameraProviderSimulation
 
 # setup
-odometer = Odometer()
 if SerialCommunication.is_possible():
     communication = SerialCommunication()
     robot_brain = RobotBrain(communication)
-    wheels = WheelsHardware(odometer, robot_brain)
+    wheels = WheelsHardware(robot_brain)
     camera_provider = UsbCameraProviderHardware()
 else:
-    wheels = WheelsSimulation(odometer)
+    wheels = WheelsSimulation()
     camera_provider = UsbCameraProviderSimulation()
 CameraServer(camera_provider)
 steerer = Steerer(wheels)
+odometer = Odometer(wheels)
 
 
 async def add_main_camera(camera: Camera) -> None:

@@ -5,22 +5,22 @@ import uuid
 import rosys
 from nicegui import ui
 from rosys.automation import AutomationControls, Automator
-from rosys.driving import Driver, KeyboardControl, Odometer, PathSegment, RobotObject, RobotShape, Steerer
-from rosys.geometry import Point, Pose, Spline
+from rosys.driving import Driver, KeyboardControl, Odometer, PathSegment, RobotObject, Steerer
+from rosys.geometry import Point, Pose, Prism, Spline
 from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, WheelsSimulation
 from rosys.pathplanning import Obstacle, ObstacleObject, PathPlanner
 from rosys.pathplanning.path_object import PathObject
 
 # setup
-shape = RobotShape(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)])
-odometer = Odometer()
+shape = Prism(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)], height=0.5)
 if SerialCommunication.is_possible():
     communication = SerialCommunication()
     robot_brain = RobotBrain(communication)
-    wheels = WheelsHardware(odometer, robot_brain)
+    wheels = WheelsHardware(robot_brain)
 else:
-    wheels = WheelsSimulation(odometer)
+    wheels = WheelsSimulation()
 steerer = Steerer(wheels)
+odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
 automator = Automator(wheels, steerer)
 path_planner = PathPlanner(shape)

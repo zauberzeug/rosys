@@ -7,14 +7,14 @@ from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Extrusion, Group, Sphere, Stl
 from rosys import config
 
+from ..geometry import Prism
 from .driver import Driver
 from .odometer import Odometer
-from .robot_shape import RobotShape
 
 
 class RobotObject(Object3D):
 
-    def __init__(self, shape: RobotShape, odometer: Odometer, driver: Optional[Driver] = None, *,
+    def __init__(self, shape: Prism, odometer: Odometer, driver: Optional[Driver] = None, *,
                  debug: bool = False) -> None:
         super().__init__('group')
         self.shape = shape

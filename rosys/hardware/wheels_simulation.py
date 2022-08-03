@@ -2,15 +2,14 @@ from typing import Optional
 
 import rosys
 
-from ..driving import Odometer
-from ..geometry import Pose, PoseStep
+from ..geometry import Pose, PoseStep, Velocity
 from .wheels import Wheels
 
 
 class WheelsSimulation(Wheels):
 
-    def __init__(self, odometer: Odometer) -> None:
-        super().__init__(odometer)
+    def __init__(self) -> None:
+        super().__init__()
 
         self.pose: Pose = Pose()
         self.linear_velocity: float = 0
@@ -32,6 +31,5 @@ class WheelsSimulation(Wheels):
             dt = rosys.time() - self._last_step
             self.pose += PoseStep(linear=dt*self.linear_velocity, angular=dt*self.angular_velocity, time=rosys.time())
         self._last_step = rosys.time()
-
-        self.odometer.add_odometry(self.linear_velocity, self.angular_velocity, rosys.time())
-        self.odometer.process_odometry()
+        velocity = Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=rosys.time())
+        self.VELOCITY_MEASURED.emit([velocity])

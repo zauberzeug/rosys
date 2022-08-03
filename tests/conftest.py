@@ -3,7 +3,8 @@ from typing import Generator
 import pytest
 import rosys
 from rosys.automation import Automator
-from rosys.driving import Driver, Odometer, RobotShape
+from rosys.driving import Driver, Odometer
+from rosys.geometry import Prism
 from rosys.hardware import Wheels, WheelsSimulation
 from rosys.pathplanning import PathPlanner
 from rosys.test import helpers, log_configuration
@@ -24,13 +25,13 @@ async def run_around_tests(odometer: Odometer, driver: Driver, automator: Automa
 
 
 @pytest.fixture(autouse=True)
-def odometer() -> Odometer:
-    return Odometer()
+def odometer(wheels: Wheels) -> Odometer:
+    return Odometer(wheels)
 
 
 @pytest.fixture(autouse=True)
-def wheels(odometer: Odometer) -> Wheels:
-    return WheelsSimulation(odometer)
+def wheels() -> Wheels:
+    return WheelsSimulation()
 
 
 @pytest.fixture(autouse=True)
@@ -44,10 +45,10 @@ def automator(wheels: Wheels) -> Automator:
 
 
 @pytest.fixture(autouse=True)
-def shape() -> RobotShape:
-    return RobotShape()
+def shape() -> Prism:
+    return Prism.default_robot_shape()
 
 
 @pytest.fixture(autouse=True)
-def path_planner(shape: RobotShape) -> PathPlanner:
+def path_planner(shape: Prism) -> PathPlanner:
     return PathPlanner(shape)
