@@ -43,7 +43,7 @@ class Odometer:
             dt = velocity.time - self._last_time
             self._last_time = velocity.time
 
-            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=velocity.time)
+            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=velocity.time, dt=dt)
             self._steps.append(step)
             self.prediction += step
 
@@ -57,13 +57,16 @@ class Odometer:
 
     def handle_detection(self, detection: Pose) -> None:
         self.detection = detection
-
-        if self._steps and detection.time < self._steps[0].time:
-            return
+        self.prediction = deepcopy(detection)
 
         self.prune_steps(detection.time)
-        self.prediction = deepcopy(detection)
-        for step in self._steps:
+        if not self._steps:
+            return
+
+        step0 = self._steps[0]
+        fraction = (step0.time - detection.time) / step0.dt
+        self.prediction += PoseStep(linear=fraction*step0.linear, angular=fraction*step0.angular, time=step0.time)
+        for step in self._steps[1:]:
             self.prediction += step
 
     def prune_steps(self, cut_off_time: float) -> None:

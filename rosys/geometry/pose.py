@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 
@@ -14,6 +13,7 @@ class PoseStep:
     linear: float
     angular: float
     time: float
+    dt: float = 0
 
 
 @dataclass(slots=True, kw_only=True)

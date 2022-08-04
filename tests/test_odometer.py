@@ -21,3 +21,11 @@ async def test_odometer():
     odometer.handle_detection(Pose(x=5.5, time=5.0))
     assert odometer.prediction.x == 10.5
     assert odometer.prediction.time == 10.0
+
+    odometer.handle_detection(Pose(x=6.5, time=7.0))
+    assert odometer.prediction.x == 9.5
+    assert odometer.prediction.time == 10.0
+
+    odometer.handle_detection(Pose(x=7.5, time=7.5))
+    assert odometer.prediction.x == 10.0
+    assert odometer.prediction.time == 10.0
