@@ -1,5 +1,6 @@
 import pytest
-from rosys.geometry import LineSegment, Point, Pose, PoseStep, Rectangle
+from rosys.geometry import Line, LineSegment, Point, Pose, PoseStep, Rectangle
+from rosys.test import approx
 
 
 def test_line_segment_distance():
@@ -8,6 +9,19 @@ def test_line_segment_distance():
     assert segment.distance(Point(x=2, y=0)) == pytest.approx(1.00, 0.01)
     assert segment.distance(Point(x=2, y=1)) == pytest.approx(0.00, 0.01)
     assert segment.distance(Point(x=4, y=0)) == pytest.approx(1.41, 0.01)
+
+
+def test_line_transformation():
+    point1 = Point(x=1, y=2)
+    point2 = Point(x=4, y=3)
+    line = Line.from_points(point1, point2)
+
+    pose = Pose(x=0.5, y=3.1, yaw=0.5)
+    point1_ = pose.transform(point1)
+    point2_ = pose.transform(point2)
+    line_ = pose.transform_line(line)
+
+    approx(line_, Line.from_points(point1_, point2_))
 
 
 def test_pose():

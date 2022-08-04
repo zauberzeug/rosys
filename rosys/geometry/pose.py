@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from .line import Line
 from .point import Point
 from .point3d import Point3d
 
@@ -88,6 +89,10 @@ class Pose:
             y=self.y + pose.x * np.sin(self.yaw) + pose.y * np.cos(self.yaw),
             yaw=self.yaw + pose.yaw,
         )
+
+    def transform_line(self, line: Line) -> Line:
+        a, b, c = np.linalg.inv(self.matrix).T @ line.tuple
+        return Line(a=a, b=b, c=c)
 
     def relative_pose(self, other: Pose) -> Pose:
         return Pose.from_matrix(np.linalg.inv(self.matrix) @ other.matrix)
