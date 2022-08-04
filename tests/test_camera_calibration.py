@@ -28,7 +28,7 @@ def test_calibration_from_points():
     approx(calibration.intrinsics.rotation.R, cam.calibration.intrinsics.rotation.R)
     approx(calibration.extrinsics.translation, cam.calibration.extrinsics.translation)
     approx(calibration.extrinsics.yaw, cam.calibration.extrinsics.yaw)
-    approx(calibration.extrinsics.tilt.R, cam.calibration.extrinsics.tilt.R)
+    approx(calibration.extrinsics.tilt.R, cam.calibration.extrinsics.tilt.R, abs=1e-6)
 
 
 def test_projection():
