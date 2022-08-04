@@ -99,3 +99,11 @@ class Pose:
 
     def rotate(self, angle: float) -> Pose:
         return Pose(x=self.x, y=self.y, yaw=self.yaw+angle, time=self.time)
+
+    def interpolate(self, other: Pose, t: float) -> Pose:
+        return Pose(
+            x=(1 - t) * self.x + t * other.x,
+            y=(1 - t) * self.y + t * other.y,
+            yaw=(1 - t) * self.yaw + t * other.yaw,
+            time=(1 - t) * self.time + t * other.time,
+        )

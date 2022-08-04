@@ -40,6 +40,13 @@ def test_pose_steps():
     assert pose == Pose(x=1.1, y=2.0, yaw=0.2, time=13.0)
 
 
+def test_pose_interpolation():
+    p1 = Pose(x=1.1, y=1.2, yaw=1.3)
+    p2 = Pose(x=2.1, y=2.2, yaw=2.3)
+    p3 = Pose(x=1.3, y=1.4, yaw=1.5)
+    approx(p1.interpolate(p2, 0.2), p3)
+
+
 def test_rectangle_contains_point():
     rectangle = Rectangle(x=2, y=1, width=2, height=3)
     out1 = Point(x=1, y=1)
