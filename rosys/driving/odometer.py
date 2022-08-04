@@ -1,18 +1,13 @@
 import logging
 from copy import deepcopy
-from dataclasses import dataclass
 from typing import Optional, Protocol
 
+import numpy as np
 import rosys
+from rosys.geometry.pose import PoseStep
 
 from ..event import Event
-from ..geometry import Pose, PoseStep, Velocity
-
-
-@dataclass(slots=True, kw_only=True)
-class HistoryItem:
-    pose: Pose
-    step: PoseStep
+from ..geometry import Pose, Velocity
 
 
 class VelocityProvider(Protocol):
@@ -31,57 +26,59 @@ class Odometer:
         self.detection: Optional[Pose] = None
         self.current_velocity: Optional[Velocity] = None
         self.last_movement: float = 0
+        self.history: list[Pose] = []
+        self.odometry_frame: Pose = Pose()
 
-        self._last_time: float = None
-        self._history: list[HistoryItem] = []
-
-        rosys.on_repeat(lambda: self.prune_history(rosys.time() - 10.0), 1.0)
+        rosys.on_repeat(self.prune_history, 1.0)
 
     def handle_velocities(self, velocities: list[Velocity]) -> None:
+        robot_moved: bool = False
         for velocity in velocities:
-            if self._last_time is None:
-                self._last_time = velocity.time
+            if not self.history:
+                self.history.append(Pose(time=velocity.time))
                 continue
 
-            dt = velocity.time - self._last_time
-            self._last_time = velocity.time
-
-            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=velocity.time, dt=dt)
-            self._history.append(HistoryItem(pose=deepcopy(self.prediction), step=step))
-            self.prediction += step
-
-            self.current_velocity = velocity
+            dt = velocity.time - self.history[-1].time
+            step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=velocity.time)
+            self.history.append(self.history[-1] + step)
 
             if step.linear or step.angular:
-                self.last_movement = step.time
-                self.ROBOT_MOVED.emit()
+                robot_moved = True
+
+        self.prediction = self.odometry_frame.transform_pose(self.history[-1])
+        self.current_velocity = velocity
+
+        if robot_moved:
+            self.last_movement = step.time
+            self.ROBOT_MOVED.emit()
 
     def handle_detection(self, detection: Pose) -> None:
         self.detection = detection
-        self.prediction = deepcopy(detection)
 
-        self.prune_history(detection.time)
-        if not self._history:
-            return
+        if self.history:
+            self.odometry_frame = self._compute_odometry_frame(self.get_pose(detection.time, local=True), detection)
+            self.prediction = self.odometry_frame.transform_pose(self.history[-1])
+        else:
+            self.prediction = deepcopy(detection)
 
-        step0 = self._history[0].step
-        dt = step0.time - detection.time
-        fraction = dt / step0.dt
-        half_step = PoseStep(linear=fraction*step0.linear, angular=fraction*step0.angular, time=step0.time, dt=dt)
-        self.prediction += half_step
-        self._history[0].pose = deepcopy(detection)
-        self._history[0].step = half_step
-        for i in range(1, len(self._history)):
-            self._history[i].pose = self._history[i-1].pose + self._history[i-1].step
-            self.prediction += self._history[i].step
+    def prune_history(self, max_age: float = 10.0) -> None:
+        if self.history:
+            cut_off_time = rosys.time() - max_age
+            while self.history[0].time <= cut_off_time:
+                del self.history[0]
 
-    def prune_history(self, cut_off_time: float) -> None:
-        while self._history and self._history[0].step.time <= cut_off_time:
-            del self._history[0]
-
-    def get_pose(self, time: float) -> Pose:
-        for item in self._history:
-            if item.pose.time <= time < item.step.time:
-                f = (time - item.pose.time) / (item.step.time - item.pose.time)
-                return item.pose + PoseStep(linear=f*item.step.linear, angular=f*item.step.angular, time=time)
+    def get_pose(self, time: float, local: bool = False) -> Pose:
+        for i in range(1, len(self.history)):
+            if self.history[i-1].time <= time < self.history[i].time:
+                f = (time - self.history[i-1].time) / (self.history[i].time - self.history[i-1].time)
+                local_pose = self.history[i-1].interpolate(self.history[i], f)
+                return local_pose if local else self.odometry_frame.transform_pose(local_pose)
+        if local:
+            return deepcopy(self.history)[-1]
         return Pose(x=self.prediction.x, y=self.prediction.y, yaw=self.prediction.yaw, time=time)
+
+    @staticmethod
+    def _compute_odometry_frame(local_pose: Pose, global_pose: Pose) -> Pose:
+        frame = Pose.from_matrix(global_pose.matrix @ np.linalg.inv(local_pose.matrix))
+        frame.time = global_pose.time
+        return frame

@@ -14,7 +14,6 @@ class PoseStep:
     linear: float
     angular: float
     time: float
-    dt: float = 0
 
 
 @dataclass(slots=True, kw_only=True)
@@ -88,6 +87,7 @@ class Pose:
             x=self.x + pose.x * np.cos(self.yaw) - pose.y * np.sin(self.yaw),
             y=self.y + pose.x * np.sin(self.yaw) + pose.y * np.cos(self.yaw),
             yaw=self.yaw + pose.yaw,
+            time=pose.time,
         )
 
     def transform_line(self, line: Line) -> Line:
