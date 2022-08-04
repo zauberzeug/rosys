@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from dataclasses import fields
 from typing import Any, Callable, Optional
 
 import numpy as np
@@ -92,8 +93,8 @@ def approx(o1: Any, o2: Any, *, rel: Optional[float] = None, abs: Optional[float
     # https://github.com/pytest-dev/pytest/issues/6632#issuecomment-580507745
     assert type(o1) == type(o2)
 
-    o1_keys = [v for v in dir(o1) if not v.startswith('__')]
-    o2_keys = [v for v in dir(o2) if not v.startswith('__')]
+    o1_keys = list(o1.__dict__) if hasattr(o1, '__dict__') else [f.name for f in fields(o1)]
+    o2_keys = list(o2.__dict__) if hasattr(o2, '__dict__') else [f.name for f in fields(o2)]
 
     assert sorted(o1_keys) == sorted(o2_keys)
 
