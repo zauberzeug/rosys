@@ -1,11 +1,18 @@
 import logging
 from copy import deepcopy
+from dataclasses import dataclass
 from typing import Optional, Protocol
 
 import rosys
 
 from ..event import Event
 from ..geometry import Pose, PoseStep, Velocity
+
+
+@dataclass(slots=True, kw_only=True)
+class HistoryItem:
+    pose: Pose
+    step: PoseStep
 
 
 class VelocityProvider(Protocol):
@@ -20,22 +27,18 @@ class Odometer:
         self.log = logging.getLogger('rosys.odometer')
 
         wheels.VELOCITY_MEASURED.register(self.handle_velocities)
-        self.odometry: list[Velocity] = []
         self.prediction: Pose = Pose()
         self.detection: Optional[Pose] = None
         self.current_velocity: Optional[Velocity] = None
         self.last_movement: float = 0
 
         self._last_time: float = None
-        self._steps: list[PoseStep] = []
+        self._history: list[HistoryItem] = []
+
+        rosys.on_repeat(lambda: self.prune_history(rosys.time() - 10.0), 1.0)
 
     def handle_velocities(self, velocities: list[Velocity]) -> None:
-        self.odometry.extend(velocities)
-        if not self.odometry:
-            return
-        while self.odometry:
-            velocity = self.odometry.pop(0)
-
+        for velocity in velocities:
             if self._last_time is None:
                 self._last_time = velocity.time
                 continue
@@ -44,7 +47,7 @@ class Odometer:
             self._last_time = velocity.time
 
             step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=velocity.time, dt=dt)
-            self._steps.append(step)
+            self._history.append(HistoryItem(pose=deepcopy(self.prediction), step=step))
             self.prediction += step
 
             self.current_velocity = velocity
@@ -53,22 +56,32 @@ class Odometer:
                 self.last_movement = step.time
                 self.ROBOT_MOVED.emit()
 
-        self.prune_steps(rosys.time() - 10.0)
-
     def handle_detection(self, detection: Pose) -> None:
         self.detection = detection
         self.prediction = deepcopy(detection)
 
-        self.prune_steps(detection.time)
-        if not self._steps:
+        self.prune_history(detection.time)
+        if not self._history:
             return
 
-        step0 = self._steps[0]
-        fraction = (step0.time - detection.time) / step0.dt
-        self.prediction += PoseStep(linear=fraction*step0.linear, angular=fraction*step0.angular, time=step0.time)
-        for step in self._steps[1:]:
-            self.prediction += step
+        step0 = self._history[0].step
+        dt = step0.time - detection.time
+        fraction = dt / step0.dt
+        half_step = PoseStep(linear=fraction*step0.linear, angular=fraction*step0.angular, time=step0.time, dt=dt)
+        self.prediction += half_step
+        self._history[0].pose = deepcopy(detection)
+        self._history[0].step = half_step
+        for i in range(1, len(self._history)):
+            self._history[i].pose = self._history[i-1].pose + self._history[i-1].step
+            self.prediction += self._history[i].step
 
-    def prune_steps(self, cut_off_time: float) -> None:
-        while self._steps and self._steps[0].time <= cut_off_time:
-            del self._steps[0]
+    def prune_history(self, cut_off_time: float) -> None:
+        while self._history and self._history[0].step.time <= cut_off_time:
+            del self._history[0]
+
+    def get_pose(self, time: float) -> Pose:
+        for item in self._history:
+            if item.pose.time <= time < item.step.time:
+                f = (time - item.pose.time) / (item.step.time - item.pose.time)
+                return item.pose + PoseStep(linear=f*item.step.linear, angular=f*item.step.angular, time=time)
+        return Pose(x=self.prediction.x, y=self.prediction.y, yaw=self.prediction.yaw, time=time)
