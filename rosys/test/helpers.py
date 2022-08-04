@@ -90,29 +90,21 @@ async def automate_drive_to(x: float, y: float) -> None:
 
 
 def approx(o1: Any, o2: Any, *, rel: Optional[float] = None, abs: Optional[float] = None, nan_ok: bool = False) -> None:
-    NUMBER_TYPES = [int, float, np.float32, np.float64]
-    if type(o1) not in NUMBER_TYPES or type(o2) not in NUMBER_TYPES:
-        assert type(o1) == type(o2)
-
-    if type(o1) in [bool, str]:
-        assert o1 == o2
-    elif type(o1) in NUMBER_TYPES:
-        assert o1 == pytest.approx(o2, rel=rel, abs=abs, nan_ok=nan_ok)
-    elif isinstance(o1, list):
-        assert np.allclose(o1, o2, rtol=rel or 1.e-5, atol=abs or 1.e-8, equal_nan=nan_ok or False)
-    elif isinstance(o1, dict):
-        assert sorted(o1) == sorted(o2)
-        for key, value in o1.items():
-            approx(value, o2[key])
-    elif hasattr(o1, '__dict__'):
+    if hasattr(o1, '__dict__'):
         assert sorted(o1.__dict__) == sorted(o2.__dict__)
         for key, value in o1.__dict__.items():
-            approx(value, getattr(o2, key))
+            approx(value, getattr(o2, key), rel=rel, abs=abs, nan_ok=nan_ok)
     elif is_dataclass(o1):
         o1_keys = [f.name for f in fields(o1)]
         o2_keys = [f.name for f in fields(o2)]
         assert sorted(o1_keys) == sorted(o2_keys)
         for key in o1_keys:
-            approx(getattr(o1, key), getattr(o2, key))
+            approx(getattr(o1, key), getattr(o2, key), rel=rel, abs=abs, nan_ok=nan_ok)
+    elif isinstance(o1, list):
+        for i1, i2 in zip(o1, o2, strict=True):
+            approx(i1, i2, rel=rel, abs=abs, nan_ok=nan_ok)
+    elif isinstance(o1, dict):
+        for k1, k2 in zip(sorted(o1), sorted(o2), strict=True):
+            approx(o1[k1], o2[k2], rel=rel, abs=abs, nan_ok=nan_ok)
     else:
-        raise ValueError(f'invalid input type "{type(o1)}"')
+        assert o1 == pytest.approx(o2, rel=rel, abs=abs, nan_ok=nan_ok)
