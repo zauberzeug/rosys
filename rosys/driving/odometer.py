@@ -45,9 +45,10 @@ class Odometer:
             if step.linear or step.angular:
                 robot_moved = True
 
-        self.prediction = self.odometry_frame.transform_pose(self.history[-1])
-        self.current_velocity = velocity
-
+        if self.history:
+            self.prediction = self.odometry_frame.transform_pose(self.history[-1])
+        if velocities:
+            self.current_velocity = velocities[-1]
         if robot_moved:
             self.last_movement = step.time
             self.ROBOT_MOVED.emit()
