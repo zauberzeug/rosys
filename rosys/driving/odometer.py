@@ -62,10 +62,9 @@ class Odometer:
             self.prediction = deepcopy(detection)
 
     def prune_history(self, max_age: float = 10.0) -> None:
-        if self.history:
-            cut_off_time = rosys.time() - max_age
-            while self.history[0].time <= cut_off_time:
-                del self.history[0]
+        cut_off_time = rosys.time() - max_age
+        while self.history and self.history[0].time <= cut_off_time:
+            del self.history[0]
 
     def get_pose(self, time: float, local: bool = False) -> Pose:
         for i in range(1, len(self.history)):
