@@ -9,7 +9,7 @@
     },
     {
       "name": "NiceGUI docker",
-      "path": "/usr/local/lib/python3.9/site-packages/nicegui"
+      "path": "/usr/local/lib/python3.10/site-packages/nicegui"
     }
   ],
   "settings": {},
