@@ -552,8 +552,8 @@ optional = false
 python-versions = ">=3.6"
 
 [package.extras]
-test = ["pytest", "pytest-trio", "pytest-asyncio", "testpath", "trio", "async-timeout"]
-trio = ["trio", "async-generator"]
+trio = ["async-generator", "trio"]
+test = ["async-timeout", "trio", "testpath", "pytest-asyncio", "pytest-trio", "pytest"]
 
 [[package]]
 name = "jinja2"
@@ -850,8 +850,8 @@ optional = false
 python-versions = ">=3.6"
 
 [package.extras]
-dev = ["pre-commit", "tox"]
-testing = ["pytest", "pytest-benchmark"]
+testing = ["pytest-benchmark", "pytest"]
+dev = ["tox", "pre-commit"]
 
 [[package]]
 name = "psutil"
@@ -2164,7 +2164,10 @@ networkx = [
     {file = "networkx-2.6.3-py3-none-any.whl", hash = "sha256:80b6b89c77d1dfb64a4c7854981b60aeea6360ac02c6d4e4913319e0a313abef"},
     {file = "networkx-2.6.3.tar.gz", hash = "sha256:c0946ed31d71f1b732b5aaa6da5a0388a345019af232ce2f49c766e2d6795c51"},
 ]
-nicegui = []
+nicegui = [
+    {file = "nicegui-0.8.2-py3-none-any.whl", hash = "sha256:5da99cdb634c39fa91bc4dcf26fe29f9df11aea06bd6165128f2f103e5933799"},
+    {file = "nicegui-0.8.2.tar.gz", hash = "sha256:6b8e6d996b74ee7534d1d7c629065528221a2ffc6537da7a625bc1ff34270c4e"},
+]
 numpy = [
     {file = "numpy-1.22.2-cp310-cp310-macosx_10_14_x86_64.whl", hash = "sha256:515a8b6edbb904594685da6e176ac9fbea8f73a5ebae947281de6613e27f1956"},
     {file = "numpy-1.22.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:76a4f9bce0278becc2da7da3b8ef854bed41a991f4226911a24a9711baad672c"},
@@ -2362,7 +2365,10 @@ python-engineio = [
     {file = "python-engineio-4.3.1.tar.gz", hash = "sha256:6e1d26977ffefe3b7da1b5df7a8750aedc7686da8201cd90daf36693db122489"},
     {file = "python_engineio-4.3.1-py3-none-any.whl", hash = "sha256:85986067cb9f7695347954d4e03491f7d45152c5428c07109a9707e04e8942cb"},
 ]
-python-socketio = []
+python-socketio = [
+    {file = "python-socketio-5.7.1.tar.gz", hash = "sha256:5011a0cd2545c954d7df09eef7489ec424c93b001cc146599cd72f1dd20f0d46"},
+    {file = "python_socketio-5.7.1-py3-none-any.whl", hash = "sha256:86ee93591c1e781d339d9a61940e62fd6cbc838390653b52a7bcc4f7ce89fe47"},
+]
 pywin32-ctypes = [
     {file = "pywin32-ctypes-0.2.0.tar.gz", hash = "sha256:24ffc3b341d457d48e8922352130cf2644024a4ff09762a2261fd34c36ee5942"},
     {file = "pywin32_ctypes-0.2.0-py2.py3-none-any.whl", hash = "sha256:9dc2d991b3479cc2df15930958b674a48a227d5361d413827a4cfd0b5876fc98"},
