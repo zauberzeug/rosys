@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from functools import reduce
 from operator import ixor
 
-from ..driving import Velocity
+from ..geometry import Velocity
 from .communication import Communication
 
 
