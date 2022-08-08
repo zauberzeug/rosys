@@ -71,7 +71,7 @@ class SerialCommunication(Communication):
         super().debug_ui()
 
         async def submit_input() -> None:
-            await self.send_async(input.value)
+            await self.send(input.value)
             input.value = ''
 
         def toggle(e: ValueChangeEventArguments) -> None:
