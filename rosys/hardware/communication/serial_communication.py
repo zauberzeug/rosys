@@ -5,6 +5,7 @@ from typing import Optional
 import rosys
 import serial
 from nicegui import ui
+from nicegui.events import ValueChangeEventArguments
 
 from .communication import Communication
 
@@ -72,21 +73,19 @@ class SerialCommunication(Communication):
 
     def debug_ui(self) -> None:
         super().debug_ui()
-        ui.switch(
-            'Serial Communication', value=self.serial.isOpen(),
-            on_change=self.toggle_communication)
+
+        async def submit_input() -> None:
+            await self.send_async(input.value)
+            input.value = ''
+
+        def toggle(e: ValueChangeEventArguments) -> None:
+            if e.value:
+                self.connect()
+                rosys.notify('connected to Lizard')
+            else:
+                self.disconnect()
+                rosys.notify('disconnected from Lizard')
+
+        ui.switch('Serial Communication', value=self.serial.isOpen(), on_change=toggle)
         ui.switch('Serial Logging').bind_value(self, 'log_io')
-        self.input = ui.input(on_change=self.submit_message)
-
-    async def submit_message(self):
-        await self.send_async(self.input.value)
-        self.input.value = ''
-        await self.input.view.update()
-
-    async def toggle_communication(self, status):
-        if status.value:
-            self.connect()
-            await rosys.notify('connected to Lizard')
-        else:
-            self.disconnect()
-            await rosys.notify('disconnected from Lizard')
+        input = ui.input(on_change=submit_input)
