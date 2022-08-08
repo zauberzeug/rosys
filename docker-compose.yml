@@ -8,6 +8,8 @@ services:
       - ./../nicegui/nicegui:/usr/local/lib/python3.10/site-packages/nicegui
       - ~/.rosys:/root/.rosys
     privileged: true
+    ports:
+      - 80:8080
     environment:
       - TZ=Europe/Amsterdam
     devices:

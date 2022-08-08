@@ -1,12 +1,9 @@
-import logging
 import os
 from typing import Optional
 
 import serial
 
 from .communication import Communication
-
-log = logging.getLogger('rosys.hardware.serial_communication')
 
 
 class SerialCommunication(Communication):
@@ -15,24 +12,23 @@ class SerialCommunication(Communication):
 
     def __init__(self) -> None:
         super().__init__()
-        self.device_path = SerialCommunication.get_device_path()
+        self.device_path = self.get_device_path()
         if self.device_path is None:
             raise Exception('No serial port found')
         self.log.debug(f'connecting serial on {self.device_path} with baudrate {self.baudrate}')
         self.serial = serial.Serial(self.device_path, self.baudrate)
         self.buffer = ''
 
-    @classmethod
-    def is_possible(cls) -> bool:
-        return cls.get_device_path() is not None
+    @staticmethod
+    def is_possible() -> bool:
+        return SerialCommunication.get_device_path() is not None
 
-    @classmethod
-    def get_device_path(cls) -> Optional[str]:
+    @staticmethod
+    def get_device_path() -> Optional[str]:
         device_paths = [
-            '/dev/ttyTHS1',
             '/dev/ttyUSB0',
+            '/dev/ttyTHS1',
             '/dev/tty.SLAB_USBtoUART',
-            '/dev/serial/by-id/usb-Silicon_Labs_CP2102_USB_to_UART_Bridge_Controller_0001-if00-port0',
             '/dev/esp',
         ]
         for device_path in device_paths:

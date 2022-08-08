@@ -32,43 +32,28 @@ then
     exit
 fi
 
-compose_args="-p rosys"
-
-os=`uname`
-case $os in
-    Linux)
-        compose_args="$compose_args -f docker-compose.yml -f docker-compose.linux.yml"
-        ;;
-    Darwin)
-        compose_args="$compose_args -f docker-compose.yml -f docker-compose.mac.yml"
-        ;;
-    *)
-        echo "Unsupported OS: $os"
-        exit 1
-esac
-
 set -x
 
 cmd=$1
 cmd_args=${@:2}
 case $cmd in
     b | build)
-    	docker-compose $compose_args build $cmd_args
+    	docker-compose build $cmd_args
         ;;
     u | up)
-        docker-compose $compose_args up -d $cmd_args
+        docker-compose up -d $cmd_args
         ;;
     U | buildup | upbuild | upb | bup | ub)
-        docker-compose $compose_args up -d --build $cmd_args
+        docker-compose up -d --build $cmd_args
         ;;
     d | down)
-        docker-compose $compose_args down -d $cmd_args
+        docker-compose down -d $cmd_args
         ;;
     s | start)
-        docker-compose $compose_args start $cmd_args
+        docker-compose start $cmd_args
         ;;
     r | restart)
-        docker-compose $compose_args restart $cmd_args
+        docker-compose restart $cmd_args
         ;;
     i | install)
         echo "disabing restart for any containers which may have been configured before"
@@ -77,25 +62,25 @@ case $cmd in
         docker update --restart=always $(docker ps -q)
         ;;
     h | stop)
-        docker-compose $compose_args stop $cmd_args
+        docker-compose stop $cmd_args
         ;;
     rm)
-        docker-compose $compose_args rm $cmd_args
+        docker-compose rm $cmd_args
         ;;
     ps)
-        docker-compose $compose_args ps $cmd_args
+        docker-compose ps $cmd_args
         ;;
     stat | stats)
         docker stats $cmd_args
         ;;
     l | log | logs)
-        docker-compose $compose_args logs -f --tail 100 $cmd_args
+        docker-compose logs -f --tail 100 $cmd_args
         ;;
     e | exec)
-        docker-compose $compose_args exec $cmd_args
+        docker-compose exec $cmd_args
         ;;
     a | attach)
-        docker-compose $compose_args exec $cmd_args /bin/bash
+        docker-compose exec $cmd_args /bin/bash
         ;;
     prune)
         docker system prune
