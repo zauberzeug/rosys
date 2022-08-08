@@ -20,3 +20,6 @@ class Communication(abc.ABC):
     @abc.abstractmethod
     async def read(self) -> Optional[str]:
         pass
+
+    def debug_ui(self) -> None:
+        pass
