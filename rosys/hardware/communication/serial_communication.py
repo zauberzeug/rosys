@@ -10,17 +10,21 @@ from .communication import Communication
 
 
 class SerialCommunication(Communication):
-    baudrate: int = 115200
-    log_io: bool = False
+    search_paths: list[str] = [
+        '/dev/tty.SLAB_USBtoUART',
+        '/dev/ttyTHS1',
+        '/dev/ttyUSB0',
+    ]
 
-    def __init__(self) -> None:
+    def __init__(self, baudrate: int = 115200) -> None:
         super().__init__()
         self.device_path = self.get_device_path()
         if self.device_path is None:
             raise Exception('No serial port found')
-        self.log.debug(f'connecting serial on {self.device_path} with baudrate {self.baudrate}')
-        self.serial = serial.Serial(self.device_path, self.baudrate)
+        self.log.debug(f'connecting serial on {self.device_path} with baudrate {baudrate}')
+        self.serial = serial.Serial(self.device_path, baudrate)
         self.buffer = ''
+        self.log_io: bool = False
 
     @staticmethod
     def is_possible() -> bool:
@@ -28,13 +32,7 @@ class SerialCommunication(Communication):
 
     @staticmethod
     def get_device_path() -> Optional[str]:
-        device_paths = [
-            '/dev/ttyUSB0',
-            '/dev/ttyTHS1',
-            '/dev/tty.SLAB_USBtoUART',
-            '/dev/esp',
-        ]
-        for device_path in device_paths:
+        for device_path in SerialCommunication.search_paths:
             if os.path.exists(device_path) and os.stat(device_path).st_gid > 0:
                 return device_path
 
