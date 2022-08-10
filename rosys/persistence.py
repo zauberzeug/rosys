@@ -105,7 +105,7 @@ def export_button(title: str = 'Export', route: str = '/export', tmp_filepath: s
         with open(tmp_filepath, 'w') as f:
             json.dump({name: actor.backup() for name, actor in actors.items()}, f, indent=4)
         return FileResponse(tmp_filepath, filename='export.json')
-    ui.button(title, on_click=lambda e: ui.open(route, e.socket))
+    ui.button(title, on_click=lambda e: ui.open(route[1:], e.socket))
 
 
 def import_button(title: str = 'Import', after_import: Optional[Callable] = None) -> ui.button:
