@@ -7,7 +7,7 @@ import socketio
 import socketio.exceptions
 
 from .. import persistence, task_logger
-from .detections import BoxDetection, Detections, PointDetection
+from .detections import BoxDetection, Detections, PointDetection, SegmentationDetection
 from .detector import Autoupload, Detector
 from .image import Image
 from .uploads import Uploads
@@ -93,7 +93,7 @@ class DetectorHardware(Detector):
         except:
             self.log.exception(f'could not upload {image.id}')
 
-    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Optional[Detections]:
+    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED, tags: list[str] = []) -> None:
         '''Runs detections on the image. Afterwards the `image.detections` property is filled.'''
         if not self.is_connected:
             return
@@ -111,10 +111,15 @@ class DetectorHardware(Detector):
                     'image': image.data,
                     'mac': image.camera_id,
                     'autoupload': autoupload.value,
+                    'tags': tags,
                 }, timeout=3)
                 image.detections = Detections(
                     boxes=[persistence.from_dict(BoxDetection, d) for d in result.get('box_detections', [])],
                     points=[persistence.from_dict(PointDetection, d) for d in result.get('point_detections', [])],
+                    segmentations=[
+                        persistence.from_dict(SegmentationDetection, d)
+                        for d in result.get('segmentation_detections', [])
+                    ],
                 )
             except socketio.exceptions.TimeoutError:
                 self.log.exception(f'detection for {image.id} on {self.port} took too long')

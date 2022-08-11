@@ -1,3 +1,6 @@
+import itertools
+import logging
+from dataclasses import dataclass
 from functools import lru_cache
 from typing import Optional
 
@@ -17,9 +20,13 @@ from .obstacle_map import ObstacleMap
 
 GRID_RESOLUTION = 1.0
 MIN_MARGIN = 1.0
+# try to find a collision-free simple path between start and goal (see https://trello.com/c/FtP4yHqA/777#comment-62d0323e97ba19392bcbceb8)
+TRY_SINGLE_PATH = True
+TRY_SINGLE_SHUNTING = True  # try to find collision-free path with minimal switching (single shunting)
 
 
 class DelaunayPlanner:
+
     def __init__(self, robot_outline: list[tuple[float, float]]) -> None:
         self.robot_outline = robot_outline
         self.areas: list[Area] = []
@@ -29,6 +36,7 @@ class DelaunayPlanner:
         self.tri_mesh: Optional[spatial.Delaunay] = None
         self.pose_groups: Optional[list[DelaunayPoseGroup]] = None
         self.graph: Optional[nx.DiGraph] = None
+        self.log = logging.getLogger('rosys.delaunay_planner')
 
     def update_map(self, areas: list[Area], obstacles: list[Obstacle], additional_points: list[Point],
                    deadline: float) -> None:
@@ -117,62 +125,87 @@ class DelaunayPlanner:
                             self.graph.add_edge((g_, p_), (g, p), backward=True, weight=1.2*length)
 
     def search(self, start: Pose, goal: Pose) -> list[PathSegment]:
-        first_segment, g, p = _find_terminal_segment(self.obstacle_map, self.pose_groups, start, True)
-        last_segment, g_, p_ = _find_terminal_segment(self.obstacle_map, self.pose_groups, goal, False)
-
-        path: list[PathSegment] = []
-        path.append(first_segment)
-        last_g, last_p = g, p
-        try:
-            for next_g, next_p in nx.shortest_path(self.graph, (g, p), (g_, p_), weight='weight')[1:]:
-                last_pose = self.pose_groups[last_g].poses[last_p]
-                next_pose = self.pose_groups[next_g].poses[next_p]
-                backward = self.graph.edges[((last_g, last_p), (next_g, next_p))]['backward']
-                spline = Spline.from_poses(last_pose, next_pose, backward=backward)
-                path.append(PathSegment(spline=spline, backward=backward))
-                last_g, last_p = next_g, next_p
-        except nx.exception.NetworkXNoPath:
-            pass
-        path.append(last_segment)
-
-        while True:
-            shortcuts = []
-            for step_size in [1, 2]:
-                for s in range(len(path) - step_size):
-                    new_start = Pose(
-                        x=path[s].spline.start.x,
-                        y=path[s].spline.start.y,
-                        yaw=path[s].spline.yaw(0) + (np.pi if path[s].backward else 0),
-                    )
-                    new_end = Pose(
-                        x=path[s+step_size].spline.end.x,
-                        y=path[s+step_size].spline.end.y,
-                        yaw=path[s+step_size].spline.yaw(1) + (np.pi if path[s+step_size].backward else 0),
-                    )
-                    if abs(angle(new_start.yaw, new_end.yaw + np.pi)) < 0.01:
+        if TRY_SINGLE_PATH:
+            for backward in [True, False]:
+                simple_spline = Spline.from_poses(start, goal, backward=backward)
+                if _is_healthy(simple_spline) and not self.obstacle_map.test_spline(simple_spline, backward):
+                    self.log.info('found single spline to reach goal')
+                    return [PathSegment(spline=simple_spline, backward=backward)]
+        paths: list[list[PathSegment]] = []
+        if TRY_SINGLE_SHUNTING:
+            for backward in [True, False]:
+                for length in [1, 1.5, 2]:
+                    y_outline = [p[1] for p in self.robot_outline]
+                    robot_length = max(y_outline) - min(y_outline)
+                    intermediate = start.transform(Point(x=robot_length * (-length if backward else length), y=0))
+                    spline1 = Spline.from_poses(start, intermediate, backward=backward)
+                    if not _is_healthy(spline1) or self.obstacle_map.test_spline(spline1, backward):
                         continue
-                    for new_backward in [False, True]:
-                        new_spline = Spline.from_poses(new_start, new_end, backward=new_backward)
-                        if not _is_healthy(new_spline):
-                            continue
-                        if self.obstacle_map.test_spline(new_spline, new_backward):
-                            continue
-                        combined_length = _estimate_length(path[s].spline) + _estimate_length(path[s+step_size].spline)
-                        if .9 * _estimate_length(new_spline) > combined_length:
-                            continue
-                        shortcuts.append(PathSegment(spline=new_spline, backward=new_backward))
-                    if shortcuts:
-                        lengths = [_estimate_length(segment.spline) for segment in shortcuts]
-                        path[s] = shortcuts[np.argmin(lengths)]
-                        for _ in range(step_size):
-                            del path[s+1]
-                        break  # restart while loop
-                if shortcuts:
-                    break  # restart while loop
-            if not shortcuts:
-                break  # exit while loop
+                    spline2 = Spline.from_poses(intermediate, goal, backward=not backward)
+                    if not _is_healthy(spline2) or self.obstacle_map.test_spline(spline2, not backward):
+                        continue
+                    paths.append([
+                        PathSegment(spline=spline1, backward=backward),
+                        PathSegment(spline=spline2, backward=not backward),
+                    ])
+        grid_entries = _find_grid_passages(self.obstacle_map, self.pose_groups, start, True)
+        grid_exits = _find_grid_passages(self.obstacle_map, self.pose_groups, goal, False)
+        for enter, exit in itertools.product(grid_entries, grid_exits):
+            p, g = enter.coordinate
+            p_, g_ = exit.coordinate
+            path: list[PathSegment] = [enter.segment]
+            last_g, last_p = g, p
+            try:
+                for next_g, next_p in nx.shortest_path(self.graph, (g, p), (g_, p_), weight='weight')[1:]:
+                    last_pose = self.pose_groups[last_g].poses[last_p]
+                    next_pose = self.pose_groups[next_g].poses[next_p]
+                    backward = self.graph.edges[((last_g, last_p), (next_g, next_p))]['backward']
+                    spline = Spline.from_poses(last_pose, next_pose, backward=backward)
+                    path.append(PathSegment(spline=spline, backward=backward))
+                    last_g, last_p = next_g, next_p
+            except nx.exception.NetworkXNoPath:
+                pass
+            path.append(exit.segment)
 
-        return path
+            while True:
+                shortcuts: list[PathSegment] = []
+                for step_size in [1, 2]:
+                    for s in range(len(path) - step_size):
+                        new_start = Pose(
+                            x=path[s].spline.start.x,
+                            y=path[s].spline.start.y,
+                            yaw=path[s].spline.yaw(0) + (np.pi if path[s].backward else 0),
+                        )
+                        new_end = Pose(
+                            x=path[s+step_size].spline.end.x,
+                            y=path[s+step_size].spline.end.y,
+                            yaw=path[s+step_size].spline.yaw(1) + (np.pi if path[s+step_size].backward else 0),
+                        )
+                        if abs(angle(new_start.yaw, new_end.yaw + np.pi)) < 0.01:
+                            continue
+                        for new_backward in [False, True]:
+                            new_spline = Spline.from_poses(new_start, new_end, backward=new_backward)
+                            if not _is_healthy(new_spline):
+                                continue
+                            if self.obstacle_map.test_spline(new_spline, new_backward):
+                                continue
+                            combined_length = path[s].spline.estimated_length() + \
+                                path[s+step_size].spline.estimated_length()
+                            if .9 * new_spline.estimated_length() > combined_length:
+                                continue
+                            shortcuts.append(PathSegment(spline=new_spline, backward=new_backward))
+                        if shortcuts:
+                            lengths = [segment.spline.estimated_length() for segment in shortcuts]
+                            path[s] = shortcuts[np.argmin(lengths)]
+                            for _ in range(step_size):
+                                del path[s+1]
+                            break  # restart while loop
+                    if shortcuts:
+                        break  # restart while loop
+                if not shortcuts:
+                    break  # exit while loop
+            paths.append(path)
+        return min(paths, key=len)
 
 
 def _tri_neighbors(tri_mesh: spatial.Delaunay, vertex_index: int) -> np.ndarray:
@@ -202,33 +235,34 @@ def _generate_poses(grid: Grid, pose: Pose, pose_: Pose) -> tuple:
     return pose.x + dx, pose.y + dy, yaw
 
 
-def _estimate_length(spline: Spline) -> float:
-    dx = np.diff([spline.x(t) for t in np.linspace(0, 1, 10)])
-    dy = np.diff([spline.y(t) for t in np.linspace(0, 1, 10)])
-    return np.sum(np.sqrt(dx**2 + dy**2))
-
-
 def _is_healthy(spline: Spline, curvature_limit: float = 10.0) -> bool:
     return np.abs(spline.max_curvature()) < curvature_limit
 
 
-def _find_terminal_segment(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPoseGroup],
-                           terminal_pose: Pose, first: bool) -> tuple[PathSegment, int, int]:
-    terminal_point = terminal_pose
-    group_distances = [g.point.distance(terminal_point) for g in pose_groups]
+@dataclass(slots=True, kw_only=True)
+class Passage:
+    segment: PathSegment
+    coordinate: tuple[int, int]
+    length: float
+
+
+def _find_grid_passages(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPoseGroup],
+                        pose: Pose, entering: bool) -> list[Passage]:
+    group_distances = [g.point.distance(pose) for g in pose_groups]
     group_indices = np.argsort(group_distances)
-    for g, group in zip(group_indices, np.array(pose_groups)[group_indices]):
-        best_result = None
-        best_length = np.inf
-        for p, pose in enumerate(group.poses):
-            for backward in [False, True]:
-                poses = (terminal_pose, pose) if first else (pose, terminal_pose)
+    results: list[Passage] = []
+    for backward in [False, True]:
+        for g, group in zip(group_indices, np.array(pose_groups)[group_indices][:3]):
+            for p, group_pose in enumerate(group.poses):
+                poses = (pose, group_pose) if entering else (group_pose, pose)
                 spline = Spline.from_poses(*poses, backward=backward)
                 if _is_healthy(spline) and not obstacle_map.test_spline(spline, backward):
-                    length = _estimate_length(spline)
-                    if length < best_length:
-                        best_length = length
-                        best_result = (PathSegment(spline=spline, backward=backward), g, p)
-        if best_result is not None:
-            return best_result
-    raise RuntimeError(f'could not find terminal segment for {"start" if first else "end"}')
+                    passage = Passage(
+                        segment=PathSegment(spline=spline, backward=backward),
+                        coordinate=(p, g),
+                        length=spline.estimated_length(),
+                    )
+                    results.append(passage)
+    if results:
+        return results
+    raise RuntimeError(f'could not find terminal segment for {"start" if entering else "end"}')

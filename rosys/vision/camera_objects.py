@@ -77,7 +77,7 @@ class CameraObjects(Group):
                 del self.textures[uid]
 
         z = 0
-        for image in reversed(sorted(newest_images, key=lambda i: i.time)):
+        for image in sorted(newest_images, key=lambda i: i.time):
             camera = self.calibrated_cameras.get(image.camera_id)
             if camera is None:
                 continue

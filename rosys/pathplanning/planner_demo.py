@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import importlib
+import sys
 import time
 
+import icecream
 import numpy as np
 import pylab as pl
 from nicegui import ui
@@ -13,6 +16,8 @@ from rosys.pathplanning.delaunay_planner import DelaunayPlanner
 from rosys.pathplanning.obstacle import Obstacle
 from rosys.pathplanning.planner_process import PlannerSearchCommand
 from rosys.pathplanning.robot_renderer import RobotRenderer
+
+icecream.install()
 
 seed = np.random.randint(0, 1000)
 seed = 0
@@ -29,6 +34,13 @@ cmd = PlannerSearchCommand(
     deadline=np.inf,
 )
 robot_outline = [(-0.5, -0.5), (0.5, -0.5), (0.75, 0), (0.5, 0.5), (-0.5, 0.5)]
+
+demo = sys.argv[1] if len(sys.argv) > 1 else ''
+if demo:
+    i = importlib.import_module(demo.rstrip('.py').replace('/', '.'))
+    cmd = i.cmd
+    robot_outline = i.robot_outline
+
 planner = DelaunayPlanner(robot_outline)
 
 
@@ -61,7 +73,9 @@ def run() -> None:
 
 with ui.row():
     plot = ui.plot(figsize=(8, 8))
-    ui.button('Re-run', on_click=run).props('icon=replay outline')
+    with ui.column():
+        ui.button('Re-run', on_click=run).props('icon=replay outline')
+        ui.label(demo)
 run()
 
 ui.run()
