@@ -9,7 +9,7 @@ import numpy as np
 from scipy import ndimage, spatial
 
 from ..driving import PathSegment
-from ..geometry import Point, Pose, Spline
+from ..geometry import Point, Pose, PoseStep, Spline
 from ..helpers import angle
 from .area import Area
 from .delaunay_pose_group import DelaunayPoseGroup
@@ -137,7 +137,8 @@ class DelaunayPlanner:
                 for length in [1, 1.5, 2]:
                     y_outline = [p[1] for p in self.robot_outline]
                     robot_length = max(y_outline) - min(y_outline)
-                    intermediate = start.transform(Point(x=robot_length * (-length if backward else length), y=0))
+                    step = PoseStep(linear=robot_length * (-length if backward else length), angular=0, time=0)
+                    intermediate = start + step
                     spline1 = Spline.from_poses(start, intermediate, backward=backward)
                     if not _is_healthy(spline1) or self.obstacle_map.test_spline(spline1, backward):
                         continue
