@@ -5,26 +5,22 @@ from io import StringIO
 
 import sh
 
-has_failures = False
 
-
-def fail(output, errcode):
-    global has_failures
-    print(f' failed with error code {errcode}: {output}', flush=True)
-    has_failures = True
-
-
-def check(path: str):
+def check(path: str, *, timeout: float = 15.0) -> bool:
     try:
         # kill process which occupies port 8080
         sh.fuser('-k', '8080/tcp')  # get "fuser" command with "apt install psutils" (it is not available on mac)
     except sh.ErrorReturnCode_1:
-        pass  # its ok to not find any process to kill
-    print(path, end='', flush=True)
+        pass  # it is ok to not find any process to kill
+    print(path, flush=True)
     buf = StringIO()
     script = sh.python3(path, _bg=True, _bg_exc=False, _out=buf, _err=buf)
-    time.sleep(12)
-    output = buf.getvalue()
+    deadline = time.time() + timeout
+    while time.time() < deadline:
+        time.sleep(0.1)
+        output = buf.getvalue()
+        if 'NiceGUI ready to go' in output:
+            break
 
     try:
         script.terminate()
@@ -33,32 +29,35 @@ def check(path: str):
         pass
 
     if 'Traceback' in output:
-        fail(output, 2)
-        return
+        print(f'  Error ("Traceback" found): {output}', flush=True)
+        return False
+
     if 'Error' in output:
-        fail(output, 3)
-        return
+        print(f'  Error ("Error" found): {output}', flush=True)
+        return False
+
     if 'NiceGUI ready to go' not in output:
-        fail(output, 4)
-        return
+        print(f'  Error (NiceGUI welcome message missing): {output}', flush=True)
+        return False
 
-    print(f' is ok', flush=True)
+    print('  Ok', flush=True)
+    return True
 
 
-if __name__ == '__main__':
-    check('../main.py')
-    check('../docs/src/scene_on_click.py')
-    check('../docs/src/scene_on_click_with_automation_controls.py')
-    check('../docs/src/geofence.py')
-    check('../docs/src/path_planning.py')
-    check('../docs/src/robot_shape.py')
-    check('../docs/src/show_captured_images.py')
-    check('../docs/src/remote_operation.py')
-    check('../docs/src/logging_config.py')
-    check('../docs/src/logging_to_file.py')
-    check('../examples/hello_bot/main.py')
-    check('../examples/obstacles/main.py')
-    check('../rosys/pathplanning/planner_demo.py')
+success = True
+success &= check('../main.py')
+success &= check('../docs/src/scene_on_click.py')
+success &= check('../docs/src/scene_on_click_with_automation_controls.py')
+success &= check('../docs/src/geofence.py')
+success &= check('../docs/src/path_planning.py')
+success &= check('../docs/src/robot_shape.py')
+success &= check('../docs/src/show_captured_images.py')
+success &= check('../docs/src/remote_operation.py')
+success &= check('../docs/src/logging_config.py')
+success &= check('../docs/src/logging_to_file.py')
+success &= check('../examples/hello_bot/main.py')
+success &= check('../examples/obstacles/main.py')
+success &= check('../rosys/pathplanning/planner_demo.py', timeout=30.0)
 
-    if has_failures:
-        sys.exit(1)
+if not success:
+    sys.exit(1)

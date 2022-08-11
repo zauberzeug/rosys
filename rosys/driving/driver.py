@@ -151,7 +151,7 @@ class Carrot:
     def offset_point(self) -> Point:
         return self.pose.transform(self.offset)
 
-    def move(self, hook: Point, distance: float = 1.0, move_threshold: float = 0.01):
+    def move(self, hook: Point, distance: float = 1.0, move_threshold: float = 0.01) -> bool:
         end_pose = self.spline.pose(1.0)
         end_point = end_pose.point
         end_yaw = end_pose.yaw
