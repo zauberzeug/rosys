@@ -21,7 +21,7 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry config experimental.new-installer false
 
 # Allow installing dev dependencies to run tests
-ARG INSTALL_DEV=false
+ARG INSTALL_DEV=true
 RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install -vvv --no-root ; else poetry install -vvv --no-root --no-dev ; fi"
 
 COPY LICENSE README.md rosys.code-workspace ./
