@@ -22,6 +22,7 @@ def create_obstacle(*, x: float, y: float, radius: float = 0.5) -> Obstacle:
 
 
 async def test_basic_path_planning(path_planner: PathPlanner) -> None:
+    await asyncio.sleep(1)
     await forward(1.0)
 
     goal = Pose(x=1.0, y=1.0)

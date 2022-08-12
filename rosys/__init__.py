@@ -4,7 +4,7 @@ import logging
 import sys
 import time as pytime
 from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Awaitable, Callable, Optional
 
 import numpy as np
 import psutil
@@ -78,11 +78,23 @@ async def sleep(seconds: float) -> None:
 
 
 def on_repeat(handler: Callable, interval: float) -> None:
-    repeat_handlers.append((handler, interval))
+    if tasks:  # rosys has already started
+        log.debug(f'starting loop "{handler.__qualname__}" with interval {interval:.3f}s')
+        tasks.append(create_task(_repeat_one_handler(handler, interval), name=handler.__qualname__))
+    else:
+        repeat_handlers.append((handler, interval))
 
 
 def on_startup(handler: Callable) -> None:
-    startup_handlers.append(handler)
+    if tasks:  # rosys has already started
+        try:
+            result = handler()
+            if isinstance(result, Awaitable):
+                tasks.append(create_task(result, name=handler.__qualname__))
+        except:
+            log.exception(f'error while starting handler "{handler.__qualname__}"')
+    else:
+        startup_handlers.append(handler)
 
 
 def on_shutdown(handler: Callable) -> None:
