@@ -32,6 +32,7 @@ async def test_registering_lambdas():
     assert numbers == [42]
 
 
+@pytest.mark.usefixtures('integration')
 async def test_fire_and_forget_with_emit():
 
     class TestActor:

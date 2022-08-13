@@ -3,6 +3,7 @@ import rosys
 from rosys.test import forward
 
 
+@pytest.mark.usefixtures('integration')
 async def test_time():
     assert rosys.time() == 0.0
 
@@ -19,6 +20,7 @@ async def test_time():
     assert rosys.uptime() == pytest.approx(5.0, abs=0.1)
 
 
+@pytest.mark.usefixtures('integration')
 async def test_sleep():
     assert rosys.time() == 0.0
     sleep = rosys.create_task(rosys.sleep(1.0))
