@@ -4,7 +4,7 @@ import logging
 import sys
 import time as pytime
 from dataclasses import dataclass
-from typing import Callable, Optional
+from typing import Awaitable, Callable, Optional
 
 import numpy as np
 import psutil
@@ -77,12 +77,32 @@ async def sleep(seconds: float) -> None:
             await asyncio.sleep(0)
 
 
+def _run_handler(handler: Callable) -> None:
+    try:
+        result = handler()
+        if isinstance(result, Awaitable):
+            tasks.append(create_task(result, name=handler.__qualname__))
+    except:
+        log.exception(f'error while starting handler "{handler.__qualname__}"')
+
+
+def _start_loop(handler: Callable, interval: float) -> None:
+    log.debug(f'starting loop "{handler.__qualname__}" with interval {interval:.3f}s')
+    tasks.append(create_task(_repeat_one_handler(handler, interval), name=handler.__qualname__))
+
+
 def on_repeat(handler: Callable, interval: float) -> None:
-    repeat_handlers.append((handler, interval))
+    if tasks:  # RoSys is already running
+        _start_loop(handler, interval)
+    else:
+        repeat_handlers.append((handler, interval))
 
 
 def on_startup(handler: Callable) -> None:
-    startup_handlers.append(handler)
+    if tasks:  # RoSys is already running
+        _run_handler(handler)
+    else:
+        startup_handlers.append(handler)
 
 
 def on_shutdown(handler: Callable) -> None:
@@ -96,18 +116,13 @@ async def startup() -> None:
     persistence.restore()
 
     for handler in startup_handlers:
-        try:
-            await invoke(handler)
-        except:
-            log.exception(f'error while starting handler "{handler.__qualname__}"')
-            continue
+        _run_handler(handler)
 
     for coroutine in event.startup_coroutines:
         await coroutine
 
     for handler, interval in repeat_handlers:
-        log.debug(f'starting loop "{handler.__qualname__}" with interval {interval:.3f}s')
-        tasks.append(create_task(_repeat_one_handler(handler, interval), name=handler.__qualname__))
+        _start_loop(handler, interval)
 
 
 async def _garbage_collection(mbyte_limit: float = 300) -> None:

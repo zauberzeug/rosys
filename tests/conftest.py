@@ -12,43 +12,43 @@ from rosys.test import helpers, log_configuration
 log_configuration.setup()
 
 
-@pytest.fixture(autouse=True)
-async def run_around_tests(odometer: Odometer, driver: Driver, automator: Automator) -> Generator:
+@pytest.fixture
+async def integration() -> Generator:
     rosys.reset_before_test()
-    helpers.odometer = odometer
-    helpers.driver = driver
-    helpers.automator = automator
     await rosys.startup()
     yield
     await rosys.shutdown()
     rosys.reset_after_test()
 
 
-@pytest.fixture(autouse=True)
-def odometer(wheels: Wheels) -> Odometer:
-    return Odometer(wheels)
+@pytest.fixture
+async def odometer(wheels: Wheels, integration: None) -> Odometer:
+    helpers.odometer = Odometer(wheels)
+    return helpers.odometer
 
 
-@pytest.fixture(autouse=True)
-def wheels() -> Wheels:
+@pytest.fixture
+async def wheels(integration: None) -> Wheels:
     return WheelsSimulation()
 
 
-@pytest.fixture(autouse=True)
-def driver(wheels: Wheels, odometer: Odometer) -> Driver:
-    return Driver(wheels, odometer)
+@pytest.fixture
+async def driver(wheels: Wheels, odometer: Odometer, integration: None) -> Driver:
+    helpers.driver = Driver(wheels, odometer)
+    return helpers.driver
 
 
-@pytest.fixture(autouse=True)
-def automator(wheels: Wheels) -> Automator:
-    return Automator(wheels, None)
+@pytest.fixture
+async def automator(wheels: Wheels, integration: None) -> Automator:
+    helpers.automator = Automator(wheels, None)
+    return helpers.automator
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def shape() -> Prism:
     return Prism.default_robot_shape()
 
 
-@pytest.fixture(autouse=True)
-def path_planner(shape: Prism) -> PathPlanner:
+@pytest.fixture
+async def path_planner(shape: Prism, integration: None) -> PathPlanner:
     return PathPlanner(shape)
