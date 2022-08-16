@@ -12,7 +12,7 @@ from rosys.test import helpers, log_configuration
 log_configuration.setup()
 
 
-@pytest.fixture(autouse=False)
+@pytest.fixture
 async def integration() -> Generator:
     rosys.reset_before_test()
     await rosys.startup()
@@ -21,34 +21,34 @@ async def integration() -> Generator:
     rosys.reset_after_test()
 
 
-@pytest.fixture(autouse=False)
+@pytest.fixture
 async def odometer(wheels: Wheels, integration: None) -> Odometer:
     helpers.odometer = Odometer(wheels)
     return helpers.odometer
 
 
-@pytest.fixture(autouse=False)
+@pytest.fixture
 async def wheels(integration: None) -> Wheels:
     return WheelsSimulation()
 
 
-@pytest.fixture(autouse=False)
+@pytest.fixture
 async def driver(wheels: Wheels, odometer: Odometer, integration: None) -> Driver:
     helpers.driver = Driver(wheels, odometer)
     return helpers.driver
 
 
-@pytest.fixture(autouse=False)
+@pytest.fixture
 async def automator(wheels: Wheels, integration: None) -> Automator:
     helpers.automator = Automator(wheels, None)
     return helpers.automator
 
 
-@pytest.fixture(autouse=False)
+@pytest.fixture
 def shape() -> Prism:
     return Prism.default_robot_shape()
 
 
-@pytest.fixture(autouse=False)
+@pytest.fixture
 async def path_planner(shape: Prism, integration: None) -> PathPlanner:
     return PathPlanner(shape)
