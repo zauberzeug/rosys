@@ -12,35 +12,29 @@ If you launch the program, your browser will open the url <http://0.0.0.0:8080/>
 
 ![Screenshot](getting_started_01.png){: style="width:60%"}
 
-## Explanations
+## Explanation
 
 ### Imports
 
-The [User Interface](architecture/user_interface.md) is built with [NiceGUI](https://nicegui.io).
-The imports must be stated separately to make it possible to run RoSys without it.
+The [user interface](#user_interface) is built with [NiceGUI](https://nicegui.io).
+The individual RoSys modules come in packages `driving`, `geometry`, `hardware` and others.
 
 ### Setup
 
-As you can read up in the ["Architecture" chapter](architecture/architecture_overview.md) RoSys provides a runtime to manage the actors which operate on the world.
-The command `rosys.ui.configure(ui, runtime)` connects the user interface with the runtime.
+In this example we create a `Steerer` which needs an `Odometer`.
+If `SerialCommunication` is possible, the odometer gets access "real" `Wheels`.
+Otherwise wheels are simulated.
+For visualization purposes we also need the approximate robot shape.
 
-### Keyboard Control
+### User Interface
 
-By calling `rosys.ui.keyboard_control()` you create a keyboard event listener which will steer the robot.
-There are also other possibilities of steering the robot like a [Joystick](architecture/user_interface.md#joystick) or [clicking in the 3d scene](architecture/user_interface.md#click-handler).
-
-### 3D Scene
-
-As it is common for groups of UI elements in NiceGUI, a 3d scene is created by using context through Python's `with` statement.
-Every command "inside" is applied to the created scene.
-Here a 3d representation of the robot is created (`rosys.ui.robot_object()`).
-Then the `ui.timer` ensures its position is updated every 50 ms.
-A `ui.label` is used afterwards to explain the keyboard interaction.
-Note: The label is on the same intendation level as the `ui.scene` object, not within.
-See [NiceGUI](https://nicegui.io) for a complete API reference.
+The user interface consists of keyboard control with access to the steerer as well as a 3D view of the scene.
+The latter only contains the `RobotObject` with the given shape.
+The robot pose is constantly updated from the odometer.
+See [NiceGUI](https://nicegui.io) for more details about its API.
 
 ### Start
 
-NiceGUI provides a `ui.run` command which launches the webserver and presents the interface as configured above.
-If you modify the code, an automatic reload is triggered.
+NiceGUI provides a `ui.run` command which launches the web server and opens the corresponding web application.
+If you modify the code, a reload is triggered automatically.
 This is very convenient, but can be deactivated by passing `reload=False`.

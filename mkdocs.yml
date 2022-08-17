@@ -4,23 +4,15 @@ nav:
   - About: "index.md"
   - installation.md
   - getting_started.md
-  - Architecture:
-      - Overview: "architecture/architecture_overview.md"
-      - architecture/world.md
-      - architecture/actors.md
-      - architecture/events.md
-      - architecture/automations.md
-      - architecture/user_interface.md
-  - Features:
-      - features/manual_steering.md
-      - features/3d_scene.md
-      - features/automation_controls.md
-      - features/cameras.md
-      - features/object_detection.md
-      - features/navigation.md
-  - safety.md
-  - troubleshooting.md
+  - Examples:
+      - examples/manual_steering.md
+      - examples/3d_scene.md
+      - examples/automation_controls.md
+      - examples/cameras.md
+      - examples/object_detection.md
+      - examples/navigation.md
   - development.md
+  - troubleshooting.md
   - Module Reference: reference/
 repo_url: https://github.com/zauberzeug/rosys
 edit_uri: edit/main/docs/
@@ -66,3 +58,4 @@ plugins:
             separate_signature: true
       watch:
         - rosys
+        - README.md
