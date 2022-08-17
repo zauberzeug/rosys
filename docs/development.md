@@ -13,7 +13,7 @@ In the following examples we use Python's logging `dictConfig` for configuration
 To only print RoSys messages at the info level to the console we can use a configuration like this:
 
 ```python hl_lines="32-36"
-{!src/logging_config.py !}
+{!src/dev_log_config.py !}
 ```
 
 As you move the joystick, `rosys.steerer` messages will appear on the console:
@@ -46,13 +46,13 @@ Sometimes it is helpful to write intensive logging into a file and only show som
 For this you can add a file `handler`:
 
 ```python hl_lines="8-15"
-{!src/logging_to_file.py [ln:22-37] !}
+{!src/dev_log_file.py [ln:22-37] !}
 ```
 
 Then you can decide for each logger which handlers should be used:
 
 ```python hl_lines="3 8 13 18"
-{!src/logging_to_file.py [ln:38-59] !}
+{!src/dev_log_file.py [ln:38-59] !}
 ```
 
 !!! note
@@ -67,14 +67,14 @@ It is quite useful to see from which file and line number a log entry was trigge
 To keep the log lines from getting too long, you can create a log filter which computes the relative path:
 
 ```python hl_lines="8 14"
-{!src/log_formatting.py [ln:10-28] !}
+{!src/dev_log_formatting.py [ln:10-28] !}
 ```
 
 You need to register the filter and apply it in the handler.
 Then you can change the format for the formatter:
 
 ```python hl_lines="2-4 9 17 22"
-{!src/log_formatting.py [ln:39-64] !}
+{!src/dev_log_formatting.py [ln:39-64] !}
 ```
 
 Log output then looks like this:
@@ -88,7 +88,7 @@ Log output then looks like this:
 You can add a `profile` decorator to expensive functions and add a profiler button to your UI:
 
 ```python hl_lines="7 16"
-{!src/profiling.py !}
+{!src/dev_profiling.py !}
 ```
 
 When the button is pressed, the profiler [yappi](https://github.com/sumerc/yappi) will start recording data.

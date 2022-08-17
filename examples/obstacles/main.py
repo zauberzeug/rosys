@@ -88,4 +88,4 @@ with ui.card():
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
 # start
-ui.run(title='obstacles', port=8080)
+ui.run(title='obstacles')

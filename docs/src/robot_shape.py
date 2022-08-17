@@ -16,4 +16,4 @@ with ui.scene():
     RobotObject(shape, odometer, debug=True)
 
 # start
-ui.run(port=8080)
+ui.run()
