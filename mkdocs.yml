@@ -7,11 +7,9 @@ nav:
   - Examples:
       - examples/steering.md # NOTE: shown when clicking on "Examples" folder
       - examples/steering.md
-      - examples/3d_scene.md
-      - examples/automation_controls.md
-      - examples/cameras.md
-      - examples/object_detection.md
+      - examples/click-and-drive.md
       - examples/navigation.md
+      - examples/cameras.md
   - development.md
   - troubleshooting.md
   - Module Reference: reference/

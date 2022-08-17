@@ -37,13 +37,10 @@ logging.config.dictConfig({
     },
 })
 
-# setup
 wheels = WheelsSimulation()
 steerer = Steerer(wheels)
 odometer = Odometer(wheels)
 
-# ui
 Joystick(steerer)
 
-# start
 ui.run(title='RoSys')

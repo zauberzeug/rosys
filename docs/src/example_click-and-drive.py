@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 from nicegui import ui
-from rosys.automation import Automator
+from rosys.automation import AutomationControls, Automator
 from rosys.driving import Driver, Odometer, RobotObject
 from rosys.geometry import Point, Prism
 from rosys.hardware import WheelsSimulation
 
-# setup
 shape = Prism.default_robot_shape()
 wheels = WheelsSimulation()
 odometer = Odometer(wheels)
@@ -19,10 +18,11 @@ async def handle_click(msg):
             target = Point(x=hit.point.x, y=hit.point.y)
             automator.start(driver.drive_to(target))
 
-# ui
 with ui.scene(on_click=handle_click):
     RobotObject(shape, odometer, debug=True)
 ui.label('click into the scene to drive the robot')
+with ui.row():
+    AutomationControls(automator)
+ui.label('you can also pause/resume or stop the running automation')
 
-# start
 ui.run(title='RoSys')

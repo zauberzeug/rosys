@@ -1,3 +1,0 @@
-# Object Detection
-
-tbd.

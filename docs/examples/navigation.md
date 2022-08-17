@@ -1,8 +1,15 @@
 # Navigation
 
-## Path Following
+This example is similar to [Click-and-drive](click-and-drive.md) but includes a `PathPlanner` to find a path around an obstacle.
 
-When following a path, a "carrot" is dragged along a spline and the robot follows it like a donkey. Additionally, there is a virtual "hook" attached to the robot, which is pulled towards the carrot.
+```python
+{!src/example_navigation.py !}
+```
+
+### Geometry
+
+When following a path, a "carrot" is dragged along a spline and the robot follows it like a donkey.
+Additionally, there is a virtual "hook" attached to the robot, which is pulled towards the carrot.
 
 There are three parameters:
 
