@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import glob
+import os.path
 import sys
 import time
 from io import StringIO
@@ -45,20 +47,10 @@ def check(path: str, *, timeout: float = 15.0) -> bool:
 
 
 if __name__ == '__main__':
-    success = True
-    success &= check('../main.py')
-    success &= check('../docs/src/scene_on_click.py')
-    success &= check('../docs/src/scene_on_click_with_automation_controls.py')
-    success &= check('../docs/src/geofence.py')
-    success &= check('../docs/src/path_planning.py')
-    success &= check('../docs/src/robot_shape.py')
-    success &= check('../docs/src/show_captured_images.py')
-    success &= check('../docs/src/remote_operation.py')
-    success &= check('../docs/src/logging_config.py')
-    success &= check('../docs/src/logging_to_file.py')
-    success &= check('../examples/hello_bot/main.py')
-    success &= check('../examples/obstacles/main.py')
-    success &= check('../rosys/pathplanning/planner_demo.py', timeout=30.0)
+    success = check('../main.py')
+
+    for filepath in glob.glob(f'../docs/src/*.py'):
+        success &= check(filepath)
 
     if not success:
         sys.exit(1)
