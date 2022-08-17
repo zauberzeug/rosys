@@ -13,6 +13,12 @@ from .odometer import Odometer
 
 
 class RobotObject(Object3D):
+    '''The RobotObject UI element displays the robot with its given shape in a 3D scene.
+
+    The current pose is taken from a given odometer.
+    An optional driver module shows debugging information about a current path-following process.
+    The `debug` argument can be set to show a wireframe instead of a closed polygon.
+    '''
 
     def __init__(self, shape: Prism, odometer: Odometer, driver: Optional[Driver] = None, *,
                  debug: bool = False) -> None:

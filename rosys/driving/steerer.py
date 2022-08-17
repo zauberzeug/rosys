@@ -14,6 +14,12 @@ class State(Enum):
 
 
 class Steerer:
+    '''The steerer module translates x-y information (e.g. from a joystick) to linear/angular velocities sent to the robot.
+
+    The wheels module can be any drivable hardware representation.
+    Changing the steering state emits events that can be used to react to manual user interaction.
+    '''
+
     STEERING_STARTED = Event()
     '''steering has started'''
 

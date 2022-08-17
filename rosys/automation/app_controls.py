@@ -33,6 +33,13 @@ class AppButton:
 
 
 class AppControls:
+    '''The AppControls module enables the connection with a mobile-app-based user interface.
+
+    It uses a given communication object to communicate with [Lizard](https://lizard.dev/) running on a microcontroller
+    and in turn being connected to a mobile app via Bluetooth Low Energy.
+    It displays buttons to control a given automator.
+    '''
+
     APP_CONNECTED = Event()
     '''an app connected via bluetooth (used to refresh information or similar)'''
 

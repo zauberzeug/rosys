@@ -4,10 +4,15 @@ from typing import Any, Callable, Coroutine, Generator, Optional
 
 
 class Automation:
+    '''An automation wraps a coroutine and allows pausing and resuming it.
+
+    Optional exception and completion handlers are called if provided.
+    '''
+
     def __init__(self,
                  coro: Coroutine,
                  exception_handler: Optional[Callable] = None,
-                 on_complete: Optional[Callable] = None):
+                 on_complete: Optional[Callable] = None) -> None:
         self.log = logging.getLogger('rosys.automation')
         self.coro = coro
         self.exception_handler = exception_handler

@@ -37,6 +37,7 @@ def has_internet() -> bool:
 
 
 class WifiButton(Button):
+    '''The WiFi button indicates the current connectivity state and allows setting a new WiFi connection.'''
 
     def __init__(self) -> None:
         with ui.dialog() as self.dialog, ui.card():

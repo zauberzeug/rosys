@@ -11,6 +11,13 @@ from .automation import Automation
 
 
 class Automator:
+    '''An automator allows running automations, i.e. coroutines that can be paused and resumed.
+
+    A default automation can be specified, so that the automator can later be started (e.g. via an automation controls UI element) without passing an automation.
+    Optional wheels (or any stoppable hardware representation) will be stopped when an automation pauses or stops.
+    Manually steering the robot using an optional steerer pauses a currently running automation.
+    '''
+
     AUTOMATION_STARTED = Event()
     '''an automation has been started'''
 

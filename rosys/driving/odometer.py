@@ -15,6 +15,14 @@ class VelocityProvider(Protocol):
 
 
 class Odometer:
+    '''An odometer collects velocity information from a given wheels module (or any velocity-providing hardware representation).
+
+    It can also handle "detections", i.e. absolute pose information with timestamps.
+    Given the history of previously received velocities, it can update its prediction of the current pose.
+
+    The `get_pose` method provides robot poses from the within the last 10 seconds.
+    '''
+
     ROBOT_MOVED = Event()
     '''a robot movement is detected'''
 

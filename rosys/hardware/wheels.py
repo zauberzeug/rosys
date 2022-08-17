@@ -7,6 +7,11 @@ from ..event import Event
 
 
 class Wheels(abc.ABC):
+    '''The wheels module is a simple example for a representation of real or similated robot hareware.
+
+    Wheels can be moved using the `drive` methods and provide measured velocities as an event.
+    '''
+
     VELOCITY_MEASURED = Event()
     '''new velocity measurements are available for processing (argument: list of velocities)'''
 

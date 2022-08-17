@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 import glob
-import os.path
 import sys
 import time
 from io import StringIO

@@ -9,6 +9,11 @@ from .steerer import Steerer
 
 
 class KeyboardControl:
+    '''The KeyboardControl UI element allows controlling a given steerer via keyboard events.
+
+    Hold shift while pressing an arrow key to steer the robot.
+    You can change the speed with the number keys 1 to 9 and the initial speed via the `default_speed` argument.
+    '''
 
     def __init__(self, steerer: Steerer, *, default_speed: float = 2.0) -> None:
         self.steerer = steerer
