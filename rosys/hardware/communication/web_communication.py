@@ -7,7 +7,7 @@ from .communication import Communication
 
 
 class WebCommunication(Communication):
-    '''Remote connection to the Robot Brains Esp.
+    '''Remote connection to the Robot Brain's ESP.
 
     This makes it possible to keep developing on your fast computer
     while communicating with the hardware components connected to a physical Robot Brain.

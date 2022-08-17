@@ -21,6 +21,7 @@ nav:
   - safety.md
   - troubleshooting.md
   - development.md
+  - Module Reference: reference/
 repo_url: https://github.com/zauberzeug/rosys
 edit_uri: edit/main/docs/
 theme:
@@ -44,3 +45,24 @@ markdown_extensions:
   - pymdownx.snippets
   - attr_list
   - footnotes
+plugins:
+  - search
+  - gen-files:
+      scripts:
+        - docs/generate_reference.py
+  - literate-nav:
+      nav_file: SUMMARY.md
+  - section-index
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            show_root_heading: true
+            show_root_full_path: false
+            show_source: false
+            show_signature_annotations: true
+            merge_init_into_class: true
+            separate_signature: true
+      watch:
+        - rosys

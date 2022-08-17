@@ -52,9 +52,13 @@ def cpu() -> Generator[None, None, None]:
 
 async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool = False) -> str:
     '''executes a shell command
-    command: a sequence of program arguments as subprocess.Popen requires or full string
-    shell: whether a subshell should be launched (default is False, for speed, use True if you need file globbing or other features)
-    returns: stdout
+
+    Args:
+        command: a sequence of program arguments as subprocess.Popen requires or full string
+        shell: whether a subshell should be launched (default is `False`, for speed, use `True` if you need file globbing or other features)
+
+    Returns:
+        stdout
     '''
     def popen() -> str:
         if shell:  # convert to string

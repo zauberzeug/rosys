@@ -1,4 +1,4 @@
-'''source: https://quantlane.com/blog/ensure-asyncio-task-exceptions-get-logged/'''
+'''source: <https://quantlane.com/blog/ensure-asyncio-task-exceptions-get-logged/>'''
 
 import asyncio
 import functools

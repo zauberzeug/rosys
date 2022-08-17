@@ -8,6 +8,10 @@
   --md-code-hl-color: #d8e5fa;
 }
 
+h2.doc-heading {
+  border-bottom: 1pt solid lightgray;
+}
+
 img {
   width: 70%;
   display: block;
