@@ -102,7 +102,7 @@ jobs:
         with:
           python-version: "3.x"
       - name: Install dependencies
-        run: python3 -m pip install mkdocs mkdocs-material mdx-include mkdocs-pymdownx-material-extras mdx-footnotes2
+        run: python3 -m pip install -r mkdocs_requirements.txt
       - name: Build docs
         run: mkdocs build
       - name: Deploy gh-pages
