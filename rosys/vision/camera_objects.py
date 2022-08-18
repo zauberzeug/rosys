@@ -11,6 +11,11 @@ from .camera_provider import CameraProvider
 
 
 class CameraObjects(Group):
+    '''This module provides a UI element for displaying cameras in a 3D scene.
+
+    It requires a camera provider as a source of cameras as well as a camera projector to show the current images projected on the ground plane.
+    The `px_per_m` argument can be used to scale the camera frustums.
+    '''
 
     def __init__(self, camera_provider: CameraProvider, camera_projector: CameraProjector, *, px_per_m: float = 10000) -> None:
         super().__init__()

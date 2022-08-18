@@ -21,7 +21,6 @@ SCAN_INTERVAL = 10
 
 @dataclass(slots=True, kw_only=True)
 class Device:
-    '''device-specific infos are kept separately (world should not be aware of them)'''
     uid: str
     video_id: int
     capture: Optional[Any] = None  # cv2.VideoCapture device
@@ -47,6 +46,11 @@ def process_image(data: bytes, rotation: ImageRotation, crop: Rectangle = None) 
 
 
 class UsbCameraProviderHardware(CameraProvider):
+    '''This module collects and provides real USB cameras.
+
+    Camera devices are discovered through video4linux (v4l) and accessed with openCV.
+    Therefore the program v4l2ctl and openCV (including python bindings) must be available.
+    '''
 
     def __init__(self) -> None:
         super().__init__()

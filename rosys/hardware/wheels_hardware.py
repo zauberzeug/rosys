@@ -6,6 +6,11 @@ from .wheels import Wheels
 
 
 class WheelsHardware(Wheels):
+    '''This module implements wheels hardware.
+
+    Drive and stop commands are forwarded to a given Robot Brain.
+    Velocities are read and emitted regularly.
+    '''
 
     def __init__(self, robot_brain: RobotBrain) -> None:
         super().__init__()

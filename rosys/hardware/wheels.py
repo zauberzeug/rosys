@@ -7,7 +7,7 @@ from ..event import Event
 
 
 class Wheels(abc.ABC):
-    '''The wheels module is a simple example for a representation of real or similated robot hareware.
+    '''The wheels module is a simple example for a representation of real or simulated robot hardware.
 
     Wheels can be moved using the `drive` methods and provide measured velocities as an event.
     '''

@@ -7,6 +7,12 @@ from .communication import Communication
 
 
 class RobotBrain:
+    '''This module manages the communication with a [Zauberzeug Robot Brain](https://zauberzeug.com/robot-brain.html).
+
+    It expects a communication object, which is used for the actual read and write operations.
+    Besides providing some basic methods like configuring or restarting the microcontroller, it augments and verifies checksums for each message.
+    '''
+
     LINE_RECEIVED = Event()
     '''a line has been received from the microcontroller (argument: line as string)'''
 

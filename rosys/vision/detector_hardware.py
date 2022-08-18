@@ -14,6 +14,10 @@ from .uploads import Uploads
 
 
 class DetectorHardware(Detector):
+    '''This detector communicates with a [YOLO detector](https://hub.docker.com/r/zauberzeug/yolov5-detector) via Socket.IO.
+
+    It automatically connects and reconnects, submits and receives detections and sends images that should be uploaded to the [Zauberzeug Learning Loop](https://zauberzeug.com/learning-loop.html).
+    '''
 
     def __init__(self, *, port: int = 8004) -> None:
         self.log = logging.getLogger('rosys.detector')

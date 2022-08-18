@@ -9,6 +9,11 @@ from .image import Image
 
 
 class CameraProvider(abc.ABC):
+    '''A camera provider holds a dictionary of cameras and manages additions and removals.
+
+    The camera dictionary should not be modified directly but by using the camera provider's methods.
+    This way respective events are emitted and consistency can be taken care of.
+    '''
 
     CAMERA_ADDED = Event()
     '''a new camera has been added (argument: camera)'''

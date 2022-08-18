@@ -7,6 +7,11 @@ from .wheels import Wheels
 
 
 class WheelsSimulation(Wheels):
+    '''This module simulates two wheels.
+
+    Drive and stop commands impact internal velocities (linear and angular).
+    A simulated pose is regularly updated with these velocities, while the velocities are emitted as an event.
+    '''
 
     def __init__(self) -> None:
         super().__init__()

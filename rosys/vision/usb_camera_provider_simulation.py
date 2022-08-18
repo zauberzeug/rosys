@@ -13,6 +13,10 @@ from .usb_camera import UsbCamera
 
 
 class UsbCameraProviderSimulation(CameraProvider):
+    '''This module collects and simulates USB cameras and generates synthetic images.
+
+    In the current implementation the images only contain the camera ID and the current time.
+    '''
 
     def __init__(self) -> None:
         super().__init__()

@@ -16,6 +16,11 @@ from .planner_process import (PlannerCommand, PlannerGrowMapCommand, PlannerObst
 
 
 class PathPlanner:
+    '''This module runs a path planning algorithm in a separate process.
+
+    If given, the algorithm respects the given robot shape as well as a dictionary of accessible areas and a dictionary of obstacles, both of which a backed up and restored automatically.
+    The path planner can search paths, check if a spline interferes with obstacles and get the distance of a pose to any obstacle.
+    '''
 
     def __init__(self, robot_shape: Prism) -> None:
         self.log = logging.getLogger('rosys.path_planner')

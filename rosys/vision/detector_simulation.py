@@ -25,6 +25,13 @@ class SimulatedObject:
 
 
 class DetectorSimulation(Detector):
+    '''This detector simulates object detection.
+
+    It requires a camera provider in order to check visibility using the cameras' calibrations.
+    Individual camera IDs can be added to a set of `blocked_cameras` to simulate occlusions during pytests.
+    A list of `simulated_objects` can be filled to define what can be detected.
+    An optional `noise` parameter controls the spatial accuracy in pixels.
+    '''
 
     def __init__(self, camera_provider: CameraProvider, *, noise: float = 1.0) -> None:
         self.camera_provider = camera_provider

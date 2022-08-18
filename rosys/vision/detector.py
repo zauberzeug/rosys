@@ -22,8 +22,13 @@ class Autoupload(Enum, init='value __doc__'):
 
 
 class Detector(abc.ABC):
+    '''A detector allows detecting objects in images.
+
+    It also holds an upload queue for sending images with uncertain results to an active learning infrastructure like the [Zauberzeug Learning Loop](https://zauberzeug.com/learning-loop.html).
+    '''
+
     NEW_DETECTIONS = Event()
-    'detection on an image is completed (argument: image)'
+    '''detection on an image is completed (argument: image)'''
 
     @abc.abstractmethod
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Optional[Detections]:

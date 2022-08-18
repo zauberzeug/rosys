@@ -10,19 +10,24 @@ from .communication import Communication
 
 
 class SerialCommunication(Communication):
+    '''This module implements a communication via a serial device with a given baud rate.
+
+    It contains a list of search paths for finding the serial device.
+    '''
+
     search_paths: list[str] = [
         '/dev/tty.SLAB_USBtoUART',
         '/dev/ttyTHS1',
         '/dev/ttyUSB0',
     ]
 
-    def __init__(self, baudrate: int = 115200) -> None:
+    def __init__(self, baud_rate: int = 115200) -> None:
         super().__init__()
         self.device_path = self.get_device_path()
         if self.device_path is None:
             raise Exception('No serial port found')
-        self.log.debug(f'connecting serial on {self.device_path} with baudrate {baudrate}')
-        self.serial = serial.Serial(self.device_path, baudrate)
+        self.log.debug(f'connecting serial on {self.device_path} with baud rate {baud_rate}')
+        self.serial = serial.Serial(self.device_path, baud_rate)
         self.buffer = ''
         self.log_io: bool = False
 

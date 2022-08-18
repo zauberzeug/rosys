@@ -20,9 +20,7 @@ def shrink(factor: int, array: np.ndarray) -> bytes:
 
 
 class CameraServer:
-    '''
-    A camera server creates an HTTP route to access images of a given camera provider.
-    '''
+    '''A camera server creates an HTTP route to access images of a given camera provider.'''
 
     def __init__(self, camera_module: CameraProvider) -> None:
         self.log = logging.getLogger('rosys.camera_server')
