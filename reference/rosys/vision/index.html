@@ -1,0 +1,1408 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://rosys.io/reference/rosys/vision/">
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.0">
+    
+    
+      
+        <title>vision - RoSys</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.69437709.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.cbb835fc.min.css">
+        
+      
+      
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Source Sans Pro";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+  
+    
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#rosys.vision.CameraObjects" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="RoSys" class="md-header__button md-logo" aria-label="RoSys" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            RoSys
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              vision
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/zauberzeug/rosys" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="RoSys" class="md-nav__button md-logo" aria-label="RoSys" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    RoSys
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/zauberzeug/rosys" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.1.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        About
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../installation/" class="md-nav__link">
+        Installation
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../getting_started/" class="md-nav__link">
+        Getting Started
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+      
+      
+      
+      
+        
+        
+        <div class="md-nav__link md-nav__link--index ">
+          <a href="../../../examples/steering/">Examples</a>
+          
+            <label for="__nav_4">
+              <span class="md-nav__icon md-icon"></span>
+            </label>
+          
+        </div>
+      
+      <nav class="md-nav" aria-label="Examples" data-md-level="1">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Examples
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/steering/" class="md-nav__link">
+        Steering
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/click-and-drive/" class="md-nav__link">
+        Click-and-drive
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/navigation/" class="md-nav__link">
+        Navigation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../examples/cameras/" class="md-nav__link">
+        Cameras
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../development/" class="md-nav__link">
+        Development
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../troubleshooting/" class="md-nav__link">
+        Troubleshooting
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+      
+      
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7" type="checkbox" id="__nav_7" checked>
+      
+      
+      
+      
+        <label class="md-nav__link" for="__nav_7">
+          Module Reference
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" aria-label="Module Reference" data-md-level="1">
+        <label class="md-nav__title" for="__nav_7">
+          <span class="md-nav__icon md-icon"></span>
+          Module Reference
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../automation/" class="md-nav__link">
+        automation
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../debugging/" class="md-nav__link">
+        debugging
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../driving/" class="md-nav__link">
+        driving
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hardware/" class="md-nav__link">
+        hardware
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pathplanning/" class="md-nav__link">
+        pathplanning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          vision
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        vision
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.CameraObjects" class="md-nav__link">
+    CameraObjects
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.CameraProjector" class="md-nav__link">
+    CameraProjector
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.CameraProvider" class="md-nav__link">
+    CameraProvider
+  </a>
+  
+    <nav class="md-nav" aria-label="CameraProvider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.camera_provider.CameraProvider.CAMERA_ADDED" class="md-nav__link">
+    CAMERA_ADDED
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.camera_provider.CameraProvider.CAMERA_REMOVED" class="md-nav__link">
+    CAMERA_REMOVED
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.camera_provider.CameraProvider.NEW_IMAGE" class="md-nav__link">
+    NEW_IMAGE
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.CameraServer" class="md-nav__link">
+    CameraServer
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.Detector" class="md-nav__link">
+    Detector
+  </a>
+  
+    <nav class="md-nav" aria-label="Detector">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.detector.Detector.NEW_DETECTIONS" class="md-nav__link">
+    NEW_DETECTIONS
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.DetectorHardware" class="md-nav__link">
+    DetectorHardware
+  </a>
+  
+    <nav class="md-nav" aria-label="DetectorHardware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.detector_hardware.DetectorHardware.detect" class="md-nav__link">
+    detect()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.DetectorSimulation" class="md-nav__link">
+    DetectorSimulation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.MultiCameraProvider" class="md-nav__link">
+    MultiCameraProvider
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.UsbCameraProviderHardware" class="md-nav__link">
+    UsbCameraProviderHardware
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.UsbCameraProviderSimulation" class="md-nav__link">
+    UsbCameraProviderSimulation
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.CameraObjects" class="md-nav__link">
+    CameraObjects
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.CameraProjector" class="md-nav__link">
+    CameraProjector
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.CameraProvider" class="md-nav__link">
+    CameraProvider
+  </a>
+  
+    <nav class="md-nav" aria-label="CameraProvider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.camera_provider.CameraProvider.CAMERA_ADDED" class="md-nav__link">
+    CAMERA_ADDED
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.camera_provider.CameraProvider.CAMERA_REMOVED" class="md-nav__link">
+    CAMERA_REMOVED
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.camera_provider.CameraProvider.NEW_IMAGE" class="md-nav__link">
+    NEW_IMAGE
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.CameraServer" class="md-nav__link">
+    CameraServer
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.Detector" class="md-nav__link">
+    Detector
+  </a>
+  
+    <nav class="md-nav" aria-label="Detector">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.detector.Detector.NEW_DETECTIONS" class="md-nav__link">
+    NEW_DETECTIONS
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.DetectorHardware" class="md-nav__link">
+    DetectorHardware
+  </a>
+  
+    <nav class="md-nav" aria-label="DetectorHardware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.detector_hardware.DetectorHardware.detect" class="md-nav__link">
+    detect()
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.DetectorSimulation" class="md-nav__link">
+    DetectorSimulation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.MultiCameraProvider" class="md-nav__link">
+    MultiCameraProvider
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.UsbCameraProviderHardware" class="md-nav__link">
+    UsbCameraProviderHardware
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.UsbCameraProviderSimulation" class="md-nav__link">
+    UsbCameraProviderSimulation
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          <div class="md-content" data-md-component="content">
+            <article class="md-content__inner md-typeset">
+              
+                
+
+
+  <h1>vision</h1>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.CameraObjects" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">CameraObjects</span>
+
+
+<a href="#rosys.vision.CameraObjects" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">CameraObjects</span><span class="p">(</span><span class="n">camera_provider</span><span class="p">:</span> <span class="n">CameraProvider</span><span class="p">,</span> <span class="n">camera_projector</span><span class="p">:</span> <span class="n">CameraProjector</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">px_per_m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><span title="nicegui.elements.scene_objects.Group">Group</span></code></p>
+
+  
+      <p>This module provides a UI element for displaying cameras in a 3D scene.</p>
+<p>It requires a camera provider as a source of cameras as well as a camera projector to show the current images projected on the ground plane.
+The <code>px_per_m</code> argument can be used to scale the camera frustums.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.CameraProjector" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">CameraProjector</span>
+
+
+<a href="#rosys.vision.CameraProjector" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">CameraProjector</span><span class="p">(</span><span class="n">camera_provider</span><span class="p">:</span> <span class="n">CameraProvider</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+
+  
+      <p>The camera projector computes a grid of projected image points on the ground plane.</p>
+<p>It is mainly used for visualization purposes.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.CameraProvider" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">CameraProvider</span>
+
+
+<a href="#rosys.vision.CameraProvider" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code>abc.<span title="abc.ABC">ABC</span></code></p>
+
+  
+      <p>A camera provider holds a dictionary of cameras and manages additions and removals.</p>
+<p>The camera dictionary should not be modified directly but by using the camera provider's methods.
+This way respective events are emitted and consistency can be taken care of.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.vision.camera_provider.CameraProvider.CAMERA_ADDED" class="doc doc-heading">
+        <span class="doc doc-object-name doc-attribute-name">CAMERA_ADDED</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+  </span>
+
+<a href="#rosys.vision.camera_provider.CameraProvider.CAMERA_ADDED" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">CAMERA_ADDED</span> <span class="o">=</span> <span class="n">Event</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>a new camera has been added (argument: camera)</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.vision.camera_provider.CameraProvider.CAMERA_REMOVED" class="doc doc-heading">
+        <span class="doc doc-object-name doc-attribute-name">CAMERA_REMOVED</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+  </span>
+
+<a href="#rosys.vision.camera_provider.CameraProvider.CAMERA_REMOVED" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">CAMERA_REMOVED</span> <span class="o">=</span> <span class="n">Event</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>a camera has been removed (argument: camera id)</p>
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.vision.camera_provider.CameraProvider.NEW_IMAGE" class="doc doc-heading">
+        <span class="doc doc-object-name doc-attribute-name">NEW_IMAGE</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+  </span>
+
+<a href="#rosys.vision.camera_provider.CameraProvider.NEW_IMAGE" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">NEW_IMAGE</span> <span class="o">=</span> <span class="n">Event</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>an new image is available (argument: image)</p>
+  </div>
+
+</div>
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.CameraServer" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">CameraServer</span>
+
+
+<a href="#rosys.vision.CameraServer" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">CameraServer</span><span class="p">(</span><span class="n">camera_module</span><span class="p">:</span> <span class="n">CameraProvider</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+
+  
+      <p>A camera server creates an HTTP route to access images of a given camera provider.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.Detector" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">Detector</span>
+
+
+<a href="#rosys.vision.Detector" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code>abc.<span title="abc.ABC">ABC</span></code></p>
+
+  
+      <p>A detector allows detecting objects in images.</p>
+<p>It also holds an upload queue for sending images with uncertain results to an active learning infrastructure like the <a href="https://zauberzeug.com/learning-loop.html">Zauberzeug Learning Loop</a>.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.vision.detector.Detector.NEW_DETECTIONS" class="doc doc-heading">
+        <span class="doc doc-object-name doc-attribute-name">NEW_DETECTIONS</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+  </span>
+
+<a href="#rosys.vision.detector.Detector.NEW_DETECTIONS" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">NEW_DETECTIONS</span> <span class="o">=</span> <span class="n">Event</span><span class="p">()</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>detection on an image is completed (argument: image)</p>
+  </div>
+
+</div>
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.DetectorHardware" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">DetectorHardware</span>
+
+
+<a href="#rosys.vision.DetectorHardware" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">DetectorHardware</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8004</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.detector.Detector" href="#rosys.vision.Detector">Detector</a></code></p>
+
+  
+      <p>This detector communicates with a <a href="https://hub.docker.com/r/zauberzeug/yolov5-detector">YOLO detector</a> via Socket.IO.</p>
+<p>It automatically connects and reconnects, submits and receives detections and sends images that should be uploaded to the <a href="https://zauberzeug.com/learning-loop.html">Zauberzeug Learning Loop</a>.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h3 id="rosys.vision.detector_hardware.DetectorHardware.detect" class="doc doc-heading">
+        <span class="doc doc-object-name doc-function-name">detect</span>
+
+  
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.vision.detector_hardware.DetectorHardware.detect" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">detect</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="p">,</span> <span class="n">autoupload</span><span class="p">:</span> <span class="n">Autoupload</span> <span class="o">=</span> <span class="n">Autoupload</span><span class="o">.</span><span class="n">FILTERED</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+  
+      <p>Runs detections on the image. Afterwards the <code>image.detections</code> property is filled.</p>
+
+  </div>
+
+</div>
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.DetectorSimulation" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">DetectorSimulation</span>
+
+
+<a href="#rosys.vision.DetectorSimulation" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">DetectorSimulation</span><span class="p">(</span><span class="n">camera_provider</span><span class="p">:</span> <span class="n">CameraProvider</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">noise</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.detector.Detector" href="#rosys.vision.Detector">Detector</a></code></p>
+
+  
+      <p>This detector simulates object detection.</p>
+<p>It requires a camera provider in order to check visibility using the cameras' calibrations.
+Individual camera IDs can be added to a set of <code>blocked_cameras</code> to simulate occlusions during pytests.
+A list of <code>simulated_objects</code> can be filled to define what can be detected.
+An optional <code>noise</code> parameter controls the spatial accuracy in pixels.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.MultiCameraProvider" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">MultiCameraProvider</span>
+
+
+<a href="#rosys.vision.MultiCameraProvider" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">MultiCameraProvider</span><span class="p">(</span><span class="o">*</span><span class="n">camera_providers</span><span class="p">:</span> <span class="n">CameraProvider</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a></code></p>
+
+  
+      <p>A multi-camera provider combines multiple camera providers into one.</p>
+<p>This is useful if another module requires a single camera provider but the robot has multiple camera sources like USB and WiFi cameras.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.UsbCameraProviderHardware" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">UsbCameraProviderHardware</span>
+
+
+<a href="#rosys.vision.UsbCameraProviderHardware" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">UsbCameraProviderHardware</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a></code></p>
+
+  
+      <p>This module collects and provides real USB cameras.</p>
+<p>Camera devices are discovered through video4linux (v4l) and accessed with openCV.
+Therefore the program v4l2ctl and openCV (including python bindings) must be available.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.UsbCameraProviderSimulation" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">UsbCameraProviderSimulation</span>
+
+
+<a href="#rosys.vision.UsbCameraProviderSimulation" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">UsbCameraProviderSimulation</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a></code></p>
+
+  
+      <p>This module collects and simulates USB cameras and generates synthetic images.</p>
+<p>In the current implementation the images only contain the camera ID and the current time.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+
+
+
+              
+            </article>
+            
+          </div>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+    <nav class="md-footer__inner md-grid" aria-label="Footer" >
+      
+        
+        <a href="../pathplanning/" class="md-footer__link md-footer__link--prev" aria-label="Previous: pathplanning" rel="prev">
+          <div class="md-footer__button md-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+          </div>
+          <div class="md-footer__title">
+            <div class="md-ellipsis">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              pathplanning
+            </div>
+          </div>
+        </a>
+      
+      
+    </nav>
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.9c69f0bc.min.js"></script>
+      
+    
+  </body>
+</html>

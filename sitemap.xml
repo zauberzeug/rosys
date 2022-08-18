@@ -2,92 +2,82 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://rosys.io/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/development/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/getting_started/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/installation/</loc>
-         <lastmod>2022-08-03</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://rosys.io/safety/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/troubleshooting/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rosys.io/architecture/actors/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <loc>https://rosys.io/examples/cameras/</loc>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rosys.io/architecture/architecture_overview/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <loc>https://rosys.io/examples/click-and-drive/</loc>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rosys.io/architecture/automations/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <loc>https://rosys.io/examples/navigation/</loc>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rosys.io/architecture/events/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <loc>https://rosys.io/examples/steering/</loc>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rosys.io/architecture/user_interface/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <loc>None</loc>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rosys.io/architecture/world/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <loc>https://rosys.io/reference/rosys/automation/</loc>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rosys.io/features/3d_scene/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <loc>https://rosys.io/reference/rosys/debugging/</loc>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rosys.io/features/automation_controls/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <loc>https://rosys.io/reference/rosys/driving/</loc>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rosys.io/features/cameras/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <loc>https://rosys.io/reference/rosys/hardware/</loc>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rosys.io/features/manual_steering/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <loc>https://rosys.io/reference/rosys/pathplanning/</loc>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rosys.io/features/navigation/</loc>
-         <lastmod>2022-08-03</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://rosys.io/features/object_detection/</loc>
-         <lastmod>2022-08-03</lastmod>
+         <loc>https://rosys.io/reference/rosys/vision/</loc>
+         <lastmod>2022-08-18</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
