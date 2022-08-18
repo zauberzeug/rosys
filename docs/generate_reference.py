@@ -1,11 +1,25 @@
 import dataclasses
 import importlib
+import inspect
 from pathlib import Path
 from types import ModuleType
 
 import mkdocs_gen_files
 
 nav = mkdocs_gen_files.Nav()
+
+
+def extract_events(filepath: str) -> dict[str, str]:
+    with open(filepath, 'r') as f:
+        lines = f.read().splitlines()
+    events = {}
+    for l, line in enumerate(lines):
+        if line.endswith('= Event()'):
+            event_name = line.strip().split()[0]
+            event_doc = lines[l+1].split("'''")[1]
+            events[event_name] = event_doc
+    return events
+
 
 for path in sorted(Path('.').rglob('__init__.py')):
     identifier = str(path.parent).replace('/', '.')
@@ -22,15 +36,27 @@ for path in sorted(Path('.').rglob('__init__.py')):
     for name in dir(module):
         if name.startswith('_'):
             continue  # skip private fields
-        obj = getattr(module, name)
-        if isinstance(obj, ModuleType):
+        cls = getattr(module, name)
+        if isinstance(cls, ModuleType):
             continue  # skip sub-modules
-        if dataclasses.is_dataclass(obj):
+        if dataclasses.is_dataclass(cls):
             continue  # skip dataclasses
-        if not obj.__doc__:
+        if not cls.__doc__:
             continue  # skip classes without docstring
+        events = extract_events(inspect.getfile(cls))
         with mkdocs_gen_files.open(Path('reference', doc_path), 'a') as fd:
             print(f'::: {identifier}.{name}', file=fd)
+            if events:
+                print('    options:', file=fd)
+                print('      filters:', file=fd)
+                for event_name in events:
+                    print(f'        - "!{event_name}"', file=fd)
+                print('### Events', file=fd)
+                print('Name | Description', file=fd)
+                print('- | -', file=fd)
+                for event_name, event_doc in events.items():
+                    print(f'{event_name} | {event_doc}', file=fd)
+                print('', file=fd)
         found_something = True
 
     if found_something:
