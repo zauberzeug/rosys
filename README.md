@@ -6,7 +6,7 @@ But RoSys is fully based on modern web technologies and focusses on mobile robot
 
 See full documentation at [rosys.io](https://rosys.io/).
 
-Currently RoSys is mostly tested and developed on the [Zauberzeug Robot Brain](https://www.zauberzeug.com/product-robot-brain.html) which uses [Lizard](https://lizard.dev/) for communication with motors, sensors and other peripherals.
+Currently RoSys is mostly tested and developed on the [Zauberzeug Robot Brain](https://www.zauberzeug.com/robot-brain.html) which uses [Lizard](https://lizard.dev/) for communication with motors, sensors and other peripherals.
 But the software architecture of RoSys also allows you to write your own modules if you prefer another industrial PC or setup.
 
 ## Principles
@@ -96,8 +96,8 @@ you should wrap the code in a function and await it with `await rosys.run.cpu_bo
 Python is fast enough for most high level logic, but has no realtime guarantees.
 Safety-relevant behavior should therefore be written in [Lizard](https://lizard.dev/) and executed on a suitable microprocessor.
 The microprocessor governs the hardware of the robot and must be able to perform safety actions like triggering emergency hold etc.
-We suggest you use an industrial PC like the [Zauberzeug Robot Brain](https://www.zauberzeug.com/product-robot-brain.html).
-It provides a Linux system with AI acceleration to run RoSys, an integrated [ESP32](https://www.espressif.com/en/products/socs/esp32) to run Lizard and six I/O sockets for CAN, RS485, SPI, I2C, ... with a software controllable ENABLE switch.
+We suggest you use an industrial PC with an integrated controller like the [Zauberzeug Robot Brain](https://www.zauberzeug.com/robot-brain.html).
+It provides a Linux system with AI acceleration to run RoSys, two integrated [ESP32](https://www.espressif.com/en/products/socs/esp32) to run Lizard and six I/O sockets with up to 24 GPIOs for digital I/Os, CAN, RS485, SPI, I2C, ... with a software controllable ENABLE switch.
 
 ### User Interface
 
