@@ -21,7 +21,7 @@ class Uploads:
             self.queue[image.id] = image
 
     def get_queued(self) -> list[Image]:
-        return [image for image in self.queue.items() if image.data]
+        return [image for image in self.queue.values() if image.data]
 
     def get_priority_queued(self) -> list[Image]:
-        return [image for image in self.priority_queue.items() if image.data]
+        return [image for image in self.priority_queue.values() if image.data]
