@@ -109,14 +109,7 @@ class Driver:
         await self.wheels.stop()
 
     def _throttle(self, linear: float, angular: float) -> tuple[float, float]:
-        if self.parameters.max_detection_age_ramp is None:
-            factor = 1
-        elif self.odometer.detection is None:
-            factor = 0
-        else:
-            age_ramp = self.parameters.max_detection_age_ramp
-            age = rosys.time() - self.odometer.detection.time
-            factor = ramp(age, age_ramp[0], age_ramp[1], 1.0, 0.0, clip=True)
+        factor = self.throttle_factor()
         linear *= factor
         angular *= factor
 
@@ -133,6 +126,16 @@ class Driver:
             angular *= factor
 
         return linear, angular
+
+    def throttle_factor(self) -> float:
+        if self.parameters.max_detection_age_ramp is None:
+            return 1
+        elif self.odometer.detection is None:
+            return 0
+        else:
+            age_ramp = self.parameters.max_detection_age_ramp
+            age = rosys.time() - self.odometer.detection.time
+            return ramp(age, age_ramp[0], age_ramp[1], 1.0, 0.0, clip=True)
 
 
 @dataclass(slots=True, kw_only=True)
