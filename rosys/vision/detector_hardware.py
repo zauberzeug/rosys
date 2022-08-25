@@ -133,7 +133,6 @@ class DetectorHardware(Detector):
             else:
                 self.timeout_count = 0
                 self.NEW_DETECTIONS.emit(image)
-                return image.detections
             finally:
                 self.is_detecting = False
                 if self.timeout_count > 5:
