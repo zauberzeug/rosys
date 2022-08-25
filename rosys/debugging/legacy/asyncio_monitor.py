@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import os.path
 import re
@@ -32,17 +31,7 @@ class AsyncioMonitor:
         self.timings: dict[str, list[Measurement]] = defaultdict(list)
         self.log_position: Optional[int] = None
 
-        rosys.on_startup(self.activate_async_debugging)
         rosys.on_repeat(self.step, 10)
-
-    def activate_async_debugging(self) -> None:
-        '''Produce warnings for coroutines which take too long on the main loop and hence clog the event loop'''
-        try:
-            loop = asyncio.get_running_loop()
-            loop.set_debug(True)
-            loop.slow_callback_duration = 0.05
-        except:
-            self.log.exception('could not activate async debugging')
 
     async def step(self) -> None:
         if not os.path.isfile(self.log_filepath):
