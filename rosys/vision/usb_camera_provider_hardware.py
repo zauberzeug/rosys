@@ -45,6 +45,10 @@ def process_image(data: bytes, rotation: ImageRotation, crop: Rectangle = None) 
     return img_byte_arr.getvalue()
 
 
+def to_bytes(image: Any) -> bytes:
+    return image[0].tobytes()
+
+
 class UsbCameraProviderHardware(CameraProvider):
     '''This module collects and provides real USB cameras.
 
@@ -99,11 +103,9 @@ class UsbCameraProviderHardware(CameraProvider):
                 if image is None:
                     await self.deactivate(camera)
                     continue
-                if camera.crop is None and \
-                        (camera.rotation is None or camera.rotation == ImageRotation.NONE):
-                    bytes = image[0].tobytes()
-                else:
-                    bytes = await rosys.run.cpu_bound(process_image, image[0].tobytes(), camera.rotation, camera.crop)
+                bytes = await rosys.run.io_bound(to_bytes, image)
+                if camera.crop or camera.rotation != ImageRotation.NONE:
+                    bytes = await rosys.run.cpu_bound(process_image, bytes, camera.rotation, camera.crop)
                 size = camera.resolution or ImageSize(width=800, height=600)
                 camera.images.append(Image(camera_id=uid, data=bytes, time=rosys.time(), size=size))
             except:
