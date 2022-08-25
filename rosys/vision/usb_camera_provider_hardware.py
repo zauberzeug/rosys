@@ -67,6 +67,7 @@ class UsbCameraProviderHardware(CameraProvider):
 
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.step, 0.3)
+        rosys.on_repeat(self.prune_images, 1.0)
 
         self.needs_backup: bool = False
         persistence.register(self)
@@ -111,7 +112,6 @@ class UsbCameraProviderHardware(CameraProvider):
             except:
                 self.log.exception(f'could not capture image from {uid}')
                 await self.deactivate(camera)
-        self.purge_old_images()
 
     def capture_image(self, id) -> Any:
         _, image = self.devices[id].capture.read()
@@ -135,9 +135,9 @@ class UsbCameraProviderHardware(CameraProvider):
             await rosys.run.io_bound(self.devices[camera.id].capture.release)
         del self.devices[camera.id]
 
-    def purge_old_images(self) -> None:
+    def prune_images(self) -> None:
         for camera in self._cameras.values():
-            while camera.images and camera.images[0].time < rosys.time() - 5 * 60.0:
+            while camera.images and camera.images[0].time < rosys.time() - 5.0:
                 del camera.images[0]
 
     async def update_device_list(self) -> None:
