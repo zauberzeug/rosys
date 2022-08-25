@@ -24,6 +24,7 @@ class UsbCameraProviderSimulation(CameraProvider):
         self._cameras: dict[str, UsbCamera] = {}
 
         rosys.on_repeat(self.step, 1.0)
+        rosys.on_repeat(lambda: self.prune_images(max_age_seconds=1.0), 5.0)
 
         self.needs_backup: bool = False
         persistence.register(self)

@@ -67,7 +67,7 @@ class UsbCameraProviderHardware(CameraProvider):
 
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.step, 0.3)
-        rosys.on_repeat(self.prune_images, 1.0)
+        rosys.on_repeat(lambda: self.prune_images(max_age_seconds=1.0), 5.0)
 
         self.needs_backup: bool = False
         persistence.register(self)
@@ -134,11 +134,6 @@ class UsbCameraProviderHardware(CameraProvider):
             self.log.info(f'deactivated {camera.id}')
             await rosys.run.io_bound(self.devices[camera.id].capture.release)
         del self.devices[camera.id]
-
-    def prune_images(self) -> None:
-        for camera in self._cameras.values():
-            while camera.images and camera.images[0].time < rosys.time() - 5.0:
-                del camera.images[0]
 
     async def update_device_list(self) -> None:
         if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
