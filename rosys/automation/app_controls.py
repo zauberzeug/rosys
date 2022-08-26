@@ -40,12 +40,13 @@ class AppControls:
     It displays buttons to control a given automator.
     '''
 
-    APP_CONNECTED = Event()
-    '''an app connected via bluetooth (used to refresh information or similar)'''
-
     def __init__(self, communication: Communication, automator: Automator) -> None:
+        self.APP_CONNECTED = Event()
+        '''an app connected via bluetooth (used to refresh information or similar)'''
+
         self.communication = communication
         self.automator = automator
+        self.APP_CONNECTED
 
         self.main_buttons: dict[str, AppButton] = {
             'play': AppButton('play_arrow', released=automator.start),

@@ -34,6 +34,8 @@ class DetectorSimulation(Detector):
     '''
 
     def __init__(self, camera_provider: CameraProvider, *, noise: float = 1.0) -> None:
+        super().__init__()
+
         self.camera_provider = camera_provider
         self.noise = noise
 

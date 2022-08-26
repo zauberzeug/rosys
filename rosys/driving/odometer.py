@@ -23,10 +23,10 @@ class Odometer:
     The `get_pose` method provides robot poses from the within the last 10 seconds.
     '''
 
-    ROBOT_MOVED = Event()
-    '''a robot movement is detected'''
-
     def __init__(self, wheels: VelocityProvider) -> None:
+        self.ROBOT_MOVED = Event()
+        '''a robot movement is detected'''
+
         self.log = logging.getLogger('rosys.odometer')
 
         wheels.VELOCITY_MEASURED.register(self.handle_velocities)

@@ -18,28 +18,28 @@ class Automator:
     Manually steering the robot using an optional steerer pauses a currently running automation.
     '''
 
-    AUTOMATION_STARTED = Event()
-    '''an automation has been started'''
-
-    AUTOMATION_PAUSED = Event()
-    '''an automation has been paused (string argument: description of the cause)'''
-
-    AUTOMATION_RESUMED = Event()
-    '''an automation has been resumed'''
-
-    AUTOMATION_STOPPED = Event()
-    '''an automation has been stopped (string argument: description of the cause)'''
-
-    AUTOMATION_FAILED = Event()
-    '''an automation has failed to complete (string argument: description of the cause)'''
-
-    AUTOMATION_COMPLETED = Event()
-    '''an automation has been completed'''
-
     def __init__(self,
                  wheels: Optional[Drivable],
                  steerer: Optional[Steerer], *,
                  default_automation: Optional[Callable] = None) -> None:
+        self.AUTOMATION_STARTED = Event()
+        '''an automation has been started'''
+
+        self.AUTOMATION_PAUSED = Event()
+        '''an automation has been paused (string argument: description of the cause)'''
+
+        self.AUTOMATION_RESUMED = Event()
+        '''an automation has been resumed'''
+
+        self.AUTOMATION_STOPPED = Event()
+        '''an automation has been stopped (string argument: description of the cause)'''
+
+        self.AUTOMATION_FAILED = Event()
+        '''an automation has failed to complete (string argument: description of the cause)'''
+
+        self.AUTOMATION_COMPLETED = Event()
+        '''an automation has been completed'''
+
         self.log = logging.getLogger('rosys.automator')
 
         self.default_automation = default_automation

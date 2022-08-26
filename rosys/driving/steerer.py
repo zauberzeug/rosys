@@ -20,18 +20,17 @@ class Steerer:
     Changing the steering state emits events that can be used to react to manual user interaction.
     '''
 
-    STEERING_STARTED = Event()
-    '''steering has started'''
+    def __init__(self, wheels: Drivable, speed_scaling: float = 1.0) -> None:
+        self.STEERING_STARTED = Event()
+        '''steering has started'''
 
-    STEERING_STOPPED = Event()
-    '''steering has stopped'''
+        self.STEERING_STOPPED = Event()
+        '''steering has stopped'''
 
-    speed_scaling: float = 1
-
-    def __init__(self, wheels: Drivable) -> None:
         self.log = logging.getLogger('rosys.steerer')
 
         self.wheels = wheels
+        self.speed_scaling = speed_scaling
         self.state = State.IDLE
         self.linear_speed = 0
         self.angular_speed = 0

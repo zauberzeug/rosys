@@ -15,12 +15,15 @@ class CameraProvider(abc.ABC):
     This way respective events are emitted and consistency can be taken care of.
     '''
 
-    CAMERA_ADDED = Event()
-    '''a new camera has been added (argument: camera)'''
-    CAMERA_REMOVED = Event()
-    '''a camera has been removed (argument: camera id)'''
-    NEW_IMAGE = Event()
-    '''an new image is available (argument: image)'''
+    def __init__(self) -> None:
+        self.CAMERA_ADDED = Event()
+        '''a new camera has been added (argument: camera)'''
+
+        self.CAMERA_REMOVED = Event()
+        '''a camera has been removed (argument: camera id)'''
+
+        self.NEW_IMAGE = Event()
+        '''an new image is available (argument: image)'''
 
     @property
     @abc.abstractmethod

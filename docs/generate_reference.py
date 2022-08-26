@@ -15,7 +15,7 @@ def extract_events(filepath: str) -> dict[str, str]:
     events = {}
     for l, line in enumerate(lines):
         if line.endswith('= Event()'):
-            event_name = line.strip().split()[0]
+            event_name = line.strip().split()[0].removeprefix('self.')
             event_doc = lines[l+1].split("'''")[1]
             events[event_name] = event_doc
     return events

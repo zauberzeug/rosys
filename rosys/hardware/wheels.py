@@ -12,10 +12,10 @@ class Wheels(abc.ABC):
     Wheels can be moved using the `drive` methods and provide measured velocities as an event.
     '''
 
-    VELOCITY_MEASURED = Event()
-    '''new velocity measurements are available for processing (argument: list of velocities)'''
-
     def __init__(self) -> None:
+        self.VELOCITY_MEASURED = Event()
+        '''new velocity measurements are available for processing (argument: list of velocities)'''
+
         self.log = logging.getLogger(__name__)
 
         rosys.on_shutdown(self.stop)

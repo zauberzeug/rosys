@@ -13,10 +13,10 @@ class RobotBrain:
     Besides providing some basic methods like configuring or restarting the microcontroller, it augments and verifies checksums for each message.
     '''
 
-    LINE_RECEIVED = Event()
-    '''a line has been received from the microcontroller (argument: line as string)'''
-
     def __init__(self, communication: Communication) -> None:
+        self.LINE_RECEIVED = Event()
+        '''a line has been received from the microcontroller (argument: line as string)'''
+
         self.communication = communication
         self.waiting_list: dict[str, Optional[str]] = {}
 

@@ -20,6 +20,8 @@ class DetectorHardware(Detector):
     '''
 
     def __init__(self, *, port: int = 8004) -> None:
+        super().__init__()
+
         self.log = logging.getLogger('rosys.detector')
 
         self.sio = socketio.AsyncClient()
