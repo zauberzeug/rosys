@@ -22,8 +22,7 @@ The individual RoSys modules come in packages `driving`, `geometry`, `hardware` 
 ### Setup
 
 In this example we create a `Steerer` which needs an `Odometer`.
-If `SerialCommunication` is possible, the odometer gets access "real" `Wheels`.
-Otherwise wheels are simulated.
+Here we work without real hardware, so two wheels are simulated.
 For visualization purposes we also need the approximate robot shape.
 
 ### User Interface

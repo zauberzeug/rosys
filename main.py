@@ -3,16 +3,11 @@ from nicegui import ui
 
 from rosys.driving import KeyboardControl, Odometer, RobotObject, Steerer
 from rosys.geometry import Prism
-from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, WheelsSimulation, communication
+from rosys.hardware import WheelsSimulation
 
 # setup
 shape = Prism.default_robot_shape()
-if SerialCommunication.is_possible():
-    communication = SerialCommunication()
-    robot_brain = RobotBrain(communication)
-    wheels = WheelsHardware(robot_brain)
-else:
-    wheels = WheelsSimulation()
+wheels = WheelsSimulation()
 odometer = Odometer(wheels)
 steerer = Steerer(wheels)
 
