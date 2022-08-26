@@ -26,7 +26,7 @@ async def add_main_camera(camera: Camera) -> None:
         maincam = ui.image()
         ui.timer(1, lambda: maincam.set_source(camera.latest_image_uri))
 
-CameraProvider.CAMERA_ADDED.register(add_main_camera)
+camera_provider.CAMERA_ADDED.register(add_main_camera)
 
 with ui.card().tight().style('width:30em') as camera_card:
     ui.label('seeking main camera').classes('m-8 text-center')
