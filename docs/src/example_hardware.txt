@@ -1,0 +1,11 @@
+can = Can(32, 33, 1000000)
+
+l = ODriveMotor(can, 0x000)
+r = ODriveMotor(can, 0x100)
+l.m_per_tick = 0.0627
+r.m_per_tick = 0.0627
+
+wheels = ODriveWheels(l, r)
+wheels.width = 0.515
+
+core.output("core.millis wheels.linear_speed:3 wheels.angular_speed:3")
