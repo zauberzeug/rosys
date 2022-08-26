@@ -151,7 +151,7 @@ class UsbCameraProviderHardware(CameraProvider):
             if uid not in self._cameras:
                 self._cameras[uid] = UsbCamera(id=uid)
                 self.log.info(f'adding camera {uid}')
-                await CameraProvider.CAMERA_ADDED.call(self._cameras[uid])
+                await self.CAMERA_ADDED.call(self._cameras[uid])
             lines = infos.splitlines()
             if 'dev/video' not in lines[1]:
                 continue
