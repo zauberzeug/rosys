@@ -25,9 +25,9 @@ But you can replace the provider with a `UsbCameraProviderHardware`.
 
 ## Remote Operation
 
-A fairly often required use case is the remote operation of a robot.
+A fairly often required use case on real mobile robots is the remote operation.
 In a simple use case you may only need to visualize one camera and have some steering controls.
-Here we use the `NEW_CAMERA` event to display the first camera:
+Here we use the `NEW_CAMERA` event to display the first camera to control real [Hardware](hardware.md):
 
 ```python
 {!src/example_cameras_remote.py !}
