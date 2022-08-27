@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://rosys.io/">
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.0">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
     
     
       
@@ -472,6 +472,20 @@
   
   
     <li class="md-nav__item">
+      <a href="examples/hardware/" class="md-nav__link">
+        Hardware
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="examples/click-and-drive/" class="md-nav__link">
         Click-and-drive
       </a>
@@ -551,113 +565,10 @@
   
   
   
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-      
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7" type="checkbox" id="__nav_7" >
-      
-      
-      
-      
-        <label class="md-nav__link" for="__nav_7">
-          Module Reference
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" aria-label="Module Reference" data-md-level="1">
-        <label class="md-nav__title" for="__nav_7">
-          <span class="md-nav__icon md-icon"></span>
-          Module Reference
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
     <li class="md-nav__item">
-      <a href="reference/rosys/automation/" class="md-nav__link">
-        automation
+      <a href="reference/SUMMARY/" class="md-nav__link">
+        Module Reference
       </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="reference/rosys/debugging/" class="md-nav__link">
-        debugging
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="reference/rosys/driving/" class="md-nav__link">
-        driving
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="reference/rosys/hardware/" class="md-nav__link">
-        hardware
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="reference/rosys/pathplanning/" class="md-nav__link">
-        pathplanning
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="reference/rosys/vision/" class="md-nav__link">
-        vision
-      </a>
-    </li>
-  
-
-            
-          
-        </ul>
-      </nav>
     </li>
   
 
@@ -849,7 +760,7 @@
 Its purpose is similar to <a href="https://www.ros.org/">ROS</a>.
 But RoSys is fully based on modern web technologies and focusses on mobile robotics.</p>
 <p>See full documentation at <a href="https://rosys.io/">rosys.io</a>.</p>
-<p>Currently RoSys is mostly tested and developed on the <a href="https://www.zauberzeug.com/product-robot-brain.html">Zauberzeug Robot Brain</a> which uses <a href="https://lizard.dev/">Lizard</a> for communication with motors, sensors and other peripherals.
+<p>Currently RoSys is mostly tested and developed on the <a href="https://www.zauberzeug.com/robot-brain.html">Zauberzeug Robot Brain</a> which uses <a href="https://lizard.dev/">Lizard</a> for communication with motors, sensors and other peripherals.
 But the software architecture of RoSys also allows you to write your own modules if you prefer another industrial PC or setup.</p>
 <h2 id="principles">Principles<a class="headerlink" href="#principles" title="Permanent link">&para;</a></h2>
 <h3 id="all-python">All Python<a class="headerlink" href="#all-python" title="Permanent link">&para;</a></h3>
@@ -907,8 +818,8 @@ you should wrap the code in a function and await it with <code>await rosys.run.c
 <p>Python is fast enough for most high level logic, but has no realtime guarantees.
 Safety-relevant behavior should therefore be written in <a href="https://lizard.dev/">Lizard</a> and executed on a suitable microprocessor.
 The microprocessor governs the hardware of the robot and must be able to perform safety actions like triggering emergency hold etc.
-We suggest you use an industrial PC like the <a href="https://www.zauberzeug.com/product-robot-brain.html">Zauberzeug Robot Brain</a>.
-It provides a Linux system with AI acceleration to run RoSys, an integrated <a href="https://www.espressif.com/en/products/socs/esp32">ESP32</a> to run Lizard and six I/O sockets for CAN, RS485, SPI, I2C, ... with a software controllable ENABLE switch.</p>
+We suggest you use an industrial PC with an integrated controller like the <a href="https://www.zauberzeug.com/robot-brain.html">Zauberzeug Robot Brain</a>.
+It provides a Linux system with AI acceleration to run RoSys, two integrated <a href="https://www.espressif.com/en/products/socs/esp32">ESP32</a> to run Lizard and six I/O sockets with up to 24 GPIOs for digital I/Os, CAN, RS485, SPI, I2C, ... with a software controllable ENABLE switch.</p>
 <h3 id="user-interface">User Interface<a class="headerlink" href="#user-interface" title="Permanent link">&para;</a></h3>
 <p>RoSys plays very well with <a href="https://nicegui.io/">NiceGUI</a> and provides additional robot-related UI elements.
 NiceGUI is a high-level web UI framework on top of <a href="https://justpy.io/">JustPy</a>.

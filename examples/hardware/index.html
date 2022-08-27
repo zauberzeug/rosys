@@ -8,21 +8,21 @@
       
       
       
-        <link rel="canonical" href="https://rosys.io/reference/rosys/pathplanning/">
+        <link rel="canonical" href="https://rosys.io/examples/hardware/">
       
-      <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.0">
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
     
     
       
-        <title>pathplanning - RoSys</title>
+        <title>Hardware - RoSys</title>
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.69437709.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.69437709.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.cbb835fc.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.cbb835fc.min.css">
         
       
       
@@ -38,11 +38,11 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -66,7 +66,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#rosys.pathplanning.PathPlanner" class="md-skip">
+        <a href="#hardware" class="md-skip">
           Skip to content
         </a>
       
@@ -80,7 +80,7 @@
 
 <header class="md-header" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../.." title="RoSys" class="md-header__button md-logo" aria-label="RoSys" data-md-component="logo">
+    <a href="../.." title="RoSys" class="md-header__button md-logo" aria-label="RoSys" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -99,7 +99,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              pathplanning
+              Hardware
             
           </span>
         </div>
@@ -178,7 +178,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../.." title="RoSys" class="md-nav__button md-logo" aria-label="RoSys" data-md-component="logo">
+    <a href="../.." title="RoSys" class="md-nav__button md-logo" aria-label="RoSys" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -209,7 +209,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         About
       </a>
     </li>
@@ -224,7 +224,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../installation/" class="md-nav__link">
+      <a href="../../installation/" class="md-nav__link">
         Installation
       </a>
     </li>
@@ -239,7 +239,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../getting_started/" class="md-nav__link">
+      <a href="../../getting_started/" class="md-nav__link">
         Getting Started
       </a>
     </li>
@@ -252,12 +252,14 @@
 
   
   
+    
+  
   
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
       
       
       
@@ -265,7 +267,7 @@
         
         
         <div class="md-nav__link md-nav__link--index ">
-          <a href="../../../examples/steering/">Examples</a>
+          <a href="../steering/">Examples</a>
           
             <label for="__nav_4">
               <span class="md-nav__icon md-icon"></span>
@@ -286,7 +288,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/steering/" class="md-nav__link">
+      <a href="../steering/" class="md-nav__link">
         Steering
       </a>
     </li>
@@ -298,9 +300,33 @@
               
   
   
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Hardware
+      </a>
+      
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
   
     <li class="md-nav__item">
-      <a href="../../../examples/click-and-drive/" class="md-nav__link">
+      <a href="../click-and-drive/" class="md-nav__link">
         Click-and-drive
       </a>
     </li>
@@ -314,7 +340,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/navigation/" class="md-nav__link">
+      <a href="../navigation/" class="md-nav__link">
         Navigation
       </a>
     </li>
@@ -328,7 +354,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../examples/cameras/" class="md-nav__link">
+      <a href="../cameras/" class="md-nav__link">
         Cameras
       </a>
     </li>
@@ -350,7 +376,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../development/" class="md-nav__link">
+      <a href="../../development/" class="md-nav__link">
         Development
       </a>
     </li>
@@ -365,7 +391,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../troubleshooting/" class="md-nav__link">
+      <a href="../../troubleshooting/" class="md-nav__link">
         Troubleshooting
       </a>
     </li>
@@ -378,153 +404,11 @@
 
   
   
-    
-  
-  
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
-      
-      
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7" type="checkbox" id="__nav_7" checked>
-      
-      
-      
-      
-        <label class="md-nav__link" for="__nav_7">
-          Module Reference
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" aria-label="Module Reference" data-md-level="1">
-        <label class="md-nav__title" for="__nav_7">
-          <span class="md-nav__icon md-icon"></span>
-          Module Reference
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
   
     <li class="md-nav__item">
-      <a href="../automation/" class="md-nav__link">
-        automation
+      <a href="../../reference/SUMMARY/" class="md-nav__link">
+        Module Reference
       </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../debugging/" class="md-nav__link">
-        debugging
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../driving/" class="md-nav__link">
-        driving
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../hardware/" class="md-nav__link">
-        hardware
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-    
-  
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          pathplanning
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
-        pathplanning
-      </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#rosys.pathplanning.PathPlanner" class="md-nav__link">
-    PathPlanner
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../vision/" class="md-nav__link">
-        vision
-      </a>
-    </li>
-  
-
-            
-          
-        </ul>
-      </nav>
     </li>
   
 
@@ -546,21 +430,8 @@
   
   
   
+    
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#rosys.pathplanning.PathPlanner" class="md-nav__link">
-    PathPlanner
-  </a>
-  
-</li>
-      
-    </ul>
   
 </nav>
                   </div>
@@ -572,50 +443,58 @@
             <article class="md-content__inner md-typeset">
               
                 
-
-
-  <h1>pathplanning</h1>
-
-<div class="doc doc-object doc-class">
+  <a href="https://github.com/zauberzeug/rosys/edit/main/docs/examples/hardware.md" title="Edit this page" class="md-content__button md-icon">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
+  </a>
 
 
 
-<h2 id="rosys.pathplanning.PathPlanner" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">PathPlanner</span>
+<h1 id="hardware">Hardware<a class="headerlink" href="#hardware" title="Permanent link">&para;</a></h1>
+<p>You can use <code>SerialCommunication.is_possible()</code> to automatically switch between a simulation and real hardware.
+The module <code>WheelsHardware</code> expects a <code>RobotBrain</code>, which controls the <code>SerialCommunication</code> with a microcontroller.
+The <a href="https://zauberzeug.com/robot-brain.html">Zauberzeug Robot Brain</a> is an industrial-grade controller to combine artificial intelligence with machinery.</p>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
+<span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
+<span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">KeyboardControl</span><span class="p">,</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">Steerer</span>
+<span class="kn">from</span> <span class="nn">rosys.hardware</span> <span class="kn">import</span> <span class="n">RobotBrain</span><span class="p">,</span> <span class="n">SerialCommunication</span><span class="p">,</span> <span class="n">WheelsHardware</span><span class="p">,</span> <span class="n">WheelsSimulation</span><span class="p">,</span> <span class="n">communication</span>
 
+<span class="n">is_real</span> <span class="o">=</span> <span class="n">SerialCommunication</span><span class="o">.</span><span class="n">is_possible</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">is_real</span><span class="p">:</span>
+    <span class="n">communication</span> <span class="o">=</span> <span class="n">SerialCommunication</span><span class="p">()</span>
+    <span class="n">robot_brain</span> <span class="o">=</span> <span class="n">RobotBrain</span><span class="p">(</span><span class="n">communication</span><span class="p">)</span>
+    <span class="n">wheels</span> <span class="o">=</span> <span class="n">WheelsHardware</span><span class="p">(</span><span class="n">robot_brain</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="n">wheels</span> <span class="o">=</span> <span class="n">WheelsSimulation</span><span class="p">()</span>
+<span class="n">odometer</span> <span class="o">=</span> <span class="n">Odometer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
+<span class="n">steerer</span> <span class="o">=</span> <span class="n">Steerer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
 
-<a href="#rosys.pathplanning.PathPlanner" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="n">PathPlanner</span><span class="p">(</span><span class="n">robot_shape</span><span class="p">:</span> <span class="n">Prism</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<span class="n">KeyboardControl</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">is_real</span><span class="p">:</span>
+    <span class="n">communication</span><span class="o">.</span><span class="n">debug_ui</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">configure</span><span class="p">():</span>
+        <span class="k">await</span> <span class="n">robot_brain</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="s1">&#39;example_hardware.txt&#39;</span><span class="p">)</span>
+    <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;Configure Lizard&#39;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">configure</span><span class="p">)</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">&#39;outline&#39;</span><span class="p">)</span>
+
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
 </code></pre></div>
+<p>With <code>communication.debug_ui()</code> you can add some helpful UI elements for debugging the serial communication.</p>
+<p>Furthermore, you can add a button to send the <a href="https://lizard.dev/">Lizard</a> configuration to the microcontroller running the Lizard firmware.
+This way it recognizes wheel commands from the <code>RobotBrain</code> module and responds accordingly.</p>
+<p>The lizard configuration for two wheels controlled with an <a href="https://odriverobotics.com/">ODrive</a> might look as follows:</p>
+<div class="highlight"><pre><span></span><code>can = Can(32, 33, 1000000)
 
-  <div class="doc doc-contents first">
+l = ODriveMotor(can, 0x000)
+r = ODriveMotor(can, 0x100)
+l.m_per_tick = 0.0627
+r.m_per_tick = 0.0627
 
-  
-      <p>This module runs a path planning algorithm in a separate process.</p>
-<p>If given, the algorithm respects the given robot shape as well as a dictionary of accessible areas and a dictionary of obstacles, both of which a backed up and restored automatically.
-The path planner can search paths, check if a spline interferes with obstacles and get the distance of a pose to any obstacle.</p>
+wheels = ODriveWheels(l, r)
+wheels.width = 0.515
 
-
-
-  
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-  </div>
-
-</div>
+core.output(&quot;core.millis wheels.linear_speed:3 wheels.angular_speed:3&quot;)
+</code></pre></div>
 
 
 
@@ -634,7 +513,7 @@ The path planner can search paths, check if a spline interferes with obstacles a
     <nav class="md-footer__inner md-grid" aria-label="Footer" >
       
         
-        <a href="../hardware/" class="md-footer__link md-footer__link--prev" aria-label="Previous: hardware" rel="prev">
+        <a href="../steering/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Steering" rel="prev">
           <div class="md-footer__button md-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
           </div>
@@ -643,20 +522,20 @@ The path planner can search paths, check if a spline interferes with obstacles a
               <span class="md-footer__direction">
                 Previous
               </span>
-              hardware
+              Steering
             </div>
           </div>
         </a>
       
       
         
-        <a href="../vision/" class="md-footer__link md-footer__link--next" aria-label="Next: vision" rel="next">
+        <a href="../click-and-drive/" class="md-footer__link md-footer__link--next" aria-label="Next: Click-and-drive" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              vision
+              Click-and-drive
             </div>
           </div>
           <div class="md-footer__button md-icon">
@@ -687,10 +566,10 @@ The path planner can search paths, check if a spline interferes with obstacles a
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.9c69f0bc.min.js"></script>
+      <script src="../../assets/javascripts/bundle.9c69f0bc.min.js"></script>
       
     
   </body>

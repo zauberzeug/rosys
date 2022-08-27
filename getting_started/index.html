@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://rosys.io/getting_started/">
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.0">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
     
     
       
@@ -375,6 +375,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/hardware/" class="md-nav__link">
+        Hardware
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/click-and-drive/" class="md-nav__link">
         Click-and-drive
       </a>
@@ -454,113 +468,10 @@
   
   
   
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-      
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7" type="checkbox" id="__nav_7" >
-      
-      
-      
-      
-        <label class="md-nav__link" for="__nav_7">
-          Module Reference
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" aria-label="Module Reference" data-md-level="1">
-        <label class="md-nav__title" for="__nav_7">
-          <span class="md-nav__icon md-icon"></span>
-          Module Reference
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
     <li class="md-nav__item">
-      <a href="../reference/rosys/automation/" class="md-nav__link">
-        automation
+      <a href="../reference/SUMMARY/" class="md-nav__link">
+        Module Reference
       </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../reference/rosys/debugging/" class="md-nav__link">
-        debugging
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../reference/rosys/driving/" class="md-nav__link">
-        driving
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../reference/rosys/hardware/" class="md-nav__link">
-        hardware
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../reference/rosys/pathplanning/" class="md-nav__link">
-        pathplanning
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../reference/rosys/vision/" class="md-nav__link">
-        vision
-      </a>
-    </li>
-  
-
-            
-          
-        </ul>
-      </nav>
     </li>
   
 
@@ -659,16 +570,11 @@ Name your entry file <code>main.py</code> and add the following content:</p>
 
 <span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">KeyboardControl</span><span class="p">,</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">RobotObject</span><span class="p">,</span> <span class="n">Steerer</span>
 <span class="kn">from</span> <span class="nn">rosys.geometry</span> <span class="kn">import</span> <span class="n">Prism</span>
-<span class="kn">from</span> <span class="nn">rosys.hardware</span> <span class="kn">import</span> <span class="n">RobotBrain</span><span class="p">,</span> <span class="n">SerialCommunication</span><span class="p">,</span> <span class="n">WheelsHardware</span><span class="p">,</span> <span class="n">WheelsSimulation</span><span class="p">,</span> <span class="n">communication</span>
+<span class="kn">from</span> <span class="nn">rosys.hardware</span> <span class="kn">import</span> <span class="n">WheelsSimulation</span>
 
 <span class="c1"># setup</span>
 <span class="n">shape</span> <span class="o">=</span> <span class="n">Prism</span><span class="o">.</span><span class="n">default_robot_shape</span><span class="p">()</span>
-<span class="k">if</span> <span class="n">SerialCommunication</span><span class="o">.</span><span class="n">is_possible</span><span class="p">():</span>
-    <span class="n">communication</span> <span class="o">=</span> <span class="n">SerialCommunication</span><span class="p">()</span>
-    <span class="n">robot_brain</span> <span class="o">=</span> <span class="n">RobotBrain</span><span class="p">(</span><span class="n">communication</span><span class="p">)</span>
-    <span class="n">wheels</span> <span class="o">=</span> <span class="n">WheelsHardware</span><span class="p">(</span><span class="n">robot_brain</span><span class="p">)</span>
-<span class="k">else</span><span class="p">:</span>
-    <span class="n">wheels</span> <span class="o">=</span> <span class="n">WheelsSimulation</span><span class="p">()</span>
+<span class="n">wheels</span> <span class="o">=</span> <span class="n">WheelsSimulation</span><span class="p">()</span>
 <span class="n">odometer</span> <span class="o">=</span> <span class="n">Odometer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
 <span class="n">steerer</span> <span class="o">=</span> <span class="n">Steerer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
 
@@ -689,8 +595,8 @@ Name your entry file <code>main.py</code> and add the following content:</p>
 The individual RoSys modules come in packages <code>driving</code>, <code>geometry</code>, <code>hardware</code> and others.</p>
 <h3 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">&para;</a></h3>
 <p>In this example we create a <code>Steerer</code> which needs an <code>Odometer</code>.
-If <code>SerialCommunication</code> is possible, the odometer gets access "real" <code>Wheels</code>.
-Otherwise wheels are simulated.
+Here we work without real hardware, so two wheels are simulated.
+Please see <a href="hardware.md">Hardware</a> for an example which can actually be used on a mobile robot.
 For visualization purposes we also need the approximate robot shape.</p>
 <h3 id="user-interface">User Interface<a class="headerlink" href="#user-interface" title="Permanent link">&para;</a></h3>
 <p>The user interface consists of keyboard control with access to the steerer as well as a 3D view of the scene.

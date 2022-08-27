@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://rosys.io/examples/cameras/">
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.0">
+      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.2">
     
     
       
@@ -302,6 +302,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../hardware/" class="md-nav__link">
+        Hardware
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../click-and-drive/" class="md-nav__link">
         Click-and-drive
       </a>
@@ -436,113 +450,10 @@
   
   
   
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-      
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_7" type="checkbox" id="__nav_7" >
-      
-      
-      
-      
-        <label class="md-nav__link" for="__nav_7">
-          Module Reference
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" aria-label="Module Reference" data-md-level="1">
-        <label class="md-nav__title" for="__nav_7">
-          <span class="md-nav__icon md-icon"></span>
-          Module Reference
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
     <li class="md-nav__item">
-      <a href="../../reference/rosys/automation/" class="md-nav__link">
-        automation
+      <a href="../../reference/SUMMARY/" class="md-nav__link">
+        Module Reference
       </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/rosys/debugging/" class="md-nav__link">
-        debugging
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/rosys/driving/" class="md-nav__link">
-        driving
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/rosys/hardware/" class="md-nav__link">
-        hardware
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/rosys/pathplanning/" class="md-nav__link">
-        pathplanning
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../reference/rosys/vision/" class="md-nav__link">
-        vision
-      </a>
-    </li>
-  
-
-            
-          
-        </ul>
-      </nav>
     </li>
   
 
@@ -678,7 +589,7 @@ Here we use the <code>NEW_CAMERA</code> event to display the first camera:</p>
         <span class="n">maincam</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">image</span><span class="p">()</span>
         <span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">maincam</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">latest_image_uri</span><span class="p">))</span>
 
-<span class="n">CameraProvider</span><span class="o">.</span><span class="n">CAMERA_ADDED</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">add_main_camera</span><span class="p">)</span>
+<span class="n">camera_provider</span><span class="o">.</span><span class="n">CAMERA_ADDED</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">add_main_camera</span><span class="p">)</span>
 
 <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">()</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">&#39;width:30em&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">camera_card</span><span class="p">:</span>
     <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;seeking main camera&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-8 text-center&#39;</span><span class="p">)</span>
