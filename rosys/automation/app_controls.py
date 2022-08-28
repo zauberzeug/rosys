@@ -7,7 +7,7 @@ from typing import Callable
 import rosys
 
 from ..event import Event
-from ..hardware import Communication, RobotBrain
+from ..hardware import RobotBrain
 from ..task_logger import create_task
 from .automator import Automator
 
@@ -40,11 +40,11 @@ class AppControls:
     It displays buttons to control a given automator.
     '''
 
-    def __init__(self, communication: Communication, automator: Automator) -> None:
+    def __init__(self, robot_brain: RobotBrain, automator: Automator) -> None:
         self.APP_CONNECTED = Event()
         '''an app connected via bluetooth (used to refresh information or similar)'''
 
-        self.communication = communication
+        self.robot_brain = robot_brain
         self.automator = automator
         self.APP_CONNECTED
 
@@ -60,7 +60,7 @@ class AppControls:
         rosys.on_shutdown(self.clear)
         rosys.on_repeat(self.refresh, 0.1)
         rosys.NEW_NOTIFICATION.register(self.notify)
-        RobotBrain.LINE_RECEIVED.register(self.parse)
+        robot_brain.LINE_RECEIVED.register(self.parse)
 
     async def refresh(self) -> None:
         before = ' '.join(str(b) for b in self.main_buttons.values())
@@ -75,11 +75,11 @@ class AppControls:
 
     async def set_info(self, msg: str) -> None:
         '''replace constantly shown info text on mobile device'''
-        await self.communication.send(f'bluetooth.send("PUT /info {msg}")')
+        await self.robot_brain.communication.send(f'bluetooth.send("PUT /info {msg}")')
 
     async def notify(self, msg: str) -> None:
         '''show notification as Snackbar message on mobile device'''
-        await self.communication.send(f'bluetooth.send("POST /notification {msg}")')
+        await self.robot_brain.communication.send(f'bluetooth.send("POST /notification {msg}")')
 
     def parse(self, line: str) -> None:
         if line.startswith('"'):
@@ -113,7 +113,7 @@ class AppControls:
             for name, button in buttons.items():
                 for prop in get_properties(button):
                     cmd = f'bluetooth.send("{method} /button/{group}/{name}{prop}")'
-                    await self.communication.send(cmd)
+                    await self.robot_brain.communication.send(cmd)
         await run('main', self.main_buttons)
         await run('extra', self.extra_buttons)
 
