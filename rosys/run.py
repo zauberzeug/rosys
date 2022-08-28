@@ -86,6 +86,7 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
 
 
 def tear_down() -> None:
+    # stopping process as described in https://www.cloudcity.io/blog/2019/02/27/things-i-wish-they-told-me-about-multiprocessing-in-python/
     log.info('teardown thread_pool')
     thread_pool.shutdown(wait=False, cancel_futures=True)
     [p.join(2) for p in running_sh_processes]
