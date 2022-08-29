@@ -35,7 +35,7 @@ class AppButton:
 class AppControls:
     '''The AppControls module enables the connection with a mobile-app-based user interface.
 
-    It uses a given communication object to communicate with [Lizard](https://lizard.dev/) running on a microcontroller
+    It uses a given RobotBrain object to communicate with [Lizard](https://lizard.dev/) running on a microcontroller
     and in turn being connected to a mobile app via Bluetooth Low Energy.
     It displays buttons to control a given automator.
     '''
@@ -75,11 +75,11 @@ class AppControls:
 
     async def set_info(self, msg: str) -> None:
         '''replace constantly shown info text on mobile device'''
-        await self.robot_brain.communication.send(f'bluetooth.send("PUT /info {msg}")')
+        await self.robot_brain.send(f'bluetooth.send("PUT /info {msg}")')
 
     async def notify(self, msg: str) -> None:
         '''show notification as Snackbar message on mobile device'''
-        await self.robot_brain.communication.send(f'bluetooth.send("POST /notification {msg}")')
+        await self.robot_brain.send(f'bluetooth.send("POST /notification {msg}")')
 
     def parse(self, line: str) -> None:
         if line.startswith('"'):
@@ -113,7 +113,7 @@ class AppControls:
             for name, button in buttons.items():
                 for prop in get_properties(button):
                     cmd = f'bluetooth.send("{method} /button/{group}/{name}{prop}")'
-                    await self.robot_brain.communication.send(cmd)
+                    await self.robot_brain.send(cmd)
         await run('main', self.main_buttons)
         await run('extra', self.extra_buttons)
 
