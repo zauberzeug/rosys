@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from datetime import date, datetime
 from itertools import groupby
 from typing import Any
@@ -18,7 +17,7 @@ def str_to_date(date: str) -> date: return datetime.fromisoformat(date)
 class KpiLogger:
 
     def __init__(self) -> None:
-        self.states: dict[str, bool] = defaultdict(bool)
+        self.states: dict[str, bool] = {}
 
         self.days: list[Day] = []
         self.months: list[Month] = []
@@ -56,10 +55,11 @@ class KpiLogger:
         return self.days[-1]
 
     def increment(self, key: str) -> None:
-        self.today().incidents[key] += 1
+        day = self.today()
+        day.incidents[key] = day.incidents.get(key, 0) + 1
         self.needs_backup = True
 
     def increment_on_rising_edge(self, key: str, new_state: bool) -> None:
-        if new_state and not self.states[key]:
+        if new_state and not self.states.get(key, False):
             self.increment(key)
         self.states[key] = new_state

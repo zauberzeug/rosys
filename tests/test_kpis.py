@@ -1,4 +1,3 @@
-from collections import defaultdict
 from datetime import timedelta
 
 import pytest
@@ -43,7 +42,7 @@ def test_packing_old_days_into_month(
         kpi_logger: KpiLogger, days: int, expected_days: int, expected_months: int, expected_sums: int):
     today = str_to_date('2022-03-13').date()
     kpi_logger.days = [
-        Day(date=date_to_str(today - timedelta(days=d)), incidents=defaultdict(int, problem=1, success=1))
+        Day(date=date_to_str(today - timedelta(days=d)), incidents=dict(problem=1, success=1))
         for d in range(days)
     ][::-1]
     kpi_logger.pack()
