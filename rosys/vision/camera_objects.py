@@ -29,11 +29,7 @@ class CameraObjects(Group):
 
     @property
     def calibrated_cameras(self) -> dict[str, Camera]:
-        return {
-            id: camera
-            for id, camera in self.camera_provider.cameras.items()
-            if camera.calibration is not None and camera.calibration.is_complete
-        }
+        return {id: camera for id, camera in self.camera_provider.cameras.items() if camera.calibration}
 
     def find_objects(self, type: str) -> dict[str, Object3D]:
         return {

@@ -38,7 +38,7 @@ class CameraProjector:
                 del self.projections[id]
 
         for id, camera in self.camera_provider.cameras.items():
-            if camera.calibration is None or not camera.calibration.is_complete:
+            if not camera.calibration:
                 continue
             if id in self.projections and self.projections[id].camera_calibration == camera.calibration:
                 continue

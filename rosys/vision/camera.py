@@ -40,13 +40,14 @@ class Camera(abc.ABC):
 
     def set_perfect_calibration(
         self,
+        *,
+        width=800, height=600,
         x: float = 0.0, y: float = 0.0, z: float = 1.0,
-        yaw: float = 0.0, tilt_x: float = 0.0, tilt_y: float = 0.0,
-        image_width=800, image_height=600,
+        roll: float = np.pi, pitch: float = 0.0, yaw: float = 0.0,
     ) -> None:
         self.calibration = Calibration(
-            intrinsics=Camera.create_intrinsics(image_width, image_height),
-            extrinsics=Extrinsics(tilt=Rotation.from_euler(tilt_x, np.pi + tilt_y, 0), yaw=yaw, translation=[x, y, z]),
+            intrinsics=Camera.create_intrinsics(width, height),
+            extrinsics=Extrinsics(rotation=Rotation.from_euler(roll, pitch, yaw), translation=[x, y, z]),
         )
 
     @staticmethod

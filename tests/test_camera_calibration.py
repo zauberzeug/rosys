@@ -6,7 +6,7 @@ from rosys.vision import Calibration, Camera
 
 def demo_data() -> tuple[Camera, list[Point3d]]:
     cam = Camera(id='1')
-    cam.set_perfect_calibration(x=0.1, y=0.2, z=3, tilt_x=np.deg2rad(10), tilt_y=np.deg2rad(20))
+    cam.set_perfect_calibration(x=0.1, y=0.2, z=3, tilt_x=np.deg2rad(10), tilt_y=np.deg2rad(20), yaw=np.deg2rad(30))
     world_points = [
         Point3d(x=x, y=y, z=z)
         for x in [-1.0, 0.0, 1.0]
@@ -27,8 +27,7 @@ def test_calibration_from_points():
     approx(calibration.intrinsics.matrix, cam.calibration.intrinsics.matrix)
     approx(calibration.intrinsics.rotation.R, cam.calibration.intrinsics.rotation.R)
     approx(calibration.extrinsics.translation, cam.calibration.extrinsics.translation)
-    approx(calibration.extrinsics.yaw, cam.calibration.extrinsics.yaw)
-    approx(calibration.extrinsics.tilt.R, cam.calibration.extrinsics.tilt.R, abs=1e-6)
+    approx(calibration.extrinsics.rotation.R, cam.calibration.extrinsics.rotation.R, abs=1e-6)
 
 
 def test_projection():

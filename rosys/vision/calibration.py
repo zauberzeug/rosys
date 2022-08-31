@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Optional
 
 import cv2
 import numpy as np
@@ -24,8 +24,7 @@ log = logging.getLogger('rosys.world.calibration')
 
 @dataclass(slots=True, kw_only=True)
 class Extrinsics:
-    tilt: Optional[Rotation] = None
-    yaw: float = 0.0
+    rotation: Rotation = Rotation.from_euler(np.pi, 0, 0)
     translation: list[float] = field(default_factory=lambda: [0.0, 0.0, 1.0])
 
 
@@ -36,18 +35,11 @@ class Calibration:
 
     @property
     def rotation(self) -> Rotation:
-        tilt = self.extrinsics.tilt or Rotation.zero()
-        return Rotation.from_euler(0, 0, self.extrinsics.yaw) * tilt * self.intrinsics.rotation
+        return self.extrinsics.rotation * self.intrinsics.rotation
 
     @property
     def rotation_array(self) -> np.ndarray:
-        tilt = self.extrinsics.tilt or Rotation.zero()
-        yaw = self.extrinsics.yaw
-        return np.dot([[np.cos(yaw), -np.sin(yaw), 0], [np.sin(yaw), np.cos(yaw), 0], [0, 0, 1]], tilt.R) @ self.intrinsics.rotation.R
-
-    @property
-    def is_complete(self) -> bool:
-        return self.extrinsics.tilt is not None
+        return np.dot(self.extrinsics.rotation.R, self.intrinsics.rotation.R)
 
     def project_to_image(self, world_point: Point3d) -> Point:
         world_points = np.array([world_point.tuple], dtype=np.float32)
@@ -117,6 +109,6 @@ class Calibration:
 
         rotation = Rotation.from_rvec(rvecs[0]).T
         translation = (-np.array(rotation.R).dot(tvecs)).flatten().tolist()
-        extrinsics = Extrinsics(tilt=rotation, translation=translation)
+        extrinsics = Extrinsics(rotation=rotation, translation=translation)
 
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
