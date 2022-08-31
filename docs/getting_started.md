@@ -23,7 +23,7 @@ The individual RoSys modules come in packages `driving`, `geometry`, `hardware` 
 
 In this example we create a `Steerer` which needs an `Odometer`.
 Here we work without real hardware, so two wheels are simulated.
-Please see [Hardware](hardware.md) for an example which can actually be used on a mobile robot.
+Please see [Hardware](examples/hardware.md) for an example which can actually be used on a mobile robot.
 For visualization purposes we also need the approximate robot shape.
 
 ### User Interface
