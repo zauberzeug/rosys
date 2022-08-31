@@ -1,6 +1,8 @@
 import asyncio
 import logging
+import os
 import shlex
+import signal
 import subprocess
 import uuid
 from asyncio.subprocess import Process
@@ -75,11 +77,15 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
             cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
+            preexec_fn=os.setsid,  # set process group id to ensure child processes are killed when parent is killed
             shell=shell,
         )
         running_sh_processes.append(proc)
         stdout, *_ = proc.communicate()
-        proc.kill()
+        try:
+            os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        except ProcessLookupError:
+            pass
         running_sh_processes.remove(proc)
         return stdout.decode('utf-8')
     return await io_bound(popen)
@@ -94,6 +100,6 @@ def tear_down() -> None:
     running_sh_processes.clear()
     if not rosys.is_test:
         log.info('teardown process_pool')
-        [p.kill() for p in process_pool._processes.values()]
+        [os.killpg(os.getpgid(p.pid), signal.SIGTERM) for p in process_pool._processes.values()]
         process_pool.shutdown(wait=True, cancel_futures=True)
     log.info('teardown complete')
