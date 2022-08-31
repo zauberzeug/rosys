@@ -5,10 +5,7 @@ from rosys.vision import Camera, CameraProjector
 def test_projection():
     cam = Camera(id='1')
     cam.set_perfect_calibration(
-        x=0.1, y=0.2, z=3,
-        tilt_x=np.deg2rad(10), tilt_y=np.deg2rad(20),
-        image_width=1600, image_height=1200,
-    )
+        x=0.1, y=0.2, z=3, roll=np.deg2rad(180 + 10), pitch=np.deg2rad(20), width=1600, height=1200)
     coordinates = CameraProjector.project(cam, rows=3, columns=4)
     assert CameraProjector.allclose(coordinates, [
         [[-17.36746838820115, 13.46952851869435], [-3.5078721380854008, 6.316241144047431],
@@ -20,7 +17,7 @@ def test_projection():
     ])
 
     cam = Camera(id='1')
-    cam.set_perfect_calibration(tilt_x=np.deg2rad(70), image_width=1600, image_height=1200)
+    cam.set_perfect_calibration(roll=np.deg2rad(180+70), width=1600, height=1200)
     coordinates = CameraProjector.project(cam, rows=3, columns=4,)
     assert CameraProjector.allclose(coordinates, [
         [None, None, None, None],

@@ -51,9 +51,9 @@ class Camera(abc.ABC):
         )
 
     @staticmethod
-    def create_intrinsics(image_width: int = 800, image_height: int = 600) -> Intrinsics:
+    def create_intrinsics(width: int = 800, height: int = 600) -> Intrinsics:
         c = 570
-        size = ImageSize(width=image_width, height=image_height)
+        size = ImageSize(width=width, height=height)
         K = [[c, 0, size.width / 2], [0, c, size.height / 2], [0, 0, 1]]
         D = [0, 0, 0, 0, 0]
         rotation = Rotation.zero()
