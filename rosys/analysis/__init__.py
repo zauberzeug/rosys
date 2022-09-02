@@ -4,4 +4,5 @@ from .kpi_page import KpiPage
 from .legacy.asyncio_monitor import AsyncioMonitor
 from .legacy.network_monitor import NetworkMonitor, NetworkStats
 from .profile_button import ProfileButton
-from .wifi import WifiButton
+from .timelapse_recorder import TimelapseRecorder
+from .videos_page import VideosPage

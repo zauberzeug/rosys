@@ -14,7 +14,7 @@ from PIL import Image, ImageDraw, ImageFont
 from rosys.vision import Image as RosysImage
 
 STORAGE_PATH = os.path.expanduser('~/.rosys/timelapse')
-FONT = f'{os.path.dirname(__file__)}/RobotoMono-Medium.ttf'
+FONT = f'{os.path.dirname(__file__)}/assets/RobotoMono-Medium.ttf'
 IMAGE_FONT = ImageFont.truetype(FONT, 12)
 BIG_COVER_FONT = ImageFont.truetype(FONT, 100)
 SMALL_COVER_FONT = ImageFont.truetype(FONT, 60)

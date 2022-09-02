@@ -1,4 +1,4 @@
-from rosys.debugging import AsyncioMonitor
+from rosys.analysis import AsyncioMonitor
 
 
 def test_parse_task_warning():

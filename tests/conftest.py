@@ -2,8 +2,8 @@ from typing import Generator
 
 import pytest
 import rosys
+from rosys.analysis import KpiLogger
 from rosys.automation import Automator
-from rosys.debugging import KpiLogger
 from rosys.driving import Driver, Odometer
 from rosys.geometry import Prism
 from rosys.hardware import Wheels, WheelsSimulation
