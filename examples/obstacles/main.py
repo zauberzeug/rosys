@@ -8,8 +8,7 @@ from rosys.automation import Automator, automation_controls
 from rosys.driving import Driver, Odometer, PathSegment, Steerer, keyboard_control, robot_object
 from rosys.geometry import Point, Pose, Prism, Spline
 from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, WheelsSimulation
-from rosys.pathplanning import Obstacle, ObstacleObject, PathPlanner
-from rosys.pathplanning.path_object import PathObject
+from rosys.pathplanning import Obstacle, PathPlanner, obstacle_object, path_object
 
 # setup
 shape = Prism(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)], height=0.5)
@@ -80,8 +79,8 @@ with ui.card():
 
     with ui.scene(640, 480, on_click=handle_click) as scene:
         robot_object(shape, odometer, debug=True)
-        obstacles3d = ObstacleObject(path_planner.obstacles)
-        path3d = PathObject()
+        obstacles3d = obstacle_object(path_planner.obstacles)
+        path3d = path_object()
 
     with ui.row():
         automation_controls(automator)
