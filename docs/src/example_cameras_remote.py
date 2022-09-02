@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from nicegui import ui
-from rosys.driving import Joystick, KeyboardControl, Odometer, Steerer
+from rosys.driving import Odometer, Steerer, joystick, keyboard_control
 from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, WheelsSimulation
 from rosys.vision import Camera, UsbCameraProviderHardware, UsbCameraProviderSimulation
 
@@ -33,8 +33,8 @@ with ui.card().tight().style('width:30em') as camera_card:
 with ui.card().tight().style('width:30em'):
     with ui.row():
         with ui.card().tight():
-            Joystick(steerer)
-            KeyboardControl(steerer)
+            joystick(steerer)
+            keyboard_control(steerer)
         ui.markdown('steer with joystick on the left or<br />SHIFT + arrow keys').classes('m-8 text-center')
 
 ui.run(title='RoSys')

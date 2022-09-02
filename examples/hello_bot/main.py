@@ -3,8 +3,8 @@ import os
 
 import rosys
 from nicegui import ui
-from rosys.automation import AutomationControls, Automator
-from rosys.driving import Driver, Joystick, KeyboardControl, Odometer, RobotObject, Steerer
+from rosys.automation import Automator, automation_controls
+from rosys.driving import Driver, Odometer, Steerer, joystick, keyboard_control, robot_object
 from rosys.geometry import Prism
 from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, WheelsSimulation
 
@@ -27,7 +27,7 @@ automator = Automator(wheels, steerer, default_automation=driver.drive_square)
 
 # ui
 with ui.card():
-    KeyboardControl(steerer)
+    keyboard_control(steerer)
 
     with ui.row():
         state = ui.label()
@@ -35,11 +35,11 @@ with ui.card():
 
     with ui.row():
         with ui.scene():
-            RobotObject(shape, odometer)
-        Joystick(steerer, size=50, color='blue')
+            robot_object(shape, odometer)
+        joystick(steerer, size=50, color='blue')
 
     with ui.row():
-        AutomationControls(automator)
+        automation_controls(automator)
         if isinstance(wheels, WheelsHardware):
             ui.button('configure microcontroller', on_click=robot_brain.configure).props('outline')
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')

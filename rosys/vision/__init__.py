@@ -1,6 +1,6 @@
 from .calibration import Calibration, Extrinsics, Intrinsics
 from .camera import Camera
-from .camera_objects import CameraObjects
+from .camera_objects import CameraObjects as camera_objects
 from .camera_projector import CameraProjector
 from .camera_provider import CameraProvider
 from .detections import BoxDetection, Detection, Detections, PointDetection

@@ -1,1 +1,1 @@
-from .wifi import WifiButton
+from .wifi import WifiButton as wifi_button
