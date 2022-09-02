@@ -3,7 +3,6 @@ from .camera import Camera
 from .camera_objects import CameraObjects
 from .camera_projector import CameraProjector
 from .camera_provider import CameraProvider
-from .camera_server import CameraServer
 from .detections import BoxDetection, Detection, Detections, PointDetection
 from .detector import Detector
 from .detector_hardware import DetectorHardware

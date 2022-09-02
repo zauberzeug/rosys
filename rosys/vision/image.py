@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import io
-import urllib.parse
 from dataclasses import dataclass
 from typing import Optional
 
@@ -28,10 +27,6 @@ class Image:
     time: float  # time of recording
     data: Optional[bytes] = None
     detections: Optional[Detections] = None
-
-    @property
-    def url(self) -> str:
-        return f'camera/{urllib.parse.quote_plus(self.camera_id)}/{self.time}'
 
     @property
     def id(self) -> str:
