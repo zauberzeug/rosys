@@ -534,18 +534,17 @@ Make sure the container can access the USB devices by starting it with <code>--p
 <p>Using <code>rosys.ui</code> you can show the latest captured images from each camera:</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
 <span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
-<span class="kn">from</span> <span class="nn">rosys.vision</span> <span class="kn">import</span> <span class="n">CameraServer</span><span class="p">,</span> <span class="n">UsbCameraProviderSimulation</span><span class="p">,</span> <span class="n">camera_provider</span>
+<span class="kn">from</span> <span class="nn">rosys.vision</span> <span class="kn">import</span> <span class="n">UsbCameraProviderSimulation</span><span class="p">,</span> <span class="n">camera_provider</span>
 
 <span class="n">camera_provider</span> <span class="o">=</span> <span class="n">UsbCameraProviderSimulation</span><span class="p">()</span>
 <span class="n">camera_provider</span><span class="o">.</span><span class="n">add_camera</span><span class="p">(</span><span class="n">camera_provider</span><span class="o">.</span><span class="n">create_calibrated</span><span class="p">(</span><span class="s1">&#39;test_cam&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">600</span><span class="p">))</span>
-<span class="n">CameraServer</span><span class="p">(</span><span class="n">camera_provider</span><span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">refresh</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">for</span> <span class="n">uid</span><span class="p">,</span> <span class="n">camera</span> <span class="ow">in</span> <span class="n">camera_provider</span><span class="o">.</span><span class="n">cameras</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">uid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">feeds</span><span class="p">:</span>
             <span class="n">feeds</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">image</span><span class="p">()</span>
-        <span class="n">feeds</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">latest_image_uri</span><span class="p">)</span>
+        <span class="n">feeds</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera_provider</span><span class="o">.</span><span class="n">get_latest_image_url</span><span class="p">(</span><span class="n">camera</span><span class="p">))</span>
 
 
 <span class="n">feeds</span> <span class="o">=</span> <span class="p">{}</span>
@@ -565,7 +564,7 @@ Here we use the <code>NEW_CAMERA</code> event to display the first camera to con
 <span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
 <span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Joystick</span><span class="p">,</span> <span class="n">KeyboardControl</span><span class="p">,</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">Steerer</span>
 <span class="kn">from</span> <span class="nn">rosys.hardware</span> <span class="kn">import</span> <span class="n">RobotBrain</span><span class="p">,</span> <span class="n">SerialCommunication</span><span class="p">,</span> <span class="n">WheelsHardware</span><span class="p">,</span> <span class="n">WheelsSimulation</span>
-<span class="kn">from</span> <span class="nn">rosys.vision</span> <span class="kn">import</span> <span class="n">Camera</span><span class="p">,</span> <span class="n">CameraProvider</span><span class="p">,</span> <span class="n">CameraServer</span><span class="p">,</span> <span class="n">UsbCameraProviderHardware</span><span class="p">,</span> <span class="n">UsbCameraProviderSimulation</span>
+<span class="kn">from</span> <span class="nn">rosys.vision</span> <span class="kn">import</span> <span class="n">Camera</span><span class="p">,</span> <span class="n">UsbCameraProviderHardware</span><span class="p">,</span> <span class="n">UsbCameraProviderSimulation</span>
 
 <span class="k">if</span> <span class="n">SerialCommunication</span><span class="o">.</span><span class="n">is_possible</span><span class="p">():</span>
     <span class="n">communication</span> <span class="o">=</span> <span class="n">SerialCommunication</span><span class="p">()</span>
@@ -578,7 +577,6 @@ Here we use the <code>NEW_CAMERA</code> event to display the first camera to con
     <span class="n">camera_provider</span><span class="o">.</span><span class="n">restore</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">_</span><span class="p">:</span> <span class="kc">None</span>  <span class="c1"># NOTE: disable persistence</span>
     <span class="n">test_cam</span> <span class="o">=</span> <span class="n">camera_provider</span><span class="o">.</span><span class="n">create_calibrated</span><span class="p">(</span><span class="s1">&#39;test_cam&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
     <span class="n">ui</span><span class="o">.</span><span class="n">on_startup</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">camera_provider</span><span class="o">.</span><span class="n">add_camera</span><span class="p">(</span><span class="n">test_cam</span><span class="p">))</span>
-<span class="n">CameraServer</span><span class="p">(</span><span class="n">camera_provider</span><span class="p">)</span>
 <span class="n">steerer</span> <span class="o">=</span> <span class="n">Steerer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
 <span class="n">odometer</span> <span class="o">=</span> <span class="n">Odometer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
 
@@ -587,7 +585,7 @@ Here we use the <code>NEW_CAMERA</code> event to display the first camera to con
     <span class="n">camera_card</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>  <span class="c1"># remove &quot;seeking camera&quot; label</span>
     <span class="k">with</span> <span class="n">camera_card</span><span class="p">:</span>
         <span class="n">maincam</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">image</span><span class="p">()</span>
-        <span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">maincam</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">latest_image_uri</span><span class="p">))</span>
+        <span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">maincam</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera_provider</span><span class="o">.</span><span class="n">get_latest_image_url</span><span class="p">(</span><span class="n">camera</span><span class="p">)))</span>
 
 <span class="n">camera_provider</span><span class="o">.</span><span class="n">CAMERA_ADDED</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">add_main_camera</span><span class="p">)</span>
 
