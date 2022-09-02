@@ -19,13 +19,6 @@ class Camera(abc.ABC):
     images: list[Image] = field(default_factory=list, metadata=persistence.exclude)
 
     @property
-    def latest_image_uri(self) -> str:
-        image = self.latest_captured_image
-        if image is None:
-            return 'camera/placeholder'
-        return f'camera/{self.id}/{image.time}'
-
-    @property
     def captured_images(self) -> list[Image]:
         return [i for i in self.images if i.data]
 

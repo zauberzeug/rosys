@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rosys
 from nicegui import ui
-from rosys.debugging import ProfileButton, profiling
+from rosys.analysis import ProfileButton, profiling
 
 
 @profiling.profile

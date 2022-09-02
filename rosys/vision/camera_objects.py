@@ -87,14 +87,14 @@ class CameraObjects(Group):
                 continue
             coordinates = [[point and [point[0], point[1], 0] for point in row] for row in projection.coordinates]
 
+            url = self.camera_provider.get_image_url(image)
             if image.camera_id not in self.textures:
-                self.textures[image.camera_id] = Texture(image.url, coordinates).with_name(f'image_{image.id}')
+                self.textures[image.camera_id] = Texture(url, coordinates).with_name(f'image_{image.id}')
             texture = self.textures[image.camera_id]
 
             z += 0.001
             texture.move(z=z)
-            if texture.args[0] != image.url:
-                url = image.url
+            if texture.args[0] != url:
                 await texture.set_url(url)
             if not await run.cpu_bound(CameraProjector.allclose, texture.args[1], coordinates):
                 await texture.set_coordinates(coordinates)

@@ -1,7 +1,7 @@
 from datetime import timedelta
 
 import pytest
-from rosys.debugging import Day, KpiLogger, date_to_str, str_to_date
+from rosys.analysis import Day, KpiLogger, date_to_str, str_to_date
 from rosys.test import forward
 
 
