@@ -51,7 +51,37 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rosys.io/reference/SUMMARY/</loc>
+         <loc>None</loc>
+         <lastmod>2022-09-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rosys.io/reference/rosys/analysis/</loc>
+         <lastmod>2022-09-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rosys.io/reference/rosys/automation/</loc>
+         <lastmod>2022-09-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rosys.io/reference/rosys/driving/</loc>
+         <lastmod>2022-09-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rosys.io/reference/rosys/hardware/</loc>
+         <lastmod>2022-09-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rosys.io/reference/rosys/system/</loc>
+         <lastmod>2022-09-03</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
+         <loc>https://rosys.io/reference/rosys/vision/</loc>
          <lastmod>2022-09-03</lastmod>
          <changefreq>daily</changefreq>
     </url>
