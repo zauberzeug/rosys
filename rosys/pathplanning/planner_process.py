@@ -6,8 +6,6 @@ from multiprocessing import Process
 from multiprocessing.connection import Connection
 from typing import Any
 
-import icecream
-
 from ..geometry import Point, Pose, Spline
 from .area import Area
 from .delaunay_planner import DelaunayPlanner
@@ -68,7 +66,6 @@ class PlannerProcess(Process):
         self.planner = DelaunayPlanner(robot_outline)
 
     def run(self) -> None:
-        icecream.install()  # NOTE provide ic(...) in subprocess
         while True:
             try:
                 cmd = self.connection.recv()
