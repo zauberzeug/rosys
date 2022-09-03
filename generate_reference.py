@@ -1,6 +1,7 @@
 import dataclasses
 import importlib
 import inspect
+import logging
 from pathlib import Path
 from types import ModuleType
 
@@ -29,6 +30,7 @@ for path in sorted(Path('.').rglob('__init__.py')):
     try:
         module = importlib.import_module(identifier)
     except:
+        logging.exception(f'Failed to import {identifier}')
         continue
 
     doc_path = path.parent.with_suffix('.md')
