@@ -1,7 +1,6 @@
 name: Documentation
 
 on:
-  push:
   release:
     types: [published]
 
