@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rosys
 from nicegui import ui
-from rosys.analysis import profile_button, profiling
+from rosys.analysis import ProfileButton, profiling
 
 
 @profiling.profile
@@ -13,6 +13,6 @@ def compute() -> None:
 
 
 rosys.on_repeat(compute, 1.0)
-profile_button()
+ProfileButton()
 
 ui.run()

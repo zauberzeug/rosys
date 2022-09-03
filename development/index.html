@@ -617,7 +617,7 @@ In the following examples we use Python's logging <code>dictConfig</code> for co
 <span class="kn">import</span> <span class="nn">logging.config</span>
 
 <span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
-<span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">Steerer</span><span class="p">,</span> <span class="n">joystick</span>
+<span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Joystick</span><span class="p">,</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">Steerer</span>
 <span class="kn">from</span> <span class="nn">rosys.hardware</span> <span class="kn">import</span> <span class="n">WheelsSimulation</span>
 
 <span class="n">logging</span><span class="o">.</span><span class="n">config</span><span class="o">.</span><span class="n">dictConfig</span><span class="p">({</span>
@@ -655,7 +655,7 @@ In the following examples we use Python's logging <code>dictConfig</code> for co
 <span class="n">steerer</span> <span class="o">=</span> <span class="n">Steerer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
 <span class="n">odometer</span> <span class="o">=</span> <span class="n">Odometer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
 
-<span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
+<span class="n">Joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
 
 <span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
 </code></pre></div>
@@ -782,7 +782,7 @@ Then you can change the format for the formatter:</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
 <span class="kn">import</span> <span class="nn">rosys</span>
 <span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
-<span class="kn">from</span> <span class="nn">rosys.analysis</span> <span class="kn">import</span> <span class="n">profile_button</span><span class="p">,</span> <span class="n">profiling</span>
+<span class="kn">from</span> <span class="nn">rosys.analysis</span> <span class="kn">import</span> <span class="n">ProfileButton</span><span class="p">,</span> <span class="n">profiling</span>
 
 
 <span class="hll"><span class="nd">@profiling</span><span class="o">.</span><span class="n">profile</span>
@@ -794,7 +794,7 @@ Then you can change the format for the formatter:</p>
 
 
 <span class="n">rosys</span><span class="o">.</span><span class="n">on_repeat</span><span class="p">(</span><span class="n">compute</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
-<span class="hll"><span class="n">profile_button</span><span class="p">()</span>
+<span class="hll"><span class="n">ProfileButton</span><span class="p">()</span>
 </span>
 <span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </code></pre></div>

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from nicegui import ui
-from rosys.driving import Odometer, Steerer, keyboard_control
+from rosys.driving import KeyboardControl, Odometer, Steerer
 from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, WheelsSimulation, communication
 
 is_real = SerialCommunication.is_possible()
@@ -13,7 +13,7 @@ else:
 odometer = Odometer(wheels)
 steerer = Steerer(wheels)
 
-keyboard_control(steerer)
+KeyboardControl(steerer)
 
 if is_real:
     communication.debug_ui()

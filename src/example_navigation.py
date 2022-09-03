@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 from nicegui import ui
 from rosys.automation import Automator
-from rosys.driving import Driver, Odometer, robot_object
+from rosys.driving import Driver, Odometer, RobotObject
 from rosys.geometry import Point, Pose, Prism
 from rosys.hardware import WheelsSimulation
-from rosys.pathplanning import Obstacle, PathPlanner, obstacle_object, path_object
+from rosys.pathplanning import Obstacle, ObstacleObject, PathObject, PathPlanner
 
 shape = Prism.default_robot_shape()
 path_planner = PathPlanner(shape)
@@ -26,9 +26,9 @@ async def handle_click(msg):
             automator.start(driver.drive_path(path))
 
 with ui.scene(on_click=handle_click, width=600):
-    robot_object(shape, odometer)
-    obstacle_object(path_planner.obstacles)
-    path3d = path_object()
+    RobotObject(shape, odometer)
+    ObstacleObject(path_planner.obstacles)
+    path3d = PathObject()
 
 ui.label('click into the scene to drive the robot')
 
