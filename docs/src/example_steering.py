@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from nicegui import ui
-from rosys.driving import Joystick, KeyboardControl, Odometer, RobotObject, Steerer
+from rosys.driving import Odometer, Steerer, joystick, keyboard_control, robot_object
 from rosys.geometry import Prism
 from rosys.hardware import WheelsSimulation
 
@@ -9,9 +9,9 @@ wheels = WheelsSimulation()
 odometer = Odometer(wheels)
 steerer = Steerer(wheels)
 
-KeyboardControl(steerer)
-Joystick(steerer, size=50, color='blue')
+keyboard_control(steerer)
+joystick(steerer, size=50, color='blue')
 with ui.scene():
-    RobotObject(shape, odometer)
+    robot_object(shape, odometer)
 
 ui.run(title='RoSys')

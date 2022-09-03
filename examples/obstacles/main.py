@@ -4,12 +4,11 @@ import uuid
 
 import rosys
 from nicegui import ui
-from rosys.automation import AutomationControls, Automator
-from rosys.driving import Driver, KeyboardControl, Odometer, PathSegment, RobotObject, Steerer
+from rosys.automation import Automator, automation_controls
+from rosys.driving import Driver, Odometer, PathSegment, Steerer, keyboard_control, robot_object
 from rosys.geometry import Point, Pose, Prism, Spline
 from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, WheelsSimulation
-from rosys.pathplanning import Obstacle, ObstacleObject, PathPlanner
-from rosys.pathplanning.path_object import PathObject
+from rosys.pathplanning import Obstacle, PathPlanner, obstacle_object, path_object
 
 # setup
 shape = Prism(outline=[(0, 0), (-0.5, -0.5), (1.5, -0.5), (1.75, 0), (1.5, 0.5), (-0.5, 0.5)], height=0.5)
@@ -27,7 +26,7 @@ path_planner = PathPlanner(shape)
 
 # ui
 with ui.card():
-    KeyboardControl(steerer)
+    keyboard_control(steerer)
 
     state = ui.label()
     ui.timer(0.1, lambda: state.set_text(f'{rosys.time():.3f} s, {odometer.prediction}'))
@@ -79,12 +78,12 @@ with ui.card():
                 return
 
     with ui.scene(640, 480, on_click=handle_click) as scene:
-        RobotObject(shape, odometer, debug=True)
-        obstacles3d = ObstacleObject(path_planner.obstacles)
-        path3d = PathObject()
+        robot_object(shape, odometer, debug=True)
+        obstacles3d = obstacle_object(path_planner.obstacles)
+        path3d = path_object()
 
     with ui.row():
-        AutomationControls(automator)
+        automation_controls(automator)
         ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
 
 # start

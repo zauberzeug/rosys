@@ -1,6 +1,6 @@
 from .area import Area
-from .area_object import AreaObject
+from .area_object_ import AreaObject as area_object
 from .obstacle import Obstacle
-from .obstacle_object import ObstacleObject
-from .path_object import PathObject
+from .obstacle_object_ import ObstacleObject as obstacle_object
+from .path_object_ import PathObject as path_object
 from .path_planner import PathPlanner

@@ -4,7 +4,6 @@ import os
 import socket
 
 from nicegui import ui
-from nicegui.elements.button import Button
 
 log = logging.getLogger('rosys.wifi')
 
@@ -36,7 +35,7 @@ def has_internet() -> bool:
         return False
 
 
-class WifiButton(Button):
+class WifiButton(ui.button):
     '''The WiFi button indicates the current connectivity state and allows setting a new WiFi connection.'''
 
     def __init__(self) -> None:

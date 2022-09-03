@@ -3,7 +3,7 @@ import logging
 import logging.config
 
 from nicegui import ui
-from rosys.driving import Joystick, Odometer, Steerer
+from rosys.driving import Odometer, Steerer, joystick
 from rosys.hardware import WheelsSimulation
 
 logging.config.dictConfig({
@@ -41,6 +41,6 @@ wheels = WheelsSimulation()
 steerer = Steerer(wheels)
 odometer = Odometer(wheels)
 
-Joystick(steerer)
+joystick(steerer)
 
 ui.run(title='RoSys')
