@@ -30,7 +30,7 @@ class CameraProvider(abc.ABC):
         self.NEW_IMAGE = Event()
         '''an new image is available (argument: image)'''
 
-        self.base_path = f'/images/{str(uuid4())}'
+        self.base_path = f'images/{str(uuid4())}'
         create_image_route(self)
 
     @property
