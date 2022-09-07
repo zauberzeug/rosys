@@ -1,19 +1,17 @@
-from rosys.actors.pathplanning import PlannerSearchCommand
-from rosys.world import Area, Point, Pose
+from rosys.geometry import Point, Pose
+from rosys.pathplanning.area import Area
+from rosys.pathplanning.planner_process import PlannerSearchCommand
 
 cmd = PlannerSearchCommand(
-    deadline=1657785369.4472249,
+    deadline=1657783451.6148303,
     areas=[
         Area(
             id='efc3d76a-dc4f-4578-9dba-b1b673dc63b2', type=None, color='green',
             outline=[Point(x=6.149937727671209, y=-0.17711484789623144),
-                     Point(x=9.046821662232519, y=-0.21698541645168223),
-                     Point(x=12.699061983842249, y=-0.2761903864398221),
-                     Point(x=13.828295970670862, y=-0.6445640499531102),
-                     Point(x=27.449221921371926, y=0.24219831882073173),
+                     Point(x=9.612772529615507, y=-0.31516119913314),
+                     Point(x=27.620256939642154, y=-0.10576934579104247),
                      Point(x=28.024465321296177, y=-2.101078143446283),
-                     Point(x=13.507960466210443, y=-3.1956976724428197),
-                     Point(x=13.647888341643045, y=-5.411756660888658),
+                     Point(x=11.736482388608621, y=-3.2472106100020364),
                      Point(x=12.238609367234528, y=-10.776575490209341),
                      Point(x=10.11621581471781, y=-10.751731291418032),
                      Point(x=10.152396176357877, y=-9.206962519468602),
@@ -37,11 +35,12 @@ cmd = PlannerSearchCommand(
         Area(
             id='f9777f5e-8b58-4f24-94b6-6379aeca12b4', type='sand', color='SandyBrown',
             outline=[Point(x=26.981890753032665, y=-0.3263875500272597),
-                     Point(x=15.807769756181198, y=-0.9329868641480514),
-                     Point(x=15.003576366400255, y=-2.7753407211819487),
+                     Point(x=11.664895239366887, y=-0.8104581416677199),
+                     Point(x=14.080928558308386, y=-2.5807959888852743),
                      Point(x=26.2813145841394, y=-1.9524768591532027)])],
     obstacles=[],
-    start=Pose(x=15, y=-2.0, yaw=-2.83, time=0),
-    goal=Pose(x=0.058, y=-0.34, yaw=3.14, time=0))
+    start=Pose(
+        x=0.5050162048835956, y=-1.6844343414747884, yaw=-3.132945871135351, time=1657783441.6119301),
+    goal=Pose(x=-2.0705826461450285, y=-1.1370770520609557, yaw=2.792526803190927, time=0))
 
 robot_outline = [(-0.22, -0.36), (1.07, -0.36), (1.17, 0), (1.07, 0.36), (-0.22, 0.36)]
