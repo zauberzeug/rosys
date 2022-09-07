@@ -551,6 +551,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../reference/rosys/pathplanning/" class="md-nav__link">
+        pathplanning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../reference/rosys/system/" class="md-nav__link">
         system
       </a>
@@ -671,7 +685,7 @@ Name your entry file <code>main.py</code> and add the following content:</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
 <span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
 
-<span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">KeyboardControl</span><span class="p">,</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">RobotObject</span><span class="p">,</span> <span class="n">Steerer</span>
+<span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">Steerer</span><span class="p">,</span> <span class="n">keyboard_control</span><span class="p">,</span> <span class="n">robot_object</span>
 <span class="kn">from</span> <span class="nn">rosys.geometry</span> <span class="kn">import</span> <span class="n">Prism</span>
 <span class="kn">from</span> <span class="nn">rosys.hardware</span> <span class="kn">import</span> <span class="n">WheelsSimulation</span>
 
@@ -682,9 +696,9 @@ Name your entry file <code>main.py</code> and add the following content:</p>
 <span class="n">steerer</span> <span class="o">=</span> <span class="n">Steerer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
 
 <span class="c1"># ui</span>
-<span class="n">KeyboardControl</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
+<span class="n">keyboard_control</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
 <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">():</span>
-    <span class="n">RobotObject</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">odometer</span><span class="p">)</span>
+    <span class="n">robot_object</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">odometer</span><span class="p">)</span>
 <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;hold SHIFT to steer with the keyboard arrow keys&#39;</span><span class="p">)</span>
 
 <span class="c1"># start</span>

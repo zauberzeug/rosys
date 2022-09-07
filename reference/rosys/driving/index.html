@@ -487,20 +487,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rosys.driving.Joystick" class="md-nav__link">
-    Joystick
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rosys.driving.KeyboardControl" class="md-nav__link">
-    KeyboardControl
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#rosys.driving.Odometer" class="md-nav__link">
     Odometer
   </a>
@@ -517,13 +503,6 @@
         
       </ul>
     </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rosys.driving.RobotObject" class="md-nav__link">
-    RobotObject
-  </a>
   
 </li>
       
@@ -547,6 +526,27 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#rosys.driving.joystick" class="md-nav__link">
+    joystick
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.driving.keyboard_control" class="md-nav__link">
+    keyboard_control
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.driving.robot_object" class="md-nav__link">
+    robot_object
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -564,6 +564,20 @@
     <li class="md-nav__item">
       <a href="../hardware/" class="md-nav__link">
         hardware
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../pathplanning/" class="md-nav__link">
+        pathplanning
       </a>
     </li>
   
@@ -636,20 +650,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rosys.driving.Joystick" class="md-nav__link">
-    Joystick
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rosys.driving.KeyboardControl" class="md-nav__link">
-    KeyboardControl
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#rosys.driving.Odometer" class="md-nav__link">
     Odometer
   </a>
@@ -670,13 +670,6 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#rosys.driving.RobotObject" class="md-nav__link">
-    RobotObject
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
   <a href="#rosys.driving.Steerer" class="md-nav__link">
     Steerer
   </a>
@@ -693,6 +686,27 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.driving.joystick" class="md-nav__link">
+    joystick
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.driving.keyboard_control" class="md-nav__link">
+    keyboard_control
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.driving.robot_object" class="md-nav__link">
+    robot_object
+  </a>
   
 </li>
       
@@ -731,90 +745,6 @@
 <p>It requires a wheels module (or any drivable hardware representation) to execute individual drive commands.
 It also requires an odometer to get a current prediction of the robot's pose.
 Its <code>parameters</code> allow controlling the specific drive behavior.</p>
-
-
-
-  
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="rosys.driving.Joystick" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">Joystick</span>
-
-
-<a href="#rosys.driving.Joystick" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="n">Joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">:</span> <span class="n">Steerer</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
-
-  <div class="doc doc-contents first">
-      <p class="doc doc-class-bases">
-        Bases: <code><span title="nicegui.elements.joystick.Joystick">NiceGuiJoystick</span></code></p>
-
-  
-      <p>The Joystick UI element allows controlling a given steerer via touch events.</p>
-
-
-
-  
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
-<h2 id="rosys.driving.KeyboardControl" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">KeyboardControl</span>
-
-
-<a href="#rosys.driving.KeyboardControl" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="n">KeyboardControl</span><span class="p">(</span>
-    <span class="n">steerer</span><span class="p">:</span> <span class="n">Steerer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">default_speed</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
-
-  <div class="doc doc-contents first">
-
-  
-      <p>The KeyboardControl UI element allows controlling a given steerer via keyboard events.</p>
-<p>Hold shift while pressing an arrow key to steer the robot.
-You can change the speed with the number keys 1 to 9 and the initial speed via the <code>default_speed</code> argument.</p>
 
 
 
@@ -899,56 +829,6 @@ Given the history of previously received velocities, it can update its predictio
 
 
 
-<h2 id="rosys.driving.RobotObject" class="doc doc-heading">
-        <span class="doc doc-object-name doc-class-name">RobotObject</span>
-
-
-<a href="#rosys.driving.RobotObject" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="n">RobotObject</span><span class="p">(</span>
-    <span class="n">shape</span><span class="p">:</span> <span class="n">Prism</span><span class="p">,</span>
-    <span class="n">odometer</span><span class="p">:</span> <span class="n">Odometer</span><span class="p">,</span>
-    <span class="n">driver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Driver</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="o">*</span><span class="p">,</span>
-    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
-</code></pre></div>
-
-  <div class="doc doc-contents first">
-      <p class="doc doc-class-bases">
-        Bases: <code><span title="nicegui.elements.scene_object3d.Object3D">Object3D</span></code></p>
-
-  
-      <p>The RobotObject UI element displays the robot with its given shape in a 3D scene.</p>
-<p>The current pose is taken from a given odometer.
-An optional driver module shows debugging information about a current path-following process.
-The <code>debug</code> argument can be set to show a wireframe instead of a closed polygon.</p>
-
-
-
-  
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-  </div>
-
-</div>
-
-<div class="doc doc-object doc-class">
-
-
-
 <h2 id="rosys.driving.Steerer" class="doc doc-heading">
         <span class="doc doc-object-name doc-class-name">Steerer</span>
 
@@ -1005,6 +885,141 @@ Changing the steering state emits events that can be used to react to manual use
 </tr>
 </tbody>
 </table>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.driving.joystick" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">joystick</span>
+
+
+<a href="#rosys.driving.joystick" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">:</span> <span class="n">Steerer</span><span class="p">,</span> <span class="o">**</span><span class="n">options</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><span title="nicegui.elements.joystick.Joystick">NiceGuiJoystick</span></code></p>
+
+  
+      <p>The Joystick UI element allows controlling a given steerer via touch events.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.driving.keyboard_control" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">keyboard_control</span>
+
+
+<a href="#rosys.driving.keyboard_control" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">keyboard_control</span><span class="p">(</span>
+    <span class="n">steerer</span><span class="p">:</span> <span class="n">Steerer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">default_speed</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+
+  
+      <p>The KeyboardControl UI element allows controlling a given steerer via keyboard events.</p>
+<p>Hold shift while pressing an arrow key to steer the robot.
+You can change the speed with the number keys 1 to 9 and the initial speed via the <code>default_speed</code> argument.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.driving.robot_object" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">robot_object</span>
+
+
+<a href="#rosys.driving.robot_object" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">robot_object</span><span class="p">(</span>
+    <span class="n">shape</span><span class="p">:</span> <span class="n">Prism</span><span class="p">,</span>
+    <span class="n">odometer</span><span class="p">:</span> <span class="n">Odometer</span><span class="p">,</span>
+    <span class="n">driver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Driver</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><span title="nicegui.elements.scene_object3d.Object3D">Object3D</span></code></p>
+
+  
+      <p>The RobotObject UI element displays the robot with its given shape in a 3D scene.</p>
+<p>The current pose is taken from a given odometer.
+An optional driver module shows debugging information about a current path-following process.
+The <code>debug</code> argument can be set to show a wireframe instead of a closed polygon.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
 
 
 

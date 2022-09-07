@@ -519,6 +519,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/rosys/pathplanning/" class="md-nav__link">
+        pathplanning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/rosys/system/" class="md-nav__link">
         system
       </a>
@@ -603,10 +617,10 @@
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
 <span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
 <span class="kn">from</span> <span class="nn">rosys.automation</span> <span class="kn">import</span> <span class="n">Automator</span>
-<span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Driver</span><span class="p">,</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">RobotObject</span>
+<span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Driver</span><span class="p">,</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">robot_object</span>
 <span class="kn">from</span> <span class="nn">rosys.geometry</span> <span class="kn">import</span> <span class="n">Point</span><span class="p">,</span> <span class="n">Pose</span><span class="p">,</span> <span class="n">Prism</span>
 <span class="kn">from</span> <span class="nn">rosys.hardware</span> <span class="kn">import</span> <span class="n">WheelsSimulation</span>
-<span class="kn">from</span> <span class="nn">rosys.pathplanning</span> <span class="kn">import</span> <span class="n">Obstacle</span><span class="p">,</span> <span class="n">ObstacleObject</span><span class="p">,</span> <span class="n">PathObject</span><span class="p">,</span> <span class="n">PathPlanner</span>
+<span class="kn">from</span> <span class="nn">rosys.pathplanning</span> <span class="kn">import</span> <span class="n">Obstacle</span><span class="p">,</span> <span class="n">PathPlanner</span><span class="p">,</span> <span class="n">obstacle_object</span><span class="p">,</span> <span class="n">path_object</span>
 
 <span class="n">shape</span> <span class="o">=</span> <span class="n">Prism</span><span class="o">.</span><span class="n">default_robot_shape</span><span class="p">()</span>
 <span class="n">path_planner</span> <span class="o">=</span> <span class="n">PathPlanner</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
@@ -628,9 +642,9 @@
             <span class="n">automator</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">driver</span><span class="o">.</span><span class="n">drive_path</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
 
 <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">(</span><span class="n">on_click</span><span class="o">=</span><span class="n">handle_click</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">600</span><span class="p">):</span>
-    <span class="n">RobotObject</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">odometer</span><span class="p">)</span>
-    <span class="n">ObstacleObject</span><span class="p">(</span><span class="n">path_planner</span><span class="o">.</span><span class="n">obstacles</span><span class="p">)</span>
-    <span class="n">path3d</span> <span class="o">=</span> <span class="n">PathObject</span><span class="p">()</span>
+    <span class="n">robot_object</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">odometer</span><span class="p">)</span>
+    <span class="n">obstacle_object</span><span class="p">(</span><span class="n">path_planner</span><span class="o">.</span><span class="n">obstacles</span><span class="p">)</span>
+    <span class="n">path3d</span> <span class="o">=</span> <span class="n">path_object</span><span class="p">()</span>
 
 <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;click into the scene to drive the robot&#39;</span><span class="p">)</span>
 

@@ -533,6 +533,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/rosys/pathplanning/" class="md-nav__link">
+        pathplanning
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/rosys/system/" class="md-nav__link">
         system
       </a>
@@ -665,7 +679,7 @@ In a simple use case you may only need to visualize one camera and have some ste
 Here we use the <code>NEW_CAMERA</code> event to display the first camera to control real <a href="../hardware/">Hardware</a>:</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
 <span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
-<span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Joystick</span><span class="p">,</span> <span class="n">KeyboardControl</span><span class="p">,</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">Steerer</span>
+<span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">Steerer</span><span class="p">,</span> <span class="n">joystick</span><span class="p">,</span> <span class="n">keyboard_control</span>
 <span class="kn">from</span> <span class="nn">rosys.hardware</span> <span class="kn">import</span> <span class="n">RobotBrain</span><span class="p">,</span> <span class="n">SerialCommunication</span><span class="p">,</span> <span class="n">WheelsHardware</span><span class="p">,</span> <span class="n">WheelsSimulation</span>
 <span class="kn">from</span> <span class="nn">rosys.vision</span> <span class="kn">import</span> <span class="n">Camera</span><span class="p">,</span> <span class="n">UsbCameraProviderHardware</span><span class="p">,</span> <span class="n">UsbCameraProviderSimulation</span>
 
@@ -698,8 +712,8 @@ Here we use the <code>NEW_CAMERA</code> event to display the first camera to con
 <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">()</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">&#39;width:30em&#39;</span><span class="p">):</span>
     <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
         <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">():</span>
-            <span class="n">Joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
-            <span class="n">KeyboardControl</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
+            <span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
+            <span class="n">keyboard_control</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
         <span class="n">ui</span><span class="o">.</span><span class="n">markdown</span><span class="p">(</span><span class="s1">&#39;steer with joystick on the left or&lt;br /&gt;SHIFT + arrow keys&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-8 text-center&#39;</span><span class="p">)</span>
 
 <span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
