@@ -47,7 +47,6 @@ async def _get_image(cameras: dict[str, Camera], request: Request) -> None:
         raise
 
 
-@cached(ttl=30)
 async def _try_get_jpeg(camera: Camera, timestamp: str, shrink_factor: int) -> Optional[bytes]:
     for image in reversed(camera.images):
         if str(image.time) == timestamp:
