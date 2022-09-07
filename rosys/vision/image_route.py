@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING, Optional
 
 import cv2
 import numpy as np
-from aiocache import cached
 from nicegui import ui
 from starlette.requests import Request
 from starlette.responses import Response
