@@ -5,6 +5,7 @@ from typing import Optional
 import rosys
 import socketio
 import socketio.exceptions
+from rosys.debugging import profile
 
 from .. import persistence, task_logger
 from .detections import BoxDetection, Detections, PointDetection, SegmentationDetection
@@ -99,6 +100,7 @@ class DetectorHardware(Detector):
         except:
             self.log.exception(f'could not upload {image.id}')
 
+    @profile
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED, tags: list[str] = []) -> None:
         '''Runs detections on the image. Afterwards the `image.detections` property is filled.'''
         if not self.is_connected:

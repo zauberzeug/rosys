@@ -11,7 +11,7 @@ from .profiling import profile
 class ProfileButton(ui.button):
     '''The profile button allows starting and stopping a profiling session.
 
-    Use the `profiling.profile` decorator for including functions or methods in the analysis.
+    Use the `@rosys.analyze.profile` decorator for including functions or methods in the analysis.
     The results are shown on the console.
     '''
 
