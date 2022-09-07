@@ -6,18 +6,23 @@ import os
 from datetime import datetime
 from glob import glob
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Protocol
 
 import humanize
 import rosys
 from PIL import Image, ImageDraw, ImageFont
-from rosys.vision import Image as RosysImage
 
 STORAGE_PATH = os.path.expanduser('~/.rosys/timelapse')
 FONT = f'{os.path.dirname(__file__)}/assets/RobotoMono-Medium.ttf'
 IMAGE_FONT = ImageFont.truetype(FONT, 12)
 BIG_COVER_FONT = ImageFont.truetype(FONT, 100)
 SMALL_COVER_FONT = ImageFont.truetype(FONT, 60)
+
+
+class RosysImage(Protocol):
+    camera_id: str
+    time: float
+    data: Optional[bytes] = None
 
 
 class TimelapseRecorder:
