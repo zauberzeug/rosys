@@ -9,10 +9,10 @@ RUN apt update && apt install -y \
 RUN python3 -m pip install --upgrade pip
 
 # We use Poetry for dependency management
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | POETRY_HOME=/opt/poetry python && \
-    cd /usr/local/bin && \
-    ln -s /opt/poetry/bin/poetry && \
-    poetry config virtualenvs.create false
+RUN curl -sSL https://install.python-poetry.org | python3 - && \
+        cd /usr/local/bin && \
+        ln -s ~/.local/bin/poetry && \
+        poetry config virtualenvs.create false
 
 WORKDIR /rosys
 
