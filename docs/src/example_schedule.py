@@ -8,22 +8,23 @@ from rosys.geometry import Point, Prism
 from rosys.hardware import WheelsSimulation
 
 
-async def forward_backward() -> None:
+async def drive_around() -> None:
     while True:
         await driver.drive_to(Point(x=1, y=0))
         await driver.drive_to(Point(x=0, y=0))
 
 
-async def stop() -> None:
-    await wheels.drive(0, 0)
+async def drive_home() -> None:
+    await driver.drive_to(Point(x=0, y=0))
+
 
 shape = Prism.default_robot_shape()
 wheels = WheelsSimulation()
 odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator(wheels, None, default_automation=forward_backward)
+automator = Automator(wheels, None, default_automation=drive_around)
 
-schedule = Schedule(automator, on_enable=forward_backward, on_disable=stop)
+schedule = Schedule(automator, on_enable=drive_around, on_disable=drive_home, location=(51.983013, 7.434259))
 schedule.plan.disable_all()
 
 ui.label(
