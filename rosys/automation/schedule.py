@@ -1,16 +1,17 @@
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 import rosys
 from nicegui import ui
+from rosys import persistence
 
 from .automator import Automator
 
 
+@dataclass(slots=True, kw_only=True)
 class Plan:
-
-    def __init__(self) -> None:
-        self.half_hours: list[bool] = [True] * 2 * 24 * 7
+    half_hours: list[bool] = field(default_factory=lambda: [True] * 2 * 24 * 7)
 
     def time_to_index(self, weekday: int, hour: int, minute: int) -> int:
         if not 0 <= weekday <= 6:
@@ -62,6 +63,16 @@ class Schedule:
         self.buttons: list[tuple(ui.button, ui.button, ui.button)] = []
         rosys.on_repeat(self.step, 1)
 
+        self.needs_backup: bool = False
+        persistence.register(self)
+
+    def backup(self) -> dict:
+        return {'half_hours': self.plan.half_hours}
+
+    def restore(self, data: dict[str, Any]) -> None:
+        self.plan.half_hours[:] = data.get('half_hours', True)
+        self.update_ui()
+
     def step(self) -> None:
         time = datetime.fromtimestamp(rosys.time())
         if not self.enabled and self.plan.is_enabled(time.weekday(), time.hour, time.minute) and self.on_enable:
@@ -98,4 +109,5 @@ class Schedule:
 
     def toggle(self, weekday: int, hour: int, minute: Optional[int] = None) -> None:
         self.plan.toggle(weekday, hour, minute)
+        self.needs_backup = True
         self.update_ui()
