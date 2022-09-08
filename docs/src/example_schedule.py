@@ -26,8 +26,9 @@ automator = Automator(wheels, None, default_automation=forward_backward)
 schedule = Schedule(automator, on_enable=forward_backward, on_disable=stop)
 schedule.plan.disable_all()
 
-ui.label(f'You can test the schedule by clicking on the "{datetime.now().hour:02d}" slot. '
-         f'This will let the robot drive back and forth for the current hour.')
+ui.label(
+    f'You can test the schedule by clicking on slot "{datetime.now().hour:02d}" in row {datetime.now().weekday()+1}. '
+    f'This will let the robot drive back and forth for the current hour.')
 schedule.ui()
 with ui.scene():
     robot_object(shape, odometer)

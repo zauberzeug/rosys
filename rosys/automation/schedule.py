@@ -10,26 +10,29 @@ from .automator import Automator
 class Plan:
 
     def __init__(self) -> None:
-        self.half_hours: list[bool] = [True] * 24 * 2
+        self.half_hours: list[bool] = [True] * 2 * 24 * 7
 
-    def time_to_index(self, hour: int, minute: int) -> int:
+    def time_to_index(self, weekday: int, hour: int, minute: int) -> int:
+        if not 0 <= weekday <= 6:
+            raise ValueError(f'day of week must be between 0 and 6, not {weekday}')
         if not 0 <= minute <= 59:
             raise ValueError(f'minutes must be between 0 and 59, not {minute}')
-        return hour * 2 + minute // 30
+        return weekday * 2 * 24 + hour * 2 + minute // 30
 
-    def is_enabled(self, hour: int, minute: Optional[int] = None) -> bool:
+    def is_enabled(self, weekday: int, hour: int, minute: Optional[int] = None) -> bool:
         if minute is None:
-            return self.half_hours[self.time_to_index(hour, 0)] or self.half_hours[self.time_to_index(hour, 30)]
+            return self.half_hours[self.time_to_index(weekday, hour, 0)] \
+                or self.half_hours[self.time_to_index(weekday, hour, 30)]
         else:
-            return self.half_hours[self.time_to_index(hour, minute)]
+            return self.half_hours[self.time_to_index(weekday, hour, minute)]
 
-    def toggle(self, hour: int, minute: Optional[int] = None) -> bool:
-        new_value = not self.is_enabled(hour, minute)
+    def toggle(self, weekday: int, hour: int, minute: Optional[int] = None) -> bool:
+        new_value = not self.is_enabled(weekday, hour, minute)
         if minute is None:
-            self.half_hours[self.time_to_index(hour, 0)] = new_value
-            self.half_hours[self.time_to_index(hour, 30)] = new_value
+            self.half_hours[self.time_to_index(weekday, hour, 0)] = new_value
+            self.half_hours[self.time_to_index(weekday, hour, 30)] = new_value
         else:
-            self.half_hours[self.time_to_index(hour, minute)] = new_value
+            self.half_hours[self.time_to_index(weekday, hour, minute)] = new_value
 
     def disable_all(self) -> None:
         for i in range(len(self.half_hours)):
@@ -61,33 +64,38 @@ class Schedule:
 
     def step(self) -> None:
         time = datetime.fromtimestamp(rosys.time())
-        if not self.enabled and self.plan.is_enabled(time.hour, time.minute) and self.on_enable:
+        if not self.enabled and self.plan.is_enabled(time.weekday(), time.hour, time.minute) and self.on_enable:
             self.automator.start(self.on_enable())
             self.enabled = True
-        if self.enabled and not self.plan.is_enabled(time.hour, time.minute) and self.on_disable:
+        if self.enabled and not self.plan.is_enabled(time.weekday(), time.hour, time.minute) and self.on_disable:
             self.automator.start(self.on_disable())
             self.enabled = False
 
     def ui(self) -> ui.row:
-        with ui.row().style(replace='gap: 0.3em') as row:
-            for i in range(24):
-                with ui.column().style(replace='gap: 0.3em'):
-                    hour = ui.button(f'{i:02d}', on_click=lambda _, i=i: self.toggle(i)).props('unelevated dense')
-                    with ui.row().style(replace='gap: 0.1em'):
-                        first_half = ui.button(on_click=lambda _, i=i: self.toggle(i, 0)).props('unelevated dense') \
-                            .style('width:0.8em')
-                        second_half = ui.button(on_click=lambda _, i=i: self.toggle(i, 30)).props('unelevated dense') \
-                            .style('width:0.8em')
-                self.buttons.append((hour, first_half, second_half))
+        with ui.column().style(replace='gap: 0') as grid:
+            for d in range(7):
+                with ui.row().style(f'padding: 0.3em; background-color: {"#ccc" if d > 4 else "#fff"}', replace='gap: 0.3em'):
+                    for h in range(24):
+                        with ui.column().style(replace='gap: 0.1em'):
+                            hour = ui.button(f'{h:02d}', on_click=lambda _, d=d, h=h: self.toggle(d, h)) \
+                                .props('unelevated dense')
+                            with ui.row().style(replace='gap: 0.1em'):
+                                first_half = ui.button(on_click=lambda _, d=d, h=h: self.toggle(d, h, 0)) \
+                                    .props('unelevated dense').style('height: 1em; width: 0.8em')
+                                second_half = ui.button(on_click=lambda _, d=d, h=h: self.toggle(d, h, 30)) \
+                                    .props('unelevated dense').style('height: 1em; width: 0.8em')
+                        self.buttons.append((hour, first_half, second_half))
         self.update_ui()
-        return row
+        return grid
 
     def update_ui(self) -> None:
-        for i, hour_buttons in enumerate(self.buttons):
-            hour_buttons[0].classes(replace='bg-positive' if self.plan.is_enabled(i) else 'bg-negative')
-            hour_buttons[1].classes(replace='bg-positive' if self.plan.is_enabled(i, 0) else 'bg-negative')
-            hour_buttons[2].classes(replace='bg-positive' if self.plan.is_enabled(i, 30) else 'bg-negative')
+        for d in range(7):
+            for h in range(24):
+                buttons = self.buttons[d * 24 + h]
+                buttons[0].classes(replace='bg-positive' if self.plan.is_enabled(d, h) else 'bg-negative')
+                buttons[1].classes(replace='bg-positive' if self.plan.is_enabled(d, h, 0) else 'bg-negative')
+                buttons[2].classes(replace='bg-positive' if self.plan.is_enabled(d, h, 30) else 'bg-negative')
 
-    def toggle(self, hour: int, minute: Optional[int] = None) -> None:
-        self.plan.toggle(hour, minute)
+    def toggle(self, weekday: int, hour: int, minute: Optional[int] = None) -> None:
+        self.plan.toggle(weekday, hour, minute)
         self.update_ui()
