@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Optional
 
-import pytz
 import rosys
 import suntime
 from nicegui import ui
@@ -26,8 +25,8 @@ class Plan:
     def is_enabled(self, weekday: int, hour: int, minute: Optional[int] = None) -> bool:
         if self.location:
             sun = suntime.Sun(lat=self.location[0], lon=self.location[1])
-            t = datetime.now().replace(hour=hour, minute=minute or 0)
-            if not sun.get_sunrise_time() < pytz.UTC.localize(t) < sun.get_sunset_time():
+            dt = datetime.now().astimezone().replace(hour=hour, minute=minute or 0)
+            if not sun.get_local_sunrise_time() < dt < sun.get_local_sunset_time():
                 return False
         if minute is None:
             return self.half_hours[self.time_to_index(weekday, hour, 0)] \
