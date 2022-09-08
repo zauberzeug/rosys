@@ -9,6 +9,7 @@ nav:
       - examples/steering.md
       - examples/hardware.md
       - examples/click-and-drive.md
+      - examples/schedule.md
       - examples/navigation.md
       - examples/cameras.md
   - development.md
