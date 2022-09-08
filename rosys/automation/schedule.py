@@ -56,7 +56,7 @@ class Schedule:
     def __init__(self, automator: Automator, *,
                  on_enable: Optional[Callable] = None,
                  on_disable: Optional[Callable] = None,
-                 location: Optional[tuple[float, float]]) -> None:
+                 location: Optional[tuple[float, float]] = None) -> None:
         '''Schedules automations according to a time plan.
 
         param on_enable: automation to execute when entering a time frame marked as active
