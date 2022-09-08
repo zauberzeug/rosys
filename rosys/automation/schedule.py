@@ -2,7 +2,9 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Callable, Optional
 
+import pytz
 import rosys
+import suntime
 from nicegui import ui
 from rosys import persistence
 
@@ -12,6 +14,7 @@ from .automator import Automator
 @dataclass(slots=True, kw_only=True)
 class Plan:
     half_hours: list[bool] = field(default_factory=lambda: [True] * 2 * 24 * 7)
+    location: Optional[tuple[float, float]] = None
 
     def time_to_index(self, weekday: int, hour: int, minute: int) -> int:
         if not 0 <= weekday <= 6:
@@ -21,6 +24,11 @@ class Plan:
         return weekday * 2 * 24 + hour * 2 + minute // 30
 
     def is_enabled(self, weekday: int, hour: int, minute: Optional[int] = None) -> bool:
+        if self.location:
+            sun = suntime.Sun(lat=self.location[0], lon=self.location[1])
+            t = datetime.now().replace(hour=hour, minute=minute or 0)
+            if not sun.get_sunrise_time() < pytz.UTC.localize(t) < sun.get_sunset_time():
+                return False
         if minute is None:
             return self.half_hours[self.time_to_index(weekday, hour, 0)] \
                 or self.half_hours[self.time_to_index(weekday, hour, 30)]
@@ -48,17 +56,19 @@ class Schedule:
 
     def __init__(self, automator: Automator, *,
                  on_enable: Optional[Callable] = None,
-                 on_disable: Optional[Callable] = None) -> None:
+                 on_disable: Optional[Callable] = None,
+                 location: Optional[tuple[float, float]]) -> None:
         '''Schedules automations according to a time plan.
 
         param on_enable: automation to execute when entering a time frame marked as active
-        param on_disable: automation to execute when entering a time frame marked as inactive'''
+        param on_disable: automation to execute when entering a time frame marked as inactive
+        param location: optional geographic coordinates to activate the robot at daylight only'''
 
         self.automator = automator
         self.on_enable = on_enable
         self.on_disable = on_disable
 
-        self.plan = Plan()
+        self.plan = Plan(location=location)
         self.enabled = False
         self.buttons: list[tuple(ui.button, ui.button, ui.button)] = []
         rosys.on_repeat(self.step, 1)
