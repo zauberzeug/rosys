@@ -20,6 +20,7 @@ class Schedule:
                  locations: Optional[dict[str, tuple[float, float]]] = None,
                  sunrise_offset: float = 0.0,
                  sunset_offset: float = 0.0,
+                 is_enabled: bool = False,
                  ) -> None:
         '''Schedules automations according to a time plan.
 
@@ -29,6 +30,7 @@ class Schedule:
         param locations: optional dictionary with geographic coordinates to choose from
         param sunrise_offset: optional offset for activation after sunrise (minutes, default: 0.0)
         param sunset_offset: optional offset for deactivation after sunset (minutes, default: 0.0)
+        param is_enabled: whether the schedule is enabled (default: False)
         '''
         self.log = logging.getLogger('rosys.schedule')
 
@@ -39,10 +41,11 @@ class Schedule:
         self.locations = locations
         self.sunrise_offset = sunrise_offset
         self.sunset_offset = sunset_offset
+        self.is_enabled = is_enabled
 
         self.half_hours = [True] * 2 * 24 * 7
 
-        self.is_active = False
+        self._is_active = False
         self.buttons: list[tuple(ui.button, ui.button, ui.button)] = []
         rosys.on_repeat(self.step, 1)
         rosys.on_repeat(self.update_ui, 60)  # NOTE: to update the "now" indicator
@@ -55,6 +58,7 @@ class Schedule:
             'location': self.location,
             'sunrise_offset': self.sunrise_offset,
             'sunset_offset': self.sunset_offset,
+            'is_enabled': self.is_enabled,
             'half_hours': self.half_hours,
         }
 
@@ -62,6 +66,7 @@ class Schedule:
         self.location = tuple(data.get('location')) if data.get('location') else None
         self.sunrise_offset = data.get('sunrise_offset')
         self.sunset_offset = data.get('sunset_offset')
+        self.is_enabled = data.get('is_enabled', False)
         self.half_hours[:] = data.get('half_hours', True)
         self.update_ui()
 
@@ -83,7 +88,7 @@ class Schedule:
         stop_time = sun.get_local_sunset_time() + timedelta(minutes=self.sunset_offset)
         return not start_time < datetime.fromtimestamp(rosys.time()).astimezone() < stop_time
 
-    def is_enabled(self, weekday: int, hour: int, minute: Optional[int] = None) -> bool:
+    def is_planned(self, weekday: int, hour: int, minute: Optional[int] = None) -> bool:
         if minute is None:
             return self.half_hours[self.time_to_index(weekday, hour, 0)] \
                 or self.half_hours[self.time_to_index(weekday, hour, 30)]
@@ -96,30 +101,36 @@ class Schedule:
 
     def can_be_active(self) -> bool:
         time = datetime.fromtimestamp(rosys.time())
-        return self.is_enabled(time.weekday(), time.hour, time.minute) and not self.is_dark()
+        return self.is_planned(time.weekday(), time.hour, time.minute) and not self.is_dark()
 
     def step(self) -> None:
-        if not self.is_active and self.can_be_active():
+        if not self.is_enabled:
+            return
+        if not self._is_active and self.can_be_active():
             self.log.info('activate')
             if self.on_activate:
                 self.log.info('start automation')
                 self.automator.start(self.on_activate())
-            self.is_active = True
-        if self.is_active and not self.can_be_active():
+            self._is_active = True
+        if self._is_active and not self.can_be_active():
             self.log.info('deactivate')
             if self.on_deactivate:
                 self.log.info('start automation')
                 self.automator.start(self.on_deactivate())
-            self.is_active = False
+            self._is_active = False
 
     def ui(self) -> ui.row:
         with ui.column() as grid:
-            if self.location and self.locations:
-                with ui.row():
+            ui.switch('enabled').bind_value(self, 'is_enabled')
+            with ui.row():
+                if self.location and self.locations:
+                    def set_location(location_name: str) -> None:
+                        self.location = self.locations[location_name]
                     location_names = list(self.locations.keys())
                     ui.select(location_names,
                               label='Location',
-                              value=[key for key in location_names if self.locations[key] == self.location][:1]) \
+                              value=[key for key in location_names if self.locations[key] == self.location][:1],
+                              on_change=lambda e: set_location(e.value)) \
                         .style('width: 21em')
                     ui.number('Sunrise offset', format='%.0f', on_change=self.invalidate) \
                         .bind_value(self, 'sunrise_offset').props('suffix=min')
@@ -149,7 +160,7 @@ class Schedule:
             is_now = dt.weekday() == weekday and dt.hour == hour
             positive = '#147029' if is_now else '#21ba45' if d < 5 else '#1a9537'
             negative = '#74000d' if is_now else '#c10015' if d < 5 else '#9a0011'
-            return positive if self.is_enabled(weekday, hour, minute) else negative
+            return positive if self.is_planned(weekday, hour, minute) else negative
         for d in range(7):
             for h in range(24):
                 buttons: tuple[ui.button] = self.buttons[d * 24 + h]
@@ -158,7 +169,7 @@ class Schedule:
                 buttons[2].style(replace=f'background-color: {color(d, h, 30)} !important; height: 1em; width: 0.8em')
 
     def _toggle(self, weekday: int, hour: int, minute: Optional[int] = None) -> None:
-        new_value = not self.is_enabled(weekday, hour, minute)
+        new_value = not self.is_planned(weekday, hour, minute)
         if minute is None:
             self.half_hours[self.time_to_index(weekday, hour, 0)] = new_value
             self.half_hours[self.time_to_index(weekday, hour, 30)] = new_value
