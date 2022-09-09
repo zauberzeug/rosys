@@ -28,7 +28,7 @@ locations = {
     'New York': (40.730610, -73.935242),
     'Berlin': (52.520008, 13.404954),
 }
-schedule = Schedule(automator, on_enable=drive_around, on_disable=drive_home,
+schedule = Schedule(automator, on_activate=drive_around, on_deactivate=drive_home,
                     location=locations['Berlin'], locations=locations)
 schedule.fill(False)
 

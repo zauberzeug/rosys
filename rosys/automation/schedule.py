@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from typing import Any, Callable, Optional
 
@@ -13,8 +14,8 @@ class Schedule:
 
     def __init__(self,
                  automator: Automator, *,
-                 on_enable: Optional[Callable] = None,
-                 on_disable: Optional[Callable] = None,
+                 on_activate: Optional[Callable] = None,
+                 on_deactivate: Optional[Callable] = None,
                  location: Optional[tuple[float, float]] = None,
                  locations: Optional[dict[str, tuple[float, float]]] = None,
                  sunrise_offset: float = 0.0,
@@ -22,16 +23,18 @@ class Schedule:
                  ) -> None:
         '''Schedules automations according to a time plan.
 
-        param on_enable: automation to execute when entering a time frame marked as active
-        param on_disable: automation to execute when entering a time frame marked as inactive
+        param on_activate: automation to execute when entering an active period
+        param on_deactivate: automation to execute when entering an inactive period
         param location: optional geographic coordinates to activate the robot at daylight only
         param locations: optional dictionary with geographic coordinates to choose from
         param sunrise_offset: optional offset for activation after sunrise (minutes, default: 0.0)
         param sunset_offset: optional offset for deactivation after sunset (minutes, default: 0.0)
         '''
+        self.log = logging.getLogger('rosys.schedule')
+
         self.automator = automator
-        self.on_enable = on_enable
-        self.on_disable = on_disable
+        self.on_activate = on_activate
+        self.on_deactivate = on_deactivate
         self.location = location
         self.locations = locations
         self.sunrise_offset = sunrise_offset
@@ -39,7 +42,7 @@ class Schedule:
 
         self.half_hours = [True] * 2 * 24 * 7
 
-        self.enabled = False
+        self.is_active = False
         self.buttons: list[tuple(ui.button, ui.button, ui.button)] = []
         rosys.on_repeat(self.step, 1)
 
@@ -95,14 +98,18 @@ class Schedule:
         return self.is_enabled(time.weekday(), time.hour, time.minute) and not self.is_dark()
 
     def step(self) -> None:
-        if not self.enabled and self.can_be_active():
-            if self.on_enable:
-                self.automator.start(self.on_enable())
-            self.enabled = True
-        if self.enabled and not self.can_be_active():
-            if self.on_disable:
-                self.automator.start(self.on_disable())
-            self.enabled = False
+        if not self.is_active and self.can_be_active():
+            self.log.info('activate')
+            if self.on_activate:
+                self.log.info('start automation')
+                self.automator.start(self.on_activate())
+            self.is_active = True
+        if self.is_active and not self.can_be_active():
+            self.log.info('deactivate')
+            if self.on_deactivate:
+                self.log.info('start automation')
+                self.automator.start(self.on_deactivate())
+            self.is_active = False
 
     def ui(self) -> ui.row:
         with ui.column().style(replace='gap: 0') as grid:
