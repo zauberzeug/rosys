@@ -45,6 +45,7 @@ class Schedule:
         self.is_active = False
         self.buttons: list[tuple(ui.button, ui.button, ui.button)] = []
         rosys.on_repeat(self.step, 1)
+        rosys.on_repeat(self.update_ui, 60)  # NOTE: to update the "now" indicator
 
         self.needs_backup: bool = False
         persistence.register(self)
@@ -112,42 +113,49 @@ class Schedule:
             self.is_active = False
 
     def ui(self) -> ui.row:
-        with ui.column().style(replace='gap: 0') as grid:
+        with ui.column() as grid:
             if self.location and self.locations:
                 with ui.row():
                     location_names = list(self.locations.keys())
                     ui.select(location_names,
                               label='Location',
                               value=[key for key in location_names if self.locations[key] == self.location][:1]) \
-                        .classes('w-64')
+                        .style('width: 21em')
                     ui.number('Sunrise offset', format='%.0f', on_change=self.invalidate) \
                         .bind_value(self, 'sunrise_offset').props('suffix=min')
                     ui.number('Sunset offset', format='%.0f', on_change=self.invalidate) \
                         .bind_value(self, 'sunset_offset').props('suffix=min')
 
-            for d in range(7):
-                with ui.row().style(f'padding: 0.3em; background-color: {"#ccc" if d > 4 else "#fff"}', replace='gap: 0.3em'):
-                    for h in range(24):
-                        with ui.column().style(replace='gap: 0.1em'):
-                            hour = ui.button(f'{h:02d}', on_click=lambda _, d=d, h=h: self._toggle(d, h)) \
-                                .props('unelevated dense')
-                            with ui.row().style(replace='gap: 0.1em'):
-                                first_half = ui.button(on_click=lambda _, d=d, h=h: self._toggle(d, h, 0)) \
-                                    .props('unelevated dense').style('height: 1em; width: 0.8em')
-                                second_half = ui.button(on_click=lambda _, d=d, h=h: self._toggle(d, h, 30)) \
-                                    .props('unelevated dense').style('height: 1em; width: 0.8em')
-                        self.buttons.append((hour, first_half, second_half))
+            with ui.column().style('gap: 0.3em'):
+                for d in range(7):
+                    with ui.row().style('gap: 0.3em'):
+                        for h in range(24):
+                            with ui.column().style('gap: 0.1em'):
+                                hour = ui.button(f'{h:02d}', on_click=lambda _, d=d, h=h: self._toggle(d, h)) \
+                                    .props('unelevated dense')
+                                with ui.row().style('gap: 0.1em'):
+                                    first_half = ui.button(on_click=lambda _, d=d, h=h: self._toggle(d, h, 0)) \
+                                        .props('unelevated dense')
+                                    second_half = ui.button(on_click=lambda _, d=d, h=h: self._toggle(d, h, 30)) \
+                                        .props('unelevated dense')
+                            self.buttons.append((hour, first_half, second_half))
 
         self.update_ui()
         return grid
 
     def update_ui(self) -> None:
+        def color(weekday: int, hour: int, minute: Optional[int]) -> str:
+            dt = datetime.fromtimestamp(rosys.time())
+            is_now = dt.weekday() == weekday and dt.hour == hour
+            positive = '#147029' if is_now else '#21ba45' if d < 5 else '#1a9537'
+            negative = '#74000d' if is_now else '#c10015' if d < 5 else '#9a0011'
+            return positive if self.is_enabled(weekday, hour, minute) else negative
         for d in range(7):
             for h in range(24):
-                buttons = self.buttons[d * 24 + h]
-                buttons[0].classes(replace='bg-positive' if self.is_enabled(d, h) else 'bg-negative')
-                buttons[1].classes(replace='bg-positive' if self.is_enabled(d, h, 0) else 'bg-negative')
-                buttons[2].classes(replace='bg-positive' if self.is_enabled(d, h, 30) else 'bg-negative')
+                buttons: tuple[ui.button] = self.buttons[d * 24 + h]
+                buttons[0].style(replace=f'background-color: {color(d, h, None)} !important')
+                buttons[1].style(replace=f'background-color: {color(d, h, 0)} !important; height: 1em; width: 0.8em')
+                buttons[2].style(replace=f'background-color: {color(d, h, 30)} !important; height: 1em; width: 0.8em')
 
     def _toggle(self, weekday: int, hour: int, minute: Optional[int] = None) -> None:
         new_value = not self.is_enabled(weekday, hour, minute)
