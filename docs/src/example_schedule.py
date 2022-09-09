@@ -24,8 +24,13 @@ odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
 automator = Automator(wheels, None, default_automation=drive_around)
 
-schedule = Schedule(automator, on_enable=drive_around, on_disable=drive_home, location=(51.983013, 7.434259))
-schedule.plan.disable_all()
+locations = {
+    'New York': (40.730610, -73.935242),
+    'Berlin': (52.520008, 13.404954),
+}
+schedule = Schedule(automator, on_enable=drive_around, on_disable=drive_home,
+                    location=locations['Berlin'], locations=locations)
+schedule.fill(False)
 
 ui.label(
     f'You can test the schedule by clicking on slot "{datetime.now().hour:02d}" in row {datetime.now().weekday()+1}. '
