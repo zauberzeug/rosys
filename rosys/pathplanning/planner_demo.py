@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import importlib
+import logging
 import sys
 import time
 
@@ -50,7 +51,11 @@ def run() -> None:
     dt0 = time.time() - t
 
     t = time.time()
-    path = planner.search(cmd.start, cmd.goal)
+    try:
+        path = planner.search(cmd.start, cmd.goal)
+    except RuntimeError:
+        logging.exception('could not find path')
+        path = []
     dt1 = time.time() - t
 
     with plot:
