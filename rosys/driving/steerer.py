@@ -48,6 +48,8 @@ class Steerer:
             self.angular_speed = -x * self.speed_scaling
 
     def stop(self) -> None:
+        if self.state != State.STEERING:
+            return
         self.log.info('stop steering')
         self.orientation = None
         self.state = State.STOPPING
