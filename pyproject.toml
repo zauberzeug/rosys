@@ -42,6 +42,7 @@ dataclasses-json = "^0.5.7"
 line-profiler = "3.5.1"
 executing = "^1.0.0"
 suntime = "^1.2.5"
+awaits = "^0.0.1"
 
 [tool.poetry.dev-dependencies]
 autopep8 = "^1.5.5"

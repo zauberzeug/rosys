@@ -6,6 +6,7 @@ from dataclasses import fields
 from typing import Any, Callable, Optional, Protocol, TypeVar
 
 import numpy as np
+from awaits.awaitable import awaitable
 from dataclasses_json import Exclude, config
 from dataclasses_json.core import _asdict, _decode_dataclass
 from nicegui import ui
@@ -77,6 +78,7 @@ class Encoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
+@awaitable
 def backup(force: bool = False) -> None:
     for name, actor in actors.items():
         if not actor.needs_backup and not force:
@@ -114,7 +116,7 @@ def import_button(title: str = 'Import', after_import: Optional[Callable] = None
         assert isinstance(all_data, dict)
         for name, data in all_data.items():
             actors[name].restore(data)
-        backup(force=True)
+        await backup(force=True)
         dialog.close()
         await invoke(after_import)
     with ui.dialog() as dialog, ui.card():
