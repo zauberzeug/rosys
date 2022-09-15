@@ -134,9 +134,9 @@ class Schedule:
                               on_change=lambda e: set_location(e.value)) \
                         .style('width: 21em')
                     ui.number('Sunrise offset', format='%.0f', on_change=self.invalidate) \
-                        .bind_value(self, 'sunrise_offset').props('suffix=min')
+                        .bind_value(self, 'sunrise_offset').props('suffix=min').style('width:100px')
                     ui.number('Sunset offset', format='%.0f', on_change=self.invalidate) \
-                        .bind_value(self, 'sunset_offset').props('suffix=min')
+                        .bind_value(self, 'sunset_offset').props('suffix=min').style('width:100px')
 
             with ui.column().style('gap: 0.3em'):
                 for d in range(7):
