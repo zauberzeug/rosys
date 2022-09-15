@@ -72,6 +72,7 @@ class Schedule:
 
     def invalidate(self) -> None:
         self.needs_backup = True
+        self.update_ui()
 
     def time_to_index(self, weekday: int, hour: int, minute: int) -> int:
         if not 0 <= weekday <= 6:
@@ -80,13 +81,13 @@ class Schedule:
             raise ValueError(f'minutes must be between 0 and 59, not {minute}')
         return weekday * 2 * 24 + hour * 2 + minute // 30
 
-    def is_dark(self) -> bool:
+    def is_dark(self, time: float) -> bool:
         if not self.location:
             return False
         sun = suntime.Sun(lat=self.location[0], lon=self.location[1])
         start_time = sun.get_local_sunrise_time() + timedelta(minutes=self.sunrise_offset)
         stop_time = sun.get_local_sunset_time() + timedelta(minutes=self.sunset_offset)
-        return not start_time < datetime.fromtimestamp(rosys.time()).astimezone() < stop_time
+        return not start_time < datetime.fromtimestamp(time).astimezone() < stop_time
 
     def is_planned(self, weekday: int, hour: int, minute: Optional[int] = None) -> bool:
         if minute is None:
@@ -101,7 +102,7 @@ class Schedule:
 
     def can_be_active(self) -> bool:
         time = datetime.fromtimestamp(rosys.time())
-        return self.is_planned(time.weekday(), time.hour, time.minute) and not self.is_dark()
+        return self.is_planned(time.weekday(), time.hour, time.minute) and not self.is_dark(rosys.time())
 
     def step(self) -> None:
         if not self.is_enabled:
@@ -156,10 +157,14 @@ class Schedule:
 
     def update_ui(self) -> None:
         def color(weekday: int, hour: int, minute: Optional[int]) -> str:
+            t = datetime.fromtimestamp(rosys.time())
+            t = t.replace(hour=hour, minute=minute or 0, second=0, microsecond=0)
             dt = datetime.fromtimestamp(rosys.time())
             is_now = dt.weekday() == weekday and dt.hour == hour
             positive = '#147029' if is_now else '#21ba45' if d < 5 else '#1a9537'
             negative = '#74000d' if is_now else '#c10015' if d < 5 else '#9a0011'
+            if self.is_dark(t.timestamp()):
+                return '#cccccc' if self.is_planned(weekday, hour, minute) else '#ffcccc'
             return positive if self.is_planned(weekday, hour, minute) else negative
         for d in range(7):
             for h in range(24):
