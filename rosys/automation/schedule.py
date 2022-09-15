@@ -46,6 +46,8 @@ class Schedule:
         self.half_hours = [True] * 2 * 24 * 7
 
         self._is_active = False
+        self._sun_start_hour = 0.0
+        self._sun_stop_hour = 24.0
         self.buttons: list[tuple(ui.button, ui.button, ui.button)] = []
         rosys.on_repeat(self.step, 1)
         rosys.on_repeat(self.update_ui, 60)  # NOTE: to update the "now" indicator
@@ -72,6 +74,7 @@ class Schedule:
 
     def invalidate(self) -> None:
         self.needs_backup = True
+        self.update_ui()
 
     def time_to_index(self, weekday: int, hour: int, minute: int) -> int:
         if not 0 <= weekday <= 6:
@@ -80,13 +83,8 @@ class Schedule:
             raise ValueError(f'minutes must be between 0 and 59, not {minute}')
         return weekday * 2 * 24 + hour * 2 + minute // 30
 
-    def is_dark(self) -> bool:
-        if not self.location:
-            return False
-        sun = suntime.Sun(lat=self.location[0], lon=self.location[1])
-        start_time = sun.get_local_sunrise_time() + timedelta(minutes=self.sunrise_offset)
-        stop_time = sun.get_local_sunset_time() + timedelta(minutes=self.sunset_offset)
-        return not start_time < datetime.fromtimestamp(rosys.time()).astimezone() < stop_time
+    def is_dark(self, hour: int, minute: int) -> bool:
+        return not self._sun_start_hour < hour + minute / 60 < self._sun_stop_hour
 
     def is_planned(self, weekday: int, hour: int, minute: Optional[int] = None) -> bool:
         if minute is None:
@@ -100,8 +98,8 @@ class Schedule:
             self.half_hours[i] = value
 
     def can_be_active(self) -> bool:
-        time = datetime.fromtimestamp(rosys.time())
-        return self.is_planned(time.weekday(), time.hour, time.minute) and not self.is_dark()
+        now = datetime.fromtimestamp(rosys.time())
+        return self.is_planned(now.weekday(), now.hour, now.minute) and not self.is_dark(now.hour, now.minute)
 
     def step(self) -> None:
         if not self.is_enabled:
@@ -133,9 +131,9 @@ class Schedule:
                               on_change=lambda e: set_location(e.value)) \
                         .style('width: 21em')
                     ui.number('Sunrise offset', format='%.0f', on_change=self.invalidate) \
-                        .bind_value(self, 'sunrise_offset').props('suffix=min')
+                        .bind_value(self, 'sunrise_offset').props('suffix=min').style('width:100px')
                     ui.number('Sunset offset', format='%.0f', on_change=self.invalidate) \
-                        .bind_value(self, 'sunset_offset').props('suffix=min')
+                        .bind_value(self, 'sunset_offset').props('suffix=min').style('width:100px')
 
             with ui.column().style('gap: 0.3em'):
                 for d in range(7):
@@ -154,13 +152,30 @@ class Schedule:
         self.update_ui()
         return grid
 
+    def update_sun_limits(self) -> None:
+        if self.location:
+            sun = suntime.Sun(lat=self.location[0], lon=self.location[1])
+            start_time = sun.get_local_sunrise_time() + timedelta(minutes=self.sunrise_offset)
+            stop_time = sun.get_local_sunset_time() + timedelta(minutes=self.sunset_offset)
+            self._sun_start_hour = start_time.hour + start_time.minute / 60
+            self._sun_stop_hour = stop_time.hour + stop_time.minute / 60
+        else:
+            self._sun_start_hour = 0.0
+            self._sun_stop_hour = 24.0
+
     def update_ui(self) -> None:
         def color(weekday: int, hour: int, minute: Optional[int]) -> str:
+            # https://maketintsandshades.com/#21ba45,c10015
+            if self.is_dark(hour, minute or 0):
+                return '#d3f1da' if self.is_planned(weekday, hour, minute) else '#f3ccd0'
             dt = datetime.fromtimestamp(rosys.time())
             is_now = dt.weekday() == weekday and dt.hour == hour
             positive = '#147029' if is_now else '#21ba45' if d < 5 else '#1a9537'
             negative = '#74000d' if is_now else '#c10015' if d < 5 else '#9a0011'
             return positive if self.is_planned(weekday, hour, minute) else negative
+        self.update_sun_limits()
+        if not self.buttons:
+            return
         for d in range(7):
             for h in range(24):
                 buttons: tuple[ui.button] = self.buttons[d * 24 + h]
