@@ -4,7 +4,7 @@ from typing import Optional
 from nicegui import ui
 
 
-class Trace:
+class Track:
 
     def __init__(self) -> None:
         self.stack: list[str] = []
@@ -19,7 +19,7 @@ class Trace:
             return result
         return wrap
 
-    def ui(self) -> ui.tree:
+    def ui(self) -> ui.label:
         def update() -> None:
             self._ui.text = ' → '.join(self.stack)
         self._ui = ui.label()
@@ -27,4 +27,4 @@ class Trace:
         return self._ui
 
 
-trace = Trace()
+track = Track()

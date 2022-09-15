@@ -5,5 +5,5 @@ from .legacy.asyncio_monitor import AsyncioMonitor
 from .legacy.network_monitor import NetworkMonitor, NetworkStats
 from .profile_button_ import ProfileButton as profile_button
 from .timelapse_recorder import TimelapseRecorder
-from .trace import trace
+from .track import track
 from .videos_page_ import VideosPage as videos_page
