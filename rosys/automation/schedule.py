@@ -157,14 +157,13 @@ class Schedule:
 
     def update_ui(self) -> None:
         def color(weekday: int, hour: int, minute: Optional[int]) -> str:
-            t = datetime.fromtimestamp(rosys.time())
-            t = t.replace(hour=hour, minute=minute or 0, second=0, microsecond=0)
+            # https://maketintsandshades.com/#21ba45,c10015
             dt = datetime.fromtimestamp(rosys.time())
+            if self.is_dark(dt.replace(hour=hour, minute=minute or 0).timestamp()):
+                return '#d3f1da' if self.is_planned(weekday, hour, minute) else '#f3ccd0'
             is_now = dt.weekday() == weekday and dt.hour == hour
             positive = '#147029' if is_now else '#21ba45' if d < 5 else '#1a9537'
             negative = '#74000d' if is_now else '#c10015' if d < 5 else '#9a0011'
-            if self.is_dark(t.timestamp()):
-                return '#cccccc' if self.is_planned(weekday, hour, minute) else '#ffcccc'
             return positive if self.is_planned(weekday, hour, minute) else negative
         if not self.buttons:
             return
