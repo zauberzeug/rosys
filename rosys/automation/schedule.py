@@ -166,6 +166,8 @@ class Schedule:
             if self.is_dark(t.timestamp()):
                 return '#cccccc' if self.is_planned(weekday, hour, minute) else '#ffcccc'
             return positive if self.is_planned(weekday, hour, minute) else negative
+        if not self.buttons:
+            return
         for d in range(7):
             for h in range(24):
                 buttons: tuple[ui.button] = self.buttons[d * 24 + h]
