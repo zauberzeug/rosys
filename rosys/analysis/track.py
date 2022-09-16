@@ -17,8 +17,12 @@ class Track:
                 self.stack.append(f.__name__)
                 return await f(*args, **kw)
             finally:
-                self.stack.pop()
+                if self.stack and self.stack[-1] == f.__name__:
+                    self.stack.pop()
         return wrap
+
+    def clear(self) -> None:
+        self.stack.clear()
 
     def ui(self) -> ui.label:
         def update() -> None:
