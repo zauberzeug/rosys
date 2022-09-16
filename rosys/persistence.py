@@ -6,12 +6,13 @@ from dataclasses import fields
 from typing import Any, Callable, Optional, Protocol, TypeVar
 
 import numpy as np
-from awaits.awaitable import awaitable
 from dataclasses_json import Exclude, config
 from dataclasses_json.core import _asdict, _decode_dataclass
 from nicegui import ui
 from nicegui.events import UploadEventArguments
 from starlette.responses import FileResponse
+
+from rosys.run import awaitable
 
 from .helpers import invoke
 

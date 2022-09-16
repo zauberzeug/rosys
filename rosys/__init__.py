@@ -183,7 +183,7 @@ async def _repeat_one_handler(handler: Callable, interval: float) -> None:
 
 
 async def shutdown() -> None:
-    persistence.backup(force=True)
+    await persistence.backup(force=True)
     run.tear_down()
     [t.cancel() for t in tasks]
     tasks.clear()
