@@ -13,10 +13,11 @@ class Track:
     def __call__(self, f):
         @wraps(f)
         async def wrap(*args, **kw):
-            self.stack.append(f.__name__)
-            result = await f(*args, **kw)
-            self.stack.pop()
-            return result
+            try:
+                self.stack.append(f.__name__)
+                return await f(*args, **kw)
+            finally:
+                self.stack.pop()
         return wrap
 
     def ui(self) -> ui.label:
