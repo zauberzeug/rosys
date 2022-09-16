@@ -92,7 +92,11 @@ class Driver:
         carrot_offset = Point(x=self.parameters.carrot_offset, y=0)
         carrot = Carrot(spline=spline, offset=carrot_offset)
 
+        timeout = (spline.estimated_length() / self.parameters.linear_speed_limit) * 10
+        start = rosys.time()
         while True:
+            if rosys.time() > start + timeout:
+                raise TimeoutError('Driving spline took to long')
             hook = self.odometer.prediction.transform(hook_offset)
             if not carrot.move(hook, distance=self.parameters.carrot_distance):
                 break
