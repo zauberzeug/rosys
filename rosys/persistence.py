@@ -12,6 +12,8 @@ from nicegui import ui
 from nicegui.events import UploadEventArguments
 from starlette.responses import FileResponse
 
+from rosys.run import awaitable
+
 from .helpers import invoke
 
 exclude = config(exclude=Exclude.ALWAYS)
@@ -77,6 +79,7 @@ class Encoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 
+@awaitable
 def backup(force: bool = False) -> None:
     for name, actor in actors.items():
         if not actor.needs_backup and not force:
@@ -114,7 +117,7 @@ def import_button(title: str = 'Import', after_import: Optional[Callable] = None
         assert isinstance(all_data, dict)
         for name, data in all_data.items():
             actors[name].restore(data)
-        backup(force=True)
+        await backup(force=True)
         dialog.close()
         await invoke(after_import)
     with ui.dialog() as dialog, ui.card():

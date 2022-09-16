@@ -6,7 +6,8 @@ import uuid
 from asyncio.subprocess import Process
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
-from typing import Callable, Generator, Optional
+from functools import partial, wraps
+from typing import Callable, Coroutine, Generator, Optional
 
 import rosys
 
@@ -17,15 +18,23 @@ running_sh_processes: list[Process] = []
 log = logging.getLogger('rosys.run')
 
 
-async def io_bound(callback: Callable, *args: any):
+async def io_bound(callback: Callable, *args: any, **kwargs: any):
     loop = asyncio.get_running_loop()
     try:
-        return await loop.run_in_executor(thread_pool, callback, *args)
+        return await loop.run_in_executor(thread_pool, partial(callback, *args, **kwargs))
     except RuntimeError as e:
         if 'cannot schedule new futures after shutdown' not in str(e):
             raise
     except asyncio.exceptions.CancelledError:
         pass
+
+
+def awaitable(func) -> Coroutine:
+    '''decorator to wrap a normal function into an asnycio coroutine'''
+    @wraps(func)
+    async def inner(*args, **kwargs):
+        return await io_bound(func, *args, **kwargs)
+    return inner
 
 
 async def cpu_bound(callback: Callable, *args: any):
