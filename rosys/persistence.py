@@ -12,9 +12,8 @@ from nicegui import ui
 from nicegui.events import UploadEventArguments
 from starlette.responses import FileResponse
 
-from rosys.run import awaitable
-
 from .helpers import invoke
+from .run import awaitable
 
 exclude = config(exclude=Exclude.ALWAYS)
 
