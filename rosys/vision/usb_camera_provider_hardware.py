@@ -184,7 +184,7 @@ class UsbCameraProviderHardware(CameraProvider):
 
     def set_parameters(self, camera: UsbCamera, device: Device) -> None:
         camera.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
-        if camera.exposure is None:
+        if not camera.auto_exposure and camera.exposure is None and device.exposure_max > 0:
             camera.exposure = device.exposure_default / device.exposure_max
         # NOTE enforcing motion jpeg for now
         if device.capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
