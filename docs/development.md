@@ -105,6 +105,15 @@ Line #      Hits         Time  Per Hit   % Time  Line Contents
     12         3       2151.0    717.0      0.1      ui.notify(s)
 ```
 
+## Track async function calls
+
+RoSys provides a `@track` decorator that you can put above asynchronous functions that are called as part of automations.
+The UI element `track.ui()` will show the stack of functions that are currently awaited.
+
+```python hl_lines="8 13 18 27"
+{!src/dev_track.py !}
+```
+
 ## Continuous Build
 
 We run our continuous integration with GitHub Actions.
