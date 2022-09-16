@@ -185,7 +185,7 @@ class Schedule:
                     f'background-color: {color(d, h, 30)} !important; height: 1em; width: 0.8em',
                 ]
                 for i in range(3):
-                    if buttons[i].view.style[1:] != styles[i]:
+                    if buttons[i].view.style.lstrip(';') != styles[i]:
                         buttons[i].style(replace=styles[i])
 
     def _toggle(self, weekday: int, hour: int, minute: Optional[int] = None) -> None:

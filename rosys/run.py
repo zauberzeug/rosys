@@ -7,7 +7,7 @@ from asyncio.subprocess import Process
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from functools import partial, wraps
-from typing import Callable, Coroutine, Generator, Optional
+from typing import Callable, Generator, Optional
 
 import rosys
 
@@ -29,8 +29,8 @@ async def io_bound(callback: Callable, *args: any, **kwargs: any):
         pass
 
 
-def awaitable(func) -> Coroutine:
-    '''decorator to wrap a normal function into an asnycio coroutine'''
+def awaitable(func: Callable) -> Callable:
+    '''decorator to wrap a normal function into an asyncio coroutine'''
     @wraps(func)
     async def inner(*args, **kwargs):
         return await io_bound(func, *args, **kwargs)
