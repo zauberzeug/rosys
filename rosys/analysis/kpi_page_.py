@@ -24,7 +24,9 @@ class KpiPage:
         self.negatives = negatives
 
         humanize.activate('de')
-        with ui.page('/kpis'):
+
+        @ui.page('/kpis')
+        def page():
             with ui.row().style('margin:1em'):
                 ui.markdown(f'### {title}').style('margin:1.5em;margin-top:-1.2em;')
                 toggle = ui.toggle(timespans, value=list(timespans.keys())[0], on_change=lambda e: self.show(e.value))
