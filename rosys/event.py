@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import ast
 import asyncio
 import inspect
 import logging
+import os.path
 from typing import Awaitable, Callable
 
 from executing import Source
@@ -19,8 +21,16 @@ class Event:
 
     def __init__(self) -> None:
         try:
-            self.name = Source.executing(inspect.currentframe().f_back).node.parent.targets[0].id
+            frame = inspect.currentframe().f_back
+            target = Source.executing(frame).node.parent.targets[0]
+            if isinstance(target, ast.Name):
+                self.name = target.id
+            elif isinstance(target, ast.Attribute):
+                self.name = target.attr
+            else:
+                self.name = f'EVENT_{os.path.basename(frame.f_code.co_filename)}:{frame.f_lineno}'
         except:
+            log.exception('Could not determine event name')
             self.name = 'noname_event'
         self.listeners = set()
         events.append(self)
