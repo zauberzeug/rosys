@@ -1,13 +1,10 @@
 from __future__ import annotations
 
-import ast
 import asyncio
 import inspect
 import logging
-import os.path
+from dataclasses import dataclass
 from typing import Awaitable, Callable
-
-from executing import Source
 
 from .helpers import invoke
 
@@ -17,54 +14,50 @@ log = logging.getLogger('rosys.event')
 events: list[Event] = []
 
 
+@dataclass(slots=True, kw_only=True, frozen=True)  # NOTE: frozen to be hashable for set
+class EventListener:
+    callback: Callable
+    filepath: str
+    line: int
+
+
 class Event:
 
     def __init__(self) -> None:
-        try:
-            frame = inspect.currentframe().f_back
-            target = Source.executing(frame).node.parent.targets[0]
-            if isinstance(target, ast.Name):
-                self.name = target.id
-            elif isinstance(target, ast.Attribute):
-                self.name = target.attr
-            else:
-                self.name = f'EVENT_{os.path.basename(frame.f_code.co_filename)}:{frame.f_lineno}'
-        except:
-            log.exception('Could not determine event name')
-            self.name = 'noname_event'
-        self.listeners = set()
+        self.listeners: set[EventListener] = set()
         events.append(self)
 
-    def register(self, listener: Callable) -> Event:
-        if not callable(listener):
-            raise Exception('non-callable listener')
-        self.listeners.add(listener)
+    def register(self, callback: Callable) -> Event:
+        if not callable(callback):
+            raise Exception('non-callable callback')
+        frame = inspect.currentframe().f_back
+        self.listeners.add(EventListener(callback=callback, filepath=frame.f_code.co_filename, line=frame.f_lineno))
         return self
 
-    def unregister(self, listener: Callable) -> None:
-        self.listeners.remove(listener)
+    def unregister(self, callback: Callable) -> None:
+        self.listeners[:] = {l for l in self.listeners if l.callback == callback}
 
     async def call(self, *args) -> None:
         '''Fires event and waits async until all registered listeners are completed'''
         for listener in self.listeners:
             try:
-                await invoke(listener, *args)
+                await invoke(listener.callback, *args)
             except:
-                log.exception(f'could not call {listener=} for event {self.name}')
+                log.exception(f'could not call {listener=}')
 
     def emit(self, *args) -> None:
         '''Fires event without waiting for the result.'''
         loop = asyncio.get_event_loop()
         for listener in self.listeners:
             try:
-                result = invoke(listener, *args)
+                result = invoke(listener.callback, *args)
                 if isinstance(result, Awaitable):
                     if loop.is_running:
-                        tasks.append(loop.create_task(result, name=f'handle {self.name}'))
+                        tasks.append(loop.create_task(result, name=f'{listener.filepath}:{listener.line}'))
                     else:
                         startup_coroutines.append(result)
             except:
-                log.exception(f'could not call {listener=} for event {self.name}')
+                log.exception(f'could not emit {listener=}')
 
 
 def reset() -> None:
