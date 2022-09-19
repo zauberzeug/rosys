@@ -14,7 +14,7 @@ log = logging.getLogger('rosys.event')
 events: list[Event] = []
 
 
-@dataclass(slots=True, kw_only=True, frozen=True)  # NOTE: frozen to be hashable for set
+@dataclass(slots=True, kw_only=True)
 class EventListener:
     callback: Callable
     filepath: str
@@ -24,18 +24,20 @@ class EventListener:
 class Event:
 
     def __init__(self) -> None:
-        self.listeners: set[EventListener] = set()
+        self.listeners: list[EventListener] = list()
         events.append(self)
 
     def register(self, callback: Callable) -> Event:
         if not callable(callback):
             raise Exception('non-callable callback')
+        if any(l.callback == callback for l in self.listeners):
+            return  # NOTE: don't add duplicate listeners
         frame = inspect.currentframe().f_back
-        self.listeners.add(EventListener(callback=callback, filepath=frame.f_code.co_filename, line=frame.f_lineno))
+        self.listeners.append(EventListener(callback=callback, filepath=frame.f_code.co_filename, line=frame.f_lineno))
         return self
 
     def unregister(self, callback: Callable) -> None:
-        self.listeners[:] = {l for l in self.listeners if l.callback == callback}
+        self.listeners[:] = [l for l in self.listeners if l.callback == callback]
 
     async def call(self, *args) -> None:
         '''Fires event and waits async until all registered listeners are completed'''
