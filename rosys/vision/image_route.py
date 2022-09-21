@@ -48,7 +48,7 @@ async def _get_image(cameras: dict[str, Camera], request: Request) -> None:
 
 async def _try_get_jpeg(camera: Camera, timestamp: str, shrink_factor: int) -> Optional[bytes]:
     for image in reversed(camera.images):
-        if str(image.time) == timestamp:
+        if str(image.time) == timestamp and image.data is not None:
             jpeg = image.data
             if shrink_factor != 1:
                 array = np.frombuffer(image.data, dtype=np.uint8)
