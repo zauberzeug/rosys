@@ -82,7 +82,7 @@ class Odometer:
                 local_pose = self.history[i-1].interpolate(self.history[i], f)
                 return local_pose if local else self.odometry_frame.transform_pose(local_pose)
         if local:
-            return deepcopy(self.history)[-1]
+            return deepcopy(self.history[-1])
         return Pose(x=self.prediction.x, y=self.prediction.y, yaw=self.prediction.yaw, time=time)
 
     @staticmethod
