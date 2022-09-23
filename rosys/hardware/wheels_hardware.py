@@ -16,8 +16,8 @@ class WheelsHardware(Wheels):
         super().__init__()
 
         self.robot_brain = robot_brain
-
         rosys.on_repeat(self.step, 0.01)
+        rosys.on_shutdown(self.stop)
 
     async def drive(self, linear: float, angular: float) -> None:
         await self.robot_brain.send(f'wheels.speed({linear}, {angular})')
