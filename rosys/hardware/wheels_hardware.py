@@ -31,4 +31,8 @@ class WheelsHardware(Wheels):
             words = line.split()
             if words[0] == 'core':
                 velocities.append(Velocity(linear=float(words[2]), angular=float(words[3]), time=time))
+                await self.on_core_output(words[4:])
         self.VELOCITY_MEASURED.emit(velocities)
+
+    async def on_core_output(self, words: list[str]) -> None:
+        pass
