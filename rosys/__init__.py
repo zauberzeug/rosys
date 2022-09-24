@@ -33,6 +33,8 @@ is_test = 'pytest' in sys.modules
 
 _start_time: float = 0.0 if is_test else pytime.time()
 _time = _start_time
+_last_time_request: float = _start_time
+speed: float = 1.0
 
 notifications: list[Notification] = []
 _exception: Optional[Exception] = None  # NOTE: used for tests
@@ -50,7 +52,12 @@ def notify(message: str) -> None:
 
 
 def time() -> float:
-    return _time if is_test else pytime.time()
+    global _time, _last_time_request
+    if is_test:
+        return _time
+    _time += (pytime.time() - _last_time_request) * speed
+    _last_time_request = pytime.time()
+    return _time
 
 
 def set_time(value: float) -> None:

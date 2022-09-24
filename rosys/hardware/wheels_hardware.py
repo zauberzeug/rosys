@@ -16,8 +16,8 @@ class WheelsHardware(Wheels):
         super().__init__()
 
         self.robot_brain = robot_brain
-
         rosys.on_repeat(self.step, 0.01)
+        rosys.on_shutdown(self.stop)
 
     async def drive(self, linear: float, angular: float) -> None:
         await self.robot_brain.send(f'wheels.speed({linear}, {angular})')
@@ -31,4 +31,8 @@ class WheelsHardware(Wheels):
             words = line.split()
             if words[0] == 'core':
                 velocities.append(Velocity(linear=float(words[2]), angular=float(words[3]), time=time))
+                await self.on_core_output(words[4:])
         self.VELOCITY_MEASURED.emit(velocities)
+
+    async def on_core_output(self, words: list[str]) -> None:
+        pass

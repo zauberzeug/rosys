@@ -31,5 +31,10 @@ class Track:
         ui.timer(0.5, update)
         return self._ui
 
+    def reset(self) -> None:
+        self.stack.clear()
+        if self._ui:
+            self._ui.text = ''
+
 
 track = Track()
