@@ -76,5 +76,8 @@ class Steerer:
             await self.wheels.stop()
             self.state = State.IDLE
 
+    def set_speed_scaling(self, speed_scaling: float) -> None:
+        self.speed_scaling = speed_scaling
+
     def __str__(self) -> str:
         return f'{type(self).__name__} ({self.state})'
