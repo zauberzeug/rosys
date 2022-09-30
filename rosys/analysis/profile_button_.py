@@ -22,7 +22,7 @@ class ProfileButton(ui.button):
 
     async def start(self, duration: float = 10.0) -> None:
         ui.notify('start profiling')
-        self.props(replace='icon=stop')
+        self.props('icon=stop')
         yappi.clear_stats()
         yappi.start()
         profile.start()
@@ -33,7 +33,7 @@ class ProfileButton(ui.button):
 
     def stop(self) -> None:
         ui.notify('stop profiling')
-        self.props(replace='icon=play_arrow')
+        self.props('icon=play_arrow')
         profile.stop(print=False)
         yappi.stop()
         table = [

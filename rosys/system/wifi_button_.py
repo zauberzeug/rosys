@@ -62,8 +62,8 @@ class WifiButton(ui.button):
 
     async def update_wifi_status(self) -> None:
         if await asyncio.get_event_loop().run_in_executor(None, has_internet):
-            self.props(replace='color=green')
+            self.props('color=green')
             self.status.set_text(f'Robot is connected to the internet.')
         else:
-            self.props(replace='color=red')
+            self.props('color=red')
             self.status.set_text(f'Robot is not connected to the internet.')
