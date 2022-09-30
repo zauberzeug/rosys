@@ -186,7 +186,7 @@ class Schedule:
                 ]
                 for i in range(3):
                     if buttons[i].view.style.lstrip(';') != styles[i]:
-                        buttons[i].style(replace=styles[i])
+                        buttons[i].style(styles[i])
 
     def _toggle(self, weekday: int, hour: int, minute: Optional[int] = None) -> None:
         new_value = not self.is_planned(weekday, hour, minute)
