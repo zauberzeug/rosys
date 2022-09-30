@@ -21,9 +21,6 @@ class Track:
                     self.stack.pop()
         return wrap
 
-    def clear(self) -> None:
-        self.stack.clear()
-
     def ui(self) -> ui.label:
         def update() -> None:
             self._ui.text = ' → '.join(self.stack)
