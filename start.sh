@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-
+pip3 install suntime
 if [[ $1 = "debug" ]]; then
-   nice -n -19 python3 -m debugpy --listen 5678 main.py
+   nice -n -5 python3 -m debugpy --listen 5678 /app/main.py
 elif [[ $1 = "profile" ]]; then
-   nice -n -19 py-spy record -o profile.svg -- python3 main.py
+   nice -n -5 py-spy record -o profile.svg -- python3 /app/main.py
 else
-   nice -n -19 python3 main.py
+   nice -n -5 python3 /app/main.py
 fi
