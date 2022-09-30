@@ -79,7 +79,7 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
                 cmd = f'timeout {timeout} {cmd}'
             else:
                 cmd = ['timeout', str(timeout)] + cmd
-        #log.info(f'running sh: "{cmd}"')
+        # log.info(f'running sh: "{cmd}"')
         proc = subprocess.Popen(
             cmd,
             stdout=asyncio.subprocess.PIPE,
@@ -99,6 +99,7 @@ def tear_down() -> None:
     log.info('teardown thread_pool')
     thread_pool.shutdown(wait=False, cancel_futures=True)
     [p.join(2) for p in running_sh_processes]
+    [log.error(f'{p.pid} is still alive') for p in running_sh_processes if p.is_alive()]
     [p.terminate() for p in running_sh_processes if p.is_alive()]
     running_sh_processes.clear()
     if not rosys.is_test:
