@@ -190,12 +190,17 @@ async def _repeat_one_handler(handler: Callable, interval: float) -> None:
 
 
 async def shutdown() -> None:
-    await persistence.backup(force=True)
-    run.tear_down()
-    [t.cancel() for t in tasks]
-    tasks.clear()
     for handler in shutdown_handlers:
+        log.debug(f'invoking shutdown handler "{handler.__qualname__}"')
         await invoke(handler)
+    log.debug('creating data backup')
+    await persistence.backup(force=True)
+    log.debug('tear down "run" tasks')
+    run.tear_down()
+    log.debug('canceling all remaining tasks')
+    [t.cancel() for t in tasks]
+    log.debug('clearing tasks')
+    tasks.clear()
 
 
 def reset_before_test() -> None:
