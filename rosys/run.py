@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import os
 import shlex
 import subprocess
 import uuid
@@ -7,8 +8,10 @@ from asyncio.subprocess import Process
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from functools import partial, wraps
+from signal import signal
 from typing import Callable, Generator, Optional
 
+from psutil import Popen
 import rosys
 
 process_pool = ProcessPoolExecutor()
@@ -85,22 +88,29 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
             shell=shell,
+            start_new_session=True,
         )
         running_sh_processes.append(proc)
         stdout, *_ = proc.communicate()
-        proc.kill()
+        _kill(proc)
         running_sh_processes.remove(proc)
         return stdout.decode('utf-8')
     return await io_bound(popen)
+
+
+def _kill(proc: Popen) -> None:
+    try:
+        os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
+        log.info(f'killed {proc.pid}')
+    except ProcessLookupError:
+        pass
 
 
 def tear_down() -> None:
     # stopping process as described in https://www.cloudcity.io/blog/2019/02/27/things-i-wish-they-told-me-about-multiprocessing-in-python/
     log.info('teardown thread_pool')
     thread_pool.shutdown(wait=False, cancel_futures=True)
-    [p.join(2) for p in running_sh_processes]
-    [log.error(f'{p.pid} is still alive') for p in running_sh_processes if p.is_alive()]
-    [p.terminate() for p in running_sh_processes if p.is_alive()]
+    [_kill(p) for p in running_sh_processes]
     running_sh_processes.clear()
     if not rosys.is_test:
         log.info('teardown process_pool')
