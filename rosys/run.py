@@ -11,7 +11,9 @@ from functools import partial, wraps
 from signal import signal
 from typing import Callable, Generator, Optional
 
+from nicegui import globals as nicegui_globals
 from psutil import Popen
+
 import rosys
 
 process_pool = ProcessPoolExecutor()
@@ -22,6 +24,8 @@ log = logging.getLogger('rosys.run')
 
 
 async def io_bound(callback: Callable, *args: any, **kwargs: any):
+    if nicegui_globals.state != nicegui_globals.State.STARTED:
+        return
     loop = asyncio.get_running_loop()
     try:
         return await loop.run_in_executor(thread_pool, partial(callback, *args, **kwargs))
@@ -41,6 +45,8 @@ def awaitable(func: Callable) -> Callable:
 
 
 async def cpu_bound(callback: Callable, *args: any):
+    if nicegui_globals.state != nicegui_globals.State.STARTED:
+        return
     with cpu():
         try:
             loop = asyncio.get_running_loop()
@@ -95,6 +101,8 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
         _kill(proc)
         running_sh_processes.remove(proc)
         return stdout.decode('utf-8')
+    if nicegui_globals.state != nicegui_globals.State.STARTED:
+        return
     return await io_bound(popen)
 
 
