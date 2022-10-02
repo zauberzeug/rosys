@@ -54,7 +54,10 @@ def notify(message: str) -> None:
     for page in WebPage.instances.values():
         assert isinstance(page, WebPage)
         with nicegui_globals.within_view(page.components[0]):
-            ui.notify(message)
+            try:
+                ui.notify(message)
+            except:
+                log.exception('failed to call notify')
 
 
 def time() -> float:
