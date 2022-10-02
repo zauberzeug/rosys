@@ -22,6 +22,6 @@ class AutomationControls:
             pause_button.visible = automator.is_running
             resume_button.visible = automator.is_paused
             play_button.view.disable = automator.default_automation is None or not automator.enabled
-            stop_button.view.disable = automator.is_stopped
+            stop_button.view.disable = automator.is_stopped and automator.is_running
 
         ui.timer(config.ui_update_interval, refresh)
