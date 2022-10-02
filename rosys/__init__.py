@@ -8,6 +8,8 @@ from typing import Awaitable, Callable, Optional
 
 import numpy as np
 import psutil
+from justpy.htmlcomponents import WebPage
+from nicegui import globals as nicegui_globals
 from nicegui import ui
 
 from . import event, persistence, run
@@ -48,7 +50,11 @@ def notify(message: str) -> None:
     log.info(message)
     notifications.append(Notification(time=time, message=message))
     NEW_NOTIFICATION.emit(message)
-    ui.notify(message)
+    # NOTE show notifications on all pages
+    for page in WebPage.instances.values():
+        assert isinstance(page, WebPage)
+        with nicegui_globals.within_view(page.components[0]):
+            ui.notify(message)
 
 
 def time() -> float:
