@@ -8,6 +8,7 @@ from typing import Any, Optional
 import cv2
 import PIL
 import rosys
+from numpy.typing import NDArray
 
 from .. import persistence
 from ..geometry import Rectangle
@@ -28,9 +29,10 @@ class Device:
     exposure_max: int = 0
     exposure_default: int = 0
     last_state: dict = field(default_factory=dict)
+    video_formats: set[str] = field(default_factory=set)
 
 
-def process_image(data: bytes, rotation: ImageRotation, crop: Rectangle = None) -> bytes:
+def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Rectangle = None) -> bytes:
     image = PIL.Image.open(io.BytesIO(data))
     if crop is not None:
         image = image.crop((int(crop.x), int(crop.y), int(crop.x+crop.width), int(crop.y+crop.height)))
@@ -43,6 +45,18 @@ def process_image(data: bytes, rotation: ImageRotation, crop: Rectangle = None) 
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format='JPEG')
     return img_byte_arr.getvalue()
+
+
+def process_ndarray_image(image: NDArray, rotation: ImageRotation, crop: Rectangle = None) -> bytes:
+    if crop is not None:
+        image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]
+    if rotation == ImageRotation.LEFT:
+        image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    elif rotation == ImageRotation.RIGHT:
+        image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+    elif rotation == ImageRotation.UPSIDE_DOWN:
+        image = cv2.rotate(image, cv2.ROTATE_180)
+    return cv2.imencode('.jpg', image)[1].tobytes()
 
 
 def to_bytes(image: Any) -> bytes:
@@ -92,21 +106,25 @@ class UsbCameraProviderHardware(CameraProvider):
             try:
                 if uid not in self.devices:
                     continue
-                if self.devices[uid].capture is None:
+                device = self.devices[uid]
+                if device.capture is None:
                     await self.activate(uid)
-                if self.devices[uid].capture is None:
+                if device.capture is None:
                     self.log.warn(f'unexpected missing capture handle for {uid}')
                     continue
-                elif self.devices[uid].last_state != persistence.to_dict(camera):
-                    await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
-                    self.devices[uid].last_state = persistence.to_dict(camera)
+                elif device.last_state != persistence.to_dict(camera):
+                    await rosys.run.io_bound(self.set_parameters, camera, device)
+                    device.last_state = persistence.to_dict(camera)
                 image = await rosys.run.io_bound(self.capture_image, uid)
                 if image is None:
                     await self.deactivate(camera)
                     continue
-                bytes = await rosys.run.io_bound(to_bytes, image)
-                if camera.crop or camera.rotation != ImageRotation.NONE:
-                    bytes = await rosys.run.cpu_bound(process_image, bytes, camera.rotation, camera.crop)
+                if 'MJPG' in device.video_formats:
+                    bytes = await rosys.run.io_bound(to_bytes, image)
+                    if camera.crop or camera.rotation != ImageRotation.NONE:
+                        bytes = await rosys.run.cpu_bound(process_jpeg_image, bytes, camera.rotation, camera.crop)
+                else:
+                    bytes = await rosys.run.cpu_bound(process_ndarray_image, image, camera.rotation, camera.crop)
                 size = camera.resolution or ImageSize(width=800, height=600)
                 camera.images.append(Image(camera_id=uid, data=bytes, time=rosys.time(), size=size))
             except:
@@ -186,15 +204,16 @@ class UsbCameraProviderHardware(CameraProvider):
         camera.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
         if not camera.auto_exposure and camera.exposure is None and device.exposure_max > 0:
             camera.exposure = device.exposure_default / device.exposure_max
-        # NOTE enforcing motion jpeg for now
-        if device.capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
-            device.capture.set(cv2.CAP_PROP_FOURCC, MJPG)
-        # NOTE disable video decoding (see https://stackoverflow.com/questions/62664621/read-jpeg-frame-from-mjpeg-camera-without-decoding-in-python-opencv/70869738?noredirect=1#comment110818859_62664621)
-        if device.capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
-            device.capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
-        # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
-        if device.capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
-            device.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        if 'MJPG' in device.video_formats:
+            # NOTE enforcing motion jpeg for now
+            if device.capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
+                device.capture.set(cv2.CAP_PROP_FOURCC, MJPG)
+            # NOTE disable video decoding (see https://stackoverflow.com/questions/62664621/read-jpeg-frame-from-mjpeg-camera-without-decoding-in-python-opencv/70869738?noredirect=1#comment110818859_62664621)
+            if device.capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
+                device.capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
+            # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
+            if device.capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
+                device.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         resolution = ImageSize(
             width=int(device.capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
             height=int(device.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -219,9 +238,14 @@ class UsbCameraProviderHardware(CameraProvider):
     async def load_value_ranges(self, device: Device) -> None:
         output = await self.run_v4l(device, '--all')
         match = re.search(r'exposure_absolute.*: min=(\d*).*max=(\d*).*default=(\d*).*', output)
-        device.exposure_min = int(match.group(1))
-        device.exposure_max = int(match.group(2))
-        device.exposure_default = int(match.group(3))
+        if match is not None:
+            device.exposure_min = int(match.group(1))
+            device.exposure_max = int(match.group(2))
+            device.exposure_default = int(match.group(3))
+        output = await self.run_v4l(device, '--list-formats')
+        match = re.finditer(r"$.*'(.*)'.*", output)
+        for m in match:
+            device.video_formats.add(m.group(1))
 
     async def run_v4l(self, device: Device, *args) -> None:
         cmd = ['v4l2-ctl', '-d', str(device.video_id)]
