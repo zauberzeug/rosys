@@ -167,7 +167,7 @@ class Schedule:
     def update_ui(self) -> None:
         def color(weekday: int, hour: int, minute: Optional[int]) -> str:
             # https://maketintsandshades.com/#21ba45,c10015
-            if self.is_dark(hour, minute or 0):
+            if self.is_dark(hour, minute or 59):
                 return '#d3f1da' if self.is_planned(weekday, hour, minute) else '#f3ccd0'
             dt = datetime.fromtimestamp(rosys.time())
             is_now = dt.weekday() == weekday and dt.hour == hour
@@ -182,8 +182,8 @@ class Schedule:
                 buttons: tuple[ui.button] = self.buttons[d * 24 + h]
                 styles = [
                     f'background-color: {color(d, h, None)} !important',
-                    f'background-color: {color(d, h, 0)} !important; height: 1em; width: 0.8em',
-                    f'background-color: {color(d, h, 30)} !important; height: 1em; width: 0.8em',
+                    f'background-color: {color(d, h, 29)} !important; height: 1em; width: 0.8em',
+                    f'background-color: {color(d, h, 59)} !important; height: 1em; width: 0.8em',
                 ]
                 for i in range(3):
                     if buttons[i].view.style.lstrip(';') != styles[i]:
