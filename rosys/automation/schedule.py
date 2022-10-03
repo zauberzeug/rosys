@@ -126,10 +126,10 @@ class Schedule:
                 if self.locations:
                     ui.select(self.locations, label='Location', on_change=lambda e: self.set_location(e.value)) \
                         .bind_value(self, 'location').style('width: 21em')
-                ui.number('Sunrise offset', format='%.0f', on_change=self.invalidate) \
-                    .bind_value(self, 'sunrise_offset').props('suffix=min').style('width:100px')
-                ui.number('Sunset offset', format='%.0f', on_change=self.invalidate) \
-                    .bind_value(self, 'sunset_offset').props('suffix=min').style('width:100px')
+                    ui.number('Sunrise offset', format='%.0f', on_change=self.invalidate) \
+                        .bind_value(self, 'sunrise_offset').props('suffix=min').style('width:100px')
+                    ui.number('Sunset offset', format='%.0f', on_change=self.invalidate) \
+                        .bind_value(self, 'sunset_offset').props('suffix=min').style('width:100px')
 
             with ui.column().style('gap: 0.3em'):
                 for d in range(7):
