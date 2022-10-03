@@ -26,7 +26,7 @@ automator = Automator(wheels, None, default_automation=drive_around)
 
 locations = {
     (52.520008, 13.404954): 'Berlin',
-    (40.730610, -73.935242): 'New York',
+    (40.730610, 73.935242): 'New York',
     None: 'no location',
 }
 schedule = Schedule(automator, on_activate=drive_around, on_deactivate=drive_home,
