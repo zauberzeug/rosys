@@ -121,8 +121,8 @@ class Schedule:
 
     def ui(self) -> ui.row:
         with ui.column() as grid:
-            ui.switch('enabled').bind_value(self, 'is_enabled')
-            with ui.row():
+            with ui.row().classes('fit items-center justify-between'):
+                ui.switch('enabled').bind_value(self, 'is_enabled')
                 if self.locations:
                     ui.select(self.locations, label='Location', on_change=lambda e: self.set_location(e.value)) \
                         .bind_value(self, 'location').style('width: 21em')
