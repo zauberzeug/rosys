@@ -17,7 +17,7 @@ class Schedule:
                  on_activate: Optional[Callable] = None,
                  on_deactivate: Optional[Callable] = None,
                  location: Optional[tuple[float, float]] = None,
-                 locations: Optional[dict[str, tuple[float, float]]] = None,
+                 locations: Optional[dict[tuple[float, float], str]] = None,
                  sunrise_offset: float = 0.0,
                  sunset_offset: float = 0.0,
                  is_enabled: bool = False,
@@ -121,19 +121,13 @@ class Schedule:
         with ui.column() as grid:
             ui.switch('enabled').bind_value(self, 'is_enabled')
             with ui.row():
-                if self.location and self.locations:
-                    def set_location(location_name: str) -> None:
-                        self.location = self.locations[location_name]
-                    location_names = list(self.locations.keys())
-                    ui.select(location_names,
-                              label='Location',
-                              value=[key for key in location_names if self.locations[key] == self.location][:1],
-                              on_change=lambda e: set_location(e.value)) \
-                        .style('width: 21em')
-                    ui.number('Sunrise offset', format='%.0f', on_change=self.invalidate) \
-                        .bind_value(self, 'sunrise_offset').props('suffix=min').style('width:100px')
-                    ui.number('Sunset offset', format='%.0f', on_change=self.invalidate) \
-                        .bind_value(self, 'sunset_offset').props('suffix=min').style('width:100px')
+                if self.locations:
+                    ui.select(self.locations, label='Location', on_change=lambda e: self.set_location(e.value)) \
+                        .bind_value(self, 'location').style('width: 21em')
+                ui.number('Sunrise offset', format='%.0f', on_change=self.invalidate) \
+                    .bind_value(self, 'sunrise_offset').props('suffix=min').style('width:100px')
+                ui.number('Sunset offset', format='%.0f', on_change=self.invalidate) \
+                    .bind_value(self, 'sunset_offset').props('suffix=min').style('width:100px')
 
             with ui.column().style('gap: 0.3em'):
                 for d in range(7):
@@ -151,6 +145,10 @@ class Schedule:
 
         self.update_ui()
         return grid
+
+    def set_location(self, location: tuple[float, float]) -> None:
+        self.location = location
+        self.update_ui()
 
     def update_sun_limits(self) -> None:
         if self.location:

@@ -25,12 +25,12 @@ driver = Driver(wheels, odometer)
 automator = Automator(wheels, None, default_automation=drive_around)
 
 locations = {
-    'New York': (40.730610, -73.935242),
-    'Berlin': (52.520008, 13.404954),
-    'no location': None,
+    (52.520008, 13.404954): 'Berlin',
+    (40.730610, -73.935242): 'New York',
+    None: 'no location',
 }
 schedule = Schedule(automator, on_activate=drive_around, on_deactivate=drive_home,
-                    location=locations['Berlin'], locations=locations, is_enabled=True)
+                    location=None, locations=locations, is_enabled=True)
 schedule.fill(False)
 
 ui.label(
