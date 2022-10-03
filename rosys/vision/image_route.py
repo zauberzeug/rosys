@@ -52,10 +52,15 @@ async def _try_get_jpeg(camera: Camera, timestamp: str, shrink_factor: int) -> O
             jpeg = image.data
             if shrink_factor != 1:
                 array = np.frombuffer(image.data, dtype=np.uint8)
+                if array is None:
+                    return
                 jpeg = await run.cpu_bound(_shrink, shrink_factor, array)
             return jpeg
 
 
 def _shrink(factor: int, array: np.ndarray) -> bytes:
-    img = cv2.imdecode(array, cv2.IMREAD_COLOR)[::factor, ::factor]
+    decoded = cv2.imdecode(array, cv2.IMREAD_COLOR)
+    if decoded is None:
+        return
+    img = decoded[::factor, ::factor]
     return cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 60])[1].tobytes()
