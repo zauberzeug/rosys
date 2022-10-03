@@ -34,13 +34,12 @@ schedule = Schedule(automator, on_activate=drive_around, on_deactivate=drive_hom
 schedule.fill(False)  # disable at all times so the user can enable it manually
 schedule.is_enabled = True  # the schedule must be enabled to take any effect
 
-ui.label(
-    f'You can test the schedule by clicking on slot "{datetime.now().hour:02d}" in row {datetime.now().weekday()+1}. '
-    f'This will let the robot drive back and forth for the current hour.')
-schedule.ui()
-with ui.scene():
-    robot_object(shape, odometer)
-with ui.row():
-    automation_controls(automator)
+with ui.row().classes('items-end'):
+    schedule.ui()
+    with ui.column().classes('items-end'):
+        with ui.row():
+            automation_controls(automator)
+        with ui.scene(height=360):
+            robot_object(shape, odometer)
 
 ui.run(title='RoSys')
