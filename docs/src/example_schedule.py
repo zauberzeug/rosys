@@ -15,7 +15,7 @@ async def drive_around() -> None:
 
 
 async def drive_home() -> None:
-    await driver.drive_to(Point(x=0, y=0))
+    await driver.drive_to(Point(x=-3, y=0))
 
 
 shape = Prism.default_robot_shape()
@@ -31,7 +31,8 @@ locations = {
 }
 schedule = Schedule(automator, on_activate=drive_around, on_deactivate=drive_home,
                     location=None, locations=locations, is_enabled=True)
-schedule.fill(False)
+schedule.fill(False)  # disable at all times so the user can enable it manually
+schedule.is_enabled = True  # the schedule must be enabled to take any effect
 
 ui.label(
     f'You can test the schedule by clicking on slot "{datetime.now().hour:02d}" in row {datetime.now().weekday()+1}. '
