@@ -9,6 +9,8 @@ from rosys import persistence
 
 from .automator import Automator
 
+DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
+
 
 class Schedule:
 
@@ -132,6 +134,7 @@ class Schedule:
             with ui.column().style('gap: 0.3em'):
                 for d in range(7):
                     with ui.row().style('gap: 0.3em'):
+                        ui.label(DAYS[d]).classes('mt-2').style('width: 2em')
                         for h in range(24):
                             with ui.column().style('gap: 0.1em'):
                                 hour = ui.button(f'{h:02d}', on_click=lambda _, d=d, h=h: self._toggle(d, h)) \
