@@ -6,9 +6,9 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 
 import cv2
+import numpy as np
 import PIL
 import rosys
-from numpy.typing import NDArray
 
 from .. import persistence
 from ..geometry import Rectangle
@@ -47,7 +47,7 @@ def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Rectangle = N
     return img_byte_arr.getvalue()
 
 
-def process_ndarray_image(image: NDArray, rotation: ImageRotation, crop: Rectangle = None) -> bytes:
+def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Rectangle = None) -> bytes:
     if crop is not None:
         image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]
     if rotation == ImageRotation.LEFT:

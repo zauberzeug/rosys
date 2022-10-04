@@ -9,7 +9,7 @@ from rosys import persistence
 
 from .automator import Automator
 
-DAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su']
+DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 
 class Schedule:
@@ -81,8 +81,8 @@ class Schedule:
     def time_to_index(self, weekday: int, hour: int, minute: int) -> int:
         if not 0 <= weekday <= 6:
             raise ValueError(f'day of week must be between 0 and 6, not {weekday}')
-        if not 0 <= minute <= 59:
-            raise ValueError(f'minutes must be between 0 and 59, not {minute}')
+        if not 0 <= minute <= 60:
+            raise ValueError(f'minutes must be between 0 and 60, not {minute}')
         return weekday * 2 * 24 + hour * 2 + minute // 30
 
     def is_dark(self, hour: int, minute: int) -> bool:
@@ -158,22 +158,22 @@ class Schedule:
             sun = suntime.Sun(lat=self.location[0], lon=self.location[1])
             start_time = sun.get_local_sunrise_time() + timedelta(minutes=self.sunrise_offset)
             stop_time = sun.get_local_sunset_time() + timedelta(minutes=self.sunset_offset)
-            self._sun_start_hour = start_time.hour + start_time.minute / 60
-            self._sun_stop_hour = stop_time.hour + stop_time.minute / 60
+            self._sun_start_hour = start_time.hour + start_time.minute / 60 + start_time.second / 60 / 60
+            self._sun_stop_hour = stop_time.hour + stop_time.minute / 60 + stop_time.second / 60 / 60
         else:
             self._sun_start_hour = 0.0
             self._sun_stop_hour = 24.0
 
     def update_ui(self) -> None:
-        def color(weekday: int, hour: int, minute: Optional[int]) -> str:
+        def color(weekday: int, hour: int, minutes: list[int]) -> str:
             # https://maketintsandshades.com/#21ba45,c10015
-            if self.is_dark(hour, minute or 59):
-                return '#d3f1da' if self.is_planned(weekday, hour, minute) else '#f3ccd0'
+            if all(self.is_dark(hour, minute) for minute in minutes):
+                return '#d3f1da' if self.is_planned(weekday, hour, minutes[0]) else '#f3ccd0'
             dt = datetime.fromtimestamp(rosys.time())
             is_now = dt.weekday() == weekday and dt.hour == hour
             positive = '#147029' if is_now else '#21ba45' if d < 5 else '#1a9537'
             negative = '#74000d' if is_now else '#c10015' if d < 5 else '#9a0011'
-            return positive if self.is_planned(weekday, hour, minute) else negative
+            return positive if self.is_planned(weekday, hour, minutes[0]) else negative
         self.update_sun_limits()
         if not self.buttons:
             return
@@ -181,9 +181,9 @@ class Schedule:
             for h in range(24):
                 buttons: tuple[ui.button] = self.buttons[d * 24 + h]
                 styles = [
-                    f'background-color: {color(d, h, None)} !important',
-                    f'background-color: {color(d, h, 29)} !important; height: 1em; width: 0.8em',
-                    f'background-color: {color(d, h, 59)} !important; height: 1em; width: 0.8em',
+                    f'background-color: {color(d, h, [0, 30, 60])} !important',
+                    f'background-color: {color(d, h, [0, 30])} !important; height: 1em; width: 0.8em',
+                    f'background-color: {color(d, h, [30, 60])} !important; height: 1em; width: 0.8em',
                 ]
                 for i in range(3):
                     if buttons[i].view.style.lstrip(';') != styles[i]:

@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-from datetime import datetime
-
 from nicegui import ui
 from rosys.automation import Automator, Schedule, automation_controls
 from rosys.driving import Driver, Odometer, robot_object
