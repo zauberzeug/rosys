@@ -18,6 +18,7 @@ class DriveParameters(ModificationContext):
     linear_speed_limit: float = 0.5
     angular_speed_limit: float = 0.5
     minimum_turning_radius: float = 0.0
+    can_drive_backwards: bool = True
     max_detection_age_ramp: Optional[tuple[float, float]] = None
     hook_offset: float = 0.5
     carrot_offset: float = 0.6
@@ -94,7 +95,11 @@ class Driver:
 
         while True:
             hook = self.odometer.prediction.transform(hook_offset)
-            if not carrot.move(hook, distance=self.parameters.carrot_distance):
+            if self.parameters.can_drive_backwards:
+                can_move = carrot.move(hook, distance=self.parameters.carrot_distance)
+            else:
+                can_move = carrot.move_by_foot(self.odometer.prediction)
+            if not can_move:
                 break
             self.carrot_pose = carrot.pose
 
@@ -104,6 +109,9 @@ class Driver:
                 curvature = (-1 if curvature < 0 else 1) / self.parameters.minimum_turning_radius
 
             drive_backward = hook.projected_distance(carrot.offset_point, self.odometer.prediction.yaw) < 0
+            if drive_backward and not self.parameters.can_drive_backwards:
+                drive_backward = False
+                curvature = (-1 if curvature > 0 else 1) / max(self.parameters.minimum_turning_radius, 0.001)
             linear = -1 if drive_backward else 1
             if carrot.t > 1.0 and throttle_at_end:
                 linear *= ramp(carrot.target_distance, 0.5, 0.0, 1.0, 0.5)
@@ -181,3 +189,7 @@ class Carrot:
                 return False
 
         return True
+
+    def move_by_foot(self, pose: Pose) -> bool:
+        self.t = self.spline.closest_point(pose.x, pose.y, t_min=self.t, t_max=1.0)
+        return self.t < 1.0
