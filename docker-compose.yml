@@ -6,6 +6,7 @@ services:
       - ./:/rosys
       - ./:/app
       - ./../nicegui/nicegui:/usr/local/lib/python3.10/site-packages/nicegui
+      - ~/.vscode-server:/root/.vscode-server
       - ~/.rosys:/root/.rosys
     privileged: true
     ports:
