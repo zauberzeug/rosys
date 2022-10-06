@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-pip3 install suntime
 if [[ $1 = "debug" ]]; then
    nice -n -5 python3 -m debugpy --listen 5678 /app/main.py
 elif [[ $1 = "profile" ]]; then

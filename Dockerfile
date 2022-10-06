@@ -35,13 +35,4 @@ WORKDIR /app/
 COPY ./start.sh /
 COPY ./main.py /app/
 
-# to simplify development within the RoSys container we preinstall vs code server and extensions
-RUN curl -sSL https://gist.githubusercontent.com/b01/0a16b6645ab7921b0910603dfb85e4fb/raw/5186ea07a06eac28937fd914a9c8f9ce077a978e/download-vs-code-server.sh | sed "s/server-linux-x64/server-linux-$(dpkg --print-architecture)/" | sed "s/amd64/x64/" | bash
-ENV VSCODE_SERVER=/root/.vscode-server/bin/*/server.sh
-RUN $VSCODE_SERVER --install-extension ms-python.vscode-pylance \
-    $VSCODE_SERVER --install-extension ms-python.python \
-    $VSCODE_SERVER --install-extension himanoa.python-autopep8 \
-    $VSCODE_SERVER --install-extension esbenp.prettier-vscode \
-    $VSCODE_SERVER --install-extension littlefoxteam.vscode-python-test-adapter
-
 CMD /start.sh
