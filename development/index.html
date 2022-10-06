@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://rosys.io/development/">
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.3.1, mkdocs-material-8.4.3">
+      <meta name="generator" content="mkdocs-1.4.0, mkdocs-material-8.5.6">
     
     
       
@@ -19,13 +19,14 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.6b80c2a2.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.20d9efc8.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.cbb835fc.min.css">
         
       
       
+
     
     
     
@@ -46,6 +47,7 @@
     
       
 
+    
     
     
   </head>
@@ -122,7 +124,7 @@
       </label>
       <nav class="md-search__options" aria-label="Search">
         
-        <button type="reset" class="md-search__icon md-icon" aria-label="Clear" tabindex="-1">
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
         </button>
       </nav>
@@ -328,6 +330,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples/schedule/" class="md-nav__link">
+        Schedule automations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../examples/navigation/" class="md-nav__link">
         Navigation
       </a>
@@ -441,6 +457,13 @@
         <li class="md-nav__item">
   <a href="#profiling" class="md-nav__link">
     Profiling
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#track-async-function-calls" class="md-nav__link">
+    Track async function calls
   </a>
   
 </li>
@@ -689,6 +712,13 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#track-async-function-calls" class="md-nav__link">
+    Track async function calls
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#continuous-build" class="md-nav__link">
     Continuous Build
   </a>
@@ -710,10 +740,11 @@
               </div>
             
           
-          <div class="md-content" data-md-component="content">
-            <article class="md-content__inner md-typeset">
-              
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
                 
+                  
 
   <a href="https://github.com/zauberzeug/rosys/edit/main/docs/development.md" title="Edit this page" class="md-content__button md-icon">
     
@@ -927,6 +958,39 @@ When stopped, you will see its output on the console:</p>
     11   3000000    1098975.0      0.4     71.6          s += i**2
     12         3       2151.0    717.0      0.1      ui.notify(s)
 </code></pre></div>
+<h2 id="track-async-function-calls">Track async function calls<a class="headerlink" href="#track-async-function-calls" title="Permanent link">&para;</a></h2>
+<p>RoSys provides a <code>@track</code> decorator that you can put above asynchronous functions that are called as part of automations.
+The UI element <code>track.ui()</code> will show the stack of functions that are currently awaited.</p>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
+<span class="kn">import</span> <span class="nn">asyncio</span>
+
+<span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
+<span class="kn">from</span> <span class="nn">rosys.analysis</span> <span class="kn">import</span> <span class="n">track</span>
+
+
+<span class="hll"><span class="nd">@track</span>
+</span><span class="k">async</span> <span class="k">def</span> <span class="nf">do_A</span><span class="p">():</span>
+    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="hll"><span class="nd">@track</span>
+</span><span class="k">async</span> <span class="k">def</span> <span class="nf">do_B</span><span class="p">():</span>
+    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="hll"><span class="nd">@track</span>
+</span><span class="k">async</span> <span class="k">def</span> <span class="nf">do_something</span><span class="p">():</span>
+    <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
+        <span class="k">await</span> <span class="n">do_A</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">do_B</span><span class="p">()</span>
+
+<span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;Do something&#39;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">do_something</span><span class="p">)</span>
+
+<span class="hll"><span class="n">track</span><span class="o">.</span><span class="n">ui</span><span class="p">()</span>
+</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div>
 <h2 id="continuous-build">Continuous Build<a class="headerlink" href="#continuous-build" title="Permanent link">&para;</a></h2>
 <p>We run our continuous integration with GitHub Actions.
 For each commit the pytests are executed.</p>
@@ -941,10 +1005,12 @@ A GitHub Action then performs the following steps:</p>
 
 
 
-              
-            </article>
-            
-          </div>
+
+                
+              </article>
+            </div>
+          
+          
         </div>
         
       </main>
@@ -1008,10 +1074,10 @@ A GitHub Action then performs the following steps:</p>
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate"], "search": "../assets/javascripts/workers/search.ecf98df9.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate"], "search": "../assets/javascripts/workers/search.5bf1dace.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.2ab50757.min.js"></script>
+      <script src="../assets/javascripts/bundle.078830c0.min.js"></script>
       
     
   </body>
