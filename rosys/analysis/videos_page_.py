@@ -8,10 +8,11 @@ from starlette import responses
 
 class VideosPage:
 
-    @ui.page('/videos', 'Videos')
-    def page():
-        self.list = ui.column()
-        ui.timer(5, self.update_list)
+    def __init__(self) -> None:
+        @ui.page('/videos', 'Videos')
+        def page():
+            self.list = ui.column()
+            ui.timer(5, self.update_list)
 
     def update_list(self) -> None:
         self.list.clear()
