@@ -39,6 +39,14 @@ class Pose:
         ])
 
     @property
+    def inv_matrix(self) -> np.ndarray:
+        return np.array([
+            [np.cos(self.yaw), np.sin(self.yaw), -np.cos(self.yaw) * self.x - np.sin(self.yaw) * self.y],
+            [-np.sin(self.yaw), np.cos(self.yaw), np.sin(self.yaw) * self.x - np.cos(self.yaw) * self.y],
+            [0, 0, 1],
+        ])
+
+    @property
     def yaw_deg(self) -> float:
         return np.rad2deg(self.yaw)
 
@@ -91,11 +99,11 @@ class Pose:
         )
 
     def transform_line(self, line: Line) -> Line:
-        a, b, c = np.linalg.inv(self.matrix).T @ line.tuple
+        a, b, c = self.inv_matrix.T @ line.tuple
         return Line(a=a, b=b, c=c)
 
     def relative_pose(self, other: Pose) -> Pose:
-        return Pose.from_matrix(np.linalg.inv(self.matrix) @ other.matrix)
+        return Pose.from_matrix(self.inv_matrix @ other.matrix)
 
     def rotate(self, angle: float) -> Pose:
         return Pose(x=self.x, y=self.y, yaw=self.yaw+angle, time=self.time)

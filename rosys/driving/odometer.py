@@ -87,12 +87,6 @@ class Odometer:
 
     @staticmethod
     def _compute_odometry_frame(local_pose: Pose, global_pose: Pose) -> Pose:
-        # inv_local_pose_matrix = np.linalg.inv(local_pose.matrix) # NOTE: much less efficient
-        inv_local_pose_matrix = np.array([
-            [np.cos(local_pose.yaw), np.sin(local_pose.yaw), -np.cos(local_pose.yaw) * local_pose.x - np.sin(local_pose.yaw) * local_pose.y],
-            [-np.sin(local_pose.yaw), np.cos(local_pose.yaw), np.sin(local_pose.yaw) * local_pose.x - np.cos(local_pose.yaw) * local_pose.y],
-            [0, 0, 1],
-        ])
-        frame = Pose.from_matrix(global_pose.matrix @ inv_local_pose_matrix)
+        frame = Pose.from_matrix(global_pose.matrix @ local_pose.inv_matrix)
         frame.time = global_pose.time
         return frame
