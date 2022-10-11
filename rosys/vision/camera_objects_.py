@@ -1,7 +1,7 @@
 import numpy as np
 from nicegui import ui
 from nicegui.elements.scene_object3d import Object3D
-from nicegui.elements.scene_objects import Cylinder, Group, Texture
+from nicegui.elements.scene_objects import Cylinder, Group, Text, Texture
 
 from .. import run
 from .calibration import Calibration
@@ -15,14 +15,17 @@ class CameraObjects(Group):
 
     It requires a camera provider as a source of cameras as well as a camera projector to show the current images projected on the ground plane.
     The `px_per_m` argument can be used to scale the camera frustums.
+    With `debug=True` camera IDs are shown (default: `False`).
     '''
 
-    def __init__(self, camera_provider: CameraProvider, camera_projector: CameraProjector, *, px_per_m: float = 10000) -> None:
+    def __init__(self, camera_provider: CameraProvider, camera_projector: CameraProjector, *,
+                 px_per_m: float = 10000, debug: bool = False) -> None:
         super().__init__()
 
         self.camera_provider = camera_provider
         self.camera_projector = camera_projector
         self.px_per_m = px_per_m
+        self.debug = debug
         self.textures: dict[str, Texture] = {}
 
         ui.timer(1.0, self.update)
@@ -55,6 +58,8 @@ class CameraObjects(Group):
                             .rotate(-np.pi / 2, 0, np.pi / 4) \
                             .move(z=0.5) \
                             .material('#0088ff')
+                        if self.debug:
+                            Text(uid)
                     pyramid.scale(
                         camera.calibration.intrinsics.size.width / self.px_per_m,
                         camera.calibration.intrinsics.size.height / self.px_per_m,
