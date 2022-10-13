@@ -1,6 +1,7 @@
 import asyncio
 import gc
 import logging
+import multiprocessing
 import sys
 import time as pytime
 from dataclasses import dataclass
@@ -20,6 +21,9 @@ from .task_logger import create_task
 log = logging.getLogger('rosys.core')
 
 config = Config()
+
+# POSIX standard to create processes is "fork", which is inherently broken for python (see https://pythonspeed.com/articles/python-multiprocessing/)
+ui.on_startup(lambda: multiprocessing.set_start_method('spawn'))
 
 
 @dataclass(slots=True, kw_only=True)
