@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import datetime, timedelta
 from typing import Optional
@@ -128,8 +129,10 @@ class DetectorHardware(Detector):
                     ],
                 )
             except socketio.exceptions.TimeoutError:
-                self.log.exception(f'detection for {image.id} on {self.port} took too long')
+                self.log.debug(f'detection for {image.id} on {self.port} took too long')
                 self.timeout_count += 1
+            except asyncio.exceptions.CancelledError:
+                self.log.debug(f'task has beeen cancelled')
             except:
                 self.log.exception(f'could not detect {image.id}')
             else:
