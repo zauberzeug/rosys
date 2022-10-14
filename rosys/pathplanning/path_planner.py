@@ -65,11 +65,17 @@ class PathPlanner:
         self.log.info(f'teardown of {self.process} completed')
 
     async def step(self) -> None:
-        if self.connection.poll():
-            response = self.connection.recv()
-            assert isinstance(response, PlannerResponse)
-            if time.time() < response.deadline:
-                self.responses[response.id] = response.content
+        try:
+            if self.connection.poll():
+                response = self.connection.recv()
+                assert isinstance(response, PlannerResponse)
+                if time.time() < response.deadline:
+                    self.responses[response.id] = response.content
+        except OSError as e:
+            if 'handle is closed' in str(e):
+                self.log.info('path planner process connection closed')
+            else:
+                raise
 
     async def grow_map(self, points: list[Point], timeout: float = 3.0) -> None:
         return await self._call(PlannerGrowMapCommand(
