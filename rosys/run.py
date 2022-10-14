@@ -7,6 +7,7 @@ import subprocess
 import uuid
 from asyncio.subprocess import Process
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from contextlib import contextmanager
 from functools import partial, wraps
 from typing import Callable, Generator, Optional
@@ -55,6 +56,8 @@ async def cpu_bound(callback: Callable, *args: any):
             if 'cannot schedule new futures after shutdown' not in str(e):
                 raise
         except asyncio.exceptions.CancelledError:
+            pass
+        except BrokenProcessPool:
             pass
 
 
