@@ -2,13 +2,13 @@ import asyncio
 import logging
 import os
 import shlex
+import signal
 import subprocess
 import uuid
 from asyncio.subprocess import Process
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from functools import partial, wraps
-from signal import signal
 from typing import Callable, Generator, Optional
 
 from nicegui import globals as nicegui_globals
