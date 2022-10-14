@@ -25,7 +25,7 @@ config = Config()
 is_test = 'pytest' in sys.modules
 
 # POSIX standard to create processes is "fork", which is inherently broken for python (see https://pythonspeed.com/articles/python-multiprocessing/)
-if __name__ == '__main__' or is_test:
+if __name__ == '__main__':
     multiprocessing.set_start_method('spawn')
 
 

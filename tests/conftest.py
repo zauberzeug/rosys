@@ -1,3 +1,4 @@
+import multiprocessing
 from typing import Generator
 
 import pytest
@@ -58,3 +59,9 @@ async def path_planner(shape: Prism, integration: None) -> PathPlanner:
 @pytest.fixture
 async def kpi_logger(integration: None) -> KpiLogger:
     return KpiLogger()
+
+
+@pytest.fixture(scope='session', autouse=True)
+def enforce_spawn_process():
+    if multiprocessing.get_start_method() != 'spawn':
+        multiprocessing.set_start_method('spawn')
