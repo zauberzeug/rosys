@@ -24,7 +24,7 @@ log = logging.getLogger('rosys.run')
 
 
 async def io_bound(callback: Callable, *args: any, **kwargs: any):
-    if nicegui_globals.state == nicegui_globals.State.STOPPING:
+    if rosys.is_stopping():
         return
     loop = asyncio.get_running_loop()
     try:
@@ -45,7 +45,7 @@ def awaitable(func: Callable) -> Callable:
 
 
 async def cpu_bound(callback: Callable, *args: any):
-    if nicegui_globals.state == nicegui_globals.State.STOPPING:
+    if rosys.is_stopping():
         return
     with cpu():
         try:
@@ -101,7 +101,7 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
         _kill(proc)
         running_sh_processes.remove(proc)
         return stdout.decode('utf-8')
-    if nicegui_globals.state == nicegui_globals.State.STOPPING:
+    if rosys.rosys.is_stopping():
         return
     return await io_bound(popen)
 

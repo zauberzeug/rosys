@@ -109,7 +109,7 @@ class DetectorHardware(Detector):
         if self.is_detecting:
             return
 
-        while self.next_image is not None:
+        while self.next_image is not None and not rosys.is_stopping():
             try:
                 image = self.next_image
                 self.next_image = None

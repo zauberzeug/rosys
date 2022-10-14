@@ -151,6 +151,10 @@ async def startup() -> None:
     _activate_asyncio_warnings()
 
 
+def is_stopping() -> bool:
+    return nicegui_globals.state == nicegui_globals.State.STOPPING
+
+
 def _activate_asyncio_warnings() -> None:
     '''Produce warnings for coroutines which take too long on the main loop and hence clog the event loop'''
     try:
@@ -186,6 +190,9 @@ async def _repeat_one_handler(handler: Callable, interval: float) -> None:
     while True:
         start = time()
         try:
+            if is_stopping():
+                log.info(f'{handler} is must be stopped')
+                break
             await invoke(handler)
             dt = time() - start
         except (asyncio.CancelledError, GeneratorExit):
