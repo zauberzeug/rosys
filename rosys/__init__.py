@@ -22,8 +22,10 @@ log = logging.getLogger('rosys.core')
 
 config = Config()
 
+is_test = 'pytest' in sys.modules
+
 # POSIX standard to create processes is "fork", which is inherently broken for python (see https://pythonspeed.com/articles/python-multiprocessing/)
-if __name__ == '__main__':
+if __name__ == '__main__' or is_test:
     multiprocessing.set_start_method('spawn')
 
 
@@ -36,7 +38,6 @@ class Notification:
 NEW_NOTIFICATION = event.Event()
 '''notify the user (string argument: message)'''
 
-is_test = 'pytest' in sys.modules
 
 _start_time: float = 0.0 if is_test else pytime.time()
 _time = _start_time
