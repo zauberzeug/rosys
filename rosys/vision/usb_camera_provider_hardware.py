@@ -237,6 +237,8 @@ class UsbCameraProviderHardware(CameraProvider):
 
     async def load_value_ranges(self, device: Device) -> None:
         output = await self.run_v4l(device, '--all')
+        if output is None:
+            return
         match = re.search(r'exposure_absolute.*: min=(\d*).*max=(\d*).*default=(\d*).*', output)
         if match is not None:
             device.exposure_min = int(match.group(1))
