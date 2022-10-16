@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://rosys.io/reference/rosys/vision/">
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.0, mkdocs-material-8.5.6">
+      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.6">
     
     
       
@@ -1234,7 +1234,8 @@ Therefore the program v4l2ctl and openCV (including python bindings) must be ava
     <span class="n">camera_provider</span><span class="p">:</span> <span class="n">CameraProvider</span><span class="p">,</span>
     <span class="n">camera_projector</span><span class="p">:</span> <span class="n">CameraProjector</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">px_per_m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10000</span>
+    <span class="n">px_per_m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span>
+    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
@@ -1245,7 +1246,8 @@ Therefore the program v4l2ctl and openCV (including python bindings) must be ava
   
       <p>This module provides a UI element for displaying cameras in a 3D scene.</p>
 <p>It requires a camera provider as a source of cameras as well as a camera projector to show the current images projected on the ground plane.
-The <code>px_per_m</code> argument can be used to scale the camera frustums.</p>
+The <code>px_per_m</code> argument can be used to scale the camera frustums.
+With <code>debug=True</code> camera IDs are shown (default: <code>False</code>).</p>
 
 
 
