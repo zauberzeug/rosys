@@ -134,7 +134,6 @@ def on_shutdown(handler: Callable) -> None:
 async def startup() -> None:
     if tasks:
         raise RuntimeError('should be only executed once')
-    print('starting RoSys...', multiprocessing.get_start_method(), flush=True)
     if multiprocessing.get_start_method() != 'spawn':
         raise RuntimeError(
             'multiprocessing start method must be "spawn"; see https://pythonspeed.com/articles/python-multiprocessing/')

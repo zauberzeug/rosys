@@ -64,4 +64,4 @@ async def kpi_logger(integration: None) -> KpiLogger:
 @pytest.fixture(scope='session', autouse=True)
 def enforce_spawn_process():
     if multiprocessing.get_start_method() != 'spawn':
-        multiprocessing.set_start_method('spawn')
+        multiprocessing.set_start_method('spawn', force=True)
