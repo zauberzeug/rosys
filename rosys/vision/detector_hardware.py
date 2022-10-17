@@ -132,7 +132,7 @@ class DetectorHardware(Detector):
                 self.log.debug(f'detection for {image.id} on {self.port} took too long')
                 self.timeout_count += 1
             except asyncio.exceptions.CancelledError:
-                self.log.debug(f'task has beeen cancelled')
+                self.log.debug(f'task has been cancelled')
             except:
                 self.log.exception(f'could not detect {image.id}')
             else:

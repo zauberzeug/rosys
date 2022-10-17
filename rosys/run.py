@@ -12,7 +12,6 @@ from contextlib import contextmanager
 from functools import partial, wraps
 from typing import Callable, Generator, Optional
 
-from nicegui import globals as nicegui_globals
 from psutil import Popen
 
 import rosys
@@ -52,12 +51,12 @@ async def cpu_bound(callback: Callable, *args: any):
         try:
             loop = asyncio.get_running_loop()
             return await loop.run_in_executor(process_pool, callback, *args)
+        except BrokenProcessPool:
+            pass
         except RuntimeError as e:
             if 'cannot schedule new futures after shutdown' not in str(e):
                 raise
         except asyncio.exceptions.CancelledError:
-            pass
-        except BrokenProcessPool:
             pass
 
 
@@ -104,7 +103,7 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
         _kill(proc)
         running_sh_processes.remove(proc)
         return stdout.decode('utf-8')
-    if rosys.rosys.is_stopping():
+    if rosys.is_stopping():
         return
     return await io_bound(popen)
 

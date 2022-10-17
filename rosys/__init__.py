@@ -192,7 +192,7 @@ async def _repeat_one_handler(handler: Callable, interval: float) -> None:
         start = time()
         try:
             if is_stopping():
-                log.info(f'{handler} is must be stopped')
+                log.info(f'{handler} must be stopped')
                 break
             await invoke(handler)
             dt = time() - start
