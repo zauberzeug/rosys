@@ -25,6 +25,14 @@ class DriveParameters(ModificationContext):
     carrot_distance: float = 0.1
 
 
+@dataclass(slots=True, kw_only=True)
+class DriveState:
+    carrot_pose: Pose
+    curvature: float
+    backward: bool
+    turn_angle: float
+
+
 class Driver:
     '''The driver module allows following a given path.
 
@@ -37,7 +45,7 @@ class Driver:
         self.wheels = wheels
         self.odometer = odometer
         self.parameters = DriveParameters()
-        self.carrot_pose: Optional[Pose] = None
+        self.state: Optional[DriveState] = None
 
     @track
     async def drive_square(self) -> None:
@@ -101,7 +109,6 @@ class Driver:
                 can_move = carrot.move_by_foot(self.odometer.prediction)
             if not can_move:
                 break
-            self.carrot_pose = carrot.pose
 
             turn_angle = eliminate_pi(hook.direction(carrot.offset_point) - self.odometer.prediction.yaw)
             curvature = np.tan(turn_angle) / hook_offset.x
@@ -117,10 +124,17 @@ class Driver:
                 linear *= ramp(carrot.target_distance, 0.5, 0.0, 1.0, 0.5)
             angular = linear * curvature
 
+            self.state = DriveState(
+                carrot_pose=carrot.pose,
+                curvature=curvature,
+                backward=drive_backward,
+                turn_angle=turn_angle,
+            )
+
             await self.wheels.drive(*self._throttle(linear, angular))
             await rosys.sleep(0.1)
 
-        self.carrot_pose = None
+        self.state = None
         await self.wheels.stop()
 
     def _throttle(self, linear: float, angular: float) -> tuple[float, float]:
