@@ -226,6 +226,7 @@ async def shutdown() -> None:
     [t.cancel() for t in tasks]
     log.debug('clearing tasks')
     tasks.clear()
+    log.debug('waiting for all tasks to finish')
     if not is_test:
         await sleep(2)  # NOTE we need to wait to ensure that all tasks are finished; otherwise reloading may stuck
 
