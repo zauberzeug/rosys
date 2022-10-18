@@ -229,7 +229,7 @@ class UsbCameraProviderHardware(CameraProvider):
         if auto_exposure and not camera.auto_exposure:
             self.log.info(f'deactivating auto-exposure of {camera.id}')
             device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)  # `v4l2-ctl -L` says "1: Manual Mode"
-        if not camera.auto_exposure:
+        if not camera.auto_exposure and device.exposure_max > 0:
             exposure = device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
             if camera.exposure is not None and camera.exposure != exposure:
                 self.log.info(f'updating exposure of {camera.id} from {exposure} to {camera.exposure})')
