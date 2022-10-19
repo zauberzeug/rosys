@@ -24,6 +24,13 @@ def test_line_transformation():
     approx(line_, Line.from_points(point1_, point2_))
 
 
+def test_pose_transformation():
+    a = Pose(x=1.2, y=3.4, yaw=5.6)
+    b = Pose(x=0.1, y=0.2, yaw=0.3)
+    c = a.transform_pose(b)
+    approx(a.relative_pose(c), b)
+
+
 def test_pose():
     pose0 = Pose(x=1, y=2, yaw=0)
     pose1 = Pose(x=4, y=6, yaw=0)
