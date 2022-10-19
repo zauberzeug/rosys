@@ -23,6 +23,7 @@ class DriveParameters(ModificationContext):
     hook_offset: float = 0.5
     carrot_offset: float = 0.6
     carrot_distance: float = 0.1
+    hook_bending_factor: float = 0
 
 
 @dataclass(slots=True, kw_only=True)
@@ -102,7 +103,8 @@ class Driver:
         carrot = Carrot(spline=spline, offset=carrot_offset)
 
         while True:
-            hook = self.odometer.prediction.transform(hook_offset)
+            dYaw = self.parameters.hook_bending_factor * self.odometer.current_velocity.angular
+            hook = self.odometer.prediction.transform_pose(Pose(yaw=dYaw)).transform(hook_offset)
             if self.parameters.can_drive_backwards:
                 can_move = carrot.move(hook, distance=self.parameters.carrot_distance)
             else:
