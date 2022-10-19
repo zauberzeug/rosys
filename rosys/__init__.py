@@ -230,7 +230,7 @@ async def shutdown() -> None:
     log.debug('clearing tasks')
     tasks.clear()
 
-    # Note: kill own process and all its chldren after uvicorn has finished (we had many restart freezes before)
+    # NOTE: kill own process and all its children after uvicorn has finished (we had many restart freezes before)
     def delayed_kill():
         pytime.sleep(1)
         os.kill(os.getpid(), signal.SIGKILL)
