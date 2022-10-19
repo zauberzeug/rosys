@@ -103,7 +103,7 @@ class Driver:
         carrot = Carrot(spline=spline, offset=carrot_offset)
 
         while True:
-            dYaw = self.parameters.hook_bending_factor * self.odometer.current_velocity.angular
+            dYaw = self.parameters.hook_bending_factor * self.odometer.current_velocity.angular if self.odometer.current_velocity else 0
             hook = self.odometer.prediction.transform_pose(Pose(yaw=dYaw)).transform(hook_offset)
             if self.parameters.can_drive_backwards:
                 can_move = carrot.move(hook, distance=self.parameters.carrot_distance)
