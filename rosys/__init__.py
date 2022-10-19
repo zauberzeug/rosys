@@ -234,7 +234,8 @@ async def shutdown() -> None:
     def delayed_kill():
         pytime.sleep(1)
         os.kill(os.getpid(), signal.SIGKILL)
-    threading.Thread(target=delayed_kill).start()
+    if not is_test:
+        threading.Thread(target=delayed_kill).start()
     log.debug('finished shutdown')
 
 
