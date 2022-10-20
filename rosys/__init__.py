@@ -77,8 +77,9 @@ def time() -> float:
     if is_test:
         return _time
     with time_lock:
-        _time += (pytime.time() - _last_time_request) * speed
-        _last_time_request = pytime.time()
+        now = pytime.time()
+        _time += (now - _last_time_request) * speed
+        _last_time_request = now
         return _time
 
 
