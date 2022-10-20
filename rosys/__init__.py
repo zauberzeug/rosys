@@ -69,13 +69,17 @@ def notify(message: str) -> None:
                 log.exception('failed to call notify')
 
 
+time_lock = threading.Lock()
+
+
 def time() -> float:
     global _time, _last_time_request
     if is_test:
         return _time
-    _time += (pytime.time() - _last_time_request) * speed
-    _last_time_request = pytime.time()
-    return _time
+    with time_lock:
+        _time += (pytime.time() - _last_time_request) * speed
+        _last_time_request = pytime.time()
+        return _time
 
 
 def set_time(value: float) -> None:
