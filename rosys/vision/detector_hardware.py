@@ -122,6 +122,8 @@ class DetectorHardware(Detector):
                     'autoupload': autoupload.value,
                     'tags': tags,
                 }, timeout=3)
+                if image.is_broken:  # NOTE: image can be marked broken while detection is underway
+                    continue
                 image.detections = Detections(
                     boxes=[persistence.from_dict(BoxDetection, d) for d in result.get('box_detections', [])],
                     points=[persistence.from_dict(PointDetection, d) for d in result.get('point_detections', [])],
