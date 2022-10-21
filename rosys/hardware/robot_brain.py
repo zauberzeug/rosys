@@ -1,10 +1,11 @@
+import os
 from typing import Optional
 
 import rosys
 from nicegui import ui
 from rosys.event import Event
 
-from .communication import Communication
+from .communication import Communication, SerialCommunication
 
 
 class RobotBrain:
@@ -23,6 +24,7 @@ class RobotBrain:
 
         self.clock_offset: Optional[float] = None
         self.hardware_time: Optional[float] = None
+        self.flash_params = []
 
     async def configure(self, filepath: str = 'lizard.txt') -> None:
         await self.send(f'!-')
@@ -72,11 +74,15 @@ class RobotBrain:
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
     async def flash(self) -> None:
-        with ui.dialog() as dialog:
+        assert isinstance(self.communication, SerialCommunication)
+        with ui.dialog() as dialog, ui.card():
             status = ui.markdown('.... flashing ....')
         dialog.open()
-        output = await rosys.run.sh(f'cd ~/.lizard; ./upload_ths1.sh', timeout=60, shell=True)
-        status.set_content(f'# Flashed\n\n```\n{output}\n```')
+        dialog.page.update()
+        self.communication.disconnect()
+        output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=60, working_dir=os.path.expanduser('~/.lizard'))
+        status.set_content(f'```\n{output}\n```')
+        self.communication.connect()
 
     def developer_ui(self) -> None:
         ui.label('Lizard')

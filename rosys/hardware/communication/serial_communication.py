@@ -85,6 +85,6 @@ class SerialCommunication(Communication):
                 self.disconnect()
                 rosys.notify('disconnected from Lizard')
 
-        ui.switch('Serial Communication', value=self.serial.isOpen(), on_change=toggle)
-        ui.switch('Serial Logging').bind_value(self, 'log_io')
-        input = ui.input(on_change=submit_input)
+        ui.switch('Serial Communication', value=self.serial.isOpen(), on_change=toggle).classes('fit')
+        ui.switch('Serial Logging').bind_value(self, 'log_io').classes('fit')
+        input = ui.input('Serial Command', on_change=submit_input).classes('fit')
