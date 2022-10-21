@@ -543,6 +543,26 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rosys.driving.driver_object" class="md-nav__link">
+    driver_object
+  </a>
+  
+    <nav class="md-nav" aria-label="driver_object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.driving.driver_object.DriverObject" class="md-nav__link">
+    DriverObject
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rosys.driving.joystick" class="md-nav__link">
     joystick
   </a>
@@ -696,6 +716,26 @@
           <li class="md-nav__item">
   <a href="#events_1" class="md-nav__link">
     Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.driving.driver_object" class="md-nav__link">
+    driver_object
+  </a>
+  
+    <nav class="md-nav" aria-label="driver_object">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.driving.driver_object.DriverObject" class="md-nav__link">
+    DriverObject
   </a>
   
 </li>
@@ -912,6 +952,82 @@ From 110 degrees to 120 degrees the throttle factor is linearly ramped from 0.0 
 </table>
 
 
+<div class="doc doc-object doc-module">
+
+
+
+<h2 id="rosys.driving.driver_object" class="doc doc-heading">
+          <span class="doc doc-object-name doc-module-name">driver_object</span>
+
+
+<a href="#rosys.driving.driver_object" class="headerlink" title="Permanent link">&para;</a></h2>
+
+  <div class="doc doc-contents first">
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h3 id="rosys.driving.driver_object.DriverObject" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">DriverObject</span>
+
+
+<a href="#rosys.driving.driver_object.DriverObject" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">DriverObject</span><span class="p">(</span><span class="n">driver</span><span class="p">:</span> <span class="n">Driver</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents ">
+      <p class="doc doc-class-bases">
+        Bases: <code><span title="nicegui.elements.scene_objects.Group">Group</span></code></p>
+
+  
+      <p>The DriverObject UI element displays the path following process in a 3D scene.</p>
+<p>The current pose is taken from a given odometer.
+An optional driver module shows debugging information about a current path-following process.
+The <code>debug</code> argument can be set to show a wireframe instead of a closed polygon.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
 <div class="doc doc-object doc-class">
 
 
@@ -1006,22 +1122,17 @@ You can change the speed with the number keys 1 to 9 and the initial speed via t
 
 <a href="#rosys.driving.robot_object" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="n">robot_object</span><span class="p">(</span>
-    <span class="n">shape</span><span class="p">:</span> <span class="n">Prism</span><span class="p">,</span>
-    <span class="n">odometer</span><span class="p">:</span> <span class="n">Odometer</span><span class="p">,</span>
-    <span class="n">driver</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Driver</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="o">*</span><span class="p">,</span>
-    <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">shape</span><span class="p">:</span> <span class="n">Prism</span><span class="p">,</span> <span class="n">odometer</span><span class="p">:</span> <span class="n">Odometer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">debug</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
   <div class="doc doc-contents first">
       <p class="doc doc-class-bases">
-        Bases: <code><span title="nicegui.elements.scene_object3d.Object3D">Object3D</span></code></p>
+        Bases: <code><span title="nicegui.elements.scene_objects.Group">Group</span></code></p>
 
   
       <p>The RobotObject UI element displays the robot with its given shape in a 3D scene.</p>
 <p>The current pose is taken from a given odometer.
-An optional driver module shows debugging information about a current path-following process.
 The <code>debug</code> argument can be set to show a wireframe instead of a closed polygon.</p>
 
 
