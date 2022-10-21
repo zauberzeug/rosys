@@ -1,6 +1,7 @@
 from typing import Optional
 
 import rosys
+from nicegui import ui
 from rosys.event import Event
 
 from .communication import Communication
@@ -69,6 +70,19 @@ class RobotBrain:
         while self.waiting_list.get(ack) is None and rosys.time() < t0 + timeout:
             await rosys.sleep(0.1)
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
+
+    async def flash(self) -> None:
+        with ui.dialog() as dialog:
+            status = ui.markdown('.... flashing ....')
+        dialog.open()
+        output = await rosys.run.sh(f'cd ~/.lizard; ./upload_ths1.sh', timeout=60, shell=True)
+        status.set_content(f'# Flashed\n\n```\n{output}\n```')
+
+    def developer_ui(self) -> None:
+        ui.label('Lizard')
+        ui.button('Configure', on_click=self.configure).props('outline')
+        ui.button('Restart', on_click=self.restart).props('outline')
+        ui.button('Flash', on_click=self.flash).props('outline')
 
 
 def augment(line: str) -> str:
