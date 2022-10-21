@@ -112,6 +112,8 @@ class DetectorHardware(Detector):
         while self.next_image is not None and not rosys.is_stopping():
             try:
                 image = self.next_image
+                if image.is_broken:
+                    continue
                 self.next_image = None
                 self.is_detecting = True
                 result: dict = await self.sio.call('detect', {

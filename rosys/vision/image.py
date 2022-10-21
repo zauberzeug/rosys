@@ -27,6 +27,7 @@ class Image:
     time: float  # time of recording
     data: Optional[bytes] = None
     detections: Optional[Detections] = None
+    is_broken: Optional[bool] = None
 
     @property
     def id(self) -> str:
