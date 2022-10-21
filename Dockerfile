@@ -27,7 +27,7 @@ RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install -vvv --no-root 
 COPY LICENSE README.md rosys.code-workspace ./
 ADD ./rosys /rosys/rosys
 
-# Copy lizard firmware if it exsits (hence the *)
+# Copy lizard firmware + scripts (if they exsits; hence the *)
 ADD ./lizard* /root/.lizard
 
 ENV PYTHONPATH "${PYTHONPATH}:/rosys"
