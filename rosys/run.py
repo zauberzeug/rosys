@@ -70,7 +70,7 @@ def cpu() -> Generator[None, None, None]:
         running_cpu_bound_processes.remove(id)
 
 
-async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool = False) -> str:
+async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool = False, working_dir: Optional[str] = None) -> str:
     '''executes a shell command
 
     Args:
@@ -93,6 +93,7 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
         # log.info(f'running sh: "{cmd}"')
         proc = subprocess.Popen(
             cmd,
+            cwd=working_dir,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
             shell=shell,
