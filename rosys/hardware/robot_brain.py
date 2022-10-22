@@ -73,16 +73,20 @@ class RobotBrain:
             await rosys.sleep(0.1)
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
-    async def flash(self) -> None:
-        assert isinstance(self.communication, SerialCommunication)
+    def flash(self) -> None:
         with ui.dialog() as dialog, ui.card():
             status = ui.markdown('.... flashing ....')
         dialog.open()
-        dialog.page.update()
-        self.communication.disconnect()
-        output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=60, working_dir=os.path.expanduser('~/.lizard'))
-        status.set_content(f'```\n{output}\n```')
-        self.communication.connect()
+
+        # NOTE this is a workaround for a bug in the current version of nicegui, see https://github.com/zauberzeug/nicegui/issues/131
+        async def _flash() -> None:
+            assert isinstance(self.communication, SerialCommunication)
+            self.communication.disconnect()
+            output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=None, working_dir=os.path.expanduser('~/.lizard'))
+            status.set_content(f'```\n{output}\n```')
+            self.communication.connect()
+
+        rosys.task_logger.create_task(_flash())
 
     def developer_ui(self) -> None:
         ui.label('Lizard')
