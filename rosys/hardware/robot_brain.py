@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import Optional
 
 import rosys
@@ -93,6 +94,23 @@ class RobotBrain:
         ui.button('Configure', on_click=self.configure).props('outline')
         ui.button('Restart', on_click=self.restart).props('outline')
         ui.button('Flash', on_click=self.flash).props('outline')
+        ui.button('Enable', on_click=self.enable_esp).props('outline')
+
+    def enable_esp(self):
+        try:
+            sys.path.insert(1, os.path.expanduser('~/.lizard'))
+            from esp import Esp
+            esp = Esp()
+            with esp.pin_config():
+                esp.activate()
+        except:
+            self.log.exception('Could not enable ESP')
+
+    def __del__(self) -> None:
+        self.communication.disconnect()
+
+    def __repr__(self) -> str:
+        return f'<RobotBrain {self.communication}>'
 
 
 def augment(line: str) -> str:
