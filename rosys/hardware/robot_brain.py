@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 from typing import Optional
@@ -26,8 +27,12 @@ class RobotBrain:
         self.clock_offset: Optional[float] = None
         self.hardware_time: Optional[float] = None
         self.flash_params = []
+        self.log = logging.getLogger('rosys.robot_rain')
 
-    async def configure(self, filepath: str = 'lizard.txt') -> None:
+    async def configure(self, filepath: str = None) -> None:
+        self.log.info('Configuring...')
+        if not isinstance(filepath, str):  # NOTE: click handlers pass events as first argument
+            filepath = 'lizard.txt'
         await self.send(f'!-')
         with open(filepath) as f:
             for line in f.read().splitlines():
