@@ -63,6 +63,7 @@ class Schedule:
             'sunrise_offset': self.sunrise_offset,
             'sunset_offset': self.sunset_offset,
             'is_enabled': self.is_enabled,
+            'is_active': self._is_active,
             'half_hours': self.half_hours,
         }
 
@@ -71,6 +72,7 @@ class Schedule:
         self.sunrise_offset = data.get('sunrise_offset')
         self.sunset_offset = data.get('sunset_offset')
         self.is_enabled = data.get('is_enabled', False)
+        self._is_active = data.get('is_active', False)
         self.half_hours[:] = data.get('half_hours', True)
         self.update_ui()
 
