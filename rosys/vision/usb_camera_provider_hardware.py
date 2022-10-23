@@ -80,7 +80,9 @@ class UsbCameraProviderHardware(CameraProvider):
         self._cameras: dict[str, UsbCamera] = {}
 
         rosys.on_shutdown(self.shutdown)
-        rosys.on_repeat(self.step, 0.3)
+        rosys.on_repeat(self.capture_images, 0.2)
+        rosys.on_repeat(self.update_prameters, 1)
+        rosys.on_repeat(self.update_device_list, 1)
         rosys.on_repeat(lambda: self.prune_images(max_age_seconds=1.0), 5.0)
 
         self.needs_backup: bool = False
@@ -96,8 +98,7 @@ class UsbCameraProviderHardware(CameraProvider):
     def restore(self, data: dict[str, Any]) -> None:
         persistence.replace_dict(self._cameras, UsbCamera, data.get('cameras', {}))
 
-    async def step(self) -> None:
-        await self.update_device_list()
+    async def capture_images(self) -> None:
         for uid, camera in self._cameras.items():
             if not camera.active:
                 if uid in self.devices and self.devices[uid].capture is not None:
@@ -112,9 +113,6 @@ class UsbCameraProviderHardware(CameraProvider):
                 if device.capture is None:
                     self.log.warn(f'unexpected missing capture handle for {uid}')
                     continue
-                elif device.last_state != persistence.to_dict(camera):
-                    await rosys.run.io_bound(self.set_parameters, camera, device)
-                    device.last_state = persistence.to_dict(camera)
                 image = await rosys.run.io_bound(self.capture_image, uid)
                 if image is None:
                     await self.deactivate(camera)
@@ -130,6 +128,12 @@ class UsbCameraProviderHardware(CameraProvider):
             except:
                 self.log.exception(f'could not capture image from {uid}')
                 await self.deactivate(camera)
+
+    async def update_prameters(self) -> None:
+        for uid, camera in self._cameras.items():
+            if camera.active and uid in self.devices:
+                continue
+            await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
 
     def capture_image(self, id) -> Any:
         _, image = self.devices[id].capture.read()
