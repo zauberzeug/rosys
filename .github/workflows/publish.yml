@@ -72,19 +72,6 @@ jobs:
         uses: docker/setup-buildx-action@master
         with:
           install: true
-      - name: Fetch Lizard Firmware
-        run: |
-          mkdir lizard
-          pushd "$_"
-          CURL="curl -u '${{ secrets.CURL_GITHUB_CREDENTIALS }}' -s https://api.github.com/repos/zauberzeug/lizard/releases"; \
-          TOOLS=$(eval "$CURL/latest" | jq -r '.assets[0].id');
-          eval "$CURL/assets/$TOOLS -LJOH 'Accept: application/octet-stream'"
-          BIN=$(eval "$CURL/latest" | jq -r '.assets[1].id');
-          eval "$CURL/assets/$BIN -LJOH 'Accept: application/octet-stream'"
-          unzip *zip
-          rm *zip
-          ls -lha
-          popd
       - name: Build
         uses: docker/build-push-action@v2
         with:
