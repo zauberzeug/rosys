@@ -157,21 +157,9 @@ async def startup() -> None:
     for handler, interval in repeat_handlers:
         _start_loop(handler, interval)
 
-    _activate_asyncio_warnings()
-
 
 def is_stopping() -> bool:
     return nicegui_globals.state == nicegui_globals.State.STOPPING
-
-
-def _activate_asyncio_warnings() -> None:
-    '''Produce warnings for coroutines which take too long on the main loop and hence clog the event loop'''
-    try:
-        loop = asyncio.get_running_loop()
-        loop.set_debug(True)
-        loop.slow_callback_duration = 0.05
-    except:
-        log.exception('could not activate asyncio warnings')
 
 
 async def _garbage_collection(mbyte_limit: float = 300) -> None:
