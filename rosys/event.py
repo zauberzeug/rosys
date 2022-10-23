@@ -6,6 +6,8 @@ import logging
 from dataclasses import dataclass
 from typing import Awaitable, Callable
 
+from rosys import task_logger
+
 from .helpers import invoke
 
 startup_coroutines: list[Awaitable] = []
@@ -55,7 +57,8 @@ class Event:
                 result = invoke(listener.callback, *args)
                 if isinstance(result, Awaitable):
                     if loop.is_running:
-                        tasks.append(loop.create_task(result, name=f'{listener.filepath}:{listener.line}'))
+                        name = f'{listener.filepath}:{listener.line}'
+                        tasks.append(task_logger.create_task(result, name=name, loop=loop))
                     else:
                         startup_coroutines.append(result)
             except:
