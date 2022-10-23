@@ -5,7 +5,11 @@ import functools
 import logging
 from typing import Any, Awaitable, Optional, TypeVar
 
+from rosys.analysis.profiling import profile
+
 T = TypeVar('T')
+
+logger = logging.getLogger(__name__)
 
 
 def create_task(coroutine: Awaitable[T], *,
@@ -17,20 +21,18 @@ def create_task(coroutine: Awaitable[T], *,
     ``message_args``.
     '''
 
-    logger = logging.getLogger(__name__)
     message = 'Task raised an exception'
     message_args = ()
     if loop is None:
         loop = asyncio.get_running_loop()
     task = loop.create_task(coroutine, name=name)
     task.add_done_callback(
-        functools.partial(_handle_task_result, logger=logger, message=message, message_args=message_args)
+        functools.partial(_handle_task_result, message=message, message_args=message_args)
     )
     return task
 
 
-def _handle_task_result(task: asyncio.Task, *,
-                        logger: logging.Logger, message: str, message_args: tuple[Any, ...] = ()) -> None:
+def _handle_task_result(task: asyncio.Task, *, message: str, message_args: tuple[Any, ...] = ()) -> None:
     try:
         task.result()
     except asyncio.CancelledError:
