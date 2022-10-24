@@ -5,8 +5,8 @@ from typing import Optional
 
 import rosys
 from nicegui import ui
-from rosys.event import Event
 
+from ..event import Event
 from .communication import Communication, SerialCommunication
 
 
@@ -17,24 +17,23 @@ class RobotBrain:
     Besides providing some basic methods like configuring or restarting the microcontroller, it augments and verifies checksums for each message.
     '''
 
-    def __init__(self, communication: Communication) -> None:
+    def __init__(self, communication: Communication, lizard_startup: str = 'lizard.txt') -> None:
         self.LINE_RECEIVED = Event()
         '''a line has been received from the microcontroller (argument: line as string)'''
 
         self.communication = communication
+        self.lizard_startup = lizard_startup
         self.waiting_list: dict[str, Optional[str]] = {}
 
         self.clock_offset: Optional[float] = None
         self.hardware_time: Optional[float] = None
-        self.flash_params = []
+        self.flash_params: list[str] = []
         self.log = logging.getLogger('rosys.robot_rain')
 
-    async def configure(self, filepath: str = None) -> None:
+    async def configure(self) -> None:
         self.log.info('Configuring...')
-        if not isinstance(filepath, str):  # NOTE: click handlers pass events as first argument
-            filepath = 'lizard.txt'
         await self.send(f'!-')
-        with open(filepath) as f:
+        with open(self.lizard_startup) as f:
             for line in f.read().splitlines():
                 await self.send(f'!+{line}')
         await self.send(f'!.')
@@ -79,20 +78,17 @@ class RobotBrain:
             await rosys.sleep(0.1)
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
-    def flash(self) -> None:
+    async def flash(self) -> None:
         with ui.dialog() as dialog, ui.card():
             status = ui.markdown('.... flashing ....')
         dialog.open()
-
-        # NOTE this is a workaround for a bug in the current version of nicegui, see https://github.com/zauberzeug/nicegui/issues/131
-        async def _flash() -> None:
-            assert isinstance(self.communication, SerialCommunication)
-            self.communication.disconnect()
-            output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=None, working_dir=os.path.expanduser('~/.lizard'))
-            status.set_content(f'```\n{output}\n```')
-            self.communication.connect()
-
-        rosys.task_logger.create_task(_flash())
+        # NOTE this is a workaround for a bug in the current version of NiceGUI, see https://github.com/zauberzeug/nicegui/issues/131
+        rosys.task_logger.create_task(dialog.page.update())
+        assert isinstance(self.communication, SerialCommunication)
+        self.communication.disconnect()
+        output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=None, working_dir=os.path.expanduser('~/.lizard'))
+        status.set_content(f'```\n{output}\n```')
+        self.communication.connect()
 
     def developer_ui(self) -> None:
         ui.label('Lizard')
@@ -101,7 +97,7 @@ class RobotBrain:
         ui.button('Flash', on_click=self.flash).props('outline')
         ui.button('Enable', on_click=self.enable_esp).props('outline')
 
-    def enable_esp(self):
+    def enable_esp(self) -> None:
         try:
             sys.path.insert(1, os.path.expanduser('~/.lizard'))
             from esp import Esp

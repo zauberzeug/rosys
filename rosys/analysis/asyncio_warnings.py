@@ -5,16 +5,16 @@ import rosys
 from nicegui import ui
 
 
-class AsyncioWarnings():
+class AsyncioWarnings:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.log = logging.getLogger('rosys.asyncio_warnings')
-        rosys.on_startup(lambda: self.set_treshold(0.05))
+        rosys.on_startup(lambda: self.set_threshold(0.05))
 
     def activate(self) -> None:
         '''Produce warnings for coroutines which take too long on the main loop and hence clog the event loop.
 
-        Beware: this is slowing everything down. Do not use in production or while profiling!
+        Beware: This slows everything down. Do not use in production or while profiling!
         '''
         try:
             loop = asyncio.get_running_loop()
@@ -38,13 +38,14 @@ class AsyncioWarnings():
         else:
             self.activate()
 
-    def set_treshold(self, seconds: float) -> None:
-        '''Sets the treshold in seconds after which a coroutine is considered slow.'''
+    def set_threshold(self, seconds: float) -> None:
+        '''Sets the threshold in seconds after which a coroutine is considered slow.'''
         loop = asyncio.get_running_loop()
         loop.slow_callback_duration = seconds
 
-    def ui(self):
-        ui.switch('asyncio warnings', on_change=self.toggle)
-        loop = asyncio.get_running_loop()
-        ui.number('asyncio slowness-threshold', value=loop.slow_callback_duration,
-                  format='%.3f', on_change=lambda e: self.set_treshold(e.value))
+    def ui(self) -> None:
+        with ui.row().classes('items-end'):
+            loop = asyncio.get_running_loop()
+            ui.checkbox(on_change=self.toggle)
+            ui.number('coro limit', value=loop.slow_callback_duration, format='%.3f',
+                      on_change=lambda e: self.set_threshold(e.value)).props('suffix=s').classes('w-16')

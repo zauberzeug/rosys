@@ -81,7 +81,7 @@ class UsbCameraProviderHardware(CameraProvider):
 
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.capture_images, 0.2)
-        rosys.on_repeat(self.update_prameters, 1)
+        rosys.on_repeat(self.update_parameters, 1)
         rosys.on_repeat(self.update_device_list, 1)
         rosys.on_repeat(lambda: self.prune_images(max_age_seconds=1.0), 5.0)
 
@@ -129,7 +129,7 @@ class UsbCameraProviderHardware(CameraProvider):
                 self.log.exception(f'could not capture image from {uid}')
                 await self.deactivate(camera)
 
-    async def update_prameters(self) -> None:
+    async def update_parameters(self) -> None:
         for uid, camera in self._cameras.items():
             if camera.active and uid in self.devices:
                 continue

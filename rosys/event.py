@@ -6,8 +6,7 @@ import logging
 from dataclasses import dataclass
 from typing import Awaitable, Callable
 
-from rosys import task_logger
-
+from . import task_logger
 from .helpers import invoke
 
 startup_coroutines: list[Awaitable] = []
