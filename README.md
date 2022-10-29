@@ -13,20 +13,20 @@ But the software architecture of RoSys also allows you to write your own modules
 
 ### All Python
 
-Business logic is wired in Python while computation-heavy tasks are encapsulated through websockets or bindings.
+Business logic is written in pure Python.
+Computation-heavy tasks are wrapped in processes, accessed through websockets or called via C++ bindings.
+Like you would do in any other Python program.
 
-### Shared State
+### Modularity
 
-All code can access and manipulate a shared and typesafe state -- this does not mean it should.
-Good software design is still necessary.
-But it is much easier to do if you do not have to perform serialization all the time.
+You can structure your code as you please.
+RoSys provides it's magic without assuming a specific file structure, config files or enforced naming.
 
-### No Threading
+### Async
 
-Thanks to [asyncio](https://docs.python.org/3/library/asyncio.html) you can write the business logic without locks and mutex mechanisms.
-The running system feels like everything is happening in parallel.
-But each code block is executed one after another through an event queue and yields execution as soon as it waits for I/O or heavy computation.
-The latter is still executed in threads to not block the rest of the business logic.
+Thanks to [asyncio](https://docs.python.org/3/library/asyncio.html) you can write your business logic without locks and mutexes.
+The execution is [parallel but not concurrent, which makes it really fast](https://realpython.com/python-concurrency/).
+In real case scenarios this is much faster than ROS with it's multiprocessing architecture which requires a lot of inter-process communication.
 
 ### Web UI
 
@@ -37,8 +37,8 @@ It is also possible to proxy the user interface through a gateway for remote ope
 ### Simulation
 
 Robot hardware is often slower than your own computer.
-Therefore RoSys supports a simulation mode for rapid development.
-To get maximum performance the current implementation does not run a full physics engine.
+To rapidly test out new behavior and algorithms, RoSys provides a simulation mode.
+Here, all hardware is mocked and can even be manipulated to test wheel blockages and similar.
 
 ### Testing
 
@@ -49,7 +49,7 @@ It is based on the above-described simulation mode and accelerates the robot's t
 
 ### Modules
 
-RoSys modules basically are Python modules encapsulate certain functionality.
+RoSys modules basically are Python modules which encapsulate certain functionality.
 They can hold their own state, register lifecycle hooks, run methods repeatedly and subscribe to or raise [events](#events).
 Most modules depend on other modules.
 
