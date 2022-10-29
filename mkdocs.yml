@@ -12,9 +12,9 @@ nav:
       - examples/hardware.md
       - examples/cameras.md
       - examples/schedule.md
+  - Module Reference: reference/
   - development.md
   - troubleshooting.md
-  - Module Reference: reference/
 repo_url: https://github.com/zauberzeug/rosys
 edit_uri: edit/main/docs/
 theme:

@@ -1,5 +1,20 @@
 # Development
 
+## Pushing Code to Robot
+
+To get the code onto the robot you can simply pull your repository.
+But this requires you to have login credentials on an external machine.
+And editing files must be done on slow hardware compared to development workstations and laptops.
+If you use [VS Code Remote Development](https://code.visualstudio.com/docs/remote/remote-overview) or similar to do actual development on these slow systems, everything feels like jelly. Especially if you run powerful extensions like [Pylance](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance).
+
+That's why we at [Zauberzeug](https://zauberzeug.com) created a small open source tool called [LiveSync](https://github.com/zauberzeug/livesync).
+It combines a local filesystem watcher with rsync to copy changes to a (slow) remote target whenever your local code changes. This approach has multiple advantages:
+
+- own choosing of IDE and tooling
+- locally able to run tests (or the production code)
+- simultaneously continuous deployment of the development code to the target environment (where auto-reload ensures live preview)
+- almost no overhead on the (slow) target
+
 ## Logging
 
 RoSys uses the Python [logging](https://docs.python.org/3/library/logging.html) package with namespaced loggers.
