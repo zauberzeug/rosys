@@ -4,10 +4,7 @@ RoSys provides an easy-to-use robot system.
 Its purpose is similar to [ROS](https://www.ros.org/).
 But RoSys is fully based on modern web technologies and focusses on mobile robotics.
 
-See full documentation at [rosys.io](https://rosys.io/).
-
-Currently RoSys is mostly tested and developed on the [Zauberzeug Robot Brain](https://www.zauberzeug.com/robot-brain.html) which uses [Lizard](https://lizard.dev/) for communication with motors, sensors and other peripherals.
-But the software architecture of RoSys also allows you to write your own modules if you prefer another industrial PC or setup.
+The full documentation is available at [rosys.io](https://rosys.io/).
 
 ## Principles
 
@@ -27,7 +24,7 @@ RoSys provides it's magic without assuming a specific file structure, config fil
 Thanks to [asyncio](https://docs.python.org/3/library/asyncio.html) you can write your business logic without locks and mutexes.
 The execution is [parallel but not concurrent](https://realpython.com/python-concurrency/) which makes it easier to write/read and debug.
 In real case scenarios this is also much faster than [ROS](https://www.ros.org/).
-It's multiprocessing architecture requires a lot of slow inter-process communication.
+Their multiprocessing architecture requires too much inter-process communication.
 
 ### Web UI
 
