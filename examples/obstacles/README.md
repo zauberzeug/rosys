@@ -4,7 +4,7 @@ This example shows how to use path planning and obstacle avoidance.
 
 ### How to get started
 
-To get started, navigate to the hello_bot directory and execute
+To get started, navigate to the obstacles directory and execute
 
 ```bash
 docker-compose up

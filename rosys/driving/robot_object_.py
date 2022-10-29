@@ -30,11 +30,16 @@ class RobotObject(Group):
                  omega: float = 0, phi: float = 0, kappa: float = 0,
                  scale: float = 1.0,
                  color: str = '#ffffff', opacity: float = 1.0) -> RobotObject:
+        '''Defines an stl url to be displayed with the robot.
+
+        The file can be served from a local directory with [ui.add_static_files(url, path)](https://nicegui.io/reference#static_files).
+        '''
         self.robot_object.delete()
         with self:
             self.robot_object = Stl(url).move(x, y, z).rotate(omega, phi, kappa).scale(scale).material(color, opacity)
         return self
 
     def update(self) -> None:
+        super().update()
         self.move(self.odometer.prediction.x, self.odometer.prediction.y)
         self.rotate(0, 0, self.odometer.prediction.yaw)
