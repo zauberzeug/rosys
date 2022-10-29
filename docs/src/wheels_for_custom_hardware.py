@@ -14,10 +14,12 @@ class WheelsForCustomHardware(rosys.hardware.Wheels):
         rosys.on_shutdown(self.stop)
 
     async def drive(self, linear: float, angular: float) -> None:
-        ...  # TODO send driving commands for given linear and angular to the hardware
+        # TODO send driving commands for given linear and angular to the hardware
+        ...
 
     async def stop(self) -> None:
-        ...  # TODO perform hardware command to stop the wheels
+        # TODO perform hardware command to stop the wheels
+        ...
 
     async def read_current_velocity(self) -> None:
         velocities: list[rosys.Velocity] = []
