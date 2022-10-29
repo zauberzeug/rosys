@@ -1,6 +1,6 @@
 # Steering
 
-The following example simulates a robot that can be steered using keyboard controls or a joystick.
+The following example simulates a robot that can be steered using keyboard controls or a joystick via web interface.
 
 ```python hl_lines="12-13"
 {!src/example_steering.py !}

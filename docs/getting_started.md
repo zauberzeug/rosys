@@ -35,6 +35,6 @@ See [NiceGUI](https://nicegui.io) for more details about its API.
 
 ### Start
 
-NiceGUI provides a `ui.run` command which launches the web server and opens the corresponding web application.
+[NiceGUI](https://nicegui.io) provides a `ui.run` command which launches the web server and opens the corresponding web application.
 If you modify the code, a reload is triggered automatically.
 This is very convenient, but can be deactivated by passing `reload=False`.

@@ -17,6 +17,8 @@ class Automator:
     A default automation can be specified, so that the automator can later be started (e.g. via an automation controls UI element) without passing an automation.
     Optional wheels (or any stoppable hardware representation) will be stopped when an automation pauses or stops.
     Manually steering the robot using an optional steerer pauses a currently running automation.
+
+    See [Click-and-drive](https://rosys.io/examples/click-and-drive/) for a simple example of an automation.
     '''
 
     def __init__(self,

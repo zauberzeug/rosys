@@ -1,6 +1,6 @@
 # Click-and-drive
 
-In this example we create a simulated robot that drives wherever the user clicks.
+In this example we create a simulated robot which uses an [automation](../../reference/rosys/automation) to drive wherever the user clicks.
 
 ```python
 {!src/example_click-and-drive.py!}
@@ -18,4 +18,4 @@ Driver
 : Among others, the driver has an async method `drive_to` which lets the robot follow a straight line to a given target.
 
 Automator and automation controls
-: The automator starts the async method and allows pausing, resuming and stopping it, e.g. with the `AutomationControls` UI element.
+: The [Automator](../../reference/rosys/automation/#rosys.automation.Automator) starts the async method and allows pausing, resuming and stopping it, e.g. with the `AutomationControls` UI element.

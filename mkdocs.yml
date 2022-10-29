@@ -7,11 +7,11 @@ nav:
   - Examples:
       - examples/steering.md # NOTE: shown when clicking on "Examples" folder
       - examples/steering.md
-      - examples/hardware.md
       - examples/click-and-drive.md
-      - examples/schedule.md
       - examples/navigation.md
+      - examples/hardware.md
       - examples/cameras.md
+      - examples/schedule.md
   - development.md
   - troubleshooting.md
   - Module Reference: reference/
