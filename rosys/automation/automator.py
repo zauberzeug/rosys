@@ -14,11 +14,15 @@ from .automation import Automation
 class Automator:
     '''An automator allows running automations, i.e. coroutines that can be paused and resumed.
 
-    A default automation can be specified, so that the automator can later be started (e.g. via an automation controls UI element) without passing an automation.
-    Optional wheels (or any stoppable hardware representation) will be stopped when an automation pauses or stops.
-    Manually steering the robot using an optional steerer pauses a currently running automation.
-
     See [Click-and-drive](https://rosys.io/examples/click-and-drive/) for a simple example of an automation.
+
+    _wheels_: Optional wheels (or any stoppable hardware representation) will be stopped when an automation pauses or stops.
+
+    _steerer_: If provided, manually steering the robot will pause a currently running automation.
+
+    _default_automation_: If provided, it allows the automator to start a new automation without passing an automation 
+    (e.g. via an "Play"-button like offered by the [automation controls](https://rosys.io/reference/rosys/automation/#rosys.automation.automation_controls)). 
+    The passed function should return a new coroutine on every call.
     '''
 
     def __init__(self,
@@ -72,6 +76,10 @@ class Automator:
         return self.automation is not None and self.automation.is_paused
 
     def start(self, coro: Optional[Coroutine] = None) -> None:
+        '''Starts a new automation.
+
+        You can pass any coroutine.
+        The automator will make sure it can be paused, resumed and stopped.'''
         if coro is None:
             self.start(self.default_automation())
             return
@@ -85,12 +93,19 @@ class Automator:
         rosys.notify('automation started')
 
     def pause(self, because: str) -> None:
+        '''Pauses the current automation.
+
+        You need to provide a cause as a meaningful string which will be used as notification.
+        '''
+
         if self.is_running:
             self.automation.pause()
             self.AUTOMATION_PAUSED.emit(because)
             rosys.notify(f'automation paused because {because}')
 
     def resume(self) -> None:
+        '''Resumes the current automation.'''
+
         if not self.enabled:
             return
         if self.is_paused:
@@ -99,6 +114,11 @@ class Automator:
             rosys.notify('automation resumed')
 
     def stop(self, because: str) -> None:
+        '''Stops the current automation.
+
+        You need to provide a cause as a meaningful string which will be used as notification
+        '''
+
         if not self.is_stopped:
             self.automation.stop()
             self.AUTOMATION_STOPPED.emit(because)
@@ -106,9 +126,21 @@ class Automator:
             rosys.notify(f'automation stopped because {because}')
 
     def enable(self) -> None:
+        '''Enables the automator.
+
+        It is enabled by default. It can be disabled by calling `disable()`.'''
+
         self.enabled = True
 
     def disable(self, because: str) -> None:
+        '''Disables the automator.
+
+        No automations can be started while the automator is disabled.
+        If an automation is running or paused it will be stopped.
+        You need to provide a cause of the disabling as a meaningful string. 
+        This will be used as notification message.
+        '''
+
         self.stop(because)
         self.enabled = False
 

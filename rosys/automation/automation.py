@@ -7,7 +7,7 @@ class Automation:
     '''An automation wraps a coroutine and allows pausing and resuming it.
 
     Optional exception and completion handlers are called if provided.
-    This class is used by the [Automator](https://rosys.io/reference/rosys/automation/automator) internally.
+    This class is used by the [Automator](https://rosys.io/reference/rosys/automation/#rosys.automation.Automator) internally.
     '''
 
     def __init__(self,
