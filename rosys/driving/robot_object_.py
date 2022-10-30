@@ -40,6 +40,5 @@ class RobotObject(Group):
         return self
 
     def update(self) -> None:
-        super().update()
         self.move(self.odometer.prediction.x, self.odometer.prediction.y)
         self.rotate(0, 0, self.odometer.prediction.yaw)

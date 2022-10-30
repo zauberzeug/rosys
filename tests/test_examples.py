@@ -37,7 +37,7 @@ def check(path: str, *, timeout: float = 15.0) -> bool:
         print(f'  Error ("Error" found): {output}', flush=True)
         return False
 
-    if 'NiceGUI ready to go' not in output:
+    if 'ui.run' in open(path).read() and 'NiceGUI ready to go' not in output:
         print(f'  Error (NiceGUI welcome message missing): {output}', flush=True)
         return False
 
