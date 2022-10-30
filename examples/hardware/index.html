@@ -341,9 +341,47 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Hardware
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         Hardware
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#custom-implementation" class="md-nav__link">
+    Custom Implementation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#robot-brain" class="md-nav__link">
+    Robot Brain
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -566,6 +604,28 @@
     
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#custom-implementation" class="md-nav__link">
+    Custom Implementation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#robot-brain" class="md-nav__link">
+    Robot Brain
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -585,12 +645,70 @@
 
 
 <h1 id="hardware">Hardware<a class="headerlink" href="#hardware" title="Permanent link">&para;</a></h1>
-<p>You can use <code>SerialCommunication.is_possible()</code> to automatically switch between a simulation and real hardware.
-The module <code>WheelsHardware</code> expects a <code>RobotBrain</code>, which controls the <code>SerialCommunication</code> with a microcontroller.
-The <a href="https://zauberzeug.com/robot-brain.html">Zauberzeug Robot Brain</a> is an industrial-grade controller to combine artificial intelligence with machinery.</p>
+<p>The other examples use simulated hardware for simplicity and easy execution on any development system.
+To be able to control real hardware we recommend to derive a <code>Simulation</code> and <code>Hardware</code> version from a shared interface.
+Depending on your environment you can then instantiate the correct implementation without bothering with it in the rest of your code.</p>
+<h2 id="custom-implementation">Custom Implementation<a class="headerlink" href="#custom-implementation" title="Permanent link">&para;</a></h2>
+<p>For a differential-steering controlled robot, RoSys offers a <a href="../../reference/rosys/hardware/#rosys.hardware.Wheels"><code>Wheels</code></a> base class plus a <a href="../../reference/rosys/hardware/#rosys.hardware.WheelsSimulation"><code>WheelsSimulation</code></a>.
+The following example illustrates the content of <code>wheels_for_custom_hardware.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span> <span class="nn">rosys</span>
+<span class="kn">import</span> <span class="nn">rosys.hardware</span>
+
+
+<span class="k">class</span> <span class="nc">WheelsForCustomHardware</span><span class="p">(</span><span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">Wheels</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="c1"># TODO raise exception if hardware is not available</span>
+
+        <span class="c1"># measured velocities must be updated regularly to feed the odometer</span>
+        <span class="n">rosys</span><span class="o">.</span><span class="n">on_repeat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_current_velocity</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)</span>
+        <span class="c1"># this makes the wheels stop if rosys is shutdown (or reloaded)</span>
+        <span class="n">rosys</span><span class="o">.</span><span class="n">on_shutdown</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">drive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linear</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">angular</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># TODO send driving commands for given linear and angular to the hardware</span>
+        <span class="o">...</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># TODO perform hardware command to stop the wheels</span>
+        <span class="o">...</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">read_current_velocity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">velocities</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">rosys</span><span class="o">.</span><span class="n">Velocity</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="c1"># TODO: read measured velocities since last call from hardware</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">VELOCITY_MEASURED</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">velocities</span><span class="p">)</span>
+</code></pre></div>
+<p>Depending on your hardware you may need to modify a PWM signal, send commands via CAN bus or serial, use Protobuf over Ethernet or something else.
+By raising an exception if the real hardware is not available a robot controlled by keyboard/joystick looks like this:</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
 <span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
-<span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">Steerer</span><span class="p">,</span> <span class="n">keyboard_control</span>
+<span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">Steerer</span><span class="p">,</span> <span class="n">joystick</span><span class="p">,</span> <span class="n">keyboard_control</span>
+<span class="kn">from</span> <span class="nn">rosys.hardware</span> <span class="kn">import</span> <span class="n">WheelsSimulation</span>
+
+<span class="kn">from</span> <span class="nn">wheels_for_custom_hardware</span> <span class="kn">import</span> <span class="n">WheelsForCustomHardware</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">wheels</span> <span class="o">=</span> <span class="n">WheelsForCustomHardware</span><span class="p">()</span>
+<span class="k">except</span><span class="p">:</span>
+    <span class="n">wheels</span> <span class="o">=</span> <span class="n">WheelsSimulation</span><span class="p">()</span>
+<span class="n">odometer</span> <span class="o">=</span> <span class="n">Odometer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
+<span class="n">steerer</span> <span class="o">=</span> <span class="n">Steerer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
+
+<span class="n">keyboard_control</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
+<span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
+
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="robot-brain">Robot Brain<a class="headerlink" href="#robot-brain" title="Permanent link">&para;</a></h2>
+<p>The <a href="https://zauberzeug.com/robot-brain.html">Zauberzeug Robot Brain</a> is an industrial-grade controller which combines artificial intelligence with machinery.
+It has a build in ESP32 microcontroller with <a href="https://lizard.dev/">Lizard</a> installed to do the actual hardware communication in realtime.</p>
+<p>Serial communication is used to send and receive messages between the build-in NVidia Jetson and the microcontroller.
+You can call <code>SerialCommunication.is_possible()</code> to automatically switch between a simulation and real hardware.
+The module <code>WheelsHardware</code> expects a <code>RobotBrain</code>, which controls the <code>SerialCommunication</code> with the microcontroller.</p>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
+<span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
+<span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">Steerer</span><span class="p">,</span> <span class="n">joystick</span><span class="p">,</span> <span class="n">keyboard_control</span>
 <span class="kn">from</span> <span class="nn">rosys.hardware</span> <span class="kn">import</span> <span class="n">RobotBrain</span><span class="p">,</span> <span class="n">SerialCommunication</span><span class="p">,</span> <span class="n">WheelsHardware</span><span class="p">,</span> <span class="n">WheelsSimulation</span><span class="p">,</span> <span class="n">communication</span>
 
 <span class="n">is_real</span> <span class="o">=</span> <span class="n">SerialCommunication</span><span class="o">.</span><span class="n">is_possible</span><span class="p">()</span>
@@ -604,20 +722,17 @@ The <a href="https://zauberzeug.com/robot-brain.html">Zauberzeug Robot Brain</a>
 <span class="n">steerer</span> <span class="o">=</span> <span class="n">Steerer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
 
 <span class="n">keyboard_control</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
+<span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
 
 <span class="k">if</span> <span class="n">is_real</span><span class="p">:</span>
     <span class="n">communication</span><span class="o">.</span><span class="n">debug_ui</span><span class="p">()</span>
-
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">configure</span><span class="p">():</span>
-        <span class="k">await</span> <span class="n">robot_brain</span><span class="o">.</span><span class="n">configure</span><span class="p">(</span><span class="s1">&#39;example_hardware.txt&#39;</span><span class="p">)</span>
-    <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;Configure Lizard&#39;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">configure</span><span class="p">)</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">&#39;outline&#39;</span><span class="p">)</span>
+    <span class="n">robot_brain</span><span class="o">.</span><span class="n">developer_ui</span><span class="p">()</span>
 
 <span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
 </code></pre></div>
-<p>With <code>communication.debug_ui()</code> you can add some helpful UI elements for debugging the serial communication.</p>
-<p>Furthermore, you can add a button to send the <a href="https://lizard.dev/">Lizard</a> configuration to the microcontroller running the Lizard firmware.
-This way it recognizes wheel commands from the <code>RobotBrain</code> module and responds accordingly.</p>
-<p>The lizard configuration for two wheels controlled with an <a href="https://odriverobotics.com/">ODrive</a> might look as follows:</p>
+<p>With <code>communication.debug_ui()</code> you can add some helpful UI elements for debugging the serial communication.
+Furthermore, with <code>robot_brain.developer_ui()</code> you can add a ui elements to configure and reboot <a href="https://lizard.dev/">Lizard</a>.</p>
+<p>The Lizard configuration for a differential-steering controlled robot with an <a href="https://odriverobotics.com/">ODrive</a> might look as follows:</p>
 <div class="highlight"><pre><span></span><code>can = Can(32, 33, 1000000)
 
 l = ODriveMotor(can, 0x000)
