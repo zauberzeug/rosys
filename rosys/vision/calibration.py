@@ -24,14 +24,14 @@ log = logging.getLogger('rosys.world.calibration')
 
 @dataclass(slots=True, kw_only=True)
 class Extrinsics:
-    rotation: Rotation = Rotation.from_euler(np.pi, 0, 0)
+    rotation: Rotation = field(default_factory=lambda: Rotation.from_euler(np.pi, 0, 0))
     translation: list[float] = field(default_factory=lambda: [0.0, 0.0, 1.0])
 
 
 @dataclass(slots=True, kw_only=True)
 class Calibration:
     intrinsics: Intrinsics
-    extrinsics: Extrinsics = Extrinsics()
+    extrinsics: Extrinsics = field(default_factory=lambda: Extrinsics())
 
     @property
     def rotation(self) -> Rotation:
