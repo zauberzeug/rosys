@@ -49,6 +49,8 @@ if __name__ == '__main__':
     success = check('../main.py')
 
     for filepath in glob.glob(f'../docs/src/*.py'):
+        if filepath.endswith('dev_profiling.py'):
+            continue  # TODO: allow testing dev_profiling.py again as soon as yappi and line-profiler support Python 3.11
         success &= check(filepath)
 
     if not success:
