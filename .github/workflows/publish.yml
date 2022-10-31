@@ -5,9 +5,13 @@ on:
     types: [published]
 
 jobs:
+  #depending on pytest workflow, see https://stackoverflow.com/a/71489231/364388
+  pytest:
+    uses: ./.github/workflows/pytest.yml
+
   pypi:
     runs-on: ubuntu-latest
-
+    needs: pytest
     steps:
       - uses: actions/checkout@v2
       - name: set up Python
@@ -31,7 +35,6 @@ jobs:
   docker:
     needs: pypi
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
       - name: Prepare
