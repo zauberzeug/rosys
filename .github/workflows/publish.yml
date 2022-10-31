@@ -94,3 +94,25 @@ jobs:
           destination_container_repo: zauberzeug/rosys
           provider: dockerhub
           short_description: "A robot system based on web technologies with focus on autonomous mobile robots."
+
+  docs:
+    runs-on: ubuntu-latest
+    needs: pypi
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          python3 -m pip install -r mkdocs_requirements.txt
+          python3 -m pip install -e .
+      - name: Build docs
+        run: mkdocs build -v
+      - name: Deploy gh-pages
+        uses: JamesIves/github-pages-deploy-action@v4.2.5
+        with:
+          branch: gh-pages
+          folder: site
