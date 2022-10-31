@@ -88,7 +88,7 @@ class Automator:
             return
         self.stop(because='new automation starts')
         self.automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
-        create_task(asyncio.wait([self.automation]), name='automation')
+        create_task(self.automation.__await__(), name='automation')
         self.AUTOMATION_STARTED.emit()
         rosys.notify('automation started')
 
