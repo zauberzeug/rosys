@@ -100,6 +100,17 @@ Log output then looks like this:
 
 ## Profiling
 
+!!! note
+
+    The default RoSys installation via pip does not come with profiling packages.
+    To install them, run
+
+    ```bash
+    python3 -m pip install rosys[profiling]
+    ```
+
+    This does currently not work with Python 3.11 because yappy and line-profiler have not implemented 3.11 yet.
+
 You can add a `profile` decorator to expensive functions and add a profiler button to your UI:
 
 ```python hl_lines="7 16"
