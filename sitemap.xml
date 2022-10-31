@@ -61,11 +61,6 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
-         <loc>https://rosys.io/reference/rosys/analysis/</loc>
-         <lastmod>2022-10-31</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
          <loc>https://rosys.io/reference/rosys/automation/</loc>
          <lastmod>2022-10-31</lastmod>
          <changefreq>daily</changefreq>

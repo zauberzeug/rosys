@@ -406,20 +406,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../reference/rosys/analysis/" class="md-nav__link">
-        analysis
-      </a>
-    </li>
-  
-
-            
-          
-            
-              
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../reference/rosys/automation/" class="md-nav__link">
         automation
       </a>
@@ -954,6 +940,14 @@ Then you can change the format for the formatter:</p>
 <div class="highlight"><pre><span></span><code>2022-01-11 06:51:00.319 [DEBUG] rosys/runtime.py:78: startup completed
 </code></pre></div>
 <h2 id="profiling">Profiling<a class="headerlink" href="#profiling" title="Permanent link">&para;</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The default RoSys installation via pip does not come with profiling packages.
+To install them, run</p>
+<div class="highlight"><pre><span></span><code>python3 -m pip install rosys<span class="o">[</span>profiling<span class="o">]</span>
+</code></pre></div>
+<p>This does currently not work with Python 3.11 because yappy and line-profiler have not implemented 3.11 yet.</p>
+</div>
 <p>You can add a <code>profile</code> decorator to expensive functions and add a profiler button to your UI:</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
 <span class="kn">import</span> <span class="nn">rosys</span>
