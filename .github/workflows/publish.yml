@@ -13,7 +13,7 @@ jobs:
       - name: set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: "3.10"
+          python-version: "3.11"
       - name: set up Poetry
         uses: abatilo/actions-poetry@v2.0.0
         with:
