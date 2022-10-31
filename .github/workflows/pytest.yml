@@ -28,7 +28,7 @@ jobs:
   slack:
     needs:
       - pytest
-    if: always() # also execute when pytest fails
+    if: always() and github.event.type == 'PushEvent' # also execute when pytest fails but not when running from release workflow
     runs-on: ubuntu-latest
     steps:
       - name: Determine if we need to notify
