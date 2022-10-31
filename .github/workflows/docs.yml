@@ -18,7 +18,6 @@ jobs:
         run: |
           python3 -m pip install -r mkdocs_requirements.txt
           python3 -m pip install -e .
-          python3 -m pip install line-profiler
       - name: Build docs
         run: mkdocs build -v
       - name: Deploy gh-pages
