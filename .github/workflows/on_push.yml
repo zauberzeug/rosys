@@ -1,0 +1,29 @@
+name: On Push
+
+on: push
+
+jobs:
+  #depending on pytest workflow, see https://stackoverflow.com/a/71489231/364388
+  pytest:
+    uses: ./.github/workflows/pytest.yml
+
+  slack:
+    needs:
+      - pytest
+    if: always() # also execute when pytest fails
+    runs-on: ubuntu-latest
+    steps:
+      - name: Determine if we need to notify
+        uses: Jimdo/should-i-notify-action@main
+        id: should_notify
+        with:
+          needs_context: ${{ toJson(needs) }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Slack workflow notification
+        if: steps.should_notify.outputs.should_send_message == 'yes'
+        uses: Gamesight/slack-workflow-status@master
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          slack_webhook_url: ${{ secrets.SLACK_ROBOTICS_CI_WEBHOOK }}
+          channel: "robotik-ci"
+          name: "RoSys"
