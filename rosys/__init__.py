@@ -12,7 +12,9 @@ from typing import Awaitable, Callable, Optional
 
 import numpy as np
 import psutil
-from nicegui import auto_context, ui
+from nicegui import auto_context
+from nicegui import globals as nicegui_globals
+from nicegui import ui
 from nicegui.page import Page
 
 from . import event, persistence, run
@@ -61,7 +63,7 @@ def notify(message: str) -> None:
     # NOTE show notifications on all pages
     for page in Page.instances.values():
         assert isinstance(page, Page)
-        with auto_context.within_view(page.view):
+        with auto_context.Context(page.view):
             try:
                 ui.notify(message)
             except:
