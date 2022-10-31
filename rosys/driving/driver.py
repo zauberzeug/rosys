@@ -1,5 +1,5 @@
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
@@ -172,7 +172,7 @@ class Driver:
 @dataclass(slots=True, kw_only=True)
 class Carrot:
     spline: Spline
-    offset: Point = Point(x=0, y=0)
+    offset: Point = field(default_factory=lambda: Point(x=0, y=0))
     t: float = 0
     target_distance: Optional[float] = None
 
