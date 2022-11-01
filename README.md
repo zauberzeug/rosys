@@ -10,7 +10,7 @@ The full documentation is available at [rosys.io](https://rosys.io/).
 
 ### All Python
 
-Business logic is written in pure Python.
+Python is great to write business logic.
 Computation-heavy tasks are wrapped in processes, accessed through websockets or called via C++ bindings.
 Like you would do in any other Python program.
 
@@ -19,7 +19,7 @@ Like you would do in any other Python program.
 You can structure your code as you please.
 RoSys provides it's magic without assuming a specific file structure, config files or enforced naming.
 
-### Async
+### Event Loop
 
 Thanks to [asyncio](https://docs.python.org/3/library/asyncio.html) you can write your business logic without locks and mutexes.
 The execution is [parallel but not concurrent](https://realpython.com/python-concurrency/) which makes it easier to write/read and debug.
@@ -29,7 +29,8 @@ Their multiprocessing architecture requires too much inter-process communication
 ### Web UI
 
 Most machines need some kind of human interaction.
-We made sure your robot can be operated fully off the grid with any web browser by incorporating [NiceGUI](https://nicegui.io/).
+RoSys is build from the ground up to make sure your robot can be operated fully off the grid with any web browser.
+This is done by incorporating [NiceGUI](https://nicegui.io/), a wonderful all-Python UI web framework.
 It is also possible to proxy the user interface through a gateway for remote operation.
 
 ### Simulation
@@ -71,11 +72,12 @@ Have a look at our [Click-and-drive](examples/click-and-drive.md) example.
 
 Modules can register backup and restore methods to read and write their state to disk.
 
-### RoSys Time
+### Time
 
-If you want to delay the execution, you should invoke `await rosys.sleep(seconds: float)`.
-This causes to wait until the _RoSys time_ has elapsed the desired amount of time.
-In pytests the RoSys time is simulated and can advance much faster if no CPU-intensive operation is performed.
+RoSys uses it's own time which is accessible through `rosys.time`.
+This way in simulation and tests the time can advance much faster if no CPU-intensive operation is performed.
+To delay the execution of a coroutine, you should invoke `await rosys.sleep(seconds: float)`.
+This create a delay until the provided amount of _RoSys time_ has elapsed.
 
 ### Threading And Multiprocessing
 
