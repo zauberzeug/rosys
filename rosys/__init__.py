@@ -20,6 +20,7 @@ from nicegui.page import Page
 from . import event, persistence, run
 from .config import Config
 from .helpers import invoke
+from .simulation_ui import simulation_ui
 from .task_logger import create_task
 
 log = logging.getLogger('rosys.core')
