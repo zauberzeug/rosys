@@ -53,7 +53,7 @@ log = logging.getLogger('rosys.persistence')
 is_test = 'pytest' in sys.modules
 
 
-class PersistentActor(Protocol):
+class PersistentModule(Protocol):
     needs_backup: bool
 
     def backup(self) -> dict[str, Any]:
@@ -63,12 +63,13 @@ class PersistentActor(Protocol):
         ...
 
 
-actors: dict[str, PersistentActor] = {}
+modules: dict[str, PersistentModule] = {}
 
 
-def register(actor: PersistentActor) -> None:
+def register(module: PersistentModule) -> None:
+    ic(module)
     if not is_test:
-        actors[actor.__module__] = actor
+        modules[module.__module__] = module
 
 
 class Encoder(json.JSONEncoder):
@@ -80,32 +81,32 @@ class Encoder(json.JSONEncoder):
 
 @awaitable
 def backup(force: bool = False) -> None:
-    for name, actor in actors.items():
-        if not actor.needs_backup and not force:
+    for name, module in modules.items():
+        if not module.needs_backup and not force:
             continue
         if not os.path.exists(backup_path):
             os.makedirs(backup_path)
         filepath = f'{backup_path}/{name}.json'
         with open(filepath, 'w') as f:
-            json.dump(actor.backup(), f, indent=4, cls=Encoder)
-        actor.needs_backup = False
+            json.dump(module.backup(), f, indent=4, cls=Encoder)
+        module.needs_backup = False
 
 
 def restore() -> None:
-    for name, actor in actors.items():
+    for name, module in modules.items():
         filepath = f'{backup_path}/{name}.json'
         if not os.path.exists(filepath):
             log.warning(f'Backup file "{filepath}" not found.')
             continue
         with open(filepath) as f:
-            actor.restore(json.load(f))
+            module.restore(json.load(f))
 
 
 def export_button(title: str = 'Export', route: str = '/export', tmp_filepath: str = '/tmp/export.json') -> ui.button:
     @ui.get(route)
     def get_export() -> FileResponse:
         with open(tmp_filepath, 'w') as f:
-            json.dump({name: actor.backup() for name, actor in actors.items()}, f, indent=4)
+            json.dump({name: module.backup() for name, module in modules.items()}, f, indent=4)
         return FileResponse(tmp_filepath, filename='export.json')
     ui.button(title, on_click=lambda e: ui.open(route[1:], e.socket))
 
@@ -115,7 +116,7 @@ def import_button(title: str = 'Import', after_import: Optional[Callable] = None
         all_data = json.loads(e.files[0].decode())
         assert isinstance(all_data, dict)
         for name, data in all_data.items():
-            actors[name].restore(data)
+            modules[name].restore(data)
         await backup(force=True)
         dialog.close()
         await invoke(after_import)
