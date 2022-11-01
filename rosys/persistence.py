@@ -67,7 +67,6 @@ modules: dict[str, PersistentModule] = {}
 
 
 def register(module: PersistentModule) -> None:
-    ic(module)
     if not is_test:
         modules[module.__module__] = module
 
