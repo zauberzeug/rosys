@@ -30,7 +30,7 @@ class RobotObject(Group):
                  omega: float = 0, phi: float = 0, kappa: float = 0,
                  scale: float = 1.0,
                  color: str = '#ffffff', opacity: float = 1.0) -> RobotObject:
-        '''Defines an stl url to be displayed with the robot.
+        '''Sets an STL to be displayed as the robot.
 
         The file can be served from a local directory with [ui.add_static_files(url, path)](https://nicegui.io/reference#static_files).
         '''

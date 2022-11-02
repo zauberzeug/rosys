@@ -17,8 +17,7 @@ class simulation_ui:
     def request_backup(self) -> None:
         self.needs_backup = True
 
-    def backup(self) -> dict:
-        ic()
+    def backup(self) -> dict[str, Any]:
         return {'speed': rosys.speed}
 
     def restore(self, data: dict[str, Any]) -> None:
