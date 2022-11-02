@@ -1,5 +1,4 @@
 from functools import wraps
-from typing import Optional
 
 from nicegui import ui
 
@@ -8,7 +7,8 @@ class Track:
 
     def __init__(self) -> None:
         self.stack: list[str] = []
-        self._ui: Optional[ui.label] = None
+        self._labels: list[ui.label] = []
+        ui.timer(0.5, self.update)
 
     def __call__(self, f):
         @wraps(f)
@@ -21,17 +21,17 @@ class Track:
                     self.stack.pop()
         return wrap
 
+    def update(self) -> None:
+        for label in self._labels:
+            label.text = ' → '.join(self.stack)
+
     def ui(self) -> ui.label:
-        def update() -> None:
-            self._ui.text = ' → '.join(self.stack)
-        self._ui = ui.label()
-        ui.timer(0.5, update)
-        return self._ui
+        self._labels.append(ui.label())
+        return self._labels[-1]
 
     def reset(self) -> None:
         self.stack.clear()
-        if self._ui:
-            self._ui.text = ''
+        self.update()
 
 
 track = Track()
