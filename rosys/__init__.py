@@ -96,15 +96,16 @@ def uptime() -> float:
 
 
 async def sleep(seconds: float) -> None:
-    if is_test or speed != 1.0:
+    if is_test:
         sleep_end_time = time() + seconds
         while time() <= sleep_end_time:
             await asyncio.sleep(0)
     else:
-        count = int(np.ceil(seconds))
+        scaled_seconds = seconds / speed
+        count = int(np.ceil(scaled_seconds))
         if count > 0:
             for _ in range(count):
-                await asyncio.sleep(seconds / count)
+                await asyncio.sleep(scaled_seconds / count)
         else:
             await asyncio.sleep(0)
 
