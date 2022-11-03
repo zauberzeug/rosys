@@ -1,18 +1,20 @@
 # Development
 
-## Pushing Code to Robot
+## Pushing Code to the Robot
 
 To get the code onto the robot you can simply pull your repository.
 But this requires you to have login credentials on an external machine.
 And editing files must be done on slow hardware compared to development workstations and laptops.
-If you use [VS Code Remote Development](https://code.visualstudio.com/docs/remote/remote-overview) or similar to do actual development on these slow systems, everything feels like jelly. Especially if you run powerful extensions like [Pylance](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance).
+If you use [VS Code Remote Development](https://code.visualstudio.com/docs/remote/remote-overview) or similar to do actual development on these slow systems, everything feels like jelly.
+Especially if you run powerful extensions like [Pylance](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance).
 
-That's why we at [Zauberzeug](https://zauberzeug.com) created a small open source tool called [LiveSync](https://github.com/zauberzeug/livesync).
-It combines a local filesystem watcher with rsync to copy changes to a (slow) remote target whenever your local code changes. This approach has multiple advantages:
+That is why we at [Zauberzeug](https://zauberzeug.com) created a small open source tool called [LiveSync](https://github.com/zauberzeug/livesync).
+It combines a local filesystem watcher with rsync to copy changes to a (slow) remote target whenever your local code changes.
+This approach has multiple advantages:
 
-- own choosing of IDE and tooling
-- locally able to run tests (or the production code)
-- simultaneously continuous deployment of the development code to the target environment (where auto-reload ensures live preview)
+- work with your personal choice of IDE and tooling
+- run tests (or simulate the production code) locally
+- continuously deploy the development code to the target environment (where auto-reload ensures live preview)
 - almost no overhead on the (slow) target
 
 ## Logging
@@ -109,7 +111,7 @@ Log output then looks like this:
     python3 -m pip install rosys[profiling]
     ```
 
-    This does currently not work with Python 3.11 because yappy and line-profiler have not implemented 3.11 yet.
+    Currently this does not work with Python 3.11 because yappy and line-profiler do not support 3.11 yet.
 
 You can add a `profile` decorator to expensive functions and add a profiler button to your UI:
 
@@ -151,4 +153,4 @@ We publish releases by creating a new version on GitHub and describe the changes
 A GitHub Action then performs the following steps:
 
 - If the pytests are successful, a poetry build and deployment to [pypi](https://pypi.org/project/rosys/) is issued.
-- A multi-arch docker image is built and pushed to [Docker Hub](https://hub.docker.com/r/zauberzeug/rosys).
+- A multi-arch Docker image is built and pushed to [Docker Hub](https://hub.docker.com/r/zauberzeug/rosys).

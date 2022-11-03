@@ -14,7 +14,7 @@ The following example illustrates the content of `wheels_for_custom_hardware.py`
 ```
 
 Depending on your hardware you may need to modify a PWM signal, send commands via CAN bus or serial, use Protobuf over Ethernet or something else.
-By raising an exception if the real hardware is not available a robot controlled by keyboard/joystick looks like this:
+By raising an exception if the real hardware is not available a robot controlled by keyboard or joystick looks like this:
 
 ```python
 {!src/example_hardware.py !}
@@ -23,10 +23,10 @@ By raising an exception if the real hardware is not available a robot controlled
 ## Robot Brain
 
 The [Zauberzeug Robot Brain](https://zauberzeug.com/robot-brain.html) is an industrial-grade controller which combines artificial intelligence with machinery.
-It has a build in ESP32 microcontroller with [Lizard](https://lizard.dev/) installed to do the actual hardware communication in realtime.
+It has a built-in ESP32 microcontroller with [Lizard](https://lizard.dev/) installed to do the actual hardware communication in realtime.
 
-Serial communication is used to send and receive messages between the build-in NVidia Jetson and the microcontroller.
-You can call `SerialCommunication.is_possible()` to automatically switch between a simulation and real hardware.
+Serial communication is used to send and receive messages between the built-in NVidia Jetson and the microcontroller.
+You can call `SerialCommunication.is_possible()` to automatically switch between simulation and real hardware.
 The module `WheelsHardware` expects a `RobotBrain`, which controls the `SerialCommunication` with the microcontroller.
 
 ```python
@@ -34,7 +34,7 @@ The module `WheelsHardware` expects a `RobotBrain`, which controls the `SerialCo
 ```
 
 With `communication.debug_ui()` you can add some helpful UI elements for debugging the serial communication.
-Furthermore, with `robot_brain.developer_ui()` you can add a ui elements to configure and reboot [Lizard](https://lizard.dev/).
+Furthermore, with `robot_brain.developer_ui()` you can add UI elements to configure and reboot [Lizard](https://lizard.dev/).
 
 The Lizard configuration for a differential-steering controlled robot with an [ODrive](https://odriverobotics.com/) might look as follows:
 

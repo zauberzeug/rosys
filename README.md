@@ -11,25 +11,25 @@ The full documentation is available at [rosys.io](https://rosys.io/).
 ### All Python
 
 Python is great to write business logic.
-Computation-heavy tasks are wrapped in processes, accessed through websockets or called via C++ bindings.
+Computation-heavy tasks are wrapped in processes, accessed through WebSockets or called via C++ bindings.
 Like you would do in any other Python program.
 
 ### Modularity
 
 You can structure your code as you please.
-RoSys provides it's magic without assuming a specific file structure, config files or enforced naming.
+RoSys provides its magic without assuming a specific file structure, configuration files or enforced naming.
 
 ### Event Loop
 
 Thanks to [asyncio](https://docs.python.org/3/library/asyncio.html) you can write your business logic without locks and mutexes.
-The execution is [parallel but not concurrent](https://realpython.com/python-concurrency/) which makes it easier to write/read and debug.
-In real case scenarios this is also much faster than [ROS](https://www.ros.org/).
-Their multiprocessing architecture requires too much inter-process communication.
+The execution is [parallel but not concurrent](https://realpython.com/python-concurrency/) which makes it easier to read, write and debug.
+In real-case scenarios this is also much faster than [ROS](https://www.ros.org/).
+Its multiprocessing architecture requires too much inter-process communication.
 
 ### Web UI
 
 Most machines need some kind of human interaction.
-RoSys is build from the ground up to make sure your robot can be operated fully off the grid with any web browser.
+RoSys is built from the ground up to make sure your robot can be operated fully off the grid with any web browser.
 This is done by incorporating [NiceGUI](https://nicegui.io/), a wonderful all-Python UI web framework.
 It is also possible to proxy the user interface through a gateway for remote operation.
 
@@ -52,14 +52,14 @@ RoSys modules are just Python modules which encapsulate certain functionality.
 They can hold their own state, register lifecycle hooks, run methods repeatedly and subscribe to or raise [events](#events).
 Modules can depend on other modules which is mostly implemented by passing them into the constructor.
 
-### Lifecycle Hooks And Loops
+### Lifecycle Hooks and Loops
 
 Modules can register functions for being called `on_startup` or `on_shutdown` as well as repeatedly with a given interval with `on_repeat`.
 
 ### Events
 
 Modules can provide events to allow connecting otherwise separated modules of the system.
-For example on module might read sensor data and raise an event `NEW_SENSOR_DATA`, without knowing of any consumers.
+For example, one module might read sensor data and raise an event `NEW_SENSOR_DATA`, without knowing of any consumers.
 Another module can register on `NEW_SENSOR_DATA` and act accordingly when being called.
 
 ### Automations
@@ -74,14 +74,14 @@ Modules can register backup and restore methods to read and write their state to
 
 ### Time
 
-RoSys uses it's own time which is accessible through `rosys.time`.
-This way in simulation and tests the time can advance much faster if no CPU-intensive operation is performed.
+RoSys uses its own time which is accessible through `rosys.time`.
+This way the time can advance much faster in simulation and tests if no CPU-intensive operation is performed.
 To delay the execution of a coroutine, you should invoke `await rosys.sleep(seconds: float)`.
-This create a delay until the provided amount of _RoSys time_ has elapsed.
+This creates a delay until the provided amount of _RoSys time_ has elapsed.
 
-### Threading And Multiprocessing
+### Threading and Multiprocessing
 
-RoSys makes extensive use of [async/await](#async) to archive parallelism without threading or multiprocessing.
+RoSys makes extensive use of [async/await](#async) to achieve parallelism without threading or multiprocessing.
 But not every piece of code you want to integrate is offering an asyncio interface.
 Therefore RoSys provides two handy wrappers:
 
@@ -95,15 +95,16 @@ you should wrap the code in a function and await it with `await rosys.run.cpu_bo
 
 ### Safety
 
-Python (and Linux) is fast enough for most high level logic, but has no realtime guarantees.
+Python (and Linux) is fast enough for most high-level logic, but has no realtime guarantees.
 Safety-relevant behavior should therefore be put on a suitable microcontroller.
 It governs the hardware of the robot and must be able to perform safety actions like triggering emergency hold etc.
 
-We suggest you use an industrial PC with an integrated controller like the [Zauberzeug Robot Brain](https://www.zauberzeug.com/robot-brain.html).
-It provides a Linux system to run RoSys, offers AI acceleration via NVidia Jetson and two integrated [ESP32](https://www.espressif.com/en/products/socs/esp32) microcontrollers and six I/O sockets with up to 24 GPIOs for digital I/Os, CAN, RS485, SPI, I2C, etc. It also has two hardware ENABLE switches and one which is controllable via software.
+We suggest to use an industrial PC with an integrated controller like the [Zauberzeug Robot Brain](https://www.zauberzeug.com/robot-brain.html).
+It provides a Linux system to run RoSys, offers AI acceleration via NVidia Jetson, two integrated [ESP32](https://www.espressif.com/en/products/socs/esp32) microcontrollers and six I/O sockets with up to 24 GPIOs for digital I/Os, CAN, RS485, SPI, I2C, etc.
+It also has two hardware ENABLE switches and one which is controllable via software.
 
-To have flexible configuration for the microcontroller we created another Open Source project called [Lizard](https://lizard.dev/).
-It's a domain-specific language interpreted by the microcontroller which enables you to write reactive hardware behavior without recompiling and flashing.
+To have flexible configuration for the microcontroller we created another open source project called [Lizard](https://lizard.dev/).
+It is a domain-specific language interpreted by the microcontroller which enables you to write reactive hardware behavior without recompiling and flashing.
 
 ### User Interface
 

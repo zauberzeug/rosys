@@ -2,8 +2,8 @@ import logging
 from typing import Callable, Coroutine, Optional
 
 import rosys
-from rosys.analysis import track
 
+from ..analysis import track
 from ..driving import Drivable, Steerer
 from ..event import Event
 from ..task_logger import create_task
@@ -19,7 +19,7 @@ class Automator:
 
     _steerer_: If provided, manually steering the robot will pause a currently running automation.
 
-    _default_automation_: If provided, it allows the automator to start a new automation without passing an automation 
+    _default_automation_: If provided, it allows the automator to start a new automation without passing an automation
     (e.g. via an "Play"-button like offered by the [automation controls](https://rosys.io/reference/rosys/automation/#rosys.automation.automation_controls)). 
     The passed function should return a new coroutine on every call.
     '''
@@ -78,7 +78,8 @@ class Automator:
         '''Starts a new automation.
 
         You can pass any coroutine.
-        The automator will make sure it can be paused, resumed and stopped.'''
+        The automator will make sure it can be paused, resumed and stopped.
+        '''
         if coro is None:
             self.start(self.default_automation())
             return
@@ -94,9 +95,8 @@ class Automator:
     def pause(self, because: str) -> None:
         '''Pauses the current automation.
 
-        You need to provide a cause as a meaningful string which will be used as notification.
+        You need to provide a cause which will be used as notification message.
         '''
-
         if self.is_running:
             self.automation.pause()
             self.AUTOMATION_PAUSED.emit(because)
@@ -104,7 +104,6 @@ class Automator:
 
     def resume(self) -> None:
         '''Resumes the current automation.'''
-
         if not self.enabled:
             return
         if self.is_paused:
@@ -115,9 +114,8 @@ class Automator:
     def stop(self, because: str) -> None:
         '''Stops the current automation.
 
-        You need to provide a cause as a meaningful string which will be used as notification
+        You need to provide a cause which will be used as notification message.
         '''
-
         if not self.is_stopped:
             self.automation.stop()
             self.AUTOMATION_STOPPED.emit(because)
@@ -127,8 +125,9 @@ class Automator:
     def enable(self) -> None:
         '''Enables the automator.
 
-        It is enabled by default. It can be disabled by calling `disable()`.'''
-
+        It is enabled by default.
+        It can be disabled by calling `disable()`.
+        '''
         self.enabled = True
 
     def disable(self, because: str) -> None:
@@ -136,10 +135,8 @@ class Automator:
 
         No automations can be started while the automator is disabled.
         If an automation is running or paused it will be stopped.
-        You need to provide a cause of the disabling as a meaningful string. 
-        This will be used as notification message.
+        You need to provide a cause which will be used as notification message.
         '''
-
         self.stop(because)
         self.enabled = False
 

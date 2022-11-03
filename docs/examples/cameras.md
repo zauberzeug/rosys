@@ -6,7 +6,7 @@ RoSys provides instant camera access for object detection, remote operation and 
 
 USB camera devices are discovered through video4linux (v4l) and accessed with openCV.
 Therefore the program `v4l2ctl` and openCV (including python bindings) must be available.
-We recommend to use the [RoSys docker image](https://hub.docker.com/r/zauberzeug/rosys) which provides the full required software stack.
+We recommend to use the [RoSys Docker image](https://hub.docker.com/r/zauberzeug/rosys) which provides the full required software stack.
 Make sure the container can access the USB devices by starting it with `--privileged` or explicitly passing the specific `--device`s.
 
 ## Show Captured Images
