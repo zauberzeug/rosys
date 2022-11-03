@@ -1,5 +1,6 @@
 from functools import wraps
 
+import rosys
 from nicegui import ui
 
 
@@ -8,7 +9,7 @@ class Track:
     def __init__(self) -> None:
         self.stack: list[str] = []
         self._labels: list[ui.label] = []
-        ui.timer(0.5, self.update)
+        rosys.on_repeat(self.update, 0.5)
 
     def __call__(self, f):
         @wraps(f)
