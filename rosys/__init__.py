@@ -110,13 +110,6 @@ async def sleep(seconds: float) -> None:
             await asyncio.sleep(0)
 
 
-def _timer(*_) -> None:
-    raise RuntimeError('ui.timer() is not supported within RoSys projects. Please use rosys.on_repeat().')
-
-
-ui.timer = _timer
-
-
 def _run_handler(handler: Callable) -> None:
     try:
         result = handler()
