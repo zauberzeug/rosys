@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://rosys.io/development/">
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.8">
     
     
       
@@ -22,7 +22,7 @@
       <link rel="stylesheet" href="../assets/stylesheets/main.20d9efc8.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.cbb835fc.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.815d1a91.min.css">
         
       
       
@@ -366,6 +366,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/persistence/" class="md-nav__link">
+        Persistence
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -532,8 +546,8 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#pushing-code-to-robot" class="md-nav__link">
-    Pushing Code to Robot
+  <a href="#pushing-code-to-the-robot" class="md-nav__link">
+    Pushing Code to the Robot
   </a>
   
 </li>
@@ -657,8 +671,8 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#pushing-code-to-robot" class="md-nav__link">
-    Pushing Code to Robot
+  <a href="#pushing-code-to-the-robot" class="md-nav__link">
+    Pushing Code to the Robot
   </a>
   
 </li>
@@ -753,17 +767,19 @@
 
 
 <h1 id="development">Development<a class="headerlink" href="#development" title="Permanent link">&para;</a></h1>
-<h2 id="pushing-code-to-robot">Pushing Code to Robot<a class="headerlink" href="#pushing-code-to-robot" title="Permanent link">&para;</a></h2>
+<h2 id="pushing-code-to-the-robot">Pushing Code to the Robot<a class="headerlink" href="#pushing-code-to-the-robot" title="Permanent link">&para;</a></h2>
 <p>To get the code onto the robot you can simply pull your repository.
 But this requires you to have login credentials on an external machine.
 And editing files must be done on slow hardware compared to development workstations and laptops.
-If you use <a href="https://code.visualstudio.com/docs/remote/remote-overview">VS Code Remote Development</a> or similar to do actual development on these slow systems, everything feels like jelly. Especially if you run powerful extensions like <a href="https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance">Pylance</a>.</p>
-<p>That's why we at <a href="https://zauberzeug.com">Zauberzeug</a> created a small open source tool called <a href="https://github.com/zauberzeug/livesync">LiveSync</a>.
-It combines a local filesystem watcher with rsync to copy changes to a (slow) remote target whenever your local code changes. This approach has multiple advantages:</p>
+If you use <a href="https://code.visualstudio.com/docs/remote/remote-overview">VS Code Remote Development</a> or similar to do actual development on these slow systems, everything feels like jelly.
+Especially if you run powerful extensions like <a href="https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance">Pylance</a>.</p>
+<p>That is why we at <a href="https://zauberzeug.com">Zauberzeug</a> created a small open source tool called <a href="https://github.com/zauberzeug/livesync">LiveSync</a>.
+It combines a local filesystem watcher with rsync to copy changes to a (slow) remote target whenever your local code changes.
+This approach has multiple advantages:</p>
 <ul>
-<li>own choosing of IDE and tooling</li>
-<li>locally able to run tests (or the production code)</li>
-<li>simultaneously continuous deployment of the development code to the target environment (where auto-reload ensures live preview)</li>
+<li>work with your personal choice of IDE and tooling</li>
+<li>run tests (or simulate the production code) locally</li>
+<li>continuously deploy the development code to the target environment (where auto-reload ensures live preview)</li>
 <li>almost no overhead on the (slow) target</li>
 </ul>
 <h2 id="logging">Logging<a class="headerlink" href="#logging" title="Permanent link">&para;</a></h2>
@@ -946,7 +962,7 @@ Then you can change the format for the formatter:</p>
 To install them, run</p>
 <div class="highlight"><pre><span></span><code>python3 -m pip install rosys<span class="o">[</span>profiling<span class="o">]</span>
 </code></pre></div>
-<p>This does currently not work with Python 3.11 because yappy and line-profiler have not implemented 3.11 yet.</p>
+<p>Currently this does not work with Python 3.11 because yappy and line-profiler do not support 3.11 yet.</p>
 </div>
 <p>You can add a <code>profile</code> decorator to expensive functions and add a profiler button to your UI:</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
@@ -1020,7 +1036,7 @@ For each commit the pytests are executed.</p>
 A GitHub Action then performs the following steps:</p>
 <ul>
 <li>If the pytests are successful, a poetry build and deployment to <a href="https://pypi.org/project/rosys/">pypi</a> is issued.</li>
-<li>A multi-arch docker image is built and pushed to <a href="https://hub.docker.com/r/zauberzeug/rosys">Docker Hub</a>.</li>
+<li>A multi-arch Docker image is built and pushed to <a href="https://hub.docker.com/r/zauberzeug/rosys">Docker Hub</a>.</li>
 </ul>
 
 
@@ -1098,7 +1114,7 @@ A GitHub Action then performs the following steps:</p>
     <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate"], "search": "../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.8492ddcf.min.js"></script>
+      <script src="../assets/javascripts/bundle.d6c3db9e.min.js"></script>
       
     
   </body>

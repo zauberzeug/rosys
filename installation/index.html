@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://rosys.io/installation/">
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.8">
     
     
       
@@ -22,7 +22,7 @@
       <link rel="stylesheet" href="../assets/stylesheets/main.20d9efc8.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.cbb835fc.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.815d1a91.min.css">
         
       
       
@@ -414,6 +414,20 @@
 
             
           
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/persistence/" class="md-nav__link">
+        Persistence
+      </a>
+    </li>
+  
+
+            
+          
         </ul>
       </nav>
     </li>
@@ -634,14 +648,14 @@
 </code></pre></div>
 <p>See <a href="../getting_started/">Getting Started</a> for what to do next.</p>
 <h2 id="on-the-robot">On The Robot<a class="headerlink" href="#on-the-robot" title="Permanent link">&para;</a></h2>
-<p>While the above installation commands work perfectly well in local environments, on a robot it is often easier to run RoSys inside a docker container.
-If you already have a <code>main.py</code> it can be as simple as running</p>
+<p>While the above-mentioned installation command works perfectly well in local environments, on a robot it is often easier to run RoSys inside a Docker container.
+If you already have a <code>main.py</code>, it can be as simple as running</p>
 <div class="highlight"><pre><span></span><code>docker run -it --rm -v `pwd`:/app zauberzeug/rosys
 </code></pre></div>
 <p>from the same directory.
 See <a href="../development/#pushing-code-to-robot">Pushing Code to Robot</a> on how to get your project onto the remote system.</p>
-<p>More complex docker setups benefit from a compose file.
-Also there are some specialties needed to start RoSys in different environments (Mac, Linux, NVidia Jetson, ...).
+<p>More complex Docker setups benefit from a compose file.
+There are also some specialties needed to start RoSys in different environments (Mac, Linux, NVidia Jetson, ...).
 To simplify the usage we suggest to use a script called <a href="https://github.com/zauberzeug/rosys/blob/main/docker.sh"><code>./docker.sh</code></a> which you can also copy and adapt in your own project.
 Have a look at the <a href="https://github.com/zauberzeug/rosys/tree/main/examples">project examples</a> to see how a setup of your own repository may look like.</p>
 
@@ -720,7 +734,7 @@ Have a look at the <a href="https://github.com/zauberzeug/rosys/tree/main/exampl
     <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate"], "search": "../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.8492ddcf.min.js"></script>
+      <script src="../assets/javascripts/bundle.d6c3db9e.min.js"></script>
       
     
   </body>

@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://rosys.io/">
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.1, mkdocs-material-8.5.7">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.8">
     
     
       
@@ -22,7 +22,7 @@
       <link rel="stylesheet" href="assets/stylesheets/main.20d9efc8.min.css">
       
         
-        <link rel="stylesheet" href="assets/stylesheets/palette.cbb835fc.min.css">
+        <link rel="stylesheet" href="assets/stylesheets/palette.815d1a91.min.css">
         
       
       
@@ -267,8 +267,8 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#async" class="md-nav__link">
-    Async
+  <a href="#event-loop" class="md-nav__link">
+    Event Loop
   </a>
   
 </li>
@@ -316,7 +316,7 @@
         
           <li class="md-nav__item">
   <a href="#lifecycle-hooks-and-loops" class="md-nav__link">
-    Lifecycle Hooks And Loops
+    Lifecycle Hooks and Loops
   </a>
   
 </li>
@@ -343,15 +343,15 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#rosys-time" class="md-nav__link">
-    RoSys Time
+  <a href="#time" class="md-nav__link">
+    Time
   </a>
   
 </li>
         
           <li class="md-nav__item">
   <a href="#threading-and-multiprocessing" class="md-nav__link">
-    Threading And Multiprocessing
+    Threading and Multiprocessing
   </a>
   
 </li>
@@ -532,6 +532,20 @@
     <li class="md-nav__item">
       <a href="examples/schedule/" class="md-nav__link">
         Schedule automations
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="examples/persistence/" class="md-nav__link">
+        Persistence
       </a>
     </li>
   
@@ -741,8 +755,8 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#async" class="md-nav__link">
-    Async
+  <a href="#event-loop" class="md-nav__link">
+    Event Loop
   </a>
   
 </li>
@@ -790,7 +804,7 @@
         
           <li class="md-nav__item">
   <a href="#lifecycle-hooks-and-loops" class="md-nav__link">
-    Lifecycle Hooks And Loops
+    Lifecycle Hooks and Loops
   </a>
   
 </li>
@@ -817,15 +831,15 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#rosys-time" class="md-nav__link">
-    RoSys Time
+  <a href="#time" class="md-nav__link">
+    Time
   </a>
   
 </li>
         
           <li class="md-nav__item">
   <a href="#threading-and-multiprocessing" class="md-nav__link">
-    Threading And Multiprocessing
+    Threading and Multiprocessing
   </a>
   
 </li>
@@ -883,20 +897,21 @@ But RoSys is fully based on modern web technologies and focusses on mobile robot
 <p>The full documentation is available at <a href="https://rosys.io/">rosys.io</a>.</p>
 <h2 id="principles">Principles<a class="headerlink" href="#principles" title="Permanent link">&para;</a></h2>
 <h3 id="all-python">All Python<a class="headerlink" href="#all-python" title="Permanent link">&para;</a></h3>
-<p>Business logic is written in pure Python.
-Computation-heavy tasks are wrapped in processes, accessed through websockets or called via C++ bindings.
+<p>Python is great to write business logic.
+Computation-heavy tasks are wrapped in processes, accessed through WebSockets or called via C++ bindings.
 Like you would do in any other Python program.</p>
 <h3 id="modularity">Modularity<a class="headerlink" href="#modularity" title="Permanent link">&para;</a></h3>
 <p>You can structure your code as you please.
-RoSys provides it's magic without assuming a specific file structure, config files or enforced naming.</p>
-<h3 id="async">Async<a class="headerlink" href="#async" title="Permanent link">&para;</a></h3>
+RoSys provides its magic without assuming a specific file structure, configuration files or enforced naming.</p>
+<h3 id="event-loop">Event Loop<a class="headerlink" href="#event-loop" title="Permanent link">&para;</a></h3>
 <p>Thanks to <a href="https://docs.python.org/3/library/asyncio.html">asyncio</a> you can write your business logic without locks and mutexes.
-The execution is <a href="https://realpython.com/python-concurrency/">parallel but not concurrent</a> which makes it easier to write/read and debug.
-In real case scenarios this is also much faster than <a href="https://www.ros.org/">ROS</a>.
-Their multiprocessing architecture requires too much inter-process communication.</p>
+The execution is <a href="https://realpython.com/python-concurrency/">parallel but not concurrent</a> which makes it easier to read, write and debug.
+In real-case scenarios this is also much faster than <a href="https://www.ros.org/">ROS</a>.
+Its multiprocessing architecture requires too much inter-process communication.</p>
 <h3 id="web-ui">Web UI<a class="headerlink" href="#web-ui" title="Permanent link">&para;</a></h3>
 <p>Most machines need some kind of human interaction.
-We made sure your robot can be operated fully off the grid with any web browser by incorporating <a href="https://nicegui.io/">NiceGUI</a>.
+RoSys is built from the ground up to make sure your robot can be operated fully off the grid with any web browser.
+This is done by incorporating <a href="https://nicegui.io/">NiceGUI</a>, a wonderful all-Python UI web framework.
 It is also possible to proxy the user interface through a gateway for remote operation.</p>
 <h3 id="simulation">Simulation<a class="headerlink" href="#simulation" title="Permanent link">&para;</a></h3>
 <p>Robot hardware is often slower than your own computer.
@@ -910,11 +925,11 @@ It is based on the above-described simulation mode and accelerates the robot's t
 <p>RoSys modules are just Python modules which encapsulate certain functionality.
 They can hold their own state, register lifecycle hooks, run methods repeatedly and subscribe to or raise <a href="#events">events</a>.
 Modules can depend on other modules which is mostly implemented by passing them into the constructor.</p>
-<h3 id="lifecycle-hooks-and-loops">Lifecycle Hooks And Loops<a class="headerlink" href="#lifecycle-hooks-and-loops" title="Permanent link">&para;</a></h3>
+<h3 id="lifecycle-hooks-and-loops">Lifecycle Hooks and Loops<a class="headerlink" href="#lifecycle-hooks-and-loops" title="Permanent link">&para;</a></h3>
 <p>Modules can register functions for being called <code>on_startup</code> or <code>on_shutdown</code> as well as repeatedly with a given interval with <code>on_repeat</code>.</p>
 <h3 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h3>
 <p>Modules can provide events to allow connecting otherwise separated modules of the system.
-For example on module might read sensor data and raise an event <code>NEW_SENSOR_DATA</code>, without knowing of any consumers.
+For example, one module might read sensor data and raise an event <code>NEW_SENSOR_DATA</code>, without knowing of any consumers.
 Another module can register on <code>NEW_SENSOR_DATA</code> and act accordingly when being called.</p>
 <h3 id="automations">Automations<a class="headerlink" href="#automations" title="Permanent link">&para;</a></h3>
 <p>RoSys provides an <code>Automator</code> module for running "automations".
@@ -922,12 +937,13 @@ Automations are coroutines that can not only be started and stopped, but also pa
 Have a look at our <a href="examples/click-and-drive/">Click-and-drive</a> example.</p>
 <h3 id="persistence">Persistence<a class="headerlink" href="#persistence" title="Permanent link">&para;</a></h3>
 <p>Modules can register backup and restore methods to read and write their state to disk.</p>
-<h3 id="rosys-time">RoSys Time<a class="headerlink" href="#rosys-time" title="Permanent link">&para;</a></h3>
-<p>If you want to delay the execution, you should invoke <code>await rosys.sleep(seconds: float)</code>.
-This causes to wait until the <em>RoSys time</em> has elapsed the desired amount of time.
-In pytests the RoSys time is simulated and can advance much faster if no CPU-intensive operation is performed.</p>
-<h3 id="threading-and-multiprocessing">Threading And Multiprocessing<a class="headerlink" href="#threading-and-multiprocessing" title="Permanent link">&para;</a></h3>
-<p>RoSys makes extensive use of <a href="#async">async/await</a> to archive parallelism without threading or multiprocessing.
+<h3 id="time">Time<a class="headerlink" href="#time" title="Permanent link">&para;</a></h3>
+<p>RoSys uses its own time which is accessible through <code>rosys.time</code>.
+This way the time can advance much faster in simulation and tests if no CPU-intensive operation is performed.
+To delay the execution of a coroutine, you should invoke <code>await rosys.sleep(seconds: float)</code>.
+This creates a delay until the provided amount of <em>RoSys time</em> has elapsed.</p>
+<h3 id="threading-and-multiprocessing">Threading and Multiprocessing<a class="headerlink" href="#threading-and-multiprocessing" title="Permanent link">&para;</a></h3>
+<p>RoSys makes extensive use of <a href="#async">async/await</a> to achieve parallelism without threading or multiprocessing.
 But not every piece of code you want to integrate is offering an asyncio interface.
 Therefore RoSys provides two handy wrappers:</p>
 <p>IO-bound:
@@ -937,13 +953,14 @@ you should wrap the code in a function and await it with <code>await rosys.run.i
 If you need to do some heavy computation and want to spawn another process,
 you should wrap the code in a function and await it with <code>await rosys.run.cpu_bound(...)</code>.</p>
 <h3 id="safety">Safety<a class="headerlink" href="#safety" title="Permanent link">&para;</a></h3>
-<p>Python (and Linux) is fast enough for most high level logic, but has no realtime guarantees.
+<p>Python (and Linux) is fast enough for most high-level logic, but has no realtime guarantees.
 Safety-relevant behavior should therefore be put on a suitable microcontroller.
 It governs the hardware of the robot and must be able to perform safety actions like triggering emergency hold etc.</p>
-<p>We suggest you use an industrial PC with an integrated controller like the <a href="https://www.zauberzeug.com/robot-brain.html">Zauberzeug Robot Brain</a>.
-It provides a Linux system to run RoSys, offers AI acceleration via NVidia Jetson and two integrated <a href="https://www.espressif.com/en/products/socs/esp32">ESP32</a> microcontrollers and six I/O sockets with up to 24 GPIOs for digital I/Os, CAN, RS485, SPI, I2C, etc. It also has two hardware ENABLE switches and one which is controllable via software.</p>
-<p>To have flexible configuration for the microcontroller we created another Open Source project called <a href="https://lizard.dev/">Lizard</a>.
-It's a domain-specific language interpreted by the microcontroller which enables you to write reactive hardware behavior without recompiling and flashing.</p>
+<p>We suggest to use an industrial PC with an integrated controller like the <a href="https://www.zauberzeug.com/robot-brain.html">Zauberzeug Robot Brain</a>.
+It provides a Linux system to run RoSys, offers AI acceleration via NVidia Jetson, two integrated <a href="https://www.espressif.com/en/products/socs/esp32">ESP32</a> microcontrollers and six I/O sockets with up to 24 GPIOs for digital I/Os, CAN, RS485, SPI, I2C, etc.
+It also has two hardware ENABLE switches and one which is controllable via software.</p>
+<p>To have flexible configuration for the microcontroller we created another open source project called <a href="https://lizard.dev/">Lizard</a>.
+It is a domain-specific language interpreted by the microcontroller which enables you to write reactive hardware behavior without recompiling and flashing.</p>
 <h3 id="user-interface">User Interface<a class="headerlink" href="#user-interface" title="Permanent link">&para;</a></h3>
 <p>RoSys builds upon the open source project <a href="https://nicegui.io/">NiceGUI</a> and offers many robot-related UI elements.
 NiceGUI is a high-level UI framework for the web.
@@ -1015,7 +1032,7 @@ The history of notifications is stored in the list <code>rosys.notifications</co
     <script id="__config" type="application/json">{"base": ".", "features": ["content.code.annotate"], "search": "assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
     
     
-      <script src="assets/javascripts/bundle.8492ddcf.min.js"></script>
+      <script src="assets/javascripts/bundle.d6c3db9e.min.js"></script>
       
     
   </body>
