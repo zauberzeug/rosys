@@ -98,7 +98,10 @@ def restore() -> None:
             log.warning(f'Backup file "{filepath}" not found.')
             continue
         with open(filepath) as f:
-            module.restore(json.load(f))
+            try:
+                module.restore(json.load(f))
+            except:
+                log.exception(f'failed to restore {module}')
 
 
 def export_button(title: str = 'Export', route: str = '/export', tmp_filepath: str = '/tmp/export.json') -> ui.button:
