@@ -25,8 +25,8 @@ class Automator:
     '''
 
     def __init__(self,
-                 wheels: Optional[Drivable],
-                 steerer: Optional[Steerer], *,
+                 wheels: Optional[Drivable], *,
+                 steerer: Optional[Steerer] = None,
                  default_automation: Optional[Callable] = None) -> None:
         self.AUTOMATION_STARTED = Event()
         '''an automation has been started'''
