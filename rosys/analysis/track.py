@@ -1,6 +1,7 @@
 from functools import wraps
 from typing import Optional
 
+import rosys
 from nicegui import ui
 
 
@@ -8,7 +9,8 @@ class Track:
 
     def __init__(self) -> None:
         self.stack: list[str] = []
-        self._ui: Optional[ui.label] = None
+        self._labels: list[ui.label] = []
+        rosys.on_repeat(self.update, 0.5)
 
     def __call__(self, f):
         @wraps(f)

@@ -12,6 +12,7 @@ nav:
       - examples/hardware.md
       - examples/cameras.md
       - examples/schedule.md
+      - examples/persistence.md
   - Module Reference: reference/
   - development.md
   - troubleshooting.md
