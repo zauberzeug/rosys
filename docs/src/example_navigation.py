@@ -13,7 +13,7 @@ path_planner.obstacles['0'] = Obstacle(id='0', outline=[Point(x=3, y=0), Point(x
 wheels = WheelsSimulation()
 odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator(wheels, None)
+automator = Automator(wheels)
 
 
 async def handle_click(msg):

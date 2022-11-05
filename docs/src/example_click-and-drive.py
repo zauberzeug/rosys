@@ -9,7 +9,7 @@ shape = Prism.default_robot_shape()
 wheels = WheelsSimulation()
 odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator(wheels, None)
+automator = Automator(wheels)
 
 
 async def handle_click(msg):

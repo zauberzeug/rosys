@@ -20,7 +20,7 @@ shape = Prism.default_robot_shape()
 wheels = WheelsSimulation()
 odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator(wheels, None, default_automation=drive_around)
+automator = Automator(wheels, default_automation=drive_around)
 
 locations = {
     (52.520008, 13.404954): 'Berlin',
