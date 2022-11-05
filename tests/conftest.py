@@ -42,7 +42,7 @@ async def driver(wheels: Wheels, odometer: Odometer, integration: None) -> Drive
 
 @pytest.fixture
 async def automator(wheels: Wheels, integration: None) -> Automator:
-    helpers.automator = Automator(wheels, None)
+    helpers.automator = Automator(wheels)
     return helpers.automator
 
 
