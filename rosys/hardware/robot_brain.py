@@ -5,6 +5,7 @@ from typing import Optional
 
 import rosys
 from nicegui import ui
+from rosys import task_logger
 
 from ..event import Event
 from .communication import Communication, SerialCommunication
@@ -24,11 +25,12 @@ class RobotBrain:
         self.communication = communication
         self.lizard_startup = lizard_startup
         self.waiting_list: dict[str, Optional[str]] = {}
-
+        self.lizard_version: Optional[str] = None
         self.clock_offset: Optional[float] = None
         self.hardware_time: Optional[float] = None
         self.flash_params: list[str] = []
         self.log = logging.getLogger('rosys.robot_rain')
+        task_logger.create_task(self.determine_lizard_version(), name='lizard version')
 
     async def configure(self) -> None:
         self.log.info('Configuring...')
@@ -82,8 +84,6 @@ class RobotBrain:
         with ui.dialog() as dialog, ui.card():
             status = ui.markdown('.... flashing ....')
         dialog.open()
-        # NOTE this is a workaround for a bug in the current version of NiceGUI, see https://github.com/zauberzeug/nicegui/issues/131
-        rosys.task_logger.create_task(dialog.page.update())
         assert isinstance(self.communication, SerialCommunication)
         self.communication.disconnect()
         output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=None, working_dir=os.path.expanduser('~/.lizard'))
@@ -91,11 +91,18 @@ class RobotBrain:
         self.communication.connect()
 
     def developer_ui(self) -> None:
-        ui.label('Lizard')
+        ui.label(f'Lizard').bind_text_from(self, 'lizard_version', backward=lambda x: f'Lizard ({x})')
         ui.button('Configure', on_click=self.configure).props('outline')
         ui.button('Restart', on_click=self.restart).props('outline')
-        ui.button('Flash', on_click=self.flash).props('outline')
+        ui.button(f'Flash ({self.available_lizard_version})', on_click=self.flash).props('outline')
         ui.button('Enable', on_click=self.enable_esp).props('outline')
+        ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
+
+    async def determine_lizard_version(self) -> None:
+        while (response := await self.send_and_await('core.info()', 'lizard', timeout=1)) is None:
+            await rosys.sleep(0.1)
+            continue
+        self.lizard_version = response.split()[-1].split('-')[0][1:]
 
     def enable_esp(self) -> None:
         try:
@@ -112,6 +119,13 @@ class RobotBrain:
 
     def __repr__(self) -> str:
         return f'<RobotBrain {self.communication}>'
+
+    @property
+    def available_lizard_version(self) -> str:
+        with open(os.path.expanduser('~/.lizard/build/lizard.bin'), 'rb') as f:
+            head = f.read(150).decode('utf-8', 'backslashreplace')
+            version = head.split(' ')[3]
+            return version[1:version.find('lizard')].strip()
 
 
 def augment(line: str) -> str:
