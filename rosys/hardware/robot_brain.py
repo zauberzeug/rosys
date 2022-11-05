@@ -30,7 +30,6 @@ class RobotBrain:
         self.hardware_time: Optional[float] = None
         self.flash_params: list[str] = []
         self.log = logging.getLogger('rosys.robot_rain')
-        task_logger.create_task(self.determine_lizard_version(), name='lizard version')
 
     async def configure(self) -> None:
         self.log.info('Configuring...')
@@ -81,25 +80,32 @@ class RobotBrain:
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
     async def flash(self) -> None:
-        with ui.dialog() as dialog, ui.card():
-            status = ui.markdown('.... flashing ....')
-        dialog.open()
         assert isinstance(self.communication, SerialCommunication)
+        rosys.notify(f'Installing Lizard firmware {self.available_lizard_version}')
         self.communication.disconnect()
         output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=None, working_dir=os.path.expanduser('~/.lizard'))
-        status.set_content(f'```\n{output}\n```')
+        self.log.info(f'flashed Lizard:\n {output}')
         self.communication.connect()
+        await self.configure()
+        rosys.notify(f'Installed Lizard firmware {self.lizard_version}')
 
     def developer_ui(self) -> None:
-        ui.label(f'Lizard').bind_text_from(self, 'lizard_version', backward=lambda x: f'Lizard ({x})')
+        ui.label(f'Lizard').bind_text_from(self, 'lizard_version', backward=lambda x: f'Lizard ({x or "?"})')
         ui.button('Configure', on_click=self.configure).props('outline')
         ui.button('Restart', on_click=self.restart).props('outline')
         ui.button(f'Flash ({self.available_lizard_version})', on_click=self.flash).props('outline')
         ui.button('Enable', on_click=self.enable_esp).props('outline')
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
 
-    async def determine_lizard_version(self) -> None:
+    async def ensure_lizard_version(self) -> None:
+        await self.determine_lizard_version()
+        if self.lizard_version != self.available_lizard_version:
+            task_logger.create_task(self.flash)
+        await self.determine_lizard_version()
+
+    async def determine_lizard_version(self) -> str:
         while (response := await self.send_and_await('core.info()', 'lizard', timeout=1)) is None:
+            self.log.warning('Could not get Lizard version')
             await rosys.sleep(0.1)
             continue
         self.lizard_version = response.split()[-1].split('-')[0][1:]
