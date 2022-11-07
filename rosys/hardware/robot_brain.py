@@ -3,10 +3,11 @@ import os
 import sys
 from typing import Optional
 
-import rosys
 from nicegui import ui
-from rosys import task_logger
 
+import rosys
+
+from .. import task_logger
 from ..event import Event
 from .communication import Communication, SerialCommunication
 
@@ -90,7 +91,7 @@ class RobotBrain:
         rosys.notify(f'Installed Lizard firmware {self.lizard_version}')
 
     def developer_ui(self) -> None:
-        ui.label(f'Lizard').bind_text_from(self, 'lizard_version', backward=lambda x: f'Lizard ({x or "?"})')
+        ui.label('Lizard').bind_text_from(self, 'lizard_version', backward=lambda x: f'Lizard ({x or "?"})')
         ui.button('Configure', on_click=self.configure).props('outline')
         ui.button('Restart', on_click=self.restart).props('outline')
         ui.button(f'Flash ({self.available_lizard_version})', on_click=self.flash).props('outline')
