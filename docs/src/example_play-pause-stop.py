@@ -15,7 +15,7 @@ checkpoints: list[Point] = [Point(x=-3, y=1), Point(x=3, y=3), Point(x=2, y=-2)]
 wheels = WheelsSimulation()
 odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator(wheels, default_automation=run)
+automator = Automator(wheels, None, default_automation=run)
 
 with ui.scene(width=600) as scene:
     robot_object(Prism.default_robot_shape(), odometer)

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from nicegui import ui
+
 from rosys.automation import Automator
 from rosys.driving import Driver, Odometer, robot_object
 from rosys.geometry import Point, Pose, Prism
@@ -13,7 +14,7 @@ path_planner.obstacles['0'] = Obstacle(id='0', outline=[Point(x=3, y=0), Point(x
 wheels = WheelsSimulation()
 odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator(wheels)
+automator = Automator(wheels, None)
 
 
 async def handle_click(msg):

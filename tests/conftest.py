@@ -2,6 +2,7 @@ import multiprocessing
 from typing import Generator
 
 import pytest
+
 import rosys
 from rosys.analysis import KpiLogger
 from rosys.automation import Automator
@@ -42,7 +43,7 @@ async def driver(wheels: Wheels, odometer: Odometer, integration: None) -> Drive
 
 @pytest.fixture
 async def automator(wheels: Wheels, integration: None) -> Automator:
-    helpers.automator = Automator(wheels)
+    helpers.automator = Automator(wheels, None)
     return helpers.automator
 
 

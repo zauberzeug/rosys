@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from nicegui import ui
+
 from rosys.automation import Automator, automation_controls
 from rosys.driving import Driver, Odometer, robot_object
 from rosys.geometry import Point, Prism
@@ -9,7 +10,7 @@ shape = Prism.default_robot_shape()
 wheels = WheelsSimulation()
 odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator(wheels)
+automator = Automator(wheels, None)
 
 
 async def handle_click(msg):
