@@ -1,14 +1,18 @@
 import logging
 import os
+import pathlib
+import subprocess
 import sys
 from typing import Optional
 
+import requests
 from nicegui import ui
 
 import rosys
 
 from .. import task_logger
 from ..event import Event
+from ..run import awaitable
 from .communication import Communication, SerialCommunication
 
 
@@ -27,6 +31,7 @@ class RobotBrain:
         self.lizard_startup = lizard_startup
         self.waiting_list: dict[str, Optional[str]] = {}
         self.lizard_version: Optional[str] = None
+        self.latest_lizard_release: Optional[str] = None
         self.clock_offset: Optional[float] = None
         self.hardware_time: Optional[float] = None
         self.flash_params: list[str] = []
@@ -88,6 +93,7 @@ class RobotBrain:
         self.log.info(f'flashed Lizard:\n {output}')
         self.communication.connect()
         await self.configure()
+        await self.determine_lizard_version()
         rosys.notify(f'Installed Lizard firmware {self.lizard_version}')
 
     def developer_ui(self) -> None:
@@ -95,6 +101,8 @@ class RobotBrain:
         ui.button('Configure', on_click=self.configure).props('outline')
         ui.button('Restart', on_click=self.restart).props('outline')
         ui.button(f'Flash ({self.available_lizard_version})', on_click=self.flash).props('outline')
+        ui.button('Update', on_click=self.update_lizard).props('outline') \
+            .bind_text_from(self, 'latest_lizard_release', backward=lambda x: f'Update ({x or "?"})')
         ui.button('Enable', on_click=self.enable_esp).props('outline')
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
 
@@ -102,7 +110,6 @@ class RobotBrain:
         await self.determine_lizard_version()
         if self.lizard_version != self.available_lizard_version:
             await self.flash()
-            await self.determine_lizard_version()
 
     async def determine_lizard_version(self) -> str:
         while (response := await self.send_and_await('core.info()', 'lizard', timeout=1)) is None:
@@ -111,6 +118,25 @@ class RobotBrain:
             continue
         self.lizard_version = response.split()[-1].split('-')[0][1:]
         self.log.info(f'currently installed Lizard version is {self.lizard_version}')
+        self.latest_lizard_release = await self.get_latest_lizard_release()
+
+    async def update_lizard(self) -> None:
+        rosys.notify(f'downloading Lizard {self.latest_lizard_release}')
+        await self.download_latest_lizard_release()
+        await self.flash()
+
+    @awaitable
+    def get_latest_lizard_release(self) -> str:
+        return requests.get('https://api.github.com/repos/zauberzeug/lizard/releases/latest').json()['tag_name'].replace('v', '')
+
+    @awaitable
+    def download_latest_lizard_release(self) -> None:
+        latest = 'https://api.github.com/repos/zauberzeug/lizard/releases/latest'
+        zip = requests.get(latest).json()['assets'][0]['browser_download_url']
+        with open(os.path.expanduser('~/.lizard/lizard.zip'), 'wb') as f:
+            f.write(requests.get(zip).content)
+        subprocess.run(['unzip', '-o', 'lizard.zip'], cwd=os.path.expanduser('~/.lizard'))
+        pathlib.Path('~/.lizard/lizard.zip').expanduser().unlink()
 
     def enable_esp(self) -> None:
         try:
