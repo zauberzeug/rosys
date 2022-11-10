@@ -101,8 +101,8 @@ class RobotBrain:
     async def ensure_lizard_version(self) -> None:
         await self.determine_lizard_version()
         if self.lizard_version != self.available_lizard_version:
-            task_logger.create_task(self.flash())
-        await self.determine_lizard_version()
+            await self.flash()
+            await self.determine_lizard_version()
 
     async def determine_lizard_version(self) -> str:
         while (response := await self.send_and_await('core.info()', 'lizard', timeout=1)) is None:
@@ -110,6 +110,7 @@ class RobotBrain:
             await rosys.sleep(0.1)
             continue
         self.lizard_version = response.split()[-1].split('-')[0][1:]
+        self.log.info(f'currently installed Lizard version is {self.lizard_version}')
 
     def enable_esp(self) -> None:
         try:
@@ -131,7 +132,7 @@ class RobotBrain:
     def available_lizard_version(self) -> str:
         with open(os.path.expanduser('~/.lizard/build/lizard.bin'), 'rb') as f:
             head = f.read(150).decode('utf-8', 'backslashreplace')
-            version = head.split(' ')[3]
+            version = head.split(' ')[3].replace('\x00', '')
             return version[1:version.find('lizard')].strip()
 
 
