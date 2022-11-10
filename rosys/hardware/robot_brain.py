@@ -101,7 +101,7 @@ class RobotBrain:
     async def ensure_lizard_version(self) -> None:
         await self.determine_lizard_version()
         if self.lizard_version != self.available_lizard_version:
-            task_logger.create_task(self.flash)
+            task_logger.create_task(self.flash())
         await self.determine_lizard_version()
 
     async def determine_lizard_version(self) -> str:
