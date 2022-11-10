@@ -23,7 +23,7 @@ with ui.scene() as scene:
     robot_object(Prism.default_robot_shape(), odometer)
     for i, a in enumerate(boundary):
         b = boundary[(i+1) % len(boundary)]
-        ui.scene.line([*a, 0.1], [*b, 0.1]).material('#f00')
+        ui.scene.line([*a, 0.1], [*b, 0.1]).material('red')
     scene.move_camera(0, 0, 8)
 with ui.column().style('width: 400px'):
     rosys.simulation_ui()

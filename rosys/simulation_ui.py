@@ -1,7 +1,6 @@
 from datetime import timedelta
 from typing import Any
 
-import humanize
 from nicegui import ui
 
 import rosys
@@ -29,4 +28,4 @@ class simulation_ui:
         rosys.speed = data.get('speed', 1.0)
 
     def update_simulation_time(self) -> None:
-        self.simulation_time.set_text(f' Running for {timedelta(seconds=int(rosys.time() -self.startup_time))}')
+        self.simulation_time.set_text(f'Running for {timedelta(seconds=int(rosys.time() - self.startup_time))}')
