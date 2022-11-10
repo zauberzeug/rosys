@@ -18,20 +18,20 @@ if TYPE_CHECKING:
 class LizardFirmware:
 
     def __init__(self, robot_brain: 'RobotBrain') -> None:
+        self.log = logging.getLogger('rosys.lizard_firmware')
         self.robot_brain = robot_brain
         self.lizard_version: Optional[str] = None
         self.latest_lizard_release: Optional[str] = None
         self.flash_params: list[str] = []
-        self.log = logging.getLogger('rosys.lizard_firmware')
 
     async def flash(self) -> None:
-        assert isinstance(self.communication, SerialCommunication)
+        assert isinstance(self.robot_brain.communication, SerialCommunication)
         rosys.notify(f'Installing Lizard firmware {self.available_lizard_version}')
-        self.communication.disconnect()
+        self.robot_brain.communication.disconnect()
         output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=None, working_dir=os.path.expanduser('~/.lizard'))
         self.log.info(f'flashed Lizard:\n {output}')
-        self.communication.connect()
-        await self.configure()
+        self.robot_brain.communication.connect()
+        await self.robot_brain.configure()
         await self.determine_lizard_version()
         rosys.notify(f'Installed Lizard firmware {self.lizard_version}')
 

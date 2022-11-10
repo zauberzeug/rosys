@@ -8,7 +8,6 @@ from nicegui import ui
 import rosys
 
 from ..event import Event
-from ..run import awaitable
 from .communication import Communication
 from .lizard_firmware import LizardFirmware
 
