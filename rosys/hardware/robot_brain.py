@@ -7,9 +7,10 @@ from nicegui import ui
 
 import rosys
 
-from .. import task_logger
 from ..event import Event
-from .communication import Communication, SerialCommunication
+from ..run import awaitable
+from .communication import Communication
+from .lizard_firmware import LizardFirmware
 
 
 class RobotBrain:
@@ -26,11 +27,22 @@ class RobotBrain:
         self.communication = communication
         self.lizard_startup = lizard_startup
         self.waiting_list: dict[str, Optional[str]] = {}
-        self.lizard_version: Optional[str] = None
         self.clock_offset: Optional[float] = None
         self.hardware_time: Optional[float] = None
-        self.flash_params: list[str] = []
         self.log = logging.getLogger('rosys.robot_rain')
+        self.lizard_firmware = LizardFirmware(self)
+
+    def developer_ui(self) -> None:
+        ui.label('Lizard') \
+            .bind_text_from(self.lizard_firmware, 'lizard_version', backward=lambda x: f'Lizard ({x or "?"})')
+        ui.button('Configure', on_click=self.configure).props('outline')
+        ui.button('Restart', on_click=self.restart).props('outline')
+        ui.button(f'Update Local ({self.lizard_firmware.available_lizard_version})',
+                  on_click=self.lizard_firmware.flash).props('outline')
+        ui.button('Update from GitHub', on_click=self.lizard_firmware.update_lizard).props('outline').bind_text_from(
+            self.lizard_firmware, 'latest_lizard_release', backward=lambda x: f'Update from GitHub ({x or "?"})')
+        ui.button('Enable', on_click=self.enable_esp).props('outline')
+        ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
 
     async def configure(self) -> None:
         self.log.info('Configuring...')
@@ -80,37 +92,6 @@ class RobotBrain:
             await rosys.sleep(0.1)
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
-    async def flash(self) -> None:
-        assert isinstance(self.communication, SerialCommunication)
-        rosys.notify(f'Installing Lizard firmware {self.available_lizard_version}')
-        self.communication.disconnect()
-        output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=None, working_dir=os.path.expanduser('~/.lizard'))
-        self.log.info(f'flashed Lizard:\n {output}')
-        self.communication.connect()
-        await self.configure()
-        rosys.notify(f'Installed Lizard firmware {self.lizard_version}')
-
-    def developer_ui(self) -> None:
-        ui.label('Lizard').bind_text_from(self, 'lizard_version', backward=lambda x: f'Lizard ({x or "?"})')
-        ui.button('Configure', on_click=self.configure).props('outline')
-        ui.button('Restart', on_click=self.restart).props('outline')
-        ui.button(f'Flash ({self.available_lizard_version})', on_click=self.flash).props('outline')
-        ui.button('Enable', on_click=self.enable_esp).props('outline')
-        ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
-
-    async def ensure_lizard_version(self) -> None:
-        await self.determine_lizard_version()
-        if self.lizard_version != self.available_lizard_version:
-            task_logger.create_task(self.flash)
-        await self.determine_lizard_version()
-
-    async def determine_lizard_version(self) -> str:
-        while (response := await self.send_and_await('core.info()', 'lizard', timeout=1)) is None:
-            self.log.warning('Could not get Lizard version')
-            await rosys.sleep(0.1)
-            continue
-        self.lizard_version = response.split()[-1].split('-')[0][1:]
-
     def enable_esp(self) -> None:
         try:
             sys.path.insert(1, os.path.expanduser('~/.lizard'))
@@ -126,13 +107,6 @@ class RobotBrain:
 
     def __repr__(self) -> str:
         return f'<RobotBrain {self.communication}>'
-
-    @property
-    def available_lizard_version(self) -> str:
-        with open(os.path.expanduser('~/.lizard/build/lizard.bin'), 'rb') as f:
-            head = f.read(150).decode('utf-8', 'backslashreplace')
-            version = head.split(' ')[3]
-            return version[1:version.find('lizard')].strip()
 
 
 def augment(line: str) -> str:

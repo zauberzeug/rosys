@@ -10,6 +10,7 @@ nav:
       - examples/click-and-drive.md
       - examples/navigation.md
       - examples/hardware.md
+      - examples/simulation_speed.md
       - examples/cameras.md
       - examples/schedule.md
       - examples/persistence.md
