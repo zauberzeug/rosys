@@ -8,6 +8,7 @@ from typing import Any, Optional
 import cv2
 import numpy as np
 import PIL
+
 import rosys
 
 from .. import persistence
@@ -132,8 +133,7 @@ class UsbCameraProviderHardware(CameraProvider):
     async def update_parameters(self) -> None:
         for uid, camera in self._cameras.items():
             if camera.active and uid in self.devices:
-                continue
-            await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
+                await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
 
     def capture_image(self, id) -> Any:
         _, image = self.devices[id].capture.read()
