@@ -3,9 +3,10 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
-import rosys
 import socketio
 import socketio.exceptions
+
+import rosys
 
 from .. import persistence, task_logger
 from .detections import BoxDetection, Detections, PointDetection, SegmentationDetection
@@ -110,21 +111,21 @@ class DetectorHardware(Detector):
             return
 
         while self.next_image is not None and not rosys.is_stopping():
+            current_image = self.next_image
+            self.next_image = None
+            if current_image.is_broken:
+                continue
             try:
-                image = self.next_image
-                if image.is_broken:
-                    continue
-                self.next_image = None
                 self.is_detecting = True
                 result: dict = await self.sio.call('detect', {
-                    'image': image.data,
-                    'mac': image.camera_id,
+                    'image': current_image.data,
+                    'mac': current_image.camera_id,
                     'autoupload': autoupload.value,
                     'tags': tags,
                 }, timeout=3)
-                if image.is_broken:  # NOTE: image can be marked broken while detection is underway
+                if current_image.is_broken:  # NOTE: image can be marked broken while detection is underway
                     continue
-                image.detections = Detections(
+                current_image.detections = Detections(
                     boxes=[persistence.from_dict(BoxDetection, d) for d in result.get('box_detections', [])],
                     points=[persistence.from_dict(PointDetection, d) for d in result.get('point_detections', [])],
                     segmentations=[
@@ -133,15 +134,16 @@ class DetectorHardware(Detector):
                     ],
                 )
             except socketio.exceptions.TimeoutError:
-                self.log.debug(f'detection for {image.id} on {self.port} took too long')
+                self.log.debug(f'detection for {current_image.id} on {self.port} took too long')
                 self.timeout_count += 1
             except asyncio.exceptions.CancelledError:
                 self.log.debug(f'task has been cancelled')
             except:
-                self.log.exception(f'could not detect {image.id}')
+                self.log.exception(f'could not detect {current_image.id}')
             else:
                 self.timeout_count = 0
-                self.NEW_DETECTIONS.emit(image)
+                if not current_image.is_broken:
+                    self.NEW_DETECTIONS.emit(current_image)
             finally:
                 self.is_detecting = False
                 if self.timeout_count > 5:
