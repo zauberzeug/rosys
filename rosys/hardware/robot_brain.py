@@ -34,15 +34,20 @@ class RobotBrain:
     def developer_ui(self) -> None:
         ui.label('Lizard') \
             .bind_text_from(self.lizard_firmware, 'lizard_version', backward=lambda x: f'Lizard ({x or "?"})')
-        ui.button('Configure', on_click=self.configure).props('outline')
-        ui.button('Restart', on_click=self.restart).props('outline')
+        ui.button('Configure', on_click=self.configure).props('outline') \
+            .tooltip('Configure the microcontroller with the Lizard startup file')
+        ui.button('Restart', on_click=self.restart).props('outline') \
+            .tooltip('Restart the microcontroller')
         self.update_button = ui.button(f'Update ({self.lizard_firmware.available_lizard_version})',
-                                       on_click=self.lizard_firmware.flash).props('outline')
+                                       on_click=self.lizard_firmware.flash).props('outline') \
+            .tooltip('Update the Lizard firmware')
         self.update_button.visible = False
         self.upgrade_button = ui.button('Update', on_click=self.lizard_firmware.update_lizard).props('outline').bind_text_from(
-            self.lizard_firmware, 'latest_lizard_release', backward=lambda x: f'Update from GitHub ({x or "?"})')
+            self.lizard_firmware, 'latest_lizard_release', backward=lambda x: f'Update from GitHub ({x or "?"})') \
+            .tooltip('Upgrade the Lizard firmware from GitHub')
         self.upgrade_button.visible = False
-        ui.button('Enable', on_click=self.enable_esp).props('outline')
+        ui.button('Enable', on_click=self.enable_esp).props('outline') \
+            .tooltip('Enable the microcontroller module (will later be done automatically)')
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
 
     async def configure(self) -> None:
