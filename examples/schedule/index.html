@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://rosys.io/examples/schedule/">
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.8">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.9">
     
     
       
@@ -22,7 +22,7 @@
       <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.815d1a91.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.08040f6c.min.css">
         
       
       
@@ -58,7 +58,7 @@
     
     
     
-    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
   
     
     
@@ -346,6 +346,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../simulation_speed/" class="md-nav__link">
+        Simulation Speed
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../cameras/" class="md-nav__link">
         Cameras
       </a>
@@ -589,6 +603,7 @@
 The <code>Schedule</code> module comes with its own UI to manipulate the half-hourly time plan.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
 <span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
+
 <span class="kn">from</span> <span class="nn">rosys.automation</span> <span class="kn">import</span> <span class="n">Automator</span><span class="p">,</span> <span class="n">Schedule</span><span class="p">,</span> <span class="n">automation_controls</span>
 <span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Driver</span><span class="p">,</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">robot_object</span>
 <span class="kn">from</span> <span class="nn">rosys.geometry</span> <span class="kn">import</span> <span class="n">Point</span><span class="p">,</span> <span class="n">Prism</span>

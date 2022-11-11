@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from nicegui import ui
+
 from rosys.automation import Automator
 from rosys.driving import Driver, Odometer, robot_object
 from rosys.geometry import Point, Pose, Prism

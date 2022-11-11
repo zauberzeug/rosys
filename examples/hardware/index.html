@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://rosys.io/examples/hardware/">
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.8">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.9">
     
     
       
@@ -22,7 +22,7 @@
       <link rel="stylesheet" href="../../assets/stylesheets/main.20d9efc8.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.815d1a91.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.08040f6c.min.css">
         
       
       
@@ -58,7 +58,7 @@
     
     
     
-    <body dir="ltr" data-md-color-scheme="" data-md-color-primary="none" data-md-color-accent="none">
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
   
     
     
@@ -394,6 +394,20 @@
   
   
     <li class="md-nav__item">
+      <a href="../simulation_speed/" class="md-nav__link">
+        Simulation Speed
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../cameras/" class="md-nav__link">
         Cameras
       </a>
@@ -710,6 +724,7 @@ You can call <code>SerialCommunication.is_possible()</code> to automatically swi
 The module <code>WheelsHardware</code> expects a <code>RobotBrain</code>, which controls the <code>SerialCommunication</code> with the microcontroller.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
 <span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
+
 <span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">Steerer</span><span class="p">,</span> <span class="n">joystick</span><span class="p">,</span> <span class="n">keyboard_control</span>
 <span class="kn">from</span> <span class="nn">rosys.hardware</span> <span class="kn">import</span> <span class="n">RobotBrain</span><span class="p">,</span> <span class="n">SerialCommunication</span><span class="p">,</span> <span class="n">WheelsHardware</span><span class="p">,</span> <span class="n">WheelsSimulation</span><span class="p">,</span> <span class="n">communication</span>
 
@@ -783,13 +798,13 @@ core.output(&quot;core.millis wheels.linear_speed:3 wheels.angular_speed:3&quot;
       
       
         
-        <a href="../cameras/" class="md-footer__link md-footer__link--next" aria-label="Next: Cameras" rel="next">
+        <a href="../simulation_speed/" class="md-footer__link md-footer__link--next" aria-label="Next: Simulation Speed" rel="next">
           <div class="md-footer__title">
             <div class="md-ellipsis">
               <span class="md-footer__direction">
                 Next
               </span>
-              Cameras
+              Simulation Speed
             </div>
           </div>
           <div class="md-footer__button md-icon">
