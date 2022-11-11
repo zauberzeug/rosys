@@ -29,6 +29,7 @@ class Device:
     exposure_min: int = 0
     exposure_max: int = 0
     exposure_default: int = 0
+    has_manual_exposure: bool = False
     last_state: dict = field(default_factory=dict)
     video_formats: set[str] = field(default_factory=set)
 
@@ -226,18 +227,19 @@ class UsbCameraProviderHardware(CameraProvider):
             self.log.info(f'updating resolution of {camera.id} from {resolution} to {camera.resolution}')
             device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, camera.resolution.width)
             device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, camera.resolution.height)
-        auto_exposure = device.capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
-        if camera.auto_exposure and not auto_exposure:
-            self.log.info(f'activating auto-exposure for {camera.id}')
-            device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)  # `v4l2-ctl -L` says "3: Aperture Priority Mode"
-        if auto_exposure and not camera.auto_exposure:
-            self.log.info(f'deactivating auto-exposure of {camera.id}')
-            device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)  # `v4l2-ctl -L` says "1: Manual Mode"
-        if not camera.auto_exposure and device.exposure_max > 0:
-            exposure = device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
-            if camera.exposure is not None and camera.exposure != exposure:
-                self.log.info(f'updating exposure of {camera.id} from {exposure} to {camera.exposure})')
-                device.capture.set(cv2.CAP_PROP_EXPOSURE, int(camera.exposure * device.exposure_max))
+        if device.has_manual_exposure:
+            auto_exposure = device.capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
+            if camera.auto_exposure and not auto_exposure:
+                self.log.info(f'activating auto-exposure for {camera.id}')
+                device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)  # `v4l2-ctl -L` says "3: Aperture Priority Mode"
+            if auto_exposure and not camera.auto_exposure:
+                self.log.info(f'deactivating auto-exposure of {camera.id}')
+                device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)  # `v4l2-ctl -L` says "1: Manual Mode"
+            if not camera.auto_exposure and device.exposure_max > 0:
+                exposure = device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
+                if camera.exposure is not None and camera.exposure != exposure:
+                    self.log.info(f'updating exposure of {camera.id} from {exposure} to {camera.exposure})')
+                    device.capture.set(cv2.CAP_PROP_EXPOSURE, int(camera.exposure * device.exposure_max))
 
     async def load_value_ranges(self, device: Device) -> None:
         output = await self.run_v4l(device, '--all')
@@ -248,6 +250,8 @@ class UsbCameraProviderHardware(CameraProvider):
             device.exposure_min = int(match.group(1))
             device.exposure_max = int(match.group(2))
             device.exposure_default = int(match.group(3))
+        else:
+            device.has_manual_exposure = False
         output = await self.run_v4l(device, '--list-formats')
         match = re.finditer(r"$.*'(.*)'.*", output)
         for m in match:
