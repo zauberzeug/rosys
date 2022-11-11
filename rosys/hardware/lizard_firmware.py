@@ -28,9 +28,11 @@ class LizardFirmware:
         assert isinstance(self.robot_brain.communication, SerialCommunication)
         rosys.notify(f'Installing Lizard firmware {self.available_lizard_version}')
         self.robot_brain.communication.disconnect()
+        await rosys.sleep(0.3)
         output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=None, working_dir=os.path.expanduser('~/.lizard'))
         self.log.info(f'flashed Lizard:\n {output}')
         self.robot_brain.communication.connect()
+        await rosys.sleep(0.3)
         await self.robot_brain.configure()
         await self.determine_lizard_version()
         rosys.notify(f'Installed Lizard firmware {self.lizard_version}')
@@ -41,12 +43,14 @@ class LizardFirmware:
             await self.flash()
 
     async def determine_lizard_version(self) -> str:
-        while (response := await self.robot_brain.send_and_await('core.info()', 'lizard', timeout=1)) is None:
+        t = rosys.time()
+        while (response := await self.robot_brain.send_and_await('core.info()', 'lizard', timeout=1)) is None and rosys.time() - t < 5:
             self.log.warning('Could not get Lizard version')
             await rosys.sleep(0.1)
             continue
-        self.lizard_version = response.split()[-1].split('-')[0][1:]
-        self.log.info(f'currently installed Lizard version is {self.lizard_version}')
+        if response is not None:
+            self.lizard_version = response.split()[-1].split('-')[0][1:]
+            self.log.info(f'currently installed Lizard version is {self.lizard_version}')
         self.latest_lizard_release = await self.get_latest_lizard_release()
         self.robot_brain.update_button.visible = self.can_update
         self.robot_brain.upgrade_button.visible = self.can_upgrade
@@ -55,6 +59,7 @@ class LizardFirmware:
         rosys.notify(f'downloading Lizard {self.latest_lizard_release}')
         await self.download_latest_lizard_release()
         await self.flash()
+        await self.determine_lizard_version()
 
     @awaitable
     def get_latest_lizard_release(self) -> str:
@@ -78,7 +83,7 @@ class LizardFirmware:
 
     @property
     def can_update(self) -> bool:
-        return self.lizard_version != self.available_lizard_version
+        return self.lizard_version is None or self.lizard_version != self.available_lizard_version
 
     @property
     def can_upgrade(self) -> bool:
