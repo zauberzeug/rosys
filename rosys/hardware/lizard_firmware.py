@@ -37,7 +37,7 @@ class LizardFirmware:
 
     async def ensure_lizard_version(self) -> None:
         await self.determine_lizard_version()
-        if self.lizard_version != self.available_lizard_version:
+        if self.can_update:
             await self.flash()
 
     async def determine_lizard_version(self) -> str:
@@ -48,6 +48,8 @@ class LizardFirmware:
         self.lizard_version = response.split()[-1].split('-')[0][1:]
         self.log.info(f'currently installed Lizard version is {self.lizard_version}')
         self.latest_lizard_release = await self.get_latest_lizard_release()
+        self.robot_brain.update_button.visible = self.can_update
+        self.robot_brain.upgrade_button.visible = self.can_upgrade
 
     async def update_lizard(self) -> None:
         rosys.notify(f'downloading Lizard {self.latest_lizard_release}')
@@ -76,4 +78,8 @@ class LizardFirmware:
 
     @property
     def can_update(self) -> bool:
-        return self.available_lizard_version != self.latest_lizard_release
+        return self.lizard_version != self.available_lizard_version
+
+    @property
+    def can_upgrade(self) -> bool:
+        return self.lizard_version != self.latest_lizard_release and self.available_lizard_version != self.latest_lizard_release

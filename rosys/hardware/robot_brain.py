@@ -36,10 +36,12 @@ class RobotBrain:
             .bind_text_from(self.lizard_firmware, 'lizard_version', backward=lambda x: f'Lizard ({x or "?"})')
         ui.button('Configure', on_click=self.configure).props('outline')
         ui.button('Restart', on_click=self.restart).props('outline')
-        ui.button(f'Update Local ({self.lizard_firmware.available_lizard_version})',
-                  on_click=self.lizard_firmware.flash).props('outline')
-        ui.button('Update from GitHub', on_click=self.lizard_firmware.update_lizard).props('outline').bind_text_from(
+        self.update_button = ui.button(f'Update ({self.lizard_firmware.available_lizard_version})',
+                                       on_click=self.lizard_firmware.flash).props('outline')
+        self.update_button.visible = False
+        self.upgrade_button = ui.button('Update', on_click=self.lizard_firmware.update_lizard).props('outline').bind_text_from(
             self.lizard_firmware, 'latest_lizard_release', backward=lambda x: f'Update from GitHub ({x or "?"})')
+        self.upgrade_button.visible = False
         ui.button('Enable', on_click=self.enable_esp).props('outline')
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
 
