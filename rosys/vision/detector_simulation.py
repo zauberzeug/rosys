@@ -3,8 +3,8 @@ from typing import Optional
 from uuid import uuid4
 
 import numpy as np
-import rosys
 
+from .. import rosys
 from ..geometry import Point3d
 from .camera_provider import CameraProvider
 from .detections import BoxDetection, Detections, PointDetection

@@ -1,4 +1,5 @@
 import pytest
+
 import rosys
 from rosys.event import Event
 from rosys.test import forward
@@ -35,17 +36,14 @@ async def test_registering_lambdas():
 @pytest.mark.usefixtures('integration')
 async def test_fire_and_forget_with_emit():
 
-    class TestActor:
-
-        async def handle_event(self, number: int) -> None:
-            await rosys.sleep(1)
-            numbers.append(number)
-            await rosys.sleep(1)
-            raise Exception('some failure which should be detected even when using "fire and forget"')
+    async def handle_event(number: int) -> None:
+        await rosys.sleep(1)
+        numbers.append(number)
+        await rosys.sleep(1)
+        raise Exception('some failure which should be detected even when using "fire and forget"')
 
     numbers = []
-    actor = TestActor()
-    TEST_EVENT.register(actor.handle_event)
+    TEST_EVENT.register(handle_event)
     TEST_EVENT.emit(42)
     await forward(0.5)
     assert numbers == []

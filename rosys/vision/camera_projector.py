@@ -3,8 +3,8 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-import rosys
 
+from .. import rosys
 from .calibration import Calibration
 from .camera import Camera
 from .camera_provider import CameraProvider

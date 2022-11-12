@@ -4,8 +4,7 @@ import inspect
 from dataclasses import dataclass
 from typing import Callable
 
-import rosys
-
+from .. import rosys
 from ..event import Event
 from ..hardware import RobotBrain
 from ..task_logger import create_task

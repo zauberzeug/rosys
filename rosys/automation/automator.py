@@ -1,8 +1,7 @@
 import logging
 from typing import Callable, Coroutine, Optional
 
-import rosys
-
+from .. import rosys
 from ..analysis import track
 from ..driving import Drivable, Steerer
 from ..event import Event

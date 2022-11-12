@@ -3,7 +3,7 @@ from typing import Any
 
 from nicegui import ui
 
-import rosys
+from . import rosys
 
 
 class simulation_ui:

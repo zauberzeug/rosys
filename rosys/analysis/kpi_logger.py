@@ -4,9 +4,9 @@ from datetime import date, datetime
 from itertools import groupby
 from typing import Any
 
-import rosys
 from rosys import persistence
 
+from .. import rosys
 from .kpi_buckets import Day, Month
 
 

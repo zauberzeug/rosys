@@ -2,11 +2,12 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Callable, Optional
 
-import rosys
 import suntime
 from nicegui import ui
+
 from rosys import persistence
 
+from .. import rosys
 from .automator import Automator
 
 DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']

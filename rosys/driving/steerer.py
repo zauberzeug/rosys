@@ -2,10 +2,11 @@ import logging
 from enum import Enum
 
 import numpy as np
-import rosys
+
 from rosys.event import Event
 from rosys.helpers import ramp
 
+from .. import rosys
 from .drivable import Drivable
 
 

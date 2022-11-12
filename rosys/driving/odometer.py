@@ -3,9 +3,10 @@ from copy import deepcopy
 from typing import Optional, Protocol
 
 import numpy as np
-import rosys
+
 from rosys.geometry.pose import PoseStep
 
+from .. import rosys
 from ..event import Event
 from ..geometry import Pose, Velocity
 

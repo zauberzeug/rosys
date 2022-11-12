@@ -1,10 +1,10 @@
 import time
 
-import rosys
 import yappi
 from nicegui import ui
 from tabulate import tabulate
 
+from .. import rosys
 from .profiling import profile
 
 

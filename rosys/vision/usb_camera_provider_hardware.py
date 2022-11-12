@@ -9,9 +9,7 @@ import cv2
 import numpy as np
 import PIL
 
-import rosys
-
-from .. import persistence
+from .. import persistence, rosys
 from ..geometry import Rectangle
 from .camera_provider import CameraProvider
 from .image import Image, ImageSize

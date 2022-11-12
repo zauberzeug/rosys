@@ -3,8 +3,7 @@ import urllib.parse
 from typing import Optional
 from uuid import uuid4
 
-import rosys
-
+from .. import rosys
 from ..event import Event
 from .camera import Camera
 from .image import Image

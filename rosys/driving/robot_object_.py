@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from nicegui import ui
 from nicegui.elements.scene_objects import Extrusion, Group, Stl
-from rosys import config
 
 from ..geometry import Prism
+from ..rosys import config
 from .odometer import Odometer
 
 
