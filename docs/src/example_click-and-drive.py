@@ -4,7 +4,7 @@ from nicegui import ui
 import rosys
 
 wheels = rosys.hardware.WheelsSimulation()
-odometer = rosys.hardware.Odometer(wheels)
+odometer = rosys.driving.Odometer(wheels)
 driver = rosys.driving.Driver(wheels, odometer)
 automator = rosys.automation.Automator(wheels, None)
 
