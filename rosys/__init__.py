@@ -17,7 +17,7 @@ from nicegui import globals as nicegui_globals
 from nicegui import ui
 from nicegui.page import Page
 
-from . import analysis, automation, driving, event, geometry, hardware, pathplanning, persistence, run, system
+from . import analysis, automation, driving, event, geometry, hardware, pathplanning, persistence, run, system, vision
 from .config import Config
 from .helpers import invoke
 from .rosys import (NEW_NOTIFICATION, Notification, config, is_test, notify, on_repeat, on_shutdown, on_startup,
