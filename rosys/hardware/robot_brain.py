@@ -51,13 +51,17 @@ class RobotBrain:
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
 
     async def configure(self) -> None:
-        self.log.info('Configuring...')
+        if not os.path.exists(self.lizard_startup):
+            rosys.notify('No Lizard startup file found')
+            return
+        rosys.notify('Configuring Lizard...')
         await self.send(f'!-')
         with open(self.lizard_startup) as f:
             for line in f.read().splitlines():
                 await self.send(f'!+{line}')
         await self.send(f'!.')
         await self.restart()
+        rosys.notify('Lizard configured successfully...')
 
     async def restart(self) -> None:
         await self.send(f'core.restart()')
