@@ -33,6 +33,8 @@ class LizardFirmware:
         self.robot_brain.communication.connect()
         await rosys.sleep(0.3)
         await self.robot_brain.configure()
+        await rosys.sleep(0.3)
+        await self.robot_brain.send('expander.flash()')
         await self.determine_lizard_version()
         rosys.notify(f'Installed Lizard firmware {self.lizard_version}')
 
