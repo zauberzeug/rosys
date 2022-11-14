@@ -1,7 +1,7 @@
-import rosys
 from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Extrusion
 
+from .. import rosys
 from .obstacle import Obstacle
 
 

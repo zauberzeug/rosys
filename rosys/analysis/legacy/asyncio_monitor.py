@@ -5,7 +5,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Optional
 
-import rosys
+from ... import rosys
 
 
 @dataclass(slots=True, kw_only=True)

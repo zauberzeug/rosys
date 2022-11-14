@@ -5,9 +5,8 @@ from typing import Any, Callable, Optional
 
 import numpy as np
 import pytest
-import rosys
 
-from .. import run
+from .. import rosys, run
 from ..automation import Automator
 from ..driving import Driver, Odometer
 from ..geometry import Point, Point3d

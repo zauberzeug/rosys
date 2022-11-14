@@ -1,8 +1,9 @@
 import asyncio
 import logging
 
-import rosys
 from nicegui import ui
+
+from .. import rosys
 
 
 class AsyncioWarnings:

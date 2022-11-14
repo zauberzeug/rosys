@@ -3,7 +3,7 @@ import re
 import shutil
 from dataclasses import dataclass
 
-import rosys
+from ... import rosys
 
 
 @dataclass(slots=True, kw_only=True)

@@ -5,8 +5,7 @@ from typing import Optional
 
 from nicegui import ui
 
-import rosys
-
+from .. import rosys
 from ..event import Event
 from .communication import Communication
 from .lizard_firmware import LizardFirmware

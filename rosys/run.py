@@ -14,7 +14,7 @@ from typing import Callable, Generator, Optional
 
 from psutil import Popen
 
-import rosys
+from . import rosys
 
 process_pool = ProcessPoolExecutor()
 thread_pool = ThreadPoolExecutor(thread_name_prefix='run.py thread_pool')

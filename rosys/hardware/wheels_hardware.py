@@ -1,5 +1,4 @@
-import rosys
-
+from .. import rosys
 from ..geometry import Velocity
 from .robot_brain import RobotBrain
 from .wheels import Wheels

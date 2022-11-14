@@ -5,9 +5,10 @@ from typing import Any, Optional
 
 import numpy as np
 import PIL as pil
-import rosys
+
 from rosys import persistence
 
+from .. import rosys
 from .camera_provider import CameraProvider
 from .image import Image, ImageSize
 from .usb_camera import UsbCamera

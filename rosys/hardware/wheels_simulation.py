@@ -1,7 +1,6 @@
 from typing import Optional
 
-import rosys
-
+from .. import rosys
 from ..geometry import Pose, PoseStep, Velocity
 from .wheels import Wheels
 

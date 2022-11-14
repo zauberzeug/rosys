@@ -3,8 +3,8 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
-import rosys
 
+from .. import rosys
 from ..analysis import track
 from ..geometry import Point, Pose, Spline
 from ..helpers import ModificationContext, eliminate_2pi, eliminate_pi, ramp

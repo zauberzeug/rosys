@@ -6,8 +6,7 @@ from typing import TYPE_CHECKING, Optional
 
 import requests
 
-import rosys
-
+from .. import rosys
 from ..run import awaitable
 from .communication import SerialCommunication
 

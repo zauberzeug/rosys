@@ -1,7 +1,8 @@
 from functools import wraps
 
-import rosys
 from nicegui import ui
+
+from .. import rosys
 
 
 class Track:

@@ -1,8 +1,7 @@
 import abc
 import logging
 
-import rosys
-
+from .. import rosys
 from ..event import Event
 
 

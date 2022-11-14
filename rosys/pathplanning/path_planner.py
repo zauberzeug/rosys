@@ -4,9 +4,7 @@ import time
 from multiprocessing import Pipe
 from typing import Any
 
-import rosys
-
-from .. import persistence, run
+from .. import persistence, rosys, run
 from ..driving import PathSegment
 from ..geometry import Point, Pose, Prism, Spline
 from .area import Area

@@ -6,9 +6,7 @@ from typing import Optional
 import socketio
 import socketio.exceptions
 
-import rosys
-
-from .. import persistence, task_logger
+from .. import persistence, rosys, task_logger
 from .detections import BoxDetection, Detections, PointDetection, SegmentationDetection
 from .detector import Autoupload, Detector
 from .image import Image

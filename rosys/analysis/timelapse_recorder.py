@@ -9,8 +9,9 @@ from pathlib import Path
 from typing import Optional, Protocol
 
 import humanize
-import rosys
 from PIL import Image, ImageDraw, ImageFont
+
+from .. import rosys
 
 STORAGE_PATH = os.path.expanduser('~/.rosys/timelapse')
 FONT = f'{os.path.dirname(__file__)}/assets/RobotoMono-Medium.ttf'

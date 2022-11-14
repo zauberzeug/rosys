@@ -1,7 +1,6 @@
 from nicegui import ui
 
-from rosys import config
-
+from ..rosys import config
 from .automator import Automator
 
 

@@ -1,11 +1,11 @@
 import os
 from typing import Optional
 
-import rosys
 import serial
 from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
 
+from ... import rosys
 from .communication import Communication
 
 
