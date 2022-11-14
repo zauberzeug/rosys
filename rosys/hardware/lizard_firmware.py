@@ -34,7 +34,6 @@ class LizardFirmware:
         await rosys.sleep(0.3)
         await self.robot_brain.configure()
         await rosys.sleep(0.3)
-        await self.robot_brain.send('expander.flash()')
         await self.determine_lizard_version()
         rosys.notify(f'Installed Lizard firmware {self.lizard_version}')
 
@@ -44,12 +43,11 @@ class LizardFirmware:
             await self.flash()
 
     async def determine_lizard_version(self) -> str:
-        t = rosys.time()
-        while (response := await self.robot_brain.send_and_await('core.info()', 'lizard', timeout=1)) is None and rosys.time() - t < 5:
+        deadline = rosys.time() + 5
+        while (response := await self.robot_brain.send_and_await('core.info()', 'lizard', timeout=1)) is None and rosys.time() < deadline:
             self.log.warning('Could not get Lizard version')
             await rosys.sleep(0.1)
-            continue
-        if response is not None:
+        if response:
             self.lizard_version = response.split()[-1].split('-')[0][1:]
             self.log.info(f'currently installed Lizard version is {self.lizard_version}')
         self.latest_lizard_release = await self.get_latest_lizard_release()

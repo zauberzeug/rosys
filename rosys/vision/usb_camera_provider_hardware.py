@@ -246,6 +246,7 @@ class UsbCameraProviderHardware(CameraProvider):
             return
         match = re.search(r'exposure_absolute.*: min=(\d*).*max=(\d*).*default=(\d*).*', output)
         if match is not None:
+            device.has_manual_exposure = True
             device.exposure_min = int(match.group(1))
             device.exposure_max = int(match.group(2))
             device.exposure_default = int(match.group(3))
