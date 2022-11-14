@@ -149,6 +149,7 @@ class UsbCameraProviderHardware(CameraProvider):
         self.devices[uid].capture = capture
         await rosys.run.io_bound(self.set_parameters, camera, device)
         self.log.info(f'activated {uid}')
+        await self.CAMERA_ADDED.call(camera)
 
     async def deactivate(self, camera: UsbCamera) -> None:
         if camera.id not in self.devices:
