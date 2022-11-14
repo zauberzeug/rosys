@@ -5,9 +5,7 @@ from typing import Any, Callable, Optional
 import suntime
 from nicegui import ui
 
-from rosys import persistence
-
-from .. import rosys
+from .. import persistence, rosys
 from .automator import Automator
 
 DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
