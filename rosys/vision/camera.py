@@ -17,6 +17,7 @@ class Camera(abc.ABC):
     id: str
     calibration: Optional[Calibration] = None
     images: list[Image] = field(default_factory=list, metadata=persistence.exclude)
+    focal_length: Optional[float] = None
 
     @property
     def captured_images(self) -> list[Image]:
