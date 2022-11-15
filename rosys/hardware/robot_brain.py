@@ -1,6 +1,6 @@
 import logging
-import os
 import sys
+from pathlib import Path
 from typing import Optional
 
 from nicegui import ui
@@ -22,42 +22,42 @@ class RobotBrain:
         self.LINE_RECEIVED = Event()
         '''a line has been received from the microcontroller (argument: line as string)'''
 
+        self.log = logging.getLogger('rosys.robot_rain')
+
         self.communication = communication
-        self.lizard_startup = lizard_startup
+        self.lizard_startup = Path(lizard_startup)
+        self.lizard_firmware = LizardFirmware(self)
+
         self.waiting_list: dict[str, Optional[str]] = {}
         self.clock_offset: Optional[float] = None
         self.hardware_time: Optional[float] = None
-        self.log = logging.getLogger('rosys.robot_rain')
-        self.lizard_firmware = LizardFirmware(self)
 
     def developer_ui(self) -> None:
-        ui.label('Lizard') \
-            .bind_text_from(self.lizard_firmware, 'lizard_version', backward=lambda x: f'Lizard ({x or "?"})')
+        ui.label().bind_text_from(self.lizard_firmware, 'active_version', backward=lambda x: f'Active: {x or "?"}')
+        ui.label().bind_text_from(self.lizard_firmware, 'offline_version', backward=lambda x: f'Offline: {x or "?"}')
+        ui.label().bind_text_from(self.lizard_firmware, 'online_version', backward=lambda x: f'Online: {x or "?"}')
+        ui.button('Refresh', on_click=self.lizard_firmware.read_all).props('outline') \
+            .tooltip('Read installed and available versions')
+        ui.button('Download', on_click=self.lizard_firmware.download).props('outline') \
+            .tooltip('Download the latest Lizard firmware from GitHub')
+        ui.button('Flash', on_click=self.lizard_firmware.flash).props('outline') \
+            .tooltip('Flash the downloaded Lizard firmware to the microcontroller')
+        ui.button('Enable', on_click=self.enable_esp).props('outline') \
+            .tooltip('Enable the microcontroller module (will later be done automatically)')
         ui.button('Configure', on_click=self.configure).props('outline') \
             .tooltip('Configure the microcontroller with the Lizard startup file')
         ui.button('Restart', on_click=self.restart).props('outline') \
             .tooltip('Restart the microcontroller')
-        self.update_button = ui.button(f'Update ({self.lizard_firmware.available_lizard_version})',
-                                       on_click=self.lizard_firmware.flash).props('outline') \
-            .tooltip('Update the Lizard firmware')
-        self.update_button.visible = False
-        self.upgrade_button = ui.button('Update', on_click=self.lizard_firmware.update_lizard).props('outline').bind_text_from(
-            self.lizard_firmware, 'latest_lizard_release', backward=lambda x: f'Update from GitHub ({x or "?"})') \
-            .tooltip('Upgrade the Lizard firmware from GitHub')
-        self.upgrade_button.visible = False
-        ui.button('Enable', on_click=self.enable_esp).props('outline') \
-            .tooltip('Enable the microcontroller module (will later be done automatically)')
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
 
     async def configure(self) -> None:
-        if not os.path.exists(self.lizard_startup):
+        if not self.lizard_startup.exists():
             rosys.notify('No Lizard startup file found')
             return
         rosys.notify('Configuring Lizard...')
         await self.send(f'!-')
-        with open(self.lizard_startup) as f:
-            for line in f.read().splitlines():
-                await self.send(f'!+{line}')
+        for line in self.lizard_startup.read_text().splitlines():
+            await self.send(f'!+{line}')
         await self.send(f'!.')
         await self.restart()
         rosys.notify('Lizard configured successfully...')
@@ -103,7 +103,7 @@ class RobotBrain:
 
     def enable_esp(self) -> None:
         try:
-            sys.path.insert(1, os.path.expanduser('~/.lizard'))
+            sys.path.insert(1, str(Path('~/.lizard').expanduser()))
             from esp import Esp
             params = self.lizard_firmware.flash_params
             devices = [param for param in params if param.startswith('/dev/')]

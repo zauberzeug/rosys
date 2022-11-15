@@ -1,7 +1,6 @@
 import logging
-import os
-import pathlib
 import subprocess
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 import requests
@@ -15,75 +14,60 @@ if TYPE_CHECKING:
 
 
 class LizardFirmware:
+    GITHUB_URL = 'https://api.github.com/repos/zauberzeug/lizard/releases/latest'
+    PATH = Path('~/.lizard').expanduser()
 
     def __init__(self, robot_brain: 'RobotBrain') -> None:
         self.log = logging.getLogger('rosys.lizard_firmware')
         self.robot_brain = robot_brain
-        self.lizard_version: Optional[str] = None
-        self.latest_lizard_release: Optional[str] = None
+
         self.flash_params: list[str] = []
+
+        self.active_version: Optional[str] = None
+        self.offline_version: Optional[str] = None
+        self.online_version: Optional[str] = None
+
+        rosys.on_repeat(self.read_all, 60.0)
+
+    async def read_all(self) -> None:
+        await self.read_online_version()
+        self.read_offline_version()
+        await self.read_active_version()
+
+    @awaitable
+    def read_online_version(self) -> None:
+        self.online_version = requests.get(self.GITHUB_URL).json()['tag_name'].removeprefix('v')
+
+    def read_offline_version(self) -> None:
+        bin = self.PATH / 'build' / 'lizard.bin'
+        with open(bin, 'rb') as f:
+            head = f.read(150).decode('utf-8', 'backslashreplace')
+        self.offline_version = head.split(' ')[3].replace('\x00', '').split('lizard')[0].removeprefix('v')
+
+    async def read_active_version(self, timeout: float = 5.0) -> None:
+        deadline = rosys.time() + timeout
+        while rosys.time() < deadline:
+            response = await self.robot_brain.send_and_await('core.info()', 'lizard', timeout=1)
+            if response:
+                self.active_version = response.split()[-1].split('-')[0][1:]
+                return
+            self.log.warning('Could not get Lizard version')
+            await rosys.sleep(0.1)
+
+    @awaitable
+    def download(self) -> None:
+        url = requests.get(self.GITHUB_URL).json()['assets'][0]['browser_download_url']
+        zip = self.PATH / 'lizard.zip'
+        zip.write_bytes(requests.get(url).content)
+        subprocess.run(['unzip', '-o', zip], cwd=self.PATH)
+        zip.unlink()
 
     async def flash(self) -> None:
         assert isinstance(self.robot_brain.communication, SerialCommunication)
-        rosys.notify(f'Installing Lizard firmware {self.available_lizard_version}')
+        rosys.notify(f'Flashing Lizard firmware {self.offline_version}...')
         self.robot_brain.communication.disconnect()
         await rosys.sleep(0.3)
-        output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=None, working_dir=os.path.expanduser('~/.lizard'))
+        output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=None, working_dir=self.PATH)
         self.log.info(f'flashed Lizard:\n {output}')
         self.robot_brain.communication.connect()
-        await rosys.sleep(0.3)
-        await self.robot_brain.configure()
-        await rosys.sleep(0.3)
-        await self.determine_lizard_version()
-        rosys.notify(f'Installed Lizard firmware {self.lizard_version}')
-
-    async def ensure_lizard_version(self) -> None:
-        await self.determine_lizard_version()
-        if self.can_update:
-            await self.flash()
-
-    async def determine_lizard_version(self) -> str:
-        deadline = rosys.time() + 5
-        while (response := await self.robot_brain.send_and_await('core.info()', 'lizard', timeout=1)) is None and rosys.time() < deadline:
-            self.log.warning('Could not get Lizard version')
-            await rosys.sleep(0.1)
-        if response:
-            self.lizard_version = response.split()[-1].split('-')[0][1:]
-            self.log.info(f'currently installed Lizard version is {self.lizard_version}')
-        self.latest_lizard_release = await self.get_latest_lizard_release()
-        self.robot_brain.update_button.visible = self.can_update
-        self.robot_brain.upgrade_button.visible = self.can_upgrade
-
-    async def update_lizard(self) -> None:
-        rosys.notify(f'downloading Lizard {self.latest_lizard_release}')
-        await self.download_latest_lizard_release()
-        await self.flash()
-        await self.determine_lizard_version()
-
-    @awaitable
-    def get_latest_lizard_release(self) -> str:
-        return requests.get('https://api.github.com/repos/zauberzeug/lizard/releases/latest').json()['tag_name'].replace('v', '')
-
-    @awaitable
-    def download_latest_lizard_release(self) -> None:
-        latest = 'https://api.github.com/repos/zauberzeug/lizard/releases/latest'
-        zip = requests.get(latest).json()['assets'][0]['browser_download_url']
-        with open(os.path.expanduser('~/.lizard/lizard.zip'), 'wb') as f:
-            f.write(requests.get(zip).content)
-        subprocess.run(['unzip', '-o', 'lizard.zip'], cwd=os.path.expanduser('~/.lizard'))
-        pathlib.Path('~/.lizard/lizard.zip').expanduser().unlink()
-
-    @property
-    def available_lizard_version(self) -> str:
-        with open(os.path.expanduser('~/.lizard/build/lizard.bin'), 'rb') as f:
-            head = f.read(150).decode('utf-8', 'backslashreplace')
-            version = head.split(' ')[3].replace('\x00', '')
-            return version[1:version.find('lizard')].strip()
-
-    @property
-    def can_update(self) -> bool:
-        return self.lizard_version is None or self.lizard_version != self.available_lizard_version
-
-    @property
-    def can_upgrade(self) -> bool:
-        return self.lizard_version != self.latest_lizard_release and self.available_lizard_version != self.latest_lizard_release
+        rosys.notify(f'Finished.')
