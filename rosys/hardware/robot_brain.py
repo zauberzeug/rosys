@@ -42,8 +42,10 @@ class RobotBrain:
             .tooltip('Read installed and available versions')
         ui.button('Download', on_click=self.lizard_firmware.download).props('outline') \
             .tooltip('Download the latest Lizard firmware from GitHub')
-        ui.button('Flash', on_click=self.lizard_firmware.flash).props('outline') \
-            .tooltip('Flash the downloaded Lizard firmware to the microcontroller')
+        ui.button('Flash Core', on_click=self.lizard_firmware.flash_core).props('outline') \
+            .tooltip('Flash the downloaded Lizard firmware to the Core microcontroller')
+        ui.button('Flash P0', on_click=self.lizard_firmware.flash_p0).props('outline') \
+            .tooltip('Flash the downloaded Lizard firmware to the P0 microcontroller')
         ui.button('Enable', on_click=self.enable_esp).props('outline') \
             .tooltip('Enable the microcontroller module (will later be done automatically)')
         ui.button('Configure', on_click=self.configure).props('outline') \
