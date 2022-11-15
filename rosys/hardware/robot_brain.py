@@ -105,7 +105,9 @@ class RobotBrain:
         try:
             sys.path.insert(1, os.path.expanduser('~/.lizard'))
             from esp import Esp
-            esp = Esp()
+            params = self.lizard_firmware.flash_params
+            devices = [param for param in params if param.startswith('/dev/')]
+            esp = Esp(nand='nand' in params, xavier='xavier' in params, device=devices[0] if devices else None)
             with esp.pin_config():
                 esp.activate()
         except:
