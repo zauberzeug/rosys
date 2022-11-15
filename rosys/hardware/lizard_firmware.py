@@ -23,7 +23,8 @@ class LizardFirmware:
 
         self.flash_params: list[str] = []
 
-        self.active_version: Optional[str] = None
+        self.core_version: Optional[str] = None
+        self.p0_version: Optional[str] = None
         self.offline_version: Optional[str] = None
         self.online_version: Optional[str] = None
 
@@ -32,7 +33,8 @@ class LizardFirmware:
     async def read_all(self) -> None:
         await self.read_online_version()
         self.read_offline_version()
-        await self.read_active_version()
+        await self.read_core_version()
+        await self.read_p0_version()
 
     @awaitable
     def read_online_version(self) -> None:
@@ -44,15 +46,21 @@ class LizardFirmware:
             head = f.read(150).decode('utf-8', 'backslashreplace')
         self.offline_version = head.split(' ')[3].replace('\x00', '').split('lizard')[0].removeprefix('v')
 
-    async def read_active_version(self, timeout: float = 5.0) -> None:
+    async def read_core_version(self, timeout: float = 5.0) -> None:
         deadline = rosys.time() + timeout
         while rosys.time() < deadline:
-            response = await self.robot_brain.send_and_await('core.info()', 'lizard', timeout=1)
-            if response:
-                self.active_version = response.split()[-1].split('-')[0][1:]
+            if response := await self.robot_brain.send_and_await('core.info()', 'lizard version:', timeout=1):
+                self.core_version = response.split()[-1].split('-')[0][1:]
                 return
-            self.log.warning('Could not get Lizard version')
-            await rosys.sleep(0.1)
+            self.log.warning('Could not read Lizard version from Core')
+
+    async def read_p0_version(self, timeout: float = 5.0) -> None:
+        deadline = rosys.time() + timeout
+        while rosys.time() < deadline:
+            if response := await self.robot_brain.send_and_await('p0.info()', 'p0: lizard version:', timeout=1):
+                self.p0_version = response.split()[-1].split('-')[0][1:]
+                return
+            self.log.warning('Could not read Lizard version from P0')
 
     @awaitable
     def download(self) -> None:

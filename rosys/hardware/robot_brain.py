@@ -33,9 +33,11 @@ class RobotBrain:
         self.hardware_time: Optional[float] = None
 
     def developer_ui(self) -> None:
-        ui.label().bind_text_from(self.lizard_firmware, 'active_version', backward=lambda x: f'Active: {x or "?"}')
+        ui.label().bind_text_from(self.lizard_firmware, 'core_version', backward=lambda x: f'Core: {x or "?"}')
+        ui.label().bind_text_from(self.lizard_firmware, 'p0_version', backward=lambda x: f'P0: {x or "?"}')
         ui.label().bind_text_from(self.lizard_firmware, 'offline_version', backward=lambda x: f'Offline: {x or "?"}')
         ui.label().bind_text_from(self.lizard_firmware, 'online_version', backward=lambda x: f'Online: {x or "?"}')
+
         ui.button('Refresh', on_click=self.lizard_firmware.read_all).props('outline') \
             .tooltip('Read installed and available versions')
         ui.button('Download', on_click=self.lizard_firmware.download).props('outline') \
@@ -48,6 +50,7 @@ class RobotBrain:
             .tooltip('Configure the microcontroller with the Lizard startup file')
         ui.button('Restart', on_click=self.restart).props('outline') \
             .tooltip('Restart the microcontroller')
+
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
 
     async def configure(self) -> None:
@@ -76,9 +79,10 @@ class RobotBrain:
             words = line.split()
             if not words:
                 continue
+            for key in self.waiting_list:
+                if line.startswith(key):
+                    self.waiting_list[key] = line
             first = words.pop(0)
-            if first in self.waiting_list:
-                self.waiting_list[first] = line
             if first == 'core':
                 millis = float(words.pop(0))
                 if self.clock_offset is None:
