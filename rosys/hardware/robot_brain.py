@@ -81,10 +81,9 @@ class RobotBrain:
             words = line.split()
             if not words:
                 continue
-            for key in self.waiting_list:
-                if line.startswith(key):
-                    self.waiting_list[key] = line
             first = words.pop(0)
+            if first in self.waiting_list:
+                self.waiting_list[first] = line
             if first == 'core':
                 millis = float(words.pop(0))
                 if self.clock_offset is None:

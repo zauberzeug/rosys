@@ -50,7 +50,7 @@ class LizardFirmware:
     async def read_core_version(self) -> None:
         deadline = rosys.time() + 5.0
         while rosys.time() < deadline:
-            if response := await self.robot_brain.send_and_await('core.info()', 'lizard version:', timeout=1):
+            if response := await self.robot_brain.send_and_await('core.version()', 'version:', timeout=1):
                 self.core_version = response.split()[-1].split('-')[0][1:]
                 return
             self.log.warning('Could not read Lizard version from Core')
@@ -58,7 +58,7 @@ class LizardFirmware:
     async def read_p0_version(self) -> None:
         deadline = rosys.time() + 5.0
         while rosys.time() < deadline:
-            if response := await self.robot_brain.send_and_await('p0.info()', 'p0: lizard version:', timeout=1):
+            if response := await self.robot_brain.send_and_await('p0.version()', 'p0:', timeout=1):
                 self.p0_version = response.split()[-1].split('-')[0][1:]
                 return
             self.log.warning('Could not read Lizard version from P0')
