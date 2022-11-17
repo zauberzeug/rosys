@@ -32,6 +32,8 @@ class RobotBrain:
         self.clock_offset: Optional[float] = None
         self.hardware_time: Optional[float] = None
 
+        rosys.on_startup(self.enable_esp)
+
     def developer_ui(self) -> None:
         ui.label().bind_text_from(self.lizard_firmware, 'core_version', backward=lambda x: f'Core: {x or "?"}')
         ui.label().bind_text_from(self.lizard_firmware, 'p0_version', backward=lambda x: f'P0: {x or "?"}')
