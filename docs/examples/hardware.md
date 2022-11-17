@@ -39,5 +39,5 @@ Furthermore, with `robot_brain.developer_ui()` you can add UI elements to config
 The Lizard configuration for a differential-steering controlled robot with an [ODrive](https://odriverobotics.com/) might look as follows:
 
 ```
-{!src/example_lizard.txt !}
+{!src/example_hardware_startup.liz !}
 ```

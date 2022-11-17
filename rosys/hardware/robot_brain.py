@@ -18,7 +18,7 @@ class RobotBrain:
     Besides providing some basic methods like configuring or restarting the microcontroller, it augments and verifies checksums for each message.
     '''
 
-    def __init__(self, communication: Communication, lizard_startup: str = 'lizard.txt') -> None:
+    def __init__(self, communication: Communication, lizard_startup: str = 'startup.liz') -> None:
         self.LINE_RECEIVED = Event()
         '''a line has been received from the microcontroller (argument: line as string)'''
 
