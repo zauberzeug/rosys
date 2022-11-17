@@ -70,6 +70,7 @@ class LizardFirmware:
         zip.write_bytes(requests.get(url).content)
         subprocess.run(['unzip', '-o', zip], cwd=self.PATH)
         zip.unlink()
+        self.read_local_version()
 
     async def flash_core(self) -> None:
         assert isinstance(self.robot_brain.communication, SerialCommunication)
@@ -79,16 +80,19 @@ class LizardFirmware:
         output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=None, working_dir=self.PATH)
         self.log.info(f'flashed Lizard:\n {output}')
         self.robot_brain.communication.connect()
+        await self.read_core_version()
         rosys.notify('Finished.')
 
     async def flash_p0(self) -> None:
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
         await self.robot_brain.send('p0.flash()')
         start = rosys.time()
-        while rosys.time() < start + 60.0:
-            if self.robot_brain.hardware_time > start + 3.0:
-                await self.robot_brain.restart()
-                rosys.notify('Finished.')
+        while self.robot_brain.hardware_time < start + 3.0:
+            if rosys.time() > start + 60.0:
+                rosys.notify('Failed.')
                 return
             await rosys.sleep(0.1)
-        rosys.notify('Failed.')
+        await self.robot_brain.restart()
+        await rosys.sleep(3.0)
+        await self.read_p0_version()
+        rosys.notify('Finished.')
