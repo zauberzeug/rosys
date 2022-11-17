@@ -1,6 +1,7 @@
 from nicegui import ui
 from nicegui.elements.chart import Chart
-from rosys import config
+
+from ...rosys import config
 
 
 class LizardStats(Chart):
