@@ -152,7 +152,7 @@ class Schedule:
 
     def set_location(self, location: tuple[float, float]) -> None:
         self.location = location
-        self.update_ui()
+        self.invalidate()
 
     def update_sun_limits(self) -> None:
         if self.location:
@@ -197,5 +197,4 @@ class Schedule:
             self.half_hours[self.time_to_index(weekday, hour, 30)] = new_value
         else:
             self.half_hours[self.time_to_index(weekday, hour, minute)] = new_value
-        self.needs_backup = True
-        self.update_ui()
+        self.invalidate()
