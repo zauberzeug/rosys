@@ -111,7 +111,7 @@ class UsbCameraProviderHardware(CameraProvider):
                 if device.capture is None:
                     await self.activate(uid)
                 if device.capture is None:
-                    self.log.warn(f'unexpected missing capture handle for {uid}')
+                    self.log.warning(f'unexpected missing capture handle for {uid}')
                     continue
                 image = await rosys.run.io_bound(self.capture_image, uid)
                 if image is None:
