@@ -35,25 +35,57 @@ class RobotBrain:
         rosys.on_startup(self.enable_esp)
 
     def developer_ui(self) -> None:
-        ui.label().bind_text_from(self.lizard_firmware, 'core_version', backward=lambda x: f'Core: {x or "?"}')
-        ui.label().bind_text_from(self.lizard_firmware, 'p0_version', backward=lambda x: f'P0: {x or "?"}')
-        ui.label().bind_text_from(self.lizard_firmware, 'local_version', backward=lambda x: f'Local: {x or "?"}')
-        ui.label().bind_text_from(self.lizard_firmware, 'online_version', backward=lambda x: f'Online: {x or "?"}')
+        async def online_update() -> None:
+            await self.lizard_firmware.download()
+            await self.lizard_firmware.flash_core()
+            await self.lizard_firmware.flash_p0()
+            await self.configure()
 
-        ui.button('Refresh', on_click=self.lizard_firmware.read_all).props('outline') \
-            .tooltip('Read installed and available versions')
-        ui.button('Download', on_click=self.lizard_firmware.download).props('outline') \
-            .tooltip('Download the latest Lizard firmware from GitHub')
-        ui.button('Flash Core', on_click=self.lizard_firmware.flash_core).props('outline') \
-            .tooltip('Flash the downloaded Lizard firmware to the Core microcontroller')
-        ui.button('Flash P0', on_click=self.lizard_firmware.flash_p0).props('outline') \
-            .tooltip('Flash the downloaded Lizard firmware to the P0 microcontroller')
-        ui.button('Enable', on_click=self.enable_esp).props('outline') \
-            .tooltip('Enable the microcontroller module (will later be done automatically)')
-        ui.button('Configure', on_click=self.configure).props('outline') \
-            .tooltip('Configure the microcontroller with the Lizard startup file')
-        ui.button('Restart', on_click=self.restart).props('outline') \
-            .tooltip('Restart the microcontroller')
+        async def local_update() -> None:
+            await self.lizard_firmware.flash_core()
+            await self.lizard_firmware.flash_p0()
+            await self.configure()
+
+        with ui.row().classes('items-center'):
+            ui.label().bind_text_from(self.lizard_firmware, 'online_version', backward=lambda x: f'Online: {x or "?"}')
+            online_update_button = ui.button(on_click=online_update).props('icon=file_download flat round dense') \
+                .tooltip('Download and flash online version to Core and P0 microcontrollers')
+        with ui.row().classes('items-center'):
+            ui.label().bind_text_from(self.lizard_firmware, 'local_version', backward=lambda x: f'Local: {x or "?"}')
+            local_update_button = ui.button(on_click=local_update).props('icon=file_download flat round dense') \
+                .tooltip('Flash local version to Core and P0 microcontrollers')
+        with ui.row():
+            ui.label().bind_text_from(self.lizard_firmware, 'core_version', backward=lambda x: f'Core: {x or "?"}')
+        with ui.row():
+            ui.label().bind_text_from(self.lizard_firmware, 'p0_version', backward=lambda x: f'P0: {x or "?"}')
+
+        def update_visibility() -> None:
+            online_update_button.visible = \
+                self.lizard_firmware.online_version != self.lizard_firmware.core_version or \
+                self.lizard_firmware.online_version != self.lizard_firmware.p0_version
+            local_update_button.visible = \
+                self.lizard_firmware.local_version != self.lizard_firmware.core_version or \
+                self.lizard_firmware.local_version != self.lizard_firmware.p0_version
+        ui.timer(1.0, update_visibility)
+
+        with ui.row().classes('items-center'):
+            ui.button('Refresh', on_click=self.lizard_firmware.read_all).props('outline') \
+                .tooltip('Read installed and available versions')
+            with ui.row():
+                with ui.menu() as menu:
+                    ui.menu_item('Download', on_click=self.lizard_firmware.download) \
+                        .tooltip('Download the latest Lizard firmware from GitHub')
+                    ui.menu_item('Flash Core', on_click=self.lizard_firmware.flash_core) \
+                        .tooltip('Flash the downloaded Lizard firmware to the Core microcontroller')
+                    ui.menu_item('Flash P0', on_click=self.lizard_firmware.flash_p0) \
+                        .tooltip('Flash the downloaded Lizard firmware to the P0 microcontroller')
+                    ui.menu_item('Enable', on_click=self.enable_esp) \
+                        .tooltip('Enable the microcontroller module (will later be done automatically)')
+                    ui.menu_item('Configure', on_click=self.configure) \
+                        .tooltip('Configure the microcontroller with the Lizard startup file')
+                    ui.menu_item('Restart', on_click=self.restart) \
+                        .tooltip('Restart the microcontroller')
+                ui.button(on_click=menu.open).props('icon=more_vert flat round')
 
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
 
