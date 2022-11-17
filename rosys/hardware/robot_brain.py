@@ -37,7 +37,7 @@ class RobotBrain:
     def developer_ui(self) -> None:
         ui.label().bind_text_from(self.lizard_firmware, 'core_version', backward=lambda x: f'Core: {x or "?"}')
         ui.label().bind_text_from(self.lizard_firmware, 'p0_version', backward=lambda x: f'P0: {x or "?"}')
-        ui.label().bind_text_from(self.lizard_firmware, 'offline_version', backward=lambda x: f'Offline: {x or "?"}')
+        ui.label().bind_text_from(self.lizard_firmware, 'local_version', backward=lambda x: f'Local: {x or "?"}')
         ui.label().bind_text_from(self.lizard_firmware, 'online_version', backward=lambda x: f'Online: {x or "?"}')
 
         ui.button('Refresh', on_click=self.lizard_firmware.read_all).props('outline') \

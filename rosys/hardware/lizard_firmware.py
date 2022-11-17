@@ -25,12 +25,12 @@ class LizardFirmware:
 
         self.core_version: Optional[str] = None
         self.p0_version: Optional[str] = None
-        self.offline_version: Optional[str] = None
+        self.local_version: Optional[str] = None
         self.online_version: Optional[str] = None
 
     async def read_all(self) -> None:
         await self.read_online_version()
-        self.read_offline_version()
+        self.read_local_version()
         await self.read_core_version()
         await self.read_p0_version()
 
@@ -41,11 +41,11 @@ class LizardFirmware:
         except KeyError:
             rosys.notify(response.get('message', 'Could not access online version'))
 
-    def read_offline_version(self) -> None:
+    def read_local_version(self) -> None:
         bin = self.PATH / 'build' / 'lizard.bin'
         with open(bin, 'rb') as f:
             head = f.read(150).decode('utf-8', 'backslashreplace')
-        self.offline_version = head.split(' ')[3].replace('\x00', '').split('lizard')[0].removeprefix('v')
+        self.local_version = head.split(' ')[3].replace('\x00', '').split('lizard')[0].removeprefix('v')
 
     async def read_core_version(self) -> None:
         deadline = rosys.time() + 5.0
@@ -73,7 +73,7 @@ class LizardFirmware:
 
     async def flash_core(self) -> None:
         assert isinstance(self.robot_brain.communication, SerialCommunication)
-        rosys.notify(f'Flashing Lizard firmware {self.offline_version} to Core...')
+        rosys.notify(f'Flashing Lizard firmware {self.local_version} to Core...')
         self.robot_brain.communication.disconnect()
         await rosys.sleep(0.3)
         output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=None, working_dir=self.PATH)
