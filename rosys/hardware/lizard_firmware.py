@@ -28,11 +28,16 @@ class LizardFirmware:
         self.local_version: Optional[str] = None
         self.online_version: Optional[str] = None
 
+        self.local_checksum: Optional[str] = None
+        self.core_checksum: Optional[str] = None
+
     async def read_all(self) -> None:
         await self.read_online_version()
         self.read_local_version()
         await self.read_core_version()
         await self.read_p0_version()
+        self.read_local_checksum()
+        await self.read_core_checksum()
 
     async def read_online_version(self) -> None:
         response: dict[str, str] = (await rosys.run.io_bound(requests.get, self.GITHUB_URL)).json()
@@ -62,6 +67,19 @@ class LizardFirmware:
                 self.p0_version = response.split()[-1].split('-')[0][1:]
                 return
             self.log.warning('Could not read Lizard version from P0')
+
+    def read_local_checksum(self) -> None:
+        startup = self.robot_brain.lizard_startup.read_text()
+        checksum = sum(ord(c) for c in startup) % 0x10000
+        self.local_checksum = f'{checksum:04x}'
+
+    async def read_core_checksum(self) -> None:
+        deadline = rosys.time() + 5.0
+        while rosys.time() < deadline:
+            if response := await self.robot_brain.send_and_await('core.startup_checksum()', 'checksum:', timeout=1):
+                self.core_checksum = response.split()[-1]
+                return
+            self.log.warning('Could not read startup checksum from Core')
 
     @awaitable
     def download(self) -> None:
