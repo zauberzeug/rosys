@@ -34,6 +34,9 @@ RUN CURL="curl -s https://api.github.com/repos/zauberzeug/lizard/releases" && \
     rm *zip && \
     ls -lha
 
+# for Lizard monitor 
+RUN pip install --no-cache prompt-toolkit
+
 WORKDIR /rosys
 COPY LICENSE README.md rosys.code-workspace ./
 ADD ./rosys /rosys/rosys
