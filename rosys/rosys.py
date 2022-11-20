@@ -47,7 +47,6 @@ _start_time: float = 0.0 if is_test else pytime.time()
 _time = _start_time
 _last_time_request: float = _start_time
 _exception: Optional[Exception] = None  # NOTE: used for tests
-speed: float = 1.0
 
 notifications: list[Notification] = []
 repeat_handlers: list[tuple[Callable, float]] = []
@@ -79,7 +78,7 @@ def time() -> float:
         return _time
     with time_lock:
         now = pytime.time()
-        _time += (now - _last_time_request) * speed
+        _time += (now - _last_time_request) * config.simulation_speed
         _last_time_request = now
         return _time
 
@@ -100,7 +99,7 @@ async def sleep(seconds: float) -> None:
         while time() <= sleep_end_time:
             await asyncio.sleep(0)
     else:
-        scaled_seconds = seconds / speed
+        scaled_seconds = seconds / config.simulation_speed
         count = int(np.ceil(scaled_seconds))
         if count > 0:
             for _ in range(count):
