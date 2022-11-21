@@ -10,7 +10,7 @@ class Config:
     simulation_speed: float = 1.0
     needs_backup: bool = False
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         rosys.persistence.register(self)
 
     def backup(self) -> dict[str, Any]:
