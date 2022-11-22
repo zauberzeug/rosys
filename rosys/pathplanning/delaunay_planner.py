@@ -165,7 +165,7 @@ class DelaunayPlanner:
                     path.append(PathSegment(spline=spline, backward=backward))
                     last_g, last_p = next_g, next_p
             except nx.exception.NetworkXNoPath:
-                pass
+                continue
             path.append(exit.segment)
 
             while True:
