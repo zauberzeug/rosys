@@ -252,9 +252,11 @@ def _find_grid_passages(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPos
     group_distances = [g.point.distance(pose) for g in pose_groups]
     group_indices = np.argsort(group_distances)
     results: list[Passage] = []
-    for backward in [False, True]:
-        for g, group in zip(group_indices, np.array(pose_groups)[group_indices][:3]):
-            for p, group_pose in enumerate(group.poses):
+    for i, (g, group) in enumerate(zip(group_indices, np.array(pose_groups)[group_indices][:10])):
+        if i >= 3 and results:
+            break
+        for p, group_pose in enumerate(group.poses):
+            for backward in [False, True]:
                 poses = (pose, group_pose) if entering else (group_pose, pose)
                 spline = Spline.from_poses(*poses, backward=backward)
                 if _is_healthy(spline) and not obstacle_map.test_spline(spline, backward):

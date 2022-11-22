@@ -10,6 +10,7 @@ import icecream
 import numpy as np
 import pylab as pl
 from nicegui import ui
+
 from rosys.geometry import Point, Pose
 from rosys.pathplanning import plot_tools as pt
 from rosys.pathplanning.area import Area
