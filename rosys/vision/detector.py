@@ -1,4 +1,5 @@
 import abc
+import logging
 from typing import Optional
 
 from aenum import Enum, auto
@@ -30,6 +31,7 @@ class Detector(abc.ABC):
     def __init__(self) -> None:
         self.NEW_DETECTIONS = Event()
         '''detection on an image is completed (argument: image)'''
+        self.log = logging.getLogger('rosys.detector')
 
     @abc.abstractmethod
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Optional[Detections]:

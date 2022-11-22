@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from datetime import datetime, timedelta
 from typing import Optional
 
@@ -21,8 +20,6 @@ class DetectorHardware(Detector):
 
     def __init__(self, *, port: int = 8004) -> None:
         super().__init__()
-
-        self.log = logging.getLogger('rosys.detector')
 
         self.sio = socketio.AsyncClient()
         self.is_detecting: bool = False
