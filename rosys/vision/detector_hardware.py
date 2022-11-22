@@ -90,6 +90,7 @@ class DetectorHardware(Detector):
             self.uploads.priority_queue.clear()
 
     async def upload(self, image: Image) -> None:
+        await super().upload(image)
         try:
             self.log.info(f'uploading to port {self.port}')
             await self.sio.emit('upload', {'image': image.data, 'mac': image.camera_id})

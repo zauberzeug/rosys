@@ -37,6 +37,10 @@ class Detector(abc.ABC):
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Optional[Detections]:
         return
 
+    @abc.abstractmethod
+    async def upload(self, image: Image) -> None:
+        pass
+
     @property
     def uploads(self) -> Uploads:
         return

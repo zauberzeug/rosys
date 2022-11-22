@@ -63,6 +63,10 @@ class DetectorSimulation(Detector):
         self.NEW_DETECTIONS.emit(image)
         return image.detections
 
+    async def upload(self, image: Image) -> None:
+        self.log.info(f'Uploading {image.id}')
+        await super().upload(image)
+
     def update_simulated_objects(self, image: Image) -> None:
         pass
 
