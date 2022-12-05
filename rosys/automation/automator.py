@@ -20,7 +20,7 @@ class Automator:
 
     _default_automation_: If provided, it allows the automator to start a new automation without passing an automation
     (e.g. via an "Play"-button like offered by the [automation controls](https://rosys.io/reference/rosys/automation/#rosys.automation.automation_controls)). 
-    The passed function should return a new coroutine on every call.
+    The passed function should return a new coroutine on every call (see [Play-pause-stop](https://rosys.io/examples/play-pause-stop/) example).
     '''
 
     def __init__(self,

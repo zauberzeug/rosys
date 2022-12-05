@@ -5,7 +5,10 @@ from .automator import Automator
 
 
 class AutomationControls:
-    '''This UI element contains start/stop/pause/resume buttons for controlling a given automator.'''
+    '''This UI element contains start/stop/pause/resume buttons for controlling a given automator.
+
+    See [Play-pause-stop](https://rosys.io/examples/play-pause-stop/) for a simple example of the automation controls.
+    '''
 
     def __init__(self, automator: Automator) -> None:
         play_button = ui.button(on_click=lambda: automator.start()) \
