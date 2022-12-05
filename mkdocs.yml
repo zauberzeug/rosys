@@ -8,6 +8,7 @@ nav:
       - examples/steering.md # NOTE: shown when clicking on "Examples" folder
       - examples/steering.md
       - examples/click-and-drive.md
+      - examples/play-pause-stop.md
       - examples/navigation.md
       - examples/hardware.md
       - examples/simulation_speed.md
