@@ -30,6 +30,8 @@ class AutomationControls:
         ui.timer(config.ui_update_interval, refresh)
 
     def _disable(self, button: ui.button, should_disable: bool) -> None:
-        if getattr(button.view, 'disable', False) != should_disable:
-            button.view.disable = should_disable
-            button.update()
+        if should_disable:
+            button.props('disable')
+        else:
+            button.props(remove='disable')
+        button.update()
