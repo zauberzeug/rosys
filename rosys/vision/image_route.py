@@ -3,10 +3,8 @@ from typing import TYPE_CHECKING, Optional
 
 import cv2
 import numpy as np
-from nicegui import ui
-from starlette.requests import Request
-from starlette.responses import Response
-from starlette.routing import Route
+from fastapi import Request, Response
+from nicegui import app
 
 from .. import run
 from .camera import Camera
@@ -19,27 +17,24 @@ log = logging.getLogger('rosys.image_route')
 
 
 def create_image_route(camera_provider: 'CameraProvider') -> None:
-    async def get_image(request: Request, **_) -> Response:
-        return await _get_image(camera_provider.cameras, request)
-    ui.add_route(Route('/' + camera_provider.base_path + '/{camera_id}/{timestamp}', get_image))
-    ui.add_route(Route('/' + camera_provider.base_path + '/placeholder', _get_placeholder))
+    async def get_image(camera_id: str, timestamp: str, shrink_factor=1) -> Response:
+        return await _get_image(camera_provider.cameras, camera_id, timestamp, shrink_factor)
+    app.add_api_route('/' + camera_provider.base_path + '/{camera_id}/{timestamp}', get_image)
+    app.add_api_route('/' + camera_provider.base_path + '/placeholder', _get_placeholder)
 
 
-def _get_placeholder(_) -> Response:
+def _get_placeholder() -> Response:
     return Response(content=Image.create_placeholder('no image').data, media_type='image/jpeg')
 
 
-async def _get_image(cameras: dict[str, Camera], request: Request) -> None:
+async def _get_image(cameras: dict[str, Camera], camera_id: str, timestamp: str, shrink_factor=1) -> None:
     try:
-        camera = cameras.get(request.path_params['camera_id'])
+        camera = cameras.get(camera_id)
         if not camera:
             return Response(content='Camera not found', status_code=404)
-
-        shrink_factor = int(request.query_params.get('shrink', 1))
-        jpeg = await _try_get_jpeg(camera, request.path_params['timestamp'], shrink_factor)
+        jpeg = await _try_get_jpeg(camera, timestamp, shrink_factor)
         if not jpeg:
             return Response(content='Image not found', status_code=404)
-
         return Response(content=jpeg, headers={'cache-control': 'max-age=7776000'}, media_type='image/jpeg')
     except:
         log.exception('could not get image')
