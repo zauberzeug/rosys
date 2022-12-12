@@ -34,4 +34,3 @@ class AutomationControls:
             button.props('disable')
         else:
             button.props(remove='disable')
-        button.update()
