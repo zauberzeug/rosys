@@ -9,7 +9,7 @@ from starlette import responses
 class VideosPage:
 
     def __init__(self) -> None:
-        @ui.page('/videos', 'Videos')
+        @ui.page('/videos', title='Videos')
         def page():
             self.list = ui.column()
             ui.timer(5, self.update_list)

@@ -181,14 +181,9 @@ class Schedule:
         for d in range(7):
             for h in range(24):
                 buttons: tuple[ui.button] = self.buttons[d * 24 + h]
-                styles = [
-                    f'background-color: {color(d, h, [0, 30, 60])} !important',
-                    f'background-color: {color(d, h, [0, 30])} !important; height: 1em; width: 0.8em',
-                    f'background-color: {color(d, h, [30, 60])} !important; height: 1em; width: 0.8em',
-                ]
-                for i in range(3):
-                    if buttons[i].view.style.lstrip(';') != styles[i]:
-                        buttons[i].style(styles[i])
+                buttons[0].style(f'background-color: {color(d, h, [0, 30, 60])} !important')
+                buttons[1].style(f'background-color: {color(d, h, [0, 30])} !important; height: 1em; width: 0.8em')
+                buttons[2].style(f'background-color: {color(d, h, [30, 60])} !important; height: 1em; width: 0.8em')
 
     def _toggle(self, weekday: int, hour: int, minute: Optional[int] = None) -> None:
         new_value = not self.is_planned(weekday, hour, minute)

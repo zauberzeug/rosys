@@ -10,11 +10,12 @@ class PathObject(Object3D):
         super().__init__('group')
 
     def update(self, path: list[PathSegment], height: float = 0) -> None:
-        [obj.delete() for obj in list(self.view.objects.values()) if obj.name == 'path']
-        for segment in path:
-            Curve(
-                [segment.spline.start.x, segment.spline.start.y, height],
-                [segment.spline.control1.x, segment.spline.control1.y, height],
-                [segment.spline.control2.x, segment.spline.control2.y, height],
-                [segment.spline.end.x, segment.spline.end.y, height],
-            ).material('#ff8800').with_name('path')
+        [obj.delete() for obj in list(self.scene.objects.values()) if obj.name == 'path']
+        with self.scene:
+            for segment in path:
+                Curve(
+                    [segment.spline.start.x, segment.spline.start.y, height],
+                    [segment.spline.control1.x, segment.spline.control1.y, height],
+                    [segment.spline.control2.x, segment.spline.control2.y, height],
+                    [segment.spline.end.x, segment.spline.end.y, height],
+                ).material('#ff8800').with_name('path')
