@@ -14,7 +14,7 @@ class Joystick(NiceGuiJoystick):
         self.steerer.start()
 
     def handle_move(self, msg) -> None:
-        self.steerer.update(msg.data.vector.x, msg.data.vector.y)
+        self.steerer.update(msg.x, msg.y)
 
     def handle_end(self, _) -> None:
         self.steerer.stop()
