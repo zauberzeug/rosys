@@ -435,7 +435,7 @@ name = "graphviz"
 version = "0.20.1"
 description = "Simple Python interface for Graphviz"
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.7"
 
 [package.extras]
@@ -511,7 +511,7 @@ name = "importlib-resources"
 version = "5.10.1"
 description = "Read resources from Python packages"
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.7"
 
 [package.extras]
@@ -567,7 +567,7 @@ name = "line-profiler"
 version = "4.0.2"
 description = "Line-by-line profiler"
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.6"
 
 [package.extras]
@@ -733,7 +733,7 @@ name = "objgraph"
 version = "3.5.0"
 description = "Draws Python object reference graphs with graphviz"
 category = "main"
-optional = true
+optional = false
 python-versions = "*"
 
 [package.dependencies]
@@ -885,7 +885,7 @@ name = "pyloot"
 version = "0.1.0"
 description = "Multiprocessing compatible memory leak debugger inspired by dozer/dowser"
 category = "main"
-optional = true
+optional = false
 python-versions = ">=3.7"
 
 [package.dependencies]
@@ -1342,7 +1342,7 @@ name = "webob"
 version = "1.8.7"
 description = "WSGI request and response object"
 category = "main"
-optional = true
+optional = false
 python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*"
 
 [package.extras]
@@ -1362,7 +1362,7 @@ name = "yappi"
 version = "1.4.0"
 description = "Yet Another Python Profiler"
 category = "main"
-optional = true
+optional = false
 python-versions = "*"
 
 [package.extras]
@@ -1380,13 +1380,10 @@ python-versions = ">=3.7"
 idna = ">=2.0"
 multidict = ">=4.0"
 
-[extras]
-profiling = ["yappi", "line-profiler", "pyloot", "objgraph"]
-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.10, <3.12"
-content-hash = "1086478280ad2be7da50b7f21de5e5a9fa07121859e2ffe46ac08c89165b83d3"
+content-hash = "f589fc1dd172ec21e34036c0dee17fd75e4d4e7042ba85d0adccbf322e84d626"
 
 [metadata.files]
 aenum = [

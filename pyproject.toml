@@ -40,7 +40,7 @@ suntime = "^1.2.5"
 line-profiler = "^4.0.2"
 yappi = "^1.4"
 pyloot = "^0.1.0"
-objgraph "^3.5.0"
+objgraph = "^3.5.0"
 
 [tool.poetry.dev-dependencies]
 autopep8 = "^1.5.5"
