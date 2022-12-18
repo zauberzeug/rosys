@@ -37,13 +37,10 @@ uvloop = "^0.17.0"
 dataclasses-json = "^0.5.7"
 executing = "^1.0.0"
 suntime = "^1.2.5"
-line-profiler = {version = "^4.0.2", optional = true}
-yappi = {version = "^1.4", optional = true}
-pyloot = {version = "^0.1.0", optional = true}
-objgraph = {version = "^3.5.0", optional = true}
-
-[tool.poetry.extras]
-profiling = ["yappi", "line-profiler", "pyloot", "objgraph"]
+line-profiler = "^4.0.2"
+yappi = "^1.4"
+pyloot = "^0.1.0"
+objgraph "^3.5.0"
 
 [tool.poetry.dev-dependencies]
 autopep8 = "^1.5.5"
