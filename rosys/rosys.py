@@ -12,10 +12,8 @@ from typing import Awaitable, Callable, Optional
 
 import numpy as np
 import psutil
-from nicegui import auto_context
 from nicegui import globals as nicegui_globals
 from nicegui import ui
-from nicegui.page import Page
 
 from . import event, persistence, run
 from .config import Config
@@ -60,9 +58,8 @@ def notify(message: str) -> None:
     notifications.append(Notification(time=time, message=message))
     NEW_NOTIFICATION.emit(message)
     # NOTE show notifications on all pages
-    for page in Page.instances.values():
-        assert isinstance(page, Page)
-        with auto_context.Context(page.view):
+    for client in nicegui_globals.clients.values():
+        with client:
             try:
                 ui.notify(message)
             except:

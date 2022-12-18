@@ -37,7 +37,7 @@ class CameraObjects(Group):
     def find_objects(self, type: str) -> dict[str, Object3D]:
         return {
             (obj.name or '').split('_', 1)[1]: obj
-            for obj in self.view.objects.values()
+            for obj in self.scene.objects.values()
             if (obj.name or '').split('_', 1)[0] == type
         }
 
@@ -100,6 +100,6 @@ class CameraObjects(Group):
             z += 0.001
             texture.move(z=z)
             if texture.args[0] != url:
-                await texture.set_url(url)
+                texture.set_url(url)
             if not await run.cpu_bound(CameraProjector.allclose, texture.args[1], coordinates):
-                await texture.set_coordinates(coordinates)
+                texture.set_coordinates(coordinates)

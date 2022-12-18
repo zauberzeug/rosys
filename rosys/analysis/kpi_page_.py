@@ -34,6 +34,7 @@ class KpiPage:
                 self.positive_chart = ui.chart({
                     'title': {'text': positive_title},
                     'chart': {'type': 'column'},
+                    'xAxis': {},
                     'yAxis': {'title': False},
                     'credits': False,
                     'exporting': False,
@@ -42,6 +43,7 @@ class KpiPage:
                     'title': {'text': negative_title},
                     'chart': {'type': 'column'},
                     'plotOptions': {'series': {'stacking': 'normal'}},
+                    'xAxis': {},
                     'yAxis': {'title': False},
                     'colors': [to_hex(hsv_to_rgb((0, 1, i / 100.0))) for i in reversed(range(20, 120, 20))],
                     'credits': False,
@@ -65,14 +67,14 @@ class KpiPage:
 
         keys = set(key for day in time_buckets for key in day.incidents if key in self.positives)
         data = {self.positives[key]: [day.incidents.get(key, 0) for day in time_buckets] for key in keys}
-        self.positive_chart.options.xAxis.categories = [self._label(b) for b in time_buckets]
-        self.positive_chart.options.series = [{'name': k, 'data': v} for k, v in sorted(data.items())]
+        self.positive_chart.options['xAxis']['categories'] = [self._label(b) for b in time_buckets]
+        self.positive_chart.options['series'] = [{'name': k, 'data': v} for k, v in sorted(data.items())]
         self.positive_chart.update()
 
         keys = set(key for day in time_buckets for key in day.incidents if key in self.negatives)
         data = {self.negatives[key]: [day.incidents.get(key, 0) for day in time_buckets] for key in keys}
-        self.negative_chart.options.xAxis.categories = [self._label(b) for b in time_buckets]
-        self.negative_chart.options.series = [{'name': k, 'data': v} for k, v in sorted(data.items())]
+        self.negative_chart.options['xAxis']['categories'] = [self._label(b) for b in time_buckets]
+        self.negative_chart.options['series'] = [{'name': k, 'data': v} for k, v in sorted(data.items())]
         self.negative_chart.update()
 
     @staticmethod

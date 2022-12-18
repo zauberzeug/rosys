@@ -23,7 +23,7 @@ RUN poetry config experimental.new-installer false
 
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=true
-RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install -vvv --no-root ; else poetry install -vvv --no-root --no-dev ; fi"
+RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install  --all-extras -vvv --no-root ; else poetry install --all-extras -vvv --no-root --no-dev ; fi"
 
 # Fetch Lizard firmware + scripts for hardware control
 WORKDIR /root/.lizard

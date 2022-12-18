@@ -8,7 +8,7 @@ from typing import Any, Callable, Optional, Protocol, TypeVar
 import numpy as np
 from dataclasses_json import Exclude, config
 from dataclasses_json.core import _asdict, _decode_dataclass
-from nicegui import ui
+from nicegui import app, ui
 from nicegui.events import UploadEventArguments
 from starlette.responses import FileResponse
 
@@ -105,7 +105,7 @@ def restore() -> None:
 
 
 def export_button(title: str = 'Export', route: str = '/export', tmp_filepath: str = '/tmp/export.json') -> ui.button:
-    @ui.get(route)
+    @app.get(route)
     def get_export() -> FileResponse:
         with open(tmp_filepath, 'w') as f:
             json.dump({name: module.backup() for name, module in modules.items()}, f, indent=4)
@@ -123,5 +123,5 @@ def import_button(title: str = 'Import', after_import: Optional[Callable] = None
         dialog.close()
         await invoke(after_import)
     with ui.dialog() as dialog, ui.card():
-        ui.upload(on_upload=restore_from_file, upload_button_text='Import')
+        ui.upload(on_upload=restore_from_file)
     return ui.button(title, on_click=dialog.open)

@@ -2,14 +2,14 @@ import os
 from glob import glob
 from pathlib import Path
 
-from nicegui import ui
+from nicegui import app, ui
 from starlette import responses
 
 
 class VideosPage:
 
     def __init__(self) -> None:
-        @ui.page('/videos', 'Videos')
+        @ui.page('/videos', title='Videos')
         def page():
             self.list = ui.column()
             ui.timer(5, self.update_list)
@@ -23,7 +23,7 @@ class VideosPage:
                     ui.html(self.create_video_tag(name))
                 ui.link(name.replace('_', ' ').replace('-', ':'), page)
 
-    @ui.get('/timelapse/{name}')
+    @app.get('/timelapse/{name}')
     def produce_plain_response(name: str) -> responses.FileResponse:
         return responses.FileResponse(os.path.expanduser(f'~/.rosys/timelapse/videos/{name}.mp4'))
 
