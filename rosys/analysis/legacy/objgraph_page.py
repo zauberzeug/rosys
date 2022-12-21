@@ -15,7 +15,8 @@ log = logging.getLogger('rosys.objgraph_page')
 class ObjgraphPage:
 
     def __init__(self) -> None:
-        with ui.page('/objgraph'):
+        @ui.page('/objgraph')
+        def objgraph_page() -> None:
             t = ui.timer(10, self.refresh_stats, active=False)
             ui.switch('track objects (every 10 s)').bind_value_to(t, 'active')
             with ui.column():
@@ -24,17 +25,22 @@ class ObjgraphPage:
                 self.overall = ui.label()
                 self.counts = ui.markdown()
 
-            self.class_search = ui.input('Search Class', on_change=self.update_graph)
-            self.class_search_result = ui.image().props('contain').style('height:400px;width:100%')
+            self.class_search = ui.input('Search Class')
+            ui.button('Update Graph', on_click=self.update_graph)
+            with ui.row().classes('w-full h-128'):
+                self.class_search_result = ui.image()
             self.class_search_result.visible = False
             self.most_common_search_result = ui.image().props('contain').style('height:400px;width:100%')
             self.most_common_search_result.visible = False
 
-    def update_graph(self, _=None) -> None:
+    def update_graph(self) -> None:
         if not self.class_search.value:
             return
+        objects = objgraph.by_type(self.class_search.value)
+        if not objects:
+            return
         objgraph.show_chain(objgraph.find_backref_chain(
-            random.choice(objgraph.by_type(self.class_search.value)),  # just pick one of the found objects
+            random.choice(objects),  # just pick one of the found objects
             objgraph.is_proper_module),
             filename='/tmp/rosys_objgraph_class_search.png')
         self.load_image('/tmp/rosys_objgraph_class_search.png', self.class_search_result)
