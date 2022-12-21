@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 import objgraph
-from nicegui import ui
+from nicegui import globals, ui
 
 log = logging.getLogger('rosys.objgraph_page')
 
@@ -27,7 +27,7 @@ class ObjgraphPage:
                 self.overall = ui.label()
                 self.counts = ui.markdown()
 
-            self.class_search = ui.input('Search Class')
+            self.class_search = ui.input('Search Class', value='Client')
             ui.button('Update Graph', on_click=self.update_graph)
             self.class_search_result = ui.html()
             self.most_common_search_result = ui.html()
@@ -35,11 +35,12 @@ class ObjgraphPage:
     def update_graph(self) -> None:
         gc.collect()
         objects = objgraph.by_type(self.class_search.value)
-        if not objects:
-            return
-        chain = objgraph.find_backref_chain(random.choice(objects), objgraph.is_proper_module)
-        objgraph.show_chain(chain, filename=str(SVG_FILE))
-        self.class_search_result.content = SVG_FILE.read_text()
+        self.class_search_result.content = ''
+        for obj in objects:
+            chain = objgraph.find_backref_chain(obj, objgraph.is_proper_module)
+            objgraph.show_chain(chain, filename=str(SVG_FILE))
+            self.class_search_result.content += SVG_FILE.read_text()
+        print(globals.slot_stacks, flush=True)
 
     def get_objgraph_stats(self) -> tuple[str, str, str, Optional[Counter[str]]]:
         gc.collect()
