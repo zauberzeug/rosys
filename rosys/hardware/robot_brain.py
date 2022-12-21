@@ -38,13 +38,15 @@ class RobotBrain:
         async def online_update() -> None:
             await self.lizard_firmware.download()
             await self.lizard_firmware.flash_core()
-            await self.lizard_firmware.flash_p0()
+            await self.restart()
             await self.configure()
+            await self.lizard_firmware.flash_p0()
 
         async def local_update() -> None:
             await self.lizard_firmware.flash_core()
-            await self.lizard_firmware.flash_p0()
+            await self.restart()
             await self.configure()
+            await self.lizard_firmware.flash_p0()
 
         with ui.row().classes('items-center'):
             ui.label().bind_text_from(self.lizard_firmware, 'online_version', backward=lambda x: f'Online: {x or "?"}')
