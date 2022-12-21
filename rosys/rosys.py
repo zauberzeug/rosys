@@ -245,8 +245,8 @@ def reset_after_test() -> None:
     event.reset()
 
 
-gc.disable()  # NOTE disable automatic garbage collection to optimize performance
-on_repeat(_garbage_collection, 10 * 60)
+# gc.disable()  # NOTE disable automatic garbage collection to optimize performance
+# on_repeat(_garbage_collection, 10 * 60)
 on_repeat(_watch_emitted_events, 0.1)
 on_repeat(persistence.backup, 10)
 
