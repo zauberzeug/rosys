@@ -1,15 +1,17 @@
 import asyncio
-import base64
 import gc
 import logging
 import random
 from collections import Counter
+from pathlib import Path
 from typing import Optional
 
 import objgraph
 from nicegui import ui
 
 log = logging.getLogger('rosys.objgraph_page')
+
+SVG_FILE = Path('/tmp/rosys_objgraph.svg')
 
 
 class ObjgraphPage:
@@ -27,33 +29,17 @@ class ObjgraphPage:
 
             self.class_search = ui.input('Search Class')
             ui.button('Update Graph', on_click=self.update_graph)
-            with ui.row().classes('w-full h-128'):
-                self.class_search_result = ui.image()
-            self.class_search_result.visible = False
-            self.most_common_search_result = ui.image().props('contain').style('height:400px;width:100%')
-            self.most_common_search_result.visible = False
+            self.class_search_result = ui.html()
+            self.most_common_search_result = ui.html()
 
     def update_graph(self) -> None:
-        if not self.class_search.value:
-            return
+        gc.collect()
         objects = objgraph.by_type(self.class_search.value)
         if not objects:
             return
-        objgraph.show_chain(objgraph.find_backref_chain(
-            random.choice(objects),  # just pick one of the found objects
-            objgraph.is_proper_module),
-            filename='/tmp/rosys_objgraph_class_search.png')
-        self.load_image('/tmp/rosys_objgraph_class_search.png', self.class_search_result)
-
-    def load_image(self, file: str, img: ui.image) -> None:
-        try:
-            with open(file, 'rb') as f:
-                data = base64.b64encode(f.read()).decode('utf-8')
-            img.clear()
-            img.visible = True
-            img.set_source('data:image/png;base64,'+str(data))
-        except:
-            log.exception('could not load image ' + file)
+        chain = objgraph.find_backref_chain(random.choice(objects), objgraph.is_proper_module)
+        objgraph.show_chain(chain, filename=str(SVG_FILE))
+        self.class_search_result.content = SVG_FILE.read_text()
 
     def get_objgraph_stats(self) -> tuple[str, str, str, Optional[Counter[str]]]:
         gc.collect()
@@ -74,12 +60,8 @@ class ObjgraphPage:
             if counts:
                 most_common = counts.most_common()[0][0]
                 unique = {str(i): i for i in new}
-                # build chain for most common object
-                objgraph.show_chain(objgraph.find_backref_chain(
-                    unique[most_common],
-                    objgraph.is_proper_module),
-                    filename='/tmp/rosys_objgraph_most_common.png'
-                )
+                chain = objgraph.find_backref_chain(unique[most_common], objgraph.is_proper_module)
+                objgraph.show_chain(chain, filename=str(SVG_FILE))
         else:
             counts = None
 
@@ -94,7 +76,4 @@ class ObjgraphPage:
         self.overall.set_text(overall)
         highest = [f'{c[1]}: {c[0]}' for c in counts.most_common()[:5]]
         self.counts.set_content('new obj occurrence: ' + '\n'.join(highest))
-        if counts:
-            self.load_image('/tmp/rosys_objgraph_most_common.png', self.most_common_search_result)
-        else:
-            self.most_common_search_result.visible = False
+        self.most_common_search_result.content = SVG_FILE.read_text() if counts else ''
