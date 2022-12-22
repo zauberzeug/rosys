@@ -9,6 +9,10 @@ from typing import Optional
 import objgraph
 from nicegui import globals, ui
 
+import rosys
+
+from ...helpers import measure
+
 log = logging.getLogger('rosys.objgraph_page')
 
 SVG_FILE = Path('/tmp/rosys_objgraph.svg')
@@ -32,15 +36,25 @@ class ObjgraphPage:
             self.class_search_result = ui.html()
             self.most_common_search_result = ui.html()
 
-    def update_graph(self) -> None:
-        gc.collect()
-        objects = objgraph.by_type(self.class_search.value)
-        self.class_search_result.content = ''
-        for obj in objects:
-            chain = objgraph.find_backref_chain(obj, objgraph.is_proper_module)
-            objgraph.show_chain(chain, filename=str(SVG_FILE))
-            self.class_search_result.content += SVG_FILE.read_text()
-        print(globals.slot_stacks, flush=True)
+    async def update_graph(self) -> None:
+
+        @rosys.run.awaitable
+        def search() -> str:
+            gc.collect()
+            objects = objgraph.by_type(self.class_search.value)
+            content = ''
+            measure(reset=True)
+            for obj in objects:
+                chain = objgraph.find_backref_chain(obj, objgraph.is_proper_module)
+                measure()
+                objgraph.show_chain(chain, filename=str(SVG_FILE))
+                measure()
+                content += SVG_FILE.read_text()
+                measure()
+            print(globals.slot_stacks, flush=True)
+            return content
+
+        self.class_search_result.content = await search()
 
     def get_objgraph_stats(self) -> tuple[str, str, str, Optional[Counter[str]]]:
         gc.collect()
