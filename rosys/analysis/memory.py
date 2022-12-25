@@ -9,16 +9,21 @@ from starlette.middleware.base import BaseHTTPMiddleware
 class MemoryMiddleware(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
-        mem_before = self.get_process_memory()
+        mem_before = get_process_memory()
         response = await call_next(request)
         if response.headers.get('x-nicegui-content') == 'page':
-            mem_after = self.get_process_memory()
-            msg = f'GET {request.get("path")} increased memory by {bytes2human(mem_after - mem_before)}'
+            self.mem_before = get_process_memory()
+            mem_after = get_process_memory()
+            msg = f'GET {request.get("path")} increased memory by {bytes2human(mem_after - mem_before)} and is now {bytes2human(mem_after)}'
             print(msg, flush=True)
         return response
 
-    @staticmethod
-    def get_process_memory() -> int:
-        process = psutil.Process(os.getpid())
-        mem_info = process.memory_info()
-        return mem_info.rss
+
+def get_process_memory() -> int:
+    process = psutil.Process(os.getpid())
+    mem_info = process.memory_info()
+    return mem_info.rss
+
+
+def get_humanreadable_process_memory() -> int:
+    return bytes2human(get_process_memory())
