@@ -1,9 +1,15 @@
+import logging
 import os
 
 import psutil
 from fastapi import Request
+from nicegui import ui
 from psutil._common import bytes2human
 from starlette.middleware.base import BaseHTTPMiddleware
+
+import rosys
+
+log = logging.getLogger('rosys.analysis.memory')
 
 
 class MemoryMiddleware(BaseHTTPMiddleware):
@@ -27,3 +33,17 @@ def get_process_memory() -> int:
 
 def get_humanreadable_process_memory() -> int:
     return bytes2human(get_process_memory())
+
+
+def observe_memory_growth():
+    prev_memory = 0
+
+    def stats():
+        nonlocal prev_memory
+        log.info(
+            f'memory growth: {bytes2human(rosys.analysis.memory.get_process_memory() - prev_memory)},'
+            f'now its {rosys.analysis.memory.get_humanreadable_process_memory()}'
+        )
+        prev_memory = rosys.analysis.memory.get_process_memory()
+
+    ui.timer(10.0, stats)
