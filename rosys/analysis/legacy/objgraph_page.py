@@ -85,7 +85,7 @@ class ObjgraphPage:
     async def refresh_stats(self) -> None:
         loop = asyncio.get_running_loop()
         growth, leaking, overall, counts = await loop.run_in_executor(None, self.get_objgraph_stats)
-        await loop.run_in_executor(None, self.update_graph)
+        await self.update_graph()
         self.growth.set_text(growth)
         self.leaking.set_text(leaking)
         self.overall.set_text(overall)
