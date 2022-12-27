@@ -23,7 +23,7 @@ def kpi_page(kpi_logger: KpiLogger,
     def page():
         with ui.row().style('margin:1em'):
             ui.markdown(f'### {title}').style('margin:1.5em;margin-top:-1.2em;')
-            toggle = ui.toggle(timespans, value=list(timespans.keys())[0], on_change=lambda e: self.show(e.value))
+            toggle = ui.toggle(timespans, value=list(timespans.keys())[0], on_change=lambda e: show(e.value))
         with ui.row():
             positive_chart = ui.chart({
                 'title': {'text': positive_title},
