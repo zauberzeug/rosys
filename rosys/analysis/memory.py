@@ -10,7 +10,6 @@ from psutil._common import bytes2human
 from starlette.middleware.base import BaseHTTPMiddleware
 
 import rosys
-from rosys.helpers import measure
 
 log = logging.getLogger('rosys.analysis.memory')
 
@@ -47,6 +46,7 @@ def compare_tracemalloc_snapshots(snapshot, prev_snapshot):
 
 
 def observe_memory_growth(with_tracemalloc: bool = False) -> None:
+    log.info('Observing memory growth')
     prev_memory: int = 0
     prev_snapshot: tracemalloc.Snapshot = None
     if with_tracemalloc:
@@ -70,4 +70,4 @@ def observe_memory_growth(with_tracemalloc: bool = False) -> None:
                 await rosys.run.cpu_bound(compare_tracemalloc_snapshots, snapshot, prev_snapshot)
             prev_snapshot = snapshot
 
-    ui.timer(60.0, stats)
+    rosys.on_repeat(stats, 60.0)
