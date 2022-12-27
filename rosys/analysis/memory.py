@@ -57,12 +57,12 @@ def observe_memory_growth(with_tracemalloc: bool = False) -> None:
         nonlocal prev_snapshot
         gc.collect()
         growth = rosys.analysis.memory.get_process_memory() - prev_memory
-        log.info('==============')
+        # log.info('==============')
         log.info(
             f'memory growth: {bytes2human(growth)}, '
             f'now its {rosys.analysis.memory.get_humanreadable_process_memory()}'
         )
-        log.info('==============')
+        # log.info('==============')
         prev_memory = rosys.analysis.memory.get_process_memory()
         if with_tracemalloc:
             snapshot = tracemalloc.take_snapshot()
