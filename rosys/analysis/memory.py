@@ -1,5 +1,7 @@
+import gc
 import logging
 import os
+import tracemalloc
 
 import psutil
 from fastapi import Request
@@ -8,6 +10,7 @@ from psutil._common import bytes2human
 from starlette.middleware.base import BaseHTTPMiddleware
 
 import rosys
+from rosys.helpers import measure
 
 log = logging.getLogger('rosys.analysis.memory')
 
@@ -21,7 +24,7 @@ class MemoryMiddleware(BaseHTTPMiddleware):
             self.mem_before = get_process_memory()
             mem_after = get_process_memory()
             msg = f'GET {request.get("path")} increased memory by {bytes2human(mem_after - mem_before)} and is now {bytes2human(mem_after)}'
-            print(msg, flush=True)
+            log.info(msg)
         return response
 
 
@@ -35,15 +38,36 @@ def get_humanreadable_process_memory() -> int:
     return bytes2human(get_process_memory())
 
 
-def observe_memory_growth():
-    prev_memory = 0
+def compare_tracemalloc_snapshots(snapshot, prev_snapshot):
+    stats = snapshot.compare_to(prev_snapshot, 'traceback')
+    for stat in stats[:10]:
+        trace = '\n'.join(stat.traceback.format())
+        usage = f'{bytes2human(stat.size_diff)} new, {bytes2human(stat.size)} total; {stat.count_diff} new memory blocks, {stat.count} total'
+        log.info(trace + '\n' + usage)
 
-    def stats():
+
+def observe_memory_growth(with_tracemalloc: bool = False) -> None:
+    prev_memory: int = 0
+    prev_snapshot: tracemalloc.Snapshot = None
+    if with_tracemalloc:
+        tracemalloc.start(10)
+
+    async def stats() -> None:
         nonlocal prev_memory
+        nonlocal prev_snapshot
+        gc.collect()
+        growth = rosys.analysis.memory.get_process_memory() - prev_memory
+        log.info('==============')
         log.info(
-            f'memory growth: {bytes2human(rosys.analysis.memory.get_process_memory() - prev_memory)},'
+            f'memory growth: {bytes2human(growth)}, '
             f'now its {rosys.analysis.memory.get_humanreadable_process_memory()}'
         )
+        log.info('==============')
         prev_memory = rosys.analysis.memory.get_process_memory()
+        if with_tracemalloc:
+            snapshot = tracemalloc.take_snapshot()
+            if growth > 4 * 1e-6 and prev_snapshot is not None:
+                await rosys.run.cpu_bound(compare_tracemalloc_snapshots, snapshot, prev_snapshot)
+            prev_snapshot = snapshot
 
-    ui.timer(10.0, stats)
+    ui.timer(60.0, stats)
