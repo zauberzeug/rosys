@@ -21,7 +21,7 @@ async def handle_click(msg):
     for hit in msg.hits:
         if hit.object_id == 'ground':
             yaw = odometer.prediction.point.direction(hit.point)
-            goal = Pose(x=hit.point.x, y=hit.point.y, yaw=yaw)
+            goal = Pose(x=hit.x, y=hit.y, yaw=yaw)
             path = await path_planner.search(start=odometer.prediction, goal=goal)
             path3d.update(path)
             automator.start(driver.drive_path(path))

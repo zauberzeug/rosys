@@ -2,8 +2,9 @@
 import os
 import uuid
 
-import rosys
 from nicegui import ui
+
+import rosys
 from rosys.automation import Automator, automation_controls
 from rosys.driving import Driver, Odometer, PathSegment, Steerer, keyboard_control, robot_object
 from rosys.geometry import Point, Pose, Prism, Spline
@@ -44,7 +45,7 @@ with ui.card():
             object_type = hit.object_id if hit.object is None else (hit.object.name or '').split('_')[0]
             if object_type == 'ground' and click_mode.value == 'drive':
                 start = odometer.prediction.point
-                target = Point(x=hit.point.x, y=hit.point.y)
+                target = Point(x=hit.x, y=hit.y)
                 path = [PathSegment(spline=Spline(
                     start=start,
                     control1=start.interpolate(target, 1/3),
@@ -55,7 +56,7 @@ with ui.card():
                 automator.start(driver.drive_path(path))
                 return
             if object_type == 'ground' and click_mode.value == 'navigate':
-                goal = Pose(x=hit.point.x, y=hit.point.y, yaw=odometer.prediction.point.direction(hit.point))
+                goal = Pose(x=hit.x, y=hit.y, yaw=odometer.prediction.point.direction(hit.point))
                 path = await path_planner.search(start=odometer.prediction, goal=goal, timeout=3.0)
                 path3d.update(path)
                 automator.start(driver.drive_path(path))
@@ -63,10 +64,9 @@ with ui.card():
             if object_type == 'ground' and click_mode.value == 'obstacles':
                 id = str(uuid.uuid4())
                 path_planner.obstacles[id] = Obstacle(id=id, outline=[
-                    Point(x=hit.point.x-0.5, y=hit.point.y-0.5),
-                    Point(x=hit.point.x+0.5, y=hit.point.y-0.5),
-                    Point(x=hit.point.x+0.5, y=hit.point.y+0.5),
-                    Point(x=hit.point.x-0.5, y=hit.point.y+0.5),
+                    Point(x=hit.x-0.5, y=hit.point.y-0.5),
+                    Point(x=hit.x+0.5, y=hit.point.y-0.5),
+                    Point(x=hit.x-0.5, y=hit.point.y+0.5),
                 ])
                 path_planner.needs_backup = True
                 obstacles3d.update()

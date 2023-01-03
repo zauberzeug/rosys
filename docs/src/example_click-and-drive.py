@@ -12,7 +12,7 @@ automator = rosys.automation.Automator(wheels, None)
 async def handle_click(msg):
     for hit in msg.hits:
         if hit.object_id == 'ground':
-            target = rosys.geometry.Point(x=hit.point.x, y=hit.point.y)
+            target = rosys.geometry.Point(x=hit.x, y=hit.y)
             automator.start(driver.drive_to(target))
 
 with ui.scene(on_click=handle_click):
