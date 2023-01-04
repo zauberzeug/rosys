@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from nicegui import ui
+from nicegui.events import SceneClickEventArguments
 
 import rosys
 
@@ -9,8 +10,8 @@ driver = rosys.driving.Driver(wheels, odometer)
 automator = rosys.automation.Automator(wheels, None)
 
 
-async def handle_click(msg):
-    for hit in msg.hits:
+async def handle_click(e: SceneClickEventArguments):
+    for hit in e.hits:
         if hit.object_id == 'ground':
             target = rosys.geometry.Point(x=hit.x, y=hit.y)
             automator.start(driver.drive_to(target))

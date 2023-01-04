@@ -5,7 +5,6 @@ import tracemalloc
 
 import psutil
 from fastapi import Request
-from nicegui import ui
 from psutil._common import bytes2human
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -60,7 +59,7 @@ def observe_memory_growth(with_tracemalloc: bool = False) -> None:
         # log.info('==============')
         log.info(
             f'memory growth: {bytes2human(growth)}, '
-            f'now its {rosys.analysis.memory.get_humanreadable_process_memory()}'
+            f'now it\'s {rosys.analysis.memory.get_humanreadable_process_memory()}'
         )
         # log.info('==============')
         prev_memory = rosys.analysis.memory.get_process_memory()

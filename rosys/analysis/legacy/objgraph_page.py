@@ -1,17 +1,14 @@
 import asyncio
 import gc
 import logging
-import random
 from collections import Counter
 from pathlib import Path
 from typing import Optional
 
 import objgraph
-from nicegui import globals, ui
+from nicegui import ui
 
 import rosys
-
-from ...helpers import measure
 
 log = logging.getLogger('rosys.objgraph_page')
 
@@ -43,15 +40,10 @@ class ObjgraphPage:
             gc.collect()
             objects = objgraph.by_type(self.class_search.value)
             content = ''
-            measure(reset=True)
             for obj in objects:
                 chain = objgraph.find_backref_chain(obj, objgraph.is_proper_module)
-                measure()
                 objgraph.show_chain(chain, filename=str(SVG_FILE))
-                measure()
                 content += SVG_FILE.read_text()
-                measure()
-            print(globals.slot_stacks, flush=True)
             return content
 
         self.class_search_result.content = await search()

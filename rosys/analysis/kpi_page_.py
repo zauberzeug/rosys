@@ -45,8 +45,7 @@ def kpi_page(kpi_logger: KpiLogger,
             })
         ui.timer(5, lambda: show(toggle.value))
 
-        def show(
-                num_days: int) -> None:
+        def show(num_days: int) -> None:
             if num_days <= 7:
                 time_buckets = kpi_logger.days[-num_days:]
             elif num_days % 7 == 0:
