@@ -49,9 +49,7 @@ class Schedule:
         self._is_active = False
         self._sun_start_hour = 0.0
         self._sun_stop_hour = 24.0
-        self.buttons: list[tuple(ui.button, ui.button, ui.button)] = []
         rosys.on_repeat(self.step, 1)
-        rosys.on_repeat(self.update_ui, 60)  # NOTE: to update the "now" indicator
 
         self.needs_backup: bool = False
         persistence.register(self)
@@ -77,7 +75,6 @@ class Schedule:
 
     def invalidate(self) -> None:
         self.needs_backup = True
-        self.update_ui()
 
     def time_to_index(self, weekday: int, hour: int, minute: int) -> int:
         if not 0 <= weekday <= 6:
@@ -121,33 +118,57 @@ class Schedule:
             self._is_active = False
 
     def ui(self) -> ui.row:
+        buttons: list[tuple[ui.button, ui.button, ui.button]] = []
         with ui.column() as grid:
             with ui.row().classes('fit items-center justify-between'):
                 ui.switch('enabled').bind_value(self, 'is_enabled')
                 if self.locations:
-                    ui.select(self.locations, label='Location', on_change=lambda e: self.set_location(e.value)) \
+                    ui.select(self.locations, label='Location',
+                              on_change=lambda e: (self.set_location(e.value), update())) \
                         .bind_value(self, 'location').style('width: 21em')
-                    ui.number('Sunrise offset', format='%.0f', on_change=self.invalidate) \
+                    ui.number('Sunrise offset', format='%.0f',
+                              on_change=lambda: (self.invalidate(), update())) \
                         .bind_value(self, 'sunrise_offset').props('suffix=min').style('width:100px')
-                    ui.number('Sunset offset', format='%.0f', on_change=self.invalidate) \
+                    ui.number('Sunset offset', format='%.0f',
+                              on_change=lambda: (self.invalidate(), update())) \
                         .bind_value(self, 'sunset_offset').props('suffix=min').style('width:100px')
-
             with ui.column().style('gap: 0.3em'):
                 for d in range(7):
                     with ui.row().style('gap: 0.3em'):
                         ui.label(DAYS[d]).classes('mt-2').style('width: 2em')
                         for h in range(24):
                             with ui.column().style('gap: 0.1em'):
-                                hour = ui.button(f'{h:02d}', on_click=lambda _, d=d, h=h: self._toggle(d, h)) \
+                                hour = ui.button(
+                                    f'{h:02d}', on_click=lambda _, d=d, h=h: (self._toggle(d, h), update())) \
                                     .props('unelevated dense')
                                 with ui.row().style('gap: 0.1em'):
-                                    first_half = ui.button(on_click=lambda _, d=d, h=h: self._toggle(d, h, 0)) \
-                                        .props('unelevated dense')
-                                    second_half = ui.button(on_click=lambda _, d=d, h=h: self._toggle(d, h, 30)) \
-                                        .props('unelevated dense')
-                            self.buttons.append((hour, first_half, second_half))
+                                    first_half = ui.button(
+                                        on_click=lambda _, d=d, h=h: (self._toggle(d, h, 0), update())) \
+                                        .props('unelevated dense').style('height: 1em; width: 0.8em')
+                                    second_half = ui.button(
+                                        on_click=lambda _, d=d, h=h: (self._toggle(d, h, 30), update())) \
+                                        .props('unelevated dense').style('height: 1em; width: 0.8em')
+                            buttons.append((hour, first_half, second_half))
 
-        self.update_ui()
+        def update() -> None:
+            def color(weekday: int, hour: int, minutes: list[int]) -> str:
+                # https://maketintsandshades.com/#21ba45,c10015
+                if all(self.is_dark(hour, minute) for minute in minutes):
+                    return '#d3f1da' if self.is_planned(weekday, hour, minutes[0]) else '#f3ccd0'
+                dt = datetime.fromtimestamp(rosys.time())
+                is_now = dt.weekday() == weekday and dt.hour == hour
+                positive = '#147029' if is_now else '#21ba45' if d < 5 else '#1a9537'
+                negative = '#74000d' if is_now else '#c10015' if d < 5 else '#9a0011'
+                return positive if self.is_planned(weekday, hour, minutes[0]) else negative
+            self.update_sun_limits()
+            for d in range(7):
+                for h in range(24):
+                    b0, b1, b2 = buttons[d * 24 + h]
+                    b0.classes(replace=f'!bg-[{color(d, h, [0, 30, 60])}]')
+                    b1.classes(replace=f'!bg-[{color(d, h, [0, 30])}]')
+                    b2.classes(replace=f'!bg-[{color(d, h, [30, 60])}]')
+
+        ui.timer(60, update)  # NOTE: to update the "now" indicator
         return grid
 
     def set_location(self, location: tuple[float, float]) -> None:
@@ -164,26 +185,6 @@ class Schedule:
         else:
             self._sun_start_hour = 0.0
             self._sun_stop_hour = 24.0
-
-    def update_ui(self) -> None:
-        def color(weekday: int, hour: int, minutes: list[int]) -> str:
-            # https://maketintsandshades.com/#21ba45,c10015
-            if all(self.is_dark(hour, minute) for minute in minutes):
-                return '#d3f1da' if self.is_planned(weekday, hour, minutes[0]) else '#f3ccd0'
-            dt = datetime.fromtimestamp(rosys.time())
-            is_now = dt.weekday() == weekday and dt.hour == hour
-            positive = '#147029' if is_now else '#21ba45' if d < 5 else '#1a9537'
-            negative = '#74000d' if is_now else '#c10015' if d < 5 else '#9a0011'
-            return positive if self.is_planned(weekday, hour, minutes[0]) else negative
-        self.update_sun_limits()
-        if not self.buttons:
-            return
-        for d in range(7):
-            for h in range(24):
-                buttons: tuple[ui.button] = self.buttons[d * 24 + h]
-                buttons[0].style(f'background-color: {color(d, h, [0, 30, 60])} !important')
-                buttons[1].style(f'background-color: {color(d, h, [0, 30])} !important; height: 1em; width: 0.8em')
-                buttons[2].style(f'background-color: {color(d, h, [30, 60])} !important; height: 1em; width: 0.8em')
 
     def _toggle(self, weekday: int, hour: int, minute: Optional[int] = None) -> None:
         new_value = not self.is_planned(weekday, hour, minute)
