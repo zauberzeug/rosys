@@ -71,7 +71,6 @@ class Schedule:
         self.is_enabled = data.get('is_enabled', False)
         self._is_active = data.get('is_active', False)
         self.half_hours[:] = data.get('half_hours', True)
-        self.update_ui()
 
     def invalidate(self) -> None:
         self.needs_backup = True
@@ -118,6 +117,26 @@ class Schedule:
             self._is_active = False
 
     def ui(self) -> ui.row:
+        def update() -> None:
+            def color(weekday: int, hour: int, minutes: list[int]) -> str:
+                # https://maketintsandshades.com/#21ba45,c10015
+                if all(self.is_dark(hour, minute) for minute in minutes):
+                    return '#d3f1da' if self.is_planned(weekday, hour, minutes[0]) else '#f3ccd0'
+                dt = datetime.fromtimestamp(rosys.time())
+                is_now = dt.weekday() == weekday and dt.hour == hour
+                positive = '#147029' if is_now else '#21ba45' if d < 5 else '#1a9537'
+                negative = '#74000d' if is_now else '#c10015' if d < 5 else '#9a0011'
+                return positive if self.is_planned(weekday, hour, minutes[0]) else negative
+            if not buttons:
+                return
+            self.update_sun_limits()
+            for d in range(7):
+                for h in range(24):
+                    b0, b1, b2 = buttons[d * 24 + h]
+                    b0.classes(replace=f'!bg-[{color(d, h, [0, 30, 60])}]')
+                    b1.classes(replace=f'!bg-[{color(d, h, [0, 30])}]')
+                    b2.classes(replace=f'!bg-[{color(d, h, [30, 60])}]')
+
         buttons: list[tuple[ui.button, ui.button, ui.button]] = []
         with ui.column() as grid:
             with ui.row().classes('fit items-center justify-between'):
@@ -149,24 +168,6 @@ class Schedule:
                                         on_click=lambda _, d=d, h=h: (self._toggle(d, h, 30), update())) \
                                         .props('unelevated dense').style('height: 1em; width: 0.8em')
                             buttons.append((hour, first_half, second_half))
-
-        def update() -> None:
-            def color(weekday: int, hour: int, minutes: list[int]) -> str:
-                # https://maketintsandshades.com/#21ba45,c10015
-                if all(self.is_dark(hour, minute) for minute in minutes):
-                    return '#d3f1da' if self.is_planned(weekday, hour, minutes[0]) else '#f3ccd0'
-                dt = datetime.fromtimestamp(rosys.time())
-                is_now = dt.weekday() == weekday and dt.hour == hour
-                positive = '#147029' if is_now else '#21ba45' if d < 5 else '#1a9537'
-                negative = '#74000d' if is_now else '#c10015' if d < 5 else '#9a0011'
-                return positive if self.is_planned(weekday, hour, minutes[0]) else negative
-            self.update_sun_limits()
-            for d in range(7):
-                for h in range(24):
-                    b0, b1, b2 = buttons[d * 24 + h]
-                    b0.classes(replace=f'!bg-[{color(d, h, [0, 30, 60])}]')
-                    b1.classes(replace=f'!bg-[{color(d, h, [0, 30])}]')
-                    b2.classes(replace=f'!bg-[{color(d, h, [30, 60])}]')
 
         ui.timer(60, update)  # NOTE: to update the "now" indicator
         return grid
