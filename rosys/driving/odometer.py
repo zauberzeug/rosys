@@ -2,13 +2,9 @@ import logging
 from copy import deepcopy
 from typing import Optional, Protocol
 
-import numpy as np
-
-from rosys.geometry.pose import PoseStep
-
 from .. import rosys
 from ..event import Event
-from ..geometry import Pose, Velocity
+from ..geometry import Pose, PoseStep, Velocity
 
 
 class VelocityProvider(Protocol):
