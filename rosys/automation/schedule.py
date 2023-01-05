@@ -6,6 +6,7 @@ import suntime
 from nicegui import ui
 
 from .. import persistence, rosys
+from ..event import Event
 from .automator import Automator
 
 DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
@@ -34,6 +35,9 @@ class Schedule:
         param is_enabled: whether the schedule is enabled (default: False)
         '''
         self.log = logging.getLogger('rosys.schedule')
+
+        self.SCHEDULE_CHANGED = Event()
+        '''the schedule has changed'''
 
         self.automator = automator
         self.on_activate = on_activate
@@ -71,9 +75,11 @@ class Schedule:
         self.is_enabled = data.get('is_enabled', False)
         self._is_active = data.get('is_active', False)
         self.half_hours[:] = data.get('half_hours', True)
+        self.SCHEDULE_CHANGED.emit()
 
     def invalidate(self) -> None:
         self.needs_backup = True
+        self.SCHEDULE_CHANGED.emit()
 
     def time_to_index(self, weekday: int, hour: int, minute: int) -> int:
         if not 0 <= weekday <= 6:
@@ -142,14 +148,11 @@ class Schedule:
             with ui.row().classes('fit items-center justify-between'):
                 ui.switch('enabled').bind_value(self, 'is_enabled')
                 if self.locations:
-                    ui.select(self.locations, label='Location',
-                              on_change=lambda e: (self.set_location(e.value), update())) \
+                    ui.select(self.locations, label='Location', on_change=lambda e: self.set_location(e.value)) \
                         .bind_value(self, 'location').style('width: 21em')
-                    ui.number('Sunrise offset', format='%.0f',
-                              on_change=lambda: (self.invalidate(), update())) \
+                    ui.number('Sunrise offset', format='%.0f', on_change=self.invalidate) \
                         .bind_value(self, 'sunrise_offset').props('suffix=min').style('width:100px')
-                    ui.number('Sunset offset', format='%.0f',
-                              on_change=lambda: (self.invalidate(), update())) \
+                    ui.number('Sunset offset', format='%.0f', on_change=self.invalidate) \
                         .bind_value(self, 'sunset_offset').props('suffix=min').style('width:100px')
             with ui.column().style('gap: 0.3em'):
                 for d in range(7):
@@ -157,19 +160,17 @@ class Schedule:
                         ui.label(DAYS[d]).classes('mt-2').style('width: 2em')
                         for h in range(24):
                             with ui.column().style('gap: 0.1em'):
-                                hour = ui.button(
-                                    f'{h:02d}', on_click=lambda _, d=d, h=h: (self._toggle(d, h), update())) \
+                                hour = ui.button(f'{h:02d}', on_click=lambda _, d=d, h=h: self._toggle(d, h)) \
                                     .props('unelevated dense')
                                 with ui.row().style('gap: 0.1em'):
-                                    first_half = ui.button(
-                                        on_click=lambda _, d=d, h=h: (self._toggle(d, h, 0), update())) \
+                                    first_half = ui.button(on_click=lambda _, d=d, h=h: self._toggle(d, h, 0)) \
                                         .props('unelevated dense').style('height: 1em; width: 0.8em')
-                                    second_half = ui.button(
-                                        on_click=lambda _, d=d, h=h: (self._toggle(d, h, 30), update())) \
+                                    second_half = ui.button(on_click=lambda _, d=d, h=h: self._toggle(d, h, 30)) \
                                         .props('unelevated dense').style('height: 1em; width: 0.8em')
                             buttons.append((hour, first_half, second_half))
 
         ui.timer(60, update)  # NOTE: to update the "now" indicator
+        self.SCHEDULE_CHANGED.register(update)
         return grid
 
     def set_location(self, location: tuple[float, float]) -> None:
