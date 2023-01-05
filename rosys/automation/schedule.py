@@ -170,7 +170,7 @@ class Schedule:
                             buttons.append((hour, first_half, second_half))
 
         ui.timer(60, update)  # NOTE: to update the "now" indicator
-        self.SCHEDULE_CHANGED.register(update)
+        self.SCHEDULE_CHANGED.register_ui(update)
         return grid
 
     def set_location(self, location: tuple[float, float]) -> None:

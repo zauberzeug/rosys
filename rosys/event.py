@@ -38,12 +38,12 @@ class Event:
             return  # NOTE: don't add duplicate listeners
         frame = inspect.currentframe().f_back
         self.listeners.append(EventListener(callback=callback, filepath=frame.f_code.co_filename, line=frame.f_lineno))
-        if nicegui_globals.state == nicegui_globals.State.STARTED:
-            ui.on_disconnect(lambda title=f'{frame.f_code.co_filename}:{frame.f_lineno}': (
-                print(f'unregister {title}', flush=True),
-                self.unregister(callback),
-            ))
-        print(frame.f_code.co_filename, frame.f_lineno, len(self.listeners), flush=True)
+        return self
+
+    def register_ui(self, callback: Callable) -> Event:
+        self.register(callback)
+        if not nicegui_globals.get_client().shared:
+            ui.on_disconnect(lambda: self.unregister(callback))
         return self
 
     def unregister(self, callback: Callable) -> None:
