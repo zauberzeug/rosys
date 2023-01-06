@@ -69,18 +69,18 @@ with ui.card():
                     Point(x=hit.x+0.5, y=hit.y-0.5),
                     Point(x=hit.x-0.5, y=hit.y+0.5),
                 ])
-                path_planner.needs_backup = True
-                obstacles3d.update()
+                path_planner.invalidate()
+                path_planner.OBSTACLES_CHANGED.emit(path_planner.obstacles)
                 return
             if object_type == 'obstacle' and click_mode.value == 'obstacles':
                 del path_planner.obstacles[hit.object.name.split('_')[1]]
-                path_planner.needs_backup = True
-                obstacles3d.update()
+                path_planner.invalidate()
+                path_planner.OBSTACLES_CHANGED.emit(path_planner.obstacles)
                 return
 
     with ui.scene(640, 480, on_click=handle_click) as scene:
         robot_object(shape, odometer, debug=True)
-        obstacles3d = obstacle_object(path_planner.obstacles)
+        obstacle_object(path_planner)
         path3d = path_object()
 
     with ui.row():

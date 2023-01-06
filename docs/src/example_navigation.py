@@ -29,7 +29,7 @@ async def handle_click(e: SceneClickEventArguments):
 
 with ui.scene(on_click=handle_click, width=600):
     robot_object(shape, odometer)
-    obstacle_object(path_planner.obstacles)
+    obstacle_object(path_planner)
     path3d = path_object()
 
 ui.label('click into the scene to drive the robot')

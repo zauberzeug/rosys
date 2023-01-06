@@ -1,23 +1,21 @@
 import numpy as np
-from nicegui import ui
-from nicegui.elements.scene_object3d import Object3D
-from nicegui.elements.scene_objects import Extrusion
+from nicegui.elements.scene_objects import Extrusion, Group
 
 from .area import Area
+from .path_planner import PathPlanner
 
 
-class AreaObject(Object3D):
+class AreaObject(Group):
 
-    def __init__(self, areas: dict[str, Area]) -> None:
-        super().__init__('group')
+    def __init__(self, path_planner: PathPlanner) -> None:
+        super().__init__()
 
-        self.areas = areas
+        self.update(path_planner.areas)
+        path_planner.AREAS_CHANGED.register_ui(self.update)
 
-        ui.timer(1.0, self.update, once=True)  # NOTE: wait for persistence to restore state
-
-    def update(self) -> None:
+    def update(self, areas: dict[str, Area]) -> None:
         [obj.delete() for obj in list(self.scene.objects.values()) if (obj.name or '').startswith('area_')]
-        for area in self.areas.values():
+        for area in areas.values():
             if len(area.outline) == 1:
                 outline = [[area.outline[0].x + 0.05 * np.cos(phi), area.outline[0].y + 0.05 * np.sin(phi)]
                            for phi in np.linspace(0, 2 * np.pi, 16, endpoint=False)]
