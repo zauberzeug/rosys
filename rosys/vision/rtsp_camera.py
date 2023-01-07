@@ -18,6 +18,7 @@ class ImageRotation(str, Enum):
 class RtspCamera(Camera):
     active: bool = True
     detect: bool = False
+    url: Optional[str] = None
 
     color: Optional[str] = None
     '''a color code to identify the camera'''
@@ -34,7 +35,7 @@ class RtspCamera(Camera):
     crop: Optional[Rectangle] = None
     '''region to crop on the original resolution before rotation'''
 
-    @ property
+    @property
     def image_resolution(self) -> Optional[ImageSize]:
         if self.resolution is None:
             return None
