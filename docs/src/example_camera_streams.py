@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
+import icecream
 from nicegui import ui
 
-from rosys.vision import UsbCameraProviderSimulation, camera_provider
+from rosys.vision import RtspCameraProviderHardware, camera_provider
 
-camera_provider = UsbCameraProviderSimulation()
-camera_provider.add_camera(camera_provider.create_calibrated('test_cam', width=800, height=600))
+icecream.install()
+camera_provider = RtspCameraProviderHardware()
 
 
 def refresh() -> None:
