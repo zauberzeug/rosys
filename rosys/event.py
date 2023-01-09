@@ -42,8 +42,9 @@ class Event:
 
     def register_ui(self, callback: Callable) -> Event:
         self.register(callback)
-        if not nicegui_globals.get_client().shared:
-            ui.on_disconnect(lambda: self.unregister(callback))
+        client = nicegui_globals.get_client()
+        if not client.shared:
+            client.on_disconnect(lambda: self.unregister(callback))
         return self
 
     def unregister(self, callback: Callable) -> None:

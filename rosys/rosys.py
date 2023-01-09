@@ -12,6 +12,7 @@ from typing import Awaitable, Callable, Optional
 
 import numpy as np
 import psutil
+from nicegui import app
 from nicegui import globals as nicegui_globals
 from nicegui import ui
 
@@ -250,5 +251,5 @@ on_repeat(_garbage_collection, 10 * 60)
 on_repeat(_watch_emitted_events, 0.1)
 on_repeat(persistence.backup, 10)
 
-ui.on_startup(startup)
-ui.on_shutdown(shutdown)
+app.on_startup(startup)
+app.on_shutdown(shutdown)
