@@ -7,6 +7,21 @@ from rosys.test import forward
 TEST_EVENT = Event()
 
 
+async def test_register_and_unregister():
+    def handler(number: int) -> None: numbers.append(number)
+    numbers = []
+    await TEST_EVENT.call(1)
+    assert numbers == []
+
+    TEST_EVENT.register(handler)
+    await TEST_EVENT.call(2)
+    assert numbers == [2]
+
+    TEST_EVENT.unregister(handler)
+    await TEST_EVENT.call(3)
+    assert numbers == [2]
+
+
 async def test_registering_multiple_handlers():
     def handler1(number: int) -> None: numbers.append(number)
     def handler2(number: int) -> None: numbers.append(number)

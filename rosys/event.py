@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from typing import Awaitable, Callable
 
 from nicegui import globals as nicegui_globals
-from nicegui import ui
 
 from . import task_logger
 from .helpers import invoke
@@ -48,7 +47,7 @@ class Event:
         return self
 
     def unregister(self, callback: Callable) -> None:
-        self.listeners[:] = [l for l in self.listeners if l.callback == callback]
+        self.listeners[:] = [l for l in self.listeners if l.callback != callback]
 
     async def call(self, *args) -> None:
         '''Fires event and waits async until all registered listeners are completed'''
