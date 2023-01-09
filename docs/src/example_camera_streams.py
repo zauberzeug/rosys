@@ -16,6 +16,6 @@ def refresh() -> None:
 
 
 feeds = {}
-ui.timer(0.3, refresh)
+ui.timer(0.01, refresh)
 
 ui.run(title='RoSys')

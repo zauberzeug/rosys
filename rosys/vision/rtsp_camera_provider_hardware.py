@@ -9,6 +9,7 @@ import subprocess
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+import aiofile
 import cv2
 import numpy as np
 import PIL
@@ -56,7 +57,7 @@ class RtspCameraProviderHardware(CameraProvider):
 
     async def capture_images(self, camera: RtspCamera) -> None:
         async def stream():
-            command = f'ffmpeg -i {camera.url} -f image2pipe -vf fps=fps=10 -nostats -y -fflags nobuffer -flags low_delay -strict experimental -rtsp_transport tcp pipe:1'
+            command = f'ffmpeg -i {camera.url} -f image2pipe -vf fps=fps=1 -nostats -y -fflags nobuffer -flags low_delay -strict experimental -rtsp_transport tcp pipe:1'
             ic(command)
             args = shlex.split(command)
             process = await asyncio.create_subprocess_exec(*args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -74,9 +75,13 @@ class RtspCameraProviderHardware(CameraProvider):
                         image_bytes = b''
                         break
 
-        size = ImageSize(width=800, height=600)
+        size = ImageSize(width=1920, height=1080)
         async for image in stream():
             camera.images.append(Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
+            async with aiofile.AIOFile(f'/tmp/rtsp/{rosys.time()}.orig.jpg', 'wb') as afp:
+                await afp.write(image)
+                await afp.fsync()
+            ic(rosys.time())
 
     async def activate(self, camera: RtspCamera) -> None:
         task = task_logger.create_task(self.capture_images(camera))
@@ -93,8 +98,8 @@ class RtspCameraProviderHardware(CameraProvider):
         if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
             return
         self.last_scan = rosys.time()
-        url = 'rtsp://admin:admin@192.168.22.232/profile1'
-        id = hashlib.md5(url.encode()).hexdigest()
+        url = 'rtsp://admin:admin@192.168.22.232/profile0'
+        id = '192.168.22.232'  # hashlib.md5(url.encode()).hexdigest()
         if id not in self._cameras:
             camera = RtspCamera(id=id, url=url)
             self._cameras[id] = camera
