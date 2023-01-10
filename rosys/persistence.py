@@ -110,12 +110,12 @@ def export_button(title: str = 'Export', route: str = '/export', tmp_filepath: s
         with open(tmp_filepath, 'w') as f:
             json.dump({name: module.backup() for name, module in modules.items()}, f, indent=4)
         return FileResponse(tmp_filepath, filename='export.json')
-    ui.button(title, on_click=lambda e: ui.open(route[1:], e.socket))
+    ui.button(title, on_click=lambda: ui.open(route[1:]))
 
 
 def import_button(title: str = 'Import', after_import: Optional[Callable] = None) -> ui.button:
     async def restore_from_file(e: UploadEventArguments) -> None:
-        all_data = json.loads(e.files[0].decode())
+        all_data = json.load(e.content)
         assert isinstance(all_data, dict)
         for name, data in all_data.items():
             modules[name].restore(data)
