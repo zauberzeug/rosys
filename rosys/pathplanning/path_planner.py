@@ -6,6 +6,7 @@ from typing import Any
 
 from .. import persistence, rosys, run
 from ..driving import PathSegment
+from ..event import Event
 from ..geometry import Point, Pose, Prism, Spline
 from .area import Area
 from .obstacle import Obstacle
@@ -30,6 +31,11 @@ class PathPlanner:
         self.obstacles: dict[str, Obstacle] = {}
         self.areas: dict[str, Area] = {}
 
+        self.OBSTACLES_CHANGED = Event()
+        '''the obstacles have changed (argument: dictionary of obstacles)'''
+        self.AREAS_CHANGED = Event()
+        '''the areas have changed (argument: dictionary of areas)'''
+
         rosys.on_startup(self.startup)
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.step, 0.1)
@@ -46,6 +52,11 @@ class PathPlanner:
     def restore(self, data: dict[str, Any]) -> None:
         persistence.replace_dict(self.obstacles, Obstacle, data.get('obstacles', {}))
         persistence.replace_dict(self.areas, Area, data.get('areas', {}))
+        self.AREAS_CHANGED.emit(self.areas)
+        self.OBSTACLES_CHANGED.emit(self.obstacles)
+
+    def invalidate(self) -> None:
+        self.needs_backup = True
 
     def startup(self) -> None:
         self.process.start()

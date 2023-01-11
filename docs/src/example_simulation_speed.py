@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import random
 
-from nicegui import ui
+from nicegui import app, ui
 
 import rosys
 from rosys.automation import Automator
@@ -33,6 +33,6 @@ async def move_around():
     while True:
         await driver.drive_to(Point(x=random.uniform(-size, size), y=random.uniform(-size, size)))
 
-ui.on_startup(lambda: automator.start(move_around()))
+app.on_startup(lambda: automator.start(move_around()))
 
 ui.run(title='RoSys')
