@@ -17,7 +17,7 @@ odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
 automator = Automator(wheels, None, default_automation=run)
 
-with ui.scene(width=600) as scene:
+with ui.scene(width=600).classes('drop-shadow-lg') as scene:
     robot_object(Prism.default_robot_shape(), odometer)
     for i, point in enumerate(checkpoints):
         scene.text(f'{i+1}').move(x=point.x, y=point.y)
