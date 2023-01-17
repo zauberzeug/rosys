@@ -43,7 +43,13 @@ class Event:
         self.register(callback)
         client = nicegui_globals.get_client()
         if not client.shared:
-            client.on_disconnect(lambda: self.unregister(callback))
+            async def register_disconnect():
+                try:
+                    await client.connected()
+                    client.on_disconnect(lambda: self.unregister(callback))
+                except TimeoutError:
+                    self.unregister(callback)
+            task_logger.create_task(register_disconnect())
         return self
 
     def unregister(self, callback: Callable) -> None:
