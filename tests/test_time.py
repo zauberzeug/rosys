@@ -1,4 +1,5 @@
 import pytest
+
 import rosys
 from rosys.test import forward
 
@@ -23,7 +24,7 @@ async def test_time():
 @pytest.mark.usefixtures('integration')
 async def test_sleep():
     assert rosys.time() == 0.0
-    sleep = rosys.create_task(rosys.sleep(1.0))
+    sleep = rosys.background_tasks.create(rosys.sleep(1.0))
     await forward(0.5)
     assert not sleep.done()
     await forward(1.0)

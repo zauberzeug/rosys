@@ -5,7 +5,7 @@ from typing import Optional
 import socketio
 import socketio.exceptions
 
-from .. import persistence, rosys, task_logger
+from .. import background_tasks, persistence, rosys
 from .detections import BoxDetection, Detections, PointDetection, SegmentationDetection
 from .detector import Autoupload, Detector
 from .image import Image
@@ -76,7 +76,7 @@ class DetectorHardware(Detector):
 
         upload_images = self.uploads.get_queued()
         if upload_images:
-            task_logger.create_task(self.upload(upload_images[0]), name='upload_image')
+            background_tasks.create(self.upload(upload_images[0]), name='upload_image')
             self.uploads.queue.clear()  # old images should not be uploaded later when the robot is inactive
             self.uploads.last_upload = datetime.now()
 
@@ -86,7 +86,7 @@ class DetectorHardware(Detector):
             async def upload_priority_images():
                 for image in upload_images:
                     await self.upload(image)
-            task_logger.create_task(upload_priority_images(), name='upload_priority_images')
+            background_tasks.create(upload_priority_images(), name='upload_priority_images')
             self.uploads.priority_queue.clear()
 
     async def upload(self, image: Image) -> None:

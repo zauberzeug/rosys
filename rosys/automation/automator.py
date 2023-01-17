@@ -5,7 +5,6 @@ from .. import rosys
 from ..analysis import track
 from ..driving import Drivable, Steerer
 from ..event import Event
-from ..task_logger import create_task
 from .automation import Automation
 
 
@@ -56,8 +55,8 @@ class Automator:
             steerer.STEERING_STARTED.register(lambda: self.pause(because='steering started'))
 
         if wheels:
-            self.AUTOMATION_PAUSED.register(lambda _: create_task(wheels.stop()))
-            self.AUTOMATION_STOPPED.register(lambda _: create_task(wheels.stop()))
+            self.AUTOMATION_PAUSED.register(lambda _: rosys.background_tasks.create(wheels.stop()))
+            self.AUTOMATION_STOPPED.register(lambda _: rosys.background_tasks.create(wheels.stop()))
 
         rosys.on_shutdown(lambda: self.stop(because='automator is shutting down'))
 
@@ -87,7 +86,7 @@ class Automator:
             return
         self.stop(because='new automation starts')
         self.automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
-        create_task(self.automation.__await__(), name='automation')
+        rosys.background_tasks.create(self.automation.__await__(), name='automation')
         self.AUTOMATION_STARTED.emit()
         rosys.notify('automation started')
 

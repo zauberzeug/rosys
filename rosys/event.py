@@ -8,7 +8,8 @@ from typing import Awaitable, Callable
 
 from nicegui import globals as nicegui_globals
 
-from . import task_logger
+from rosys import background_tasks
+
 from .helpers import invoke
 
 startup_coroutines: list[Awaitable] = []
@@ -49,7 +50,7 @@ class Event:
                     client.on_disconnect(lambda: self.unregister(callback))
                 except TimeoutError:
                     self.unregister(callback)
-            task_logger.create_task(register_disconnect())
+            background_tasks.create(register_disconnect())
         return self
 
     def unregister(self, callback: Callable) -> None:
@@ -72,7 +73,7 @@ class Event:
                 if isinstance(result, Awaitable):
                     if loop.is_running:
                         name = f'{listener.filepath}:{listener.line}'
-                        tasks.append(task_logger.create_task(result, name=name, loop=loop))
+                        tasks.append(background_tasks.create(result, name=name, loop=loop))
                     else:
                         startup_coroutines.append(result)
             except:

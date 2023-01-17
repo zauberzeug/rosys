@@ -56,7 +56,7 @@ class TimelapseRecorder:
         absolute_niceness = 10 - os.nice(0)
         cmd = f'nice -n {absolute_niceness} ffmpeg -hide_banner -threads 1 -r 10 -pattern_type glob -i "{target_dir}/*.jpg" -s 1600x1200 -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{id}.mp4; mv {target_dir}/*mp4 {STORAGE_PATH}/videos; rm -r {target_dir};'
         self.log.info(f'starting {cmd}')
-        rosys.task_logger.create_task(rosys.run.sh(cmd, timeout=None, shell=True), name='timelapse ffmpeg')
+        rosys.background_tasks.create(rosys.run.sh(cmd, timeout=None, shell=True), name='timelapse ffmpeg')
 
     def clear_jpegs(self) -> None:
         files = glob(f'{STORAGE_PATH}/**/*.jpg', recursive=True)

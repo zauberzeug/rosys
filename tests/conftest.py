@@ -1,7 +1,9 @@
+import asyncio
 import multiprocessing
 from typing import Generator
 
 import pytest
+from nicegui import globals as nicegui_globals
 
 import rosys
 from rosys.analysis import KpiLogger
@@ -17,6 +19,7 @@ log_configuration.setup()
 
 @pytest.fixture
 async def integration() -> Generator:
+    nicegui_globals.loop = asyncio.get_event_loop()
     rosys.reset_before_test()
     await rosys.startup()
     yield

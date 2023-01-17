@@ -7,7 +7,6 @@ from typing import Callable
 from .. import rosys
 from ..event import Event
 from ..hardware import RobotBrain
-from ..task_logger import create_task
 from .automator import Automator
 
 
@@ -86,7 +85,7 @@ class AppControls:
         if line.startswith('app: '):
             line = line[5:]
             if line == 'connected':
-                create_task(self.sync(), name='sync app')
+                rosys.background_tasks.create(self.sync(), name='sync app')
                 self.APP_CONNECTED.emit()
             elif line.startswith('PUT /button/') and '/action' in line:
                 # line: "PUT /button/main/my_button/action pressed"
@@ -118,6 +117,6 @@ class AppControls:
 
     async def _invoke(self, callback: Callable):
         if inspect.iscoroutinefunction(callback):
-            create_task(callback(), name='app_controls._invoke')
+            rosys.background_tasks.create(callback(), name='app_controls._invoke')
         else:
             callback()
