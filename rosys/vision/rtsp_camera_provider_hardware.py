@@ -14,8 +14,6 @@ import cv2
 import numpy as np
 import PIL
 
-from rosys import task_logger
-
 from .. import persistence, rosys
 from ..geometry import Rectangle
 from .camera_provider import CameraProvider
@@ -58,7 +56,7 @@ class RtspCameraProviderHardware(CameraProvider):
     async def capture_images(self, camera: RtspCamera) -> None:
         async def stream():
             command = f'ffmpeg -i {camera.url} -f image2pipe -vf fps=fps=1 -nostats -y -fflags nobuffer -flags low_delay -strict experimental -rtsp_transport tcp pipe:1'
-            ic(command)
+            print(command, flush=True)
             args = shlex.split(command)
             process = await asyncio.create_subprocess_exec(*args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             image_bytes = b''
@@ -84,7 +82,7 @@ class RtspCameraProviderHardware(CameraProvider):
             ic(rosys.time())
 
     async def activate(self, camera: RtspCamera) -> None:
-        task = task_logger.create_task(self.capture_images(camera))
+        task = rosys.background_tasks.create(self.capture_images(camera))
         if task is None:
             return
         self._capture_tasks[camera.id] = task
@@ -98,16 +96,37 @@ class RtspCameraProviderHardware(CameraProvider):
         if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
             return
         self.last_scan = rosys.time()
-        url = 'rtsp://admin:admin@192.168.22.232/profile0'
-        id = '192.168.22.232'  # hashlib.md5(url.encode()).hexdigest()
-        if id not in self._cameras:
-            camera = RtspCamera(id=id, url=url)
-            self._cameras[id] = camera
-            self.log.info(f'adding camera {url}')
-            await self.CAMERA_ADDED.call(camera)
+        output = (await rosys.run.sh('sudo /usr/sbin/arp-scan 192.168.1.0/24', timeout=10))
+        if output is None:
+            return
+
         for camera in self._cameras.values():
-            if camera.id not in self._capture_tasks:
+            camera.active = False
+        for line in output.splitlines():
+            infos = line.split()
+            if len(infos) < 2:
+                continue
+            try:
+                ip, mac = infos[0:2]
+            except:
+                self.log.exception(f'could not parse {line}')
+                continue
+            if not mac.startswith('e0:62:90'):
+                #self.log.debug('ignoring mac {mac} because it seems not to be a micro cam')
+                continue
+            url = f'rtsp://admin:admin@{ip}/profile0'
+            if mac not in self._cameras:
+                camera = RtspCamera(id=mac, url=url)
+                self._cameras[mac] = camera
+                self.log.info(f'adding camera {url}')
+                await self.CAMERA_ADDED.call(camera)
+            self._cameras[mac].active = True
+
+        for camera in self._cameras.values():
+            if camera.active and camera.id not in self._capture_tasks:
                 await self.activate(camera)
+            if not camera.active and camera.id in self._capture_tasks:
+                await self.deactivate(camera)
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
