@@ -1,6 +1,5 @@
 import asyncio
 import gc
-import logging
 from collections import Counter
 from pathlib import Path
 from typing import Optional
@@ -9,8 +8,6 @@ import objgraph
 from nicegui import ui
 
 import rosys
-
-log = logging.getLogger('rosys.objgraph_page')
 
 SVG_FILE = Path('/tmp/rosys_objgraph.svg')
 
@@ -26,20 +23,20 @@ def objgraph_page() -> None:
             loop = asyncio.get_running_loop()
             growth, leaking, overall, counts = await loop.run_in_executor(None, get_objgraph_stats)
             await update_graph()
-            growth.set_text(growth)
-            leaking.set_text(leaking)
-            overall.set_text(overall)
+            growth_label.set_text(growth)
+            leaking_label.set_text(leaking)
+            overall_label.set_text(overall)
             highest = [f'{c[1]}: {c[0]}' for c in counts.most_common()[:5]]
-            counts.set_content('new obj occurrence: ' + '\n'.join(highest))
+            counts_markdown.set_content('new obj occurrence: ' + '\n'.join(highest))
             most_common_search_result.content = SVG_FILE.read_text() if counts else ''
 
         t = ui.timer(10, refresh_stats, active=False)
         ui.switch('track objects (every 10 s)').bind_value_to(t, 'active')
         with ui.column():
-            growth = ui.label()
-            leaking = ui.label()
-            overall = ui.label()
-            counts = ui.markdown()
+            growth_label = ui.label()
+            leaking_label = ui.label()
+            overall_label = ui.label()
+            counts_markdown = ui.markdown()
 
         class_search = ui.input('Search Class', value='Client')
         ui.button('Update Graph', on_click=update_graph)

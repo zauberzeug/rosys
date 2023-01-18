@@ -12,13 +12,13 @@ from typing import Awaitable, Callable, Optional
 
 import numpy as np
 import psutil
+from nicegui import app
 from nicegui import globals as nicegui_globals
 from nicegui import ui
 
-from . import event, persistence, run
+from . import background_tasks, event, persistence, run
 from .config import Config
 from .helpers import invoke
-from .task_logger import create_task
 
 log = logging.getLogger('rosys.core')
 
@@ -109,14 +109,14 @@ def _run_handler(handler: Callable) -> None:
     try:
         result = handler()
         if isinstance(result, Awaitable):
-            tasks.append(create_task(result, name=handler.__qualname__))
+            tasks.append(background_tasks.create(result, name=handler.__qualname__))
     except:
         log.exception(f'error while starting handler "{handler.__qualname__}"')
 
 
 def _start_loop(handler: Callable, interval: float) -> None:
     log.debug(f'starting loop "{handler.__qualname__}" with interval {interval:.3f}s')
-    tasks.append(create_task(_repeat_one_handler(handler, interval), name=handler.__qualname__))
+    tasks.append(background_tasks.create(_repeat_one_handler(handler, interval), name=handler.__qualname__))
 
 
 def on_repeat(handler: Callable, interval: float) -> None:
@@ -250,5 +250,5 @@ on_repeat(_garbage_collection, 10 * 60)
 on_repeat(_watch_emitted_events, 0.1)
 on_repeat(persistence.backup, 10)
 
-ui.on_startup(startup)
-ui.on_shutdown(shutdown)
+app.on_startup(startup)
+app.on_shutdown(shutdown)

@@ -8,3 +8,5 @@ Here we let the robot drive to predefined checkpoints one after the other.
 ```
 
 To achieve this, we define our automation as an async method and pass it to the `default_automation` parameter of the `Automator`.
+
+![Click-and-drive](play-pause-stop.webp){: style="width:80%"}

@@ -32,7 +32,7 @@ class RobotObject(Group):
                  color: str = '#ffffff', opacity: float = 1.0) -> RobotObject:
         '''Sets an STL to be displayed as the robot.
 
-        The file can be served from a local directory with [ui.add_static_files(url, path)](https://nicegui.io/reference#static_files).
+        The file can be served from a local directory with [app.add_static_files(url, path)](https://nicegui.io/reference#static_files).
         '''
         self.robot_object.delete()
         with self:

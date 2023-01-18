@@ -7,9 +7,9 @@ from dataclasses import dataclass
 from typing import Awaitable, Callable
 
 from nicegui import globals as nicegui_globals
-from nicegui import ui
 
-from . import task_logger
+from rosys import background_tasks
+
 from .helpers import invoke
 
 startup_coroutines: list[Awaitable] = []
@@ -42,12 +42,19 @@ class Event:
 
     def register_ui(self, callback: Callable) -> Event:
         self.register(callback)
-        if not nicegui_globals.get_client().shared:
-            ui.on_disconnect(lambda: self.unregister(callback))
+        client = nicegui_globals.get_client()
+        if not client.shared:
+            async def register_disconnect():
+                try:
+                    await client.connected()
+                    client.on_disconnect(lambda: self.unregister(callback))
+                except TimeoutError:
+                    self.unregister(callback)
+            background_tasks.create(register_disconnect())
         return self
 
     def unregister(self, callback: Callable) -> None:
-        self.listeners[:] = [l for l in self.listeners if l.callback == callback]
+        self.listeners[:] = [l for l in self.listeners if l.callback != callback]
 
     async def call(self, *args) -> None:
         '''Fires event and waits async until all registered listeners are completed'''
@@ -66,7 +73,7 @@ class Event:
                 if isinstance(result, Awaitable):
                     if loop.is_running:
                         name = f'{listener.filepath}:{listener.line}'
-                        tasks.append(task_logger.create_task(result, name=name, loop=loop))
+                        tasks.append(background_tasks.create(result, name=name, loop=loop))
                     else:
                         startup_coroutines.append(result)
             except:
