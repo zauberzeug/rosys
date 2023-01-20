@@ -90,13 +90,16 @@ class RtspCameraProviderHardware(CameraProvider):
         await self.CAMERA_ADDED.call(camera)
 
     async def deactivate(self, camera: RtspCamera) -> None:
+        if camera.id not in self._capture_tasks:
+            return
         self._capture_tasks.pop(camera.id).cancel()
 
     async def update_device_list(self) -> None:
         if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
             return
         self.last_scan = rosys.time()
-        output = (await rosys.run.sh('sudo /usr/sbin/arp-scan 192.168.1.0/24', timeout=10))
+        output = (await rosys.run.sh('arp-scan -I en0 192.168.22.0/24', timeout=10))
+        ic(output)
         if output is None:
             return
 
@@ -112,7 +115,7 @@ class RtspCameraProviderHardware(CameraProvider):
                 self.log.exception(f'could not parse {line}')
                 continue
             if not mac.startswith('e0:62:90'):
-                #self.log.debug('ignoring mac {mac} because it seems not to be a micro cam')
+                #self.log.debug('ignoring mac {mac} because it seems not to be a camera')
                 continue
             url = f'rtsp://admin:admin@{ip}/profile0'
             if mac not in self._cameras:
