@@ -10,7 +10,6 @@ from asyncio.subprocess import Process
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
-import aiofile
 import cv2
 import netifaces as net
 import numpy as np
@@ -42,7 +41,6 @@ class RtspCameraProviderHardware(CameraProvider):
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, 1)
         rosys.on_repeat(lambda: self.prune_images(max_age_seconds=1.0), 5.0)
-        rosys.on_shutdown(self.shutdown)
 
         self.needs_backup: bool = False
         persistence.register(self)
@@ -59,7 +57,7 @@ class RtspCameraProviderHardware(CameraProvider):
 
     async def capture_images(self, camera: RtspCamera) -> None:
         async def stream():
-            command = f'ffmpeg -i {camera.url} -f image2pipe -vf fps=fps=1 -nostats -y -fflags nobuffer -flags low_delay -strict experimental -rtsp_transport tcp pipe:1'
+            command = f'ffmpeg -i {camera.url} -f image2pipe -vf fps=fps=10 -nostats -y -fflags nobuffer -flags low_delay -strict experimental -rtsp_transport tcp pipe:1'
             print(command, flush=True)
             args = shlex.split(command)
             process = await asyncio.create_subprocess_exec(*args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
@@ -74,7 +72,6 @@ class RtspCameraProviderHardware(CameraProvider):
                 while True:
                     image_bytes += await process.stdout.read(1)
                     if image_bytes[-2:] == b'\xff\xd9':
-                        self.log.info('new image')
                         yield image_bytes
                         image_bytes = b''
                         break
@@ -82,23 +79,15 @@ class RtspCameraProviderHardware(CameraProvider):
         size = ImageSize(width=1920, height=1080)
         async for image in stream():
             camera.images.append(Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
-            async with aiofile.AIOFile(f'/tmp/rtsp/{rosys.time()}.orig.jpg', 'wb') as afp:
-                await afp.write(image)
-                await afp.fsync()
-            ic(rosys.time())
-
-    def shutdown(self) -> None:
-        for process in self._processes:
-            ic()
-            process.kill()
 
     async def activate(self, camera: RtspCamera) -> None:
-        self.log.info(f'activating {camera}')
+        self.log.info(f'activating {camera.id}')
         task = rosys.background_tasks.create(self.capture_images(camera))
         if task is None:
+            self.log.info(f'could not create task for {camera.id}')
             return
         self._capture_tasks[camera.id] = task
-        self.log.info(f'activated {camera}')
+        self.log.info(f'activated {camera.id}')
         await self.CAMERA_ADDED.call(camera)
 
     async def deactivate(self, camera: RtspCamera) -> None:
@@ -111,7 +100,7 @@ class RtspCameraProviderHardware(CameraProvider):
             return
         self.last_scan = rosys.time()
         for interface in net.interfaces():
-            output = (await rosys.run.sh(f'sudo /usr/sbin/arp-scan -I {interface} --localnet', timeout=10))
+            output = (await rosys.run.sh(f'arp-scan -I {interface} --localnet', timeout=10))
             if output is None:
                 return
 
@@ -129,7 +118,6 @@ class RtspCameraProviderHardware(CameraProvider):
                 if not mac.startswith('e0:62:90'):
                     #self.log.debug('ignoring mac {mac} because it seems not to be a camera')
                     continue
-                ic(ip)
                 url = f'rtsp://admin:admin@{ip}/profile1'
                 if mac not in self._cameras:
                     camera = RtspCamera(id=mac, url=url)
@@ -146,3 +134,5 @@ class RtspCameraProviderHardware(CameraProvider):
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
             await self.deactivate(camera)
+        for process in self._processes:
+            process.kill()

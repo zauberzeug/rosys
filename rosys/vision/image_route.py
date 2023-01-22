@@ -1,7 +1,6 @@
 import logging
 from typing import TYPE_CHECKING, Optional
 
-import aiofile
 import cv2
 import numpy as np
 from fastapi import Response
@@ -48,10 +47,6 @@ async def _try_get_jpeg(camera: Camera, timestamp: str, shrink: int) -> Optional
     for image in reversed(camera.images):
         if str(image.time) == timestamp and image.data is not None:
             jpeg = image.data
-            async with aiofile.AIOFile(f'/tmp/rtsp/{rosys.time()}.jpg', 'wb') as afp:
-                await afp.write(jpeg)
-                await afp.fsync()
-            ic(shrink)
             if shrink != 1:
                 array = np.frombuffer(image.data, dtype=np.uint8)
                 if array is None:
