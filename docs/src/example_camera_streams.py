@@ -10,12 +10,17 @@ camera_provider = RtspCameraProviderHardware()
 
 def refresh() -> None:
     for uid, camera in camera_provider.cameras.items():
-        if uid not in feeds:
-            feeds[uid] = ui.interactive_image()
-        feeds[uid].set_source(camera_provider.get_latest_image_url(camera))
+        if uid not in feeds and not feeds:
+            with cameras:
+                feeds[uid] = ui.interactive_image()
+                ui.label(uid)
+                ic('creating new feed', uid)
+        url = camera_provider.get_latest_image_url(camera)
+        feeds[uid].set_source(url)
 
 
 feeds = {}
-ui.timer(0.01, refresh)
+cameras = ui.row()
+ui.timer(1, refresh)
 
 ui.run(title='RoSys')
