@@ -15,8 +15,11 @@ import netifaces as net
 import numpy as np
 import PIL
 
+import rosys
+
 from .. import persistence, rosys
 from ..geometry import Rectangle
+from ..helpers import measure
 from .camera_provider import CameraProvider
 from .image import Image, ImageSize
 from .rtsp_camera import ImageRotation, RtspCamera
@@ -37,6 +40,8 @@ class RtspCameraProviderHardware(CameraProvider):
         self._cameras: dict[str, RtspCamera] = {}
         self._capture_tasks: dict[str, asyncio.Task] = {}
         self._processes: list[Process] = []
+        self.arpscan_cmd = 'sudo /usr/sbin/arp-scan'
+        #self.arpscan_cmd = 'arp-scan'
 
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, 1)
@@ -60,21 +65,28 @@ class RtspCameraProviderHardware(CameraProvider):
             command = f'ffmpeg -i {camera.url} -f image2pipe -vf fps=fps=10 -nostats -y -fflags nobuffer -flags low_delay -strict experimental -rtsp_transport tcp pipe:1'
             print(command, flush=True)
             args = shlex.split(command)
-            process = await asyncio.create_subprocess_exec(*args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, start_new_session=True)
+            process = await asyncio.create_subprocess_exec(*args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self._processes.append(process)
-            image_bytes = b''
+            data = b''
             while True:
-                while True:
-                    image_bytes += await process.stdout.read(1)
-                    if image_bytes[-2:] == b'\xff\xd8':
-                        image_bytes = image_bytes[-2:]
+                new = await process.stdout.read(4096)
+                if not new:
+                    break
+                data += new
+                header = 0
+                images: list[bytes] = []
+                while header < len(data):
+                    header = data.find(b'\xff\xd8', header)
+                    if header == -1:
                         break
-                while True:
-                    image_bytes += await process.stdout.read(1)
-                    if image_bytes[-2:] == b'\xff\xd9':
-                        yield image_bytes
-                        image_bytes = b''
+                    footer = data.find(b'\xff\xd9', header)
+                    if footer == -1:
                         break
+                    images.append(data[header:footer + 2])
+                    header = footer + 2
+                data = data[header:]
+                if images:
+                    yield images[-1]
 
         size = ImageSize(width=1920, height=1080)
         async for image in stream():
@@ -82,7 +94,7 @@ class RtspCameraProviderHardware(CameraProvider):
 
     async def activate(self, camera: RtspCamera) -> None:
         self.log.info(f'activating {camera.id}')
-        task = rosys.background_tasks.create(self.capture_images(camera))
+        task = rosys.background_tasks.create(self.capture_images(camera), name=f'capture {camera.id}')
         if task is None:
             self.log.info(f'could not create task for {camera.id}')
             return
@@ -91,6 +103,7 @@ class RtspCameraProviderHardware(CameraProvider):
         await self.CAMERA_ADDED.call(camera)
 
     async def deactivate(self, camera: RtspCamera) -> None:
+        self.log.info(f'deactivating {camera.id}')
         if camera.id not in self._capture_tasks:
             return
         self._capture_tasks.pop(camera.id).cancel()
@@ -100,7 +113,7 @@ class RtspCameraProviderHardware(CameraProvider):
             return
         self.last_scan = rosys.time()
         for interface in net.interfaces():
-            output = (await rosys.run.sh(f'arp-scan -I {interface} --localnet', timeout=10))
+            output = (await rosys.run.sh(f'{self.arpscan_cmd} -I {interface} --localnet', timeout=10))
             if output is None:
                 return
 
@@ -128,8 +141,8 @@ class RtspCameraProviderHardware(CameraProvider):
             for camera in self._cameras.values():
                 if camera.active and camera.id not in self._capture_tasks:
                     await self.activate(camera)
-                if not camera.active and camera.id in self._capture_tasks:
-                    await self.deactivate(camera)
+                # if not camera.active and camera.id in self._capture_tasks:
+                #     await self.deactivate(camera)
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
