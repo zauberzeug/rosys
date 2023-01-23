@@ -137,6 +137,7 @@ class RtspCameraProviderHardware(CameraProvider):
                     self.log.info(f'adding camera {url}')
                     await self.CAMERA_ADDED.call(camera)
                 self._cameras[mac].active = True
+                self._cameras[mac].url = url
             for camera in self._cameras.values():
                 if camera.active and camera.id not in self._capture_tasks:
                     await self.activate(camera)
