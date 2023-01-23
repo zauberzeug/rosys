@@ -62,8 +62,8 @@ class RtspCameraProviderHardware(CameraProvider):
 
     async def capture_images(self, camera: RtspCamera) -> None:
         async def stream():
-            command = f'ffmpeg -i {camera.url} -f image2pipe -vf fps=fps=10 -nostats -y -fflags nobuffer -flags low_delay -strict experimental -rtsp_transport tcp pipe:1'
-            print(command, flush=True)
+            command = f'ffmpeg -i {camera.url} -f image2pipe -vf fps=fps=6 -nostats -y -fflags nobuffer -flags low_delay -strict experimental -rtsp_transport tcp -qscale:v 2 -qscale 2 -movflags +faststart pipe:1'
+            #print(command, flush=True)
             args = shlex.split(command)
             process = await asyncio.create_subprocess_exec(*args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self._processes.append(process)
@@ -93,7 +93,6 @@ class RtspCameraProviderHardware(CameraProvider):
             camera.images.append(Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
 
     async def activate(self, camera: RtspCamera) -> None:
-        self.log.info(f'activating {camera.id}')
         task = rosys.background_tasks.create(self.capture_images(camera), name=f'capture {camera.id}')
         if task is None:
             self.log.info(f'could not create task for {camera.id}')
@@ -131,7 +130,7 @@ class RtspCameraProviderHardware(CameraProvider):
                 if not mac.startswith('e0:62:90'):
                     #self.log.debug('ignoring mac {mac} because it seems not to be a camera')
                     continue
-                url = f'rtsp://admin:admin@{ip}/profile1'
+                url = f'rtsp://admin:admin@{ip}/profile0'
                 if mac not in self._cameras:
                     camera = RtspCamera(id=mac, url=url)
                     self._cameras[mac] = camera
@@ -141,6 +140,7 @@ class RtspCameraProviderHardware(CameraProvider):
             for camera in self._cameras.values():
                 if camera.active and camera.id not in self._capture_tasks:
                     await self.activate(camera)
+                # NOTE deactivating is still buggy -- disabled for now
                 # if not camera.active and camera.id in self._capture_tasks:
                 #     await self.deactivate(camera)
 
