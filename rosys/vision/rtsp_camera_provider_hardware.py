@@ -62,8 +62,8 @@ class RtspCameraProviderHardware(CameraProvider):
 
     async def capture_images(self, camera: RtspCamera) -> None:
         async def stream():
-            command = f'ffmpeg -i {camera.url} -f image2pipe -vf fps=fps=6 -nostats -y -fflags nobuffer -flags low_delay -strict experimental -rtsp_transport tcp -qscale:v 2 -qscale 2 -movflags +faststart pipe:1'
-            #print(command, flush=True)
+            command = f'ffmpeg -i {camera.url} -f image2pipe -vf fps=fps=6 -nostats -y -fflags nobuffer -flags low_delay -strict experimental -rtsp_transport tcp -qscale:v 2 -movflags +faststart -threads 1 pipe:1'
+            self.log.info(command)
             args = shlex.split(command)
             process = await asyncio.create_subprocess_exec(*args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self._processes.append(process)
@@ -71,6 +71,7 @@ class RtspCameraProviderHardware(CameraProvider):
             while True:
                 new = await process.stdout.read(4096)
                 if not new:
+                    ic(new)
                     break
                 data += new
                 header = 0
