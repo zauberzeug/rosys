@@ -10,8 +10,14 @@
       
         <link rel="canonical" href="https://rosys.io/examples/click-and-drive/">
       
+      
+        <link rel="prev" href="../steering/">
+      
+      
+        <link rel="next" href="../play-pause-stop/">
+      
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.6">
     
     
       
@@ -19,11 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.975780f9.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.558e4712.min.css">
       
         
         <link rel="stylesheet" href="../../assets/stylesheets/palette.2505c338.min.css">
-        
       
       
 
@@ -58,7 +63,7 @@
     
     
     
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="None" data-md-color-accent="None">
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="" data-md-color-accent="">
   
     
     
@@ -136,7 +141,7 @@
           <div class="md-search-result__meta">
             Initializing search
           </div>
-          <ol class="md-search-result__list"></ol>
+          <ol class="md-search-result__list" role="presentation"></ol>
         </div>
       </div>
     </div>
@@ -261,8 +266,9 @@
     <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
       
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_4" type="checkbox" id="__nav_4" checked>
       
       
       
@@ -437,12 +443,13 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
       
       
       
-      
-        <label class="md-nav__link" for="__nav_5">
+        <label class="md-nav__link" for="__nav_5" tabindex="0" aria-expanded="false">
           Module Reference
           <span class="md-nav__icon md-icon"></span>
         </label>
@@ -620,16 +627,16 @@
                 
                   
 
-  <a href="https://github.com/zauberzeug/rosys/edit/main/docs/examples/click-and-drive.md" title="Edit this page" class="md-content__button md-icon">
-    
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
-  </a>
+  
+  
+
 
 
 <h1 id="click-and-drive">Click-and-drive<a class="headerlink" href="#click-and-drive" title="Permanent link">&para;</a></h1>
 <p>In this example we create a simulated robot which uses an <a href="../../reference/rosys/automation">automation</a> to drive wherever the user clicks.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
 <span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
+<span class="kn">from</span> <span class="nn">nicegui.events</span> <span class="kn">import</span> <span class="n">SceneClickEventArguments</span>
 
 <span class="kn">import</span> <span class="nn">rosys</span>
 
@@ -639,10 +646,10 @@
 <span class="n">automator</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">automation</span><span class="o">.</span><span class="n">Automator</span><span class="p">(</span><span class="n">wheels</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">handle_click</span><span class="p">(</span><span class="n">msg</span><span class="p">):</span>
-    <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">hits</span><span class="p">:</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">handle_click</span><span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">SceneClickEventArguments</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">hits</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">hit</span><span class="o">.</span><span class="n">object_id</span> <span class="o">==</span> <span class="s1">&#39;ground&#39;</span><span class="p">:</span>
-            <span class="n">target</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">point</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
+            <span class="n">target</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
             <span class="n">automator</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">driver</span><span class="o">.</span><span class="n">drive_to</span><span class="p">(</span><span class="n">target</span><span class="p">))</span>
 
 <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">(</span><span class="n">on_click</span><span class="o">=</span><span class="n">handle_click</span><span class="p">):</span>
@@ -682,42 +689,6 @@
       
         <footer class="md-footer">
   
-    
-    <nav class="md-footer__inner md-grid" aria-label="Footer" >
-      
-        
-        <a href="../steering/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Steering" rel="prev">
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
-          </div>
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              Steering
-            </div>
-          </div>
-        </a>
-      
-      
-        
-        <a href="../play-pause-stop/" class="md-footer__link md-footer__link--next" aria-label="Next: Play-pause-stop" rel="next">
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              Play-pause-stop
-            </div>
-          </div>
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
-          </div>
-        </a>
-      
-    </nav>
-  
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
@@ -739,12 +710,11 @@
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.e5c33ebb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      <script src="../../assets/javascripts/bundle.51d95adb.min.js"></script>
       
-    
     
   </body>
 </html>

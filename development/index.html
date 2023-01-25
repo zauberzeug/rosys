@@ -10,8 +10,14 @@
       
         <link rel="canonical" href="https://rosys.io/development/">
       
+      
+        <link rel="prev" href="../reference/rosys/vision/">
+      
+      
+        <link rel="next" href="../troubleshooting/">
+      
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-8.5.10">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.6">
     
     
       
@@ -19,11 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.975780f9.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.558e4712.min.css">
       
         
         <link rel="stylesheet" href="../assets/stylesheets/palette.2505c338.min.css">
-        
       
       
 
@@ -58,7 +63,7 @@
     
     
     
-    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="None" data-md-color-accent="None">
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="" data-md-color-accent="">
   
     
     
@@ -136,7 +141,7 @@
           <div class="md-search-result__meta">
             Initializing search
           </div>
-          <ol class="md-search-result__list"></ol>
+          <ol class="md-search-result__list" role="presentation"></ol>
         </div>
       </div>
     </div>
@@ -259,8 +264,9 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
       
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_4" type="checkbox" id="__nav_4" >
       
       
       
@@ -425,12 +431,13 @@
     <li class="md-nav__item md-nav__item--nested">
       
       
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
+      
+      
+      <input class="md-nav__toggle md-toggle " data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
       
       
       
-      
-        <label class="md-nav__link" for="__nav_5">
+        <label class="md-nav__link" for="__nav_5" tabindex="0" aria-expanded="false">
           Module Reference
           <span class="md-nav__icon md-icon"></span>
         </label>
@@ -802,10 +809,9 @@
                 
                   
 
-  <a href="https://github.com/zauberzeug/rosys/edit/main/docs/development.md" title="Edit this page" class="md-content__button md-icon">
-    
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75M3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25Z"/></svg>
-  </a>
+  
+  
+
 
 
 <h1 id="development">Development<a class="headerlink" href="#development" title="Permanent link">&para;</a></h1>
@@ -949,7 +955,7 @@ Therefore logging should always be stored outside of your project's source direc
 <p>It is quite useful to see from which file and line number a log entry was triggered.
 To keep the log lines from getting too long, you can create a log filter which computes the relative path:</p>
 <div class="highlight"><pre><span></span><code><span class="k">class</span> <span class="nc">PackagePathFilter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Filter</span><span class="p">):</span>
-    <span class="sd">&#39;&#39;&#39;Provides relative path for log formatter.</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;Provides relative path for log formatter.</span>
 <span class="sd">    Original code borrowed from https://stackoverflow.com/a/52582536/3419103</span>
 <span class="sd">    &#39;&#39;&#39;</span>
 
@@ -1002,7 +1008,7 @@ Then you can change the format for the formatter:</p>
 <p class="admonition-title">Note</p>
 <p>The default RoSys installation via pip does not come with profiling packages.
 To install them, run</p>
-<div class="highlight"><pre><span></span><code>python3 -m pip install rosys<span class="o">[</span>profiling<span class="o">]</span>
+<div class="highlight"><pre><span></span><code>python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>rosys<span class="o">[</span>profiling<span class="o">]</span>
 </code></pre></div>
 <p>Currently this does not work with Python 3.11 because yappy and line-profiler do not support 3.11 yet.</p>
 </div>
@@ -1096,42 +1102,6 @@ A GitHub Action then performs the following steps:</p>
       
         <footer class="md-footer">
   
-    
-    <nav class="md-footer__inner md-grid" aria-label="Footer" >
-      
-        
-        <a href="../reference/rosys/vision/" class="md-footer__link md-footer__link--prev" aria-label="Previous: vision" rel="prev">
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
-          </div>
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Previous
-              </span>
-              vision
-            </div>
-          </div>
-        </a>
-      
-      
-        
-        <a href="../troubleshooting/" class="md-footer__link md-footer__link--next" aria-label="Next: Troubleshooting" rel="next">
-          <div class="md-footer__title">
-            <div class="md-ellipsis">
-              <span class="md-footer__direction">
-                Next
-              </span>
-              Troubleshooting
-            </div>
-          </div>
-          <div class="md-footer__button md-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
-          </div>
-        </a>
-      
-    </nav>
-  
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
@@ -1153,12 +1123,11 @@ A GitHub Action then performs the following steps:</p>
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate"], "search": "../assets/javascripts/workers/search.16e2a7d4.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.config.lang": "en", "search.config.pipeline": "trimmer, stopWordFilter", "search.config.separator": "[\\s\\-]+", "search.placeholder": "Search", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version.title": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate"], "search": "../assets/javascripts/workers/search.e5c33ebb.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.5a2dcb6a.min.js"></script>
+      <script src="../assets/javascripts/bundle.51d95adb.min.js"></script>
       
-    
     
   </body>
 </html>

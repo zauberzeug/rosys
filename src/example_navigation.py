@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from nicegui import ui
+from nicegui.events import SceneClickEventArguments
 
 from rosys.automation import Automator
 from rosys.driving import Driver, Odometer, robot_object
@@ -17,18 +18,18 @@ driver = Driver(wheels, odometer)
 automator = Automator(wheels, None)
 
 
-async def handle_click(msg):
-    for hit in msg.hits:
+async def handle_click(e: SceneClickEventArguments):
+    for hit in e.hits:
         if hit.object_id == 'ground':
-            yaw = odometer.prediction.point.direction(hit.point)
-            goal = Pose(x=hit.point.x, y=hit.point.y, yaw=yaw)
+            yaw = odometer.prediction.point.direction(Point(x=hit.x, y=hit.y))
+            goal = Pose(x=hit.x, y=hit.y, yaw=yaw)
             path = await path_planner.search(start=odometer.prediction, goal=goal)
             path3d.update(path)
             automator.start(driver.drive_path(path))
 
 with ui.scene(on_click=handle_click, width=600):
     robot_object(shape, odometer)
-    obstacle_object(path_planner.obstacles)
+    obstacle_object(path_planner)
     path3d = path_object()
 
 ui.label('click into the scene to drive the robot')
