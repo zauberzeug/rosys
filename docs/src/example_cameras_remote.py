@@ -22,7 +22,7 @@ async def add_main_camera(camera: rosys.vision.Camera) -> None:
     camera_card.clear()  # remove "seeking camera" label
     with camera_card:
         main_cam = ui.interactive_image()
-        ui.timer(1, lambda: main_cam.set_source(camera_provider.get_latest_image_url(camera)))
+        ui.timer(0.1, lambda: main_cam.set_source(camera_provider.get_latest_image_url(camera)))
 
 camera_provider.CAMERA_ADDED.register_ui(add_main_camera)
 
