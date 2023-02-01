@@ -66,14 +66,13 @@ class Event:
 
     def emit(self, *args) -> None:
         '''Fires event without waiting for the result.'''
-        loop = asyncio.get_event_loop()
         for listener in self.listeners:
             try:
                 result = invoke(listener.callback, *args)
                 if isinstance(result, Awaitable):
-                    if loop.is_running:
+                    if nicegui_globals.loop.is_running():
                         name = f'{listener.filepath}:{listener.line}'
-                        tasks.append(background_tasks.create(result, name=name, loop=loop))
+                        tasks.append(background_tasks.create(result, name=name))
                     else:
                         startup_coroutines.append(result)
             except:
