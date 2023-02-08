@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 from nicegui import ui
+from wheels_for_custom_hardware import WheelsForCustomHardware
+
 from rosys.driving import Odometer, Steerer, joystick, keyboard_control
 from rosys.hardware import WheelsSimulation
 
-from wheels_for_custom_hardware import WheelsForCustomHardware
-
 try:
     wheels = WheelsForCustomHardware()
-except:
+except Exception:
     wheels = WheelsSimulation()
 odometer = Odometer(wheels)
 steerer = Steerer(wheels)

@@ -1,20 +1,26 @@
 #!/usr/bin/env python3
 from nicegui import ui
 
-from rosys.driving import Odometer, Steerer, keyboard_control, robot_object
-from rosys.geometry import Prism
-from rosys.hardware import WheelsSimulation
+import rosys
 
 # setup
-shape = Prism.default_robot_shape()
-wheels = WheelsSimulation()
-odometer = Odometer(wheels)
-steerer = Steerer(wheels)
+shape = rosys.geometry.Prism.default_robot_shape()
+is_real = rosys.hardware.SerialCommunication.is_possible()
+if is_real:
+    communication = rosys.hardware.SerialCommunication()
+    robot_brain = rosys.hardware.RobotBrain(communication)
+    wheels = rosys.hardware.WheelsHardware()
+    robot = rosys.hardware.RobotHardware([wheels], robot_brain)
+else:
+    wheels = rosys.hardware.WheelsSimulation()
+    robot = rosys.hardware.RobotSimulation([wheels])
+odometer = rosys.driving.Odometer(wheels)
+steerer = rosys.driving.Steerer(wheels)
 
 # ui
-keyboard_control(steerer)
+rosys.driving.keyboard_control(steerer)
 with ui.scene():
-    robot_object(shape, odometer)
+    rosys.driving.robot_object(shape, odometer)
 ui.label('hold SHIFT to steer with the keyboard arrow keys')
 
 # start
