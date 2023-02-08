@@ -9,7 +9,7 @@ is_real = rosys.hardware.SerialCommunication.is_possible()
 if is_real:
     communication = rosys.hardware.SerialCommunication()
     robot_brain = rosys.hardware.RobotBrain(communication)
-    wheels = rosys.hardware.WheelsHardware()
+    wheels = rosys.hardware.WheelsHardware(robot_brain)
     robot = rosys.hardware.RobotHardware([wheels], robot_brain)
 else:
     wheels = rosys.hardware.WheelsSimulation()

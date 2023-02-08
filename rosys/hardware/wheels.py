@@ -3,7 +3,7 @@ import abc
 from .. import rosys
 from ..event import Event
 from ..geometry import Pose, PoseStep, Velocity
-from .module import Module
+from .module import Module, ModuleHardware, ModuleSimulation
 from .robot_brain import RobotBrain
 
 
@@ -30,7 +30,7 @@ class Wheels(Module):
         pass
 
 
-class WheelsHardware(Wheels):
+class WheelsHardware(Wheels, ModuleHardware):
     '''This module implements wheels hardware.
 
     Drive and stop commands are forwarded to a given Robot Brain.
@@ -38,9 +38,8 @@ class WheelsHardware(Wheels):
     '''
 
     def __init__(self, robot_brain: RobotBrain) -> None:
-        super().__init__()
-
-        self.robot_brain = robot_brain
+        Wheels.__init__(self)
+        ModuleHardware.__init__(self, robot_brain)
 
     async def drive(self, linear: float, angular: float) -> None:
         await self.robot_brain.send(f'wheels.speed({linear}, {angular})')
@@ -53,7 +52,7 @@ class WheelsHardware(Wheels):
         self.VELOCITY_MEASURED.emit([velocity])
 
 
-class WheelsSimulation(Wheels):
+class WheelsSimulation(Wheels, ModuleSimulation):
     '''This module simulates two wheels.
 
     Drive and stop commands impact internal velocities (linear and angular).
