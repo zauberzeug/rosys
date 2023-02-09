@@ -32,7 +32,7 @@ class BmsHardware(Bms, ModuleHardware):
     def __init__(self, robot_brain: RobotBrain) -> None:
         super.__init__(robot_brain=robot_brain)
         rosys.on_repeat(1.0, self._request)
-        self.serial_hooks[self.LINE_PREFIX] = self._handle_bms
+        self.message_hooks[self.LINE_PREFIX] = self._handle_bms
 
     async def _request(self) -> None:
         if rosys.time() > self.state.last_update + self.UPDATE_INTERVAL:

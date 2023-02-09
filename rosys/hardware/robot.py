@@ -22,6 +22,22 @@ class RobotHardware(Robot):
         self.robot_brain = robot_brain
         rosys.on_repeat(self.update, 0.01)
 
+    async def configure(self) -> None:
+        startup_code = ''
+        for module in self.modules:
+            startup_code += cast(ModuleHardware, module).lizard_code + '\n'
+        output_fields = []
+        for module in self.modules:
+            output_fields.extend(cast(ModuleHardware, module).CORE_MESSAGE_FIELDS)
+        startup_code += f'''
+            core.output("core.millis {' '.join(output_fields)}")
+            en = Output(15)
+            v24 = Output(12)
+            en.on()
+            v24.on()
+        '''
+        await self.robot_brain.configure(startup_code)
+
     async def update(self) -> None:
         for time, line in await self.robot_brain.read_lines():
             words = line.split()
@@ -32,8 +48,8 @@ class RobotHardware(Robot):
                     await cast(ModuleHardware, module).handle_core_output(time, words)
             else:
                 for module in self.modules:
-                    if words[0] in cast(ModuleHardware, module).serial_hooks:
-                        cast(ModuleHardware, module).serial_hooks[words[0]](time, words)
+                    if words[0] in cast(ModuleHardware, module).message_hooks:
+                        cast(ModuleHardware, module).message_hooks[words[0]](time, words)
 
 
 class RobotSimulation(Robot):

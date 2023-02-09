@@ -1,3 +1,4 @@
+from .can import CanHardware
 from .communication import Communication, SerialCommunication, WebCommunication
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot import Robot, RobotHardware, RobotSimulation

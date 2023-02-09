@@ -3,6 +3,7 @@ import abc
 from .. import rosys
 from ..event import Event
 from ..geometry import Pose, PoseStep, Velocity
+from .can import CanHardware
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot_brain import RobotBrain
 
@@ -36,15 +37,35 @@ class WheelsHardware(Wheels, ModuleHardware):
     Drive and stop commands are forwarded to a given Robot Brain.
     Velocities are read and emitted regularly.
     '''
+    CORE_MESSAGE_FIELDS: list[str] = ['linear_speed:3', 'angular_speed:3']
 
-    def __init__(self, robot_brain: RobotBrain) -> None:
-        super().__init__(robot_brain=robot_brain)
+    def __init__(self, robot_brain: RobotBrain, *,
+                 can: CanHardware,
+                 name: str = 'wheels',
+                 left_can_address: int = 0x000,
+                 right_can_address: int = 0x100,
+                 m_per_tick: float = 0.01,
+                 width: float = 0.5,
+                 is_left_reversed: bool = False,
+                 is_right_reversed: bool = False) -> None:
+        self.name = name
+        lizard_code = f'''
+            l = ODriveMotor({can.name}, {left_can_address})
+            r = ODriveMotor({can.name}, {right_can_address})
+            l.m_per_tick = {m_per_tick}
+            r.m_per_tick = {m_per_tick}
+            l.reversed = {'true' if is_left_reversed else 'false'}
+            r.reversed = {'true' if is_right_reversed else 'false'}
+            {name} = ODriveWheels(l, r)
+            {name}.width = {width}
+        '''
+        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
 
     async def drive(self, linear: float, angular: float) -> None:
-        await self.robot_brain.send(f'wheels.speed({linear}, {angular})')
+        await self.robot_brain.send(f'{self.name}.speed({linear}, {angular})')
 
     async def stop(self) -> None:
-        await self.robot_brain.send('wheels.off()')
+        await self.robot_brain.send(f'{self.name}.off()')
 
     async def handle_core_output(self, time: float, words: list[str]) -> None:
         velocity = Velocity(linear=float(words.pop(0)), angular=float(words.pop(0)), time=time)
