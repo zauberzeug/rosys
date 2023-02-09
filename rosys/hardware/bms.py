@@ -16,8 +16,8 @@ class Bms(Module):
     The BMS module provides measured voltages as an event.
     """
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
 
         self.state = BmsState()
 
@@ -30,8 +30,7 @@ class BmsHardware(Bms, ModuleHardware):
     LINE_PREFIX = 'p0: bms'
 
     def __init__(self, robot_brain: RobotBrain) -> None:
-        Bms.__init__(self)
-        ModuleHardware.__init__(self, robot_brain)
+        super.__init__(robot_brain=robot_brain)
         rosys.on_repeat(1.0, self._request)
         self.serial_hooks[self.LINE_PREFIX] = self._handle_bms
 
@@ -64,6 +63,7 @@ class BmsSimuation(Bms, ModuleSimulation):
     TEMPERATURE_FREQUENCY = 0.01
 
     def __init__(self, is_charging: Optional[callable[[], bool]] = None, fixed_voltage: Optional[float] = None) -> None:
+        super().__init__()
         self.is_charging = is_charging
         self.fixed_voltage = fixed_voltage
 

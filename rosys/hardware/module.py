@@ -12,8 +12,8 @@ class Module(abc.ABC):
 
 class ModuleHardware(Module):
 
-    def __init__(self, robot_brain: RobotBrain) -> None:
-        super().__init__()
+    def __init__(self, robot_brain: RobotBrain, **kwargs) -> None:
+        super().__init__(**kwargs)
         self.robot_brain = robot_brain
         self.serial_hooks: dict[str, callable] = {}
 
@@ -23,6 +23,9 @@ class ModuleHardware(Module):
 
 
 class ModuleSimulation(Module):
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
 
     @abc.abstractmethod
     async def step(self, dt: float) -> None:

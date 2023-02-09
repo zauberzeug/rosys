@@ -5,6 +5,7 @@ import rosys
 
 # setup
 shape = rosys.geometry.Prism.default_robot_shape()
+rosys.hardware.SerialCommunication.search_paths = ['/dev/ttyUSB0']
 is_real = rosys.hardware.SerialCommunication.is_possible()
 if is_real:
     communication = rosys.hardware.SerialCommunication()

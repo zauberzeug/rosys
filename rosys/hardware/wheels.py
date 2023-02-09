@@ -13,8 +13,8 @@ class Wheels(Module):
     Wheels can be moved using the `drive` methods and provide measured velocities as an event.
     '''
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
 
         self.VELOCITY_MEASURED = Event()
         '''new velocity measurements are available for processing (argument: list of velocities)'''
@@ -38,8 +38,7 @@ class WheelsHardware(Wheels, ModuleHardware):
     '''
 
     def __init__(self, robot_brain: RobotBrain) -> None:
-        Wheels.__init__(self)
-        ModuleHardware.__init__(self, robot_brain)
+        super().__init__(robot_brain=robot_brain)
 
     async def drive(self, linear: float, angular: float) -> None:
         await self.robot_brain.send(f'wheels.speed({linear}, {angular})')
