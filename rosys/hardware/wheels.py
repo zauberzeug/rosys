@@ -67,9 +67,10 @@ class WheelsHardware(Wheels, ModuleHardware):
     async def stop(self) -> None:
         await self.robot_brain.send(f'{self.name}.off()')
 
-    async def handle_core_output(self, time: float, words: list[str]) -> None:
+    async def handle_core_output(self, time: float, words: list[str]) -> list[str]:
         velocity = Velocity(linear=float(words.pop(0)), angular=float(words.pop(0)), time=time)
         self.VELOCITY_MEASURED.emit([velocity])
+        return words
 
 
 class WheelsSimulation(Wheels, ModuleSimulation):

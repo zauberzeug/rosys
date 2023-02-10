@@ -20,8 +20,8 @@ class ModuleHardware(Module):
         self.message_hooks: dict[str, callable] = {}
 
     @abc.abstractmethod
-    async def handle_core_output(self, time: float, words: list[str]) -> None:
-        pass
+    async def handle_core_output(self, time: float, words: list[str]) -> list[str]:
+        return words
 
 
 class ModuleSimulation(Module):
