@@ -140,8 +140,11 @@ class Schedule:
                 for h in range(24):
                     b0, b1, b2 = buttons[d * 24 + h]
                     b0._classes = [f'!bg-[{color(d, h, [0, 30, 60])}]']
+                    b0.update()
                     b1._classes = [f'!bg-[{color(d, h, [0, 30])}]']
+                    b1.update()
                     b2._classes = [f'!bg-[{color(d, h, [30, 60])}]']
+                    b2.update()
             grid.update()
 
         buttons: list[tuple[ui.button, ui.button, ui.button]] = []
