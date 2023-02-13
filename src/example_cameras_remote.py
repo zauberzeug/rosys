@@ -7,7 +7,7 @@ if rosys.hardware.SerialCommunication.is_possible():
     communication = rosys.hardware.SerialCommunication()
     robot_brain = rosys.hardware.RobotBrain(communication)
     wheels = rosys.hardware.WheelsHardware(robot_brain)
-    camera_provider = rosys.hardware.UsbCameraProviderHardware()
+    camera_provider = rosys.vision.UsbCameraProviderHardware()
 else:
     wheels = rosys.hardware.WheelsSimulation()
     camera_provider = rosys.vision.UsbCameraProviderSimulation()
