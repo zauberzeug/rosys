@@ -12,6 +12,3 @@ class CanHardware(ModuleHardware):
         self.name = name
         lizard_code = f'{name} = Can({rx_pin}, {tx_pin}, {baud})'
         super.__init__(robot_brain=robot_brain, lizard_code=lizard_code)
-
-    async def handle_core_output(self, time: float, words: list[str]) -> list[str]:
-        return words
