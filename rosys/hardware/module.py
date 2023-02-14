@@ -19,7 +19,6 @@ class ModuleHardware(Module):
         self.lizard_code = lizard_code
         self.message_hooks: dict[str, callable] = {}
 
-    @abc.abstractmethod
     async def handle_core_output(self, time: float, words: list[str]) -> None:
         pass
 
