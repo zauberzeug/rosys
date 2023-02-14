@@ -1,3 +1,4 @@
+import abc
 from typing import Optional
 
 import numpy as np
@@ -10,7 +11,7 @@ from .module import Module, ModuleHardware, ModuleSimulation
 from .robot_brain import RobotBrain
 
 
-class Bms(Module):
+class Bms(Module, abc.ABC):
     """The BMS module is a simple example for a representation of real or simulated robot hardware.
 
     The BMS module provides measured voltages as an event.

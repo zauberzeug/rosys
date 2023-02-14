@@ -8,7 +8,7 @@ from .module import Module, ModuleHardware, ModuleSimulation
 from .robot_brain import RobotBrain
 
 
-class Wheels(Module):
+class Wheels(Module, abc.ABC):
     '''The wheels module is a simple example for a representation of real or simulated robot hardware.
 
     Wheels can be moved using the `drive` methods and provide measured velocities as an event.
