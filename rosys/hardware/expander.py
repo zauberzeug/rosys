@@ -1,7 +1,6 @@
 
-from rosys.hardware import ModuleHardware, SerialHardware
-from rosys.hardware.robot_brain import RobotBrain
-
+from .module import ModuleHardware
+from .robot_brain import RobotBrain
 from .serial import SerialHardware
 
 
