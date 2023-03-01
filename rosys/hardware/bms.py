@@ -1,5 +1,5 @@
 import abc
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 
@@ -80,7 +80,7 @@ class BmsSimuation(Bms, ModuleSimulation):
     TEMPERATURE_AMPLITUDE = 1.0
     TEMPERATURE_FREQUENCY = 0.01
 
-    def __init__(self, is_charging: bool = None, fixed_voltage: Optional[float] = None) -> None:
+    def __init__(self, is_charging: Optional[Callable[[], bool]] = None, fixed_voltage: Optional[float] = None) -> None:
         super().__init__()
         self.is_charging = is_charging
         self.fixed_voltage = fixed_voltage
