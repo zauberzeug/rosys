@@ -39,20 +39,25 @@ class BmsHardware(Bms, ModuleHardware):
                  baud: int = 9600,
                  num: int = 2) -> None:
         self.name = name
+        self.expander = expander
         lizard_code = f'''
-            {name} = {expander.name}.Serial({rx_pin}, {tx_pin}, {baud}, {num})
+            {name} = {self.expander.name + "." if self.expander else ""}Serial({rx_pin}, {tx_pin}, {baud}, {num})
             {name}.unmute()
         '''
-        super.__init__(robot_brain=robot_brain, lizard_code=lizard_code)
-        rosys.on_repeat(1.0, self._request)
-        self.message_hooks[f'{expander.name + ": " if expander != None else ""}{self.name}'] = self._handle_bms
+        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
+        rosys.on_repeat(self._request, 1.0)
+        self.message_hooks[f'{self.expander.name + ": " if self.expander else ""}{self.name}'] = self._handle_bms
 
     async def _request(self) -> None:
         if rosys.time() > self.state.last_update + self.UPDATE_INTERVAL:
             await self.robot_brain.send(f'{self.name}.send(0xdd, 0xa5, 0x03, 0x00, 0xff, 0xfd, 0x77)')
 
     async def _handle_bms(self, line: str) -> None:
-        msg = BmsMessage([int(w, 16) for w in line.split()[2:]])
+        if self.expander:
+            words = line.split()[2:]
+        else:
+            words = line.split()[1:]
+        msg = BmsMessage([int(w, 16) for w in words])
         msg.check()
         result = msg.interpret()
         self.state.percentage = result.get('capacity percent')
@@ -75,7 +80,7 @@ class BmsSimuation(Bms, ModuleSimulation):
     TEMPERATURE_AMPLITUDE = 1.0
     TEMPERATURE_FREQUENCY = 0.01
 
-    def __init__(self, is_charging: Optional[callable[[], bool]] = None, fixed_voltage: Optional[float] = None) -> None:
+    def __init__(self, is_charging: bool = None, fixed_voltage: Optional[float] = None) -> None:
         super().__init__()
         self.is_charging = is_charging
         self.fixed_voltage = fixed_voltage
