@@ -12,5 +12,7 @@ class CanHardware(ModuleHardware):
                  tx_pin: int = 33,
                  baud: int = 1_000_000) -> None:
         self.name = name
-        lizard_code = f'{name} = {expander.name + "." if expander != None else ""}Can({rx_pin}, {tx_pin}, {baud})'
-        super.__init__(robot_brain=robot_brain, lizard_code=lizard_code)
+        lizard_code = f'''
+        {self.name} = {expander.name + "." if expander else ""}Can({rx_pin}, {tx_pin}, {baud})
+        '''
+        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
