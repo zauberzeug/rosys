@@ -10,7 +10,7 @@ from rosys.analysis import KpiLogger
 from rosys.automation import Automator
 from rosys.driving import Driver, Odometer
 from rosys.geometry import Prism
-from rosys.hardware import Wheels, WheelsSimulation
+from rosys.hardware import Robot, RobotSimulation, Wheels, WheelsSimulation
 from rosys.pathplanning import PathPlanner
 from rosys.test import helpers, log_configuration
 
@@ -36,6 +36,11 @@ async def odometer(wheels: Wheels, integration: None) -> Odometer:
 @pytest.fixture
 async def wheels(integration: None) -> Wheels:
     return WheelsSimulation()
+
+
+@pytest.fixture
+async def robot(wheels: Wheels, integration: None) -> Robot:
+    return RobotSimulation([wheels])
 
 
 @pytest.fixture
