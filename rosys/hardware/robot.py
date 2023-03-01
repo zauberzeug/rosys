@@ -45,11 +45,11 @@ class RobotHardware(Robot):
                 words.pop(0)
                 words.pop(0)
                 for module in self.modules:
-                    await cast(ModuleHardware, module).handle_core_output(time, words)
+                    cast(ModuleHardware, module).handle_core_output(time, words)
             else:
                 for module in self.modules:
                     if words[0] in cast(ModuleHardware, module).message_hooks:
-                        await cast(ModuleHardware, module).message_hooks[words[0]](line)
+                        cast(ModuleHardware, module).message_hooks[words[0]](line)
 
 
 class RobotSimulation(Robot):

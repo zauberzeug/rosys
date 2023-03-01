@@ -9,16 +9,16 @@ from .robot_brain import RobotBrain
 
 
 class Wheels(Module, abc.ABC):
-    '''The wheels module is a simple example for a representation of real or simulated robot hardware.
+    """The wheels module is a simple example for a representation of real or simulated robot hardware.
 
     Wheels can be moved using the `drive` methods and provide measured velocities as an event.
-    '''
+    """
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
         self.VELOCITY_MEASURED = Event()
-        '''new velocity measurements are available for processing (argument: list of velocities)'''
+        """new velocity measurements are available for processing (argument: list of velocities)"""
 
         rosys.on_shutdown(self.stop)
 
@@ -32,11 +32,11 @@ class Wheels(Module, abc.ABC):
 
 
 class WheelsHardware(Wheels, ModuleHardware):
-    '''This module implements wheels hardware.
+    """This module implements wheels hardware.
 
     Drive and stop commands are forwarded to a given Robot Brain.
     Velocities are read and emitted regularly.
-    '''
+    """
 
     def __init__(self, robot_brain: RobotBrain, *,
                  can: CanHardware,
@@ -58,7 +58,7 @@ class WheelsHardware(Wheels, ModuleHardware):
             {name} = ODriveWheels(l, r)
             {name}.width = {width}
         '''
-        core_message_fields: list[str] = [f'{self.name}.linear_speed:3', f'{self.name}.angular_speed:3']
+        core_message_fields = [f'{self.name}.linear_speed:3', f'{self.name}.angular_speed:3']
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def drive(self, linear: float, angular: float) -> None:
@@ -67,17 +67,17 @@ class WheelsHardware(Wheels, ModuleHardware):
     async def stop(self) -> None:
         await self.robot_brain.send(f'{self.name}.off()')
 
-    async def handle_core_output(self, time: float, words: list[str]) -> None:
+    def handle_core_output(self, time: float, words: list[str]) -> None:
         velocity = Velocity(linear=float(words.pop(0)), angular=float(words.pop(0)), time=time)
         self.VELOCITY_MEASURED.emit([velocity])
 
 
 class WheelsSimulation(Wheels, ModuleSimulation):
-    '''This module simulates two wheels.
+    """This module simulates two wheels.
 
     Drive and stop commands impact internal velocities (linear and angular).
     A simulated pose is regularly updated with these velocities, while the velocities are emitted as an event.
-    '''
+    """
 
     def __init__(self) -> None:
         super().__init__()

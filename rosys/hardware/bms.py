@@ -29,10 +29,9 @@ class Bms(Module, abc.ABC):
 
 class BmsHardware(Bms, ModuleHardware):
     UPDATE_INTERVAL = 5.0
-    # LINE_PREFIX = 'p0: bms'
 
     def __init__(self, robot_brain: RobotBrain, *,
-                 expander: ExpanderHardware,
+                 expander: Optional[ExpanderHardware] = None,
                  name: str = 'bms',
                  rx_pin: int = 26,
                  tx_pin: int = 27,
@@ -52,7 +51,7 @@ class BmsHardware(Bms, ModuleHardware):
         if rosys.time() > self.state.last_update + self.UPDATE_INTERVAL:
             await self.robot_brain.send(f'{self.name}.send(0xdd, 0xa5, 0x03, 0x00, 0xff, 0xfd, 0x77)')
 
-    async def _handle_bms(self, line: str) -> None:
+    def _handle_bms(self, line: str) -> None:
         if self.expander:
             words = line.split()[2:]
         else:

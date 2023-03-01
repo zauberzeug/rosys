@@ -21,7 +21,7 @@ class ModuleHardware(Module):
         self.core_message_fields: list[str] = core_message_fields
         self.message_hooks: dict[str, callable] = {}
 
-    async def handle_core_output(self, time: float, words: list[str]) -> None:
+    def handle_core_output(self, time: float, words: list[str]) -> None:
         pass
 
 
