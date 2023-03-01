@@ -18,7 +18,6 @@ class RobotHardware(Robot):
 
     def __init__(self, modules: list[Module], robot_brain: RobotBrain) -> None:
         super().__init__(modules)
-
         self.robot_brain = robot_brain
         rosys.on_repeat(self.update, 0.01)
 
@@ -28,7 +27,7 @@ class RobotHardware(Robot):
             startup_code += cast(ModuleHardware, module).lizard_code + '\n'
         output_fields = []
         for module in self.modules:
-            output_fields.extend(cast(ModuleHardware, module).CORE_MESSAGE_FIELDS)
+            output_fields.extend(cast(ModuleHardware, module).core_message_fields)
         startup_code += f'''
             core.output("core.millis {' '.join(output_fields)}")
             en = Output(15)
@@ -36,6 +35,7 @@ class RobotHardware(Robot):
             en.on()
             v24.on()
         '''
+        self.log.info(startup_code)
         await self.robot_brain.configure(startup_code)
 
     async def update(self) -> None:
@@ -49,7 +49,7 @@ class RobotHardware(Robot):
             else:
                 for module in self.modules:
                     if words[0] in cast(ModuleHardware, module).message_hooks:
-                        cast(ModuleHardware, module).message_hooks[words[0]](time, words)
+                        await cast(ModuleHardware, module).message_hooks[words[0]](line)
 
 
 class RobotSimulation(Robot):

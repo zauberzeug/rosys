@@ -11,12 +11,14 @@ class Module(abc.ABC):
 
 
 class ModuleHardware(Module):
-    CORE_MESSAGE_FIELDS: list[str] = []
 
-    def __init__(self, robot_brain: RobotBrain, lizard_code: str, **kwargs) -> None:
+    def __init__(
+            self, robot_brain: RobotBrain, lizard_code: str, core_message_fields: list[str] = [],
+            **kwargs) -> None:
         super().__init__(**kwargs)
         self.robot_brain = robot_brain
         self.lizard_code = lizard_code
+        self.core_message_fields: list[str] = core_message_fields
         self.message_hooks: dict[str, callable] = {}
 
     async def handle_core_output(self, time: float, words: list[str]) -> None:

@@ -37,7 +37,6 @@ class WheelsHardware(Wheels, ModuleHardware):
     Drive and stop commands are forwarded to a given Robot Brain.
     Velocities are read and emitted regularly.
     '''
-    CORE_MESSAGE_FIELDS: list[str] = ['linear_speed:3', 'angular_speed:3']
 
     def __init__(self, robot_brain: RobotBrain, *,
                  can: CanHardware,
@@ -59,7 +58,8 @@ class WheelsHardware(Wheels, ModuleHardware):
             {name} = ODriveWheels(l, r)
             {name}.width = {width}
         '''
-        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
+        core_message_fields: list[str] = [f'{self.name}.linear_speed:3', f'{self.name}.angular_speed:3']
+        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def drive(self, linear: float, angular: float) -> None:
         await self.robot_brain.send(f'{self.name}.speed({linear}, {angular})')
