@@ -82,13 +82,11 @@ class DelaunayPlanner:
         gradient_y, gradient_x = np.gradient(distance)
         dD_dX = ndimage.map_coordinates(gradient_x, [[rows], [cols]], order=0).reshape(X.shape)
         dD_dY = ndimage.map_coordinates(gradient_y, [[rows], [cols]], order=0).reshape(X.shape)
-        close = np.logical_and(0.0 < D, D < MIN_MARGIN)
         dD = np.sqrt(dD_dX**2 + dD_dY**2)
-        zero_dD = dD[close] == 0
-        X[close][zero_dD] = X[close][zero_dD]
-        Y[close][zero_dD] = Y[close][zero_dD]
-        X[close][~zero_dD] += dD_dX[close][~zero_dD] / dD[close][~zero_dD] * (MIN_MARGIN - D[close][~zero_dD])
-        Y[close][~zero_dD] += dD_dY[close][~zero_dD] / dD[close][~zero_dD] * (MIN_MARGIN - D[close][~zero_dD])
+        close = np.logical_and(0.0 < D, D < MIN_MARGIN)
+        close = np.logical_and(close, dD > 0)
+        X[close] += dD_dX[close] / dD[close] * (MIN_MARGIN - D[close])
+        Y[close] += dD_dY[close] / dD[close] * (MIN_MARGIN - D[close])
 
         keep = np.reshape([not all(self.obstacle_map.stack[int(np.round(row)), int(np.round(col)), :])
                            for row, col in zip(rows, cols)], X.shape)
