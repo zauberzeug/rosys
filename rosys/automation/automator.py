@@ -3,7 +3,7 @@ from typing import Callable, Coroutine, Optional
 
 from .. import rosys
 from ..analysis import track
-from ..driving import Drivable, Steerer
+from ..driving import Steerer
 from ..event import Event
 from .automation import Automation
 
@@ -13,19 +13,19 @@ class Automator:
 
     See [Click-and-drive](https://rosys.io/examples/click-and-drive/) for a simple example of an automation.
 
-    _wheels_: Optional wheels (or any stoppable hardware representation) will be stopped when an automation pauses or stops.
-
     _steerer_: If provided, manually steering the robot will pause a currently running automation.
 
     _default_automation_: If provided, it allows the automator to start a new automation without passing an automation
     (e.g. via an "Play"-button like offered by the [automation controls](https://rosys.io/reference/rosys/automation/#rosys.automation.automation_controls)). 
     The passed function should return a new coroutine on every call (see [Play-pause-stop](https://rosys.io/examples/play-pause-stop/) example).
+
+    _on_interrupt_: Optional callback that will be called when an automation pauses or stops.
     '''
 
     def __init__(self,
-                 wheels: Optional[Drivable],
                  steerer: Optional[Steerer], *,
-                 default_automation: Optional[Callable] = None) -> None:
+                 default_automation: Optional[Callable] = None,
+                 on_interrupt: Optional[Callable] = None) -> None:
         self.AUTOMATION_STARTED = Event()
         '''an automation has been started'''
 
@@ -54,9 +54,9 @@ class Automator:
         if steerer:
             steerer.STEERING_STARTED.register(lambda: self.pause(because='steering started'))
 
-        if wheels:
-            self.AUTOMATION_PAUSED.register(lambda _: rosys.background_tasks.create(wheels.stop()))
-            self.AUTOMATION_STOPPED.register(lambda _: rosys.background_tasks.create(wheels.stop()))
+        if on_interrupt:
+            self.AUTOMATION_PAUSED.register(lambda _: rosys.background_tasks.create(on_interrupt()))
+            self.AUTOMATION_STOPPED.register(lambda _: rosys.background_tasks.create(on_interrupt()))
 
         rosys.on_shutdown(lambda: self.stop(because='automator is shutting down'))
 
