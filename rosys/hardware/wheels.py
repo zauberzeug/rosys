@@ -20,15 +20,20 @@ class Wheels(Module, abc.ABC):
         self.VELOCITY_MEASURED = Event()
         """new velocity measurements are available for processing (argument: list of velocities)"""
 
+        self.linear_target_speed: float = 0.0
+        self.angular_target_speed: float = 0.0
+
         rosys.on_shutdown(self.stop)
 
     @abc.abstractmethod
     async def drive(self, linear: float, angular: float) -> None:
-        pass
+        self.linear_target_speed = linear
+        self.angular_target_speed = angular
 
     @abc.abstractmethod
     async def stop(self) -> None:
-        pass
+        self.linear_target_speed = 0.0
+        self.angular_target_speed = 0.0
 
 
 class WheelsHardware(Wheels, ModuleHardware):
@@ -62,9 +67,11 @@ class WheelsHardware(Wheels, ModuleHardware):
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def drive(self, linear: float, angular: float) -> None:
+        await super().drive(linear, angular)
         await self.robot_brain.send(f'{self.name}.speed({linear}, {angular})')
 
     async def stop(self) -> None:
+        await super().stop()
         await self.robot_brain.send(f'{self.name}.off()')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
@@ -85,16 +92,23 @@ class WheelsSimulation(Wheels, ModuleSimulation):
         self.pose: Pose = Pose()
         self.linear_velocity: float = 0
         self.angular_velocity: float = 0
+        self.inertia_factor: float = 0.0
+        self.is_blocking: bool = False
+        self.is_slipping: bool = False
 
     async def drive(self, linear: float, angular: float) -> None:
-        self.linear_velocity = linear
-        self.angular_velocity = angular
+        await super().drive(linear, angular)
+        f = self.inertia_factor
+        self.linear_velocity = 0 if self.is_blocking else f * self.linear_velocity + (1 - f) * linear
+        self.angular_velocity = 0 if self.is_blocking else f * self.angular_velocity + (1 - f) * angular
 
     async def stop(self) -> None:
+        await super().stop()
         self.linear_velocity = 0
         self.angular_velocity = 0
 
     async def step(self, dt: float) -> None:
-        self.pose += PoseStep(linear=dt*self.linear_velocity, angular=dt*self.angular_velocity, time=rosys.time())
+        if not self.is_slipping:
+            self.pose += PoseStep(linear=dt*self.linear_velocity, angular=dt*self.angular_velocity, time=rosys.time())
         velocity = Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=rosys.time())
         self.VELOCITY_MEASURED.emit([velocity])
