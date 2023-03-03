@@ -67,7 +67,7 @@ class BmsHardware(Bms, ModuleHardware):
         self.state.last_update = rosys.time()
 
 
-class BmsSimuation(Bms, ModuleSimulation):
+class BmsSimulation(Bms, ModuleSimulation):
     AVERAGE_VOLTAGE = 25.0
     VOLTAGE_AMPLITUDE = 1.0
     VOLTAGE_FREQUENCY = 0.01

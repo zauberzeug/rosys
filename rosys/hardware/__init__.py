@@ -1,4 +1,4 @@
-from .bms import Bms, BmsHardware, BmsSimuation
+from .bms import Bms, BmsHardware, BmsSimulation
 from .can import CanHardware
 from .communication import Communication, SerialCommunication, WebCommunication
 from .expander import ExpanderHardware
