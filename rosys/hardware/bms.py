@@ -36,7 +36,7 @@ class BmsHardware(Bms, ModuleHardware):
                  rx_pin: int = 26,
                  tx_pin: int = 27,
                  baud: int = 9600,
-                 num: int = 2) -> None:
+                 num: int = 1) -> None:
         self.name = name
         self.expander = expander
         lizard_code = f'''
@@ -84,7 +84,7 @@ class BmsSimulation(Bms, ModuleSimulation):
         self.is_charging = is_charging
         self.fixed_voltage = fixed_voltage
 
-    def step(self, dt: float) -> None:
+    async def step(self, dt: float) -> None:
         self.state.is_charging = self.is_charging is not None and self.is_charging()
         self.state.voltage = \
             self.AVERAGE_VOLTAGE + self.VOLTAGE_AMPLITUDE * np.sin(self.VOLTAGE_FREQUENCY * rosys.time()) \
