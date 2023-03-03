@@ -30,6 +30,5 @@ class ModuleSimulation(Module):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-    @abc.abstractmethod
     async def step(self, dt: float) -> None:
         pass
