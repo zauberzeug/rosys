@@ -38,24 +38,20 @@ class BmsHardware(Bms, ModuleHardware):
                  baud: int = 9600,
                  num: int = 1) -> None:
         self.name = name
-        self.expander = expander
         lizard_code = f'''
             {name} = {expander.name + "." if expander else ""}Serial({rx_pin}, {tx_pin}, {baud}, {num})
             {name}.unmute()
         '''
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
         rosys.on_repeat(self._request, 1.0)
-        self.message_hooks[f'{expander.name + ": " if expander else ""}{name}'] = self._handle_bms
+        self.message_hooks[name] = self._handle_bms
 
     async def _request(self) -> None:
         if rosys.time() > self.state.last_update + self.UPDATE_INTERVAL:
             await self.robot_brain.send(f'{self.name}.send(0xdd, 0xa5, 0x03, 0x00, 0xff, 0xfd, 0x77)')
 
     def _handle_bms(self, line: str) -> None:
-        if self.expander:
-            words = line.split()[2:]
-        else:
-            words = line.split()[1:]
+        words = line.split()[1:]
         msg = BmsMessage([int(w, 16) for w in words])
         msg.check()
         result = msg.interpret()

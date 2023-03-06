@@ -3,6 +3,7 @@ import logging
 from typing import Optional, cast
 
 from .. import rosys
+from .expander import ExpanderHardware
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot_brain import RobotBrain
 
@@ -19,6 +20,7 @@ class RobotHardware(Robot):
     def __init__(self, modules: list[Module], robot_brain: RobotBrain) -> None:
         super().__init__(modules)
         self.robot_brain = robot_brain
+        self.expander_prefixes = set(f'{module.name}:' for module in modules if isinstance(module, ExpanderHardware))
         rosys.on_repeat(self.update, 0.01)
 
     async def configure(self) -> None:
@@ -41,6 +43,8 @@ class RobotHardware(Robot):
     async def update(self) -> None:
         for time, line in await self.robot_brain.read_lines():
             words = line.split()
+            if words[0] in self.expander_prefixes:
+                words.pop(0)
             if words[0] == 'core':
                 words.pop(0)
                 words.pop(0)
