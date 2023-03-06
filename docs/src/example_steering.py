@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 from nicegui import ui
+
 from rosys.driving import Odometer, Steerer, joystick, keyboard_control, robot_object
 from rosys.geometry import Prism
-from rosys.hardware import WheelsSimulation
+from rosys.hardware import RobotSimulation, WheelsSimulation
 
 shape = Prism.default_robot_shape()
 wheels = WheelsSimulation()
+robot = RobotSimulation([wheels])
 odometer = Odometer(wheels)
 steerer = Steerer(wheels)
 

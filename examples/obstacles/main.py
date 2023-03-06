@@ -9,7 +9,8 @@ import rosys
 from rosys.automation import Automator, automation_controls
 from rosys.driving import Driver, Odometer, PathSegment, Steerer, keyboard_control, robot_object
 from rosys.geometry import Point, Pose, Prism, Spline
-from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, WheelsSimulation
+from rosys.hardware import (RobotBrain, RobotHardware, RobotSimulation, SerialCommunication, WheelsHardware,
+                            WheelsSimulation)
 from rosys.pathplanning import Obstacle, PathPlanner, obstacle_object, path_object
 
 # setup
@@ -18,12 +19,14 @@ if SerialCommunication.is_possible():
     communication = SerialCommunication()
     robot_brain = RobotBrain(communication)
     wheels = WheelsHardware(robot_brain)
+    robot = RobotHardware([wheels], robot_brain)
 else:
     wheels = WheelsSimulation()
+    robot = RobotSimulation([wheels])
 steerer = Steerer(wheels)
 odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator(wheels, steerer)
+automator = Automator(steerer, on_interrupt=wheels.stop)
 path_planner = PathPlanner(shape)
 
 # ui

@@ -7,18 +7,15 @@ Depending on your environment you can then instantiate the correct implementatio
 ## Custom Implementation
 
 For a differential-steering controlled robot, RoSys offers a [`Wheels`](../../reference/rosys/hardware/#rosys.hardware.Wheels) base class plus a [`WheelsSimulation`](../../reference/rosys/hardware/#rosys.hardware.WheelsSimulation).
-The following example illustrates the content of `wheels_for_custom_hardware.py`:
-
-```python
-{!src/wheels_for_custom_hardware.py !}
-```
-
-Depending on your hardware you may need to modify a PWM signal, send commands via CAN bus or serial, use Protobuf over Ethernet or something else.
-By raising an exception if the real hardware is not available a robot controlled by keyboard or joystick looks like this:
+The following example illustrates how to implement a `CustomWheelsHardware` module that derives from `Wheels`, reads the currrent velocity regularly and can be steered with linear and angular velocity.
 
 ```python
 {!src/example_hardware.py !}
 ```
+
+Depending on your hardware you may need to modify a PWM signal, send commands via CAN bus or serial, use Protobuf over Ethernet or something else.
+By raising an exception if the real hardware is not available, a simulated robot is instantiated instead.
+The robot can be controlled by keyboard or joystick.
 
 ## Robot Brain
 

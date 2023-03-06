@@ -7,7 +7,7 @@ import sys
 from nicegui import ui
 
 from rosys.driving import Odometer, Steerer, joystick
-from rosys.hardware import WheelsSimulation
+from rosys.hardware import RobotSimulation, WheelsSimulation
 
 
 class PackagePathFilter(logging.Filter):
@@ -69,6 +69,7 @@ logging.config.dictConfig({
 wheels = WheelsSimulation()
 steerer = Steerer(wheels)
 odometer = Odometer(wheels)
+robot = RobotSimulation([wheels])
 
 joystick(steerer)
 

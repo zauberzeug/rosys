@@ -5,7 +5,7 @@ from nicegui.events import SceneClickEventArguments
 from rosys.automation import Automator
 from rosys.driving import Driver, Odometer, robot_object
 from rosys.geometry import Point, Pose, Prism
-from rosys.hardware import WheelsSimulation
+from rosys.hardware import RobotSimulation, WheelsSimulation
 from rosys.pathplanning import Obstacle, PathPlanner, obstacle_object, path_object
 
 shape = Prism.default_robot_shape()
@@ -13,9 +13,10 @@ path_planner = PathPlanner(shape)
 path_planner.restore = lambda _: None  # NOTE: disable persistence
 path_planner.obstacles['0'] = Obstacle(id='0', outline=[Point(x=3, y=0), Point(x=0, y=3), Point(x=3, y=3)])
 wheels = WheelsSimulation()
+robot = RobotSimulation([wheels])
 odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator(wheels, None)
+automator = Automator(None, on_interrupt=wheels.stop)
 
 
 async def handle_click(e: SceneClickEventArguments):
