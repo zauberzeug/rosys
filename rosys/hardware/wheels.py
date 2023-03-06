@@ -9,7 +9,7 @@ from .robot_brain import RobotBrain
 
 
 class Wheels(Module, abc.ABC):
-    """The wheels module is a simple example for a representation of real or simulated robot hardware.
+    """This module represents wheels for a two-wheel differential drive.
 
     Wheels can be moved using the `drive` methods and provide measured velocities as an event.
     """

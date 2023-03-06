@@ -13,7 +13,7 @@ from .robot_brain import RobotBrain
 
 
 class Bms(Module, abc.ABC):
-    """The BMS module is a simple example for a representation of real or simulated robot hardware.
+    """The BMS module communicates with a simple battery management system over a serial connection.
 
     The BMS module provides measured voltages as an event.
     """
@@ -28,6 +28,8 @@ class Bms(Module, abc.ABC):
 
 
 class BmsHardware(Bms, ModuleHardware):
+    """This module implements the hardware interface for the BMS module."""
+
     UPDATE_INTERVAL = 5.0
 
     def __init__(self, robot_brain: RobotBrain, *,
@@ -64,6 +66,8 @@ class BmsHardware(Bms, ModuleHardware):
 
 
 class BmsSimulation(Bms, ModuleSimulation):
+    """This module simulates a BMS module."""
+
     AVERAGE_VOLTAGE = 25.0
     VOLTAGE_AMPLITUDE = 1.0
     VOLTAGE_FREQUENCY = 0.01

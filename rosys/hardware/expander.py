@@ -4,7 +4,7 @@ from .serial import SerialHardware
 
 
 class ExpanderHardware(ModuleHardware):
-    """The expander module is a simple example for a representation of real or simulated robot hardware."""
+    """The expander module represents a second ESP microcontroller connected to the core ESP via serial."""
 
     def __init__(self, robot_brain: RobotBrain, *,
                  name: str = 'p0',
