@@ -40,12 +40,12 @@ class BmsHardware(Bms, ModuleHardware):
         self.name = name
         self.expander = expander
         lizard_code = f'''
-            {name} = {self.expander.name + "." if self.expander else ""}Serial({rx_pin}, {tx_pin}, {baud}, {num})
+            {name} = {expander.name + "." if expander else ""}Serial({rx_pin}, {tx_pin}, {baud}, {num})
             {name}.unmute()
         '''
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
         rosys.on_repeat(self._request, 1.0)
-        self.message_hooks[f'{self.expander.name + ": " if self.expander else ""}{self.name}'] = self._handle_bms
+        self.message_hooks[f'{expander.name + ": " if expander else ""}{name}'] = self._handle_bms
 
     async def _request(self) -> None:
         if rosys.time() > self.state.last_update + self.UPDATE_INTERVAL:
