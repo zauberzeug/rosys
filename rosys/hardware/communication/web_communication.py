@@ -7,11 +7,11 @@ from .communication import Communication
 
 
 class WebCommunication(Communication):
-    '''Remote connection to the Robot Brain's ESP.
+    """Remote connection to the Robot Brain's ESP.
 
     This makes it possible to keep developing on your fast computer
     while communicating with the hardware components connected to a physical Robot Brain.
-    '''
+    """
     ip: str = '192.168.43.1'
     port: int = 8081
     host: str = f'ws://{ip}:{port}'

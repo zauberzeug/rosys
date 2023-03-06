@@ -35,12 +35,12 @@ class DriveState:
 
 
 class Driver:
-    '''The driver module allows following a given path.
+    """The driver module allows following a given path.
 
     It requires a wheels module (or any drivable hardware representation) to execute individual drive commands.
     It also requires an odometer to get a current prediction of the robot's pose.
     Its `parameters` allow controlling the specific drive behavior.
-    '''
+    """
 
     def __init__(self, wheels: Drivable, odometer: Odometer) -> None:
         self.wheels = wheels

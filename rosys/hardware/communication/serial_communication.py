@@ -10,10 +10,10 @@ from .communication import Communication
 
 
 class SerialCommunication(Communication):
-    '''This module implements a communication via a serial device with a given baud rate.
+    """This module implements a communication via a serial device with a given baud rate.
 
     It contains a list of search paths for finding the serial device.
-    '''
+    """
 
     search_paths: list[str] = [
         '/dev/tty.SLAB_USBtoUART',

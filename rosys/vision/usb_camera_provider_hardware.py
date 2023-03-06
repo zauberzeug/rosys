@@ -64,11 +64,11 @@ def to_bytes(image: Any) -> bytes:
 
 
 class UsbCameraProviderHardware(CameraProvider):
-    '''This module collects and provides real USB cameras.
+    """This module collects and provides real USB cameras.
 
     Camera devices are discovered through video4linux (v4l) and accessed with openCV.
     Therefore the program v4l2ctl and openCV (including python bindings) must be available.
-    '''
+    """
 
     def __init__(self) -> None:
         super().__init__()

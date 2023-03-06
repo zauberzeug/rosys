@@ -13,10 +13,10 @@ from .uploads import Uploads
 
 
 class DetectorHardware(Detector):
-    '''This detector communicates with a [YOLO detector](https://hub.docker.com/r/zauberzeug/yolov5-detector) via Socket.IO.
+    """This detector communicates with a [YOLO detector](https://hub.docker.com/r/zauberzeug/yolov5-detector) via Socket.IO.
 
     It automatically connects and reconnects, submits and receives detections and sends images that should be uploaded to the [Zauberzeug Learning Loop](https://zauberzeug.com/learning-loop.html).
-    '''
+    """
 
     def __init__(self, *, port: int = 8004) -> None:
         super().__init__()
@@ -98,7 +98,7 @@ class DetectorHardware(Detector):
             self.log.exception(f'could not upload {image.id}')
 
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED, tags: list[str] = []) -> None:
-        '''Runs detections on the image. Afterwards the `image.detections` property is filled.'''
+        """Runs detections on the image. Afterwards the `image.detections` property is filled."""
         if not self.is_connected:
             return
 

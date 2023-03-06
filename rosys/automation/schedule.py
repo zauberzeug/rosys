@@ -24,7 +24,7 @@ class Schedule:
                  sunset_offset: float = 0.0,
                  is_enabled: bool = False,
                  ) -> None:
-        '''Schedules automations according to a time plan.
+        """Schedules automations according to a time plan.
 
         param on_activate: automation to execute when entering an active period
         param on_deactivate: automation to execute when entering an inactive period
@@ -33,11 +33,11 @@ class Schedule:
         param sunrise_offset: optional offset for activation after sunrise (minutes, default: 0.0)
         param sunset_offset: optional offset for deactivation after sunset (minutes, default: 0.0)
         param is_enabled: whether the schedule is enabled (default: False)
-        '''
+        """
         self.log = logging.getLogger('rosys.schedule')
 
         self.SCHEDULE_CHANGED = Event()
-        '''the schedule has changed'''
+        """the schedule has changed"""
 
         self.automator = automator
         self.on_activate = on_activate

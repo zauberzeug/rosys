@@ -4,7 +4,7 @@ from .steerer import Steerer
 
 
 class Joystick(NiceGuiJoystick):
-    '''The Joystick UI element allows controlling a given steerer via touch events.'''
+    """The Joystick UI element allows controlling a given steerer via touch events."""
 
     def __init__(self, steerer: Steerer, **options) -> None:
         self.steerer = steerer

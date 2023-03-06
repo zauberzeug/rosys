@@ -9,11 +9,11 @@ from .odometer import Odometer
 
 
 class RobotObject(Group):
-    '''The RobotObject UI element displays the robot with its given shape in a 3D scene.
+    """The RobotObject UI element displays the robot with its given shape in a 3D scene.
 
     The current pose is taken from a given odometer.
     The `debug` argument can be set to show a wireframe instead of a closed polygon.
-    '''
+    """
 
     def __init__(self, shape: Prism, odometer: Odometer, *, debug: bool = False) -> None:
         super().__init__()
@@ -30,10 +30,10 @@ class RobotObject(Group):
                  omega: float = 0, phi: float = 0, kappa: float = 0,
                  scale: float = 1.0,
                  color: str = '#ffffff', opacity: float = 1.0) -> RobotObject:
-        '''Sets an STL to be displayed as the robot.
+        """Sets an STL to be displayed as the robot.
 
         The file can be served from a local directory with [app.add_static_files(url, path)](https://nicegui.io/reference#static_files).
-        '''
+        """
         self.robot_object.delete()
         with self:
             self.robot_object = Stl(url).move(x, y, z).rotate(omega, phi, kappa).scale(scale).material(color, opacity)

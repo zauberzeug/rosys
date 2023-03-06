@@ -3,8 +3,7 @@ from .robot_brain import RobotBrain
 
 
 class SerialHardware(ModuleHardware):
-    '''The serial module is a simple example for a representation of real or simulated robot hardware.
-    '''
+    """The serial module is a simple example for a representation of real or simulated robot hardware."""
 
     def __init__(self, robot_brain: RobotBrain, *,
                  name: str = 'serial',

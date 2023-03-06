@@ -9,7 +9,7 @@ from .automation import Automation
 
 
 class Automator:
-    '''An automator allows running automations, i.e. coroutines that can be paused and resumed.
+    """An automator allows running automations, i.e. coroutines that can be paused and resumed.
 
     See [Click-and-drive](https://rosys.io/examples/click-and-drive/) for a simple example of an automation.
 
@@ -20,29 +20,29 @@ class Automator:
     The passed function should return a new coroutine on every call (see [Play-pause-stop](https://rosys.io/examples/play-pause-stop/) example).
 
     _on_interrupt_: Optional callback that will be called when an automation pauses or stops.
-    '''
+    """
 
     def __init__(self,
                  steerer: Optional[Steerer], *,
                  default_automation: Optional[Callable] = None,
                  on_interrupt: Optional[Callable] = None) -> None:
         self.AUTOMATION_STARTED = Event()
-        '''an automation has been started'''
+        """an automation has been started"""
 
         self.AUTOMATION_PAUSED = Event()
-        '''an automation has been paused (string argument: description of the cause)'''
+        """an automation has been paused (string argument: description of the cause)"""
 
         self.AUTOMATION_RESUMED = Event()
-        '''an automation has been resumed'''
+        """an automation has been resumed"""
 
         self.AUTOMATION_STOPPED = Event()
-        '''an automation has been stopped (string argument: description of the cause)'''
+        """an automation has been stopped (string argument: description of the cause)"""
 
         self.AUTOMATION_FAILED = Event()
-        '''an automation has failed to complete (string argument: description of the cause)'''
+        """an automation has failed to complete (string argument: description of the cause)"""
 
         self.AUTOMATION_COMPLETED = Event()
-        '''an automation has been completed'''
+        """an automation has been completed"""
 
         self.log = logging.getLogger('rosys.automator')
 
@@ -73,11 +73,11 @@ class Automator:
         return self.automation is not None and self.automation.is_paused
 
     def start(self, coro: Optional[Coroutine] = None) -> None:
-        '''Starts a new automation.
+        """Starts a new automation.
 
         You can pass any coroutine.
         The automator will make sure it can be paused, resumed and stopped.
-        '''
+        """
         if coro is None:
             self.start(self.default_automation())
             return
@@ -91,17 +91,17 @@ class Automator:
         rosys.notify('automation started')
 
     def pause(self, because: str) -> None:
-        '''Pauses the current automation.
+        """Pauses the current automation.
 
         You need to provide a cause which will be used as notification message.
-        '''
+        """
         if self.is_running:
             self.automation.pause()
             self.AUTOMATION_PAUSED.emit(because)
             rosys.notify(f'automation paused because {because}')
 
     def resume(self) -> None:
-        '''Resumes the current automation.'''
+        """Resumes the current automation."""
         if not self.enabled:
             return
         if self.is_paused:
@@ -110,10 +110,10 @@ class Automator:
             rosys.notify('automation resumed')
 
     def stop(self, because: str) -> None:
-        '''Stops the current automation.
+        """Stops the current automation.
 
         You need to provide a cause which will be used as notification message.
-        '''
+        """
         if not self.is_stopped:
             self.automation.stop()
             self.AUTOMATION_STOPPED.emit(because)
@@ -121,20 +121,20 @@ class Automator:
             rosys.notify(f'automation stopped because {because}')
 
     def enable(self) -> None:
-        '''Enables the automator.
+        """Enables the automator.
 
         It is enabled by default.
         It can be disabled by calling `disable()`.
-        '''
+        """
         self.enabled = True
 
     def disable(self, because: str) -> None:
-        '''Disables the automator.
+        """Disables the automator.
 
         No automations can be started while the automator is disabled.
         If an automation is running or paused it will be stopped.
         You need to provide a cause which will be used as notification message.
-        '''
+        """
         self.stop(because)
         self.enabled = False
 

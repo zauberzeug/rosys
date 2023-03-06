@@ -57,7 +57,7 @@ class Event:
         self.listeners[:] = [l for l in self.listeners if l.callback != callback]
 
     async def call(self, *args) -> None:
-        '''Fires event and waits async until all registered listeners are completed'''
+        """Fires event and waits async until all registered listeners are completed"""
         for listener in self.listeners:
             try:
                 await invoke(listener.callback, *args)
@@ -65,7 +65,7 @@ class Event:
                 log.exception(f'could not call {listener=}')
 
     def emit(self, *args) -> None:
-        '''Fires event without waiting for the result.'''
+        """Fires event without waiting for the result."""
         for listener in self.listeners:
             try:
                 result = invoke(listener.callback, *args)

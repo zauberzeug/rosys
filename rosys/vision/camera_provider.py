@@ -11,23 +11,23 @@ from .image_route import create_image_route
 
 
 class CameraProvider(abc.ABC):
-    '''A camera provider holds a dictionary of cameras and manages additions and removals.
+    """A camera provider holds a dictionary of cameras and manages additions and removals.
 
     The camera dictionary should not be modified directly but by using the camera provider's methods.
     This way respective events are emitted and consistency can be taken care of.
 
     The camera provider also creates an HTTP route to access camera images.
-    '''
+    """
 
     def __init__(self) -> None:
         self.CAMERA_ADDED = Event()
-        '''a new camera has been added (argument: camera)'''
+        """a new camera has been added (argument: camera)"""
 
         self.CAMERA_REMOVED = Event()
-        '''a camera has been removed (argument: camera id)'''
+        """a camera has been removed (argument: camera id)"""
 
         self.NEW_IMAGE = Event()
-        '''an new image is available (argument: image)'''
+        """an new image is available (argument: image)"""
 
         self.base_path = f'images/{str(uuid4())}'
         create_image_route(self)

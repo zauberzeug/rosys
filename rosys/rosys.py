@@ -38,7 +38,7 @@ class Notification:
 
 
 NEW_NOTIFICATION = event.Event()
-'''notify the user (string argument: message)'''
+"""notify the user (string argument: message)"""
 
 
 _start_time: float = 0.0 if is_test else pytime.time()
