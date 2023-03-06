@@ -12,9 +12,8 @@ class Module(abc.ABC):
 
 class ModuleHardware(Module):
 
-    def __init__(
-            self, robot_brain: RobotBrain, lizard_code: str, core_message_fields: list[str] = [],
-            **kwargs) -> None:
+    def __init__(self, robot_brain: RobotBrain, lizard_code: str, core_message_fields: list[str] = [],
+                 **kwargs) -> None:
         super().__init__(**kwargs)
         self.robot_brain = robot_brain
         self.lizard_code = lizard_code

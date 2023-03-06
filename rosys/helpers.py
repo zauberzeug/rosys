@@ -45,6 +45,17 @@ def ramp(x: float, in_min: float, in_max: float, out_min: float, out_max: float,
     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
 
 
+def remove_indentation(text: str) -> str:
+    """Remove indentation from a multi-line string based on the indentation of the first line."""
+    lines = text.splitlines()
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    if not lines:
+        return ''
+    indentation = len(lines[0]) - len(lines[0].lstrip())
+    return '\n'.join(line[indentation:] for line in lines)
+
+
 class ModificationContext:
 
     @contextmanager

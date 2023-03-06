@@ -3,6 +3,7 @@ import abc
 from .. import rosys
 from ..event import Event
 from ..geometry import Pose, PoseStep, Velocity
+from ..helpers import remove_indentation
 from .can import CanHardware
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot_brain import RobotBrain
@@ -53,7 +54,7 @@ class WheelsHardware(Wheels, ModuleHardware):
                  is_left_reversed: bool = False,
                  is_right_reversed: bool = False) -> None:
         self.name = name
-        lizard_code = f'''
+        lizard_code = remove_indentation(f'''
             l = ODriveMotor({can.name}, {left_can_address})
             r = ODriveMotor({can.name}, {right_can_address})
             l.m_per_tick = {m_per_tick}
@@ -62,7 +63,7 @@ class WheelsHardware(Wheels, ModuleHardware):
             r.reversed = {'true' if is_right_reversed else 'false'}
             {name} = ODriveWheels(l, r)
             {name}.width = {width}
-        '''
+        ''')
         core_message_fields = [f'{self.name}.linear_speed:3', f'{self.name}.angular_speed:3']
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
