@@ -6,8 +6,9 @@ import rosys
 if rosys.hardware.SerialCommunication.is_possible():
     communication = rosys.hardware.SerialCommunication()
     robot_brain = rosys.hardware.RobotBrain(communication)
-    wheels = rosys.hardware.WheelsHardware(robot_brain)
-    robot = rosys.hardware.RobotHardware([wheels], robot_brain)
+    can = rosys.hardware.CanHardware(robot_brain)
+    wheels = rosys.hardware.WheelsHardware(robot_brain, can=can)
+    robot = rosys.hardware.RobotHardware([can, wheels], robot_brain)
     camera_provider = rosys.vision.UsbCameraProviderHardware()
 else:
     wheels = rosys.hardware.WheelsSimulation()

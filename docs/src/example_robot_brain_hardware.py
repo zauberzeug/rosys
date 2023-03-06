@@ -2,15 +2,16 @@
 from nicegui import ui
 
 from rosys.driving import Odometer, Steerer, joystick, keyboard_control
-from rosys.hardware import (RobotBrain, RobotHardware, RobotSimulation, SerialCommunication, WheelsHardware,
-                            WheelsSimulation, communication)
+from rosys.hardware import (CanHardware, RobotBrain, RobotHardware, RobotSimulation, SerialCommunication,
+                            WheelsHardware, WheelsSimulation, communication)
 
 is_real = SerialCommunication.is_possible()
 if is_real:
     communication = SerialCommunication()
     robot_brain = RobotBrain(communication)
-    wheels = WheelsHardware(robot_brain)
-    robot = RobotHardware([wheels], robot_brain)
+    can = CanHardware(robot_brain)
+    wheels = WheelsHardware(robot_brain, can=can)
+    robot = RobotHardware([can, wheels], robot_brain)
 else:
     wheels = WheelsSimulation()
     robot = RobotSimulation([wheels])

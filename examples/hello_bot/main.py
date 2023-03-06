@@ -8,8 +8,8 @@ import rosys
 from rosys.automation import Automator, automation_controls
 from rosys.driving import Driver, Odometer, Steerer, joystick, keyboard_control, robot_object
 from rosys.geometry import Prism
-from rosys.hardware import (RobotBrain, RobotHardware, RobotSimulation, SerialCommunication, WheelsHardware,
-                            WheelsSimulation)
+from rosys.hardware import (CanHardware, RobotBrain, RobotHardware, RobotSimulation, SerialCommunication,
+                            WheelsHardware, WheelsSimulation)
 
 log_configuration.setup()
 
@@ -18,8 +18,9 @@ shape = Prism.default_robot_shape()
 if SerialCommunication.is_possible():
     communication = SerialCommunication()
     robot_brain = RobotBrain(communication)
-    wheels = WheelsHardware(robot_brain)
-    robot = RobotHardware([wheels], robot_brain)
+    can = CanHardware(robot_brain)
+    wheels = WheelsHardware(robot_brain, can=can)
+    robot = RobotHardware([can, wheels], robot_brain)
 else:
     wheels = WheelsSimulation()
     robot = RobotSimulation([wheels])
