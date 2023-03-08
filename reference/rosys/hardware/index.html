@@ -17,7 +17,7 @@
         <link rel="next" href="../pathplanning/">
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.12">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.1">
     
     
       
@@ -25,10 +25,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.0d440cfe.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.402914a4.min.css">
       
         
-        <link rel="stylesheet" href="../../../assets/stylesheets/palette.2505c338.min.css">
+        <link rel="stylesheet" href="../../../assets/stylesheets/palette.a0c5b2b5.min.css">
       
       
 
@@ -73,7 +73,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#rosys.hardware.Communication" class="md-skip">
+        <a href="#rosys.hardware.Bms" class="md-skip">
           Skip to content
         </a>
       
@@ -85,7 +85,9 @@
     
       
 
-<header class="md-header" data-md-component="header">
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
     <a href="../../.." title="RoSys" class="md-header__button md-logo" aria-label="RoSys" data-md-component="logo">
       
@@ -153,7 +155,7 @@
         <a href="https://github.com/zauberzeug/rosys" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.3.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
   </div>
   <div class="md-source__repository">
     GitHub
@@ -198,7 +200,7 @@
       <a href="https://github.com/zauberzeug/rosys" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.3.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
   </div>
   <div class="md-source__repository">
     GitHub
@@ -529,18 +531,11 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#rosys.hardware.Communication" class="md-nav__link">
-    Communication
+  <a href="#rosys.hardware.Bms" class="md-nav__link">
+    Bms
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rosys.hardware.RobotBrain" class="md-nav__link">
-    RobotBrain
-  </a>
-  
-    <nav class="md-nav" aria-label="RobotBrain">
+    <nav class="md-nav" aria-label="Bms">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -556,8 +551,209 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rosys.hardware.BmsHardware" class="md-nav__link">
+    BmsHardware
+  </a>
+  
+    <nav class="md-nav" aria-label="BmsHardware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_1" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.BmsSimulation" class="md-nav__link">
+    BmsSimulation
+  </a>
+  
+    <nav class="md-nav" aria-label="BmsSimulation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_2" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.Bumper" class="md-nav__link">
+    Bumper
+  </a>
+  
+    <nav class="md-nav" aria-label="Bumper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_3" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.BumperHardware" class="md-nav__link">
+    BumperHardware
+  </a>
+  
+    <nav class="md-nav" aria-label="BumperHardware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_4" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.BumperSimulation" class="md-nav__link">
+    BumperSimulation
+  </a>
+  
+    <nav class="md-nav" aria-label="BumperSimulation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_5" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.Communication" class="md-nav__link">
+    Communication
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.EStop" class="md-nav__link">
+    EStop
+  </a>
+  
+    <nav class="md-nav" aria-label="EStop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_6" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.EStopHardware" class="md-nav__link">
+    EStopHardware
+  </a>
+  
+    <nav class="md-nav" aria-label="EStopHardware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_7" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.EStopSimulation" class="md-nav__link">
+    EStopSimulation
+  </a>
+  
+    <nav class="md-nav" aria-label="EStopSimulation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_8" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.ExpanderHardware" class="md-nav__link">
+    ExpanderHardware
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotBrain" class="md-nav__link">
+    RobotBrain
+  </a>
+  
+    <nav class="md-nav" aria-label="RobotBrain">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_9" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rosys.hardware.SerialCommunication" class="md-nav__link">
     SerialCommunication
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.SerialHardware" class="md-nav__link">
+    SerialHardware
   </a>
   
 </li>
@@ -578,7 +774,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#events_1" class="md-nav__link">
+  <a href="#events_10" class="md-nav__link">
     Events
   </a>
   
@@ -594,12 +790,38 @@
     WheelsHardware
   </a>
   
+    <nav class="md-nav" aria-label="WheelsHardware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_11" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
   <a href="#rosys.hardware.WheelsSimulation" class="md-nav__link">
     WheelsSimulation
   </a>
+  
+    <nav class="md-nav" aria-label="WheelsSimulation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_12" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -715,18 +937,11 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#rosys.hardware.Communication" class="md-nav__link">
-    Communication
+  <a href="#rosys.hardware.Bms" class="md-nav__link">
+    Bms
   </a>
   
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rosys.hardware.RobotBrain" class="md-nav__link">
-    RobotBrain
-  </a>
-  
-    <nav class="md-nav" aria-label="RobotBrain">
+    <nav class="md-nav" aria-label="Bms">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -742,8 +957,209 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rosys.hardware.BmsHardware" class="md-nav__link">
+    BmsHardware
+  </a>
+  
+    <nav class="md-nav" aria-label="BmsHardware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_1" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.BmsSimulation" class="md-nav__link">
+    BmsSimulation
+  </a>
+  
+    <nav class="md-nav" aria-label="BmsSimulation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_2" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.Bumper" class="md-nav__link">
+    Bumper
+  </a>
+  
+    <nav class="md-nav" aria-label="Bumper">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_3" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.BumperHardware" class="md-nav__link">
+    BumperHardware
+  </a>
+  
+    <nav class="md-nav" aria-label="BumperHardware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_4" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.BumperSimulation" class="md-nav__link">
+    BumperSimulation
+  </a>
+  
+    <nav class="md-nav" aria-label="BumperSimulation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_5" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.Communication" class="md-nav__link">
+    Communication
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.EStop" class="md-nav__link">
+    EStop
+  </a>
+  
+    <nav class="md-nav" aria-label="EStop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_6" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.EStopHardware" class="md-nav__link">
+    EStopHardware
+  </a>
+  
+    <nav class="md-nav" aria-label="EStopHardware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_7" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.EStopSimulation" class="md-nav__link">
+    EStopSimulation
+  </a>
+  
+    <nav class="md-nav" aria-label="EStopSimulation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_8" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.ExpanderHardware" class="md-nav__link">
+    ExpanderHardware
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotBrain" class="md-nav__link">
+    RobotBrain
+  </a>
+  
+    <nav class="md-nav" aria-label="RobotBrain">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_9" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rosys.hardware.SerialCommunication" class="md-nav__link">
     SerialCommunication
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.SerialHardware" class="md-nav__link">
+    SerialHardware
   </a>
   
 </li>
@@ -764,7 +1180,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#events_1" class="md-nav__link">
+  <a href="#events_10" class="md-nav__link">
     Events
   </a>
   
@@ -780,12 +1196,38 @@
     WheelsHardware
   </a>
   
+    <nav class="md-nav" aria-label="WheelsHardware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_11" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
   <a href="#rosys.hardware.WheelsSimulation" class="md-nav__link">
     WheelsSimulation
   </a>
+  
+    <nav class="md-nav" aria-label="WheelsSimulation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_12" class="md-nav__link">
+    Events
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -804,8 +1246,363 @@
                   
 
 
-
   <h1>hardware</h1>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.hardware.Bms" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">Bms</span>
+
+
+<a href="#rosys.hardware.Bms" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">Bms</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code>abc.<span title="abc.ABC">ABC</span></code></p>
+
+  
+      <p>The BMS module communicates with a simple battery management system over a serial connection.</p>
+<p>The BMS module provides measured voltages as an event.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div><h3 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VOLTAGE_MEASURED</td>
+<td>new voltage measurements are available for processing (argument: list of voltages)</td>
+</tr>
+</tbody>
+</table>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.hardware.BmsHardware" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">BmsHardware</span>
+
+
+<a href="#rosys.hardware.BmsHardware" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">BmsHardware</span><span class="p">(</span>
+    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">expander</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ExpanderHardware</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bms&quot;</span><span class="p">,</span>
+    <span class="n">rx_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">26</span><span class="p">,</span>
+    <span class="n">tx_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">27</span><span class="p">,</span>
+    <span class="n">baud</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">9600</span><span class="p">,</span>
+    <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bms.Bms" href="#rosys.hardware.Bms">Bms</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
+
+  
+      <p>This module implements the hardware interface for the BMS module.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div><h3 id="events_1">Events<a class="headerlink" href="#events_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VOLTAGE_MEASURED</td>
+<td>new voltage measurements are available for processing (argument: list of voltages)</td>
+</tr>
+</tbody>
+</table>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.hardware.BmsSimulation" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">BmsSimulation</span>
+
+
+<a href="#rosys.hardware.BmsSimulation" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">BmsSimulation</span><span class="p">(</span>
+    <span class="n">is_charging</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[],</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">fixed_voltage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bms.Bms" href="#rosys.hardware.Bms">Bms</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
+
+  
+      <p>This module simulates a BMS module.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div><h3 id="events_2">Events<a class="headerlink" href="#events_2" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VOLTAGE_MEASURED</td>
+<td>new voltage measurements are available for processing (argument: list of voltages)</td>
+</tr>
+</tbody>
+</table>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.hardware.Bumper" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">Bumper</span>
+
+
+<a href="#rosys.hardware.Bumper" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">Bumper</span><span class="p">(</span><span class="n">estop</span><span class="p">:</span> <span class="n">EStop</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code>abc.<span title="abc.ABC">ABC</span></code></p>
+
+  
+      <p>A module that detects when a bumper is triggered.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div><h3 id="events_3">Events<a class="headerlink" href="#events_3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BUMPER_TRIGGERED</td>
+<td>a bumper was triggered (argument: the bumper name)</td>
+</tr>
+</tbody>
+</table>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.hardware.BumperHardware" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">BumperHardware</span>
+
+
+<a href="#rosys.hardware.BumperHardware" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">BumperHardware</span><span class="p">(</span>
+    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bumper&quot;</span><span class="p">,</span>
+    <span class="n">pins</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
+    <span class="n">estop</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EStop</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bumper.Bumper" href="#rosys.hardware.Bumper">Bumper</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
+
+  
+      <p>Hardware implementation of the bumper module.</p>
+<p>The module expects a dictionary of pin names and pin numbers.
+If an e-stop is provided, the module will not trigger bumpers if the e-stop is active.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div><h3 id="events_4">Events<a class="headerlink" href="#events_4" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BUMPER_TRIGGERED</td>
+<td>a bumper was triggered (argument: the bumper name)</td>
+</tr>
+</tbody>
+</table>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.hardware.BumperSimulation" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">BumperSimulation</span>
+
+
+<a href="#rosys.hardware.BumperSimulation" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bumper.Bumper" href="#rosys.hardware.Bumper">Bumper</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
+
+  
+      <p>Simulation of the bumper module.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div><h3 id="events_5">Events<a class="headerlink" href="#events_5" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BUMPER_TRIGGERED</td>
+<td>a bumper was triggered (argument: the bumper name)</td>
+</tr>
+</tbody>
+</table>
+
 
 <div class="doc doc-object doc-class">
 
@@ -854,15 +1651,233 @@ It can also provide a piece of debug UI.</p>
 
 
 
+<h2 id="rosys.hardware.EStop" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">EStop</span>
+
+
+<a href="#rosys.hardware.EStop" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">EStop</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code>abc.<span title="abc.ABC">ABC</span></code></p>
+
+  
+      <p>A module that detects when the e-stop is triggered.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div><h3 id="events_6">Events<a class="headerlink" href="#events_6" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ESTOP_TRIGGERED</td>
+<td>the e-stop was triggered</td>
+</tr>
+</tbody>
+</table>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.hardware.EStopHardware" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">EStopHardware</span>
+
+
+<a href="#rosys.hardware.EStopHardware" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">EStopHardware</span><span class="p">(</span>
+    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;estop&quot;</span><span class="p">,</span>
+    <span class="n">pins</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.estop.EStop" href="#rosys.hardware.EStop">EStop</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
+
+  
+      <p>Hardware implementation of the e-stop module.</p>
+<p>The module expects a dictionary of pin names and pin numbers.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div><h3 id="events_7">Events<a class="headerlink" href="#events_7" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ESTOP_TRIGGERED</td>
+<td>the e-stop was triggered</td>
+</tr>
+</tbody>
+</table>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.hardware.EStopSimulation" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">EStopSimulation</span>
+
+
+<a href="#rosys.hardware.EStopSimulation" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.estop.EStop" href="#rosys.hardware.EStop">EStop</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
+
+  
+      <p>Simulation of the e-stop module.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div><h3 id="events_8">Events<a class="headerlink" href="#events_8" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ESTOP_TRIGGERED</td>
+<td>the e-stop was triggered</td>
+</tr>
+</tbody>
+</table>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.hardware.ExpanderHardware" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">ExpanderHardware</span>
+
+
+<a href="#rosys.hardware.ExpanderHardware" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">ExpanderHardware</span><span class="p">(</span>
+    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;p0&quot;</span><span class="p">,</span>
+    <span class="n">serial</span><span class="p">:</span> <span class="n">SerialHardware</span><span class="p">,</span>
+    <span class="n">boot</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">25</span><span class="p">,</span>
+    <span class="n">enable</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">14</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
+
+  
+      <p>The expander module represents a second ESP microcontroller connected to the core ESP via serial.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h2 id="rosys.hardware.RobotBrain" class="doc doc-heading">
         <span class="doc doc-object-name doc-class-name">RobotBrain</span>
 
 
 <a href="#rosys.hardware.RobotBrain" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="n">RobotBrain</span><span class="p">(</span>
-    <span class="n">communication</span><span class="p">:</span> <span class="n">Communication</span><span class="p">,</span>
-    <span class="n">lizard_startup</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;startup.liz&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="highlight"><pre><span></span><code><span class="n">RobotBrain</span><span class="p">(</span><span class="n">communication</span><span class="p">:</span> <span class="n">Communication</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
   <div class="doc doc-contents first">
@@ -892,7 +1907,7 @@ Besides providing some basic methods like configuring or restarting the microcon
 
   </div>
 
-</div><h3 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h3>
+</div><h3 id="events_9">Events<a class="headerlink" href="#events_9" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -928,6 +1943,55 @@ Besides providing some basic methods like configuring or restarting the microcon
   
       <p>This module implements a communication via a serial device with a given baud rate.</p>
 <p>It contains a list of search paths for finding the serial device.</p>
+
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.hardware.SerialHardware" class="doc doc-heading">
+        <span class="doc doc-object-name doc-class-name">SerialHardware</span>
+
+
+<a href="#rosys.hardware.SerialHardware" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">SerialHardware</span><span class="p">(</span>
+    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;serial&quot;</span><span class="p">,</span>
+    <span class="n">rx_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">26</span><span class="p">,</span>
+    <span class="n">tx_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">27</span><span class="p">,</span>
+    <span class="n">baud</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">115200</span><span class="p">,</span>
+    <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+      <p class="doc doc-class-bases">
+        Bases: <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
+
+  
+      <p>The serial module represents a serial connection with another device.</p>
 
 
 
@@ -1003,15 +2067,15 @@ while communicating with the hardware components connected to a physical Robot B
 
 
 <a href="#rosys.hardware.Wheels" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="n">Wheels</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="highlight"><pre><span></span><code><span class="n">Wheels</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
   <div class="doc doc-contents first">
       <p class="doc doc-class-bases">
-        Bases: <code>abc.<span title="abc.ABC">ABC</span></code></p>
+        Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code>abc.<span title="abc.ABC">ABC</span></code></p>
 
   
-      <p>The wheels module is a simple example for a representation of real or simulated robot hardware.</p>
+      <p>This module represents wheels for a two-wheel differential drive.</p>
 <p>Wheels can be moved using the <code>drive</code> methods and provide measured velocities as an event.</p>
 
 
@@ -1034,7 +2098,7 @@ while communicating with the hardware components connected to a physical Robot B
 
   </div>
 
-</div><h3 id="events_1">Events<a class="headerlink" href="#events_1" title="Permanent link">&para;</a></h3>
+</div><h3 id="events_10">Events<a class="headerlink" href="#events_10" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
@@ -1060,12 +2124,23 @@ while communicating with the hardware components connected to a physical Robot B
 
 
 <a href="#rosys.hardware.WheelsHardware" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="highlight"><pre><span></span><code><span class="n">WheelsHardware</span><span class="p">(</span><span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="highlight"><pre><span></span><code><span class="n">WheelsHardware</span><span class="p">(</span>
+    <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">can</span><span class="p">:</span> <span class="n">CanHardware</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;wheels&quot;</span><span class="p">,</span>
+    <span class="n">left_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">right_can_address</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span>
+    <span class="n">m_per_tick</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">width</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">is_left_reversed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">is_right_reversed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
   <div class="doc doc-contents first">
       <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.wheels.Wheels" href="#rosys.hardware.Wheels">Wheels</a></code></p>
+        Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.wheels.Wheels" href="#rosys.hardware.Wheels">Wheels</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
   
       <p>This module implements wheels hardware.</p>
@@ -1092,7 +2167,22 @@ Velocities are read and emitted regularly.</p>
 
   </div>
 
-</div>
+</div><h3 id="events_11">Events<a class="headerlink" href="#events_11" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VELOCITY_MEASURED</td>
+<td>new velocity measurements are available for processing (argument: list of velocities)</td>
+</tr>
+</tbody>
+</table>
+
 
 <div class="doc doc-object doc-class">
 
@@ -1108,7 +2198,7 @@ Velocities are read and emitted regularly.</p>
 
   <div class="doc doc-contents first">
       <p class="doc doc-class-bases">
-        Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.wheels.Wheels" href="#rosys.hardware.Wheels">Wheels</a></code></p>
+        Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.wheels.Wheels" href="#rosys.hardware.Wheels">Wheels</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
 
   
       <p>This module simulates two wheels.</p>
@@ -1135,7 +2225,21 @@ A simulated pose is regularly updated with these velocities, while the velocitie
 
   </div>
 
-</div>
+</div><h3 id="events_12">Events<a class="headerlink" href="#events_12" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>VELOCITY_MEASURED</td>
+<td>new velocity measurements are available for processing (argument: list of velocities)</td>
+</tr>
+</tbody>
+</table>
 
 
 
@@ -1173,10 +2277,10 @@ A simulated pose is regularly updated with these velocities, while the velocitie
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.db81ec45.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.4b2c34cd.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.b78d2936.min.js"></script>
       
     
   </body>

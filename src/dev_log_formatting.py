@@ -5,14 +5,16 @@ import os
 import sys
 
 from nicegui import ui
+
 from rosys.driving import Odometer, Steerer, joystick
-from rosys.hardware import WheelsSimulation
+from rosys.hardware import RobotSimulation, WheelsSimulation
 
 
 class PackagePathFilter(logging.Filter):
-    '''Provides relative path for log formatter.
+    """Provides relative path for log formatter.
+
     Original code borrowed from https://stackoverflow.com/a/52582536/3419103
-    '''
+    """
 
     def filter(self, record: logging.LogRecord) -> bool:
         pathname = record.pathname
@@ -67,6 +69,7 @@ logging.config.dictConfig({
 wheels = WheelsSimulation()
 steerer = Steerer(wheels)
 odometer = Odometer(wheels)
+robot = RobotSimulation([wheels])
 
 joystick(steerer)
 

@@ -7,14 +7,15 @@ import rosys
 from rosys.automation import Automator
 from rosys.driving import Driver, Odometer, robot_object
 from rosys.geometry import Point, Prism
-from rosys.hardware import WheelsSimulation
+from rosys.hardware import RobotSimulation, WheelsSimulation
 
 wheels = WheelsSimulation()
+robot = RobotSimulation([wheels])
 odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
 driver.parameters.linear_speed_limit = 3
 driver.parameters.angular_speed_limit = 1
-automator = Automator(wheels, None)
+automator = Automator(None, on_interrupt=wheels.stop)
 
 size = 3
 boundary = [(-size, -size), (-size, size), (size, size), (size, -size)]
