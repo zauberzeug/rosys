@@ -41,7 +41,7 @@ WORKDIR /rosys
 COPY LICENSE README.md rosys.code-workspace ./
 ADD ./rosys /rosys/rosys
 
-ENV PYTHONPATH "${PYTHONPATH}:/rosys"
+ENV PYTHONPATH "/rosys"
 
 EXPOSE 8080
 
