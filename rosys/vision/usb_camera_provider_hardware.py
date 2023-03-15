@@ -125,7 +125,7 @@ class UsbCameraProviderHardware(CameraProvider):
                     bytes = await rosys.run.cpu_bound(process_ndarray_image, image, camera.rotation, camera.crop)
                 size = camera.resolution or ImageSize(width=800, height=600)
                 camera.images.append(Image(camera_id=uid, data=bytes, time=rosys.time(), size=size))
-            except:
+            except Exception:
                 self.log.exception(f'could not capture image from {uid}')
                 await self.deactivate(camera)
 
@@ -192,7 +192,7 @@ class UsbCameraProviderHardware(CameraProvider):
                 capture.release()
             else:
                 return capture
-        except:
+        except Exception:
             self.log.exception(f'{index} device failed')
 
     async def shutdown(self) -> None:

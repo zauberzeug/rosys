@@ -100,7 +100,7 @@ def restore() -> None:
         with open(filepath) as f:
             try:
                 module.restore(json.load(f))
-            except:
+            except Exception:
                 log.exception(f'failed to restore {module}')
 
 

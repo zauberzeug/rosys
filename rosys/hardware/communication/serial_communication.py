@@ -63,7 +63,7 @@ class SerialCommunication(Communication):
                 if self.log_io:
                     self.log.debug(f'read: {line}')
                 return line
-        except:
+        except Exception:
             self.log.exception(f'Could not decode serial data: {s}')
 
     async def send(self, line: str) -> None:

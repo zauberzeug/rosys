@@ -36,7 +36,7 @@ class WebCommunication(Communication):
             sio.on('connect', sio.disconnect)
             sio.connect(cls.host)
             return True
-        except:
+        except Exception:
             return False
 
     async def read(self) -> Optional[str]:

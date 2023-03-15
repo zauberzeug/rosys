@@ -64,7 +64,7 @@ class DetectorHardware(Detector):
             await self.sio.connect(url, socketio_path='/ws/socket.io', wait_timeout=3.0)
             self.log.info('connected successfully')
             return True
-        except:
+        except Exception:
             return False
 
     async def disconnect(self) -> None:
@@ -94,7 +94,7 @@ class DetectorHardware(Detector):
         try:
             self.log.info(f'uploading to port {self.port}')
             await self.sio.emit('upload', {'image': image.data, 'mac': image.camera_id})
-        except:
+        except Exception:
             self.log.exception(f'could not upload {image.id}')
 
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED, tags: list[str] = []) -> None:
@@ -134,7 +134,7 @@ class DetectorHardware(Detector):
                 self.timeout_count += 1
             except asyncio.exceptions.CancelledError:
                 self.log.debug(f'task has been cancelled')
-            except:
+            except Exception:
                 self.log.exception(f'could not detect {current_image.id}')
             else:
                 self.timeout_count = 0

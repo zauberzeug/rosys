@@ -36,7 +36,7 @@ async def _get_image(cameras: dict[str, Camera], camera_id: str, timestamp: str,
         if not jpeg:
             return Response(content='Image not found', status_code=404)
         return Response(content=jpeg, headers={'cache-control': 'max-age=7776000'}, media_type='image/jpeg')
-    except:
+    except Exception:
         log.exception('could not get image')
         raise
 

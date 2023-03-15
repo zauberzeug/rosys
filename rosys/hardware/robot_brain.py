@@ -152,7 +152,7 @@ class RobotBrain:
             esp = Esp(nand='nand' in params, xavier='xavier' in params, device=devices[0] if devices else None)
             with esp.pin_config():
                 esp.activate()
-        except:
+        except Exception:
             self.log.exception('Could not enable ESP')
 
     def __del__(self) -> None:

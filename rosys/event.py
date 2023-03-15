@@ -61,7 +61,7 @@ class Event:
         for listener in self.listeners:
             try:
                 await invoke(listener.callback, *args)
-            except:
+            except Exception:
                 log.exception(f'could not call {listener=}')
 
     def emit(self, *args) -> None:
@@ -75,7 +75,7 @@ class Event:
                         tasks.append(background_tasks.create(result, name=name))
                     else:
                         startup_coroutines.append(result)
-            except:
+            except Exception:
                 log.exception(f'could not emit {listener=}')
 
 

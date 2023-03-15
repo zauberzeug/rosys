@@ -62,7 +62,7 @@ def notify(message: str) -> None:
         with client:
             try:
                 ui.notify(message)
-            except:
+            except Exception:
                 log.exception('failed to call notify')
 
 
@@ -110,7 +110,7 @@ def _run_handler(handler: Callable) -> None:
         result = handler()
         if isinstance(result, Awaitable):
             tasks.append(background_tasks.create(result, name=handler.__qualname__))
-    except:
+    except Exception:
         log.exception(f'error while starting handler "{handler.__qualname__}"')
 
 
@@ -176,7 +176,7 @@ async def _watch_emitted_events() -> None:
                 _exception = task.exception()
                 log.exception('task failed to execute', exc_info=task.exception())
         event.tasks = [t for t in event.tasks if not t.done()]
-    except:
+    except Exception:
         log.exception('failed to watch emitted events')
 
 
@@ -192,7 +192,7 @@ async def _repeat_one_handler(handler: Callable, interval: float) -> None:
             dt = time() - start
         except (asyncio.CancelledError, GeneratorExit):
             return
-        except:
+        except Exception:
             dt = time() - start
             log.exception(f'error in "{handler.__qualname__}"')
             if interval == 0 and dt < 0.1:

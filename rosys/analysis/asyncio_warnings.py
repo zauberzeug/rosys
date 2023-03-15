@@ -21,7 +21,7 @@ class AsyncioWarnings:
             loop = asyncio.get_running_loop()
             loop.set_debug(True)
             self.log.warning('activated asyncio warnings; do not use in production or while profiling)')
-        except:
+        except Exception:
             self.log.exception('could not activate asyncio warnings')
 
     def deactivate(self) -> None:
@@ -29,7 +29,7 @@ class AsyncioWarnings:
         try:
             loop = asyncio.get_running_loop()
             loop.set_debug(False)
-        except:
+        except Exception:
             self.log.exception('could not deactivate asyncio warnings')
 
     def toggle(self) -> None:

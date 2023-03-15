@@ -4,7 +4,6 @@ import logging
 import serial
 import socketio
 import uvicorn
-
 from hardware.robot_brain import augment, check
 
 sio = socketio.AsyncServer(async_mode='asgi')
@@ -27,7 +26,7 @@ async def receive() -> None:
             if '\n' in buffer:
                 line, buffer = buffer.split('\n', 1)
                 await sio.emit('read', check(line.rstrip('\r')))
-    except:
+    except Exception:
         logging.exception('could not read')
 
 
