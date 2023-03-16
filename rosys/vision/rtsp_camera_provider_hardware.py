@@ -41,7 +41,7 @@ class RtspCameraProviderHardware(CameraProvider):
         self._capture_tasks: dict[str, asyncio.Task] = {}
         self._processes: list[Process] = []
         self.arpscan_cmd = 'sudo /usr/sbin/arp-scan'
-        #self.arpscan_cmd = 'arp-scan'
+        # self.arpscan_cmd = 'arp-scan'
 
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, 1)
@@ -90,6 +90,8 @@ class RtspCameraProviderHardware(CameraProvider):
 
         size = ImageSize(width=1920, height=1080)
         async for image in stream():
+            if camera.crop or camera.rotation != ImageRotation.NONE:
+                image = await rosys.run.cpu_bound(process_image, image, camera.rotation, camera.crop)
             camera.images.append(Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
 
     async def activate(self, camera: RtspCamera) -> None:
@@ -128,7 +130,7 @@ class RtspCameraProviderHardware(CameraProvider):
                     self.log.exception(f'could not parse {line}')
                     continue
                 if not mac.startswith('e0:62:90'):
-                    #self.log.debug('ignoring mac {mac} because it seems not to be a camera')
+                    # self.log.debug('ignoring mac {mac} because it seems not to be a camera')
                     continue
                 url = f'rtsp://admin:admin@{ip}/profile0'
                 if mac not in self._cameras:
@@ -150,3 +152,18 @@ class RtspCameraProviderHardware(CameraProvider):
             await self.deactivate(camera)
         for process in self._processes:
             process.kill()
+
+
+def process_image(data: bytes, rotation: ImageRotation, crop: Rectangle = None) -> bytes:
+    image = PIL.Image.open(io.BytesIO(data))
+    if crop is not None:
+        image = image.crop((int(crop.x), int(crop.y), int(crop.x+crop.width), int(crop.y+crop.height)))
+    if rotation == ImageRotation.LEFT:
+        image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    elif rotation == ImageRotation.RIGHT:
+        image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+    elif rotation == ImageRotation.UPSIDE_DOWN:
+        image = cv2.rotate(image, cv2.ROTATE_180)
+    img_byte_arr = io.BytesIO()
+    image.save(img_byte_arr, format='JPEG')
+    return img_byte_arr.getvalue()

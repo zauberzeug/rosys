@@ -45,3 +45,11 @@ class RtspCamera(Camera):
             return ImageSize(width=height, height=width)
         else:
             return ImageSize(width=self.resolution.width, height=self.resolution.height)
+
+    @property
+    def rotation_angle(self) -> int:
+        return self.rotation.value
+
+    @rotation_angle.setter
+    def rotation_angle(self, value: int) -> None:
+        self.rotation = ImageRotation(value)
