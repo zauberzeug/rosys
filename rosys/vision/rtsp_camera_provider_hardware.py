@@ -6,6 +6,7 @@ import re
 import shlex
 import shutil
 import subprocess
+import sys
 from asyncio.subprocess import Process
 from dataclasses import dataclass, field
 from typing import Any, Optional
@@ -40,8 +41,10 @@ class RtspCameraProviderHardware(CameraProvider):
         self._cameras: dict[str, RtspCamera] = {}
         self._capture_tasks: dict[str, asyncio.Task] = {}
         self._processes: list[Process] = []
-        self.arpscan_cmd = 'sudo /usr/sbin/arp-scan'
-        # self.arpscan_cmd = 'arp-scan'
+        if sys.platform.startswith('darwin'):
+            self.arpscan_cmd = 'arp-scan'
+        else:
+            self.arpscan_cmd = 'sudo /usr/sbin/arp-scan'
 
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, 1)
