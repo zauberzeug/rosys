@@ -8,7 +8,7 @@ import sys
 import threading
 import time as pytime
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Optional
+from typing import Awaitable, Callable, Literal, Optional
 
 import numpy as np
 import psutil
@@ -53,7 +53,7 @@ shutdown_handlers: list[Callable] = []
 tasks: list[asyncio.Task] = []
 
 
-def notify(message: str) -> None:
+def notify(message: str, type: Optional[Literal['positive', 'negative', 'warning', 'info', 'ongoing']] = None) -> None:
     log.info(message)
     notifications.append(Notification(time=time, message=message))
     NEW_NOTIFICATION.emit(message)
@@ -61,7 +61,7 @@ def notify(message: str) -> None:
     for client in nicegui_globals.clients.values():
         with client:
             try:
-                ui.notify(message)
+                ui.notify(message, type=type)
             except Exception:
                 log.exception('failed to call notify')
 

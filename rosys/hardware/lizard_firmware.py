@@ -44,7 +44,7 @@ class LizardFirmware:
         try:
             self.online_version = response['tag_name'].removeprefix('v')
         except KeyError:
-            rosys.notify(response.get('message', 'Could not access online version'))
+            rosys.notify(response.get('message', 'Could not access online version'), 'warning')
 
     def read_local_version(self) -> None:
         bin = self.PATH / 'build' / 'lizard.bin'
@@ -100,7 +100,7 @@ class LizardFirmware:
         self.log.info(f'flashed Lizard:\n {output}')
         self.robot_brain.communication.connect()
         await self.read_core_version()
-        rosys.notify('Finished.')
+        rosys.notify('Finished.', 'positive')
 
     async def flash_p0(self) -> None:
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
@@ -108,10 +108,10 @@ class LizardFirmware:
         start = rosys.time()
         while self.robot_brain.hardware_time < start + 3.0:
             if rosys.time() > start + 60.0:
-                rosys.notify('Failed.')
+                rosys.notify('Failed.', 'negative')
                 return
             await rosys.sleep(0.1)
         await self.robot_brain.restart()
         await rosys.sleep(3.0)
         await self.read_p0_version()
-        rosys.notify('Finished.')
+        rosys.notify('Finished.', 'positive')

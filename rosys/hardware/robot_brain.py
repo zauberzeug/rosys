@@ -102,7 +102,7 @@ class RobotBrain:
             await self.send(f'!+{line}')
         await self.send(f'!.')
         await self.restart()
-        rosys.notify('Lizard configured successfully.')
+        rosys.notify('Lizard configured successfully.', 'positive')
 
     async def restart(self) -> None:
         await self.send(f'core.restart()')
