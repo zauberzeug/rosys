@@ -67,8 +67,7 @@ class RtspCameraProviderHardware(CameraProvider):
         async def stream():
             command = f'ffmpeg -i {camera.url} -f image2pipe -vf fps=fps=6 -nostats -y -fflags nobuffer -flags low_delay -strict experimental -rtsp_transport tcp -qscale:v 2 -qscale 2 -movflags +faststart -threads 1 -c:v mjpeg pipe:1'
             self.log.info(command)
-            args = shlex.split(command)
-            process = await asyncio.create_subprocess_exec(*args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self._processes.append(process)
             data = b''
             while True:
@@ -118,9 +117,8 @@ class RtspCameraProviderHardware(CameraProvider):
         self.last_scan = rosys.time()
         for interface in net.interfaces():
             output = (await rosys.run.sh(f'{self.arpscan_cmd} -I {interface} --localnet', timeout=10))
-            if output is None:
-                return
-
+            if output is None or 'ERROR' in output:
+                continue
             for camera in self._cameras.values():
                 camera.active = False
             for line in output.splitlines():
@@ -135,14 +133,14 @@ class RtspCameraProviderHardware(CameraProvider):
                 if not mac.startswith('e0:62:90'):
                     # self.log.debug('ignoring mac {mac} because it seems not to be a camera')
                     continue
+                self._cameras[mac].active = True
                 url = f'rtsp://admin:admin@{ip}/profile0'
+                self._cameras[mac].url = url
                 if mac not in self._cameras:
                     camera = RtspCamera(id=mac, url=url)
                     self._cameras[mac] = camera
                     self.log.info(f'adding camera {url}')
                     await self.CAMERA_ADDED.call(camera)
-                self._cameras[mac].active = True
-                self._cameras[mac].url = url
             for camera in self._cameras.values():
                 if camera.active and camera.id not in self._capture_tasks:
                     await self.activate(camera)
