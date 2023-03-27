@@ -46,9 +46,10 @@ class Event:
         if not client.shared:
             async def register_disconnect():
                 try:
-                    await client.connected()
+                    await client.connected(timeout=10.0)
                     client.on_disconnect(lambda: self.unregister(callback))
                 except TimeoutError:
+                    log.warning(f'could not register disconnect for {callback=}')
                     self.unregister(callback)
             background_tasks.create(register_disconnect())
         return self
