@@ -65,7 +65,7 @@ class RtspCameraProviderHardware(CameraProvider):
 
     async def capture_images(self, camera: RtspCamera) -> None:
         async def stream():
-            command = f'ffmpeg -i {camera.url} -f image2pipe -vf fps=fps=6 -nostats -y -fflags nobuffer -flags low_delay -strict experimental -rtsp_transport tcp -qscale:v 2 -qscale 2 -movflags +faststart -threads 1 -c:v mjpeg pipe:1'
+            command = f'ffmpeg -i {camera.url} -f image2pipe -vf fps=fps=6 -nostats -y -fflags nobuffer -flags low_delay -strict experimental -rtsp_transport tcp -qscale:v 2 -qscale 2 -movflags +faststart -threads 1 -tune zerolatency -c:v mjpeg pipe:1'
             self.log.info(command)
             process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self._processes.append(process)
@@ -159,12 +159,7 @@ def process_image(data: bytes, rotation: ImageRotation, crop: Rectangle = None) 
     image = PIL.Image.open(io.BytesIO(data))
     if crop is not None:
         image = image.crop((int(crop.x), int(crop.y), int(crop.x+crop.width), int(crop.y+crop.height)))
-    if rotation == ImageRotation.LEFT:
-        image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
-    elif rotation == ImageRotation.RIGHT:
-        image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
-    elif rotation == ImageRotation.UPSIDE_DOWN:
-        image = cv2.rotate(image, cv2.ROTATE_180)
+    image = image.rotate(int(rotation), expand=True, resample=PIL.Image.Resampling.BICUBIC)
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format='JPEG')
     return img_byte_arr.getvalue()
