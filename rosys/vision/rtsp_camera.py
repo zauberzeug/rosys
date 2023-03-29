@@ -13,6 +13,11 @@ class ImageRotation(str, Enum):
     UPSIDE_DOWN: int = 180
     LEFT: int = 270
 
+    @classmethod
+    def from_int(cls, degrees: int) -> 'ImageRotation':
+        degrees_normalized = degrees % 360
+        return min(cls, key=lambda rotation: abs(degrees_normalized - int(rotation)))
+
 
 @dataclass(slots=True, kw_only=True)
 class RtspCamera(Camera):
@@ -48,8 +53,14 @@ class RtspCamera(Camera):
 
     @property
     def rotation_angle(self) -> int:
-        return self.rotation.value
+        return int(self.rotation)
 
     @rotation_angle.setter
     def rotation_angle(self, value: int) -> None:
-        self.rotation = ImageRotation(value)
+        self.rotation = ImageRotation.from_int(value)
+
+    def rotate_clockwise(self) -> None:
+        self.rotation_angle += 90
+
+    def rotate_counter_clockwise(self) -> None:
+        self.rotation_angle -= 90
