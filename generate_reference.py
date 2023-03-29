@@ -30,7 +30,7 @@ for path in sorted(Path('.').rglob('__init__.py')):
 
     try:
         module = importlib.import_module(identifier)
-    except:
+    except Exception:
         logging.exception(f'Failed to import {identifier}')
         sys.exit(1)
 
