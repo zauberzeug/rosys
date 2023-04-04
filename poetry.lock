@@ -1719,14 +1719,14 @@ test = ["codecov (>=2.1)", "pytest (>=7.2)", "pytest-cov (>=4.0)"]
 
 [[package]]
 name = "nicegui"
-version = "1.2.2"
+version = "1.2.5"
 description = "Web User Interface with Buttons, Dialogs, Markdown, 3D Scences and Plots"
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "nicegui-1.2.2-py3-none-any.whl", hash = "sha256:11a8473d6e43dd834867803405ae90a60c5e8fc7099b77bb1a8ea6b72dbe1b54"},
-    {file = "nicegui-1.2.2.tar.gz", hash = "sha256:71e5bc38a9fe6b4e26b1ea705276e6fedcc3a81ae5329116c08e4fa84a7d961a"},
+    {file = "nicegui-1.2.5-py3-none-any.whl", hash = "sha256:bf3b75b99be260d7bf084c8d2848b190e1d777f7d782227dd524e8c227355d2b"},
+    {file = "nicegui-1.2.5.tar.gz", hash = "sha256:e4acfdabc2666282920a330e438b23ad6a631ba0b71f333b20cb7425e98f614a"},
 ]
 
 [package.dependencies]
@@ -3437,4 +3437,4 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <3.12"
-content-hash = "6c6a30e11ea80cc73b0e72cd78d480a158671cfbf5fbe05531b83d2b9d2d28ad"
+content-hash = "dd5e38186d407d7c273955cd8a81933fb6c722d3a09616c16d355230585823e8"
