@@ -116,7 +116,8 @@ class RtspCameraProviderHardware(CameraProvider):
             return
         self.last_scan = rosys.time()
         for interface in net.interfaces():
-            output = (await rosys.run.sh(f'{self.arpscan_cmd} -I {interface} --localnet', timeout=10))
+            cmd = f'{self.arpscan_cmd} -I {interface} --localnet'
+            output = (await rosys.run.sh(cmd, timeout=10))
             if output is None or 'ERROR' in output:
                 continue
             for camera in self._cameras.values():
@@ -133,14 +134,14 @@ class RtspCameraProviderHardware(CameraProvider):
                 if not mac.startswith('e0:62:90'):
                     # self.log.debug('ignoring mac {mac} because it seems not to be a camera')
                     continue
-                self._cameras[mac].active = True
                 url = f'rtsp://admin:admin@{ip}/profile0'
-                self._cameras[mac].url = url
                 if mac not in self._cameras:
                     camera = RtspCamera(id=mac, url=url)
                     self._cameras[mac] = camera
                     self.log.info(f'adding camera {url}')
                     await self.CAMERA_ADDED.call(camera)
+                self._cameras[mac].active = True
+                self._cameras[mac].url = url
             for camera in self._cameras.values():
                 if camera.active and camera.id not in self._capture_tasks:
                     await self.activate(camera)
