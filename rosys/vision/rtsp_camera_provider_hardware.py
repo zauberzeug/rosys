@@ -50,7 +50,7 @@ class RtspCameraProviderHardware(CameraProvider):
 
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, 1)
-        rosys.on_repeat(lambda: self.prune_images(max_age_seconds=1.0), 5.0)
+        rosys.on_repeat(lambda: self.prune_images(max_age_seconds=10.0), 5.0)
 
         self.needs_backup: bool = False
         persistence.register(self)
@@ -72,7 +72,7 @@ class RtspCameraProviderHardware(CameraProvider):
             if platform.system() == 'Darwin':
                 command = f'gst-launch-1.0 rtspsrc location={camera.url} latency=0 protocols=tcp drop-on-latency=true buffer-mode=none ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
             else:
-                command = f'gst-launch-1.0 rtspsrc location={camera.url} latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
+                command = f'gst-launch-1.0 rtspsrc location={camera.url} latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=3/1" ! jpegenc ! fdsink'
             self.log.info(command)
             process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self._processes.append(process)
@@ -122,13 +122,12 @@ class RtspCameraProviderHardware(CameraProvider):
         if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
             return
         self.last_scan = rosys.time()
+        old_cameras = [camera for camera in self._cameras.values() if camera.active]
         for interface in net.interfaces():
             cmd = f'{self.arpscan_cmd} -I {interface} --localnet'
             output = (await rosys.run.sh(cmd, timeout=10))
             if output is None or 'ERROR' in output:
                 continue
-            for camera in self._cameras.values():
-                camera.active = False
             for line in output.splitlines():
                 infos = line.split()
                 if len(infos) < 2:
@@ -148,13 +147,16 @@ class RtspCameraProviderHardware(CameraProvider):
                     self.log.info(f'adding camera {url}')
                     await self.CAMERA_ADDED.call(camera)
                 self._cameras[mac].active = True
+                old_cameras.remove(self._cameras[mac])
                 self._cameras[mac].url = url
-            for camera in self._cameras.values():
-                if camera.active and camera.id not in self._capture_tasks:
-                    await self.activate(camera)
-                # NOTE deactivating is still buggy -- disabled for now
-                # if not camera.active and camera.id in self._capture_tasks:
-                #     await self.deactivate(camera)
+        # for camera in old_cameras:
+        #     camera.active = False
+        for camera in self._cameras.values():
+            if camera.active and camera.id not in self._capture_tasks:
+                await self.activate(camera)
+            # NOTE deactivating is still buggy -- disabled for now
+            # if not camera.active and camera.id in self._capture_tasks:
+            #     await self.deactivate(camera)
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
