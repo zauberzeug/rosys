@@ -147,7 +147,8 @@ class RtspCameraProviderHardware(CameraProvider):
                     self.log.info(f'adding camera {url}')
                     await self.CAMERA_ADDED.call(camera)
                 self._cameras[mac].active = True
-                old_cameras.remove(self._cameras[mac])
+                if self._cameras[mac] in old_cameras:
+                    old_cameras.remove(self._cameras[mac])
                 self._cameras[mac].url = url
         # for camera in old_cameras:
         #     camera.active = False
@@ -162,7 +163,10 @@ class RtspCameraProviderHardware(CameraProvider):
         for camera in self._cameras.values():
             await self.deactivate(camera)
         for process in self._processes:
-            process.kill()
+            try:
+                process.kill()
+            except Exception:
+                self.log.info('could not kill process')
 
 
 def process_image(data: bytes, rotation: ImageRotation, crop: Rectangle = None) -> bytes:
