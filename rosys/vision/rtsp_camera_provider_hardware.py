@@ -168,6 +168,9 @@ class RtspCameraProviderHardware(CameraProvider):
             except Exception:
                 self.log.info('could not kill process')
 
+    def request_backup(self) -> None:
+        self.needs_backup = True
+
 
 def process_image(data: bytes, rotation: ImageRotation, crop: Rectangle = None) -> bytes:
     image = PIL.Image.open(io.BytesIO(data))
