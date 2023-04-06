@@ -97,7 +97,7 @@ class RtspCameraProviderHardware(CameraProvider):
                 if images:
                     yield images[-1]
 
-        size = ImageSize(width=1920, height=1080)
+        size = ImageSize(width=camera.resolution.width, height=camera.resolution.height)
         async for image in stream():
             if camera.crop or camera.rotation != ImageRotation.NONE:
                 image = await rosys.run.cpu_bound(process_image, image, camera.rotation, camera.crop)
@@ -146,10 +146,12 @@ class RtspCameraProviderHardware(CameraProvider):
                     self._cameras[mac] = camera
                     self.log.info(f'adding camera {url}')
                     await self.CAMERA_ADDED.call(camera)
-                self._cameras[mac].active = True
+                camera = self._cameras[mac]
+                camera.url = url
+                camera.active = True
+                camera.resolution = ImageSize(width=1920, height=1080)  # TODO determine from image stream
                 if self._cameras[mac] in old_cameras:
                     old_cameras.remove(self._cameras[mac])
-                self._cameras[mac].url = url
         # for camera in old_cameras:
         #     camera.active = False
         for camera in self._cameras.values():

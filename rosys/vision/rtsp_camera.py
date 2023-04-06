@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
+import rosys
+
 from ..geometry import Rectangle
 from .camera import Camera
 from .image import ImageSize
@@ -64,3 +66,7 @@ class RtspCamera(Camera):
 
     def rotate_counter_clockwise(self) -> None:
         self.rotation_angle -= 90
+
+    def __repr__(self) -> dict:
+        last_image = f'{rosys.time() - self.latest_captured_image.time:.0f} s ago' if self.latest_captured_image else 'never'
+        return {'name': self.name, 'url': self.url, 'active': self.active, 'last_image': last_image}
