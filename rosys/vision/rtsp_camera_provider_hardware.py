@@ -67,8 +67,6 @@ class RtspCameraProviderHardware(CameraProvider):
 
     async def capture_images(self, camera: RtspCamera) -> None:
         async def stream():
-            #command = f'ffmpeg -i {camera.url} -f image2pipe -vf fps=fps=6 -nostats -y -fflags nobuffer -flags low_delay -strict experimental -rtsp_transport tcp -qscale:v 2 -qscale 2 -movflags +faststart -threads 1 -tune zerolatency -c:v mjpeg pipe:1'
-            #command = f'gst-launch-1.0 rtspsrc location={camera.url} latency=0 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! jpegenc ! fdsink fd=1'
             if platform.system() == 'Darwin':
                 command = f'gst-launch-1.0 rtspsrc location={camera.url} latency=0 protocols=tcp drop-on-latency=true buffer-mode=none ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
             else:
