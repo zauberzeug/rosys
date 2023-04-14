@@ -126,6 +126,10 @@ class RtspCameraProviderHardware(CameraProvider):
             output = (await rosys.run.sh(cmd, timeout=10))
             if output is None or 'ERROR' in output:
                 continue
+            if 'sudo' in output:
+                self.log.error('could not run arp-scan, try running "sudo visudo" '
+                               'and add the following line: "rosys ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan"')
+                return
             for line in output.splitlines():
                 infos = line.split()
                 if len(infos) < 2:
