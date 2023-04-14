@@ -87,9 +87,9 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
             cmd = shlex.split(command) if isinstance(command, str) else command
         if timeout is not None:
             if shell:
-                cmd = f'timeout {timeout} {cmd}'
+                cmd = f'timeout --signal=SIGKILL {timeout} {cmd}'
             else:
-                cmd = ['timeout', str(timeout)] + cmd
+                cmd = ['timeout', '--signal=SIGKILL', str(timeout)] + cmd
         # log.info(f'running sh: "{cmd}"')
         proc = subprocess.Popen(
             cmd,
