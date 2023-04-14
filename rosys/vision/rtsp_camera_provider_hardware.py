@@ -123,7 +123,7 @@ class RtspCameraProviderHardware(CameraProvider):
         old_cameras = [camera for camera in self._cameras.values() if camera.active]
         for interface in net.interfaces():
             cmd = f'{self.arpscan_cmd} -I {interface} --localnet'
-            output = (await rosys.run.sh(cmd, timeout=2))
+            output = (await rosys.run.sh(cmd, timeout=1))
             if output is None or 'ERROR' in output:
                 continue
             if 'sudo' in output:
