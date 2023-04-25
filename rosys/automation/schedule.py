@@ -128,13 +128,13 @@ class Schedule:
             self.log.info('activate')
             if self.on_activate:
                 self.log.info('start automation')
-                self.automator.start(self.on_activate())
+                self.automator.start(self.on_activate(), paused=self.automator.is_paused)
             self._is_active = True
         if self._is_active and not self.can_be_active():
             self.log.info('deactivate')
             if self.on_deactivate:
                 self.log.info('start automation')
-                self.automator.start(self.on_deactivate())
+                self.automator.start(self.on_deactivate(), paused=self.automator.is_paused)
             self._is_active = False
 
     def ui(self) -> ui.row:
