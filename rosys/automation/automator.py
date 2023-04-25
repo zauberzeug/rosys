@@ -72,14 +72,14 @@ class Automator:
     def is_paused(self) -> bool:
         return self.automation is not None and self.automation.is_paused
 
-    def start(self, coro: Optional[Coroutine] = None) -> None:
+    def start(self, coro: Optional[Coroutine] = None, *, paused: bool = False) -> None:
         """Starts a new automation.
 
         You can pass any coroutine.
         The automator will make sure it can be paused, resumed and stopped.
         """
         if coro is None:
-            self.start(self.default_automation())
+            self.start(self.default_automation(), paused=paused)
             return
         if not self.enabled:
             coro.close()
@@ -89,6 +89,8 @@ class Automator:
         rosys.background_tasks.create(self.automation.__await__(), name='automation')
         self.AUTOMATION_STARTED.emit()
         rosys.notify('automation started')
+        if paused:
+            self.automation.pause()
 
     def pause(self, because: str) -> None:
         """Pauses the current automation.
