@@ -93,7 +93,6 @@ class Schedule:
         self.SCHEDULE_CHANGED.emit()
 
     def invalidate(self) -> None:
-        print(self.sunrise_offset, type(self.sunrise_offset))
         self.needs_backup = True
         self.SCHEDULE_CHANGED.emit()
 
