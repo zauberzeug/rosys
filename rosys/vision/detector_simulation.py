@@ -53,7 +53,7 @@ class DetectorSimulation(Detector):
         self._uploads.queue.clear()
         self._uploads.priority_queue.clear()
 
-    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Optional[Detections]:
+    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED, tags: list[str] = []) -> Optional[Detections]:
         is_blocked = image.camera_id in self.blocked_cameras
         await rosys.sleep(0.4)
         image.detections = Detections()
