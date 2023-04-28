@@ -19,6 +19,7 @@ class SimulatedObject:
     position: Point3d
     size: Optional[tuple[float]] = None
     uuid: str = field(init=False)
+    confidence: float = 1.0
 
     def __post_init__(self) -> None:
         self.uuid = str(uuid4())
@@ -83,7 +84,7 @@ class DetectorSimulation(Detector):
                 image.detections.points.append(PointDetection(
                     category_name=object.category_name,
                     model_name='simulation',
-                    confidence=1.0,
+                    confidence=object.confidence,
                     x=image_point.x + self.noise * np.random.randn(),
                     y=image_point.y + self.noise * np.random.randn(),
                     uuid=object.uuid,
@@ -99,7 +100,7 @@ class DetectorSimulation(Detector):
                 image.detections.boxes.append(BoxDetection(
                     category_name=object.category_name,
                     model_name='simulation',
-                    confidence=1.0,
+                    confidence=object.confidence,
                     x=image_points[:, 0].min() + self.noise * np.random.randn(),
                     y=image_points[:, 1].min() + self.noise * np.random.randn(),
                     width=image_points[:, 0].max() - image_points[:, 0].min() + self.noise * np.random.randn(),
