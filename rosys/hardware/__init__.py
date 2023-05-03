@@ -1,3 +1,4 @@
+from .bluetooth import BluetoothHardware
 from .bms import Bms, BmsHardware, BmsSimulation
 from .bumper import Bumper, BumperHardware, BumperSimulation
 from .can import CanHardware
