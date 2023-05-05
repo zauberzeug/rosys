@@ -90,7 +90,7 @@ class AppControls:
             elif line.startswith('PUT /button/') and '/action' in line:
                 # line: "PUT /button/main/my_button/action pressed"
                 _, path, action = line.split(' ')
-                _, group, name, _ = path.split('/')
+                _, group, name, _ = path[1:].split('/')
                 buttons = self.main_buttons if group == 'main' else self.extra_buttons
                 if action == 'pressed':
                     self._invoke(buttons[name].pressed)
