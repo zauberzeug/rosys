@@ -115,7 +115,7 @@ class AppControls:
         await run('main', self.main_buttons)
         await run('extra', self.extra_buttons)
 
-    async def _invoke(self, callback: Callable):
+    def _invoke(self, callback: Callable):
         if inspect.iscoroutinefunction(callback):
             rosys.background_tasks.create(callback(), name='app_controls._invoke')
         else:
