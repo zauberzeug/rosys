@@ -31,10 +31,8 @@ class Wheels(Module, abc.ABC):
         self.linear_target_speed = linear
         self.angular_target_speed = angular
 
-    @abc.abstractmethod
     async def stop(self) -> None:
-        self.linear_target_speed = 0.0
-        self.angular_target_speed = 0.0
+        await self.drive(0.0, 0.0)
 
 
 class WheelsHardware(Wheels, ModuleHardware):
@@ -71,10 +69,6 @@ class WheelsHardware(Wheels, ModuleHardware):
         await super().drive(linear, angular)
         await self.robot_brain.send(f'{self.name}.speed({linear}, {angular})')
 
-    async def stop(self) -> None:
-        await super().stop()
-        await self.robot_brain.send(f'{self.name}.off()')
-
     def handle_core_output(self, time: float, words: list[str]) -> None:
         velocity = Velocity(linear=float(words.pop(0)), angular=float(words.pop(0)), time=time)
         self.VELOCITY_MEASURED.emit([velocity])
@@ -102,11 +96,6 @@ class WheelsSimulation(Wheels, ModuleSimulation):
         f = self.inertia_factor
         self.linear_velocity = 0 if self.is_blocking else f * self.linear_velocity + (1 - f) * linear
         self.angular_velocity = 0 if self.is_blocking else f * self.angular_velocity + (1 - f) * angular
-
-    async def stop(self) -> None:
-        await super().stop()
-        self.linear_velocity = 0
-        self.angular_velocity = 0
 
     async def step(self, dt: float) -> None:
         if not self.is_slipping:
