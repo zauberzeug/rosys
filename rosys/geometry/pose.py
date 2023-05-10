@@ -105,6 +105,12 @@ class Pose:
     def relative_pose(self, other: Pose) -> Pose:
         return Pose.from_matrix(self.inv_matrix @ other.matrix)
 
+    def relative_point(self, other: Point) -> Pose:
+        dx = other.x - self.x
+        dy = other.y - self.y
+        return Point(x=dx * np.cos(-self.yaw) - dy * np.sin(-self.yaw),
+                     y=dx * np.sin(-self.yaw) + dy * np.cos(-self.yaw))
+
     def rotate(self, angle: float) -> Pose:
         return Pose(x=self.x, y=self.y, yaw=self.yaw+angle, time=self.time)
 

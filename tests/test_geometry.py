@@ -1,4 +1,5 @@
 import pytest
+
 from rosys.geometry import Line, LineSegment, Point, Pose, PoseStep, Rectangle
 from rosys.test import approx
 
@@ -29,6 +30,13 @@ def test_pose_transformation():
     b = Pose(x=0.1, y=0.2, yaw=0.3)
     c = a.transform_pose(b)
     approx(a.relative_pose(c), b)
+
+
+def test_point_transformation():
+    a = Pose(x=0.1, y=0.2, yaw=0.3)
+    p = Point(x=1.2, y=3.4)
+    q = a.transform(p)
+    approx(a.relative_point(q), p)
 
 
 def test_pose():
