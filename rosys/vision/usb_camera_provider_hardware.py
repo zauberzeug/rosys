@@ -131,7 +131,7 @@ class UsbCameraProviderHardware(CameraProvider):
 
     async def update_parameters(self) -> None:
         for uid, camera in self._cameras.items():
-            if camera.active and uid in self.devices:
+            if camera.active and uid in self.devices and self.devices[uid].capture is not None:
                 await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
 
     def capture_image(self, id) -> Any:
