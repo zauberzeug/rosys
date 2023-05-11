@@ -122,8 +122,10 @@ class Driver:
                 drive_backward = False
                 curvature = (-1 if curvature > 0 else 1) / max(self.parameters.minimum_turning_radius, 0.001)
             linear = -1 if drive_backward else 1
-            if carrot.t > 1.0 and throttle_at_end:
-                linear *= ramp(carrot.target_distance, 0.5, 0.0, 1.0, 0.5)
+            t = spline.closest_point(hook.x, hook.y)
+            if t >= 1.0 and throttle_at_end:
+                target_distance = self.odometer.prediction.projected_distance(spline.pose(1.0))
+                linear *= ramp(target_distance, self.parameters.hook_offset, 0.0, 1.0, 0.01)
             angular = linear * curvature
 
             self.state = DriveState(
@@ -174,7 +176,6 @@ class Carrot:
     spline: Spline
     offset: Point = field(default_factory=lambda: Point(x=0, y=0))
     t: float = 0
-    target_distance: Optional[float] = None
 
     @property
     def pose(self) -> Pose:
@@ -191,19 +192,11 @@ class Carrot:
     def offset_point(self) -> Point:
         return self.pose.transform(self.offset)
 
-    def move(self, hook: Point, distance: float = 1.0, move_threshold: float = 0.01) -> bool:
-        end_pose = self.spline.pose(1.0)
-        end_point = end_pose.point
-        end_yaw = end_pose.yaw
-
+    def move(self, hook: Point, distance: float) -> bool:
         while hook.distance(self.offset_point) < distance:
             self.t += 0.01
-            if self.t < 1.0:
-                continue
-            self.target_distance = hook.projected_distance(end_point, end_yaw)
-            if self.target_distance <= move_threshold:
+            if self.t >= 1.0:
                 return False
-
         return True
 
     def move_by_foot(self, pose: Pose) -> bool:
