@@ -23,7 +23,7 @@ class Line:
 
     @property
     def yaw(self) -> float:
-        return np.arctan2(self.b, self.a) + np.pi / 2
+        return np.arctan2(self.b, self.a) - np.pi / 2
 
     @staticmethod
     def from_points(point1: Point, point2: Point) -> Line:
