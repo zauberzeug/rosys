@@ -123,7 +123,12 @@ class UsbCameraProviderHardware(CameraProvider):
                         bytes = await rosys.run.cpu_bound(process_jpeg_image, bytes, camera.rotation, camera.crop)
                 else:
                     bytes = await rosys.run.cpu_bound(process_ndarray_image, image, camera.rotation, camera.crop)
-                size = camera.resolution or ImageSize(width=800, height=600)
+                if camera.crop:
+                    size = ImageSize(width=camera.crop.width, height=camera.crop.height)
+                elif camera.resolution:
+                    size = camera.resolution
+                else:
+                    size = ImageSize(width=800, height=600)
                 camera.images.append(Image(camera_id=uid, data=bytes, time=rosys.time(), size=size))
             except Exception:
                 self.log.exception(f'could not capture image from {uid}')
