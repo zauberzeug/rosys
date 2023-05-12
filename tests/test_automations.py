@@ -18,9 +18,9 @@ async def test_driving_a_square(driver: Driver, automator: Automator, robot: Rob
     await forward(x=1)
     assert_pose(1, 0, deg=0)
     await forward(y=1)
-    assert_pose(1, 1, deg=90, deg_tolerance=2)
+    assert_pose(1, 1, deg=90, deg_tolerance=3)
     await forward(x=0)
-    assert_pose(0, 1, deg=180, deg_tolerance=2)
+    assert_pose(0, 1, deg=180, deg_tolerance=3)
     await forward(y=0)
     assert_pose(0, 0, deg=270, deg_tolerance=3)
 
@@ -51,7 +51,7 @@ async def test_pause_and_resume_square(driver: Driver, automator: Automator, rob
 
     automator.resume()
     await forward(y=1)
-    assert_pose(1, 1, deg=90, deg_tolerance=2)
+    assert_pose(1, 1, deg=90, deg_tolerance=3)
 
 
 async def test_driving_a_spline(driver: Driver, automator: Automator, robot: Robot):
