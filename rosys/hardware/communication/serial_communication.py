@@ -1,4 +1,5 @@
 import os
+from collections import deque
 from typing import Optional
 
 import serial
@@ -30,6 +31,8 @@ class SerialCommunication(Communication):
         self.serial = serial.Serial(self.device_path, baud_rate)
         self.buffer = ''
         self.log_io: bool = False
+        self.undo_queue = deque(maxlen=100)
+        self.redo_queue = deque(maxlen=100)
 
     @staticmethod
     def is_possible() -> bool:
@@ -76,9 +79,22 @@ class SerialCommunication(Communication):
     def debug_ui(self) -> None:
         super().debug_ui()
 
-        async def submit_input() -> None:
+        async def input_enter() -> None:
             await self.send(input.value)
+            while self.redo_queue:
+                self.undo_queue.append(self.redo_queue.pop())
+            self.undo_queue.append(input.value)
             input.value = ''
+
+        def input_up() -> None:
+            if self.undo_queue:
+                self.redo_queue.append(input.value)
+                input.value = self.undo_queue.pop()
+
+        def input_down() -> None:
+            if self.redo_queue:
+                self.undo_queue.append(input.value)
+                input.value = self.redo_queue.pop()
 
         def toggle(e: ValueChangeEventArguments) -> None:
             if e.value:
@@ -90,4 +106,7 @@ class SerialCommunication(Communication):
 
         ui.switch('Serial Communication', value=self.serial.isOpen(), on_change=toggle)
         ui.switch('Serial Logging').bind_value(self, 'log_io')
-        input = ui.input('Serial Command', on_change=submit_input)
+        input = ui.input('Serial Command')
+        input.on('keydown.enter', input_enter)
+        input.on('keydown.up', input_up)
+        input.on('keydown.down', input_down)
