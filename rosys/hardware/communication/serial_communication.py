@@ -88,13 +88,14 @@ class SerialCommunication(Communication):
 
         def input_up() -> None:
             if self.undo_queue:
-                self.redo_queue.append(input.value)
+                if input.value:
+                    self.redo_queue.append(input.value)
                 input.value = self.undo_queue.pop()
 
         def input_down() -> None:
-            if self.redo_queue:
+            if self.input.value:
                 self.undo_queue.append(input.value)
-                input.value = self.redo_queue.pop()
+            input.value = self.redo_queue.pop() if self.redo_queue else ''
 
         def toggle(e: ValueChangeEventArguments) -> None:
             if e.value:
