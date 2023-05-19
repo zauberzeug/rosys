@@ -34,10 +34,10 @@ class RobotHardware(Robot):
             output_fields.extend(cast(ModuleHardware, module).core_message_fields)
         code += remove_indentation(f'''
             core.output("core.millis {' '.join(output_fields)}")
-            en = Output(15)
-            v24 = Output(12)
-            en.on()
-            v24.on()
+            rdyp = Output(15)
+            en3 = Output(12)
+            rdyp.on()
+            en3.on()
         ''')
         return code
 
