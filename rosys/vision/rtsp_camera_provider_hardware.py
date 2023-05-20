@@ -75,8 +75,9 @@ class RtspCameraProviderHardware(CameraProvider):
             process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self._processes.append(process)
             data = b''
-            while True:
+            while process.returncode is None:
                 new = await process.stdout.read(4096)
+                print(new, flush=True)
                 if not new:
                     break
                 data += new
@@ -94,12 +95,16 @@ class RtspCameraProviderHardware(CameraProvider):
                 data = data[header:]
                 if images:
                     yield images[-1]
+            self.log.info(f'process {process.pid} exited with {process.returncode}')
 
         size = ImageSize(width=camera.resolution.width, height=camera.resolution.height)
         async for image in stream():
+            camera.active = True
             if camera.crop or camera.rotation != ImageRotation.NONE:
                 image = await rosys.run.cpu_bound(process_image, image, camera.rotation, camera.crop)
             camera.images.append(Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
+        else:
+            camera.active = False
 
     async def activate(self, camera: RtspCamera) -> None:
         task = rosys.background_tasks.create(self.capture_images(camera), name=f'capture {camera.id}')
