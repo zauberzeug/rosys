@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-import logging
-
-import icecream
-
-if True:
-    from engineio.payload import Payload
-    Payload.max_decode_packets = 500
-
 from nicegui import ui
 
 import rosys

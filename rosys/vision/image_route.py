@@ -6,8 +6,6 @@ import numpy as np
 from fastapi import Response
 from nicegui import app
 
-import rosys
-
 from .. import run
 from .camera import Camera
 from .image import Image
