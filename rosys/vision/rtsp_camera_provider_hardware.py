@@ -144,10 +144,15 @@ class RtspCameraProviderHardware(CameraProvider):
                 except Exception:
                     self.log.exception(f'could not parse {line}')
                     continue
-                if not mac.startswith('e0:62:90'):
-                    # self.log.debug('ignoring mac {mac} because it seems not to be a camera')
+                if mac.startswith('e0:62:90'):
+                    vendor = 'Jinan Jovision Science'
+                    url = f'rtsp://admin:admin@{ip}/profile0'
+                elif mac.startswith('e4:24:6c') or mac.startswith('3c:e3:6b'):
+                    vendor = 'Dahua'
+                    url = f'rtsp://admin:Adminadmin@{ip}/cam/realmonitor?channel=1&subtype=0'
+                else:
+                    self.log.debug('ignoring mac {mac} because it seems not to be a known camera')
                     continue
-                url = f'rtsp://admin:admin@{ip}/profile0'
                 if mac not in self._cameras:
                     camera = RtspCamera(id=mac, url=url)
                     self._cameras[mac] = camera
