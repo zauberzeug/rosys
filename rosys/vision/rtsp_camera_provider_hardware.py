@@ -109,8 +109,11 @@ class RtspCameraProviderHardware(CameraProvider):
             camera.active = True
             if camera.crop or camera.rotation != ImageRotation.NONE:
                 image = await rosys.run.cpu_bound(process_image, image, camera.rotation, camera.crop)
-            with PeekableBytesIO(image) as f:
-                width, height = imgsize.get_size(f)
+            try:
+                with PeekableBytesIO(image) as f:
+                    width, height = imgsize.get_size(f)
+            except imgsize.UnknownSize:
+                continue
             size = ImageSize(width=width, height=height)
             camera.resolution = size
             camera.images.append(Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
