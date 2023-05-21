@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 
 import cv2
+import imgsize
 import netifaces as net
 import numpy as np
 import PIL
@@ -28,6 +29,14 @@ from .image import Image, ImageSize
 from .rtsp_camera import ImageRotation, RtspCamera
 
 SCAN_INTERVAL = 10
+
+
+class PeekableBytesIO(io.BytesIO):
+    def peek(self, n=-1):
+        position = self.tell()
+        data = self.read(n)
+        self.seek(position)
+        return data
 
 
 class RtspCameraProviderHardware(CameraProvider):
@@ -77,7 +86,6 @@ class RtspCameraProviderHardware(CameraProvider):
             data = b''
             while process.returncode is None:
                 new = await process.stdout.read(4096)
-                print(new, flush=True)
                 if not new:
                     break
                 data += new
@@ -97,11 +105,14 @@ class RtspCameraProviderHardware(CameraProvider):
                     yield images[-1]
             self.log.info(f'process {process.pid} exited with {process.returncode}')
 
-        size = ImageSize(width=camera.resolution.width, height=camera.resolution.height)
         async for image in stream():
             camera.active = True
             if camera.crop or camera.rotation != ImageRotation.NONE:
                 image = await rosys.run.cpu_bound(process_image, image, camera.rotation, camera.crop)
+            with PeekableBytesIO(image) as f:
+                width, height = imgsize.get_size(f)
+            size = ImageSize(width=width, height=height)
+            camera.resolution = size
             camera.images.append(Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
         else:
             camera.active = False
@@ -161,7 +172,6 @@ class RtspCameraProviderHardware(CameraProvider):
                 camera = self._cameras[mac]
                 camera.url = url
                 camera.active = True
-                camera.resolution = ImageSize(width=1920, height=1080)  # TODO determine from image stream
                 if self._cameras[mac] in old_cameras:
                     old_cameras.remove(self._cameras[mac])
         # for camera in old_cameras:
