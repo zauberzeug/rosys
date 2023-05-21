@@ -155,14 +155,8 @@ class RtspCameraProviderHardware(CameraProvider):
                 except Exception:
                     self.log.exception(f'could not parse {line}')
                     continue
-                if mac.startswith('e0:62:90'):
-                    vendor = 'Jinan Jovision Science'
-                    url = f'rtsp://admin:admin@{ip}/profile0'
-                elif mac.startswith('e4:24:6c') or mac.startswith('3c:e3:6b'):
-                    vendor = 'Dahua'
-                    url = f'rtsp://admin:Adminadmin@{ip}/cam/realmonitor?channel=1&subtype=0'
-                else:
-                    self.log.debug('ignoring mac {mac} because it seems not to be a known camera')
+                url = self.get_rtsp_url(ip, mac[:8])
+                if url is None:
                     continue
                 if mac not in self._cameras:
                     camera = RtspCamera(id=mac, url=url)
@@ -182,6 +176,14 @@ class RtspCameraProviderHardware(CameraProvider):
             # NOTE deactivating is still buggy -- disabled for now
             # if not camera.active and camera.id in self._capture_tasks:
             #     await self.deactivate(camera)
+
+    def get_rtsp_url(self, ip: str, vendor_mac: str) -> Optional[str]:
+        if vendor_mac == 'e0:62:90':  # Jovision IP Cameras
+            return f'rtsp://admin:admin@{ip}/profile0'
+        elif vendor_mac in ['e4:24:6c', '3c:e3:6b']:  # Dahua IP Cameras
+            return f'rtsp://admin:Adminadmin@{ip}/cam/realmonitor?channel=1&subtype=0'
+        else:
+            self.log.debug('ignoring vendor mac {mac} because it seems not to be a known camera')
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
