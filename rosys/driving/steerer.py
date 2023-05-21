@@ -17,7 +17,7 @@ class State(Enum):
 
 
 class Steerer:
-    '''The steerer module translates x-y information (e.g. from a joystick) to linear/angular velocities sent to the robot.
+    """The steerer module translates x-y information (e.g. from a joystick) to linear/angular velocities sent to the robot.
 
     The wheels module can be any drivable hardware representation.
     Changing the steering state emits events that can be used to react to manual user interaction.
@@ -30,14 +30,14 @@ class Steerer:
     Pulling the joystick to the rear-right corner leads to a counter-clockwise rotation while driving backwards.
     From 100 degrees to 110 degrees both velocities are throttled with a linear ramp from factor 1.0 down to 0.0.
     From 110 degrees to 120 degrees the throttle factor is linearly ramped from 0.0 back to 1.0.
-    '''
+    """
 
     def __init__(self, wheels: Drivable, speed_scaling: float = 1.0) -> None:
         self.STEERING_STARTED = Event()
-        '''steering has started'''
+        """steering has started"""
 
         self.STEERING_STOPPED = Event()
-        '''steering has stopped'''
+        """steering has stopped"""
 
         self.log = logging.getLogger('rosys.steerer')
 

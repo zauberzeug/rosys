@@ -30,19 +30,19 @@ T = TypeVar('T')
 
 
 def replace_dict(old_dict: dict[str, T], cls: type, new_dict: dict[str, T]) -> None:
-    '''Replace content of `old_dict` with keys and values from `new_dict`.'''
+    """Replace content of `old_dict` with keys and values from `new_dict`."""
     old_dict.clear()
     old_dict.update({key: from_dict(cls, value) for key, value in new_dict.items()})
 
 
 def replace_list(old_list: list[T], cls: type, new_list: list[T]) -> None:
-    '''Replace content of `old_list` with items from `new_list`.'''
+    """Replace content of `old_list` with items from `new_list`."""
     old_list.clear()
     old_list.extend(from_dict(cls, value) for value in new_list)
 
 
 def replace_dataclass(old_dataclass: Any, new_dict: dict[str, Any]) -> None:
-    '''Replace content of `old_dataclass` with content from `new_dict`.'''
+    """Replace content of `old_dataclass` with content from `new_dict`."""
     for field in fields(old_dataclass):
         setattr(old_dataclass, field.name, new_dict.get(field.name))
 
@@ -100,7 +100,7 @@ def restore() -> None:
         with open(filepath) as f:
             try:
                 module.restore(json.load(f))
-            except:
+            except Exception:
                 log.exception(f'failed to restore {module}')
 
 
@@ -110,7 +110,7 @@ def export_button(title: str = 'Export', route: str = '/export', tmp_filepath: s
         with open(tmp_filepath, 'w') as f:
             json.dump({name: module.backup() for name, module in modules.items()}, f, indent=4)
         return FileResponse(tmp_filepath, filename='export.json')
-    ui.button(title, on_click=lambda: ui.open(route[1:]))
+    return ui.button(title, on_click=lambda: ui.download(route[1:]))
 
 
 def import_button(title: str = 'Import', after_import: Optional[Callable] = None) -> ui.button:

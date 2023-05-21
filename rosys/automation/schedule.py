@@ -9,13 +9,27 @@ from .. import persistence, rosys
 from ..event import Event
 from .automator import Automator
 
-DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+
+class Translator:
+    Location = 'Location'
+    Sunrise_offset = 'Sunrise offset'
+    Sunset_offset = 'Sunset offset'
+    min = 'min'
+    enabled = 'enabled'
+    Mon = 'Mon'
+    Tue = 'Tue'
+    Wed = 'Wed'
+    Thu = 'Thu'
+    Fri = 'Fri'
+    Sat = 'Sat'
+    Sun = 'Sun'
 
 
 class Schedule:
 
     def __init__(self,
                  automator: Automator, *,
+                 translator: Optional[Translator] = None,
                  on_activate: Optional[Callable] = None,
                  on_deactivate: Optional[Callable] = None,
                  location: Optional[tuple[float, float]] = None,
@@ -24,7 +38,7 @@ class Schedule:
                  sunset_offset: float = 0.0,
                  is_enabled: bool = False,
                  ) -> None:
-        '''Schedules automations according to a time plan.
+        """Schedules automations according to a time plan.
 
         param on_activate: automation to execute when entering an active period
         param on_deactivate: automation to execute when entering an inactive period
@@ -33,13 +47,14 @@ class Schedule:
         param sunrise_offset: optional offset for activation after sunrise (minutes, default: 0.0)
         param sunset_offset: optional offset for deactivation after sunset (minutes, default: 0.0)
         param is_enabled: whether the schedule is enabled (default: False)
-        '''
+        """
         self.log = logging.getLogger('rosys.schedule')
 
         self.SCHEDULE_CHANGED = Event()
-        '''the schedule has changed'''
+        """the schedule has changed"""
 
         self.automator = automator
+        self.translator = translator or Translator()
         self.on_activate = on_activate
         self.on_deactivate = on_deactivate
         self.location = location
@@ -113,13 +128,13 @@ class Schedule:
             self.log.info('activate')
             if self.on_activate:
                 self.log.info('start automation')
-                self.automator.start(self.on_activate())
+                self.automator.start(self.on_activate(), paused=self.automator.is_paused)
             self._is_active = True
         if self._is_active and not self.can_be_active():
             self.log.info('deactivate')
             if self.on_deactivate:
                 self.log.info('start automation')
-                self.automator.start(self.on_deactivate())
+                self.automator.start(self.on_deactivate(), paused=self.automator.is_paused)
             self._is_active = False
 
     def ui(self) -> ui.row:
@@ -139,26 +154,26 @@ class Schedule:
             for d in range(7):
                 for h in range(24):
                     b0, b1, b2 = buttons[d * 24 + h]
-                    b0._classes = [f'!bg-[{color(d, h, [0, 30, 60])}]']
-                    b1._classes = [f'!bg-[{color(d, h, [0, 30])}]']
-                    b2._classes = [f'!bg-[{color(d, h, [30, 60])}]']
-            grid.update()
+                    b0.classes(replace=f'!bg-[{color(d, h, [0, 30, 60])}]')
+                    b1.classes(replace=f'!bg-[{color(d, h, [0, 30])}]')
+                    b2.classes(replace=f'!bg-[{color(d, h, [30, 60])}]')
 
+        t = self.translator
         buttons: list[tuple[ui.button, ui.button, ui.button]] = []
         with ui.column() as grid:
             with ui.row().classes('fit items-center justify-between'):
-                ui.switch('enabled').bind_value(self, 'is_enabled')
+                ui.switch(t.enabled).bind_value(self, 'is_enabled')
                 if self.locations:
-                    ui.select(self.locations, label='Location', on_change=lambda e: self.set_location(e.value)) \
+                    ui.select(self.locations, label=t.Location, on_change=lambda e: self.set_location(e.value)) \
                         .bind_value(self, 'location').style('width: 21em')
-                    ui.number('Sunrise offset', format='%.0f', on_change=self.invalidate) \
-                        .bind_value(self, 'sunrise_offset').props('suffix=min').style('width:100px')
-                    ui.number('Sunset offset', format='%.0f', on_change=self.invalidate) \
-                        .bind_value(self, 'sunset_offset').props('suffix=min').style('width:100px')
+                    ui.number(t.Sunrise_offset, format='%.0f', on_change=self.invalidate, suffix=t.min) \
+                        .bind_value(self, 'sunrise_offset').style('width:100px')
+                    ui.number(t.Sunset_offset, format='%.0f', on_change=self.invalidate, suffix=t.min) \
+                        .bind_value(self, 'sunset_offset').style('width:100px')
             with ui.column().style('gap: 0.3em'):
-                for d in range(7):
+                for d, day in enumerate([t.Mon, t.Tue, t.Wed, t.Thu, t.Fri, t.Sat, t.Sun]):
                     with ui.row().style('gap: 0.3em'):
-                        ui.label(DAYS[d]).classes('mt-2').style('width: 2em')
+                        ui.label(day).classes('mt-2').style('width: 2em')
                         for h in range(24):
                             with ui.column().style('gap: 0.1em'):
                                 hour = ui.button(f'{h:02d}', on_click=lambda _, d=d, h=h: self._toggle(d, h)) \

@@ -43,6 +43,7 @@ pyloot = "^0.1.0"
 objgraph = "^3.5.0"
 imgsize = "^2.1"
 netifaces = "^0.11.0"
+httpx = "^0.24.0"
 
 [tool.poetry.dev-dependencies]
 autopep8 = "^1.5.5"

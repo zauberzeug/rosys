@@ -43,7 +43,8 @@ class Rotation:
     @property
     def total_angle(self) -> float:
         # https://en.wikipedia.org/wiki/Rotation_matrix#Determining_the_angle
-        return np.arccos((np.trace(self.R) - 1) / 2)
+        trace = np.trace(self.R)
+        return 0 if np.isclose(trace, 3) else np.arccos((trace - 1) / 2)
 
     def __repr__(self) -> str:
         return self.__str__()

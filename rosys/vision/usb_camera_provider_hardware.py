@@ -64,11 +64,11 @@ def to_bytes(image: Any) -> bytes:
 
 
 class UsbCameraProviderHardware(CameraProvider):
-    '''This module collects and provides real USB cameras.
+    """This module collects and provides real USB cameras.
 
     Camera devices are discovered through video4linux (v4l) and accessed with openCV.
     Therefore the program v4l2ctl and openCV (including python bindings) must be available.
-    '''
+    """
 
     def __init__(self) -> None:
         super().__init__()
@@ -123,15 +123,20 @@ class UsbCameraProviderHardware(CameraProvider):
                         bytes = await rosys.run.cpu_bound(process_jpeg_image, bytes, camera.rotation, camera.crop)
                 else:
                     bytes = await rosys.run.cpu_bound(process_ndarray_image, image, camera.rotation, camera.crop)
-                size = camera.resolution or ImageSize(width=800, height=600)
+                if camera.crop:
+                    size = ImageSize(width=camera.crop.width, height=camera.crop.height)
+                elif camera.resolution:
+                    size = camera.resolution
+                else:
+                    size = ImageSize(width=800, height=600)
                 camera.images.append(Image(camera_id=uid, data=bytes, time=rosys.time(), size=size))
-            except:
+            except Exception:
                 self.log.exception(f'could not capture image from {uid}')
                 await self.deactivate(camera)
 
     async def update_parameters(self) -> None:
         for uid, camera in self._cameras.items():
-            if camera.active and uid in self.devices:
+            if camera.active and uid in self.devices and self.devices[uid].capture is not None:
                 await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
 
     def capture_image(self, id) -> Any:
@@ -192,7 +197,7 @@ class UsbCameraProviderHardware(CameraProvider):
                 capture.release()
             else:
                 return capture
-        except:
+        except Exception:
             self.log.exception(f'{index} device failed')
 
     async def shutdown(self) -> None:

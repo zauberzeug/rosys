@@ -9,7 +9,7 @@ log = logging.getLogger('rosys.wifi')
 
 
 def has_internet() -> bool:
-    '''Returns True if there's a connection'''
+    """Returns True if there's a connection"""
 
     IP_ADDRESS_LIST = [
         '1.1.1.1',  # Cloudflare
@@ -36,7 +36,7 @@ def has_internet() -> bool:
 
 
 class WifiButton(ui.button):
-    '''The WiFi button indicates the current connectivity state and allows setting a new WiFi connection.'''
+    """The WiFi button indicates the current connectivity state and allows setting a new WiFi connection."""
 
     def __init__(self) -> None:
         with ui.dialog() as self.dialog, ui.card():

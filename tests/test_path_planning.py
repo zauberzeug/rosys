@@ -4,9 +4,11 @@ import uuid
 
 import numpy as np
 import pytest
+
 from rosys.automation import Automator
 from rosys.driving import Driver
 from rosys.geometry import Point, Pose, Prism, Spline
+from rosys.hardware import Robot
 from rosys.pathplanning import Obstacle, PathPlanner
 from rosys.pathplanning.delaunay_planner import DelaunayPlanner
 from rosys.test import assert_point, forward
@@ -33,7 +35,7 @@ async def test_basic_path_planning(path_planner: PathPlanner) -> None:
     assert_point(path[-1].spline.end, goal.point)
 
 
-async def test_driving_to_planned_point(path_planner: PathPlanner, driver: Driver, automator: Automator) -> None:
+async def test_driving_to_planned_point(path_planner: PathPlanner, driver: Driver, automator: Automator, robot: Robot) -> None:
     await forward(1.0)
     path = await path_planner.search(start=Pose(), goal=Pose(x=5, y=2), timeout=3.0)
     automator.start(driver.drive_path(path))

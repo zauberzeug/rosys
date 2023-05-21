@@ -52,7 +52,7 @@ class NetworkMonitor:
                 if stats > self.interfaces[name]:
                     msg = name + ' has ' + stats.msg()
                     self.log.warning(msg)
-                    await rosys.notify(msg)
+                    rosys.notify(msg, 'warning')
                     self.interfaces[name] = stats
 
     @staticmethod

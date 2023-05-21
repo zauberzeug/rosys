@@ -9,12 +9,12 @@ from .driver import Driver
 
 
 class DriverObject(Group):
-    '''The DriverObject UI element displays the path following process in a 3D scene.
+    """The DriverObject UI element displays the path following process in a 3D scene.
 
     The current pose is taken from a given odometer.
     An optional driver module shows debugging information about a current path-following process.
     The `debug` argument can be set to show a wireframe instead of a closed polygon.
-    '''
+    """
 
     def __init__(self, driver: Driver) -> None:
         super().__init__()

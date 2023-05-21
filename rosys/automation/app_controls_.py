@@ -31,16 +31,16 @@ class AppButton:
 
 
 class AppControls:
-    '''The AppControls module enables the connection with a mobile-app-based user interface.
+    """The AppControls module enables the connection with a mobile-app-based user interface.
 
     It uses a given RobotBrain object to communicate with [Lizard](https://lizard.dev/) running on a microcontroller
     and in turn being connected to a mobile app via Bluetooth Low Energy.
     It displays buttons to control a given automator.
-    '''
+    """
 
     def __init__(self, robot_brain: RobotBrain, automator: Automator) -> None:
         self.APP_CONNECTED = Event()
-        '''an app connected via bluetooth (used to refresh information or similar)'''
+        """an app connected via bluetooth (used to refresh information or similar)"""
 
         self.robot_brain = robot_brain
         self.automator = automator
@@ -72,11 +72,11 @@ class AppControls:
             await self.sync()
 
     async def set_info(self, msg: str) -> None:
-        '''replace constantly shown info text on mobile device'''
+        """replace constantly shown info text on mobile device"""
         await self.robot_brain.send(f'bluetooth.send("PUT /info {msg}")')
 
     async def notify(self, msg: str) -> None:
-        '''show notification as Snackbar message on mobile device'''
+        """show notification as Snackbar message on mobile device"""
         await self.robot_brain.send(f'bluetooth.send("POST /notification {msg}")')
 
     def parse(self, line: str) -> None:
@@ -90,7 +90,7 @@ class AppControls:
             elif line.startswith('PUT /button/') and '/action' in line:
                 # line: "PUT /button/main/my_button/action pressed"
                 _, path, action = line.split(' ')
-                _, group, name, _ = path.split('/')
+                _, group, name, _ = path[1:].split('/')
                 buttons = self.main_buttons if group == 'main' else self.extra_buttons
                 if action == 'pressed':
                     self._invoke(buttons[name].pressed)
@@ -115,7 +115,7 @@ class AppControls:
         await run('main', self.main_buttons)
         await run('extra', self.extra_buttons)
 
-    async def _invoke(self, callback: Callable):
+    def _invoke(self, callback: Callable):
         if inspect.iscoroutinefunction(callback):
             rosys.background_tasks.create(callback(), name='app_controls._invoke')
         else:

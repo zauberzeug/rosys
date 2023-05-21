@@ -26,13 +26,13 @@ class SimulatedObject:
 
 
 class DetectorSimulation(Detector):
-    '''This detector simulates object detection.
+    """This detector simulates object detection.
 
     It requires a camera provider in order to check visibility using the cameras' calibrations.
     Individual camera IDs can be added to a set of `blocked_cameras` to simulate occlusions during pytests.
     A list of `simulated_objects` can be filled to define what can be detected.
     An optional `noise` parameter controls the spatial accuracy in pixels.
-    '''
+    """
 
     def __init__(self, camera_provider: CameraProvider, *, noise: float = 1.0) -> None:
         super().__init__()
@@ -76,6 +76,10 @@ class DetectorSimulation(Detector):
             return
         camera = self.camera_provider.cameras[image.camera_id]
         for object in self.simulated_objects:
+            viewing_direction = np.array(camera.calibration.extrinsics.rotation.R)[:, 2]
+            object_direction = np.array(object.position.tuple) - camera.calibration.extrinsics.translation
+            if np.dot(viewing_direction, object_direction) < 0:
+                continue
             image_point = camera.calibration.project_to_image(object.position)
             if not (0 <= image_point.x < image.size.width and 0 <= image_point.y < image.size.height):
                 continue

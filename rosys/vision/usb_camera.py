@@ -20,25 +20,25 @@ class UsbCamera(Camera):
     detect: bool = False
 
     color: Optional[str] = None
-    '''a color code to identify the camera'''
+    """a color code to identify the camera"""
 
     resolution: Optional[ImageSize] = None
-    '''physical resolution of the camera which should be used; camera may go into error state with wrong values'''
+    """physical resolution of the camera which should be used; camera may go into error state with wrong values"""
 
     auto_exposure: Optional[bool] = True
-    '''toggles auto exposure'''
+    """toggles auto exposure"""
 
     exposure: Optional[float] = None
-    '''manual exposure of the camera (between 0-1); set auto_exposure to False for this value to take effect'''
+    """manual exposure of the camera (between 0-1); set auto_exposure to False for this value to take effect"""
 
     rotation: ImageRotation = ImageRotation.NONE
-    '''rotation which should be applied after grabbing and cropping'''
+    """rotation which should be applied after grabbing and cropping"""
 
     fps: Optional[int] = None
-    '''current frames per second (read only)'''
+    """current frames per second (read only)"""
 
     crop: Optional[Rectangle] = None
-    '''region to crop on the original resolution before rotation'''
+    """region to crop on the original resolution before rotation"""
 
     @property
     def image_resolution(self) -> Optional[ImageSize]:

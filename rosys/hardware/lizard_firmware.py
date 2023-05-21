@@ -44,7 +44,7 @@ class LizardFirmware:
         try:
             self.online_version = response['tag_name'].removeprefix('v')
         except KeyError:
-            rosys.notify(response.get('message', 'Could not access online version'))
+            rosys.notify(response.get('message', 'Could not access online version'), 'warning')
 
     def read_local_version(self) -> None:
         bin = self.PATH / 'build' / 'lizard.bin'
@@ -69,15 +69,16 @@ class LizardFirmware:
             self.log.warning('Could not read Lizard version from P0')
 
     def read_local_checksum(self) -> None:
-        startup = self.robot_brain.lizard_startup.read_text()
-        checksum = sum(ord(c) for c in startup) % 0x10000
+        checksum = sum(ord(c) for c in self.robot_brain.lizard_code) % 0x10000
         self.local_checksum = f'{checksum:04x}'
+        self.log.info(f'local checksum: {self.local_checksum}')
 
     async def read_core_checksum(self) -> None:
         deadline = rosys.time() + 5.0
         while rosys.time() < deadline:
             if response := await self.robot_brain.send_and_await('core.startup_checksum()', 'checksum:', timeout=1):
                 self.core_checksum = response.split()[-1]
+                self.log.info(f'core checksum: {self.core_checksum}')
                 return
             self.log.warning('Could not read startup checksum from Core')
 
@@ -99,7 +100,7 @@ class LizardFirmware:
         self.log.info(f'flashed Lizard:\n {output}')
         self.robot_brain.communication.connect()
         await self.read_core_version()
-        rosys.notify('Finished.')
+        rosys.notify('Finished.', 'positive')
 
     async def flash_p0(self) -> None:
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
@@ -107,10 +108,10 @@ class LizardFirmware:
         start = rosys.time()
         while self.robot_brain.hardware_time < start + 3.0:
             if rosys.time() > start + 60.0:
-                rosys.notify('Failed.')
+                rosys.notify('Failed.', 'negative')
                 return
             await rosys.sleep(0.1)
         await self.robot_brain.restart()
         await rosys.sleep(3.0)
         await self.read_p0_version()
-        rosys.notify('Finished.')
+        rosys.notify('Finished.', 'positive')

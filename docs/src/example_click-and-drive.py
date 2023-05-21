@@ -5,9 +5,10 @@ from nicegui.events import SceneClickEventArguments
 import rosys
 
 wheels = rosys.hardware.WheelsSimulation()
+robot = rosys.hardware.RobotSimulation([wheels])
 odometer = rosys.driving.Odometer(wheels)
 driver = rosys.driving.Driver(wheels, odometer)
-automator = rosys.automation.Automator(wheels, None)
+automator = rosys.automation.Automator(None, on_interrupt=wheels.stop)
 
 
 async def handle_click(e: SceneClickEventArguments):

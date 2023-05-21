@@ -12,20 +12,20 @@ from .lizard_firmware import LizardFirmware
 
 
 class RobotBrain:
-    '''This module manages the communication with a [Zauberzeug Robot Brain](https://zauberzeug.com/robot-brain.html).
+    """This module manages the communication with a [Zauberzeug Robot Brain](https://zauberzeug.com/robot-brain.html).
 
     It expects a communication object, which is used for the actual read and write operations.
     Besides providing some basic methods like configuring or restarting the microcontroller, it augments and verifies checksums for each message.
-    '''
+    """
 
-    def __init__(self, communication: Communication, lizard_startup: str = 'startup.liz') -> None:
+    def __init__(self, communication: Communication) -> None:
         self.LINE_RECEIVED = Event()
-        '''a line has been received from the microcontroller (argument: line as string)'''
+        """a line has been received from the microcontroller (argument: line as string)"""
 
         self.log = logging.getLogger('rosys.robot_rain')
 
         self.communication = communication
-        self.lizard_startup = Path(lizard_startup)
+        self.lizard_code = ''
         self.lizard_firmware = LizardFirmware(self)
 
         self.waiting_list: dict[str, Optional[str]] = {}
@@ -96,16 +96,13 @@ class RobotBrain:
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
 
     async def configure(self) -> None:
-        if not self.lizard_startup.exists():
-            rosys.notify('No Lizard startup file found')
-            return
         rosys.notify('Configuring Lizard...')
         await self.send(f'!-')
-        for line in self.lizard_startup.read_text().splitlines():
+        for line in self.lizard_code.splitlines():
             await self.send(f'!+{line}')
         await self.send(f'!.')
         await self.restart()
-        rosys.notify('Lizard configured successfully...')
+        rosys.notify('Lizard configured successfully.', 'positive')
 
     async def restart(self) -> None:
         await self.send(f'core.restart()')
@@ -155,7 +152,7 @@ class RobotBrain:
             esp = Esp(nand='nand' in params, xavier='xavier' in params, device=devices[0] if devices else None)
             with esp.pin_config():
                 esp.activate()
-        except:
+        except Exception:
             self.log.exception('Could not enable ESP')
 
     def __del__(self) -> None:

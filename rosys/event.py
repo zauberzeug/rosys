@@ -46,9 +46,10 @@ class Event:
         if not client.shared:
             async def register_disconnect():
                 try:
-                    await client.connected()
+                    await client.connected(timeout=10.0)
                     client.on_disconnect(lambda: self.unregister(callback))
                 except TimeoutError:
+                    log.warning(f'could not register disconnect for {callback=}')
                     self.unregister(callback)
             background_tasks.create(register_disconnect())
         return self
@@ -57,26 +58,25 @@ class Event:
         self.listeners[:] = [l for l in self.listeners if l.callback != callback]
 
     async def call(self, *args) -> None:
-        '''Fires event and waits async until all registered listeners are completed'''
+        """Fires event and waits async until all registered listeners are completed"""
         for listener in self.listeners:
             try:
                 await invoke(listener.callback, *args)
-            except:
+            except Exception:
                 log.exception(f'could not call {listener=}')
 
     def emit(self, *args) -> None:
-        '''Fires event without waiting for the result.'''
-        loop = asyncio.get_event_loop()
+        """Fires event without waiting for the result."""
         for listener in self.listeners:
             try:
                 result = invoke(listener.callback, *args)
                 if isinstance(result, Awaitable):
-                    if loop.is_running:
+                    if nicegui_globals.loop.is_running():
                         name = f'{listener.filepath}:{listener.line}'
-                        tasks.append(background_tasks.create(result, name=name, loop=loop))
+                        tasks.append(background_tasks.create(result, name=name))
                     else:
                         startup_coroutines.append(result)
-            except:
+            except Exception:
                 log.exception(f'could not emit {listener=}')
 
 

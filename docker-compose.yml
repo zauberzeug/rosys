@@ -13,6 +13,7 @@ services:
       - 80:8080
     environment:
       - TZ=Europe/Amsterdam
+      - ROBOT_ID=${ROBOT_ID}
     build:
       context: ./
       args:

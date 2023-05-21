@@ -37,12 +37,24 @@ def eliminate_2pi(angle: float) -> float:
     return (angle + np.pi) % (2 * np.pi) - np.pi
 
 
-def ramp(x: float, in_min: float, in_max: float, out_min: float, out_max: float, clip: bool = False) -> float:
-    if clip and x < in_min:
-        return out_min
-    if clip and x > in_max:
-        return out_max
-    return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+def ramp(x: float, in1: float, in2: float, out1: float, out2: float, clip: bool = False) -> float:
+    """Map a value x from one range (in1, in2) to another (out1, out2)."""
+    if clip and x < min(in1, in2):
+        return out1
+    if clip and x > max(in1, in2):
+        return out2
+    return (x - in1) * (out2 - out1) / (in2 - in1) + out1
+
+
+def remove_indentation(text: str) -> str:
+    """Remove indentation from a multi-line string based on the indentation of the first line."""
+    lines = text.splitlines()
+    while lines and not lines[0].strip():
+        lines.pop(0)
+    if not lines:
+        return ''
+    indentation = len(lines[0]) - len(lines[0].lstrip())
+    return '\n'.join(line[indentation:] for line in lines)
 
 
 class ModificationContext:

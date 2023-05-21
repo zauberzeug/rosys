@@ -37,7 +37,7 @@ async def io_bound(callback: Callable, *args: any, **kwargs: any):
 
 
 def awaitable(func: Callable) -> Callable:
-    '''decorator to wrap a normal function into an asyncio coroutine'''
+    """decorator to wrap a normal function into an asyncio coroutine"""
     @wraps(func)
     async def inner(*args, **kwargs):
         return await io_bound(func, *args, **kwargs)
@@ -71,7 +71,7 @@ def cpu() -> Generator[None, None, None]:
 
 
 async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool = False, working_dir: Optional[str] = None) -> str:
-    '''executes a shell command
+    """executes a shell command
 
     Args:
         command: a sequence of program arguments as subprocess.Popen requires or full string
@@ -79,7 +79,7 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
 
     Returns:
         stdout
-    '''
+    """
     def popen() -> str:
         if shell:  # convert to string
             cmd = ' '.join(command) if isinstance(command, list) else command

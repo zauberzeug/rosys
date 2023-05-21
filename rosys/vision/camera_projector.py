@@ -20,10 +20,10 @@ class Projection:
 
 
 class CameraProjector:
-    '''The camera projector computes a grid of projected image points on the ground plane.
+    """The camera projector computes a grid of projected image points on the ground plane.
 
     It is mainly used for visualization purposes.
-    '''
+    """
 
     def __init__(self, camera_provider: CameraProvider) -> None:
         self.camera_provider = camera_provider

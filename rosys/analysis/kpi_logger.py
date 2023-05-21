@@ -37,7 +37,7 @@ class KpiLogger:
         persistence.replace_list(self.months, Month, data.get('months', []))
 
     def pack(self) -> None:
-        '''pack old days into months (as long as there are at least 3 unpacked months)'''
+        """pack old days into months (as long as there are at least 3 unpacked months)"""
         while True:
             month_groups = [list(days) for _, days in groupby(self.days, key=lambda d: d.date[:-3])]
             if len(month_groups) <= 4:

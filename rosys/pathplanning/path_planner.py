@@ -15,11 +15,11 @@ from .planner_process import (PlannerCommand, PlannerGrowMapCommand, PlannerObst
 
 
 class PathPlanner:
-    '''This module runs a path planning algorithm in a separate process.
+    """This module runs a path planning algorithm in a separate process.
 
     If given, the algorithm respects the given robot shape as well as a dictionary of accessible areas and a dictionary of obstacles, both of which a backed up and restored automatically.
     The path planner can search paths, check if a spline interferes with obstacles and get the distance of a pose to any obstacle.
-    '''
+    """
 
     def __init__(self, robot_shape: Prism) -> None:
         self.log = logging.getLogger('rosys.path_planner')
@@ -32,9 +32,9 @@ class PathPlanner:
         self.areas: dict[str, Area] = {}
 
         self.OBSTACLES_CHANGED = Event()
-        '''the obstacles have changed (argument: dictionary of obstacles)'''
+        """the obstacles have changed (argument: dictionary of obstacles)"""
         self.AREAS_CHANGED = Event()
-        '''the areas have changed (argument: dictionary of areas)'''
+        """the areas have changed (argument: dictionary of areas)"""
 
         rosys.on_startup(self.startup)
         rosys.on_shutdown(self.shutdown)

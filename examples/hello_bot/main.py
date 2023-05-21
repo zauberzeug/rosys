@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 import os
 
-import rosys
+import log_configuration
 from nicegui import ui
+
+import rosys
 from rosys.automation import Automator, automation_controls
 from rosys.driving import Driver, Odometer, Steerer, joystick, keyboard_control, robot_object
 from rosys.geometry import Prism
-from rosys.hardware import RobotBrain, SerialCommunication, WheelsHardware, WheelsSimulation
-
-import log_configuration
+from rosys.hardware import (CanHardware, RobotBrain, RobotHardware, RobotSimulation, SerialCommunication,
+                            WheelsHardware, WheelsSimulation)
 
 log_configuration.setup()
 
@@ -17,13 +18,16 @@ shape = Prism.default_robot_shape()
 if SerialCommunication.is_possible():
     communication = SerialCommunication()
     robot_brain = RobotBrain(communication)
-    wheels = WheelsHardware(robot_brain)
+    can = CanHardware(robot_brain)
+    wheels = WheelsHardware(robot_brain, can=can)
+    robot = RobotHardware([can, wheels], robot_brain)
 else:
     wheels = WheelsSimulation()
+    robot = RobotSimulation([wheels])
 steerer = Steerer(wheels)
 odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator(wheels, steerer, default_automation=driver.drive_square)
+automator = Automator(steerer, default_automation=driver.drive_square, on_interrupt=wheels.stop)
 
 # ui
 with ui.card():

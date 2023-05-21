@@ -1,12 +1,13 @@
 import numpy as np
 import pytest
+
 import rosys
-from rosys.hardware import Wheels, WheelsSimulation
+from rosys.hardware import Robot, Wheels, WheelsSimulation
 from rosys.test import assert_pose, forward
 
 
 @pytest.mark.usefixtures('odometer')
-async def test_drive(wheels: Wheels) -> None:
+async def test_drive(wheels: Wheels, robot: Robot) -> None:
     assert_pose(0, 0, deg=0)
 
     await forward(seconds=1.0)
@@ -26,7 +27,7 @@ async def test_drive(wheels: Wheels) -> None:
 
 
 @pytest.mark.usefixtures('odometer')
-async def test_stopping_robot_when_rosys_stops(wheels: Wheels) -> None:
+async def test_stopping_robot_when_rosys_stops(wheels: Wheels, robot: Robot) -> None:
     await wheels.drive(1, 0)
     await forward(x=1.0, y=0.0)
     await rosys.shutdown()
