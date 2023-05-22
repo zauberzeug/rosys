@@ -110,8 +110,8 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
     try:
         return await asyncio.wait_for(io_bound(popen), timeout)
     except asyncio.TimeoutError:
-        log.warning(f"Command '{command}' timed out after {timeout} seconds.")
-        return ""
+        log.warning(f'Command "{command}" timed out after {timeout} seconds.')
+        return ''
 
 
 def _kill(proc: Popen) -> None:

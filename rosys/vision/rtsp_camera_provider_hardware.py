@@ -1,28 +1,21 @@
 import asyncio
-import hashlib
 import io
 import logging
 import platform
-import re
 import shlex
-import shutil
 import subprocess
 import sys
 from asyncio.subprocess import Process
-from dataclasses import dataclass, field
 from typing import Any, Optional
 
-import cv2
 import imgsize
 import netifaces as net
-import numpy as np
 import PIL
 
 import rosys
 
 from .. import persistence, rosys
 from ..geometry import Rectangle
-from ..helpers import measure
 from .camera_provider import CameraProvider
 from .image import Image, ImageSize
 from .rtsp_camera import ImageRotation, RtspCamera
@@ -31,6 +24,7 @@ SCAN_INTERVAL = 10
 
 
 class PeekableBytesIO(io.BytesIO):
+
     def peek(self, n=-1):
         position = self.tell()
         data = self.read(n)
@@ -39,8 +33,7 @@ class PeekableBytesIO(io.BytesIO):
 
 
 class RtspCameraProviderHardware(CameraProvider):
-    '''This module collects and provides real RTSP streaming cameras.
-    '''
+    """This module collects and provides real RTSP streaming cameras."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -117,7 +110,7 @@ class RtspCameraProviderHardware(CameraProvider):
             camera.resolution = size
             camera.images.append(Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
         camera.active = False
-        self.request_backup()
+        self.invalidate()
         self._capture_tasks.pop(camera.id)
 
     async def activate(self, camera: RtspCamera) -> None:
@@ -140,7 +133,7 @@ class RtspCameraProviderHardware(CameraProvider):
         old_cameras = [camera for camera in self._cameras.values() if camera.active]
         for interface in net.interfaces():
             cmd = f'{self.arpscan_cmd} -I {interface} --localnet'
-            output = (await rosys.run.sh(cmd, timeout=10))
+            output = await rosys.run.sh(cmd, timeout=10)
             if output is None or 'ERROR' in output:
                 continue
             if 'sudo' in output:
@@ -191,7 +184,7 @@ class RtspCameraProviderHardware(CameraProvider):
             except Exception:
                 self.log.info('could not kill process')
 
-    def request_backup(self) -> None:
+    def invalidate(self) -> None:
         self.needs_backup = True
 
 

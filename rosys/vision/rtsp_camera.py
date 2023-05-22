@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional
+from typing import Optional, Self
 
 import rosys
 
@@ -16,9 +16,11 @@ class ImageRotation(str, Enum):
     LEFT: int = 270
 
     @classmethod
-    def from_int(cls, degrees: int) -> 'ImageRotation':
-        degrees_normalized = degrees % 360
-        return min(cls, key=lambda rotation: abs(degrees_normalized - int(rotation)))
+    def from_degrees(cls, degrees: int) -> Self:
+        for rotation in cls:
+            if int(rotation.value) == degrees % 360:
+                return rotation
+        raise ValueError(f'invalid rotation angle: {degrees}')
 
 
 @dataclass(slots=True, kw_only=True)
@@ -28,19 +30,19 @@ class RtspCamera(Camera):
     url: Optional[str] = None
 
     color: Optional[str] = None
-    '''a color code to identify the camera'''
+    """a color code to identify the camera"""
 
     resolution: Optional[ImageSize] = None
-    '''physical resolution of the camera which should be used; camera may go into error state with wrong values'''
+    """physical resolution currently configured in the camera"""
 
     rotation: ImageRotation = ImageRotation.NONE
-    '''rotation which should be applied after grabbing and cropping'''
+    """rotation which should be applied after grabbing and cropping"""
 
     fps: Optional[int] = None
-    '''current frames per second (read only)'''
+    """current frames per second (read only)"""
 
     crop: Optional[Rectangle] = None
-    '''region to crop on the original resolution before rotation'''
+    """region to crop on the original resolution before rotation"""
 
     @property
     def image_resolution(self) -> Optional[ImageSize]:
@@ -55,16 +57,19 @@ class RtspCamera(Camera):
 
     @property
     def rotation_angle(self) -> int:
+        """Rotation angle in degrees."""
         return int(self.rotation)
 
     @rotation_angle.setter
     def rotation_angle(self, value: int) -> None:
-        self.rotation = ImageRotation.from_int(value)
+        self.rotation = ImageRotation.from_degrees(value)
 
     def rotate_clockwise(self) -> None:
+        """Rotate the image clockwise by 90 degrees."""
         self.rotation_angle += 90
 
     def rotate_counter_clockwise(self) -> None:
+        """Rotate the image counter clockwise by 90 degrees."""
         self.rotation_angle -= 90
 
     def __repr__(self) -> dict:

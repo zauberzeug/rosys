@@ -16,7 +16,7 @@ def refresh() -> None:
         streams[uid].set_source(camera_provider.get_latest_image_url(camera))
 
 
-streams = {}
+streams: dict[str, ui.interactive_image] = {}
 camera_grid = ui.row()
 ui.timer(0.01, refresh)
 

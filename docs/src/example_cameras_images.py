@@ -14,7 +14,7 @@ def refresh() -> None:
         feeds[uid].set_source(camera_provider.get_latest_image_url(camera))
 
 
-feeds = {}
+feeds: dict[str, ui.interactive_image] = {}
 ui.timer(0.3, refresh)
 
 ui.run(title='RoSys')

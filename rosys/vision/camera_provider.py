@@ -82,5 +82,5 @@ class CameraProvider(abc.ABC):
                 while camera.images and camera.images[0].time < rosys.time() - max_age_seconds:
                     del camera.images[0]
 
-    def request_backup(self) -> None:
+    def invalidate(self) -> None:
         self.needs_backup = True
