@@ -1,4 +1,3 @@
-#!
 import asyncio
 import hashlib
 import io
@@ -117,20 +116,19 @@ class RtspCameraProviderHardware(CameraProvider):
             size = ImageSize(width=width, height=height)
             camera.resolution = size
             camera.images.append(Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
-        else:
-            camera.active = False
+        camera.active = False
+        self.request_backup()
+        self._capture_tasks.pop(camera.id)
 
     async def activate(self, camera: RtspCamera) -> None:
         task = rosys.background_tasks.create(self.capture_images(camera), name=f'capture {camera.id}')
         if task is None:
-            self.log.info(f'could not create task for {camera.id}')
+            self.log.warning(f'could not create task for {camera.id}')
             return
         self._capture_tasks[camera.id] = task
-        self.log.info(f'activated {camera.id}')
         await self.CAMERA_ADDED.call(camera)
 
     async def deactivate(self, camera: RtspCamera) -> None:
-        self.log.info(f'deactivating {camera.id}')
         if camera.id not in self._capture_tasks:
             return
         self._capture_tasks.pop(camera.id).cancel()
@@ -168,17 +166,13 @@ class RtspCameraProviderHardware(CameraProvider):
                     await self.CAMERA_ADDED.call(camera)
                 camera = self._cameras[mac]
                 camera.url = url
-                camera.active = True
                 if self._cameras[mac] in old_cameras:
                     old_cameras.remove(self._cameras[mac])
-        # for camera in old_cameras:
-        #     camera.active = False
+        for camera in old_cameras:
+            camera.active = False
         for camera in self._cameras.values():
-            if camera.active and camera.id not in self._capture_tasks:
+            if camera.id not in self._capture_tasks:
                 await self.activate(camera)
-            # NOTE deactivating is still buggy -- disabled for now
-            # if not camera.active and camera.id in self._capture_tasks:
-            #     await self.deactivate(camera)
 
     def get_rtsp_url(self, ip: str, vendor_mac: str) -> Optional[str]:
         if vendor_mac == 'e0:62:90':  # Jovision IP Cameras
