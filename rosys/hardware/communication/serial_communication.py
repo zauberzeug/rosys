@@ -93,7 +93,7 @@ class SerialCommunication(Communication):
                 input.value = self.undo_queue.pop()
 
         def input_down() -> None:
-            if self.input.value:
+            if input.value:
                 self.undo_queue.append(input.value)
             input.value = self.redo_queue.pop() if self.redo_queue else ''
 
