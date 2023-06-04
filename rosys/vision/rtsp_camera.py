@@ -28,6 +28,7 @@ class RtspCamera(Camera):
     active: bool = True
     detect: bool = False
     url: Optional[str] = None
+    authorized: bool = True
 
     color: Optional[str] = None
     """a color code to identify the camera"""
