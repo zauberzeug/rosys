@@ -70,7 +70,11 @@ class RtspCameraProviderHardware(CameraProvider):
             if platform.system() == 'Darwin':
                 command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp drop-on-latency=true buffer-mode=none ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
             else:
-                command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
+                if 'subtype=0' in camera.url:
+                    url = camera.url.replace('subtype=0', 'subtype=1')
+                    command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1"! jpegenc ! fdsink'
+                else:
+                    command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
             self.log.info(command)
             process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self._processes.append(process)
