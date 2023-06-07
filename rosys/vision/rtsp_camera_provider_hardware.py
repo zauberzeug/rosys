@@ -11,6 +11,9 @@ from typing import Any, Optional
 import imgsize
 import netifaces as net
 import PIL
+import requests
+from requests.auth import HTTPDigestAuth
+
 import rosys
 
 from .. import persistence, rosys
@@ -192,6 +195,17 @@ class RtspCameraProviderHardware(CameraProvider):
 
     def invalidate(self) -> None:
         self.needs_backup = True
+
+    def get_image_snapshot(self, camera: RtspCamera) -> bytes:
+        if 'profile0' in camera.url:
+            return camera.latest_captured_image
+        try:
+            ip = camera.url.split('@')[1].split('/')[0]
+            url = f'http://{ip}/cgi-bin/snapshot.cgi'
+            response = requests.get(url, auth=HTTPDigestAuth('admin', 'Adminadmin'))
+            return Image(camera_id=camera.id, data=response.content, time=rosys.time(), size=camera.resolution)
+        except:
+            return None
 
 
 def process_image(data: bytes, rotation: ImageRotation, crop: Rectangle = None) -> bytes:
