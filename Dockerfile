@@ -19,7 +19,6 @@ RUN curl -sSL https://install.python-poetry.org | python3 - && \
 # only copy poetry package specs to minimize rebuilding of image layers
 WORKDIR /rosys
 COPY pyproject.toml ./
-RUN poetry config experimental.new-installer false
 
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=true
