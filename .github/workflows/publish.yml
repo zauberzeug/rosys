@@ -1,8 +1,10 @@
 name: Upload Python Package
 
 on:
-  release:
-    types: [published]
+  workflow_dispatch:
+  push:
+    tags:
+      - v**
 
 jobs:
   #depending on pytest workflow, see https://stackoverflow.com/a/71489231/364388
@@ -31,6 +33,20 @@ jobs:
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
         run: poetry publish --build
+      - name: Create GitHub release entry
+        uses: softprops/action-gh-release@v1
+        id: create_release
+        with:
+          draft: false
+          prerelease: false
+          name: ${{ steps.get_version.outputs.VERSION }}
+          tag_name: ${{ steps.get_version.outputs.VERSION }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: verify
+        shell: bash
+        run: for i in {1..100}; do python -m pip install 'rosys==${{ steps.get_version.outputs.VERSION }}' && break || sleep 2; done
+  
 
   docker:
     needs: pypi
