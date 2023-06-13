@@ -125,7 +125,7 @@ class Driver:
             t = spline.closest_point(hook.x, hook.y)
             if t >= 1.0 and throttle_at_end:
                 target_distance = self.odometer.prediction.projected_distance(spline.pose(1.0))
-                linear *= ramp(target_distance, self.parameters.hook_offset, 0.0, 1.0, 0.01)
+                linear *= ramp(target_distance, self.parameters.hook_offset, 0.0, 1.0, 0.01, clip=True)
             angular = linear * curvature
 
             self.state = DriveState(
