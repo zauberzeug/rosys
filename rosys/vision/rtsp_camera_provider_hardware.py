@@ -5,6 +5,7 @@ import platform
 import shlex
 import subprocess
 import sys
+import urllib.parse
 from asyncio.subprocess import Process
 from typing import Any, Optional
 
@@ -47,7 +48,7 @@ class RtspCameraProviderHardware(CameraProvider):
         self._capture_tasks: dict[str, asyncio.Task] = {}
         self._processes: list[Process] = []
         if sys.platform.startswith('darwin'):
-            self.arpscan_cmd = 'arp-scan'
+            self.arpscan_cmd = 'sudo arp-scan'
         else:
             self.arpscan_cmd = 'sudo /usr/sbin/arp-scan'
 
@@ -70,14 +71,14 @@ class RtspCameraProviderHardware(CameraProvider):
 
     async def capture_images(self, camera: RtspCamera) -> None:
         async def stream():
-            if platform.system() == 'Darwin':
-                command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp drop-on-latency=true buffer-mode=none ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
+            # if platform.system() == 'Darwin':
+            #     command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp drop-on-latency=true buffer-mode=none ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
+            # else:
+            if 'subtype=0' in camera.url:
+                url = camera.url.replace('subtype=0', 'subtype=1')
+                command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1"! jpegenc ! fdsink'
             else:
-                if 'subtype=0' in camera.url:
-                    url = camera.url.replace('subtype=0', 'subtype=1')
-                    command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1"! jpegenc ! fdsink'
-                else:
-                    command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
+                command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
             self.log.info(command)
             process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self._processes.append(process)
@@ -203,7 +204,9 @@ class RtspCameraProviderHardware(CameraProvider):
             ip = camera.url.split('@')[1].split('/')[0]
             url = f'http://{ip}/cgi-bin/snapshot.cgi'
             response = requests.get(url, auth=HTTPDigestAuth('admin', 'Adminadmin'))
-            return Image(camera_id=camera.id, data=response.content, time=rosys.time(), size=camera.resolution)
+            image = Image(camera_id=camera.id, data=response.content, time=rosys.time(), size=camera.resolution)
+            camera.images.append(image)
+            return image
         except:
             return None
 
