@@ -35,8 +35,11 @@ class Event:
         if not callable(callback):
             raise Exception('non-callable callback')
         if any(l.callback == callback for l in self.listeners):
-            return  # NOTE: don't add duplicate listeners
-        frame = inspect.currentframe().f_back
+            return self  # NOTE: don't add duplicate listeners
+        frame = inspect.currentframe()
+        assert frame is not None
+        frame = frame.f_back
+        assert frame is not None
         self.listeners.append(EventListener(callback=callback, filepath=frame.f_code.co_filename, line=frame.f_lineno))
         return self
 

@@ -55,7 +55,7 @@ tasks: list[asyncio.Task] = []
 
 def notify(message: str, type: Optional[Literal['positive', 'negative', 'warning', 'info', 'ongoing']] = None) -> None:
     log.info(message)
-    notifications.append(Notification(time=time, message=message))
+    notifications.append(Notification(time=time(), message=message))
     NEW_NOTIFICATION.emit(message)
     # NOTE show notifications on all pages
     for client in nicegui_globals.clients.values():

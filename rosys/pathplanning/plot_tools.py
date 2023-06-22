@@ -24,7 +24,8 @@ def plot_spline(spline, *args, backward=False, **kwargs) -> None:
 
 
 def plot_path(path, *args, **kwargs) -> None:
-    [plot_spline(step.spline, *args, backward=step.backward, **kwargs) for step in path]
+    for step in path:
+        plot_spline(step.spline, *args, backward=step.backward, **kwargs)
 
 
 def show_obstacle_map(obstacle_map):

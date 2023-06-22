@@ -210,6 +210,7 @@ class UsbCameraProviderHardware(CameraProvider):
         return shutil.which('v4l2-ctl') is not None
 
     def set_parameters(self, camera: UsbCamera, device: Device) -> None:
+        assert device.capture is not None
         camera.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
         if not camera.auto_exposure and camera.exposure is None and device.exposure_max > 0:
             camera.exposure = device.exposure_default / device.exposure_max
@@ -258,11 +259,11 @@ class UsbCameraProviderHardware(CameraProvider):
         else:
             device.has_manual_exposure = False
         output = await self.run_v4l(device, '--list-formats')
-        match = re.finditer(r"$.*'(.*)'.*", output)
-        for m in match:
+        matches = re.finditer(r"$.*'(.*)'.*", output)
+        for m in matches:
             device.video_formats.add(m.group(1))
 
-    async def run_v4l(self, device: Device, *args) -> None:
+    async def run_v4l(self, device: Device, *args) -> str:
         cmd = ['v4l2-ctl', '-d', str(device.video_id)]
         cmd.extend(args)
         return await rosys.run.sh(cmd)

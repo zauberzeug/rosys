@@ -1,5 +1,5 @@
 import logging
-from typing import Callable, Coroutine, Optional
+from typing import Callable, Coroutine, Optional, cast
 
 from .. import rosys
 from ..analysis import track
@@ -55,8 +55,8 @@ class Automator:
             steerer.STEERING_STARTED.register(lambda: self.pause(because='steering started'))
 
         if on_interrupt:
-            self.AUTOMATION_PAUSED.register(lambda _: rosys.background_tasks.create(on_interrupt()))
-            self.AUTOMATION_STOPPED.register(lambda _: rosys.background_tasks.create(on_interrupt()))
+            self.AUTOMATION_PAUSED.register(lambda _: rosys.background_tasks.create(cast(Callable, on_interrupt)()))
+            self.AUTOMATION_STOPPED.register(lambda _: rosys.background_tasks.create(cast(Callable, on_interrupt)()))
 
         rosys.on_shutdown(lambda: self.stop(because='automator is shutting down'))
 
@@ -79,6 +79,7 @@ class Automator:
         The automator will make sure it can be paused, resumed and stopped.
         """
         if coro is None:
+            assert self.default_automation is not None
             self.start(self.default_automation(), paused=paused)
             return
         if not self.enabled:
@@ -98,6 +99,7 @@ class Automator:
         You need to provide a cause which will be used as notification message.
         """
         if self.is_running:
+            assert self.automation is not None
             self.automation.pause()
             self.AUTOMATION_PAUSED.emit(because)
             rosys.notify(f'automation paused because {because}')
@@ -107,6 +109,7 @@ class Automator:
         if not self.enabled:
             return
         if self.is_paused:
+            assert self.automation is not None
             self.automation.resume()
             self.AUTOMATION_RESUMED.emit()
             rosys.notify('automation resumed')
@@ -117,6 +120,7 @@ class Automator:
         You need to provide a cause which will be used as notification message.
         """
         if not self.is_stopped:
+            assert self.automation is not None
             self.automation.stop()
             self.AUTOMATION_STOPPED.emit(because)
             track.reset()

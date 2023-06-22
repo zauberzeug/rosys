@@ -44,6 +44,7 @@ class WebCommunication(Communication):
             await self.sio.connect(self.host)
         if self.buffer:
             return self.buffer.pop()
+        return None
 
     async def send(self, line: str) -> None:
         await self.sio.emit('write', line)

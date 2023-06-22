@@ -51,6 +51,7 @@ class CameraObjects(Group):
             if uid not in self.calibrated_cameras:
                 camera_group.delete()
         for uid, camera in self.calibrated_cameras.items():
+            assert camera.calibration is not None
             if uid not in camera_groups:
                 with self:
                     with Group().with_name(f'camera_{uid}') as camera_groups[uid]:
@@ -74,8 +75,9 @@ class CameraObjects(Group):
         return calibration.rotation.R  # computing euler rotation is cpu expensive
 
     async def update_images(self) -> None:
-        newest_images = [camera.latest_captured_image for camera in self.calibrated_cameras.values()]
-        newest_images = [i for i in newest_images if i is not None]
+        newest_images = [camera.latest_captured_image
+                         for camera in self.calibrated_cameras.values()
+                         if camera.latest_captured_image is not None]
 
         current_uids = [image.camera_id for image in newest_images]
         for uid, texture in list(self.textures.items()):
@@ -83,7 +85,7 @@ class CameraObjects(Group):
                 texture.delete()
                 del self.textures[uid]
 
-        z = 0
+        z = 0.0
         for image in sorted(newest_images, key=lambda i: i.time):
             camera = self.calibrated_cameras.get(image.camera_id)
             if camera is None:

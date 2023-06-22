@@ -33,7 +33,7 @@ class Rotation:
         return Rotation(R=np.array(self.R).T.tolist())
 
     @property
-    def euler(self) -> tuple[float]:
+    def euler(self) -> tuple[float, float, float]:
         return (
             np.arctan2(self.R[2][1], self.R[2][2]),
             np.arctan2(-self.R[2][0], np.sqrt(self.R[2][1]**2 + self.R[2][2]**2)),

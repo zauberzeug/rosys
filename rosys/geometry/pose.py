@@ -105,7 +105,7 @@ class Pose:
     def relative_pose(self, other: Pose) -> Pose:
         return Pose.from_matrix(self.inv_matrix @ other.matrix)
 
-    def relative_point(self, other: Point) -> Pose:
+    def relative_point(self, other: Point) -> Point:
         dx = other.x - self.x
         dy = other.y - self.y
         return Point(x=dx * np.cos(-self.yaw) - dy * np.sin(-self.yaw),

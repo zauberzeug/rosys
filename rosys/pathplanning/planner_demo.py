@@ -48,7 +48,7 @@ planner = DelaunayPlanner(robot_outline)
 
 def run() -> None:
     t = time.time()
-    planner.update_map(cmd.areas, cmd.obstacles, [cmd.start, cmd.goal], deadline=time.time()+10.0)
+    planner.update_map(cmd.areas, cmd.obstacles, [cmd.start.point, cmd.goal.point], deadline=time.time()+10.0)
     dt0 = time.time() - t
 
     t = time.time()

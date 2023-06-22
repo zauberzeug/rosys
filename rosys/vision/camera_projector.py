@@ -50,6 +50,7 @@ class CameraProjector:
 
     @staticmethod
     def project(camera: Camera, rows: int = 12, columns: int = 16) -> ProjectionCoordinates:
+        assert camera.calibration is not None
         c, r = np.meshgrid(np.linspace(0, camera.calibration.intrinsics.size.width, columns),
                            np.linspace(0, camera.calibration.intrinsics.size.height, rows))
         image_points = np.stack((c.flatten(), r.flatten()), axis=1)

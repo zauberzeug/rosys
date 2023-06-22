@@ -6,7 +6,7 @@ from line_profiler import LineProfiler as PyUtilsLineProfiler
 
 class LineProfiler:
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.functions: list[list] = []
         self.line_profiler: Optional[PyUtilsLineProfiler] = None
 

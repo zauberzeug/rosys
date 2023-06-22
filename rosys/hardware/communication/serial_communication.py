@@ -80,22 +80,22 @@ class SerialCommunication(Communication):
         super().debug_ui()
 
         async def input_enter() -> None:
-            await self.send(input.value)
+            await self.send(command.value)
             while self.redo_queue:
                 self.undo_queue.append(self.redo_queue.pop())
-            self.undo_queue.append(input.value)
-            input.value = ''
+            self.undo_queue.append(command.value)
+            command.value = ''
 
         def input_up() -> None:
             if self.undo_queue:
-                if input.value:
-                    self.redo_queue.append(input.value)
-                input.value = self.undo_queue.pop()
+                if command.value:
+                    self.redo_queue.append(command.value)
+                command.value = self.undo_queue.pop()
 
         def input_down() -> None:
-            if input.value:
-                self.undo_queue.append(input.value)
-            input.value = self.redo_queue.pop() if self.redo_queue else ''
+            if command.value:
+                self.undo_queue.append(command.value)
+            command.value = self.redo_queue.pop() if self.redo_queue else ''
 
         def toggle(e: ValueChangeEventArguments) -> None:
             if e.value:
@@ -107,7 +107,7 @@ class SerialCommunication(Communication):
 
         ui.switch('Serial Communication', value=self.serial.isOpen(), on_change=toggle)
         ui.switch('Serial Logging').bind_value(self, 'log_io')
-        input = ui.input('Serial Command')
-        input.on('keydown.enter', input_enter)
-        input.on('keydown.up', input_up)
-        input.on('keydown.down', input_down)
+        command = ui.input('Serial Command')
+        command.on('keydown.enter', input_enter)
+        command.on('keydown.up', input_up)
+        command.on('keydown.down', input_down)

@@ -17,7 +17,7 @@ from .uploads import Uploads
 class SimulatedObject:
     category_name: str
     position: Point3d
-    size: Optional[tuple[float]] = None
+    size: Optional[tuple[float, float, float]] = None
     uuid: str = field(init=False)
 
     def __post_init__(self) -> None:
@@ -74,6 +74,8 @@ class DetectorSimulation(Detector):
         if image.camera_id not in self.camera_provider.cameras:
             return
         camera = self.camera_provider.cameras[image.camera_id]
+        assert camera.calibration is not None
+        assert image.detections is not None
         for object in self.simulated_objects:
             viewing_direction = np.array(camera.calibration.extrinsics.rotation.R)[:, 2]
             object_direction = np.array(object.position.tuple) - camera.calibration.extrinsics.translation
