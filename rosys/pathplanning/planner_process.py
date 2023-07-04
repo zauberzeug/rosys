@@ -69,7 +69,7 @@ class PlannerProcess(Process):
         while True:
             try:
                 cmd = self.connection.recv()
-            except EOFError:
+            except (EOFError, KeyboardInterrupt):
                 self.log.info('PlannerProcess stopped')
                 return
             try:
