@@ -10,7 +10,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 from contextlib import contextmanager
 from functools import partial, wraps
-from typing import Callable, Generator, Optional
+from typing import Any, Callable, Generator, Optional
 
 from psutil import Popen
 
@@ -18,12 +18,12 @@ from . import rosys
 
 process_pool = ProcessPoolExecutor()
 thread_pool = ThreadPoolExecutor(thread_name_prefix='run.py thread_pool')
-running_cpu_bound_processes: list[int] = []  # NOTE is used in tests to advance time slower until computation is done
+running_cpu_bound_processes: list[str] = []  # NOTE is used in tests to advance time slower until computation is done
 running_sh_processes: list[Process] = []
 log = logging.getLogger('rosys.run')
 
 
-async def io_bound(callback: Callable, *args: any, **kwargs: any):
+async def io_bound(callback: Callable, *args: Any, **kwargs: Any):
     if rosys.is_stopping():
         return
     loop = asyncio.get_running_loop()
@@ -44,7 +44,7 @@ def awaitable(func: Callable) -> Callable:
     return inner
 
 
-async def cpu_bound(callback: Callable, *args: any):
+async def cpu_bound(callback: Callable, *args: Any):
     if rosys.is_stopping():
         return
     with cpu():
