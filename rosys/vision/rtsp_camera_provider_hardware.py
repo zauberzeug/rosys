@@ -195,7 +195,7 @@ class RtspCameraProviderHardware(CameraProvider):
     def invalidate(self) -> None:
         self.needs_backup = True
 
-    def get_image_snapshot(self, camera: RtspCamera) -> bytes:
+    def get_image_snapshot(self, camera: RtspCamera) -> Optional[Image]:
         if 'profile0' in camera.url:
             return camera.latest_captured_image
         try:
