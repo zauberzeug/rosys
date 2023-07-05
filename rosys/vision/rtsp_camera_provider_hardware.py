@@ -1,11 +1,9 @@
 import asyncio
 import io
 import logging
-import platform
 import shlex
 import subprocess
 import sys
-import urllib.parse
 from asyncio.subprocess import Process
 from typing import Any, Optional
 
