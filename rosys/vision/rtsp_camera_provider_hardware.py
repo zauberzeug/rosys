@@ -77,7 +77,6 @@ class RtspCameraProviderHardware(CameraProvider):
                 command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1"! jpegenc ! fdsink'
             else:
                 command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
-            self.log.info(command)
             process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self._processes.append(process)
             data = b''
@@ -173,6 +172,7 @@ class RtspCameraProviderHardware(CameraProvider):
             camera.active = False
         for camera in self._cameras.values():
             if camera.id not in self._capture_tasks and camera.authorized:
+                self.log.info(f'activating authorized camera {camera.id} with url {camera.url}...')
                 await self.activate(camera)
 
     def get_rtsp_url(self, ip: str, vendor_mac: str) -> Optional[str]:
