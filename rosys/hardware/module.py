@@ -1,5 +1,6 @@
 import abc
 import logging
+from typing import Callable
 
 from .robot_brain import RobotBrain
 
@@ -18,7 +19,7 @@ class ModuleHardware(Module):
         self.robot_brain = robot_brain
         self.lizard_code = lizard_code
         self.core_message_fields: list[str] = core_message_fields
-        self.message_hooks: dict[str, callable] = {}
+        self.message_hooks: dict[str, Callable] = {}
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         pass

@@ -10,7 +10,7 @@ from .robot_brain import RobotBrain
 class Bumper(Module, abc.ABC):
     """A module that detects when a bumper is triggered."""
 
-    def __init__(self, estop: EStop, **kwargs) -> None:
+    def __init__(self, estop: Optional[EStop], **kwargs) -> None:
         self.estop = estop
         super().__init__(**kwargs)
 
