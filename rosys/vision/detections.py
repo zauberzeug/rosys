@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 
 from ..geometry import Point
 
@@ -125,3 +125,6 @@ class Detections:
             b.to_svg(shrink) for b in self.boxes) + '\n' + '\n'.join(
             p.to_svg(shrink) for p in self.points) + '\n' + '\n'.join(
             s.to_svg(shrink) for s in self.segmentations)
+
+    def to_dict(self) -> dict:
+        return asdict(self)

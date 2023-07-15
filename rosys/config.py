@@ -18,3 +18,6 @@ class Config:
 
     def restore(self, data: dict[str, Any]) -> None:
         self.simulation_speed = data.get('simulation_speed', 1.0)
+
+    def invalidate(self) -> None:
+        self.needs_backup = True

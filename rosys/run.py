@@ -87,15 +87,15 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
             cmd = shlex.split(command) if isinstance(command, str) else command
         if timeout is not None:
             if shell:
-                cmd = f'timeout {timeout} {cmd}'
+                cmd = f'timeout --signal=SIGKILL {timeout} {cmd}'
             else:
-                cmd = ['timeout', str(timeout)] + cmd
+                cmd = ['timeout', '--signal=SIGKILL', str(timeout)] + cmd
         # log.info(f'running sh: "{cmd}"')
         proc = subprocess.Popen(
             cmd,
             cwd=working_dir,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.STDOUT,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             shell=shell,
             start_new_session=True,
         )
@@ -104,9 +104,14 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
         _kill(proc)
         running_sh_processes.remove(proc)
         return stdout.decode('utf-8')
+
     if rosys.is_stopping():
         return
-    return await io_bound(popen)
+    try:
+        return await asyncio.wait_for(io_bound(popen), timeout)
+    except asyncio.TimeoutError:
+        log.warning(f'Command "{command}" timed out after {timeout} seconds.')
+        return ''
 
 
 def _kill(proc: Popen) -> None:

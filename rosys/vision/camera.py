@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
+
 from rosys import persistence
 
 from ..geometry import Rotation
@@ -18,6 +19,11 @@ class Camera(abc.ABC):
     calibration: Optional[Calibration] = None
     images: list[Image] = field(default_factory=list, metadata=persistence.exclude)
     focal_length: Optional[float] = None
+    name: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        if self.name is None:
+            self.name = self.id
 
     @property
     def captured_images(self) -> list[Image]:

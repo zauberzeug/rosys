@@ -1,7 +1,7 @@
 FROM python:3.11-buster
 
 RUN apt update && apt install -y \
-    sudo vim less ack-grep rsync wget curl cmake iproute2 iw python3-pip python3-autopep8 libgeos-dev graphviz graphviz-dev v4l-utils psmisc sysstat \
+    sudo vim less ack-grep rsync wget curl cmake arp-scan iproute2 iw python3-pip python3-autopep8 libgeos-dev graphviz graphviz-dev v4l-utils psmisc sysstat \
     libgl1-mesa-glx ffmpeg libsm6 libxext6 \
     avahi-utils iputils-ping \ 
     jq \
@@ -19,7 +19,6 @@ RUN curl -sSL https://install.python-poetry.org | python3 - && \
 # only copy poetry package specs to minimize rebuilding of image layers
 WORKDIR /rosys
 COPY pyproject.toml ./
-RUN poetry config experimental.new-installer false
 
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=true

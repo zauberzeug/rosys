@@ -68,3 +68,18 @@ class ModificationContext:
         finally:
             for key, value in backup.items():
                 setattr(self, key, value)
+
+
+def from_dict(data_class_type, data):
+    if data is None:
+        return None
+    elif hasattr(data_class_type, '__dataclass_fields__'):  # It's a DataClass
+        field_types = {f: t for f, t in data_class_type.__annotations__.items()}
+        return data_class_type(**{f: from_dict(field_types[f], data[f]) for f in data})
+    elif hasattr(data_class_type, '__origin__'):  # It's a generic
+        if data_class_type.__origin__ is list:  # It's a List
+            return [from_dict(data_class_type.__args__[0], d) for d in data]
+        if data_class_type.__origin__ is dict:  # It's a Dict
+            return {k: from_dict(data_class_type.__args__[1], v) for k, v in data.items()}
+    else:  # It's a regular type
+        return data_class_type(data)
