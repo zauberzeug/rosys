@@ -46,7 +46,6 @@ jobs:
       - name: verify
         shell: bash
         run: for i in {1..100}; do python -m pip install 'rosys==${{ steps.get_version.outputs.VERSION }}' && break || sleep 2; done
-  
 
   docker:
     needs: pypi
@@ -120,7 +119,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: "3.10"
+          python-version: "3.11"
       - name: Install dependencies
         run: |
           python3 -m pip install -r mkdocs_requirements.txt
