@@ -16,9 +16,14 @@ class BatteryControlHardware(ModuleHardware):
                  status_pin: int = 13,
                  ) -> None:
         self.name = name
+        self.status: bool = False
         lizard_code = f'{self.name}_reset = {expander.name + "." if expander else ""}Output({reset_pin})\n'
         lizard_code += f'{self.name}_status = {expander.name + "." if expander else ""}Input({status_pin})\n'
-        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
+        core_message_fields = [f'{self.name}_status.level']
+        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
+
+    def handle_core_output(self, time: float, words: list[str]) -> None:
+        self.status = int(words.pop(0)) == 1
 
     async def release_battery_relais(self) -> None:
         self.log.info('releasing battery relais')
