@@ -15,6 +15,16 @@ class EStop(Module, abc.ABC):
         """the e-stop was triggered"""
 
         self.active: bool = False
+        self.en3_active: bool = False
+
+    @abc.abstractmethod
+    async def software_emergency_stop(self) -> None:
+        self.ESTOP_TRIGGERED.emit()
+        self.en3_active = True
+
+    @abc.abstractmethod
+    async def release_en3(self) -> None:
+        self.en3_active = False
 
 
 class EStopHardware(EStop, ModuleHardware):
@@ -29,6 +39,14 @@ class EStopHardware(EStop, ModuleHardware):
         lizard_code = '\n'.join(f'{name}_{pin} = Input({number})' for pin, number in pins.items())
         core_message_fields = [f'{name}_{pin}.level' for pin in pins]
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
+
+    async def software_emergency_stop(self) -> None:
+        await super().software_emergency_stop()
+        await self.robot_brain.send(f'en3.off()')
+
+    async def release_en3(self) -> None:
+        await super().release_en3()
+        await self.robot_brain.send(f'en3.on()')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         active = any(int(words.pop(0)) == 0 for _ in self.pins)
