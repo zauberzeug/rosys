@@ -65,3 +65,9 @@ class EStopSimulation(EStop, ModuleSimulation):
 
     def deactivate(self) -> None:
         self.active = False
+
+    async def software_emergency_stop(self) -> None:
+        await super().software_emergency_stop()
+
+    async def release_en3(self) -> None:
+        await super().release_en3()
