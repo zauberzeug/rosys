@@ -20,6 +20,7 @@ def create_image_route(camera_provider: 'CameraProvider') -> None:
     async def get_image(camera_id: str, timestamp: str, shrink: int = 1) -> Response:
         return await _get_image(camera_provider.cameras, camera_id, timestamp, shrink)
     app.add_api_route('/' + camera_provider.base_path + '/{camera_id}/{timestamp}', get_image)
+    app.add_api_route('/' + camera_provider.base_path + '/{camera_id}/{timestamp}/{shrink}', get_image)
     app.add_api_route('/' + camera_provider.base_path + '/placeholder', _get_placeholder)
 
 
