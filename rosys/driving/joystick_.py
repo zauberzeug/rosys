@@ -1,9 +1,9 @@
-from nicegui.elements.joystick import Joystick as NiceGuiJoystick
+from nicegui import ui
 
 from .steerer import Steerer
 
 
-class Joystick(NiceGuiJoystick):
+class Joystick(ui.joystick):
     """The Joystick UI element allows controlling a given steerer via touch events."""
 
     def __init__(self, steerer: Steerer, **options) -> None:
