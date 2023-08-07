@@ -6,7 +6,13 @@ from .robot_brain import RobotBrain
 
 
 class EStop(Module, abc.ABC):
-    """A module that detects when the e-stop is triggered."""
+    """A module that detects when the e-stop is triggered.
+
+    The module has a boolean field `active` that is true when the e-stop is triggered.
+
+    There is also a boolean field `is_soft_estop_active` that is true when the soft e-stop is active.
+    It can be set to true or false by calling `set_soft_estop(active: bool)`.
+    """
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -15,16 +21,13 @@ class EStop(Module, abc.ABC):
         """the e-stop was triggered"""
 
         self.active: bool = False
-        self.en3_active: bool = False
+        self.is_soft_estop_active: bool = False
 
     @abc.abstractmethod
-    async def software_emergency_stop(self) -> None:
-        self.ESTOP_TRIGGERED.emit()
-        self.en3_active = True
-
-    @abc.abstractmethod
-    async def release_en3(self) -> None:
-        self.en3_active = False
+    async def set_soft_estop(self, active: bool) -> None:
+        if active:
+            self.ESTOP_TRIGGERED.emit()
+        self.is_soft_estop_active = active
 
 
 class EStopHardware(EStop, ModuleHardware):
@@ -40,13 +43,9 @@ class EStopHardware(EStop, ModuleHardware):
         core_message_fields = [f'{name}_{pin}.level' for pin in pins]
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
-    async def software_emergency_stop(self) -> None:
-        await super().software_emergency_stop()
-        await self.robot_brain.send(f'en3.off()')
-
-    async def release_en3(self) -> None:
-        await super().release_en3()
-        await self.robot_brain.send(f'en3.on()')
+    async def set_soft_estop(self, active: bool) -> None:
+        await super().set_soft_estop(active)
+        await self.robot_brain.send(f'en3.level({0 if active else 1})')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         active = any(int(words.pop(0)) == 0 for _ in self.pins)
@@ -66,8 +65,5 @@ class EStopSimulation(EStop, ModuleSimulation):
     def deactivate(self) -> None:
         self.active = False
 
-    async def software_emergency_stop(self) -> None:
-        await super().software_emergency_stop()
-
-    async def release_en3(self) -> None:
-        await super().release_en3()
+    async def set_soft_estop(self, active: bool) -> None:
+        await super().set_soft_estop(active)
