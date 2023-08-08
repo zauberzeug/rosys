@@ -31,8 +31,8 @@ class SerialCommunication(Communication):
         self.serial = serial.Serial(self.device_path, baud_rate)
         self.buffer = ''
         self.log_io: bool = False
-        self.undo_queue = deque(maxlen=100)
-        self.redo_queue = deque(maxlen=100)
+        self.undo_queue: deque[str] = deque(maxlen=100)
+        self.redo_queue: deque[str] = deque(maxlen=100)
 
     @staticmethod
     def is_possible() -> bool:
@@ -43,6 +43,7 @@ class SerialCommunication(Communication):
         for device_path in SerialCommunication.search_paths:
             if os.path.exists(device_path) and os.stat(device_path).st_gid > 0:
                 return device_path
+        return None
 
     def connect(self) -> None:
         if not self.serial.isOpen():
@@ -56,7 +57,7 @@ class SerialCommunication(Communication):
 
     async def read(self) -> Optional[str]:
         if not self.serial.isOpen():
-            return
+            return None
         s = self.serial.read_all()
         try:
             s = s.decode()
@@ -68,6 +69,7 @@ class SerialCommunication(Communication):
                 return line
         except Exception:
             self.log.exception(f'Could not decode serial data: {s}')
+        return None
 
     async def send(self, line: str) -> None:
         if not self.serial.isOpen():
