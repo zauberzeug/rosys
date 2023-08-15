@@ -8,6 +8,7 @@ from typing import Any, Optional
 import cv2
 import numpy as np
 import PIL
+from cv2 import UMat, VideoCapture
 
 from .. import persistence, rosys
 from ..geometry import Rectangle
@@ -23,7 +24,7 @@ SCAN_INTERVAL = 10
 class Device:
     uid: str
     video_id: int
-    capture: Optional[Any] = None  # cv2.VideoCapture device
+    capture: Optional[VideoCapture] = None 
     exposure_min: int = 0
     exposure_max: int = 0
     exposure_default: int = 0
@@ -32,7 +33,7 @@ class Device:
     video_formats: set[str] = field(default_factory=set)
 
 
-def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Rectangle = None) -> bytes:
+def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
     image = PIL.Image.open(io.BytesIO(data))
     if crop is not None:
         image = image.crop((int(crop.x), int(crop.y), int(crop.x+crop.width), int(crop.y+crop.height)))
@@ -47,7 +48,7 @@ def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Rectangle = N
     return img_byte_arr.getvalue()
 
 
-def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Rectangle = None) -> bytes:
+def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
     if crop is not None:
         image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]
     if rotation == ImageRotation.LEFT:
@@ -124,7 +125,7 @@ class UsbCameraProviderHardware(CameraProvider):
                 else:
                     bytes = await rosys.run.cpu_bound(process_ndarray_image, image, camera.rotation, camera.crop)
                 if camera.crop:
-                    size = ImageSize(width=camera.crop.width, height=camera.crop.height)
+                    size = ImageSize(width=int(camera.crop.width), height=int(camera.crop.height))
                 elif camera.resolution:
                     size = camera.resolution
                 else:
@@ -139,10 +140,13 @@ class UsbCameraProviderHardware(CameraProvider):
             if camera.active and uid in self.devices and self.devices[uid].capture is not None:
                 await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
 
-    def capture_image(self, id) -> Any:
-        _, image = self.devices[id].capture.read()
-        return image
+    def capture_image(self, id: str) -> UMat:
+        capture = self.devices[id].capture
+        assert capture is not None   
 
+        _, image = capture.read()
+        return image
+        
     async def activate(self, uid: str) -> None:
         camera = self._cameras[uid]
         device = self.devices[uid]
