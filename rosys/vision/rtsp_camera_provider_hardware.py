@@ -5,6 +5,7 @@ import shlex
 import subprocess
 import sys
 from asyncio.subprocess import Process
+from io import BytesIO
 from typing import Any, Optional
 
 import imgsize
@@ -72,6 +73,8 @@ class RtspCameraProviderHardware(CameraProvider):
             # if platform.system() == 'Darwin':
             #     command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp drop-on-latency=true buffer-mode=none ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
             # else:
+            logging.info(f'capture images from {camera.id} with url {camera.url}')
+            assert camera.url is not None
             if 'subtype=0' in camera.url:
                 url = camera.url.replace('subtype=0', 'subtype=1')
                 command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1"! jpegenc ! fdsink'
@@ -79,26 +82,51 @@ class RtspCameraProviderHardware(CameraProvider):
                 command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
             process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self._processes.append(process)
-            data = b''
+
+            buffer = BytesIO()
+            pos  = 0
+            header = None
+            
             while process.returncode is None:
+                assert process.stdout is not None
                 new = await process.stdout.read(4096)
                 if not new:
                     break
-                data += new
-                header = 0
-                images: list[bytes] = []
-                while header < len(data):
-                    header = data.find(b'\xff\xd8', header)
-                    if header == -1:
-                        break
-                    footer = data.find(b'\xff\xd9', header)
-                    if footer == -1:
-                        break
-                    images.append(data[header:footer + 2])
-                    header = footer + 2
-                data = data[header:]
-                if images:
-                    yield images[-1]
+                buffer.write(new)
+
+                img_range = None
+                while True:
+                    if header is None:
+                        h = buffer.getvalue().find(b'\xff\xd8', pos)
+                        if h == -1:
+                            pos = buffer.tell() - 1
+                            break
+                        else:
+                            pos = h + 2
+                            header = h
+                    else:
+                        f = buffer.getvalue().find(b'\xff\xd9', pos)
+                        if f == -1:
+                            pos = buffer.tell() - 1
+                            break
+                        else:
+                            img_range = (header, f + 2)
+                            pos = f + 2
+                            header = None
+
+                if img_range:
+                    yield buffer.getvalue()[img_range[0]:img_range[1]]
+
+                    rest = buffer.getvalue()[img_range[1]:]
+                    buffer.seek(0)
+                    buffer.truncate()
+                    buffer.write(rest)
+                    
+                    pos = 0
+                    if header is not None:
+                        header -= img_range[1]
+                    
+            assert process.stderr is not None
             error = await process.stderr.read()
             self.log.info(f'process {process.pid} exited with {process.returncode} and error {error}')
             if 'Unauthorized' in error.decode():
@@ -108,6 +136,7 @@ class RtspCameraProviderHardware(CameraProvider):
             camera.active = True
             if camera.crop or camera.rotation != ImageRotation.NONE:
                 image = await rosys.run.cpu_bound(process_image, image, camera.rotation, camera.crop)
+                assert isinstance(image, bytes)
             try:
                 with PeekableBytesIO(image) as f:
                     width, height = imgsize.get_size(f)
@@ -214,7 +243,9 @@ def process_image(data: bytes, rotation: ImageRotation, crop: Rectangle = None) 
     image = PIL.Image.open(io.BytesIO(data))
     if crop is not None:
         image = image.crop((int(crop.x), int(crop.y), int(crop.x+crop.width), int(crop.y+crop.height)))
-    image = image.rotate(int(rotation), expand=True, resample=PIL.Image.Resampling.BICUBIC)
+    # TODO change to NN-Interpolation if rotation is a multiple of 90 (PIL.Image.NEAREST)
+    strategy = PIL.Image.BICUBIC if int(rotation)%90 == 0 else PIL.Image.NEAREST
+    image = image.rotate(int(rotation), expand=True, resample=strategy)
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format='JPEG')
     return img_byte_arr.getvalue()
