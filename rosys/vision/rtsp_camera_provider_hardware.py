@@ -24,7 +24,6 @@ from .rtsp_camera import ImageRotation, RtspCamera
 
 SCAN_INTERVAL = 10
 
-
 class PeekableBytesIO(io.BytesIO):
 
     def peek(self, n=-1):
@@ -37,8 +36,11 @@ class PeekableBytesIO(io.BytesIO):
 class RtspCameraProviderHardware(CameraProvider):
     """This module collects and provides real RTSP streaming cameras."""
 
-    def __init__(self) -> None:
+    def __init__(self, frame_rate: int = 6, jovision_profile = 0) -> None:
         super().__init__()
+
+        self.frame_rate = frame_rate
+        self.jovision_profile = jovision_profile
 
         self.log = logging.getLogger('rosys.rtsp_camera_provider')
 
@@ -76,10 +78,10 @@ class RtspCameraProviderHardware(CameraProvider):
             logging.info(f'capture images from {camera.id} with url {camera.url}')
             assert camera.url is not None
             if 'subtype=0' in camera.url:
-                url = camera.url.replace('subtype=0', 'subtype=1')
-                command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1"! jpegenc ! fdsink'
+                url = camera.url.replace('subtype=0', 'subtype=1') # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
+                command = f'gst-launch-1.0 rtspsrc location="{url}" latency=100 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.frame_rate}/1"! jpegenc ! fdsink'
             else:
-                command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
+                command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=100 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.frame_rate}/1" ! jpegenc ! fdsink'
             process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             self._processes.append(process)
 
@@ -136,7 +138,9 @@ class RtspCameraProviderHardware(CameraProvider):
             camera.active = True
             if camera.crop or camera.rotation != ImageRotation.NONE:
                 image = await rosys.run.cpu_bound(process_image, image, camera.rotation, camera.crop)
-                assert isinstance(image, bytes)
+                if not isinstance(image, bytes):
+                    logging.warning(f'could not process image from {camera.id}')
+                    continue
             try:
                 with PeekableBytesIO(image) as f:
                     width, height = imgsize.get_size(f)
@@ -144,7 +148,8 @@ class RtspCameraProviderHardware(CameraProvider):
                 continue
             size = ImageSize(width=width, height=height)
             camera.resolution = size
-            camera.images.append(Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
+            self.add_image(camera, Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
+            #camera.images.append(Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
         camera.active = False
         self.invalidate()
         self._capture_tasks.pop(camera.id)
@@ -206,7 +211,7 @@ class RtspCameraProviderHardware(CameraProvider):
 
     def get_rtsp_url(self, ip: str, vendor_mac: str) -> Optional[str]:
         if vendor_mac == 'e0:62:90':  # Jovision IP Cameras
-            return f'rtsp://admin:admin@{ip}/profile0'
+            return f'rtsp://admin:admin@{ip}/profile{self.jovision_profile}'
         elif vendor_mac in ['e4:24:6c', '3c:e3:6b']:  # Dahua IP Cameras
             return f'rtsp://admin:Adminadmin@{ip}/cam/realmonitor?channel=1&subtype=0'
         else:
