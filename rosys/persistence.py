@@ -19,10 +19,12 @@ exclude = config(exclude=Exclude.ALWAYS)
 
 
 def to_dict(obj: Any) -> dict[str, Any]:
+    """Convert an object `obj` to a serializable dict."""
     return _asdict(obj, False)
 
 
 def from_dict(cls: type, d: dict[str, Any]) -> Any:
+    """Convert a serializable dict `d` to object of type `cls`."""
     return _decode_dataclass(cls, d, False)
 
 
@@ -39,6 +41,12 @@ def replace_list(old_list: list[T], cls: type, new_list: list[T]) -> None:
     """Replace content of `old_list` with items from `new_list`."""
     old_list.clear()
     old_list.extend(from_dict(cls, value) for value in new_list)
+
+
+def replace_set(old_set: set[T], cls: type, new_set: set[T]) -> None:
+    """Replace content of `old_set` with items from `new_set`."""
+    old_set.clear()
+    old_set.update(from_dict(cls, value) for value in new_set)
 
 
 def replace_dataclass(old_dataclass: Any, new_dict: dict[str, Any]) -> None:
