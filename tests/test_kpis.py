@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 import pytest
+
 from rosys.analysis import Day, KpiLogger, date_to_str, str_to_date
 from rosys.test import forward
 
@@ -39,7 +40,7 @@ def test_increment_on_rising_edge(kpi_logger: KpiLogger):
     (180, 103, 3, [16, 31, 30]),
 ])
 def test_packing_old_days_into_month(
-        kpi_logger: KpiLogger, days: int, expected_days: int, expected_months: int, expected_sums: int):
+        kpi_logger: KpiLogger, days: int, expected_days: int, expected_months: int, expected_sums: list[int]):
     today = str_to_date('2022-03-13').date()
     kpi_logger.days = [
         Day(date=date_to_str(today - timedelta(days=d)), incidents=dict(problem=1, success=1))

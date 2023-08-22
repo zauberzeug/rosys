@@ -11,7 +11,7 @@ from .kpi_buckets import Day, Month
 
 
 def date_to_str(date: date) -> str: return date.isoformat()
-def str_to_date(date: str) -> date: return datetime.fromisoformat(date)
+def str_to_date(date: str) -> datetime: return datetime.fromisoformat(date)
 
 
 class KpiLogger:
