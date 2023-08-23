@@ -45,7 +45,7 @@ class EStopHardware(EStop, ModuleHardware):
 
     async def set_soft_estop(self, active: bool) -> None:
         await super().set_soft_estop(active)
-        await self.robot_brain.send(f'en3.{"off" if active else "on"}()')
+        await self.robot_brain.send(f'en3.level({"false" if active else "true"})')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         active = any(int(words.pop(0)) == 0 for _ in self.pins)
