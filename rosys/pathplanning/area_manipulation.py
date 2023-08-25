@@ -2,32 +2,65 @@ import uuid
 from enum import Enum
 from typing import Optional
 
+from nicegui import binding, ui
+from nicegui.events import SceneClickEventArguments, SceneDragEventArguments
+
 from .. import rosys
+from ..event import Event
 from ..geometry import LineSegment, Point
 from .area import Area
 from .path_planner import PathPlanner
 
 
-class AreaManipulationCommand(Enum):
-    NONE = None
-    ADD = 'Add'
+class AreaManipulationMode(Enum):
+    IDLE = None
     EDIT = 'Edit'
     DELETE = 'Delete'
 
+# TODO
+# - create areas of different types/colors
+# - allow adjusting the sphere size
+# - delete area on double click
+# - translation
+
 
 class AreaManipulation:
+    mode = binding.BindableProperty(on_change=lambda sender, value: sender.MODE_CHANGED.emit(value))
 
     def __init__(self, path_planner: PathPlanner) -> None:
         self.path_planner = path_planner
         self.active_area: Optional[Area] = None
-        self.command = AreaManipulationCommand.NONE
+        self.mode = AreaManipulationMode.IDLE
+
+        self.MODE_CHANGED = Event()
+        """the mode has changed (argument: new mode)"""
+
+    def create_ui(self) -> ui.row:
+        with ui.row() as row:
+            area_toggle = ui.toggle({
+                AreaManipulationMode.EDIT: 'Edit',
+                AreaManipulationMode.DELETE: 'Delete',
+            }).props('outline').bind_value(self, 'mode')
+            ui.button(icon='close', on_click=self.cancel) \
+                .props('outline') \
+                .bind_visibility_from(area_toggle, 'value', bool)
+            ui.button(icon='done', on_click=self.done) \
+                .props('outline') \
+                .bind_visibility_from(area_toggle, 'value', bool)
+            ui.button(icon='undo', on_click=self.undo) \
+                .props('outline') \
+                .bind_visibility_from(self, 'can_undo')
+            ui.button('Clear all', on_click=self.clear_all) \
+                .props('outline color=red') \
+                .bind_visibility_from(area_toggle, 'value', value=AreaManipulationMode.DELETE)
+        return row
 
     @property
     def can_undo(self) -> bool:
         return self.active_area is not None and len(self.active_area.outline) > 0
 
     def add_point(self, point: Point) -> None:
-        if self.command != AreaManipulationCommand.ADD:
+        if self.mode != AreaManipulationMode.EDIT:
             return
 
         if self.active_area is None:
@@ -47,6 +80,9 @@ class AreaManipulation:
             return
         assert self.active_area is not None
         self.active_area.outline.pop()
+        if not self.active_area.outline:
+            self.path_planner.areas.pop(self.active_area.id)
+            self.active_area = None
         self._emit_change_event()
 
     def cancel(self) -> None:
@@ -54,7 +90,7 @@ class AreaManipulation:
             self.path_planner.areas.pop(self.active_area.id)
             self._emit_change_event()
         self.active_area = None
-        self.command = AreaManipulationCommand.NONE
+        self.mode = AreaManipulationMode.IDLE
 
     def done(self) -> None:
         if self.active_area:
@@ -67,12 +103,28 @@ class AreaManipulation:
             self.active_area.closed = True
             self._emit_change_event()
         self.active_area = None
-        self.command = AreaManipulationCommand.NONE
+        self.mode = AreaManipulationMode.IDLE
 
     def clear_all(self) -> None:
         self.path_planner.areas.clear()
         self.active_area = None
-        self.command = AreaManipulationCommand.NONE
+        self.mode = AreaManipulationMode.IDLE
+        self._emit_change_event()
+
+    def handle_click(self, e: SceneClickEventArguments) -> None:
+        if e.click_type == 'dblclick':
+            for hit in e.hits:
+                if hit.object_id == 'ground':
+                    self.add_point(Point(x=hit.x, y=hit.y))
+
+    def handle_drag_end(self, e: SceneDragEventArguments) -> None:
+        words = e.object_name.split('_')
+        area_id = words[1]
+        point_index = int(words[2])
+        assert area_id in self.path_planner.areas
+        area = self.path_planner.areas[area_id]
+        area.outline[point_index].x = e.x
+        area.outline[point_index].y = e.y
         self._emit_change_event()
 
     def _emit_change_event(self) -> None:

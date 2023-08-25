@@ -1,27 +1,41 @@
-import numpy as np
-from nicegui.elements.scene_objects import Extrusion, Group
+from typing import Optional
 
-from .area import Area
+from nicegui.elements.scene_objects import Group
+
+from .area_manipulation import AreaManipulation, AreaManipulationMode
 from .path_planner import PathPlanner
+
+HEIGHT = 0.1
+DIAMETER = 0.2
 
 
 class AreaObject(Group):
 
-    def __init__(self, path_planner: PathPlanner) -> None:
+    def __init__(self, path_planner: PathPlanner, area_manipulation: Optional[AreaManipulation] = None) -> None:
         super().__init__()
 
-        self.update(path_planner.areas)
-        path_planner.AREAS_CHANGED.register_ui(self.update)
+        self.path_planner = path_planner
+        self.area_manipulation = area_manipulation
 
-    def update(self, areas: dict[str, Area]) -> None:
+        path_planner.AREAS_CHANGED.register_ui(lambda _: self.update())
+        if area_manipulation:
+            area_manipulation.MODE_CHANGED.register_ui(lambda _: self.update())
+
+        self.update()
+
+    def update(self) -> None:
         [obj.delete() for obj in list(self.scene.objects.values()) if (obj.name or '').startswith('area_')]
-        for area in areas.values():
-            if len(area.outline) == 1:
-                outline = [[area.outline[0].x + 0.05 * np.cos(phi), area.outline[0].y + 0.05 * np.sin(phi)]
-                           for phi in np.linspace(0, 2 * np.pi, 16, endpoint=False)]
-            elif area.closed:
+        for area in self.path_planner.areas.values():
+            if area.closed:
                 outline = [[point.x, point.y] for point in area.outline]
             else:
                 outline = [[point.x, point.y] for point in area.outline[:-1] + area.outline[-1:0:-1]]
-            with self.scene:
-                Extrusion(outline, 0.1, wireframe=True).with_name(f'area_{area.id}').material(area.color)
+                last_edge = [[area.outline[0].x, area.outline[0].y], [area.outline[-1].x, area.outline[-1].y]]
+                self.scene.extrusion(last_edge, HEIGHT, wireframe=True) \
+                    .with_name(f'area_{area.id}_last_edge').material(area.color, 0.2)
+            self.scene.extrusion(outline, HEIGHT, wireframe=True).with_name(f'area_{area.id}').material(area.color)
+
+            if self.area_manipulation and self.area_manipulation.mode == AreaManipulationMode.EDIT:
+                for p, point in enumerate(area.outline):
+                    self.scene.sphere(DIAMETER / 2).move(point.x, point.y, HEIGHT / 2) \
+                        .with_name(f'area_{area.id}_{p}').material(area.color).draggable()
