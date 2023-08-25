@@ -19,7 +19,9 @@ class AreaObject(Group):
             if len(area.outline) == 1:
                 outline = [[area.outline[0].x + 0.05 * np.cos(phi), area.outline[0].y + 0.05 * np.sin(phi)]
                            for phi in np.linspace(0, 2 * np.pi, 16, endpoint=False)]
-            else:
+            elif area.closed:
                 outline = [[point.x, point.y] for point in area.outline]
+            else:
+                outline = [[point.x, point.y] for point in area.outline[:-1] + area.outline[-1:0:-1]]
             with self.scene:
                 Extrusion(outline, 0.1, wireframe=True).with_name(f'area_{area.id}').material(area.color)

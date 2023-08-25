@@ -10,3 +10,4 @@ class Area:
     type: Optional[str] = None
     color: str = 'green'
     outline: list[Point]
+    closed: bool = True

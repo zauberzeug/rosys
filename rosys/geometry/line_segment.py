@@ -31,6 +31,7 @@ class LineSegment:
         t = ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) / d
         if allow_outside or (0 <= s <= 1 and 0 <= t <= 1):
             return Point(x=p1.x + s * (p2.x - p1.x), y=p1.y + s * (p2.y - p1.y))
+        return None
 
     def distance(self, point: Point) -> float:
         # https://stackoverflow.com/a/6853926/3419103
