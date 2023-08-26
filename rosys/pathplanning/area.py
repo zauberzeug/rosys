@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, Self
 
 from ..geometry import Polygon
 
@@ -10,3 +10,7 @@ class Area(Polygon):
     type: Optional[str] = None
     color: str = 'green'
     closed: bool = True
+
+    def close(self) -> Self:
+        self.closed = True
+        return self

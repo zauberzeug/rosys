@@ -43,7 +43,7 @@ class AreaManipulation:
             }).props('outline').bind_value(self, 'mode')
             ui.button(icon='close', on_click=self.cancel) \
                 .props('outline') \
-                .bind_visibility_from(area_toggle, 'value', bool)
+                .bind_visibility_from(area_toggle, 'value', value=AreaManipulationMode.EDIT)
             ui.button(icon='done', on_click=self.done) \
                 .props('outline') \
                 .bind_visibility_from(area_toggle, 'value', bool)
@@ -76,8 +76,11 @@ class AreaManipulation:
         for area in self.path_planner.areas.values():
             if area.contains(point):
                 self.path_planner.areas.pop(area.id)
+                self.active_area = None
                 self._emit_change_event()
                 return
+        if not self.path_planner.areas:
+            self.mode = AreaManipulationMode.IDLE
 
     def undo(self) -> None:
         if not self.can_undo:
