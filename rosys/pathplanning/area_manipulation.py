@@ -30,15 +30,20 @@ class Translator:
     Cancel = 'Cancel'
     Done = 'Done'
     Undo = 'Undo'
+    Area_type = 'Area type'
 
 
 class AreaManipulation:
     mode = binding.BindableProperty(on_change=lambda sender, value: sender.MODE_CHANGED.emit(value))
+    area_type = binding.BindableProperty()
+    area_color = binding.BindableProperty()
 
     def __init__(self, path_planner: PathPlanner, translator: Optional[Translator] = None) -> None:
         self.path_planner = path_planner
         self.active_area: Optional[Area] = None
         self.mode = AreaManipulationMode.IDLE
+        self.area_type: Optional[str] = None
+        self.area_color: str = 'green'
         self.translator = translator or Translator()
 
         self.MODE_CHANGED = Event()
@@ -71,7 +76,7 @@ class AreaManipulation:
 
     def add_point(self, point: Point) -> None:
         if self.active_area is None:
-            area = Area(id=str(uuid.uuid4()), outline=[], closed=False)
+            area = Area(id=str(uuid.uuid4()), outline=[], closed=False, type=self.area_type, color=self.area_color)
             self.path_planner.areas[area.id] = area
             self.active_area = area
 
