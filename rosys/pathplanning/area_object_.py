@@ -24,7 +24,8 @@ class AreaObject(Group):
         self.update()
 
     def update(self) -> None:
-        [obj.delete() for obj in list(self.scene.objects.values()) if (obj.name or '').startswith('area_')]
+        self.scene.delete_objects(lambda obj: (obj.name or '').startswith('area_'))
+
         for area in self.path_planner.areas.values():
             if area.closed:
                 outline = [[point.x, point.y] for point in area.outline]

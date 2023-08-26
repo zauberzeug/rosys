@@ -46,7 +46,7 @@ class PathPlanner:
     def backup(self) -> dict:
         return {
             'obstacles': persistence.to_dict(self.obstacles),
-            'areas': persistence.to_dict(self.areas),
+            'areas': persistence.to_dict({id: area for id, area in self.areas.items() if len(area.outline) >= 3}),
         }
 
     def restore(self, data: dict[str, Any]) -> None:

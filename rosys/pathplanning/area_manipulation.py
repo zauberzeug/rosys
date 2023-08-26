@@ -60,9 +60,6 @@ class AreaManipulation:
         return self.active_area is not None and len(self.active_area.outline) > 0
 
     def add_point(self, point: Point) -> None:
-        if self.mode != AreaManipulationMode.EDIT:
-            return
-
         if self.active_area is None:
             area = Area(id=str(uuid.uuid4()), outline=[], closed=False)
             self.path_planner.areas[area.id] = area
@@ -74,6 +71,13 @@ class AreaManipulation:
 
         self.active_area.outline.append(point)
         self._emit_change_event()
+
+    def delete_area(self, point: Point) -> None:
+        for area in self.path_planner.areas.values():
+            if area.contains(point):
+                self.path_planner.areas.pop(area.id)
+                self._emit_change_event()
+                return
 
     def undo(self) -> None:
         if not self.can_undo:
@@ -115,7 +119,11 @@ class AreaManipulation:
         if e.click_type == 'dblclick':
             for hit in e.hits:
                 if hit.object_id == 'ground':
-                    self.add_point(Point(x=hit.x, y=hit.y))
+                    target = Point(x=hit.x, y=hit.y)
+                    if self.mode == AreaManipulationMode.EDIT:
+                        self.add_point(target)
+                    elif self.mode == AreaManipulationMode.DELETE:
+                        self.delete_area(target)
 
     def handle_drag_end(self, e: SceneDragEventArguments) -> None:
         words = e.object_name.split('_')

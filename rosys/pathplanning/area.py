@@ -1,13 +1,12 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from ..geometry import Point
+from ..geometry import Polygon
 
 
 @dataclass(slots=True, kw_only=True)
-class Area:
+class Area(Polygon):
     id: str
     type: Optional[str] = None
     color: str = 'green'
-    outline: list[Point]
     closed: bool = True
