@@ -2,12 +2,13 @@ import uuid
 from enum import Enum
 from typing import Optional
 
+import numpy as np
 from nicegui import binding, ui
 from nicegui.events import SceneClickEventArguments, SceneDragEventArguments
 
 from .. import rosys
 from ..event import Event
-from ..geometry import LineSegment, Point
+from ..geometry import Point
 from .area import Area
 from .path_planner import PathPlanner
 
@@ -18,7 +19,6 @@ class AreaManipulationMode(Enum):
     DELETE = 'Delete'
 
 # TODO
-# - allow removing points from existing areas
 # - create areas of different types/colors
 # - allow adjusting the sphere size
 # - translation
@@ -75,7 +75,7 @@ class AreaManipulation:
             self.path_planner.areas[area.id] = area
             self.active_area = area
 
-        if self._would_cause_self_intersection(point, self.active_area.outline):
+        if self.active_area.would_cause_self_intersection(point):
             rosys.notify('Edges must not intersect!', type='negative')
             return
 
@@ -91,6 +91,13 @@ class AreaManipulation:
                 return
         if not self.path_planner.areas:
             self.mode = AreaManipulationMode.IDLE
+
+    def delete_point(self, area: Area, point_index: int) -> None:
+        del area.outline[point_index]
+        if not area.outline:
+            self.path_planner.areas.pop(area.id)
+            self.active_area = None
+        self._emit_change_event()
 
     def undo(self) -> None:
         if not self.can_undo:
@@ -109,49 +116,64 @@ class AreaManipulation:
         self.active_area = None
         self.mode = AreaManipulationMode.IDLE
 
-    def done(self) -> None:
+    def try_close_active_area(self) -> bool:
         if self.active_area:
             if len(self.active_area.outline) < 3:
                 rosys.notify('Areas must have at least 3 points!', type='negative')
-                return
-            if self._would_cause_self_intersection(self.active_area.outline[0], self.active_area.outline[1:]):
+                return False
+            if self.active_area.would_cause_self_intersection(self.active_area.outline[0]):
                 rosys.notify('Edges must not intersect!', type='negative')
-                return
+                return False
             self.active_area.closed = True
             self._emit_change_event()
         self.active_area = None
-        self.mode = AreaManipulationMode.IDLE
+        return True
+
+    def done(self) -> None:
+        if self.try_close_active_area():
+            self.mode = AreaManipulationMode.IDLE
 
     def handle_click(self, e: SceneClickEventArguments) -> None:
         if e.click_type == 'dblclick':
             for hit in e.hits:
+                target = Point(x=hit.x, y=hit.y)
                 if hit.object_id == 'ground':
-                    target = Point(x=hit.x, y=hit.y)
                     if self.mode == AreaManipulationMode.EDIT:
                         self.add_point(target)
                     elif self.mode == AreaManipulationMode.DELETE:
                         self.delete_area(target)
+                    return
+                if hit.object_name.startswith('area_') and '_corner_' in hit.object_name:
+                    area_id = hit.object_name.split('_')[1]
+                    area = self.path_planner.areas[area_id]
+                    distances = [point.distance(target) for point in area.outline]
+                    point_index = np.argmin(distances)
+                    if area is self.active_area and point_index == 0:
+                        self.try_close_active_area()
+                    else:
+                        self.delete_point(area, point_index)
+                    return
 
     def handle_drag_end(self, e: SceneDragEventArguments) -> None:
-        _, area_id, type_, point_index = e.object_name.split('_')
-        assert area_id in self.path_planner.areas
+        _, area_id, type_, point_index_str = e.object_name.split('_')
         area = self.path_planner.areas[area_id]
+        point_index = int(point_index_str)
+        new_point = Point(x=e.x, y=e.y)
         if type_ == 'corner':
-            area.outline[int(point_index)].x = e.x
-            area.outline[int(point_index)].y = e.y
+            old_point = area.outline.pop(point_index)
+            if area.would_cause_self_intersection(new_point, point_index):
+                rosys.notify('Edges must not intersect!', type='negative')
+                area.outline.insert(point_index, old_point)
+            else:
+                area.outline.insert(point_index, new_point)
         elif type_ == 'mid':
-            area.outline.insert(int(point_index) + 1, Point(x=e.x, y=e.y))
+            new_index = point_index + 1
+            if area.would_cause_self_intersection(new_point, new_index):
+                rosys.notify('Edges must not intersect!', type='negative')
+            else:
+                area.outline.insert(new_index, new_point)
         self._emit_change_event()
 
     def _emit_change_event(self) -> None:
         self.path_planner.AREAS_CHANGED.emit(self.path_planner.areas)
         self.path_planner.invalidate()
-
-    def _would_cause_self_intersection(self, point: Point, polyline: list[Point]) -> bool:
-        if polyline:
-            new_edge = LineSegment(point1=polyline[-1], point2=point)
-            for i in range(len(polyline) - 2):
-                edge = LineSegment(point1=polyline[i], point2=polyline[i + 1])
-                if edge.intersect(new_edge):
-                    return True
-        return False
