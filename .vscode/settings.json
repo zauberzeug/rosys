@@ -9,6 +9,7 @@
     "--disable=C0111", // Missing docstring (in function/class/method)
     "--disable=C0301", // Line too long (exceeds character limit)
     "--disable=R0902", // Too many public methods
+    "--disable=R0903", // Too few public methods
     "--disable=R0904", // Too many public methods
     "--disable=W0102", // Dangerous default value as argument
     "--disable=W0718", // Catching too general exception

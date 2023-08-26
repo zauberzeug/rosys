@@ -18,41 +18,51 @@ class AreaManipulationMode(Enum):
     DELETE = 'Delete'
 
 # TODO
+# - allow adding points to existing areas
 # - create areas of different types/colors
 # - allow adjusting the sphere size
-# - delete area on double click
 # - translation
+
+
+class Translator:
+    Edit = 'Edit'
+    Delete = 'Delete'
+    Cancel = 'Cancel'
+    Done = 'Done'
+    Undo = 'Undo'
 
 
 class AreaManipulation:
     mode = binding.BindableProperty(on_change=lambda sender, value: sender.MODE_CHANGED.emit(value))
 
-    def __init__(self, path_planner: PathPlanner) -> None:
+    def __init__(self, path_planner: PathPlanner, translator: Optional[Translator] = None) -> None:
         self.path_planner = path_planner
         self.active_area: Optional[Area] = None
         self.mode = AreaManipulationMode.IDLE
+        self.translator = translator or Translator()
 
         self.MODE_CHANGED = Event()
         """the mode has changed (argument: new mode)"""
 
     def create_ui(self) -> ui.row:
+        t = self.translator
         with ui.row() as row:
             area_toggle = ui.toggle({
-                AreaManipulationMode.EDIT: 'Edit',
-                AreaManipulationMode.DELETE: 'Delete',
+                AreaManipulationMode.EDIT: t.Edit,
+                AreaManipulationMode.DELETE: t.Delete,
             }).props('outline').bind_value(self, 'mode')
             ui.button(icon='close', on_click=self.cancel) \
                 .props('outline') \
+                .tooltip(t.Cancel) \
                 .bind_visibility_from(area_toggle, 'value', value=AreaManipulationMode.EDIT)
             ui.button(icon='done', on_click=self.done) \
                 .props('outline') \
+                .tooltip(t.Done) \
                 .bind_visibility_from(area_toggle, 'value', bool)
             ui.button(icon='undo', on_click=self.undo) \
                 .props('outline') \
+                .tooltip(t.Undo) \
                 .bind_visibility_from(self, 'can_undo')
-            ui.button('Clear all', on_click=self.clear_all) \
-                .props('outline color=red') \
-                .bind_visibility_from(area_toggle, 'value', value=AreaManipulationMode.DELETE)
         return row
 
     @property
@@ -111,12 +121,6 @@ class AreaManipulation:
             self._emit_change_event()
         self.active_area = None
         self.mode = AreaManipulationMode.IDLE
-
-    def clear_all(self) -> None:
-        self.path_planner.areas.clear()
-        self.active_area = None
-        self.mode = AreaManipulationMode.IDLE
-        self._emit_change_event()
 
     def handle_click(self, e: SceneClickEventArguments) -> None:
         if e.click_type == 'dblclick':
