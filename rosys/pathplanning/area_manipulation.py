@@ -18,7 +18,7 @@ class AreaManipulationMode(Enum):
     DELETE = 'Delete'
 
 # TODO
-# - allow adding points to existing areas
+# - allow removing points from existing areas
 # - create areas of different types/colors
 # - allow adjusting the sphere size
 # - translation
@@ -133,13 +133,14 @@ class AreaManipulation:
                         self.delete_area(target)
 
     def handle_drag_end(self, e: SceneDragEventArguments) -> None:
-        words = e.object_name.split('_')
-        area_id = words[1]
-        point_index = int(words[2])
+        _, area_id, type_, point_index = e.object_name.split('_')
         assert area_id in self.path_planner.areas
         area = self.path_planner.areas[area_id]
-        area.outline[point_index].x = e.x
-        area.outline[point_index].y = e.y
+        if type_ == 'corner':
+            area.outline[int(point_index)].x = e.x
+            area.outline[int(point_index)].y = e.y
+        elif type_ == 'mid':
+            area.outline.insert(int(point_index) + 1, Point(x=e.x, y=e.y))
         self._emit_change_event()
 
     def _emit_change_event(self) -> None:

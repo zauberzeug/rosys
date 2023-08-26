@@ -39,4 +39,8 @@ class AreaObject(Group):
             if self.area_manipulation and self.area_manipulation.mode == AreaManipulationMode.EDIT:
                 for p, point in enumerate(area.outline):
                     self.scene.sphere(DIAMETER / 2).move(point.x, point.y, HEIGHT / 2) \
-                        .with_name(f'area_{area.id}_{p}').material(area.color).draggable()
+                        .with_name(f'area_{area.id}_corner_{p}').material(area.color).draggable()
+                    next_point = area.outline[(p + 1) % len(area.outline)]
+                    mid_point = point.interpolate(next_point, 0.5)
+                    self.scene.sphere(DIAMETER / 2).move(mid_point.x, mid_point.y, HEIGHT / 2) \
+                        .with_name(f'area_{area.id}_mid_{p}').material(area.color, 0.2).draggable()

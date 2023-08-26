@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import time
+from copy import copy
 from multiprocessing import Pipe
 from typing import Any
 
@@ -44,7 +45,7 @@ class PathPlanner:
         persistence.register(self)
 
     def backup(self) -> dict:
-        finished_areas = {area_id: area.close() for area_id, area in self.areas.items() if len(area.outline) >= 3}
+        finished_areas = {area_id: copy(area).close() for area_id, area in self.areas.items() if len(area.outline) >= 3}
         return {
             'obstacles': persistence.to_dict(self.obstacles),
             'areas': persistence.to_dict(finished_areas),
