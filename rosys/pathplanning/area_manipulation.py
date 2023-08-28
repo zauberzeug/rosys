@@ -148,7 +148,7 @@ class AreaManipulation:
                     elif self.mode == AreaManipulationMode.DELETE:
                         self.delete_area(target)
                     return
-                if hit.object_name.startswith('area_') and '_corner_' in hit.object_name:
+                if (hit.object_name or '').startswith('area_') and '_corner_' in hit.object_name:
                     area_id = hit.object_name.split('_')[1]
                     area = self.path_planner.areas[area_id]
                     distances = [point.distance(target) for point in area.outline]
