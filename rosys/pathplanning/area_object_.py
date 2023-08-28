@@ -1,7 +1,8 @@
 from typing import Optional
 
-from nicegui.elements.scene_objects import Group
+from nicegui.elements.scene_objects import Group, Object3D
 
+from .area import Area
 from .area_manipulation import AreaManipulation, AreaManipulationMode
 from .path_planner import PathPlanner
 
@@ -17,16 +18,24 @@ class AreaObject(Group):
         self.path_planner = path_planner
         self.area_manipulation = area_manipulation
 
-        path_planner.AREAS_CHANGED.register_ui(lambda _: self.update())
+        path_planner.AREAS_CHANGED.register_ui(self.update)
         if area_manipulation:
             area_manipulation.MODE_CHANGED.register_ui(lambda _: self.update())
 
         self.update()
 
-    def update(self) -> None:
-        self.scene.delete_objects(lambda obj: (obj.name or '').startswith('area_'))
+    def update(self, areas: Optional[list[Area]] = None) -> None:
+        area_ids = [area.id for area in areas] if areas else []
+
+        def should_remove(obj: Object3D) -> bool:
+            words = (obj.name or '').split('_')
+            return (words[0] == 'area') and not (area_ids and words[1] not in area_ids)
+        self.scene.delete_objects(should_remove)
 
         for area in self.path_planner.areas.values():
+            if area_ids and area.id not in area_ids:
+                continue
+
             if area.closed:
                 outline = [[point.x, point.y] for point in area.outline]
             else:

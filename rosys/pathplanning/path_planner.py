@@ -35,7 +35,7 @@ class PathPlanner:
         self.OBSTACLES_CHANGED = Event()
         """the obstacles have changed (argument: dictionary of obstacles)"""
         self.AREAS_CHANGED = Event()
-        """the areas have changed (argument: dictionary of areas)"""
+        """the areas have changed (argument: list of areas that have changed, can be None for all areas)"""
 
         rosys.on_startup(self.startup)
         rosys.on_shutdown(self.shutdown)
@@ -54,7 +54,7 @@ class PathPlanner:
     def restore(self, data: dict[str, Any]) -> None:
         persistence.replace_dict(self.obstacles, Obstacle, data.get('obstacles', {}))
         persistence.replace_dict(self.areas, Area, data.get('areas', {}))
-        self.AREAS_CHANGED.emit(self.areas)
+        self.AREAS_CHANGED.emit(None)
         self.OBSTACLES_CHANGED.emit(self.obstacles)
 
     def invalidate(self) -> None:

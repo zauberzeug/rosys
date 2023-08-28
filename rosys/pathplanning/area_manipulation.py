@@ -85,14 +85,14 @@ class AreaManipulation:
             return
 
         self.active_area.outline.append(point)
-        self._emit_change_event()
+        self._emit_change_event(self.active_area)
 
     def delete_area(self, point: Point) -> None:
         for area in self.path_planner.areas.values():
             if area.contains(point):
                 self.path_planner.areas.pop(area.id)
                 self.active_area = None
-                self._emit_change_event()
+                self._emit_change_event(area)
                 return
         if not self.path_planner.areas:
             self.mode = AreaManipulationMode.IDLE
@@ -102,7 +102,7 @@ class AreaManipulation:
         if not area.outline:
             self.path_planner.areas.pop(area.id)
             self.active_area = None
-        self._emit_change_event()
+        self._emit_change_event(area)
 
     def undo(self) -> None:
         if not self.can_undo:
@@ -112,12 +112,12 @@ class AreaManipulation:
         if not self.active_area.outline:
             self.path_planner.areas.pop(self.active_area.id)
             self.active_area = None
-        self._emit_change_event()
+        self._emit_change_event(self.active_area)
 
     def cancel(self) -> None:
         if self.active_area:
             self.path_planner.areas.pop(self.active_area.id)
-            self._emit_change_event()
+            self._emit_change_event(self.active_area)
         self.active_area = None
         self.mode = AreaManipulationMode.IDLE
 
@@ -130,7 +130,7 @@ class AreaManipulation:
                 rosys.notify('Edges must not intersect!', type='negative')
                 return False
             self.active_area.closed = True
-            self._emit_change_event()
+            self._emit_change_event(self.active_area)
         self.active_area = None
         return True
 
@@ -177,8 +177,8 @@ class AreaManipulation:
                 rosys.notify('Edges must not intersect!', type='negative')
             else:
                 area.outline.insert(new_index, new_point)
-        self._emit_change_event()
+        self._emit_change_event(None)  # TODO: pass area when https://github.com/zauberzeug/nicegui/issues/1505 is fixed
 
-    def _emit_change_event(self) -> None:
-        self.path_planner.AREAS_CHANGED.emit(self.path_planner.areas)
+    def _emit_change_event(self, area: Optional[Area] = None) -> None:
+        self.path_planner.AREAS_CHANGED.emit([area] if area else None)
         self.path_planner.invalidate()
