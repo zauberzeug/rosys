@@ -18,19 +18,15 @@ class AreaManipulationMode(Enum):
     EDIT = 'Edit'
     DELETE = 'Delete'
 
-# TODO
-# - create areas of different types/colors
-# - allow adjusting the sphere size
-# - translation
-
 
 class Translator:
     Edit = 'Edit'
     Delete = 'Delete'
     Cancel = 'Cancel'
     Done = 'Done'
-    Undo = 'Undo'
-    Area_type = 'Area type'
+    Remove_last_point = 'Remove last point'
+    Edges_must_not_intersect = 'Edges must not intersect'
+    Areas_must_have_at_least_3_points = 'Areas must have at least 3 points'
 
 
 class AreaManipulation:
@@ -66,7 +62,7 @@ class AreaManipulation:
                 .bind_visibility_from(area_toggle, 'value', bool)
             ui.button(icon='undo', on_click=self.undo) \
                 .props('outline') \
-                .tooltip(t.Undo) \
+                .tooltip(t.Remove_last_point) \
                 .bind_visibility_from(self, 'can_undo')
         return row
 
@@ -81,7 +77,7 @@ class AreaManipulation:
             self.active_area = area
 
         if self.active_area.would_cause_self_intersection(point):
-            rosys.notify('Edges must not intersect!', type='negative')
+            rosys.notify(self.translator.Edges_must_not_intersect, type='negative')
             return
 
         self.active_area.outline.append(point)
@@ -124,10 +120,10 @@ class AreaManipulation:
     def try_close_active_area(self) -> bool:
         if self.active_area:
             if len(self.active_area.outline) < 3:
-                rosys.notify('Areas must have at least 3 points!', type='negative')
+                rosys.notify(self.translator.Areas_must_have_at_least_3_points, type='negative')
                 return False
             if self.active_area.would_cause_self_intersection(self.active_area.outline[0]):
-                rosys.notify('Edges must not intersect!', type='negative')
+                rosys.notify(self.translator.Edges_must_not_intersect, type='negative')
                 return False
             self.active_area.closed = True
             self._emit_change_event(self.active_area)
@@ -167,14 +163,14 @@ class AreaManipulation:
         if type_ == 'corner':
             old_point = area.outline.pop(point_index)
             if area.would_cause_self_intersection(new_point, point_index):
-                rosys.notify('Edges must not intersect!', type='negative')
+                rosys.notify(self.translator.Edges_must_not_intersect, type='negative')
                 area.outline.insert(point_index, old_point)
             else:
                 area.outline.insert(point_index, new_point)
         elif type_ == 'mid':
             new_index = point_index + 1
             if area.would_cause_self_intersection(new_point, new_index):
-                rosys.notify('Edges must not intersect!', type='negative')
+                rosys.notify(self.translator.Edges_must_not_intersect, type='negative')
             else:
                 area.outline.insert(new_index, new_point)
         self._emit_change_event(None)  # TODO: pass area when https://github.com/zauberzeug/nicegui/issues/1505 is fixed
