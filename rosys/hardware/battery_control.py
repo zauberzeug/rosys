@@ -28,6 +28,6 @@ class BatteryControlHardware(ModuleHardware):
     async def release_battery_relay(self) -> None:
         self.log.info('releasing battery relay')
         await rosys.sleep(1)
-        await self.robot_brain.send('battery_reset.on()')
+        await self.robot_brain.send(f'{self.name}_reset.on()')
         await rosys.sleep(0.5)
-        await self.robot_brain.send('battery_reset.off()')
+        await self.robot_brain.send(f'{self.name}_reset.off()')
