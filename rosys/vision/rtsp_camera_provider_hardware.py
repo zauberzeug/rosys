@@ -202,11 +202,15 @@ class RtspCameraProviderHardware(CameraProvider):
             ip = camera.url.split('@')[1].split('/')[0]
             url = f'http://{ip}/cgi-bin/snapshot.cgi'
             response = requests.get(url, auth=HTTPDigestAuth('admin', 'Adminadmin'))
+            if response.status_code != 200:
+                self.log.warning(
+                    f'could not get snapshot from {url}, status code {response.status_code}:\n {response.content}')
+                return None
             image = Image(camera_id=camera.id, data=response.content,
                           time=rosys.time(), size=ImageSize(width=3840, height=2160))
             camera.images.append(image)
             return image
-        except:
+        except Exception:
             return None
 
 
