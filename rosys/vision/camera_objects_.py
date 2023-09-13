@@ -27,6 +27,7 @@ class CameraObjects(Group):
         self.px_per_m = px_per_m
         self.debug = debug
         self.textures: dict[str, Texture] = {}
+        self.image_shrink_factor = 2
 
         ui.timer(1.0, self.update)
 
@@ -95,7 +96,7 @@ class CameraObjects(Group):
                 continue
             coordinates = [[point and [point[0], point[1], 0] for point in row] for row in projection.coordinates]
 
-            url = self.camera_provider.get_image_url(image)
+            url = f'{self.camera_provider.get_image_url(image)}?shrink={self.image_shrink_factor}'
             if image.camera_id not in self.textures:
                 with self:
                     self.textures[image.camera_id] = Texture(url, coordinates).with_name(f'image_{image.id}')
