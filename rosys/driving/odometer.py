@@ -47,7 +47,7 @@ class Odometer:
             step = PoseStep(linear=dt*velocity.linear, angular=dt*velocity.angular, time=velocity.time)
             self.history.append(self.history[-1] + step)
 
-            if step.linear or step.angular:
+            if step.linear > 0.01 or step.angular > 0.01:
                 robot_moved = True
 
         if self.history:
