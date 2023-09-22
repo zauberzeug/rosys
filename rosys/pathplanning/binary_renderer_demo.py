@@ -24,7 +24,7 @@ t = time.time()
 renderer.polygon(polygon_outline)
 ui.label(f'polygon: {(time.time() - t) * 1000:.3f} ms')
 
-with ui.plot():
+with ui.pyplot():
     pl.imshow(renderer.map, cmap=pl.cm.gray, interpolation='nearest')
     pl.xlim(0, renderer.map.shape[1] - 1)
     pl.ylim(renderer.map.shape[0] - 1, 0)

@@ -1,38 +1,34 @@
 import asyncio
 import logging
-import os
 import socket
+from pathlib import Path
 
 from nicegui import ui
 
 log = logging.getLogger('rosys.wifi')
 
+IP_ADDRESS_LIST = [
+    '1.1.1.1',  # Cloudflare
+    '1.0.0.1',
+    '8.8.8.8',  # Google DNS
+    '8.8.4.4',
+    '208.67.222.222',  # Open DNS
+    '208.67.220.220',
+]
+PORT = 53
+
 
 def has_internet() -> bool:
     """Returns True if there's a connection"""
-
-    IP_ADDRESS_LIST = [
-        '1.1.1.1',  # Cloudflare
-        '1.0.0.1',
-        '8.8.8.8',  # Google DNS
-        '8.8.4.4',
-        '208.67.222.222',  # Open DNS
-        '208.67.220.220',
-    ]
-
-    port = 53
-    timeout = 3
-
     for host in IP_ADDRESS_LIST:
         try:
-            socket.setdefaulttimeout(timeout)
-            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, port))
+            socket.setdefaulttimeout(3)
+            socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, PORT))
             return True
         except socket.error:
             pass
-    else:
-        log.warning('No internet connection')
-        return False
+    log.warning('No internet connection')
+    return False
 
 
 class WifiButton(ui.button):
@@ -53,17 +49,16 @@ class WifiButton(ui.button):
 
     def add(self) -> None:
         log.info(f'adding {self.ssid.value}, {self.password.value}')
-        wifi_configs = os.path.expanduser(f'~/.rosys/wifi')
-        os.makedirs(wifi_configs, exist_ok=True)
         # NOTE a daemon on the host system must watch the .rosys/wifi dir and reload the configuration with nmcli or similar
-        with open(f'{wifi_configs}/{self.ssid.value}', 'w') as f:
-            f.write(self.password.value)
+        config = Path('~/.rosys/wifi').expanduser() / self.ssid.value
+        config.mkdir(parents=True, exist_ok=True)
+        config.write_text(self.password.value)
         self.dialog.close()
 
     async def update_wifi_status(self) -> None:
         if await asyncio.get_event_loop().run_in_executor(None, has_internet):
             self.props('color=green')
-            self.status.set_text(f'Robot is connected to the internet.')
+            self.status.set_text('Robot is connected to the internet.')
         else:
             self.props('color=red')
-            self.status.set_text(f'Robot is not connected to the internet.')
+            self.status.set_text('Robot is not connected to the internet.')

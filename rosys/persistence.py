@@ -1,9 +1,9 @@
 import json
 import logging
-import os
 import sys
 from dataclasses import fields
-from typing import Any, Callable, Optional, Protocol, TypeVar
+from pathlib import Path
+from typing import Any, Callable, Optional, Protocol
 
 import numpy as np
 from dataclasses_json import Exclude, config
@@ -15,7 +15,7 @@ from starlette.responses import FileResponse
 from .helpers import invoke
 from .run import awaitable
 
-exclude = config(exclude=Exclude.ALWAYS)
+exclude: dict[str, dict] = config(exclude=Exclude.ALWAYS)
 
 
 def to_dict(obj: Any) -> dict[str, Any]:
@@ -26,16 +26,13 @@ def from_dict(cls: type, d: dict[str, Any]) -> Any:
     return _decode_dataclass(cls, d, False)
 
 
-T = TypeVar('T')
-
-
-def replace_dict(old_dict: dict[str, T], cls: type, new_dict: dict[str, T]) -> None:
+def replace_dict(old_dict: dict[str, Any], cls: type, new_dict: dict[str, Any]) -> None:
     """Replace content of `old_dict` with keys and values from `new_dict`."""
     old_dict.clear()
     old_dict.update({key: from_dict(cls, value) for key, value in new_dict.items()})
 
 
-def replace_list(old_list: list[T], cls: type, new_list: list[T]) -> None:
+def replace_list(old_list: list[Any], cls: type, new_list: list[Any]) -> None:
     """Replace content of `old_list` with items from `new_list`."""
     old_list.clear()
     old_list.extend(from_dict(cls, value) for value in new_list)
@@ -47,7 +44,7 @@ def replace_dataclass(old_dataclass: Any, new_dict: dict[str, Any]) -> None:
         setattr(old_dataclass, field.name, new_dict.get(field.name))
 
 
-backup_path = os.path.expanduser('~/.rosys')
+backup_path = Path('~/.rosys').expanduser()
 log = logging.getLogger('rosys.persistence')
 
 is_test = 'pytest' in sys.modules
@@ -72,10 +69,11 @@ def register(module: PersistentModule) -> None:
 
 
 class Encoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, np.floating):
-            return float(obj)
-        return json.JSONEncoder.default(self, obj)
+
+    def default(self, o):
+        if isinstance(o, np.floating):
+            return float(o)
+        return json.JSONEncoder.default(self, o)
 
 
 @awaitable
@@ -83,32 +81,30 @@ def backup(force: bool = False) -> None:
     for name, module in modules.items():
         if not module.needs_backup and not force:
             continue
-        if not os.path.exists(backup_path):
-            os.makedirs(backup_path)
-        filepath = f'{backup_path}/{name}.json'
-        with open(filepath, 'w') as f:
-            json.dump(module.backup(), f, indent=4, cls=Encoder)
+        if not backup_path.exists():
+            backup_path.mkdir(parents=True)
+        filepath = backup_path / f'{name}.json'
+        filepath.write_text(json.dumps(module.backup(), indent=4, cls=Encoder))
         module.needs_backup = False
 
 
 def restore() -> None:
     for name, module in modules.items():
-        filepath = f'{backup_path}/{name}.json'
-        if not os.path.exists(filepath):
+        filepath = backup_path / f'{name}.json'
+        if not filepath.exists():
             log.warning(f'Backup file "{filepath}" not found.')
             continue
-        with open(filepath) as f:
-            try:
-                module.restore(json.load(f))
-            except Exception:
-                log.exception(f'failed to restore {module}')
+        try:
+            module.restore(json.loads(filepath.read_text()))
+        except Exception:
+            log.exception(f'failed to restore {module}')
 
 
-def export_button(title: str = 'Export', route: str = '/export', tmp_filepath: str = '/tmp/export.json') -> ui.button:
+def export_button(title: str = 'Export', route: str = '/export', tmp_filepath: Path = Path('/tmp/export.json')) -> ui.button:
     @app.get(route)
     def get_export() -> FileResponse:
-        with open(tmp_filepath, 'w') as f:
-            json.dump({name: module.backup() for name, module in modules.items()}, f, indent=4)
+        data = {name: module.backup() for name, module in modules.items()}
+        tmp_filepath.write_text(json.dumps(data, indent=4))
         return FileResponse(tmp_filepath, filename='export.json')
     return ui.button(title, on_click=lambda: ui.download(route[1:]))
 
@@ -121,7 +117,8 @@ def import_button(title: str = 'Import', after_import: Optional[Callable] = None
             modules[name].restore(data)
         await backup(force=True)
         dialog.close()
-        await invoke(after_import)
+        if after_import is not None:
+            await invoke(after_import)
     with ui.dialog() as dialog, ui.card():
         ui.upload(on_upload=restore_from_file)
     return ui.button(title, on_click=dialog.open)

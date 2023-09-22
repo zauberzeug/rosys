@@ -65,6 +65,8 @@ def run() -> None:
         pt.show_obstacle_map(planner.obstacle_map)
         pl.gca().invert_yaxis()
         pl.autoscale(False)
+        assert planner.tri_points is not None
+        assert planner.tri_mesh is not None
         pl.triplot(planner.tri_points[:, 0], planner.tri_points[:, 1], planner.tri_mesh.simplices, lw=0.1)
 
         pt.plot_path(path, 'C1')
@@ -78,7 +80,7 @@ def run() -> None:
 
 
 with ui.row():
-    plot = ui.plot(figsize=(8, 8))
+    plot = ui.pyplot(figsize=(8, 8))
     with ui.column():
         ui.button('Re-run', on_click=run).props('icon=replay outline')
         ui.label(demo)

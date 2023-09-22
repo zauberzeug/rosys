@@ -22,7 +22,7 @@ class BatteryControlHardware(ModuleHardware):
         core_message_fields = [f'{self.name}_status.level']
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
-    def handle_core_output(self, time: float, words: list[str]) -> None:
+    def handle_core_output(self, _: float, words: list[str]) -> None:
         self.status = int(words.pop(0)) == 1
 
     async def release_battery_relay(self) -> None:

@@ -121,7 +121,7 @@ class Driver:
             if drive_backward and not self.parameters.can_drive_backwards:
                 drive_backward = False
                 curvature = (-1 if curvature > 0 else 1) / max(self.parameters.minimum_turning_radius, 0.001)
-            linear = -1 if drive_backward else 1
+            linear: float = -1 if drive_backward else 1
             t = spline.closest_point(hook.x, hook.y)
             if t >= 1.0 and throttle_at_end:
                 target_distance = self.odometer.prediction.projected_distance(spline.pose(1.0))
@@ -163,12 +163,11 @@ class Driver:
     def throttle_factor(self) -> float:
         if self.parameters.max_detection_age_ramp is None:
             return 1
-        elif self.odometer.detection is None:
+        if self.odometer.detection is None:
             return 0
-        else:
-            age_ramp = self.parameters.max_detection_age_ramp
-            age = rosys.time() - self.odometer.detection.time
-            return ramp(age, age_ramp[0], age_ramp[1], 1.0, 0.0, clip=True)
+        age_ramp = self.parameters.max_detection_age_ramp
+        age = rosys.time() - self.odometer.detection.time
+        return ramp(age, age_ramp[0], age_ramp[1], 1.0, 0.0, clip=True)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -181,12 +180,11 @@ class Carrot:
     def pose(self) -> Pose:
         if self.t < 1.0:
             return self.spline.pose(self.t)
-        else:
-            return Pose(
-                x=self.spline.x(1.0) + (self.t - 1.0) * self.spline.gx(1.0),
-                y=self.spline.y(1.0) + (self.t - 1.0) * self.spline.gy(1.0),
-                yaw=self.spline.yaw(1.0),
-            )
+        return Pose(
+            x=self.spline.x(1.0) + (self.t - 1.0) * self.spline.gx(1.0),
+            y=self.spline.y(1.0) + (self.t - 1.0) * self.spline.gy(1.0),
+            yaw=self.spline.yaw(1.0),
+        )
 
     @property
     def offset_point(self) -> Point:

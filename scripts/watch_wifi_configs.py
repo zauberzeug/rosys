@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-import os.path
 import subprocess
 import time
-from watchdog.observers import Observer
+from pathlib import Path
+
 from watchdog.events import FileSystemEvent, FileSystemEventHandler
+from watchdog.observers import Observer
+
+PATH = Path('~/.rosys/wifi').expanduser()
 
 
 def nmcli(cmd: str) -> None:
@@ -11,12 +14,10 @@ def nmcli(cmd: str) -> None:
     subprocess.Popen(cmd, shell=True)
 
 
-def apply_wifi_configurations(dir: str, interface: str = 'wlan0') -> None:
-    for network in os.scandir(dir):
-        with open(network.path) as f:
-            password = f.read()
-
-        ssid = network.name
+def apply_wifi_configurations(interface: str = 'wlan0') -> None:
+    for filepath in PATH.glob('*'):
+        ssid = filepath.name
+        password = filepath.read_text()
         print(f'creating new network {ssid}')
         nmcli(f'down "{ssid}"')
         nmcli(f'del "{ssid}"')
@@ -27,16 +28,15 @@ def apply_wifi_configurations(dir: str, interface: str = 'wlan0') -> None:
 
 
 class WifiChangedEventHandler(FileSystemEventHandler):
-    def on_any_event(self, event: FileSystemEvent):
-        apply_wifi_configurations(os.path.dirname(event.src_path))
+
+    def on_any_event(self, _: FileSystemEvent) -> None:
+        apply_wifi_configurations()
 
 
 if __name__ == '__main__':
-
-    path = os.path.expanduser('/home/zauberzeug/.rosys/wifi')
-    apply_wifi_configurations(path)
+    apply_wifi_configurations()
     observer = Observer()
-    observer.schedule(WifiChangedEventHandler(), path, recursive=False)
+    observer.schedule(WifiChangedEventHandler(), PATH)
     observer.start()
     try:
         while True:

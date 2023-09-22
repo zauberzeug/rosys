@@ -1,7 +1,7 @@
 class BmsMessage:
 
-    def __init__(self, bytes: list[int]):
-        self.bytes = bytes
+    def __init__(self, bytes_: list[int]) -> None:
+        self.bytes = bytes_
         self.cursor = -1
 
     @property

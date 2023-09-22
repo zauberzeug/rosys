@@ -26,7 +26,7 @@ class SerialCommunication(Communication):
         super().__init__()
         self.device_path = self.get_device_path()
         if self.device_path is None:
-            raise Exception('No serial port found')
+            raise FileNotFoundError('No serial port found')
         self.log.debug(f'connecting serial on {self.device_path} with baud rate {baud_rate}')
         self.serial = serial.Serial(self.device_path, baud_rate)
         self.buffer = ''
@@ -71,12 +71,12 @@ class SerialCommunication(Communication):
             self.log.exception(f'Could not decode serial data: {s}')
         return None
 
-    async def send(self, line: str) -> None:
+    async def send(self, msg: str) -> None:
         if not self.serial.isOpen():
             return
-        self.serial.write(f'{line}\n'.encode())
+        self.serial.write(f'{msg}\n'.encode())
         if self.log_io:
-            self.log.debug(f'send: {line}')
+            self.log.debug(f'send: {msg}')
 
     def debug_ui(self) -> None:
         super().debug_ui()

@@ -22,7 +22,7 @@ class ObstacleMap:
         self.stack = np.zeros(grid.size, dtype=bool)
         self.dist_stack = np.zeros(self.stack.shape)
         for layer in range(grid.size[2]):
-            _, _, yaw = grid.from_grid(0, 0, layer)
+            _, _, yaw = grid.from_3d_grid(0, 0, layer)
             kernel = robot_renderer.render(grid.pixel_size, yaw).astype(np.uint8)
             self.stack[:, :, layer] = cv2.dilate(self.map.astype(np.uint8), kernel)
             self.dist_stack[:, :, layer] = \
@@ -64,19 +64,20 @@ class ObstacleMap:
         return ObstacleMap(grid, binary_renderer.map, robot_renderer, deadline)
 
     def test(self, x, y, yaw):
-        row, col, layer = self.grid.to_grid(x, y, yaw)
+        row, col, layer = self.grid.to_3d_grid(x, y, yaw)
         return ndimage.map_coordinates(self.stack, [[row], [col], [layer]], order=0)
 
     t_lookup = [np.linspace(0, 1, i) for i in range(360)]
 
     def _create_poses(self, spline, backward) -> tuple:
-        def pose(t): return (
-            spline.x(t),
-            spline.y(t),
-            spline.yaw(t) + [0, np.pi][backward],
-        )
-        row0, col0, layer0 = self.grid.to_grid(*pose(0.0))
-        row1, col1, layer1 = self.grid.to_grid(*pose(1.0))
+        def pose(t: float) -> tuple[float, float, float]:
+            return (
+                spline.x(t),
+                spline.y(t),
+                spline.yaw(t) + [0, np.pi][backward],
+            )
+        row0, col0, layer0 = self.grid.to_3d_grid(*pose(0.0))
+        row1, col1, layer1 = self.grid.to_3d_grid(*pose(1.0))
         num_rows = int(abs(row1 - row0))
         num_cols = int(abs(col1 - col0))
         num_layers = int(abs(layer1 - layer0))
@@ -88,7 +89,7 @@ class ObstacleMap:
         return self.test(*self._create_poses(spline, backward)).any()
 
     def get_distance(self, x, y, yaw) -> np.ndarray:
-        row, col, layer = self.grid.to_grid(x, y, yaw)
+        row, col, layer = self.grid.to_3d_grid(x, y, yaw)
         return ndimage.map_coordinates(self.dist_stack, [[row], [col], [layer]], order=0)
 
     def get_minimum_spline_distance(self, spline, backward=False) -> float:

@@ -50,4 +50,5 @@ class Rotation:
         return self.__str__()
 
     def __str__(self) -> str:
-        return '%6.1f %6.1f %6.1f' % tuple(np.round(np.rad2deg(self.euler), 2))
+        omega, phi, kappa = np.round(np.rad2deg(self.euler), 2)
+        return f'{omega:6.1f} {phi:6.1f} {kappa:6.1f}'

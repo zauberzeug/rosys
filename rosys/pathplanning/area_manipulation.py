@@ -31,15 +31,15 @@ class Translator:
 
 class AreaManipulation:
     mode = binding.BindableProperty(on_change=lambda sender, value: sender.MODE_CHANGED.emit(value))
-    area_type = binding.BindableProperty()
-    area_color = binding.BindableProperty()
+    area_type: Optional[str] = binding.BindableProperty()
+    area_color: str = binding.BindableProperty()
 
     def __init__(self, path_planner: PathPlanner, translator: Optional[Translator] = None) -> None:
         self.path_planner = path_planner
         self.active_area: Optional[Area] = None
         self.mode = AreaManipulationMode.IDLE
-        self.area_type: Optional[str] = None
-        self.area_color: str = 'green'
+        self.area_type = None
+        self.area_color = 'green'
         self.translator = translator or Translator()
 
         self.MODE_CHANGED = Event()
@@ -148,7 +148,7 @@ class AreaManipulation:
                     area_id = hit.object_name.split('_')[1]
                     area = self.path_planner.areas[area_id]
                     distances = [point.distance(target) for point in area.outline]
-                    point_index = np.argmin(distances)
+                    point_index = int(np.argmin(distances))
                     if area is self.active_area and point_index == 0:
                         self.try_close_active_area()
                     else:

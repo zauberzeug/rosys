@@ -20,7 +20,7 @@ class RobotObject(Group):
         self.shape = shape
         self.odometer = odometer
         with self:
-            outline = list(map(list, self.shape.outline))
+            outline = [list(point) for point in self.shape.outline]
             self.robot_object = Extrusion(outline, self.shape.height, wireframe=debug)
             self.robot_object.material('#4488ff', 0.5)
         ui.timer(config.ui_update_interval, self.update)

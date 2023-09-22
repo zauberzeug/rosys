@@ -1,34 +1,37 @@
+import functools
 import logging
 import logging.config
-import os
+import os.path
 import sys
+from typing import Optional
 
 import coloredlogs
 import icecream
 
 import rosys
 
+ABS_SYS_PATHS = sorted((os.path.abspath(p) + os.path.pathsep for p in sys.path), key=len, reverse=True)
+
 
 class PackagePathFilter(logging.Filter):
 
     # https://stackoverflow.com/a/52582536/3419103
-    def filter(self, record: logging.LogRecord) -> bool:
-        pathname = record.pathname
-        record.relative_path = None
-        abs_sys_paths = map(os.path.abspath, sys.path)
-        for path in sorted(abs_sys_paths, key=len, reverse=True):  # longer paths first
-            if not path.endswith(os.sep):
-                path += os.sep
+    @functools.lru_cache(maxsize=100)
+    def find_relative_path(self, pathname: str) -> Optional[str]:
+        for path in ABS_SYS_PATHS:
             if pathname.startswith(path):
-                record.relative_path = os.path.relpath(pathname, path)
-                break
+                return os.path.relpath(pathname, path)
+        return None
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.relative_path = self.find_relative_path(record.pathname)
         return True
 
 
 class RosysFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
-        from rosys.test.helpers import odometer as odo
+        from rosys.test.helpers import odometer as odo  # pylint: disable=import-outside-toplevel
         if odo:
             record.rosys_time = rosys.time()
             record.robot_pose = f'{odo.prediction.x:.2f}, {odo.prediction.y:1.2f}, {odo.prediction.yaw_deg:1.2f}'
@@ -47,8 +50,8 @@ def setup() -> None:
         'formatters': {
             'default': {
                 '()': coloredlogs.ColoredFormatter,
-                'format': '%(rosys_time).2f [%(levelname)s] %(robot_pose)s %(relative_path)s:%(lineno)d: %(message)s',
-                'datefmt': '%Y-%m-%d %H:%M:%S',
+                'format': r'%(rosys_time).2f [%(levelname)s] %(robot_pose)s %(relative_path)s:%(lineno)d: %(message)s',
+                'datefmt': r'%Y-%m-%d %H:%M:%S',
             },
         },
         'filters': {

@@ -28,30 +28,35 @@ async def forward(seconds: Optional[float] = None,
                   timeout: float = 100):
     start_time = rosys.time()
     if seconds is not None:
+        def condition():
+            return rosys.time() >= start_time + seconds
         msg = f'forwarding {seconds=}'
-        def condition(): return rosys.time() >= start_time + seconds
         timeout = max(timeout, seconds)
-    elif isinstance(until, int) or isinstance(until, float):
+    elif isinstance(until, (int, float)):
+        def condition():
+            return rosys.time() >= until
         msg = f'forwarding {until=}'
-        def condition(): return rosys.time() >= until
         timeout = max(timeout, until - start_time)
-    elif isinstance(until, Callable):
+    elif callable(until):
         msg = f'forwarding {until=}'
         condition = until
     elif x is not None and y is not None:
-        assert odometer is not None
+        def condition():
+            assert odometer is not None
+            return (odometer.prediction.x - x)**2 + (odometer.prediction.y - y)**2 < tolerance**2
         msg = f'forwarding to {x=} and {y=}'
-        def condition(): return (odometer.prediction.x - x)**2 + (odometer.prediction.y - y)**2 < tolerance**2
     elif x is not None:
-        assert odometer is not None
+        def condition():
+            assert odometer is not None
+            return abs(odometer.prediction.x - x) < tolerance
         msg = f'forwarding to {x=}'
-        def condition(): return abs(odometer.prediction.x - x) < tolerance
     elif y is not None:
-        assert odometer is not None
+        def condition():
+            assert odometer is not None
+            return abs(odometer.prediction.y - y) < tolerance
         msg = f'forwarding to {y=}'
-        def condition(): return abs(odometer.prediction.y - y) < tolerance
     else:
-        raise Exception('invalid arguments')
+        raise ValueError('invalid arguments')
 
     log.info(f'\033[94m{msg}\033[0m')
     while not condition():
@@ -62,11 +67,12 @@ async def forward(seconds: Optional[float] = None,
             await asyncio.sleep(0)
         else:
             await asyncio.sleep(0.01)
-        if rosys._exception is not None:
-            raise RuntimeError(f'error while forwarding time {dt} s') from rosys._exception
+        exception = rosys.get_last_exception()
+        if exception is not None:
+            raise RuntimeError(f'error while forwarding time {dt} s') from exception
 
 
-def assert_pose(x: float, y: float, *, deg: float = None, position_tolerance: float = 0.1, deg_tolerance: float = 1.0) -> None:
+def assert_pose(x: float, y: float, *, deg: Optional[float] = None, position_tolerance: float = 0.1, deg_tolerance: float = 1.0) -> None:
     assert odometer is not None
     assert odometer.prediction.x == pytest.approx(x, abs=position_tolerance)
     assert odometer.prediction.y == pytest.approx(y, abs=position_tolerance)
@@ -75,10 +81,10 @@ def assert_pose(x: float, y: float, *, deg: float = None, position_tolerance: fl
 
 
 def assert_point(actual: Point | Point3d, expected: Point | Point3d, tolerance=0.1) -> None:
-    assert type(actual) == type(expected)
+    assert type(actual) == type(expected)  # pylint: disable=unidiomatic-typecheck
     assert actual.x == pytest.approx(expected.x, abs=tolerance)
     assert actual.y == pytest.approx(expected.y, abs=tolerance)
-    if type(actual) is Point3d:
+    if isinstance(actual, Point3d) and isinstance(expected, Point3d):
         assert actual.z == pytest.approx(expected.z, abs=tolerance)
 
 
@@ -88,7 +94,10 @@ async def automate_drive_to(x: float, y: float) -> None:
     automator.start(driver.drive_to(Point(x=x, y=y)))
 
 
-def approx(o1: Any, o2: Any, *, rel: Optional[float] = None, abs: Optional[float] = None, nan_ok: bool = False) -> None:
+def approx(o1: Any, o2: Any, *,
+           rel: Optional[float] = None,
+           abs: Optional[float] = None,  # pylint: disable=redefined-builtin
+           nan_ok: bool = False) -> None:
     if hasattr(o1, '__dict__'):
         assert sorted(o1.__dict__) == sorted(o2.__dict__)
         for key, value in o1.__dict__.items():

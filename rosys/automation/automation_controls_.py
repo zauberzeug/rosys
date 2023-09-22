@@ -11,11 +11,11 @@ class AutomationControls:
     """
 
     def __init__(self, automator: Automator) -> None:
-        play_button = ui.button(on_click=lambda: automator.start()) \
+        play_button = ui.button(on_click=automator.start) \
             .props('icon=play_arrow unelevated').tooltip('start automation')
         pause_button = ui.button(on_click=lambda: automator.pause(because='pause button was pressed')) \
             .props('icon=pause outline').tooltip('pause automation')
-        resume_button = ui.button(on_click=lambda: automator.resume()) \
+        resume_button = ui.button(on_click=automator.resume) \
             .props('icon=play_arrow outline').tooltip('resume automation')
         stop_button = ui.button(on_click=lambda: automator.stop(because='stop button was pressed')) \
             .props('icon=stop outline').tooltip('stop automation')

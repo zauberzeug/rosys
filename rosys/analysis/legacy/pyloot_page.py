@@ -10,7 +10,7 @@ class PylootPage():
     def __init__(self) -> None:
         self.pyloot = PyLoot(server=PyLootServer(disable_response_gzip=True))  # gzip is done by starlette
         ui.timer(30, self.pyloot.collect_objects)
-        ui.add_route(Mount('/pyloot', app=WSGIMiddleware(self.pyloot_wrapper)))
+        Mount('/pyloot', app=WSGIMiddleware(self.pyloot_wrapper))
 
     def pyloot_wrapper(self, wsgi_environ, start_response):
         pyloot_environ = wsgi_environ.copy()

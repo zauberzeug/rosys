@@ -46,8 +46,8 @@ class WebCommunication(Communication):
             return self.buffer.pop()
         return None
 
-    async def send(self, line: str) -> None:
-        await self.sio.emit('write', line)
+    async def send(self, msg: str) -> None:
+        await self.sio.emit('write', msg)
 
     async def tear_down(self) -> None:
         await self.sio.disconnect()

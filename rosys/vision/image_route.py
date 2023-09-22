@@ -51,11 +51,10 @@ async def _try_get_jpeg(camera: Camera, timestamp: str, shrink: int) -> Optional
                     return
                 jpeg = await run.cpu_bound(_shrink, shrink, array)
             return jpeg
+    return None
 
 
 def _shrink(factor: int, array: np.ndarray) -> bytes:
     decoded = cv2.imdecode(array, cv2.IMREAD_COLOR)
-    if decoded is None:
-        return
     img = decoded[::factor, ::factor]
     return cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 60])[1].tobytes()

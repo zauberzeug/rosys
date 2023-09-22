@@ -55,7 +55,7 @@ class Pose:
         return Pose(x=M[0, -1], y=M[1, -1], yaw=np.arctan2(M[1, 0], M[0, 0]), time=time)
 
     def __str__(self) -> str:
-        return '%.3f, %.3f, %.1f deg' % (self.x, self.y, self.yaw_deg)
+        return f'{self.x:.3f}, {self.y:.3f}, {self.yaw_deg:.1f} deg'
 
     def distance(self, other: Pose) -> float:
         return float(np.sqrt((other.x - self.x)**2 + (other.y - self.y)**2))

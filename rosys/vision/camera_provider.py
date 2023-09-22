@@ -1,6 +1,6 @@
 import abc
 import urllib.parse
-from typing import Optional
+from typing import Generic, Optional, TypeVar
 from uuid import uuid4
 
 from .. import rosys
@@ -9,8 +9,10 @@ from .camera import Camera
 from .image import Image
 from .image_route import create_image_route
 
+T = TypeVar('T', bound=Camera)
 
-class CameraProvider(abc.ABC):
+
+class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
     """A camera provider holds a dictionary of cameras and manages additions and removals.
 
     The camera dictionary should not be modified directly but by using the camera provider's methods.
@@ -32,10 +34,12 @@ class CameraProvider(abc.ABC):
         self.base_path = f'images/{str(uuid4())}'
         create_image_route(self)
 
+        self.needs_backup: bool = False
+
     @property
     @abc.abstractmethod
-    def cameras(self) -> dict[str, Camera]:
-        return {}
+    def cameras(self) -> dict[str, T]:
+        pass
 
     @property
     def images(self) -> list[Image]:
@@ -50,7 +54,7 @@ class CameraProvider(abc.ABC):
             return f'{self.base_path}/placeholder'
         return self.get_image_url(image)
 
-    def add_camera(self, camera: Camera) -> None:
+    def add_camera(self, camera: T) -> None:
         self.cameras[camera.id] = camera
         self.CAMERA_ADDED.emit(camera)
         self.needs_backup = True
@@ -61,14 +65,16 @@ class CameraProvider(abc.ABC):
         self.needs_backup = True
 
     def remove_all_cameras(self) -> None:
-        [self.remove_camera(camera_id) for camera_id in list(self.cameras)]
+        for camera_id in self.cameras:
+            self.remove_camera(camera_id)
 
     def remove_calibration(self, camera_id: str) -> None:
         self.cameras[camera_id].calibration = None
         self.needs_backup = True
 
     def remove_all_calibrations(self) -> None:
-        [self.remove_calibration(camera_id) for camera_id in self.cameras]
+        for camera_id in self.cameras:
+            self.remove_calibration(camera_id)
 
     def add_image(self, camera: Camera, image: Image) -> None:
         camera.images.append(image)

@@ -17,15 +17,15 @@ class parallelize:
         coro_iters = [coro.__await__() for coro in self.coros]
         iter_sends = [coro_iter.send for coro_iter in coro_iters]
         iter_throws = [coro_iter.throw for coro_iter in coro_iters]
-        sends = [iter_send for iter_send in iter_sends]
+        sends = iter_sends[:]
         messages = [None for _ in sends]
         completed = [False for _ in sends]
         while not all(completed):
-            for i in range(len(sends)):
+            for i, send in enumerate(sends):
                 if completed[i]:
                     continue
                 try:
-                    signal = sends[i](messages[i])
+                    signal = send(messages[i])
                 except StopIteration:
                     if self.return_when_first_completed:
                         return

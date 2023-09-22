@@ -70,6 +70,7 @@ class UsbCameraProviderSimulation(CameraProvider):
     @staticmethod
     def create_image_data(camera: UsbCamera) -> bytes:
         size = camera.image_resolution
+        assert size is not None
         img = pil.Image.new('RGB', size=(size.width, size.height), color=camera.color)
         d = pil.ImageDraw.Draw(img)
         text = f'{camera.id}: {time.time()}'

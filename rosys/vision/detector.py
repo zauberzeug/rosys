@@ -10,16 +10,17 @@ from .image import Image
 from .uploads import Uploads
 
 
-class Autoupload(Enum, init='value __doc__'):
+class Autoupload(Enum):
     """Configures the auto-submitting of images to the Learning Loop"""
 
-    def _generate_next_value_(name: str, start, count, last_values) -> str:
-        """uses enum name as value when calling auto()"""
-        return name.lower()
+    FILTERED = auto()
+    """only submit images with novel detections and in an uncertainty range (this is the default)"""
 
-    FILTERED = auto(), 'only submit images with novel detections and in an uncertainty range (this is the default)'
-    DISABLED = auto(), 'no auto-submitting'
-    ALL = auto(), 'submit all images which are run through the detector'
+    DISABLED = auto()
+    """no auto-submitting"""
+
+    ALL = auto()
+    """submit all images which are run through the detector"""
 
 
 class Detector(abc.ABC):
@@ -35,12 +36,13 @@ class Detector(abc.ABC):
 
     @abc.abstractmethod
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Optional[Detections]:
-        return
+        pass
 
     @abc.abstractmethod
     async def upload(self, image: Image) -> None:
         pass
 
     @property
+    @abc.abstractmethod
     def uploads(self) -> Uploads:
-        return
+        pass

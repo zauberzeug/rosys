@@ -10,8 +10,12 @@ from .. import rosys
 from .kpi_buckets import Day, Month
 
 
-def date_to_str(date: date) -> str: return date.isoformat()
-def str_to_date(date: str) -> datetime: return datetime.fromisoformat(date)
+def date_to_str(date_: date) -> str:
+    return date_.isoformat()
+
+
+def str_to_date(date_: str) -> datetime:
+    return datetime.fromisoformat(date_)
 
 
 class KpiLogger:
@@ -49,9 +53,9 @@ class KpiLogger:
             self.needs_backup = True
 
     def today(self) -> Day:
-        date = date_to_str(datetime.utcfromtimestamp(rosys.time()).date())
-        if not self.days or self.days[-1].date != date:
-            self.days.append(Day(date=date))
+        date_ = date_to_str(datetime.utcfromtimestamp(rosys.time()).date())
+        if not self.days or self.days[-1].date != date_:
+            self.days.append(Day(date=date_))
         return self.days[-1]
 
     def increment(self, key: str) -> None:

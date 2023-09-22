@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import logging
 import logging.config
-import os
+import os.path
 import sys
 
 from nicegui import ui
