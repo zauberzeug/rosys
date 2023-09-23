@@ -1,7 +1,7 @@
 import functools
 import logging
 import logging.config
-import os.path
+import os
 import sys
 from typing import Optional
 
@@ -10,7 +10,7 @@ import icecream
 
 import rosys
 
-ABS_SYS_PATHS = sorted((os.path.abspath(p) + os.path.pathsep for p in sys.path), key=len, reverse=True)
+ABS_SYS_PATHS = sorted((os.path.abspath(p) + os.sep for p in sys.path), key=len, reverse=True)
 
 
 class PackagePathFilter(logging.Filter):
