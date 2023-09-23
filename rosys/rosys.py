@@ -8,7 +8,7 @@ import sys
 import threading
 import time as pytime
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Literal, Optional
+from typing import Any, Awaitable, Callable, Literal, Optional
 
 import numpy as np
 import psutil
@@ -23,6 +23,7 @@ from .helpers import invoke
 log = logging.getLogger('rosys.core')
 
 config = Config()
+translator: Optional[Any] = None
 
 is_test = 'pytest' in sys.modules
 

@@ -29,7 +29,6 @@ class Schedule:
 
     def __init__(self,
                  automator: Automator, *,
-                 translator: Optional[Translator] = None,
                  on_activate: Optional[Callable] = None,
                  on_deactivate: Optional[Callable] = None,
                  location: Optional[tuple[float, float]] = None,
@@ -54,7 +53,7 @@ class Schedule:
         """the schedule has changed"""
 
         self.automator = automator
-        self.translator = translator or Translator()
+        self.translator: Translator = rosys.translator or Translator()
         self.on_activate = on_activate
         self.on_deactivate = on_deactivate
         self.location = location

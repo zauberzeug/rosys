@@ -34,13 +34,13 @@ class AreaManipulation:
     area_type: Optional[str] = binding.BindableProperty()
     area_color: str = binding.BindableProperty()
 
-    def __init__(self, path_planner: PathPlanner, translator: Optional[Translator] = None) -> None:
+    def __init__(self, path_planner: PathPlanner) -> None:
         self.path_planner = path_planner
         self.active_area: Optional[Area] = None
         self.mode = AreaManipulationMode.IDLE
         self.area_type = None
         self.area_color = 'green'
-        self.translator = translator or Translator()
+        self.translator: Translator = rosys.translator or Translator()
 
         self.MODE_CHANGED = Event()
         """the mode has changed (argument: new mode)"""
