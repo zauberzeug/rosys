@@ -30,17 +30,21 @@ class Point:
         return self.x + 1j * self.y
 
     @overload
-    def distance(self, other: Pose) -> float:
-        ...
+    def distance(self, other: Point) -> float: ...
 
     @overload
-    def distance(self, other: Point) -> float:
-        ...
+    def distance(self, other: Pose) -> float: ...
 
     def distance(self, other: Point | Pose) -> float:
         return float(np.sqrt((other.x - self.x)**2 + (other.y - self.y)**2))
 
-    def direction(self, other: Point) -> float:
+    @overload
+    def direction(self, other: Point) -> float: ...
+
+    @overload
+    def direction(self, other: Pose) -> float: ...
+
+    def direction(self, other: Point | Pose) -> float:
         return float(np.arctan2(other.y - self.y, other.x - self.x))
 
     def projected_distance(self, other: Point, direction: float) -> float:
