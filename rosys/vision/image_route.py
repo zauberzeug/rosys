@@ -26,8 +26,8 @@ def create_image_route(camera_provider: 'CameraProvider') -> None:
     app.add_api_route('/' + camera_provider.base_path + '/placeholder', get_placeholder)
 
 
-async def _get_placeholder(shrink:int = 1) -> Response:
-    return Response(content=Image.create_placeholder('no image', shrink = shrink).data, media_type='image/jpeg')
+async def _get_placeholder(shrink: int = 1) -> Response:
+    return Response(content=Image.create_placeholder('no image', shrink=shrink).data, media_type='image/jpeg')
 
 
 async def _get_image(cameras: dict[str, Camera], camera_id: str, timestamp: str, shrink: int = 1) -> Response:
@@ -59,7 +59,5 @@ async def _try_get_jpeg(camera: Camera, timestamp: str, shrink: int) -> Optional
 
 def _shrink(factor: int, array: np.ndarray) -> Optional[bytes]:
     decoded = cv2.imdecode(array, cv2.IMREAD_COLOR)
-    if decoded is None:
-        return None
     img = decoded[::factor, ::factor]
     return cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 60])[1].tobytes()

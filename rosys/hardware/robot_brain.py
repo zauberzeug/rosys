@@ -97,15 +97,15 @@ class RobotBrain:
 
     async def configure(self) -> None:
         rosys.notify('Configuring Lizard...')
-        await self.send(f'!-')
+        await self.send('!-')
         for line in self.lizard_code.splitlines():
             await self.send(f'!+{line}')
-        await self.send(f'!.')
+        await self.send('!.')
         await self.restart()
         rosys.notify('Lizard configured successfully.', 'positive')
 
     async def restart(self) -> None:
-        await self.send(f'core.restart()')
+        await self.send('core.restart()')
 
     async def read_lines(self) -> list[tuple[float, str]]:
         lines: list[tuple[float, str]] = []
@@ -127,6 +127,8 @@ class RobotBrain:
                     continue
                 self.hardware_time = millis / 1000 + self.clock_offset
             self.LINE_RECEIVED.emit(line)
+            if self.hardware_time is None:
+                continue
             lines.append((self.hardware_time, line))
         if millis is not None:
             self.clock_offset = rosys.time() - millis / 1000
@@ -146,7 +148,7 @@ class RobotBrain:
     def enable_esp(self) -> None:
         try:
             sys.path.insert(1, str(Path('~/.lizard').expanduser()))
-            from esp import Esp
+            from esp import Esp  # pylint: disable=import-error,import-outside-toplevel
             params = self.lizard_firmware.flash_params
             devices = [param for param in params if param.startswith('/dev/')]
             esp = Esp(nand='nand' in params, xavier='xavier' in params, device=devices[0] if devices else None)
@@ -171,13 +173,13 @@ def augment(line: str) -> str:
 
 def check(line: Optional[str]) -> str:
     if line is None:
-        return ""
+        return ''
     if line[-3:-2] == '@':
-        check = int(line[-2:], 16)
+        check_ = int(line[-2:], 16)
         line = line[:-3]
         checksum = 0
         for c in line:
             checksum ^= ord(c)
-        if checksum != check:
-            return None
+        if checksum != check_:
+            return ''
     return line

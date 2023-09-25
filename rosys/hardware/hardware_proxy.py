@@ -4,18 +4,19 @@ import logging
 import serial
 import socketio
 import uvicorn
-from hardware.robot_brain import augment, check
+from hardware.robot_brain import augment, check  # pylint: disable=import-error
 
 sio = socketio.AsyncServer(async_mode='asgi')
+buffer = ''
 
 
 @sio.event
-def write(sid, line) -> None:
+def write(_, line) -> None:
     serial.write(f'{augment(line)}\n'.encode())
 
 
 async def receive() -> None:
-    global buffer
+    global buffer  # pylint: disable=global-statement
     try:
         while not stop_requested:
             try:
@@ -32,7 +33,6 @@ async def receive() -> None:
 
 if __name__ == '__main__':
     serial = serial.Serial('/dev/ttyTHS1', 115200)
-    buffer = ''
     app = socketio.ASGIApp(sio, on_startup=lambda: sio.start_background_task(receive))
     stop_requested = False
     try:

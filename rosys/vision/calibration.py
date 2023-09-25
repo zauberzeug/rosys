@@ -31,7 +31,7 @@ class Extrinsics:
 @dataclass(slots=True, kw_only=True)
 class Calibration:
     intrinsics: Intrinsics
-    extrinsics: Extrinsics = field(default_factory=lambda: Extrinsics())
+    extrinsics: Extrinsics = field(default_factory=Extrinsics)
 
     @property
     def rotation(self) -> Rotation:
@@ -63,7 +63,7 @@ class Calibration:
     def project_from_image(self, image_point: Point, target_height: float = 0) -> Optional[Point3d]:
         K = np.array(self.intrinsics.matrix)
         D = np.array(self.intrinsics.distortion)
-        image_points = np.array(image_point.tuple, dtype=np.float32).reshape(1, 1, 2)
+        image_points = np.array(image_point.tuple, dtype=np.float32).reshape((1, 1, 2))
         image_points_ = cv2.undistortPoints(image_points, K, D).reshape(-1, 2)
         image_points__ = cv2.convertPointsToHomogeneous(image_points_).reshape(-1, 3)
         objPoints = image_points__ @ self.rotation_array.T
@@ -98,11 +98,11 @@ class Calibration:
     @staticmethod
     def from_points(
             world_points: list[Point3d], image_points: list[Point], image_size: ImageSize, f0: float) -> Calibration:
-        world_points = np.array([p.tuple for p in world_points], dtype=np.float32).reshape(1, -1, 3)
-        image_points = np.array([p.tuple for p in image_points], dtype=np.float32).reshape(1, -1, 2)
+        world_point_array = np.array([p.tuple for p in world_points], dtype=np.float32).reshape((1, -1, 3))
+        image_point_array = np.array([p.tuple for p in image_points], dtype=np.float32).reshape((1, -1, 2))
         K0 = np.array([[f0, 0, image_size.width / 2], [0, f0, image_size.height / 2], [0, 0, 1]], dtype=np.float32)
-        flags = cv2.CALIB_USE_INTRINSIC_GUESS
-        _, K, D, rvecs, tvecs = cv2.calibrateCamera(world_points, image_points, image_size.tuple, K0, None, flags=flags)
+        _, K, D, rvecs, tvecs = cv2.calibrateCamera(world_point_array, image_point_array, image_size.tuple, K0, None,
+                                                    flags=cv2.CALIB_USE_INTRINSIC_GUESS)
 
         rotation0 = Rotation(R=np.eye(3).tolist())
         intrinsics = Intrinsics(matrix=K.tolist(), distortion=D.tolist()[0], rotation=rotation0, size=image_size)

@@ -21,14 +21,11 @@ class ModuleHardware(Module):
         self.core_message_fields: list[str] = core_message_fields
         self.message_hooks: dict[str, Callable] = {}
 
-    def handle_core_output(self, time: float, words: list[str]) -> None:
+    def handle_core_output(self, time: float, words: list[str]) -> None:  # pylint: disable=unused-argument
         pass
 
 
 class ModuleSimulation(Module):
 
-    def __init__(self, **kwargs) -> None:
-        super().__init__(**kwargs)
-
-    async def step(self, dt: float) -> None:
+    async def step(self, dt: float) -> None:  # pylint: disable=unused-argument
         pass

@@ -34,7 +34,7 @@ class ProfileButton(ui.button):
     def stop(self) -> None:
         ui.notify('stop profiling')
         self.props('icon=play_arrow')
-        profile.stop(print=False)
+        profile.stop(print_stats=False)
         yappi.stop()
         table = [
             [str(v) for v in [stat.full_name, stat.ttot, stat.tsub, stat.tavg, stat.ncall]]
@@ -43,7 +43,7 @@ class ProfileButton(ui.button):
         ]
         output = tabulate(table[:15], headers=['function', 'total', 'excl. sub', 'avg', 'ncall'], floatfmt='.4f')
         print(output, flush=True)
-        yappi.get_thread_stats().print_all()
+        yappi.get_thread_stats().print_all()  # pylint: disable=no-member
         profile.print()
 
     async def toggle(self) -> None:

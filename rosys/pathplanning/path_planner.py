@@ -1,6 +1,7 @@
 import asyncio
 import logging
 import time
+from copy import copy
 from multiprocessing import Pipe
 from typing import Any
 
@@ -34,7 +35,7 @@ class PathPlanner:
         self.OBSTACLES_CHANGED = Event()
         """the obstacles have changed (argument: dictionary of obstacles)"""
         self.AREAS_CHANGED = Event()
-        """the areas have changed (argument: dictionary of areas)"""
+        """the areas have changed (argument: list of areas that have changed, can be None for all areas)"""
 
         rosys.on_startup(self.startup)
         rosys.on_shutdown(self.shutdown)
@@ -44,15 +45,16 @@ class PathPlanner:
         persistence.register(self)
 
     def backup(self) -> dict:
+        finished_areas = {area_id: copy(area).close() for area_id, area in self.areas.items() if len(area.outline) >= 3}
         return {
             'obstacles': persistence.to_dict(self.obstacles),
-            'areas': persistence.to_dict(self.areas),
+            'areas': persistence.to_dict(finished_areas),
         }
 
     def restore(self, data: dict[str, Any]) -> None:
         persistence.replace_dict(self.obstacles, Obstacle, data.get('obstacles', {}))
         persistence.replace_dict(self.areas, Area, data.get('areas', {}))
-        self.AREAS_CHANGED.emit(self.areas)
+        self.AREAS_CHANGED.emit(None)
         self.OBSTACLES_CHANGED.emit(self.obstacles)
 
     def invalidate(self) -> None:

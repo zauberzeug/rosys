@@ -1,6 +1,6 @@
 import logging
 from datetime import datetime, timedelta
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, cast
 
 import suntime
 from nicegui import ui
@@ -29,7 +29,6 @@ class Schedule:
 
     def __init__(self,
                  automator: Automator, *,
-                 translator: Optional[Translator] = None,
                  on_activate: Optional[Callable] = None,
                  on_deactivate: Optional[Callable] = None,
                  location: Optional[tuple[float, float]] = None,
@@ -54,7 +53,7 @@ class Schedule:
         """the schedule has changed"""
 
         self.automator = automator
-        self.translator = translator or Translator()
+        self.translator: Translator = rosys.translator or Translator()
         self.on_activate = on_activate
         self.on_deactivate = on_deactivate
         self.location = location
@@ -84,12 +83,12 @@ class Schedule:
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.location = tuple(data.get('location')) if data.get('location') else None
-        self.sunrise_offset = data.get('sunrise_offset')
-        self.sunset_offset = data.get('sunset_offset')
-        self.is_enabled = data.get('is_enabled', False)
-        self._is_active = data.get('is_active', False)
-        self.half_hours[:] = data.get('half_hours', True)
+        self.location = (data['location'][0], data['location'][1]) if 'location' in data else None
+        self.sunrise_offset = cast(float, data.get('sunrise_offset'))
+        self.sunset_offset = cast(float, data.get('sunset_offset'))
+        self.is_enabled = cast(bool, data.get('is_enabled', False))
+        self._is_active = cast(bool, data.get('is_active', False))
+        self.half_hours[:] = cast(list[bool], data['half_hours']) if 'half_hours' in data else [True] * 2 * 24 * 7
         self.SCHEDULE_CHANGED.emit()
 
     def invalidate(self) -> None:
@@ -110,11 +109,10 @@ class Schedule:
         if minute is None:
             return self.half_hours[self.time_to_index(weekday, hour, 0)] \
                 or self.half_hours[self.time_to_index(weekday, hour, 30)]
-        else:
-            return self.half_hours[self.time_to_index(weekday, hour, minute)]
+        return self.half_hours[self.time_to_index(weekday, hour, minute)]
 
     def fill(self, value: bool) -> None:
-        for i in range(len(self.half_hours)):
+        for i, _ in enumerate(self.half_hours):
             self.half_hours[i] = value
 
     def can_be_active(self) -> bool:

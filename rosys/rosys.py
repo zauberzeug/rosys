@@ -8,7 +8,7 @@ import sys
 import threading
 import time as pytime
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Literal, Optional
+from typing import Any, Awaitable, Callable, Literal, Optional
 
 import numpy as np
 import psutil
@@ -23,6 +23,7 @@ from .helpers import invoke
 log = logging.getLogger('rosys.core')
 
 config = Config()
+translator: Optional[Any] = None
 
 is_test = 'pytest' in sys.modules
 
@@ -41,10 +42,16 @@ NEW_NOTIFICATION = event.Event()
 """notify the user (string argument: message)"""
 
 
-_start_time: float = 0.0 if is_test else pytime.time()
-_time = _start_time
-_last_time_request: float = _start_time
-_exception: Optional[Exception] = None  # NOTE: used for tests
+class _state:
+    start_time: float = 0.0 if is_test else pytime.time()
+    time = start_time
+    last_time_request: float = start_time
+    exception: Optional[BaseException] = None  # NOTE: used for tests
+
+
+def get_last_exception() -> Optional[BaseException]:
+    return _state.exception
+
 
 notifications: list[Notification] = []
 repeat_handlers: list[tuple[Callable, float]] = []
@@ -53,7 +60,14 @@ shutdown_handlers: list[Callable] = []
 tasks: list[asyncio.Task] = []
 
 
-def notify(message: str, type: Optional[Literal['positive', 'negative', 'warning', 'info', 'ongoing']] = None) -> None:
+def notify(message: str,
+           type: Optional[Literal[  # pylint: disable=redefined-builtin
+               'positive',
+               'negative',
+               'warning',
+               'info',
+               'ongoing',
+           ]] = None) -> None:
     log.info(message)
     notifications.append(Notification(time=time(), message=message))
     NEW_NOTIFICATION.emit(message)
@@ -70,24 +84,22 @@ time_lock = threading.Lock()
 
 
 def time() -> float:
-    global _time, _last_time_request
     if is_test:
-        return _time
+        return _state.time
     with time_lock:
         now = pytime.time()
-        _time += (now - _last_time_request) * config.simulation_speed
-        _last_time_request = now
-        return _time
+        _state.time += (now - _state.last_time_request) * config.simulation_speed
+        _state.last_time_request = now
+        return _state.time
 
 
 def set_time(value: float) -> None:
     assert is_test, 'only tests can change the time'
-    global _time
-    _time = value
+    _state.time = value
 
 
 def uptime() -> float:
-    return time() - _start_time
+    return time() - _state.start_time
 
 
 async def sleep(seconds: float) -> None:
@@ -172,8 +184,7 @@ async def _watch_emitted_events() -> None:
     try:
         for task in event.tasks:
             if task.done() and task.exception():
-                global _exception
-                _exception = task.exception()
+                _state.exception = task.exception()
                 log.exception('task failed to execute', exc_info=task.exception())
         event.tasks = [t for t in event.tasks if not t.done()]
     except Exception:
@@ -217,7 +228,8 @@ async def shutdown() -> None:
     log.debug('tear down "run" tasks')
     run.tear_down()
     log.debug('canceling all remaining tasks')
-    [t.cancel() for t in tasks]
+    for task in tasks:
+        task.cancel()
     log.debug('clearing tasks')
     tasks.clear()
 
@@ -233,8 +245,7 @@ async def shutdown() -> None:
 def reset_before_test() -> None:
     assert is_test
     set_time(0)  # NOTE: in tests we start at zero for better readability
-    global _exception
-    _exception = None
+    _state.exception = None
 
 
 def reset_after_test() -> None:

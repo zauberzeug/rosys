@@ -31,21 +31,25 @@ class Grid:
         v_size = self.bbox[3] / self.size[0]
         return (h_size + v_size) / 2.0
 
-    def to_grid(self, x, y, yaw=None) -> tuple:
+    def to_grid(self, x: float, y: float) -> tuple[float, float]:
         row = (y - self.bbox[1]) / self.bbox[3] * self.size[0] - 0.5
         col = (x - self.bbox[0]) / self.bbox[2] * self.size[1] - 0.5
-        if yaw is None:
-            return row, col
+        return row, col
 
+    def to_3d_grid(self, x: float, y: float, yaw: float) -> tuple[float, float, float]:
+        row = (y - self.bbox[1]) / self.bbox[3] * self.size[0] - 0.5
+        col = (x - self.bbox[0]) / self.bbox[2] * self.size[1] - 0.5
         layer = (yaw / 2.0 / np.pi * self.size[2]) % self.size[2]
         return row, col, layer
 
-    def from_grid(self, row, col, layer=None) -> tuple:
+    def from_grid(self, row, col) -> tuple[float, float]:
         x = (col + 0.5) / self.size[1] * self.bbox[2] + self.bbox[0]
         y = (row + 0.5) / self.size[0] * self.bbox[3] + self.bbox[1]
-        if layer is None:
-            return x, y
+        return x, y
 
+    def from_3d_grid(self, row, col, layer) -> tuple[float, float, float]:
+        x = (col + 0.5) / self.size[1] * self.bbox[2] + self.bbox[0]
+        y = (row + 0.5) / self.size[0] * self.bbox[3] + self.bbox[1]
         yaw = layer / self.size[2] * 2.0 * np.pi
         return x, y, yaw
 

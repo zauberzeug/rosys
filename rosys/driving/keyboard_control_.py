@@ -26,7 +26,7 @@ class KeyboardControl:
         self.log.debug(f'{e.key.name} -> {e.action} {e.modifiers}')
 
         # change speed via number key
-        if e.action.keydown and e.key.number is not None:
+        if e.action.keydown and e.key.number:
             self.speed = e.key.number
             self.direction.y = self.speed * np.sign(self.direction.y)
             self.direction.x = self.speed * np.sign(self.direction.x)

@@ -9,6 +9,7 @@ class RobotRenderer:
 
     def __init__(self, outline) -> None:
         self.outline = outline
+        self.rendered_outline: np.ndarray = np.zeros((0, 2))
 
     @staticmethod
     def from_size(width, length, x_shift=0) -> RobotRenderer:

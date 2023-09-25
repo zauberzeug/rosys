@@ -4,6 +4,7 @@ import time
 import numpy as np
 import pylab as pl
 from nicegui import ui
+
 from rosys.pathplanning import plot_tools as pt
 from rosys.pathplanning.grid import Grid
 from rosys.pathplanning.obstacle_map import ObstacleMap
@@ -29,7 +30,7 @@ path = Path.from_poses([
 
 robot_renderer = RobotRenderer.from_size(0.77, 1.21, 0.445)
 
-with ui.plot():
+with ui.pyplot():
     pt.show_obstacle_map(obstacle_map)
     pl.autoscale(False)
     for step in path:
@@ -38,7 +39,7 @@ with ui.plot():
 
     t = time.time()
     path.smooth(obstacle_map, control_dist=0.2)
-    print('%.3f ms' % ((time.time() - t) * 1000))
+    print(f'{(time.time() - t) * 1000:.3f} ms')
 
     pt.plot_path(path, 'C2', lw=3)
 

@@ -8,7 +8,7 @@ from .. import rosys
 from ..geometry import Point3d
 from .camera_provider import CameraProvider
 from .detections import BoxDetection, Detections, PointDetection
-from .detector import Autoupload, Detector
+from .detector import Detector
 from .image import Image
 from .uploads import Uploads
 
@@ -54,7 +54,7 @@ class DetectorSimulation(Detector):
         self._uploads.queue.clear()
         self._uploads.priority_queue.clear()
 
-    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED, tags: list[str] = []) -> Optional[Detections]:
+    async def detect(self, image: Image, *_) -> Optional[Detections]:
         is_blocked = image.camera_id in self.blocked_cameras
         await rosys.sleep(0.4)
         image.detections = Detections()
@@ -66,7 +66,6 @@ class DetectorSimulation(Detector):
 
     async def upload(self, image: Image) -> None:
         self.log.info(f'Uploading {image.id}')
-        await super().upload(image)
 
     def update_simulated_objects(self, image: Image) -> None:
         pass
@@ -77,39 +76,39 @@ class DetectorSimulation(Detector):
         camera = self.camera_provider.cameras[image.camera_id]
         assert camera.calibration is not None
         assert image.detections is not None
-        for object in self.simulated_objects:
+        for obj in self.simulated_objects:
             viewing_direction = np.array(camera.calibration.extrinsics.rotation.R)[:, 2]
-            object_direction = np.array(object.position.tuple) - camera.calibration.extrinsics.translation
+            object_direction = np.array(obj.position.tuple) - camera.calibration.extrinsics.translation
             if np.dot(viewing_direction, object_direction) < 0:
                 continue
-            image_point = camera.calibration.project_to_image(object.position)
+            image_point = camera.calibration.project_to_image(obj.position)
             if not (0 <= image_point.x < image.size.width and 0 <= image_point.y < image.size.height):
                 continue
 
-            if object.size is None:
+            if obj.size is None:
                 image.detections.points.append(PointDetection(
-                    category_name=object.category_name,
+                    category_name=obj.category_name,
                     model_name='simulation',
-                    confidence=object.confidence,
+                    confidence=obj.confidence,
                     x=image_point.x + self.noise * np.random.randn(),
                     y=image_point.y + self.noise * np.random.randn(),
-                    uuid=object.uuid,
+                    uuid=obj.uuid,
                 ))
             else:
                 world_points = np.array([
-                    [object.position.x + dx, object.position.y + dy, object.position.z + dz]
-                    for dx in [-object.size[0] / 2, object.size[0] / 2]
-                    for dy in [-object.size[1] / 2, object.size[1] / 2]
-                    for dz in [-object.size[2] / 2, object.size[2] / 2]
+                    [obj.position.x + dx, obj.position.y + dy, obj.position.z + dz]
+                    for dx in [-obj.size[0] / 2, obj.size[0] / 2]
+                    for dy in [-obj.size[1] / 2, obj.size[1] / 2]
+                    for dz in [-obj.size[2] / 2, obj.size[2] / 2]
                 ])
                 image_points = camera.calibration.project_array_to_image(world_points)
                 image.detections.boxes.append(BoxDetection(
-                    category_name=object.category_name,
+                    category_name=obj.category_name,
                     model_name='simulation',
-                    confidence=object.confidence,
+                    confidence=obj.confidence,
                     x=image_points[:, 0].min() + self.noise * np.random.randn(),
                     y=image_points[:, 1].min() + self.noise * np.random.randn(),
                     width=image_points[:, 0].max() - image_points[:, 0].min() + self.noise * np.random.randn(),
                     height=image_points[:, 1].max() - image_points[:, 1].min() + self.noise * np.random.randn(),
-                    uuid=object.uuid,
+                    uuid=obj.uuid,
                 ))

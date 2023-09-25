@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 import logging
 import logging.config
-import os
+from pathlib import Path
 
 from nicegui import ui
 
 from rosys.driving import Odometer, Steerer, joystick
 from rosys.hardware import RobotSimulation, WheelsSimulation
 
-if not os.path.exists(os.path.expanduser('~/.rosys/')):
-    os.makedirs(os.path.expanduser('~/.rosys/'))
+PATH = Path('~/.rosys')
+PATH.mkdir(parents=True, exist_ok=True)
 
 logging.config.dictConfig({
     'version': 1,
@@ -31,7 +31,7 @@ logging.config.dictConfig({
             'level': 'DEBUG',
             'class': 'logging.handlers.RotatingFileHandler',
             'formatter': 'default',
-            'filename': os.path.expanduser('~/.rosys/example.log'),
+            'filename': PATH / 'example.log',
             'maxBytes': 1024 * 1000,
             'backupCount': 3
         }

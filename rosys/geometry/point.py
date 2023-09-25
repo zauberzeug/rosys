@@ -1,8 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, overload
 
 import numpy as np
+
+if TYPE_CHECKING:
+    from .pose import Pose
 
 
 @dataclass(slots=True, kw_only=True)
@@ -25,14 +29,27 @@ class Point:
     def complex(self) -> complex:
         return self.x + 1j * self.y
 
-    def distance(self, other: Point) -> float:
+    @overload
+    def distance(self, other: Point) -> float: ...
+
+    @overload
+    def distance(self, other: Pose) -> float: ...
+
+    def distance(self, other: Point | Pose) -> float:
         return float(np.sqrt((other.x - self.x)**2 + (other.y - self.y)**2))
 
-    def direction(self, other: Point) -> float:
+    @overload
+    def direction(self, other: Point) -> float: ...
+
+    @overload
+    def direction(self, other: Pose) -> float: ...
+
+    def direction(self, other: Point | Pose) -> float:
         return float(np.arctan2(other.y - self.y, other.x - self.x))
 
     def projected_distance(self, other: Point, direction: float) -> float:
-        def d(p): return np.sqrt(p.x**2 + p.y**2) * np.cos(direction - np.arctan2(p.y, p.x))
+        def d(p):
+            return np.sqrt(p.x**2 + p.y**2) * np.cos(direction - np.arctan2(p.y, p.x))
         return float(d(other) - d(self))
 
     def polar(self, distance: float, yaw: float) -> Point:

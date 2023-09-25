@@ -33,17 +33,17 @@ class CameraProjector:
         rosys.on_repeat(self.step, 1.0)
 
     async def step(self) -> None:
-        for id in list(self.projections):
-            if id not in self.camera_provider.cameras:
-                del self.projections[id]
+        for id_ in list(self.projections):
+            if id_ not in self.camera_provider.cameras:
+                del self.projections[id_]
 
-        for id, camera in self.camera_provider.cameras.items():
+        for id_, camera in self.camera_provider.cameras.items():
             if not camera.calibration:
                 continue
-            if id in self.projections and self.projections[id].camera_calibration == camera.calibration:
+            if id_ in self.projections and self.projections[id_].camera_calibration == camera.calibration:
                 continue
-            self.projections[id] = Projection(
-                camera_id=id,
+            self.projections[id_] = Projection(
+                camera_id=id_,
                 camera_calibration=deepcopy(camera.calibration),
                 coordinates=self.project(camera),
             )

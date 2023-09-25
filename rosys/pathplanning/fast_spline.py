@@ -39,17 +39,17 @@ class FastSpline:
     def from_poses(start: Pose, end: Pose, *, backward: bool = False) -> FastSpline:
         return FastSpline(start.x, start.y, start.yaw, end.x, end.y, end.yaw, backward)
 
-    def x(self, t: float) -> float:
+    def x(self, t: np.ndarray) -> np.ndarray:
         return t**3 * self.d + 3 * t**2 * (1 - t) * self.c + 3 * t * (1 - t)**2 * self.b + (1 - t)**3 * self.a
 
-    def y(self, t: float) -> float:
+    def y(self, t: np.ndarray) -> np.ndarray:
         return t**3 * self.h + 3 * t**2 * (1 - t) * self.g + 3 * t * (1 - t)**2 * self.f + (1 - t)**3 * self.e
 
-    def gx(self, t: float) -> float:
+    def gx(self, t: np.ndarray) -> np.ndarray:
         return 3 * (self.m * t**2 + 2 * self.n * t + self.o)
 
-    def gy(self, t: float) -> float:
+    def gy(self, t: np.ndarray) -> np.ndarray:
         return 3 * (self.p * t**2 + 2 * self.q * t + self.r)
 
-    def yaw(self, t: float) -> float:
+    def yaw(self, t: np.ndarray) -> np.ndarray:
         return np.arctan2(self.gy(t), self.gx(t))

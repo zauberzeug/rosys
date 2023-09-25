@@ -9,6 +9,7 @@ class MultiCameraProvider(CameraProvider):
     """
 
     def __init__(self, *camera_providers: CameraProvider) -> None:
+        super().__init__()
         self.providers = camera_providers
 
     @property

@@ -24,7 +24,7 @@ SCAN_INTERVAL = 10
 class Device:
     uid: str
     video_id: int
-    capture: Optional[VideoCapture] = None 
+    capture: Optional[VideoCapture] = None
     exposure_min: int = 0
     exposure_max: int = 0
     exposure_default: int = 0
@@ -119,18 +119,18 @@ class UsbCameraProviderHardware(CameraProvider):
                     await self.deactivate(camera)
                     continue
                 if 'MJPG' in device.video_formats:
-                    bytes = await rosys.run.io_bound(to_bytes, image)
+                    bytes_ = await rosys.run.io_bound(to_bytes, image)
                     if camera.crop or camera.rotation != ImageRotation.NONE:
-                        bytes = await rosys.run.cpu_bound(process_jpeg_image, bytes, camera.rotation, camera.crop)
+                        bytes_ = await rosys.run.cpu_bound(process_jpeg_image, bytes_, camera.rotation, camera.crop)
                 else:
-                    bytes = await rosys.run.cpu_bound(process_ndarray_image, image, camera.rotation, camera.crop)
+                    bytes_ = await rosys.run.cpu_bound(process_ndarray_image, image, camera.rotation, camera.crop)
                 if camera.crop:
                     size = ImageSize(width=int(camera.crop.width), height=int(camera.crop.height))
                 elif camera.resolution:
                     size = camera.resolution
                 else:
                     size = ImageSize(width=800, height=600)
-                camera.images.append(Image(camera_id=uid, data=bytes, time=rosys.time(), size=size))
+                camera.images.append(Image(camera_id=uid, data=bytes_, time=rosys.time(), size=size))
             except Exception:
                 self.log.exception(f'could not capture image from {uid}')
                 await self.deactivate(camera)
@@ -140,13 +140,12 @@ class UsbCameraProviderHardware(CameraProvider):
             if camera.active and uid in self.devices and self.devices[uid].capture is not None:
                 await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
 
-    def capture_image(self, id: str) -> UMat:
-        capture = self.devices[id].capture
-        assert capture is not None   
-
-        _, image = capture.read()
+    def capture_image(self, id_) -> UMat:
+        device = self.devices[id_]
+        assert device.capture is not None
+        _, image = device.capture.read()
         return image
-        
+
     async def activate(self, uid: str) -> None:
         camera = self._cameras[uid]
         device = self.devices[uid]
@@ -161,9 +160,10 @@ class UsbCameraProviderHardware(CameraProvider):
     async def deactivate(self, camera: UsbCamera) -> None:
         if camera.id not in self.devices:
             return
-        if self.devices[camera.id].capture is not None:
+        device = self.devices[camera.id]
+        if device.capture is not None:
             self.log.info(f'deactivated {camera.id}')
-            await rosys.run.io_bound(self.devices[camera.id].capture.release)
+            await rosys.run.io_bound(device.capture.release)
         del self.devices[camera.id]
 
     async def update_device_list(self) -> None:
@@ -191,18 +191,20 @@ class UsbCameraProviderHardware(CameraProvider):
                 self.devices[uid] = Device(uid=uid, video_id=num)
                 await self.load_value_ranges(self.devices[uid])
 
-    def get_capture_device(self, index: int) -> None:
+    def get_capture_device(self, index: int) -> Optional[cv2.VideoCapture]:
         try:
             capture = cv2.VideoCapture(index)
             if capture is None:
                 self.log.error(f'video device {index} is unavailable')
-            elif not capture.isOpened():
+                return None
+            if not capture.isOpened():
                 self.log.error(f'video device {index} can not be opened')
                 capture.release()
-            else:
-                return capture
+                return None
+            return capture
         except Exception:
             self.log.exception(f'{index} device failed')
+            return None
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import overload
 
 import numpy as np
 
@@ -55,13 +56,28 @@ class Pose:
         return Pose(x=M[0, -1], y=M[1, -1], yaw=np.arctan2(M[1, 0], M[0, 0]), time=time)
 
     def __str__(self) -> str:
-        return '%.3f, %.3f, %.1f deg' % (self.x, self.y, self.yaw_deg)
+        return f'{self.x:.3f}, {self.y:.3f}, {self.yaw_deg:.1f} deg'
 
-    def distance(self, other: Pose) -> float:
+    @overload
+    def distance(self, other: Point) -> float: ...
+
+    @overload
+    def distance(self, other: Pose) -> float: ...
+
+    def distance(self, other: Point | Pose) -> float:
         return float(np.sqrt((other.x - self.x)**2 + (other.y - self.y)**2))
 
     def projected_distance(self, other: Pose) -> float:
         return self.point.projected_distance(other.point, other.yaw)
+
+    @overload
+    def direction(self, other: Point) -> float: ...
+
+    @overload
+    def direction(self, other: Pose) -> float: ...
+
+    def direction(self, other: Point | Pose) -> float:
+        return float(np.arctan2(other.y - self.y, other.x - self.x))
 
     def __iadd__(self, step: PoseStep) -> Pose:
         self.x += step.linear * np.cos(self.yaw)

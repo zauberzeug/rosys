@@ -44,8 +44,8 @@ class Steerer:
         self.wheels = wheels
         self.speed_scaling = speed_scaling
         self.state = State.IDLE
-        self.linear_speed = 0
-        self.angular_speed = 0
+        self.linear_speed = 0.0
+        self.angular_speed = 0.0
 
         rosys.on_repeat(self.step, 0.05)
 
@@ -66,7 +66,6 @@ class Steerer:
         if self.state != State.STEERING:
             return
         self.log.info('stop steering')
-        self.orientation = None
         self.state = State.STOPPING
         self.STEERING_STOPPED.emit()
 
