@@ -36,8 +36,9 @@ class PeekableBytesIO(io.BytesIO):
 
 class RtspCameraProviderHardware(CameraProvider):
     """This module collects and provides real RTSP streaming cameras."""
+    USE_PERSISTENCE: bool = True
 
-    def __init__(self, frame_rate: int = 6, jovision_profile=0, persistent=True) -> None:
+    def __init__(self, *, frame_rate: int = 6, jovision_profile: int = 0) -> None:
         super().__init__()
 
         self.frame_rate = frame_rate
@@ -58,8 +59,8 @@ class RtspCameraProviderHardware(CameraProvider):
         rosys.on_repeat(self.update_device_list, 1)
         rosys.on_repeat(lambda: self.prune_images(max_age_seconds=10.0), 5.0)
 
-        self.needs_backup: bool = persistent
-        if persistent:
+        self.needs_backup: bool = False
+        if self.USE_PERSISTENCE:
             persistence.register(self)
 
     @property
@@ -78,14 +79,14 @@ class RtspCameraProviderHardware(CameraProvider):
             # if platform.system() == 'Darwin':
             #     command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp drop-on-latency=true buffer-mode=none ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
             # else:
-            logging.info(f'capture images from {camera.id} with url {camera.url}')
+            logging.info(f'capture images from {camera.id} with URL {camera.url}')
             assert camera.url is not None
             if 'subtype=0' in camera.url:
                 # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
                 url = camera.url.replace('subtype=0', 'subtype=1')
-                command = f'gst-launch-1.0 rtspsrc location="{url}" latency=100 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.frame_rate}/1"! jpegenc ! fdsink'
+                command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.frame_rate}/1"! jpegenc ! fdsink'
             else:
-                command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=100 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.frame_rate}/1" ! jpegenc ! fdsink'
+                command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.frame_rate}/1" ! jpegenc ! fdsink'
             process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             assert process.stdout is not None
             assert process.stderr is not None
@@ -144,9 +145,6 @@ class RtspCameraProviderHardware(CameraProvider):
             camera.active = True
             if camera.crop or camera.rotation != ImageRotation.NONE:
                 image = await rosys.run.cpu_bound(process_image, image, camera.rotation, camera.crop)
-                if not isinstance(image, bytes):
-                    logging.warning(f'could not process image from {camera.id}')
-                    continue
             try:
                 with PeekableBytesIO(image) as f:
                     width, height = imgsize.get_size(f)
@@ -155,7 +153,6 @@ class RtspCameraProviderHardware(CameraProvider):
             size = ImageSize(width=width, height=height)
             camera.resolution = size
             self.add_image(camera, Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
-            # camera.images.append(Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
         camera.active = False
         self.invalidate()
         self._capture_tasks.pop(camera.id)
@@ -258,10 +255,8 @@ class RtspCameraProviderHardware(CameraProvider):
 def process_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
     image = PIL.Image.open(io.BytesIO(data))
     if crop is not None:
-        image = image.crop((int(crop.x), int(crop.y), int(crop.x+crop.width), int(crop.y+crop.height)))
-    # TODO change to NN-Interpolation if rotation is a multiple of 90 (PIL.Image.NEAREST)
-    strategy = PIL.Image.BICUBIC if int(rotation) % 90 == 0 else PIL.Image.NEAREST
-    image = image.rotate(int(rotation), expand=True, resample=strategy)
+        image = image.crop((int(crop.x), int(crop.y), int(crop.x + crop.width), int(crop.y + crop.height)))
+    image = image.rotate(int(rotation), expand=True)  # NOTE: PIL handles rotation with 90 degree steps efficiently
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format='JPEG')
     return img_byte_arr.getvalue()

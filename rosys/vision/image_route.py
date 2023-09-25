@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Optional
 
@@ -16,14 +18,11 @@ if TYPE_CHECKING:
 log = logging.getLogger('rosys.image_route')
 
 
-def create_image_route(camera_provider: 'CameraProvider') -> None:
+def create_image_route(camera_provider: CameraProvider) -> None:
     async def get_image(camera_id: str, timestamp: str, shrink: int = 1) -> Response:
         return await _get_image(camera_provider.cameras, camera_id, timestamp, shrink)
     app.add_api_route('/' + camera_provider.base_path + '/{camera_id}/{timestamp}', get_image)
-
-    async def get_placeholder(shrink: int = 1) -> Response:
-        return await _get_placeholder(shrink)
-    app.add_api_route('/' + camera_provider.base_path + '/placeholder', get_placeholder)
+    app.add_api_route('/' + camera_provider.base_path + '/placeholder', _get_placeholder)
 
 
 async def _get_placeholder(shrink: int = 1) -> Response:
@@ -57,7 +56,7 @@ async def _try_get_jpeg(camera: Camera, timestamp: str, shrink: int) -> Optional
     return None
 
 
-def _shrink(factor: int, array: np.ndarray) -> Optional[bytes]:
+def _shrink(factor: int, array: np.ndarray) -> bytes:
     decoded = cv2.imdecode(array, cv2.IMREAD_COLOR)
     img = decoded[::factor, ::factor]
     return cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 60])[1].tobytes()

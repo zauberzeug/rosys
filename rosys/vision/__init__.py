@@ -8,7 +8,7 @@ from .detections import BoxDetection, Detection, Detections, PointDetection
 from .detector import Detector
 from .detector_hardware import DetectorHardware
 from .detector_simulation import DetectorSimulation, SimulatedObject
-from .image import Image, ImageSize, set_default_placeholder_size
+from .image import Image, ImageSize
 from .multi_camera_provider import MultiCameraProvider
 from .rtsp_camera import RtspCamera
 from .rtsp_camera_provider_hardware import RtspCameraProviderHardware

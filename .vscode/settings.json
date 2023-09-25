@@ -20,7 +20,8 @@
     "--disable=W0718", // Catching too general exception
     "--disable=W1203", // Use % formatting in logging functions
     "--disable=W1514", // Using open without explicitly specifying an encoding
-    "--extension-pkg-allow-list=cv2,scipy.spatial"
+    "--extension-pkg-allow-list=cv2,scipy.spatial",
+    "--generated-members=cv2.*"
   ],
   "python.testing.pytestArgs": ["tests"],
   "python.testing.pytestEnabled": true,

@@ -40,7 +40,7 @@ def replace_list(old_list: list[Any], cls: type, new_list: list[Any]) -> None:
     old_list.extend(from_dict(cls, value) for value in new_list)
 
 
-def replace_set(old_set: set[T], cls: type, new_set: set[T]) -> None:
+def replace_set(old_set: set[Any], cls: type, new_set: set[Any]) -> None:
     """Replace content of `old_set` with items from `new_set`."""
     old_set.clear()
     old_set.update(from_dict(cls, value) for value in new_set)
