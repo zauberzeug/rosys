@@ -8,6 +8,7 @@ from typing import Any, Optional
 import cv2
 import numpy as np
 import PIL
+from cv2 import UMat, VideoCapture
 
 from .. import persistence, rosys
 from ..geometry import Rectangle
@@ -23,7 +24,7 @@ SCAN_INTERVAL = 10
 class Device:
     uid: str
     video_id: int
-    capture: Optional[Any] = None  # cv2.VideoCapture device
+    capture: Optional[VideoCapture] = None
     exposure_min: int = 0
     exposure_max: int = 0
     exposure_default: int = 0
@@ -139,7 +140,7 @@ class UsbCameraProviderHardware(CameraProvider):
             if camera.active and uid in self.devices and self.devices[uid].capture is not None:
                 await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
 
-    def capture_image(self, id_) -> Any:
+    def capture_image(self, id_) -> UMat:
         device = self.devices[id_]
         assert device.capture is not None
         _, image = device.capture.read()

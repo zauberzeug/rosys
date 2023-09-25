@@ -19,6 +19,7 @@ class UsbCameraProviderSimulation(CameraProvider):
 
     In the current implementation the images only contain the camera ID and the current time.
     """
+    USE_PERSISTENCE: bool = True
 
     def __init__(self) -> None:
         super().__init__()
@@ -29,7 +30,8 @@ class UsbCameraProviderSimulation(CameraProvider):
         rosys.on_repeat(lambda: self.prune_images(max_age_seconds=1.0), 5.0)
 
         self.needs_backup: bool = False
-        persistence.register(self)
+        if self.USE_PERSISTENCE:
+            persistence.register(self)
 
     @property
     def cameras(self) -> dict[str, UsbCamera]:
