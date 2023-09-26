@@ -1,17 +1,10 @@
 from dataclasses import dataclass
-from enum import Enum
 from typing import Optional
 
 from ..geometry import Rectangle
 from .camera import Camera
 from .image import ImageSize
-
-
-class ImageRotation(str, Enum):
-    NONE: int = 0
-    RIGHT: int = 90
-    UPSIDE_DOWN: int = 180
-    LEFT: int = 270
+from .image_rotation import ImageRotation
 
 
 @dataclass(slots=True, kw_only=True)
