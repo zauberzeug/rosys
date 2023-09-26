@@ -91,7 +91,7 @@ async def sh(command: list[str] | str, *,
         # log.info(f'running sh: "{cmd}"')
         proc = subprocess.Popen(  # pylint: disable=consider-using-with
             cmd,
-            cwd=str(working_dir),
+            cwd=working_dir,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=shell,
