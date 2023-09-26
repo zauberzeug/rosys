@@ -1,9 +1,11 @@
 import inspect
+import sys
 import time
 from contextlib import contextmanager
 from typing import Any, Awaitable, Callable, Generator
 
 import numpy as np
+from nicegui import globals as nicegui_globals
 
 
 async def invoke(handler: Callable, *args: Any) -> Any:
@@ -84,3 +86,11 @@ def from_dict(data_class_type, data):
         raise NotImplementedError(f'Unknown generic type: {data_class_type}')
     # It's a regular type
     return data_class_type(data)
+
+
+def is_stopping() -> bool:
+    return nicegui_globals.state == nicegui_globals.State.STOPPING
+
+
+def is_test() -> bool:
+    return 'pytest' in sys.modules

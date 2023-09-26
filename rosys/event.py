@@ -6,9 +6,8 @@ import logging
 from dataclasses import dataclass
 from typing import Awaitable, Callable
 
+from nicegui import background_tasks
 from nicegui import globals as nicegui_globals
-
-from rosys import background_tasks
 
 from .helpers import invoke
 

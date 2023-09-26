@@ -7,7 +7,7 @@ from typing import Optional
 import objgraph
 from nicegui import ui
 
-import rosys
+from ... import run
 
 SVG_FILE = Path('/tmp/rosys_objgraph.svg')
 
@@ -48,7 +48,7 @@ def objgraph_page() -> None:
         most_common_search_result = ui.html()
 
 
-@rosys.run.awaitable
+@run.awaitable
 def create_graph(search_term: str) -> str:
     gc.collect()
     objects = objgraph.by_type(search_term)

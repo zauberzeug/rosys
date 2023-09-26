@@ -1,7 +1,6 @@
 from typing import Optional
 
-import rosys
-
+from .. import rosys
 from .expander import ExpanderHardware
 from .module import ModuleHardware
 from .robot_brain import RobotBrain

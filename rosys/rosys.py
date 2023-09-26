@@ -4,7 +4,6 @@ import logging
 import multiprocessing
 import os
 import signal
-import sys
 import threading
 import time as pytime
 from dataclasses import dataclass
@@ -12,20 +11,21 @@ from typing import Any, Awaitable, Callable, Literal, Optional
 
 import numpy as np
 import psutil
-from nicegui import app
+from nicegui import app, background_tasks
 from nicegui import globals as nicegui_globals
 from nicegui import ui
 
-from . import background_tasks, event, persistence, run
+from . import event, persistence, run
 from .config import Config
-from .helpers import invoke
+from .helpers import invoke, is_stopping
+from .helpers import is_test as is_test_
 
 log = logging.getLogger('rosys.core')
 
 config = Config()
 translator: Optional[Any] = None
 
-is_test = 'pytest' in sys.modules
+is_test = is_test_()
 
 # POSIX standard to create processes is "fork", which is inherently broken for python (see https://pythonspeed.com/articles/python-multiprocessing/)
 if __name__ == '__main__':
@@ -166,10 +166,6 @@ async def startup() -> None:
 
     for handler, interval in repeat_handlers:
         _start_loop(handler, interval)
-
-
-def is_stopping() -> bool:
-    return nicegui_globals.state == nicegui_globals.State.STOPPING
 
 
 async def _garbage_collection(mbyte_limit: float = 300) -> None:

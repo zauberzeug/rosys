@@ -14,9 +14,7 @@ import PIL
 import requests
 from requests.auth import HTTPDigestAuth
 
-import rosys
-
-from .. import persistence
+from .. import persistence, rosys
 from ..geometry import Rectangle
 from .camera_provider import CameraProvider
 from .image import Image, ImageSize

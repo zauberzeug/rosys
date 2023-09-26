@@ -10,7 +10,7 @@ from psutil._common import bytes2human
 from starlette.applications import ASGIApp
 from starlette.middleware.base import BaseHTTPMiddleware
 
-import rosys
+from .. import rosys, run
 
 log = logging.getLogger('rosys.analysis.memory')
 
@@ -60,18 +60,18 @@ def observe_memory_growth(with_tracemalloc: bool = False) -> None:
         nonlocal prev_memory
         nonlocal prev_snapshot
         gc.collect()
-        growth = rosys.analysis.memory.get_process_memory() - prev_memory
+        growth = get_process_memory() - prev_memory
         # log.info('==============')
         log.info(
             f'memory growth: {bytes2human(growth)}, '
-            f"now it's {rosys.analysis.memory.get_humanreadable_process_memory()}"
+            f"now it's {get_humanreadable_process_memory()}"
         )
         # log.info('==============')
-        prev_memory = rosys.analysis.memory.get_process_memory()
+        prev_memory = get_process_memory()
         if with_tracemalloc:
             snapshot = tracemalloc.take_snapshot()
             if growth > 4 * 1e-6 and prev_snapshot is not None:
-                await rosys.run.cpu_bound(compare_tracemalloc_snapshots, snapshot, prev_snapshot)
+                await run.cpu_bound(compare_tracemalloc_snapshots, snapshot, prev_snapshot)
             prev_snapshot = snapshot
 
     rosys.on_repeat(stats, 60.0)

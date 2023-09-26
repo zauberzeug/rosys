@@ -14,7 +14,7 @@ from typing import Any, Callable, Generator, Optional
 
 from psutil import Popen
 
-from . import rosys
+from .helpers import is_stopping, is_test
 
 process_pool = ProcessPoolExecutor()
 thread_pool = ThreadPoolExecutor(thread_name_prefix='run.py thread_pool')
@@ -24,7 +24,7 @@ log = logging.getLogger('rosys.run')
 
 
 async def io_bound(callback: Callable, *args: Any, **kwargs: Any):
-    if rosys.is_stopping():
+    if is_stopping():
         return
     loop = asyncio.get_running_loop()
     try:
@@ -45,7 +45,7 @@ def awaitable(func: Callable) -> Callable:
 
 
 async def cpu_bound(callback: Callable, *args: Any):
-    if rosys.is_stopping():
+    if is_stopping():
         return
     with cpu():
         try:
@@ -103,7 +103,7 @@ async def sh(command: list[str] | str, *,
         running_sh_processes.remove(proc)
         return stdout.decode('utf-8')
 
-    if rosys.is_stopping():
+    if is_stopping():
         return ''
     try:
         return await asyncio.wait_for(io_bound(popen), timeout)
@@ -127,7 +127,7 @@ def tear_down() -> None:
     for process in running_sh_processes:
         _kill(process)
     running_sh_processes.clear()
-    if not rosys.is_test:
+    if not is_test():
         log.info('teardown process_pool')
         for process in process_pool._processes.values():  # pylint: disable=protected-access
             process.kill()
