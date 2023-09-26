@@ -4,8 +4,7 @@ from typing import Optional
 
 import numpy as np
 
-from .. import rosys
-from ..analysis import track
+from .. import analysis, rosys
 from ..geometry import Point, Pose, Spline
 from ..helpers import ModificationContext, eliminate_2pi, eliminate_pi, ramp
 from .drivable import Drivable
@@ -48,25 +47,25 @@ class Driver:
         self.parameters = DriveParameters()
         self.state: Optional[DriveState] = None
 
-    @track
+    @analysis.track
     async def drive_square(self) -> None:
         start_pose = deepcopy(self.odometer.prediction)
         for x, y in [(1, 0), (1, 1), (0, 1), (0, 0)]:
             await self.drive_to(start_pose.transform(Point(x=x, y=y)))
 
-    @track
+    @analysis.track
     async def drive_arc(self) -> None:
         while self.odometer.prediction.x < 2:
             await self.wheels.drive(1, np.deg2rad(25))
             await rosys.sleep(0.1)
         await self.wheels.stop()
 
-    @track
+    @analysis.track
     async def drive_path(self, path: list[PathSegment]) -> None:
         for segment in path:
             await self.drive_spline(segment.spline, throttle_at_end=segment == path[-1], flip_hook=segment.backward)
 
-    @track
+    @analysis.track
     async def drive_to(self, target: Point) -> None:
         if self.parameters.minimum_turning_radius:
             await self.drive_circle(target)
@@ -80,7 +79,7 @@ class Driver:
         )
         await self.drive_spline(approach_spline)
 
-    @track
+    @analysis.track
     async def drive_circle(self, target: Point) -> None:
         while True:
             angle = eliminate_2pi(self.odometer.prediction.direction(target) - self.odometer.prediction.yaw)
@@ -92,7 +91,7 @@ class Driver:
             await self.wheels.drive(*self._throttle(linear, angular))
             await rosys.sleep(0.1)
 
-    @track
+    @analysis.track
     async def drive_spline(self, spline: Spline, *, flip_hook: bool = False, throttle_at_end: bool = True) -> None:
         if spline.start.distance(spline.end) < 0.01:
             return  # NOTE: skip tiny splines

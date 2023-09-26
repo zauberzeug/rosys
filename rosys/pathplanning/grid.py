@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import overload
+
 import numpy as np
 
 from ..geometry import Point
@@ -42,7 +44,13 @@ class Grid:
         layer = (yaw / 2.0 / np.pi * self.size[2]) % self.size[2]
         return row, col, layer
 
-    def from_grid(self, row, col) -> tuple[float, float]:
+    @overload
+    def from_grid(self, row: float, col: float) -> tuple[float, float]: ...
+
+    @overload
+    def from_grid(self, row: np.ndarray, col: np.ndarray) -> tuple[np.ndarray, np.ndarray]: ...
+
+    def from_grid(self, row: float | np.ndarray, col: float | np.ndarray) -> tuple[float | np.ndarray, float | np.ndarray]:
         x = (col + 0.5) / self.size[1] * self.bbox[2] + self.bbox[0]
         y = (row + 0.5) / self.size[0] * self.bbox[3] + self.bbox[1]
         return x, y

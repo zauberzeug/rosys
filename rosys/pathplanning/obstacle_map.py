@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Optional
+from typing import Optional, overload
 
 import cv2
 import numpy as np
@@ -69,13 +69,20 @@ class ObstacleMap:
 
     t_lookup = [np.linspace(0, 1, i) for i in range(360)]
 
-    def _create_poses(self, spline, backward) -> tuple:
-        def pose(t: float) -> tuple[float, float, float]:
+    def _create_poses(self, spline, backward) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        @overload
+        def pose(t: float) -> tuple[float, float, float]: ...
+
+        @overload
+        def pose(t: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray]: ...
+
+        def pose(t: float | np.ndarray) -> tuple[float | np.ndarray, float | np.ndarray, float | np.ndarray]:
             return (
                 spline.x(t),
                 spline.y(t),
                 spline.yaw(t) + [0, np.pi][backward],
             )
+
         row0, col0, layer0 = self.grid.to_3d_grid(*pose(0.0))
         row1, col1, layer1 = self.grid.to_3d_grid(*pose(1.0))
         num_rows = int(abs(row1 - row0))
