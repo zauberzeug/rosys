@@ -110,18 +110,16 @@ class RtspCameraProviderHardware(CameraProvider):
                         if h == -1:
                             pos = buffer.tell() - 1
                             break
-                        else:
-                            pos = h + 2
-                            header = h
+                        pos = h + 2
+                        header = h
                     else:
                         f = buffer.getvalue().find(b'\xff\xd9', pos)
                         if f == -1:
                             pos = buffer.tell() - 1
                             break
-                        else:
-                            img_range = (header, f + 2)
-                            pos = f + 2
-                            header = None
+                        img_range = (header, f + 2)
+                        pos = f + 2
+                        header = None
 
                 if img_range:
                     yield buffer.getvalue()[img_range[0]:img_range[1]]
