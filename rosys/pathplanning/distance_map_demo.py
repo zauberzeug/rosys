@@ -34,7 +34,7 @@ with ui.pyplot():
 with ui.pyplot():
     rows = np.arange(0, grid.size[0] - 1, 0.2)
     cols = np.arange(0, grid.size[1] - 1, 0.2)
-    xx, yy = grid.from_grid(rows, cols)
+    xx, yy = grid.from_grid(rows, cols)  # pylint: disable=unpacking-non-sequence
     interp = distance_map.interpolate(xx, yy).reshape(len(rows), len(cols))
     pl.imshow(interp, cmap=pl.cm.gray, interpolation='nearest', extent=extent, clim=[0, 30])
     pt.show_obstacle_map(obstacle_map)

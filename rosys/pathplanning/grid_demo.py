@@ -8,7 +8,7 @@ x, y = 2.5, 1.0
 print(x, y)
 row, col = grid.to_grid(x, y)
 print(col, row)
-x, y = grid.from_grid(row, col)
+x, y = grid.from_grid(row, col)  # pylint: disable=unpacking-non-sequence
 print(x, y)
 
 grid = Grid((6, 8, 36), (2.0, 1.0, 4.0, 3.0))
