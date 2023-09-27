@@ -93,11 +93,7 @@ class UsbCameraProviderHardware(CameraProvider):
         return self._cameras
 
     def backup(self) -> dict:
-        cameras_copy = persistence.to_dict(self._cameras)
-        for camera in cameras_copy.values():
-            camera["active"] = False
-
-        return {'cameras': cameras_copy}
+        return {'cameras': persistence.to_dict(self._cameras)}
 
     def restore(self, data: dict[str, Any]) -> None:
         persistence.replace_dict(self._cameras, UsbCamera, data.get('cameras', {}))
@@ -168,7 +164,6 @@ class UsbCameraProviderHardware(CameraProvider):
             self.log.info(f'deactivated {camera.id}')
             await rosys.run.io_bound(device.capture.release)
         del self.devices[camera.id]
-        camera.active = False
 
     async def update_device_list(self) -> None:
         if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
@@ -194,7 +189,6 @@ class UsbCameraProviderHardware(CameraProvider):
             if uid not in self.devices:
                 self.devices[uid] = Device(uid=uid, video_id=num)
                 await self.load_value_ranges(self.devices[uid])
-                self._cameras[uid].active = True
 
     def get_capture_device(self, index: int) -> Optional[cv2.VideoCapture]:
         try:
