@@ -51,7 +51,7 @@ class UsbCameraProviderSimulation(CameraProvider):
 
     async def step(self) -> None:
         for camera in self._cameras.values():
-            if not camera.active:
+            if not camera.is_connected:
                 continue
             assert camera.image_resolution is not None, 'simulated USB cameras should have an image resolution'
             image = Image(time=rosys.time(), camera_id=camera.id, size=camera.image_resolution)

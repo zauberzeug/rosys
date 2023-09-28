@@ -93,8 +93,6 @@ class UsbCameraProviderHardware(CameraProvider):
 
     def backup(self) -> dict:
         cameras_copy = persistence.to_dict(self._cameras)
-        for camera in cameras_copy.values():
-            camera["active"] = False
 
         return {'cameras': cameras_copy}
 
