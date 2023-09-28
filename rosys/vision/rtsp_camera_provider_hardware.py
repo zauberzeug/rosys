@@ -46,7 +46,6 @@ class RtspCameraProviderHardware(CameraProvider):
 
         self.last_scan: Optional[float] = None
         self._cameras: dict[str, RtspCamera] = {}
-        self._capture_tasks: dict[str, asyncio.Task] = {}
         self._processes: list[Process] = []
         if sys.platform.startswith('darwin'):
             self.arpscan_cmd = 'sudo arp-scan'
@@ -138,7 +137,6 @@ class RtspCameraProviderHardware(CameraProvider):
                 camera.authorized = False
 
         async for image in stream():
-            camera.active = True
             if camera.crop or camera.rotation != ImageRotation.NONE:
                 image = await rosys.run.cpu_bound(process_image, image, camera.rotation, camera.crop)
             try:
@@ -149,28 +147,26 @@ class RtspCameraProviderHardware(CameraProvider):
             size = ImageSize(width=width, height=height)
             camera.resolution = size
             self.add_image(camera, Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
-        camera.active = False
         self.invalidate()
-        self._capture_tasks.pop(camera.id)
+        camera.capture_task = None
 
     async def activate(self, camera: RtspCamera) -> None:
         task = rosys.background_tasks.create(self.capture_images(camera), name=f'capture {camera.id}')
         if task is None:
             self.log.warning(f'could not create task for {camera.id}')
             return
-        self._capture_tasks[camera.id] = task
+        camera.capture_task = task
         await self.CAMERA_ADDED.call(camera)
 
     async def deactivate(self, camera: RtspCamera) -> None:
-        if camera.id not in self._capture_tasks:
-            return
-        self._capture_tasks.pop(camera.id).cancel()
+        if camera.capture_task is not None:
+            camera.capture_task.cancel()
+            camera.capture_task = None
 
     async def update_device_list(self) -> None:
         if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
             return
         self.last_scan = rosys.time()
-        old_cameras = [camera for camera in self._cameras.values() if camera.active]
         for interface in netifaces.interfaces():
             cmd = f'{self.arpscan_cmd} -I {interface} --localnet'
             output = await rosys.run.sh(cmd, timeout=10)
@@ -199,14 +195,9 @@ class RtspCameraProviderHardware(CameraProvider):
                     await self.CAMERA_ADDED.call(camera)
                 camera = self._cameras[mac]
                 camera.url = url
-                if self._cameras[mac] in old_cameras:
-                    old_cameras.remove(self._cameras[mac])
-        for camera in old_cameras:
-            camera.active = False
-        for camera in self._cameras.values():
-            if camera.id not in self._capture_tasks and camera.authorized:
-                self.log.info(f'activating authorized camera {camera.id} with url {camera.url}...')
-                await self.activate(camera)
+                if mac in self._cameras and camera.capture_task is None and camera.authorized:
+                    self.log.info(f'activating authorized camera {camera.id} with url {camera.url}...')
+                    await self.activate(camera)
 
     def get_rtsp_url(self, ip: str, vendor_mac: str) -> Optional[str]:
         if vendor_mac == 'e0:62:90':  # Jovision IP Cameras

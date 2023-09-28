@@ -1,6 +1,8 @@
+import asyncio
 from dataclasses import dataclass
 from typing import Optional
 
+from .. import persistence
 from ..geometry import Rectangle
 from .camera import Camera
 from .image import ImageSize
@@ -9,7 +11,7 @@ from .image_rotation import ImageRotation
 
 @dataclass(slots=True, kw_only=True)
 class RtspCamera(Camera):
-    active: bool = True
+    capture_task: Optional[asyncio.Task] = None
     detect: bool = False
     url: Optional[str] = None
     authorized: bool = True
@@ -28,6 +30,10 @@ class RtspCamera(Camera):
 
     crop: Optional[Rectangle] = None
     """region to crop on the original resolution before rotation"""
+
+    @property
+    def is_connected(self) -> bool:
+        return self._capture_task is not None
 
     @property
     def image_resolution(self) -> Optional[ImageSize]:
