@@ -8,6 +8,7 @@ from typing import Any, Optional
 import cv2
 import numpy as np
 import PIL
+from cv2 import UMat
 
 from .. import persistence, rosys
 from ..geometry import Rectangle
@@ -20,10 +21,9 @@ SCAN_INTERVAL = 10
 
 
 @dataclass(slots=True, kw_only=True)
-class Device:
-    uid: str
+class UsbCameraHardwareDevice:
     video_id: int
-    capture: Optional[cv2.VideoCapture] = None
+    capture: cv2.VideoCapture
     exposure_min: int = 0
     exposure_max: int = 0
     exposure_default: int = 0
@@ -75,7 +75,6 @@ class UsbCameraProviderHardware(CameraProvider):
 
         self.log = logging.getLogger('rosys.usb_camera_provider')
 
-        self.devices: dict[str, Device] = {}
         self.last_scan: Optional[float] = None
         self._cameras: dict[str, UsbCamera] = {}
 
@@ -104,23 +103,16 @@ class UsbCameraProviderHardware(CameraProvider):
 
     async def capture_images(self) -> None:
         for uid, camera in self._cameras.items():
-            if not camera.active:
-                if uid in self.devices and self.devices[uid].capture is not None:
-                    await self.deactivate(camera)
-                continue
             try:
-                if uid not in self.devices:
+                if not camera.is_connected:
                     continue
-                device = self.devices[uid]
-                if device.capture is None:
-                    await self.activate(uid)
-                if device.capture is None:
-                    self.log.warning(f'unexpected missing capture handle for {uid}')
-                    continue
-                image = await rosys.run.io_bound(self.capture_image, uid)
+
+                image = await rosys.run.io_bound(self.capture_image(camera.id))
                 if image is None:
                     await self.deactivate(camera)
                     continue
+
+                device = camera.device
                 if 'MJPG' in device.video_formats:
                     bytes_ = await rosys.run.io_bound(to_bytes, image)
                     if camera.crop or camera.rotation != ImageRotation.NONE:
@@ -140,35 +132,40 @@ class UsbCameraProviderHardware(CameraProvider):
 
     async def update_parameters(self) -> None:
         for uid, camera in self._cameras.items():
-            if camera.active and uid in self.devices and self.devices[uid].capture is not None:
-                await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
+            if camera.is_connected:
+                await rosys.run.io_bound(self.set_parameters, camera)
 
     def capture_image(self, id_) -> cv2.UMat:
-        device = self.devices[id_]
-        assert device.capture is not None
-        _, image = device.capture.read()
+        camera = self._cameras[id_]
+        if not camera.is_connected:
+            return None
+        assert camera.device.capture is not None
+        _, image = camera.device.capture.read()
         return image
 
-    async def activate(self, uid: str) -> None:
+    async def activate(self, uid: str, video_id: str) -> None:
         camera = self._cameras[uid]
-        device = self.devices[uid]
-        capture = await rosys.run.io_bound(self.get_capture_device, device.video_id)
+        if camera.is_connected:
+            return
+
+        capture = await rosys.run.io_bound(self.get_capture_device, video_id)
         if capture is None:
             return
-        self.devices[uid].capture = capture
+
+        device = UsbCameraHardwareDevice(video_id=video_id, capture=capture)
+        await self.load_value_ranges(device)
         await rosys.run.io_bound(self.set_parameters, camera, device)
         self.log.info(f'activated {uid}')
         await self.CAMERA_ADDED.call(camera)
 
     async def deactivate(self, camera: UsbCamera) -> None:
-        if camera.id not in self.devices:
+        if not camera.is_connected:
             return
-        device = self.devices[camera.id]
-        if device.capture is not None:
-            self.log.info(f'deactivated {camera.id}')
-            await rosys.run.io_bound(device.capture.release)
-        del self.devices[camera.id]
-        camera.active = False
+
+        assert camera.device is not None
+        await rosys.run.io_bound(camera.device.capture.release)
+        camera.device = None
+        self.log.info(f'deactivated {camera.id}')
 
     async def update_device_list(self) -> None:
         if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
@@ -191,10 +188,8 @@ class UsbCameraProviderHardware(CameraProvider):
             if 'dev/video' not in lines[1]:
                 continue
             num = int(lines[1].strip().lstrip('/dev/video'))
-            if uid not in self.devices:
-                self.devices[uid] = Device(uid=uid, video_id=num)
-                await self.load_value_ranges(self.devices[uid])
-                self._cameras[uid].active = True
+            if not self._cameras[uid].is_connected:
+                self.activate(uid, num)
 
     def get_capture_device(self, index: int) -> Optional[cv2.VideoCapture]:
         try:
@@ -214,13 +209,12 @@ class UsbCameraProviderHardware(CameraProvider):
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
             await self.deactivate(camera)
-        self.devices.clear()
 
     @staticmethod
     def is_operable() -> bool:
         return shutil.which('v4l2-ctl') is not None
 
-    def set_parameters(self, camera: UsbCamera, device: Device) -> None:
+    def set_parameters(self, camera: UsbCamera, device: UsbCameraHardwareDevice) -> None:
         assert device.capture is not None
         camera.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
         if not camera.auto_exposure and camera.exposure is None and device.exposure_max > 0:
@@ -257,7 +251,7 @@ class UsbCameraProviderHardware(CameraProvider):
                     self.log.info(f'updating exposure of {camera.id} from {exposure} to {camera.exposure})')
                     device.capture.set(cv2.CAP_PROP_EXPOSURE, int(camera.exposure * device.exposure_max))
 
-    async def load_value_ranges(self, device: Device) -> None:
+    async def load_value_ranges(self, device: UsbCameraHardwareDevice) -> None:
         output = await self.run_v4l(device, '--all')
         if output is None:
             return
@@ -274,7 +268,7 @@ class UsbCameraProviderHardware(CameraProvider):
         for m in matches:
             device.video_formats.add(m.group(1))
 
-    async def run_v4l(self, device: Device, *args) -> str:
+    async def run_v4l(self, device: UsbCameraHardwareDevice, *args) -> str:
         cmd = ['v4l2-ctl', '-d', str(device.video_id)]
         cmd.extend(args)
         return await rosys.run.sh(cmd)

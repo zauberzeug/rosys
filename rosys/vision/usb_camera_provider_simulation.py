@@ -1,6 +1,7 @@
 import io
 import random
 import time
+from dataclasses import dataclass
 from typing import Any, Optional
 
 import numpy as np
@@ -12,6 +13,11 @@ from .. import rosys
 from .camera_provider import CameraProvider
 from .image import Image, ImageSize
 from .usb_camera import UsbCamera
+
+
+@dataclass(slots=True, kw_only=True)
+class UsbCameraSimulatedDevice:
+    video_id: int
 
 
 class UsbCameraProviderSimulation(CameraProvider):
@@ -54,6 +60,19 @@ class UsbCameraProviderSimulation(CameraProvider):
             else:
                 image.data = await rosys.run.cpu_bound(self.create_image_data, camera)
             camera.images.append(image)
+
+    def get_next_video_id(self) -> int:
+        return max([camera.device.video_id for camera in self._cameras.values()], default=0) + 1
+
+    async def activate(self, camera_id: str) -> None:
+        '''Simulates activating a camera by assigning it a mock video device.'''
+        if camera_id not in self._cameras:
+            raise ValueError(f'Camera with id {camera_id} is not managed by this provider')
+
+        camera = self._cameras[camera_id]
+        device = self.get_next_video_id()
+        camera.device = device
+        self.CAMERA_ADDED.emit(camera)
 
     @staticmethod
     def create(uid: str, width: int = 800, height: int = 600, color: Optional[str] = None) -> UsbCamera:

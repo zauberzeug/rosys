@@ -1,6 +1,7 @@
-from dataclasses import dataclass
-from typing import Optional
+from dataclasses import dataclass, field
+from typing import Any, Optional
 
+from .. import persistence
 from ..geometry import Rectangle
 from .camera import Camera
 from .image import ImageSize
@@ -9,7 +10,8 @@ from .image_rotation import ImageRotation
 
 @dataclass(slots=True, kw_only=True)
 class UsbCamera(Camera):
-    active: bool = True
+    device: Optional[Any] = field(default=None, metadata=persistence.exclude)
+
     detect: bool = False
 
     color: Optional[str] = None
@@ -32,6 +34,10 @@ class UsbCamera(Camera):
 
     crop: Optional[Rectangle] = None
     """region to crop on the original resolution before rotation"""
+
+    @property
+    def is_connected(self) -> bool:
+        return self.device is not None
 
     @property
     def image_resolution(self) -> Optional[ImageSize]:
