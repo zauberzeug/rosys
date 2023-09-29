@@ -32,7 +32,7 @@ class DelaunayPlanner:
         self.areas: list[Area] = []
         self.obstacles: list[Obstacle] = []
         self.obstacle_map: Optional[ObstacleMap] = None
-        self.tri_points: Optional[np.array] = None
+        self.tri_points: Optional[np.ndarray] = None
         self.tri_mesh: Optional[spatial.Delaunay] = None
         self.pose_groups: Optional[list[DelaunayPoseGroup]] = None
         self.graph: Optional[nx.DiGraph] = None
@@ -71,6 +71,7 @@ class DelaunayPlanner:
         self.obstacle_map = ObstacleMap.from_world(self.robot_outline, self.areas, self.obstacles, grid, deadline)
 
     def _create_graph(self) -> None:
+        assert self.obstacle_map is not None
         min_x, min_y, size_x, size_y = self.obstacle_map.grid.bbox
         X, Y = np.meshgrid(np.arange(min_x, min_x + size_x - GRID_RESOLUTION / 2, GRID_RESOLUTION),
                            np.arange(min_y, min_y + size_y, GRID_RESOLUTION * np.sqrt(3) / 2))
@@ -94,13 +95,14 @@ class DelaunayPlanner:
         keep[::4, 1::2] = np.logical_and(keep[::4, 1::2], D[::4, 1::2] < 2)
         keep[2::4, ::2] = np.logical_and(keep[2::4, ::2], D[2::4, ::2] < 2)
         self.tri_points = np.stack((X[keep], Y[keep]), axis=1)
+        assert self.tri_points is not None  # NOTE: mypy doesn't seem to understand np.stack
 
         self.tri_mesh = spatial.Delaunay(self.tri_points)
         self.pose_groups = [
             DelaunayPoseGroup(
                 index=i,
                 point=Point(x=self.tri_points[i, 0], y=self.tri_points[i, 1]),
-                neighbor_indices=_tri_neighbors(self.tri_mesh, i),
+                neighbor_indices=_tri_neighbors(self.tri_mesh, i).tolist(),
                 poses=[
                     Pose(x=point[0], y=point[1], yaw=np.arctan2(neighbor[1] - point[1], neighbor[0] - point[0]))
                     for neighbor in self.tri_points[_tri_neighbors(self.tri_mesh, i)]
@@ -126,6 +128,9 @@ class DelaunayPlanner:
                             self.graph.add_edge((g_, p_), (g, p), backward=True, weight=1.2*length)
 
     def search(self, start: Pose, goal: Pose) -> list[PathSegment]:
+        assert self.obstacle_map is not None
+        assert self.graph is not None
+        assert self.pose_groups is not None
         if TRY_SINGLE_PATH:
             for backward in [True, False]:
                 simple_spline = Spline.from_poses(start, goal, backward=backward)
@@ -152,9 +157,9 @@ class DelaunayPlanner:
                     ])
         grid_entries = _find_grid_passages(self.obstacle_map, self.pose_groups, start, True)
         grid_exits = _find_grid_passages(self.obstacle_map, self.pose_groups, goal, False)
-        for enter, exit in itertools.product(grid_entries, grid_exits):
+        for enter, exit_ in itertools.product(grid_entries, grid_exits):
             p, g = enter.coordinate
-            p_, g_ = exit.coordinate
+            p_, g_ = exit_.coordinate
             path: list[PathSegment] = [enter.segment]
             last_g, last_p = g, p
             try:
@@ -167,7 +172,7 @@ class DelaunayPlanner:
                     last_g, last_p = next_g, next_p
             except nx.exception.NetworkXNoPath:
                 continue
-            path.append(exit.segment)
+            path.append(exit_.segment)
 
             while True:
                 shortcuts: list[PathSegment] = []
@@ -221,10 +226,10 @@ def _t_array(n: int) -> np.ndarray:
 
 
 @lru_cache(maxsize=10000)
-def _generate_pose_offsets(grid: Grid, dx: float, dy: float, yaw: float, yaw_: float) -> tuple[float, float, float]:
+def _generate_pose_offsets(grid: Grid, dx: float, dy: float, yaw: float, yaw_: float) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     spline = FastSpline(0, 0, yaw, dx, dy, yaw_, False)
-    row0, col0, layer0 = grid.to_grid(0, 0, yaw)
-    row1, col1, layer1 = grid.to_grid(dx, dy, yaw_)
+    row0, col0, layer0 = grid.to_3d_grid(0, 0, yaw)
+    row1, col1, layer1 = grid.to_3d_grid(dx, dy, yaw_)
     num_rows = int(abs(row1 - row0))
     num_cols = int(abs(col1 - col0))
     num_layers = int(abs(layer1 - layer0))

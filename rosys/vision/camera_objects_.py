@@ -35,11 +35,11 @@ class CameraObjects(Group):
     def calibrated_cameras(self) -> dict[str, Camera]:
         return {id: camera for id, camera in self.camera_provider.cameras.items() if camera.calibration}
 
-    def find_objects(self, type: str) -> dict[str, Object3D]:
+    def find_objects(self, type_: str) -> dict[str, Object3D]:
         return {
             (obj.name or '').split('_', 1)[1]: obj
             for obj in self.scene.objects.values()
-            if (obj.name or '').split('_', 1)[0] == type
+            if (obj.name or '').split('_', 1)[0] == type_
         }
 
     async def update(self) -> None:

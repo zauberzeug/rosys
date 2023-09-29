@@ -40,16 +40,17 @@ class Automation:
             self._is_waited = True
             coro_iter = self.coro.__await__()
             iter_send, iter_throw = coro_iter.send, coro_iter.throw
-            send, message = iter_send, None
+            send: Callable = iter_send
+            message: Any = None
             while not self._stop:
                 try:
                     while not self._can_run.is_set() and not self._stop:
-                        yield from self._can_run.wait().__await__()
+                        yield from self._can_run.wait().__await__()  # pylint: disable=no-member
                 except BaseException as err:
                     send, message = iter_throw, err
 
                 if self._stop:
-                    return
+                    return None
 
                 try:
                     signal = send(message)
@@ -58,8 +59,7 @@ class Automation:
                     if self.on_complete:
                         self.on_complete()
                     return err.value
-                else:
-                    send = iter_send
+                send = iter_send
                 try:
                     message = yield signal
                 except BaseException as err:
@@ -71,6 +71,7 @@ class Automation:
             raise
         finally:
             self._is_waited = False
+        return None
 
     def pause(self) -> None:
         self._can_run.clear()

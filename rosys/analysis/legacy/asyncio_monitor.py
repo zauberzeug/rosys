@@ -1,8 +1,8 @@
 import logging
-import os.path
 import re
 from collections import defaultdict
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Optional
 
 from ... import rosys
@@ -24,7 +24,7 @@ coro_pattern = re.compile(r"(.*) (running at .*)")
 
 class AsyncioMonitor:
 
-    def __init__(self, log_filepath: str = os.path.expanduser('~/.rosys/debug.log')) -> None:
+    def __init__(self, log_filepath: Path = Path('~/.rosys/debug.log').expanduser()) -> None:
         self.log = logging.getLogger('rosys.asyncio_monitor')
 
         self.log_filepath = log_filepath
@@ -34,15 +34,15 @@ class AsyncioMonitor:
         rosys.on_repeat(self.step, 10)
 
     async def step(self) -> None:
-        if not os.path.isfile(self.log_filepath):
+        if not self.log_filepath.is_file():
             return
 
         if self.log_position is None:  # NOTE only messages generated after startup should be analyzed
-            self.log_position = os.path.getsize(self.log_filepath)
-        if os.path.getsize(self.log_filepath) < self.log_position:  # NOTE detect beginning of new log file
+            self.log_position = self.log_filepath.stat().st_size
+        if self.log_filepath.stat().st_size < self.log_position:  # NOTE detect beginning of new log file
             self.log_position = 0
         ignore_warnings = False
-        with open(self.log_filepath, 'r') as f:
+        with self.log_filepath.open() as f:
             f.seek(self.log_position)
             for line in f:
                 line = color_pattern.sub('', line)
@@ -58,10 +58,10 @@ class AsyncioMonitor:
 
     def parse_async_warning(self, msg: str) -> Optional[Measurement]:
         if 'rosys/actors/asyncio_monitor.py' in msg:
-            return  # NOTE we ignore our own messages
+            return None  # NOTE we ignore our own messages
         match_warning = warning_pattern.match(msg)
         if match_warning is None:
-            return
+            return None
         time = match_warning.group(1)
         duration = float(match_warning.group(3))
         description = match_warning.group(2)
@@ -75,7 +75,7 @@ class AsyncioMonitor:
             match_task = task_pattern.match(description)
             if match_task is None:
                 self.log.warning(f'could not parse task "{description}"')
-                return
+                return None
             name = match_task.group(1)
             details = match_task.group(2)
             if name.startswith('Task-'):

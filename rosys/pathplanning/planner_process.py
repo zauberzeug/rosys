@@ -83,9 +83,11 @@ class PlannerProcess(Process):
                     self.respond(cmd, None)
                 if isinstance(cmd, PlannerTestCommand):
                     self.planner.update_map(cmd.areas, cmd.obstacles, [cmd.spline.start, cmd.spline.end], cmd.deadline)
+                    assert self.planner.obstacle_map is not None
                     self.respond(cmd, bool(self.planner.obstacle_map.test_spline(cmd.spline, cmd.backward)))
                 if isinstance(cmd, PlannerObstacleDistanceCommand):
-                    self.planner.update_map(cmd.areas, cmd.obstacles, [cmd.pose], cmd.deadline)
+                    self.planner.update_map(cmd.areas, cmd.obstacles, [cmd.pose.point], cmd.deadline)
+                    assert self.planner.obstacle_map is not None
                     self.respond(cmd, self.planner.obstacle_map.get_distance(cmd.pose.x, cmd.pose.y, cmd.pose.yaw))
             except Exception as e:
                 self.log.exception(f'failed to compute cmd "{cmd}"')

@@ -47,8 +47,8 @@ class LizardFirmware:
             rosys.notify(response.get('message', 'Could not access online version'), 'warning')
 
     def read_local_version(self) -> None:
-        bin = self.PATH / 'build' / 'lizard.bin'
-        with open(bin, 'rb') as f:
+        path = self.PATH / 'build' / 'lizard.bin'
+        with path.open('rb') as f:
             head = f.read(150).decode('utf-8', 'backslashreplace')
         self.local_version = head.split(' ')[3].replace('\x00', '').split('lizard')[0].removeprefix('v')
 
@@ -84,11 +84,11 @@ class LizardFirmware:
 
     @awaitable
     def download(self) -> None:
-        url = requests.get(self.GITHUB_URL).json()['assets'][0]['browser_download_url']
-        zip = self.PATH / 'lizard.zip'
-        zip.write_bytes(requests.get(url).content)
-        subprocess.run(['unzip', '-o', zip], cwd=self.PATH)
-        zip.unlink()
+        url = requests.get(self.GITHUB_URL, timeout=5.0).json()['assets'][0]['browser_download_url']
+        zip_path = self.PATH / 'lizard.zip'
+        zip_path.write_bytes(requests.get(url, timeout=5.0).content)
+        subprocess.run(['unzip', '-o', zip_path], cwd=self.PATH, check=True)
+        zip_path.unlink()
         self.read_local_version()
 
     async def flash_core(self) -> None:
@@ -106,7 +106,7 @@ class LizardFirmware:
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
         await self.robot_brain.send('p0.flash()')
         start = rosys.time()
-        while self.robot_brain.hardware_time < start + 3.0:
+        while (self.robot_brain.hardware_time or 0) < start + 3.0:
             if rosys.time() > start + 60.0:
                 rosys.notify('Failed.', 'negative')
                 return

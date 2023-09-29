@@ -5,26 +5,26 @@ import shlex
 import signal
 import subprocess
 import uuid
-from asyncio.subprocess import Process
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 from contextlib import contextmanager
 from functools import partial, wraps
+from pathlib import Path
 from typing import Any, Callable, Generator, Optional
 
 from psutil import Popen
 
-from . import rosys
+from .helpers import is_stopping, is_test
 
 process_pool = ProcessPoolExecutor()
 thread_pool = ThreadPoolExecutor(thread_name_prefix='run.py thread_pool')
 running_cpu_bound_processes: list[str] = []  # NOTE is used in tests to advance time slower until computation is done
-running_sh_processes: list[Process] = []
+running_sh_processes: list[Popen] = []
 log = logging.getLogger('rosys.run')
 
 
 async def io_bound(callback: Callable, *args: Any, **kwargs: Any):
-    if rosys.is_stopping():
+    if is_stopping():
         return
     loop = asyncio.get_running_loop()
     try:
@@ -45,7 +45,7 @@ def awaitable(func: Callable) -> Callable:
 
 
 async def cpu_bound(callback: Callable, *args: Any):
-    if rosys.is_stopping():
+    if is_stopping():
         return
     with cpu():
         try:
@@ -62,15 +62,18 @@ async def cpu_bound(callback: Callable, *args: Any):
 
 @contextmanager
 def cpu() -> Generator[None, None, None]:
-    id = str(uuid.uuid4())
-    running_cpu_bound_processes.append(id)
+    id_ = str(uuid.uuid4())
+    running_cpu_bound_processes.append(id_)
     try:
         yield
     finally:
-        running_cpu_bound_processes.remove(id)
+        running_cpu_bound_processes.remove(id_)
 
 
-async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool = False, working_dir: Optional[str] = None) -> str:
+async def sh(command: list[str] | str, *,
+             timeout: Optional[float] = 1,
+             shell: bool = False,
+             working_dir: Optional[Path] = None) -> str:
     """executes a shell command
 
     Args:
@@ -81,17 +84,12 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
         stdout
     """
     def popen() -> str:
-        if shell:  # convert to string
-            cmd = ' '.join(command) if isinstance(command, list) else command
-        else:  # convert to list
-            cmd = shlex.split(command) if isinstance(command, str) else command
+        cmd_list = command if isinstance(command, list) else shlex.split(command)
         if timeout is not None:
-            if shell:
-                cmd = f'timeout --signal=SIGKILL {timeout} {cmd}'
-            else:
-                cmd = ['timeout', '--signal=SIGKILL', str(timeout)] + cmd
+            cmd_list = ['timeout', '--signal=SIGKILL', str(timeout)] + cmd_list
+        cmd = ' '.join(cmd_list) if shell else cmd_list
         # log.info(f'running sh: "{cmd}"')
-        proc = subprocess.Popen(
+        proc = subprocess.Popen(  # pylint: disable=consider-using-with
             cmd,
             cwd=working_dir,
             stdout=subprocess.PIPE,
@@ -105,8 +103,8 @@ async def sh(command: list[str] | str, timeout: Optional[float] = 1, shell: bool
         running_sh_processes.remove(proc)
         return stdout.decode('utf-8')
 
-    if rosys.is_stopping():
-        return
+    if is_stopping():
+        return ''
     try:
         return await asyncio.wait_for(io_bound(popen), timeout)
     except asyncio.TimeoutError:
@@ -126,10 +124,12 @@ def tear_down() -> None:
     # stopping process as described in https://www.cloudcity.io/blog/2019/02/27/things-i-wish-they-told-me-about-multiprocessing-in-python/
     log.info('teardown thread_pool')
     thread_pool.shutdown(wait=False, cancel_futures=True)
-    [_kill(p) for p in running_sh_processes]
+    for process in running_sh_processes:
+        _kill(process)
     running_sh_processes.clear()
-    if not rosys.is_test:
+    if not is_test():
         log.info('teardown process_pool')
-        [p.kill() for p in process_pool._processes.values()]
+        for process in process_pool._processes.values():  # pylint: disable=protected-access
+            process.kill()
         process_pool.shutdown(wait=True, cancel_futures=True)
     log.info('teardown complete')

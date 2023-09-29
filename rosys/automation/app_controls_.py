@@ -44,7 +44,6 @@ class AppControls:
 
         self.robot_brain = robot_brain
         self.automator = automator
-        self.APP_CONNECTED
 
         self.main_buttons: dict[str, AppButton] = {
             'play': AppButton('play_arrow', released=automator.start),

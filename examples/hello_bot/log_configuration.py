@@ -11,8 +11,8 @@ def setup():
         'disable_existing_loggers': True,
         'formatters': {
             'default': {
-                'format': '%(asctime)s.%(msecs)03d [%(levelname)s] %(name)s: %(message)s',
-                'datefmt': '%Y-%m-%d %H:%M:%S',
+                'format': r'%(asctime)s.%(msecs)03d [%(levelname)s] %(name)s: %(message)s',
+                'datefmt': r'%Y-%m-%d %H:%M:%S',
             },
         },
         'handlers': {

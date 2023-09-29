@@ -6,9 +6,8 @@ import logging
 from dataclasses import dataclass
 from typing import Awaitable, Callable
 
+from nicegui import background_tasks
 from nicegui import globals as nicegui_globals
-
-from rosys import background_tasks
 
 from .helpers import invoke
 
@@ -28,12 +27,12 @@ class EventListener:
 class Event:
 
     def __init__(self) -> None:
-        self.listeners: list[EventListener] = list()
+        self.listeners: list[EventListener] = []
         events.append(self)
 
     def register(self, callback: Callable) -> Event:
         if not callable(callback):
-            raise Exception('non-callable callback')
+            raise ValueError('non-callable callback')
         if any(l.callback == callback for l in self.listeners):
             return self  # NOTE: don't add duplicate listeners
         frame = inspect.currentframe()

@@ -149,7 +149,7 @@ class Automator:
         self.AUTOMATION_FAILED.emit(str(e))
         rosys.notify('automation failed', 'negative')
         if rosys.is_test:
-            self.log.exception('automation failed', e)
+            self.log.exception('automation failed')
 
     def _on_complete(self) -> None:
         self.AUTOMATION_COMPLETED.emit()

@@ -58,6 +58,7 @@ debugpy = "^1.2.1"
 py-spy = "^0.3.10"
 isort = "^5.10.1"
 esptool = "^4.3"
+cryptography = "^41.0.4" # required by esptool, but older versions have security issue
 
 [build-system]
 requires = [

@@ -25,18 +25,20 @@ def prepare_data(timings) -> tuple[list[str], list[dict[str, float]]]:
     return names, [calc_box([w.duration * 1000 for w in t]) for t in timings.values()]
 
 
-class AsyncioPage(ui.page):
+class AsyncioPage(ui.element):
 
     def __init__(self, asyncio_monitor: AsyncioMonitor) -> None:
-        super().__init__('/asyncio')
+        super().__init__()
 
-        self.asyncio_monitor = asyncio_monitor
+        async def update() -> None:
+            names, data = await run.cpu_bound(prepare_data, asyncio_monitor.timings)
+            chart.options['xAxis']['categories'][:] = names
+            chart.options['series']['data'][:] = data
+            chart.update()
 
         with self:
-            with ui.row():
-                ui.button('load', on_click=self.update)
-                self.info_label = ui.label()
-            self.chart = ui.chart(options={
+            ui.button('load', on_click=update)
+            chart = ui.chart(options={
                 'title': False,
                 'chart': {'type': 'boxplot'},
                 'xAxis': {'categories': []},
@@ -46,9 +48,3 @@ class AsyncioPage(ui.page):
                 'legend': False,
                 'credits': False,
             }).classes('fit').style('height:400px')
-
-    async def update(self) -> None:
-        names, data = await run.cpu_bound(prepare_data, self.asyncio_monitor.timings)
-        self.chart.options['xAxis']['categories'][:] = names
-        self.chart.options['series']['data'][:] = data
-        self.chart.update()

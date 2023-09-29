@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, overload
 
 import numpy as np
 
@@ -76,31 +76,79 @@ class Spline:
             end=end,
         )
 
-    def x(self, t: float) -> float:
+    @overload
+    def x(self, t: float) -> float: ...
+
+    @overload
+    def x(self, t: np.ndarray) -> np.ndarray: ...
+
+    def x(self, t: float | np.ndarray) -> float | np.ndarray:
         return t**3 * self.d + 3 * t**2 * (1 - t) * self.c + 3 * t * (1 - t)**2 * self.b + (1 - t)**3 * self.a
 
-    def y(self, t: float) -> float:
+    @overload
+    def y(self, t: float) -> float: ...
+
+    @overload
+    def y(self, t: np.ndarray) -> np.ndarray: ...
+
+    def y(self, t: float | np.ndarray) -> float | np.ndarray:
         return t**3 * self.h + 3 * t**2 * (1 - t) * self.g + 3 * t * (1 - t)**2 * self.f + (1 - t)**3 * self.e
 
-    def gx(self, t: float) -> float:
+    @overload
+    def gx(self, t: float) -> float: ...
+
+    @overload
+    def gx(self, t: np.ndarray) -> np.ndarray: ...
+
+    def gx(self, t: float | np.ndarray) -> float | np.ndarray:
         return 3 * (self.m * t**2 + 2 * self.n * t + self.o)
 
-    def ggx(self, t: float) -> float:
+    @overload
+    def ggx(self, t: float) -> float: ...
+
+    @overload
+    def ggx(self, t: np.ndarray) -> np.ndarray: ...
+
+    def ggx(self, t: float | np.ndarray) -> float | np.ndarray:
         return 6 * (self.m * t + self.n)
 
-    def gy(self, t: float) -> float:
+    @overload
+    def gy(self, t: float) -> float: ...
+
+    @overload
+    def gy(self, t: np.ndarray) -> np.ndarray: ...
+
+    def gy(self, t: float | np.ndarray) -> float | np.ndarray:
         return 3 * (self.p * t**2 + 2 * self.q * t + self.r)
 
-    def ggy(self, t: float) -> float:
+    @overload
+    def ggy(self, t: float) -> float: ...
+
+    @overload
+    def ggy(self, t: np.ndarray) -> np.ndarray: ...
+
+    def ggy(self, t: float | np.ndarray) -> float | np.ndarray:
         return 6 * (self.p * t + self.q)
 
-    def yaw(self, t: float) -> float:
+    @overload
+    def yaw(self, t: float) -> float: ...
+
+    @overload
+    def yaw(self, t: np.ndarray) -> np.ndarray: ...
+
+    def yaw(self, t: float | np.ndarray) -> float | np.ndarray:
         return np.arctan2(self.gy(t), self.gx(t))
 
     def pose(self, t: float) -> Pose:
         return Pose(x=self.x(t), y=self.y(t), yaw=self.yaw(t))
 
-    def curvature(self, t: float) -> float:
+    @overload
+    def curvature(self, t: float) -> float: ...
+
+    @overload
+    def curvature(self, t: np.ndarray) -> np.ndarray: ...
+
+    def curvature(self, t: float | np.ndarray) -> float | np.ndarray:
         x_ = self.gx(t)
         y_ = self.gy(t)
         x__ = self.ggx(t)
@@ -110,7 +158,8 @@ class Spline:
     def max_curvature(self, t_min: float = 0.0, t_max: float = 1.0) -> float:
         poly = [
             (1296 * self.m * self.p ** 2 + 1296 * self.m ** 3) * self.q - 1296 * self.n * self.p ** 3 - 1296 * self.m ** 2 *
-            self.n * self.p, (1620 * self.m * self.p ** 2 + 1620 * self.m ** 3) * self.r + 3240 * self.m * self.p * self.q
+            self.n * self.p, (1620 * self.m * self.p ** 2 + 1620 * self.m ** 3) *
+            self.r + 3240 * self.m * self.p * self.q
             ** 2 + (3240 * self.m ** 2 * self.n - 3240 * self.n * self.p ** 2) * self.q - 1620 * self.o * self.p ** 3 +
             ((-1620 * self.m ** 2 * self.o) - 3240 * self.m * self.n ** 2) * self.p,
             (5184 * self.m * self.p * self.q + 1296 * self.n * self.p ** 2 + 6480 * self.m ** 2 * self.n) * self.r + 1296 *

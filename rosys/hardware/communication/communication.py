@@ -18,6 +18,12 @@ class Communication(abc.ABC):
     def is_possible(cls) -> bool:
         return False
 
+    def connect(self) -> None:
+        pass
+
+    def disconnect(self) -> None:
+        pass
+
     @abc.abstractmethod
     async def send(self, msg: str) -> None:
         pass

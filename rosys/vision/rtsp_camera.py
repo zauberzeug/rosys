@@ -1,26 +1,10 @@
 from dataclasses import dataclass
-from enum import Enum
-from typing import Optional, Self
-
-import rosys
+from typing import Optional
 
 from ..geometry import Rectangle
 from .camera import Camera
 from .image import ImageSize
-
-
-class ImageRotation(str, Enum):
-    NONE: int = 0
-    RIGHT: int = 90
-    UPSIDE_DOWN: int = 180
-    LEFT: int = 270
-
-    @classmethod
-    def from_degrees(cls, degrees: int) -> Self:
-        for rotation in cls:
-            if int(rotation.value) == degrees % 360:
-                return rotation
-        raise ValueError(f'invalid rotation angle: {degrees}')
+from .image_rotation import ImageRotation
 
 
 @dataclass(slots=True, kw_only=True)
@@ -49,12 +33,11 @@ class RtspCamera(Camera):
     def image_resolution(self) -> Optional[ImageSize]:
         if self.resolution is None:
             return None
-        width = self.crop.width if self.crop else self.resolution.width
-        height = self.crop.height if self.crop else self.resolution.height
-        if self.rotation == ImageRotation.LEFT or self.rotation == ImageRotation.RIGHT:
-            return ImageSize(width=height, height=width)
-        else:
-            return ImageSize(width=self.resolution.width, height=self.resolution.height)
+        width = int(self.crop.width) if self.crop else self.resolution.width
+        height = int(self.crop.height) if self.crop else self.resolution.height
+        if self.rotation in {ImageRotation.LEFT, ImageRotation.RIGHT}:
+            width, height = height, width
+        return ImageSize(width=width, height=height)
 
     @property
     def rotation_angle(self) -> int:
@@ -72,7 +55,3 @@ class RtspCamera(Camera):
     def rotate_counter_clockwise(self) -> None:
         """Rotate the image counter clockwise by 90 degrees."""
         self.rotation_angle -= 90
-
-    def __repr__(self) -> dict:
-        last_image = f'{rosys.time() - self.latest_captured_image.time:.0f} s ago' if self.latest_captured_image else 'never'
-        return {'name': self.name, 'url': self.url, 'active': self.active, 'last_image': last_image}

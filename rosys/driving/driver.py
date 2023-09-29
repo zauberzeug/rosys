@@ -4,8 +4,7 @@ from typing import Optional
 
 import numpy as np
 
-from .. import rosys
-from ..analysis import track
+from .. import analysis, rosys
 from ..geometry import Point, Pose, Spline
 from ..helpers import ModificationContext, eliminate_2pi, eliminate_pi, ramp
 from .drivable import Drivable
@@ -48,25 +47,25 @@ class Driver:
         self.parameters = DriveParameters()
         self.state: Optional[DriveState] = None
 
-    @track
+    @analysis.track
     async def drive_square(self) -> None:
         start_pose = deepcopy(self.odometer.prediction)
         for x, y in [(1, 0), (1, 1), (0, 1), (0, 0)]:
             await self.drive_to(start_pose.transform(Point(x=x, y=y)))
 
-    @track
+    @analysis.track
     async def drive_arc(self) -> None:
         while self.odometer.prediction.x < 2:
             await self.wheels.drive(1, np.deg2rad(25))
             await rosys.sleep(0.1)
         await self.wheels.stop()
 
-    @track
+    @analysis.track
     async def drive_path(self, path: list[PathSegment]) -> None:
         for segment in path:
             await self.drive_spline(segment.spline, throttle_at_end=segment == path[-1], flip_hook=segment.backward)
 
-    @track
+    @analysis.track
     async def drive_to(self, target: Point) -> None:
         if self.parameters.minimum_turning_radius:
             await self.drive_circle(target)
@@ -80,11 +79,10 @@ class Driver:
         )
         await self.drive_spline(approach_spline)
 
-    @track
+    @analysis.track
     async def drive_circle(self, target: Point) -> None:
         while True:
-            direction = self.odometer.prediction.point.direction(target)
-            angle = eliminate_2pi(direction - self.odometer.prediction.yaw)
+            angle = eliminate_2pi(self.odometer.prediction.direction(target) - self.odometer.prediction.yaw)
             if abs(angle) < np.deg2rad(5):
                 break
             linear = 0.5
@@ -93,7 +91,7 @@ class Driver:
             await self.wheels.drive(*self._throttle(linear, angular))
             await rosys.sleep(0.1)
 
-    @track
+    @analysis.track
     async def drive_spline(self, spline: Spline, *, flip_hook: bool = False, throttle_at_end: bool = True) -> None:
         if spline.start.distance(spline.end) < 0.01:
             return  # NOTE: skip tiny splines
@@ -121,7 +119,7 @@ class Driver:
             if drive_backward and not self.parameters.can_drive_backwards:
                 drive_backward = False
                 curvature = (-1 if curvature > 0 else 1) / max(self.parameters.minimum_turning_radius, 0.001)
-            linear = -1 if drive_backward else 1
+            linear: float = -1 if drive_backward else 1
             t = spline.closest_point(hook.x, hook.y)
             if t >= 1.0 and throttle_at_end:
                 target_distance = self.odometer.prediction.projected_distance(spline.pose(1.0))
@@ -163,12 +161,11 @@ class Driver:
     def throttle_factor(self) -> float:
         if self.parameters.max_detection_age_ramp is None:
             return 1
-        elif self.odometer.detection is None:
+        if self.odometer.detection is None:
             return 0
-        else:
-            age_ramp = self.parameters.max_detection_age_ramp
-            age = rosys.time() - self.odometer.detection.time
-            return ramp(age, age_ramp[0], age_ramp[1], 1.0, 0.0, clip=True)
+        age_ramp = self.parameters.max_detection_age_ramp
+        age = rosys.time() - self.odometer.detection.time
+        return ramp(age, age_ramp[0], age_ramp[1], 1.0, 0.0, clip=True)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -187,12 +184,11 @@ class Carrot:
     def pose(self) -> Pose:
         if self.t < 1.0:
             return self.spline.pose(self.t)
-        else:
-            return Pose(
-                x=self.spline.x(1.0) + (self.t - 1.0) * self.spline.gx(1.0),
-                y=self.spline.y(1.0) + (self.t - 1.0) * self.spline.gy(1.0),
-                yaw=self.spline.yaw(1.0),
-            )
+        return Pose(
+            x=self.spline.x(1.0) + (self.t - 1.0) * self.spline.gx(1.0),
+            y=self.spline.y(1.0) + (self.t - 1.0) * self.spline.gy(1.0),
+            yaw=self.spline.yaw(1.0),
+        )
 
     @property
     def offset_point(self) -> Point:

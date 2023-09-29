@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from itertools import groupby
+from typing import Sequence
 
 import humanize
 from matplotlib.colors import hsv_to_rgb, to_hex
@@ -43,6 +44,7 @@ class kpi_page(ABC):
             ui.timer(5, lambda: show(toggle.value))
 
             def show(num_days: int) -> None:
+                time_buckets: Sequence[TimeBucket]
                 if num_days <= 7:
                     time_buckets = kpi_logger.days[-num_days:]
                 elif num_days % 7 == 0:
@@ -105,8 +107,7 @@ class kpi_page(ABC):
 
 def _label(time_bucket: TimeBucket) -> str:
     if isinstance(time_bucket, Month):
-        return str_to_date(time_bucket.date).strftime('%b')
-    elif isinstance(time_bucket, Week):
+        return str_to_date(time_bucket.date).strftime(r'%b')
+    if isinstance(time_bucket, Week):
         return f'#{str_to_date(time_bucket.date).isocalendar()[1]}'
-    else:
-        return humanize.naturaldate(str_to_date(time_bucket.date))
+    return humanize.naturaldate(str_to_date(time_bucket.date))

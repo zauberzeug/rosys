@@ -24,4 +24,6 @@ class CpuUsage(Chart):
     def update(self) -> None:
         for i, v in enumerate(psutil.cpu_percent(percpu=True)):
             self.options.series[i].data.append(v)
-        [s.data.pop(0) for s in self.options.series if len(s.data) > 20]
+        for s in self.options.series:
+            if len(s.data) > 20:
+                s.data.pop(0)

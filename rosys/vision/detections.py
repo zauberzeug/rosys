@@ -58,8 +58,7 @@ class Shape:
     @staticmethod
     def from_str(points: str) -> Shape:
         p = points.split(',')
-        points = [Point(int(p[i]), int(p[i+1])) for i in range(0, len(p), 2)]
-        return Shape(points=points)
+        return Shape(points=[Point(x=float(p[i]), y=float(p[i+1])) for i in range(0, len(p), 2)])
 
     def __str__(self) -> str:
         return ', '. join([f'x:{p.x:.0f} y:{p.y:.0f}' for p in self.points])
@@ -71,14 +70,6 @@ class SegmentationDetection:
     model_name: str
     confidence: float
     shape: Shape
-
-    @staticmethod
-    def from_dict(detection: dict) -> SegmentationDetection:
-        return SegmentationDetection(
-            detection['category_name'],
-            detection['model_name'],
-            detection['confidence'],
-            Shape.from_str(detection['shape']))
 
     def __str__(self) -> str:
         return f'shape:{self.shape.__str__} cat:{self.category_name} conf:{self.confidence:.2f}'

@@ -25,10 +25,10 @@ class LineProfiler:
         for f in self.functions:
             f[1] = self.line_profiler(f[0])
 
-    def stop(self, *, print: bool = True) -> None:
+    def stop(self, *, print_stats: bool = True) -> None:
         for f in self.functions:
             f[1] = f[0]
-        if print:
+        if print_stats:
             self.print()
 
     def print(self) -> None:
@@ -36,7 +36,7 @@ class LineProfiler:
             self.line_profiler.print_stats()
 
     def reset(self) -> None:
-        self.stop(print=False)
+        self.stop(print_stats=False)
         self.start()
 
 

@@ -7,7 +7,7 @@ from typing import Optional
 import objgraph
 from nicegui import ui
 
-import rosys
+from ... import run
 
 SVG_FILE = Path('/tmp/rosys_objgraph.svg')
 
@@ -26,9 +26,13 @@ def objgraph_page() -> None:
             growth_label.set_text(growth)
             leaking_label.set_text(leaking)
             overall_label.set_text(overall)
-            highest = [f'{c[1]}: {c[0]}' for c in counts.most_common()[:5]]
-            counts_markdown.set_content('new obj occurrence: ' + '\n'.join(highest))
-            most_common_search_result.content = SVG_FILE.read_text() if counts else ''
+            if counts is None:
+                counts_markdown.content = ''
+                most_common_search_result.content = ''
+            else:
+                highest = [f'{c[1]}: {c[0]}' for c in counts.most_common()[:5]]
+                counts_markdown.set_content('new obj occurrence: ' + '\n'.join(highest))
+                most_common_search_result.content = SVG_FILE.read_text()
 
         t = ui.timer(10, refresh_stats, active=False)
         ui.switch('track objects (every 10 s)').bind_value_to(t, 'active')
@@ -44,7 +48,7 @@ def objgraph_page() -> None:
         most_common_search_result = ui.html()
 
 
-@rosys.run.awaitable
+@run.awaitable
 def create_graph(search_term: str) -> str:
     gc.collect()
     objects = objgraph.by_type(search_term)

@@ -61,7 +61,7 @@ with ui.card():
                 automator.start(driver.drive_path(path))
                 return
             if object_type == 'ground' and click_mode.value == 'navigate':
-                goal = Pose(x=hit.x, y=hit.y, yaw=odometer.prediction.point.direction(target))
+                goal = Pose(x=hit.x, y=hit.y, yaw=odometer.prediction.direction(target))
                 path = await path_planner.search(start=odometer.prediction, goal=goal, timeout=3.0)
                 path3d.update(path)
                 automator.start(driver.drive_path(path))

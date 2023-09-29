@@ -5,7 +5,7 @@ from typing import Optional
 import socketio
 import socketio.exceptions
 
-from .. import background_tasks, persistence, rosys
+from .. import persistence, rosys
 from .detections import BoxDetection, Detections, PointDetection, SegmentationDetection
 from .detector import Autoupload, Detector
 from .image import Image
@@ -76,7 +76,7 @@ class DetectorHardware(Detector):
 
         upload_images = self.uploads.get_queued()
         if upload_images:
-            background_tasks.create(self.upload(upload_images[0]), name='upload_image')
+            rosys.background_tasks.create(self.upload(upload_images[0]), name='upload_image')
             self.uploads.queue.clear()  # old images should not be uploaded later when the robot is inactive
             self.uploads.last_upload = datetime.now()
 
@@ -86,11 +86,10 @@ class DetectorHardware(Detector):
             async def upload_priority_images():
                 for image in upload_images:
                     await self.upload(image)
-            background_tasks.create(upload_priority_images(), name='upload_priority_images')
+            rosys.background_tasks.create(upload_priority_images(), name='upload_priority_images')
             self.uploads.priority_queue.clear()
 
     async def upload(self, image: Image) -> None:
-        await super().upload(image)
         try:
             self.log.info(f'uploading to port {self.port}')
             await self.sio.emit('upload', {'image': image.data, 'mac': image.camera_id})
@@ -133,7 +132,7 @@ class DetectorHardware(Detector):
                 self.log.debug(f'detection for {current_image.id} on {self.port} took too long')
                 self.timeout_count += 1
             except asyncio.exceptions.CancelledError:
-                self.log.debug(f'task has been cancelled')
+                self.log.debug('task has been cancelled')
             except Exception:
                 self.log.exception(f'could not detect {current_image.id}')
             else:

@@ -1,13 +1,14 @@
 #!/usr/bin/env python
 import pylab as pl
 from nicegui import ui
+
 from rosys.geometry import Pose, Spline
 from rosys.pathplanning import plot_tools as pt
 from rosys.pathplanning.grid import Grid
 from rosys.pathplanning.obstacle_map import ObstacleMap
 from rosys.pathplanning.robot_renderer import RobotRenderer
 
-with ui.plot():
+with ui.pyplot():
     pl.axis('equal')
 
     grid = Grid((3, 4, 36), (0.5, 1.5, 4.0, 3.0))

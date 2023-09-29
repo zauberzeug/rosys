@@ -4,27 +4,28 @@ import logging
 import multiprocessing
 import os
 import signal
-import sys
 import threading
 import time as pytime
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Literal, Optional
+from typing import Any, Awaitable, Callable, Literal, Optional
 
 import numpy as np
 import psutil
-from nicegui import app
+from nicegui import app, background_tasks
 from nicegui import globals as nicegui_globals
 from nicegui import ui
 
-from . import background_tasks, event, persistence, run
+from . import event, persistence, run
 from .config import Config
-from .helpers import invoke
+from .helpers import invoke, is_stopping
+from .helpers import is_test as is_test_
 
 log = logging.getLogger('rosys.core')
 
 config = Config()
+translator: Optional[Any] = None
 
-is_test = 'pytest' in sys.modules
+is_test = is_test_()
 
 # POSIX standard to create processes is "fork", which is inherently broken for python (see https://pythonspeed.com/articles/python-multiprocessing/)
 if __name__ == '__main__':
@@ -41,10 +42,16 @@ NEW_NOTIFICATION = event.Event()
 """notify the user (string argument: message)"""
 
 
-_start_time: float = 0.0 if is_test else pytime.time()
-_time = _start_time
-_last_time_request: float = _start_time
-_exception: Optional[Exception] = None  # NOTE: used for tests
+class _state:
+    start_time: float = 0.0 if is_test else pytime.time()
+    time = start_time
+    last_time_request: float = start_time
+    exception: Optional[BaseException] = None  # NOTE: used for tests
+
+
+def get_last_exception() -> Optional[BaseException]:
+    return _state.exception
+
 
 notifications: list[Notification] = []
 repeat_handlers: list[tuple[Callable, float]] = []
@@ -53,7 +60,14 @@ shutdown_handlers: list[Callable] = []
 tasks: list[asyncio.Task] = []
 
 
-def notify(message: str, type: Optional[Literal['positive', 'negative', 'warning', 'info', 'ongoing']] = None) -> None:
+def notify(message: str,
+           type: Optional[Literal[  # pylint: disable=redefined-builtin
+               'positive',
+               'negative',
+               'warning',
+               'info',
+               'ongoing',
+           ]] = None) -> None:
     log.info(message)
     notifications.append(Notification(time=time(), message=message))
     NEW_NOTIFICATION.emit(message)
@@ -70,24 +84,22 @@ time_lock = threading.Lock()
 
 
 def time() -> float:
-    global _time, _last_time_request
     if is_test:
-        return _time
+        return _state.time
     with time_lock:
         now = pytime.time()
-        _time += (now - _last_time_request) * config.simulation_speed
-        _last_time_request = now
-        return _time
+        _state.time += (now - _state.last_time_request) * config.simulation_speed
+        _state.last_time_request = now
+        return _state.time
 
 
 def set_time(value: float) -> None:
     assert is_test, 'only tests can change the time'
-    global _time
-    _time = value
+    _state.time = value
 
 
 def uptime() -> float:
-    return time() - _start_time
+    return time() - _state.start_time
 
 
 async def sleep(seconds: float) -> None:
@@ -156,10 +168,6 @@ async def startup() -> None:
         _start_loop(handler, interval)
 
 
-def is_stopping() -> bool:
-    return nicegui_globals.state == nicegui_globals.State.STOPPING
-
-
 async def _garbage_collection(mbyte_limit: float = 300) -> None:
     if psutil.virtual_memory().free < mbyte_limit * 1_000_000:
         log.warning(f'less than {mbyte_limit} mb of memory remaining -> start garbage collection')
@@ -172,8 +180,7 @@ async def _watch_emitted_events() -> None:
     try:
         for task in event.tasks:
             if task.done() and task.exception():
-                global _exception
-                _exception = task.exception()
+                _state.exception = task.exception()
                 log.exception('task failed to execute', exc_info=task.exception())
         event.tasks = [t for t in event.tasks if not t.done()]
     except Exception:
@@ -217,7 +224,8 @@ async def shutdown() -> None:
     log.debug('tear down "run" tasks')
     run.tear_down()
     log.debug('canceling all remaining tasks')
-    [t.cancel() for t in tasks]
+    for task in tasks:
+        task.cancel()
     log.debug('clearing tasks')
     tasks.clear()
 
@@ -233,8 +241,7 @@ async def shutdown() -> None:
 def reset_before_test() -> None:
     assert is_test
     set_time(0)  # NOTE: in tests we start at zero for better readability
-    global _exception
-    _exception = None
+    _state.exception = None
 
 
 def reset_after_test() -> None:

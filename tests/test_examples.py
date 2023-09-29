@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-import glob
 import sys
 import time
 from io import StringIO
+from pathlib import Path
 
 import sh
 
 
-def check(path: str, *, timeout: float = 15.0) -> bool:
+def check(path: Path, *, timeout: float = 15.0) -> bool:
     try:
         # kill process which occupies port 8080
         sh.fuser('-k', '8080/tcp')  # get "fuser" command with "apt install psutils" (it is not available on mac)
@@ -37,7 +37,7 @@ def check(path: str, *, timeout: float = 15.0) -> bool:
         print(f'  Error ("Error" found): {output}', flush=True)
         return False
 
-    if 'ui.run' in open(path).read() and 'NiceGUI ready to go' not in output:
+    if 'ui.run' in path.read_text() and 'NiceGUI ready to go' not in output:
         print(f'  Error (NiceGUI welcome message missing): {output}', flush=True)
         return False
 
@@ -46,10 +46,11 @@ def check(path: str, *, timeout: float = 15.0) -> bool:
 
 
 if __name__ == '__main__':
-    success = check('../main.py')
+    ROOT_PATH = Path(__file__).parent.parent
+    success = check(ROOT_PATH / 'main.py')
 
-    for filepath in glob.glob(f'../docs/src/*.py'):
-        if filepath.endswith('dev_profiling.py'):
+    for filepath in (ROOT_PATH / 'docs' / 'src').glob('*.py'):
+        if filepath.name == 'dev_profiling.py':
             continue  # TODO: allow testing dev_profiling.py again as soon as yappi and line-profiler support Python 3.11
         success &= check(filepath)
 
