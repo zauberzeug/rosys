@@ -26,11 +26,11 @@ class Camera(abc.ABC):
             self.name = self.id
 
     @property
-    @abc.abstractmethod
     def is_connected(self) -> bool:
         '''
         to be interpreted as "ready to capture images"
         '''
+        return True
 
     @property
     def captured_images(self) -> list[Image]:
