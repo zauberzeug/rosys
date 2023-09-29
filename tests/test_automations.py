@@ -1,3 +1,5 @@
+import pytest
+
 from rosys.automation import Automator
 from rosys.driving import Driver
 from rosys.geometry import Pose, Spline
@@ -54,9 +56,10 @@ async def test_pause_and_resume_square(driver: Driver, automator: Automator, rob
     assert_pose(1, 1, deg=90, deg_tolerance=3)
 
 
-async def test_driving_a_spline(driver: Driver, automator: Automator, robot: Robot):
+@pytest.mark.parametrize('dx', [2, 10])
+async def test_driving_a_spline(driver: Driver, automator: Automator, robot: Robot, dx: float):
     assert_pose(0, 0, deg=0)
-    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0))
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=dx, y=1, yaw=0))
     automator.start(driver.drive_spline(spline))
-    await forward(x=2)
-    assert_pose(2, 1, deg=0, deg_tolerance=5)
+    await forward(x=dx)
+    assert_pose(dx, 1, deg=0, deg_tolerance=5)
