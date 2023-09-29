@@ -176,9 +176,7 @@ class Carrot:
     _estimated_spline_length: float = field(init=False)
 
     def __post_init__(self) -> None:
-        #_estimated_spline_length is used to calculate the step size in move()
-        #it is calculated here to avoid calculating it every time move() is called
-        self._estimated_spline_length = self.spline.estimated_length()
+        self._estimated_spline_length = self.spline.estimated_length()  # NOTE: compute once to avoid repeated computation
 
     @property
     def pose(self) -> Pose:
@@ -195,12 +193,9 @@ class Carrot:
         return self.pose.transform(self.offset)
 
     def move(self, hook: Point, distance: float) -> bool:
-        
-        step_size = distance / self._estimated_spline_length
-        step_size /= 10
-
+        dt = 0.1 * distance / self._estimated_spline_length
         while hook.distance(self.offset_point) < distance:
-            self.t += step_size
+            self.t += dt
             if self.t >= 1.0:
                 return False
         return True
