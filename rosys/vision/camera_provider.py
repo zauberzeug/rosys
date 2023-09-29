@@ -34,7 +34,7 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
         self.base_path = f'images/{str(uuid4())}'
         create_image_route(self)
 
-        self.needs_backup: bool = False
+        self.needs_backup: bool = False  # HACK: for the case that the camera provider derives from PersistentModule
 
     @property
     @abc.abstractmethod
@@ -87,6 +87,3 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
             else:
                 while camera.images and camera.images[0].time < rosys.time() - max_age_seconds:
                     del camera.images[0]
-
-    def invalidate(self) -> None:
-        self.needs_backup = True

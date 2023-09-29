@@ -15,7 +15,7 @@ from .planner_process import (PlannerCommand, PlannerGrowMapCommand, PlannerObst
                               PlannerResponse, PlannerSearchCommand, PlannerTestCommand)
 
 
-class PathPlanner:
+class PathPlanner(persistence.PersistentModule):
     """This module runs a path planning algorithm in a separate process.
 
     If given, the algorithm respects the given robot shape as well as a dictionary of accessible areas and a dictionary of obstacles, both of which a backed up and restored automatically.
@@ -23,6 +23,8 @@ class PathPlanner:
     """
 
     def __init__(self, robot_shape: Prism) -> None:
+        super().__init__()
+
         self.log = logging.getLogger('rosys.path_planner')
 
         self.connection, process_connection = Pipe()
@@ -41,9 +43,6 @@ class PathPlanner:
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.step, 0.1)
 
-        self.needs_backup: bool = False
-        persistence.register(self)
-
     def backup(self) -> dict:
         finished_areas = {area_id: copy(area).close() for area_id, area in self.areas.items() if len(area.outline) >= 3}
         return {
@@ -56,9 +55,6 @@ class PathPlanner:
         persistence.replace_dict(self.areas, Area, data.get('areas', {}))
         self.AREAS_CHANGED.emit(None)
         self.OBSTACLES_CHANGED.emit(self.obstacles)
-
-    def invalidate(self) -> None:
-        self.needs_backup = True
 
     def startup(self) -> None:
         self.process.start()

@@ -32,9 +32,8 @@ class PeekableBytesIO(io.BytesIO):
         return data
 
 
-class RtspCameraProviderHardware(CameraProvider):
+class RtspCameraProviderHardware(CameraProvider, persistence.PersistentModule):
     """This module collects and provides real RTSP streaming cameras."""
-    USE_PERSISTENCE: bool = True
 
     def __init__(self, *, frame_rate: int = 6, jovision_profile: int = 0) -> None:
         super().__init__()
@@ -56,10 +55,6 @@ class RtspCameraProviderHardware(CameraProvider):
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, 1)
         rosys.on_repeat(lambda: self.prune_images(max_age_seconds=10.0), 5.0)
-
-        self.needs_backup: bool = False
-        if self.USE_PERSISTENCE:
-            persistence.register(self)
 
     @property
     def cameras(self) -> dict[str, RtspCamera]:
@@ -150,7 +145,7 @@ class RtspCameraProviderHardware(CameraProvider):
             camera.resolution = size
             self.add_image(camera, Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
         camera.active = False
-        self.invalidate()
+        self.request_backup()
         self._capture_tasks.pop(camera.id)
 
     async def activate(self, camera: RtspCamera) -> None:
@@ -224,9 +219,6 @@ class RtspCameraProviderHardware(CameraProvider):
                 process.kill()
             except Exception:
                 self.log.info('could not kill process')
-
-    def invalidate(self) -> None:
-        self.needs_backup = True
 
     def get_image_snapshot(self, camera: RtspCamera) -> Optional[Image]:
         assert camera.url is not None

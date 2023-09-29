@@ -14,12 +14,11 @@ from .image import Image, ImageSize
 from .usb_camera import UsbCamera
 
 
-class UsbCameraProviderSimulation(CameraProvider):
+class UsbCameraProviderSimulation(CameraProvider, persistence.PersistentModule):
     """This module collects and simulates USB cameras and generates synthetic images.
 
     In the current implementation the images only contain the camera ID and the current time.
     """
-    USE_PERSISTENCE: bool = True
 
     def __init__(self) -> None:
         super().__init__()
@@ -28,10 +27,6 @@ class UsbCameraProviderSimulation(CameraProvider):
 
         rosys.on_repeat(self.step, 1.0)
         rosys.on_repeat(lambda: self.prune_images(max_age_seconds=1.0), 5.0)
-
-        self.needs_backup: bool = False
-        if self.USE_PERSISTENCE:
-            persistence.register(self)
 
     @property
     def cameras(self) -> dict[str, UsbCamera]:

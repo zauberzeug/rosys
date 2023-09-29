@@ -18,16 +18,14 @@ def str_to_date(date_: str) -> datetime:
     return datetime.fromisoformat(date_)
 
 
-class KpiLogger:
+class KpiLogger(persistence.PersistentModule):
 
     def __init__(self) -> None:
-        self.states: dict[str, bool] = {}
+        super().__init__()
 
+        self.states: dict[str, bool] = {}
         self.days: list[Day] = []
         self.months: list[Month] = []
-
-        self.needs_backup: bool = False
-        persistence.register(self)
 
     def backup(self) -> dict:
         self.pack()
@@ -50,7 +48,7 @@ class KpiLogger:
             self.months.append(month)
             for day in month_groups[0]:
                 self.days.remove(day)
-            self.needs_backup = True
+            self.request_backup()
 
     def today(self) -> Day:
         date_ = date_to_str(datetime.utcfromtimestamp(rosys.time()).date())
@@ -61,7 +59,7 @@ class KpiLogger:
     def increment(self, key: str) -> None:
         day = self.today()
         day.incidents[key] = day.incidents.get(key, 0) + 1
-        self.needs_backup = True
+        self.request_backup()
 
     def increment_on_rising_edge(self, key: str, new_state: bool) -> None:
         if new_state and not self.states.get(key, False):

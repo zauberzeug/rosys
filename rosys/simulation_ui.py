@@ -9,7 +9,7 @@ class simulation_ui:
 
     def __init__(self) -> None:
         ui.label('Simulation speed')
-        ui.slider(min=0, max=10, value=1, step=0.1, on_change=rosys.config.invalidate) \
+        ui.slider(min=0, max=10, value=1, step=0.1, on_change=rosys.config.request_backup) \
             .bind_value(rosys.config, 'simulation_speed').props('label-always')
         self.simulation_time = ui.label()
         self.startup_time = rosys.time()

@@ -67,18 +67,18 @@ with ui.card():
                 automator.start(driver.drive_path(path))
                 return
             if object_type == 'ground' and click_mode.value == 'obstacles':
-                id = str(uuid.uuid4())
-                path_planner.obstacles[id] = Obstacle(id=id, outline=[
+                id_ = str(uuid.uuid4())
+                path_planner.obstacles[id_] = Obstacle(id=id_, outline=[
                     Point(x=hit.x-0.5, y=hit.y-0.5),
                     Point(x=hit.x+0.5, y=hit.y-0.5),
                     Point(x=hit.x-0.5, y=hit.y+0.5),
                 ])
-                path_planner.invalidate()
+                path_planner.request_backup()
                 path_planner.OBSTACLES_CHANGED.emit(path_planner.obstacles)
                 return
             if object_type == 'obstacle' and click_mode.value == 'obstacles':
                 del path_planner.obstacles[hit.object.name.split('_')[1]]
-                path_planner.invalidate()
+                path_planner.request_backup()
                 path_planner.OBSTACLES_CHANGED.emit(path_planner.obstacles)
                 return
 
