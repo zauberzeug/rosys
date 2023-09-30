@@ -35,7 +35,7 @@ class Camera(abc.ABC):
         '''
         to be interpreted as "ready to capture images"
         '''
-        return True
+        return False
 
     @property
     def captured_images(self) -> list[Image]:
