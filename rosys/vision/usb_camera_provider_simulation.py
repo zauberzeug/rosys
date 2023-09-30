@@ -20,6 +20,34 @@ class UsbCameraSimulatedDevice:
     video_id: int
     creation_time: float = rosys.time()
 
+    @staticmethod
+    def floating_text_position(time: float, box_width: int, box_height: int) -> tuple[float, float]:
+        speed = 100
+        angle_degrees = 45
+
+        # Convert angle to radians
+        angle_radians = math.radians(angle_degrees)
+
+        # Calculate position at the given time
+        x = (speed * time * math.cos(angle_radians)) % (box_width)
+        y = (speed * time * math.sin(angle_radians)) % (box_height)
+
+        return x, y
+
+    def create_image_data(self, camera: UsbCamera) -> bytes:
+        size = camera.image_resolution
+        assert size is not None
+        img = pil.Image.new('RGB', size=(size.width, size.height), color=camera.color)
+        d = pil.ImageDraw.Draw(img)
+        text = f'{camera.id}: {time.time()}'
+        text_pos_x, text_pos_y = UsbCameraSimulatedDevice.floating_text_position(time.time(), size.width, size.height)
+
+        d.text((text_pos_x, text_pos_y), text, fill=(0, 0, 0))
+        d.text((text_pos_x + 1, text_pos_y + 1), text, fill=(255, 255, 255))
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        return img_byte_arr.getvalue()
 
 class UsbCameraProviderSimulation(CameraProvider):
     """This module collects and simulates USB cameras and generates synthetic images.
@@ -59,6 +87,9 @@ class UsbCameraProviderSimulation(CameraProvider):
             if rosys.is_test:
                 image.data = b'test data'
             else:
+                image.data = await rosys.run.cpu_bound(camera.device.create_image_data, camera)
+            self.add_image(camera, image)
+
     async def simulate_device_discovery(self) -> None:
         for camera in self._cameras.values():
             if not camera.is_connected:
@@ -94,16 +125,3 @@ class UsbCameraProviderSimulation(CameraProvider):
         camera = UsbCameraProviderSimulation.create(uid, width, height, color)
         camera.set_perfect_calibration(width=width, height=height, x=x, y=y, z=z, roll=roll, pitch=pitch, yaw=yaw)
         return camera
-
-    @staticmethod
-    def create_image_data(camera: UsbCamera) -> bytes:
-        size = camera.image_resolution
-        assert size is not None
-        img = pil.Image.new('RGB', size=(size.width, size.height), color=camera.color)
-        d = pil.ImageDraw.Draw(img)
-        text = f'{camera.id}: {time.time()}'
-        d.text((img.width / 2 - len(text) * 3 + 0, img.height / 2 - 5), text, fill=(0, 0, 0))
-        d.text((img.width / 2 - len(text) * 3 + 1, img.height / 2 - 4), text, fill=(255, 255, 255))
-        img_byte_arr = io.BytesIO()
-        img.save(img_byte_arr, format='JPEG')
-        return img_byte_arr.getvalue()
