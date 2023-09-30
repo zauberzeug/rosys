@@ -29,7 +29,7 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
         """a camera has been removed (argument: camera id)"""
 
         self.NEW_IMAGE = Event()
-        """an new image is available (argument: image)"""
+        """a new image is available (argument: image)"""
 
         self.base_path = f'images/{str(uuid4())}'
         create_image_route(self)
