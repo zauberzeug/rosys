@@ -156,7 +156,6 @@ class RtspCameraProviderHardware(CameraProvider):
             self.log.warning(f'could not create task for {camera.id}')
             return
         camera.capture_task = task
-        await self.CAMERA_ADDED.call(camera)
 
     async def deactivate(self, camera: RtspCamera) -> None:
         if camera.capture_task is not None:
@@ -189,10 +188,7 @@ class RtspCameraProviderHardware(CameraProvider):
                 if url is None:
                     continue
                 if mac not in self._cameras:
-                    camera = RtspCamera(id=mac, url=url)
-                    self._cameras[mac] = camera
-                    self.log.info(f'adding camera {url}')
-                    await self.CAMERA_ADDED.call(camera)
+                    self.add_camera(RtspCamera(id=mac, url=url))
                 camera = self._cameras[mac]
                 camera.url = url
                 if mac in self._cameras and camera.capture_task is None and camera.authorized:

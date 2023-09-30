@@ -70,9 +70,8 @@ class UsbCameraProviderSimulation(CameraProvider):
             raise ValueError(f'Camera with id {camera_id} is not managed by this provider')
 
         camera = self._cameras[camera_id]
-        device = self.get_next_video_id()
+        device = UsbCameraSimulatedDevice(video_id=self.get_next_video_id())
         camera.device = device
-        self.CAMERA_ADDED.emit(camera)
 
     @staticmethod
     def create(uid: str, width: int = 800, height: int = 600, color: Optional[str] = None) -> UsbCamera:
