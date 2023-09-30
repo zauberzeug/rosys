@@ -18,6 +18,7 @@ from .usb_camera import UsbCamera
 @dataclass(slots=True, kw_only=True)
 class UsbCameraSimulatedDevice:
     video_id: int
+    creation_time: float = rosys.time()
 
 
 class UsbCameraProviderSimulation(CameraProvider):
@@ -33,7 +34,7 @@ class UsbCameraProviderSimulation(CameraProvider):
         self._cameras: dict[str, UsbCamera] = {}
 
         rosys.on_repeat(self.step, 1.0)
-        rosys.on_repeat(lambda: self.prune_images(max_age_seconds=1.0), 5.0)
+        rosys.on_repeat(self.simulate_device_discovery, 5.0)
 
         self.needs_backup: bool = False
         if self.USE_PERSISTENCE:
@@ -58,11 +59,18 @@ class UsbCameraProviderSimulation(CameraProvider):
             if rosys.is_test:
                 image.data = b'test data'
             else:
-                image.data = await rosys.run.cpu_bound(self.create_image_data, camera)
-            camera.images.append(image)
+    async def simulate_device_discovery(self) -> None:
+        for camera in self._cameras.values():
+            if not camera.is_connected:
+                await self.activate(camera.id)
+                continue
+            # disconnect cameras rendomly with probabilty rising with time
+            time_since_last_activation = rosys.time() - camera.device.creation_time
+            if random.random() < time_since_last_activation / 30.:
+                camera.device = None
 
     def get_next_video_id(self) -> int:
-        return max([camera.device.video_id for camera in self._cameras.values()], default=0) + 1
+        return max([camera.device.video_id for camera in self._cameras.values() if camera.is_connected], default=0) + 1
 
     async def activate(self, camera_id: str) -> None:
         '''Simulates activating a camera by assigning it a mock video device.'''
