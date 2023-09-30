@@ -82,7 +82,6 @@ class UsbCameraProviderHardware(CameraProvider):
         rosys.on_repeat(self.capture_images, 0.2)
         rosys.on_repeat(self.update_parameters, 1)
         rosys.on_repeat(self.update_device_list, 1)
-        rosys.on_repeat(lambda: self.prune_images(max_age_seconds=1.0), 5.0)
 
         self.needs_backup: bool = False
         persistence.register(self)
@@ -92,9 +91,7 @@ class UsbCameraProviderHardware(CameraProvider):
         return self._cameras
 
     def backup(self) -> dict:
-        cameras_copy = persistence.to_dict(self._cameras)
-
-        return {'cameras': cameras_copy}
+        return {'cameras': persistence.to_dict(self._cameras)}
 
     def restore(self, data: dict[str, Any]) -> None:
         persistence.replace_dict(self._cameras, UsbCamera, data.get('cameras', {}))
@@ -105,10 +102,9 @@ class UsbCameraProviderHardware(CameraProvider):
                 if not camera.is_connected:
                     continue
 
-                image = await rosys.run.io_bound(self.capture_image(camera.id))
+                image = await rosys.run.io_bound(self.capture_image, camera.id)
                 if image is None:
-                    await self.deactivate(camera)
-                    continue
+                    raise Exception(f'could not capture image from {uid}')
 
                 device = camera.device
                 if 'MJPG' in device.video_formats:
@@ -152,7 +148,8 @@ class UsbCameraProviderHardware(CameraProvider):
 
         device = UsbCameraHardwareDevice(video_id=video_id, capture=capture)
         await self.load_value_ranges(device)
-        await rosys.run.io_bound(self.set_parameters, camera, device)
+        camera.device = device
+        await rosys.run.io_bound(self.set_parameters, camera)
         self.log.info(f'activated {uid}')
         await self.CAMERA_ADDED.call(camera)
 
@@ -187,7 +184,7 @@ class UsbCameraProviderHardware(CameraProvider):
                 continue
             num = int(lines[1].strip().lstrip('/dev/video'))
             if not self._cameras[uid].is_connected:
-                self.activate(uid, num)
+                await self.activate(uid, num)
 
     def get_capture_device(self, index: int) -> Optional[cv2.VideoCapture]:
         try:
@@ -212,7 +209,13 @@ class UsbCameraProviderHardware(CameraProvider):
     def is_operable() -> bool:
         return shutil.which('v4l2-ctl') is not None
 
-    def set_parameters(self, camera: UsbCamera, device: UsbCameraHardwareDevice) -> None:
+    def set_parameters(self, camera: UsbCamera) -> None:
+        if not camera.is_connected:
+            return
+
+        assert isinstance(camera.device, UsbCameraHardwareDevice)
+
+        device = camera.device
         assert device.capture is not None
         camera.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
         if not camera.auto_exposure and camera.exposure is None and device.exposure_max > 0:
