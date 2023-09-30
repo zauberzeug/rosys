@@ -119,7 +119,7 @@ class UsbCameraProviderHardware(CameraProvider):
                     size = camera.resolution
                 else:
                     size = ImageSize(width=800, height=600)
-                camera.images.append(Image(camera_id=uid, data=bytes_, time=rosys.time(), size=size))
+                self.add_image(camera, Image(camera_id=uid, data=bytes_, time=rosys.time(), size=size))
             except Exception:
                 self.log.exception(f'could not capture image from {uid}')
                 await self.deactivate(camera)
@@ -144,6 +144,7 @@ class UsbCameraProviderHardware(CameraProvider):
 
         capture = await rosys.run.io_bound(self.get_capture_device, video_id)
         if capture is None:
+            self.log.error(f'could not activate {uid}')
             return
 
         device = UsbCameraHardwareDevice(video_id=video_id, capture=capture)
@@ -167,6 +168,7 @@ class UsbCameraProviderHardware(CameraProvider):
         self.last_scan = rosys.time()
         output = await rosys.run.sh(['v4l2-ctl', '--list-devices'])
         if output is None:
+            self.log.error('Could not scan for USB cameras. Is video4linux (lib4vl) installed?')
             return
         output = '\n'.join([s for s in output.split('\n') if not s.startswith('Cannot open device')])
         for infos in output.split('\n\n'):
