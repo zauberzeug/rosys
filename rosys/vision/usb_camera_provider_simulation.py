@@ -1,4 +1,5 @@
 import io
+import math
 import random
 import time
 from dataclasses import dataclass
@@ -56,12 +57,12 @@ class UsbCameraProviderSimulation(CameraProvider):
     """
     USE_PERSISTENCE: bool = True
 
-    def __init__(self) -> None:
+    def __init__(self, simulate_failing=False) -> None:
         super().__init__()
 
         self._cameras: dict[str, UsbCamera] = {}
 
-        rosys.on_repeat(self.step, 1.0)
+        self.simulate_device_failure = simulate_failing
         rosys.on_repeat(self.simulate_device_discovery, 5.0)
 
         self.needs_backup: bool = False
@@ -95,10 +96,11 @@ class UsbCameraProviderSimulation(CameraProvider):
             if not camera.is_connected:
                 await self.activate(camera.id)
                 continue
-            # disconnect cameras rendomly with probabilty rising with time
-            time_since_last_activation = rosys.time() - camera.device.creation_time
-            if random.random() < time_since_last_activation / 30.:
-                camera.device = None
+            if self.simulate_device_failure:
+                # disconnect cameras rendomly with probabilty rising with time
+                time_since_last_activation = rosys.time() - camera.device.creation_time
+                if random.random() < time_since_last_activation / 30.:
+                    camera.device = None
 
     def get_next_video_id(self) -> int:
         return max([camera.device.video_id for camera in self._cameras.values() if camera.is_connected], default=0) + 1
