@@ -54,7 +54,6 @@ class RtspCameraProviderHardware(CameraProvider):
 
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, 1)
-        rosys.on_repeat(lambda: self.prune_images(max_age_seconds=10.0), 5.0)
 
         self.needs_backup: bool = False
         if self.USE_PERSISTENCE:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import abc
+from collections import deque
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -13,11 +14,15 @@ from .calibration import Calibration, Extrinsics, Intrinsics
 from .image import Image, ImageSize
 
 
+def deque_factory():
+    return deque(maxlen=256)
+
+
 @dataclass(slots=True, kw_only=True)
 class Camera(abc.ABC):
     id: str
     calibration: Optional[Calibration] = None
-    images: list[Image] = field(default_factory=list, metadata=persistence.exclude)
+    images: deque[Image] = field(default_factory=deque_factory, metadata=persistence.exclude)
     focal_length: Optional[float] = None
     name: Optional[str] = None
 
