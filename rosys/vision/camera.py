@@ -14,15 +14,13 @@ from .calibration import Calibration, Extrinsics, Intrinsics
 from .image import Image, ImageSize
 
 
-def deque_factory():
-    return deque(maxlen=256)
-
-
 @dataclass(slots=True, kw_only=True)
 class Camera(abc.ABC):
+    MAX_IMAGES = 256
+
     id: str
     calibration: Optional[Calibration] = None
-    images: deque[Image] = field(default_factory=deque_factory, metadata=persistence.exclude)
+    images: deque[Image] = field(default_factory=lambda: deque(maxlen=Camera.MAX_IMAGES), metadata=persistence.exclude)
     focal_length: Optional[float] = None
     name: Optional[str] = None
 
@@ -32,9 +30,7 @@ class Camera(abc.ABC):
 
     @property
     def is_connected(self) -> bool:
-        '''
-        to be interpreted as "ready to capture images"
-        '''
+        """To be interpreted as "ready to capture images"."""
         return False
 
     async def activate(self) -> None:
