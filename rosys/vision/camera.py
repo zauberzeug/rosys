@@ -37,6 +37,12 @@ class Camera(abc.ABC):
         '''
         return False
 
+    async def activate(self) -> None:
+        pass
+
+    async def deactivate(self) -> None:
+        pass
+
     @property
     def captured_images(self) -> list[Image]:
         return [i for i in self.images if i.data]

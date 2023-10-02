@@ -1,35 +1,18 @@
-import asyncio
 import io
 import logging
-import shlex
-import subprocess
 import sys
-from asyncio.subprocess import Process
-from io import BytesIO
-from typing import Any, AsyncGenerator, Optional
+from typing import Any, Optional
 
-import imgsize
 import netifaces
-import PIL
 import requests
 from requests.auth import HTTPDigestAuth
 
 from .. import persistence, rosys
-from ..geometry import Rectangle
 from .camera_provider import CameraProvider
 from .image import Image, ImageSize
-from .rtsp_camera import ImageRotation, RtspCamera
+from .rtsp_camera import RtspCamera
 
 SCAN_INTERVAL = 10
-
-
-class PeekableBytesIO(io.BytesIO):
-
-    def peek(self, n=-1):
-        position = self.tell()
-        data = self.read(n)
-        self.seek(position)
-        return data
 
 
 class RtspCameraProviderHardware(CameraProvider):
@@ -46,7 +29,6 @@ class RtspCameraProviderHardware(CameraProvider):
 
         self.last_scan: Optional[float] = None
         self._cameras: dict[str, RtspCamera] = {}
-        self._processes: list[Process] = []
         if sys.platform.startswith('darwin'):
             self.arpscan_cmd = 'sudo arp-scan'
         else:
@@ -68,98 +50,6 @@ class RtspCameraProviderHardware(CameraProvider):
 
     def restore(self, data: dict[str, Any]) -> None:
         persistence.replace_dict(self._cameras, RtspCamera, data.get('cameras', {}))
-
-    async def capture_images(self, camera: RtspCamera) -> None:
-        async def stream() -> AsyncGenerator[bytes, None]:
-            assert camera.url is not None
-            # if platform.system() == 'Darwin':
-            #     command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp drop-on-latency=true buffer-mode=none ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
-            # else:
-            logging.info(f'capture images from {camera.id} with URL {camera.url}')
-            assert camera.url is not None
-            if 'subtype=0' in camera.url:
-                # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
-                url = camera.url.replace('subtype=0', 'subtype=1')
-                command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.frame_rate}/1"! jpegenc ! fdsink'
-            else:
-                command = f'gst-launch-1.0 rtspsrc location="{camera.url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.frame_rate}/1" ! jpegenc ! fdsink'
-            process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            assert process.stdout is not None
-            assert process.stderr is not None
-            self._processes.append(process)
-
-            buffer = BytesIO()
-            pos = 0
-            header = None
-
-            while process.returncode is None:
-                assert process.stdout is not None
-                new = await process.stdout.read(4096)
-                if not new:
-                    break
-                buffer.write(new)
-
-                img_range = None
-                while True:
-                    if header is None:
-                        h = buffer.getvalue().find(b'\xff\xd8', pos)
-                        if h == -1:
-                            pos = buffer.tell() - 1
-                            break
-                        pos = h + 2
-                        header = h
-                    else:
-                        f = buffer.getvalue().find(b'\xff\xd9', pos)
-                        if f == -1:
-                            pos = buffer.tell() - 1
-                            break
-                        img_range = (header, f + 2)
-                        pos = f + 2
-                        header = None
-
-                if img_range:
-                    yield buffer.getvalue()[img_range[0]:img_range[1]]
-
-                    rest = buffer.getvalue()[img_range[1]:]
-                    buffer.seek(0)
-                    buffer.truncate()
-                    buffer.write(rest)
-
-                    pos = 0
-                    if header is not None:
-                        header -= img_range[1]
-
-            assert process.stderr is not None
-            error = await process.stderr.read()
-            self.log.info(f'process {process.pid} exited with {process.returncode} and error {error.decode()}')
-            if 'Unauthorized' in error.decode():
-                camera.authorized = False
-
-        async for image in stream():
-            if camera.crop or camera.rotation != ImageRotation.NONE:
-                image = await rosys.run.cpu_bound(process_image, image, camera.rotation, camera.crop)
-            try:
-                with PeekableBytesIO(image) as f:
-                    width, height = imgsize.get_size(f)
-            except imgsize.UnknownSize:
-                continue
-            size = ImageSize(width=width, height=height)
-            camera.resolution = size
-            self.add_image(camera, Image(camera_id=camera.id, data=image, time=rosys.time(), size=size))
-        self.invalidate()
-        camera.capture_task = None
-
-    async def activate(self, camera: RtspCamera) -> None:
-        task = rosys.background_tasks.create(self.capture_images(camera), name=f'capture {camera.id}')
-        if task is None:
-            self.log.warning(f'could not create task for {camera.id}')
-            return
-        camera.capture_task = task
-
-    async def deactivate(self, camera: RtspCamera) -> None:
-        if camera.capture_task is not None:
-            camera.capture_task.cancel()
-            camera.capture_task = None
 
     async def update_device_list(self) -> None:
         if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
@@ -187,12 +77,12 @@ class RtspCameraProviderHardware(CameraProvider):
                 if url is None:
                     continue
                 if mac not in self._cameras:
-                    self.add_camera(RtspCamera(id=mac, url=url))
+                    self.add_camera(RtspCamera(id=mac, url=url, goal_fps=self.frame_rate))
                 camera = self._cameras[mac]
                 camera.url = url
                 if mac in self._cameras and camera.capture_task is None and camera.authorized:
                     self.log.info(f'activating authorized camera {camera.id} with url {camera.url}...')
-                    await self.activate(camera)
+                    await camera.activate()
 
     def get_rtsp_url(self, ip: str, vendor_mac: str) -> Optional[str]:
         if vendor_mac == 'e0:62:90':  # Jovision IP Cameras
@@ -204,12 +94,7 @@ class RtspCameraProviderHardware(CameraProvider):
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
-            await self.deactivate(camera)
-        for process in self._processes:
-            try:
-                process.kill()
-            except Exception:
-                self.log.info('could not kill process')
+            await camera.deactivate()
 
     def invalidate(self) -> None:
         self.needs_backup = True
@@ -232,13 +117,3 @@ class RtspCameraProviderHardware(CameraProvider):
             return image
         except Exception:
             return None
-
-
-def process_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
-    image = PIL.Image.open(io.BytesIO(data))
-    if crop is not None:
-        image = image.crop((int(crop.x), int(crop.y), int(crop.x + crop.width), int(crop.y + crop.height)))
-    image = image.rotate(int(rotation), expand=True)  # NOTE: PIL handles rotation with 90 degree steps efficiently
-    img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='JPEG')
-    return img_byte_arr.getvalue()

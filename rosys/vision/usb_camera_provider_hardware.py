@@ -2,7 +2,6 @@ import io
 import logging
 import re
 import shutil
-from dataclasses import dataclass, field
 from typing import Any, Optional
 
 import cv2
@@ -16,20 +15,7 @@ from .camera_provider import CameraProvider
 from .image import Image, ImageSize
 from .usb_camera import ImageRotation, UsbCamera
 
-MJPG = cv2.VideoWriter_fourcc(*'MJPG')
 SCAN_INTERVAL = 10
-
-
-@dataclass(slots=True, kw_only=True)
-class UsbCameraHardwareDevice:
-    video_id: int
-    capture: cv2.VideoCapture
-    exposure_min: int = 0
-    exposure_max: int = 0
-    exposure_default: int = 0
-    has_manual_exposure: bool = False
-    last_state: dict = field(default_factory=dict)
-    video_formats: set[str] = field(default_factory=set)
 
 
 def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
@@ -84,7 +70,7 @@ class UsbCameraProviderHardware(CameraProvider):
         rosys.on_repeat(self.update_device_list, 1)
 
         self.needs_backup: bool = False
-        persistence.register(self)
+        # persistence.register(self)
 
     @property
     def cameras(self) -> dict[str, UsbCamera]:
@@ -102,7 +88,7 @@ class UsbCameraProviderHardware(CameraProvider):
                 if not camera.is_connected:
                     continue
 
-                image = await rosys.run.io_bound(self.capture_image, camera.id)
+                image = await rosys.run.io_bound(camera.capture_image)
                 if image is None:
                     raise Exception(f'could not capture image from {uid}')
 
@@ -122,45 +108,12 @@ class UsbCameraProviderHardware(CameraProvider):
                 self.add_image(camera, Image(camera_id=uid, data=bytes_, time=rosys.time(), size=size))
             except Exception:
                 self.log.exception(f'could not capture image from {uid}')
-                await self.deactivate(camera)
+                await camera.deactivate()
 
     async def update_parameters(self) -> None:
-        for uid, camera in self._cameras.items():
+        for camera in self._cameras.values():
             if camera.is_connected:
-                await rosys.run.io_bound(self.set_parameters, camera)
-
-    def capture_image(self, id_) -> cv2.UMat:
-        camera = self._cameras[id_]
-        if not camera.is_connected:
-            return None
-        assert camera.device.capture is not None
-        _, image = camera.device.capture.read()
-        return image
-
-    async def activate(self, uid: str, video_id: str) -> None:
-        camera = self._cameras[uid]
-        if camera.is_connected:
-            return
-
-        capture = await rosys.run.io_bound(self.get_capture_device, video_id)
-        if capture is None:
-            self.log.error(f'could not activate {uid}')
-            return
-
-        device = UsbCameraHardwareDevice(video_id=video_id, capture=capture)
-        await self.load_value_ranges(device)
-        camera.device = device
-        await rosys.run.io_bound(self.set_parameters, camera)
-        self.log.info(f'activated {uid}')
-
-    async def deactivate(self, camera: UsbCamera) -> None:
-        if not camera.is_connected:
-            return
-
-        assert camera.device is not None
-        await rosys.run.io_bound(camera.device.capture.release)
-        camera.device = None
-        self.log.info(f'deactivated {camera.id}')
+                await rosys.run.io_bound(camera.set_parameters)
 
     async def update_device_list(self) -> None:
         if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
@@ -181,94 +134,13 @@ class UsbCameraProviderHardware(CameraProvider):
             lines = infos.splitlines()
             if 'dev/video' not in lines[1]:
                 continue
-            num = int(lines[1].strip().lstrip('/dev/video'))
             if not self._cameras[uid].is_connected:
-                await self.activate(uid, num)
-
-    def get_capture_device(self, index: int) -> Optional[cv2.VideoCapture]:
-        try:
-            capture = cv2.VideoCapture(index)
-            if capture is None:
-                self.log.error(f'video device {index} is unavailable')
-                return None
-            if not capture.isOpened():
-                self.log.error(f'video device {index} can not be opened')
-                capture.release()
-                return None
-            return capture
-        except Exception:
-            self.log.exception(f'{index} device failed')
-            return None
+                await self._cameras[uid].activate()
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
-            await self.deactivate(camera)
+            await camera.deactivate()
 
     @staticmethod
     def is_operable() -> bool:
         return shutil.which('v4l2-ctl') is not None
-
-    def set_parameters(self, camera: UsbCamera) -> None:
-        if not camera.is_connected:
-            return
-
-        assert isinstance(camera.device, UsbCameraHardwareDevice)
-
-        device = camera.device
-        assert device.capture is not None
-        camera.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
-        if not camera.auto_exposure and camera.exposure is None and device.exposure_max > 0:
-            camera.exposure = device.exposure_default / device.exposure_max
-        if 'MJPG' in device.video_formats:
-            # NOTE enforcing motion jpeg for now
-            if device.capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
-                device.capture.set(cv2.CAP_PROP_FOURCC, MJPG)
-            # NOTE disable video decoding (see https://stackoverflow.com/questions/62664621/read-jpeg-frame-from-mjpeg-camera-without-decoding-in-python-opencv/70869738?noredirect=1#comment110818859_62664621)
-            if device.capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
-                device.capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
-            # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
-            if device.capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
-                device.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        resolution = ImageSize(
-            width=int(device.capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
-            height=int(device.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        )
-        if camera.resolution and camera.resolution != resolution:
-            self.log.info(f'updating resolution of {camera.id} from {resolution} to {camera.resolution}')
-            device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, camera.resolution.width)
-            device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, camera.resolution.height)
-        if device.has_manual_exposure:
-            auto_exposure = device.capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
-            if camera.auto_exposure and not auto_exposure:
-                self.log.info(f'activating auto-exposure for {camera.id}')
-                device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)  # `v4l2-ctl -L` says "3: Aperture Priority Mode"
-            if auto_exposure and not camera.auto_exposure:
-                self.log.info(f'deactivating auto-exposure of {camera.id}')
-                device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)  # `v4l2-ctl -L` says "1: Manual Mode"
-            if not camera.auto_exposure and device.exposure_max > 0:
-                exposure = device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
-                if camera.exposure is not None and camera.exposure != exposure:
-                    self.log.info(f'updating exposure of {camera.id} from {exposure} to {camera.exposure})')
-                    device.capture.set(cv2.CAP_PROP_EXPOSURE, int(camera.exposure * device.exposure_max))
-
-    async def load_value_ranges(self, device: UsbCameraHardwareDevice) -> None:
-        output = await self.run_v4l(device, '--all')
-        if output is None:
-            return
-        match = re.search(r'exposure_absolute.*: min=(\d*).*max=(\d*).*default=(\d*).*', output)
-        if match is not None:
-            device.has_manual_exposure = True
-            device.exposure_min = int(match.group(1))
-            device.exposure_max = int(match.group(2))
-            device.exposure_default = int(match.group(3))
-        else:
-            device.has_manual_exposure = False
-        output = await self.run_v4l(device, '--list-formats')
-        matches = re.finditer(r"$.*'(.*)'.*", output)
-        for m in matches:
-            device.video_formats.add(m.group(1))
-
-    async def run_v4l(self, device: UsbCameraHardwareDevice, *args) -> str:
-        cmd = ['v4l2-ctl', '-d', str(device.video_id)]
-        cmd.extend(args)
-        return await rosys.run.sh(cmd)
