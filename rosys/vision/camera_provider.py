@@ -65,7 +65,7 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
         self.needs_backup = True
 
     def remove_all_cameras(self) -> None:
-        for camera_id in self.cameras:
+        for camera_id in list(self.cameras):
             self.remove_camera(camera_id)
 
     def remove_calibration(self, camera_id: str) -> None:
