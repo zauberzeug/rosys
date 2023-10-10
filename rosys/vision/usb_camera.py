@@ -1,16 +1,53 @@
+import io
 import re
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 
 import cv2
+import numpy as np
+import PIL
+from cv2 import UMat
 
 import rosys
 
 from .. import persistence
-from .camera import Camera, ExposureCameraMixin
-from .image import ImageSize
+from ..geometry import Rectangle
+from .camera import Camera, ExposureCameraMixin, TransformCameraMixin
+from .image import Image, ImageSize
+from .image_rotation import ImageRotation
 
 MJPG = cv2.VideoWriter_fourcc(*'MJPG')
+
+
+def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
+    image = PIL.Image.open(io.BytesIO(data))
+    if crop is not None:
+        image = image.crop((int(crop.x), int(crop.y), int(crop.x+crop.width), int(crop.y+crop.height)))
+    if rotation == ImageRotation.LEFT:
+        image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    elif rotation == ImageRotation.RIGHT:
+        image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+    elif rotation == ImageRotation.UPSIDE_DOWN:
+        image = cv2.rotate(image, cv2.ROTATE_180)
+    img_byte_arr = io.BytesIO()
+    image.save(img_byte_arr, format='JPEG')
+    return img_byte_arr.getvalue()
+
+
+def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
+    if crop is not None:
+        image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]
+    if rotation == ImageRotation.LEFT:
+        image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+    elif rotation == ImageRotation.RIGHT:
+        image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
+    elif rotation == ImageRotation.UPSIDE_DOWN:
+        image = cv2.rotate(image, cv2.ROTATE_180)
+    return cv2.imencode('.jpg', image)[1].tobytes()
+
+
+def to_bytes(image: Any) -> bytes:
+    return image[0].tobytes()
 
 
 @dataclass(slots=True, kw_only=True)
@@ -59,10 +96,6 @@ class UsbCameraHardwareDevice:
             # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
             if self.capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
                 self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-
-        if format not in self.video_formats:
-            raise ValueError(f'unsupported video format: {format}')
-        self.run_v4l('--set-fmt-video', f'pixelformat={format}')
 
 
 class UsbCameraHardwareDeviceFactory:
@@ -121,16 +154,10 @@ class UsbCameraHardwareDeviceFactory:
 
 
 @dataclass(slots=True, kw_only=True)
-class UsbCamera(ExposureCameraMixin, Camera):
+class UsbCamera(ExposureCameraMixin, TransformCameraMixin, Camera):
     device: Optional[UsbCameraHardwareDevice] = field(default=None, metadata=persistence.exclude)
     detect: bool = False
     color: Optional[str] = None
-
-    def __post_init__(self) -> None:
-        self.exposure = None
-        self.auto_exposure = True
-
-        super().__post_init__()
 
     @property
     def is_connected(self) -> bool:
@@ -157,12 +184,23 @@ class UsbCamera(ExposureCameraMixin, Camera):
 
         # logger.info(f'deactivated {self.id}')
 
-    def capture_image(self) -> cv2.UMat:
+    async def capture_image(self) -> cv2.UMat:
         if not self.is_connected:
             return None
         assert self.device.capture is not None
+
         _, image = self.device.capture.read()
-        return image
+
+        device = self.device
+
+        if 'MJPG' in device.video_formats:
+            bytes_ = await rosys.run.io_bound(to_bytes, image)
+            if self.crop or self.rotation != ImageRotation.NONE:
+                bytes_ = await rosys.run.cpu_bound(process_jpeg_image, bytes_, self.rotation, self.crop)
+        else:
+            bytes_ = await rosys.run.cpu_bound(process_ndarray_image, image, self.rotation, self.crop)
+
+        return Image(time=rosys.time(), camera_id=self.id, size=self.image_resolution, data=bytes_)
 
     async def set_exposure(self) -> None:
         if not self.is_connected:
@@ -187,12 +225,12 @@ class UsbCamera(ExposureCameraMixin, Camera):
                     # self.log.info(f'updating exposure of {self.id} from {exposure} to {self.exposure})')
                     device.capture.set(cv2.CAP_PROP_EXPOSURE, int(self.exposure * device.exposure_max))
 
-    def set_parameters(self) -> None:
+    async def set_parameters(self) -> None:
         if not self.is_connected:
             return
         device = self.device
 
-        self.set_exposure()
+        await self.set_exposure()
         self.device.set_video_format()
 
         self.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
