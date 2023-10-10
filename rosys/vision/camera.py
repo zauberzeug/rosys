@@ -34,6 +34,8 @@ class TransformCameraMixin(abc.ABC):
     rotation: ImageRotation = ImageRotation.NONE
     """rotation which should be applied after grabbing and cropping"""
 
+    resolution: Optional[ImageSize] = None
+
     @property
     def image_resolution(self) -> Optional[ImageSize]:
         if self.resolution is None:
