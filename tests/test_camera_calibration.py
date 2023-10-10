@@ -1,11 +1,16 @@
 import numpy as np
+
 from rosys.geometry import Point3d
 from rosys.test import approx
-from rosys.vision import Calibration, Camera
+from rosys.vision import CalibratedCameraMixin, Calibration, Camera
+
+
+class CalibratedCamera(CalibratedCameraMixin, Camera):
+    pass
 
 
 def demo_data() -> tuple[Camera, list[Point3d]]:
-    cam = Camera(id='1')
+    cam = CalibratedCamera(id='1')
     cam.set_perfect_calibration(x=0.1, y=0.2, z=3, roll=np.deg2rad(180+10), pitch=np.deg2rad(20), yaw=np.deg2rad(30))
     world_points = [
         Point3d(x=x, y=y, z=z)

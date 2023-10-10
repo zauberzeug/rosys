@@ -8,8 +8,8 @@ import PIL as pil
 
 import rosys
 
+from .camera import Camera
 from .image import Image, ImageSize
-from .usb_camera import UsbCamera
 
 
 @dataclass(slots=True, kw_only=True)
@@ -50,8 +50,9 @@ class SimulatedCameraDevice:
 
 
 @dataclass(slots=True, kw_only=True)
-class SimulatedCamera(UsbCamera):
+class SimulatedCamera(Camera):
     device: Optional[SimulatedCameraDevice] = None
+    image_resolution: ImageSize
     _color: str
 
     async def activate(self) -> None:

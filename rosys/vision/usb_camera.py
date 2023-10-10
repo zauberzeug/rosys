@@ -7,10 +7,8 @@ import cv2
 import rosys
 
 from .. import persistence
-from ..geometry import Rectangle
-from .camera import Camera
+from .camera import Camera, ExposureCameraMixin
 from .image import ImageSize
-from .image_rotation import ImageRotation
 
 MJPG = cv2.VideoWriter_fourcc(*'MJPG')
 
@@ -25,6 +23,8 @@ class UsbCameraHardwareDevice:
     has_manual_exposure: bool = False
     last_state: dict = field(default_factory=dict)
     video_formats: set[str] = field(default_factory=set)
+
+    # TODO should this be a dataclass?
 
     async def load_value_ranges(self) -> None:
         output = await self.run_v4l('--all')
@@ -47,6 +47,22 @@ class UsbCameraHardwareDevice:
         cmd = ['v4l2-ctl', '-d', str(self.video_id)]
         cmd.extend(args)
         return await rosys.run.sh(cmd)
+
+    def set_video_format(self) -> None:
+        if 'MJPG' in self.video_formats:
+            # NOTE enforcing motion jpeg for now
+            if self.capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
+                self.capture.set(cv2.CAP_PROP_FOURCC, MJPG)
+            # NOTE disable video decoding (see https://stackoverflow.com/questions/62664621/read-jpeg-frame-from-mjpeg-self-without-decoding-in-python-opencv/70869738?noredirect=1#comment110818859_62664621)
+            if self.capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
+                self.capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
+            # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
+            if self.capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
+                self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+
+        if format not in self.video_formats:
+            raise ValueError(f'unsupported video format: {format}')
+        self.run_v4l('--set-fmt-video', f'pixelformat={format}')
 
 
 class UsbCameraHardwareDeviceFactory:
@@ -105,45 +121,20 @@ class UsbCameraHardwareDeviceFactory:
 
 
 @dataclass(slots=True, kw_only=True)
-class UsbCamera(Camera):
+class UsbCamera(ExposureCameraMixin, Camera):
     device: Optional[UsbCameraHardwareDevice] = field(default=None, metadata=persistence.exclude)
-
     detect: bool = False
-
     color: Optional[str] = None
-    """a color code to identify the camera"""
 
-    resolution: Optional[ImageSize] = None
-    """physical resolution of the camera which should be used; camera may go into error state with wrong values"""
+    def __post_init__(self) -> None:
+        self.exposure = None
+        self.auto_exposure = True
 
-    auto_exposure: Optional[bool] = True
-    """toggles auto exposure"""
-
-    exposure: Optional[float] = None
-    """manual exposure of the camera (between 0-1); set auto_exposure to False for this value to take effect"""
-
-    rotation: ImageRotation = ImageRotation.NONE
-    """rotation which should be applied after grabbing and cropping"""
-
-    fps: Optional[int] = None
-    """current frames per second (read only)"""
-
-    crop: Optional[Rectangle] = None
-    """region to crop on the original resolution before rotation"""
+        super().__post_init__()
 
     @property
     def is_connected(self) -> bool:
         return self.device is not None
-
-    @property
-    def image_resolution(self) -> Optional[ImageSize]:
-        if self.resolution is None:
-            return None
-        width = int(self.crop.width) if self.crop else self.resolution.width
-        height = int(self.crop.height) if self.crop else self.resolution.height
-        if self.rotation in {ImageRotation.LEFT, ImageRotation.RIGHT}:
-            width, height = height, width
-        return ImageSize(width=width, height=height)
 
     async def activate(self) -> None:
         if self.is_connected:
@@ -173,33 +164,15 @@ class UsbCamera(Camera):
         _, image = self.device.capture.read()
         return image
 
-    def set_parameters(self) -> None:
+    async def set_exposure(self) -> None:
         if not self.is_connected:
             return
 
         device = self.device
         assert device.capture is not None
-        self.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
         if not self.auto_exposure and self.exposure is None and device.exposure_max > 0:
             self.exposure = device.exposure_default / device.exposure_max
-        if 'MJPG' in device.video_formats:
-            # NOTE enforcing motion jpeg for now
-            if device.capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
-                device.capture.set(cv2.CAP_PROP_FOURCC, MJPG)
-            # NOTE disable video decoding (see https://stackoverflow.com/questions/62664621/read-jpeg-frame-from-mjpeg-self-without-decoding-in-python-opencv/70869738?noredirect=1#comment110818859_62664621)
-            if device.capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
-                device.capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
-            # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
-            if device.capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
-                device.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        resolution = ImageSize(
-            width=int(device.capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
-            height=int(device.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        )
-        if self.resolution and self.resolution != resolution:
-            # self.log.info(f'updating resolution of {self.id} from {resolution} to {self.resolution}')
-            device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.resolution.width)
-            device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.resolution.height)
+
         if device.has_manual_exposure:
             auto_exposure = device.capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
             if self.auto_exposure and not auto_exposure:
@@ -213,3 +186,23 @@ class UsbCamera(Camera):
                 if self.exposure is not None and self.exposure != exposure:
                     # self.log.info(f'updating exposure of {self.id} from {exposure} to {self.exposure})')
                     device.capture.set(cv2.CAP_PROP_EXPOSURE, int(self.exposure * device.exposure_max))
+
+    def set_parameters(self) -> None:
+        if not self.is_connected:
+            return
+        device = self.device
+
+        self.set_exposure()
+        self.device.set_video_format()
+
+        self.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
+
+        resolution = ImageSize(
+            width=int(device.capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
+            height=int(device.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        )
+
+        if self.resolution and self.resolution != resolution:
+            # self.log.info(f'updating resolution of {self.id} from {resolution} to {self.resolution}')
+            device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.resolution.width)
+            device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.resolution.height)

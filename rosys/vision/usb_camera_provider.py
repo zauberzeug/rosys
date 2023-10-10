@@ -13,7 +13,8 @@ from .. import persistence, rosys
 from ..geometry import Rectangle
 from .camera_provider import CameraProvider
 from .image import Image, ImageSize
-from .usb_camera import ImageRotation, UsbCamera
+from .image_rotation import ImageRotation
+from .usb_camera import UsbCamera
 
 SCAN_INTERVAL = 10
 
