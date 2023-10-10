@@ -73,6 +73,8 @@ def notify(message: str,
     NEW_NOTIFICATION.emit(message)
     # NOTE show notifications on all pages
     for client in nicegui_globals.clients.values():
+        if not client.has_socket_connection:
+            continue
         with client:
             try:
                 ui.notify(message, type=type)
