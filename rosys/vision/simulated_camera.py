@@ -52,13 +52,17 @@ class SimulatedCameraDevice:
 @dataclass(slots=True, kw_only=True)
 class SimulatedCamera(Camera):
     device: Optional[SimulatedCameraDevice] = None
-    image_resolution: ImageSize
+    resolution: ImageSize
     _color: str
+
+    @property
+    def is_connected(self) -> bool:
+        return self.device is not None
 
     async def activate(self) -> None:
         print(f'activating simulated camera: {self.id}')
         if self.device is None:
-            self.device = SimulatedCameraDevice(video_id=self.id, color=self._color, size=self.image_resolution)
+            self.device = SimulatedCameraDevice(video_id=self.id, color=self._color, size=self.resolution)
 
     async def deactivate(self) -> None:
         self.device = None
@@ -66,7 +70,7 @@ class SimulatedCamera(Camera):
     async def capture_image(self) -> Optional[Image]:
         if self.device is None:
             return None
-        image = Image(time=rosys.time(), camera_id=self.id, size=self.image_resolution)
+        image = Image(time=rosys.time(), camera_id=self.id, size=self.resolution)
         if rosys.is_test:
             image.data = b'test data'
         else:
