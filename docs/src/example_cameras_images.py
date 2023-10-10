@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from nicegui import ui
 
-from rosys.vision import UsbCameraProviderSimulation, camera_provider
+from rosys.vision import SimulatedCameraProvider, camera_provider
 
-camera_provider = UsbCameraProviderSimulation()
+camera_provider = SimulatedCameraProvider()
 camera_provider.add_camera(camera_provider.create_calibrated('test_cam', width=800, height=600))
 
 

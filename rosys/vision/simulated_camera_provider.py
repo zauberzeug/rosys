@@ -12,7 +12,7 @@ from .image import ImageSize
 from .simulated_camera import SimulatedCamera
 
 
-class UsbCameraProviderSimulation(CameraProvider):
+class SimulatedCameraProvider(CameraProvider):
     """This module collects and simulates USB cameras and generates synthetic images.
 
     In the current implementation the images only contain the camera ID and the current time.
@@ -68,7 +68,7 @@ class UsbCameraProviderSimulation(CameraProvider):
         for _ in range(num_cameras):
             new_id = f'cam{len(self._cameras)}'
             print(f'adding simulated camera: {new_id}')
-            self.add_camera(UsbCameraProviderSimulation.create(new_id, width=640, height=480))
+            self.add_camera(SimulatedCameraProvider.create(new_id, width=640, height=480))
 
     @staticmethod
     def create(uid: str, width: int = 800, height: int = 600, color: Optional[str] = None) -> SimulatedCamera:
@@ -80,6 +80,6 @@ class UsbCameraProviderSimulation(CameraProvider):
                           width: int = 800, height: int = 600, color: Optional[str] = None,
                           x: float = 0.0, y: float = 0.0, z: float = 1.0,
                           roll: float = np.pi, pitch: float = 0.0, yaw: float = 0.0) -> SimulatedCamera:
-        camera = UsbCameraProviderSimulation.create(uid, width, height, color)
+        camera = SimulatedCameraProvider.create(uid, width, height, color)
         camera.set_perfect_calibration(width=width, height=height, x=x, y=y, z=z, roll=roll, pitch=pitch, yaw=yaw)
         return camera

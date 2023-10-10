@@ -15,7 +15,7 @@ from .rtsp_camera import RtspCamera
 SCAN_INTERVAL = 10
 
 
-class RtspCameraProviderHardware(CameraProvider):
+class RtspCameraProvider(CameraProvider):
     """This module collects and provides real RTSP streaming cameras."""
     USE_PERSISTENCE: bool = True
 

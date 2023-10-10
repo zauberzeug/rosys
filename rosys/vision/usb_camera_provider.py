@@ -49,7 +49,7 @@ def to_bytes(image: Any) -> bytes:
     return image[0].tobytes()
 
 
-class UsbCameraProviderHardware(CameraProvider):
+class UsbCameraProvider(CameraProvider):
     """This module collects and provides real USB cameras.
 
     Camera devices are discovered through video4linux (v4l) and accessed with openCV.

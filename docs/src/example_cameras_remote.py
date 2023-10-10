@@ -9,11 +9,11 @@ if rosys.hardware.SerialCommunication.is_possible():
     can = rosys.hardware.CanHardware(robot_brain)
     wheels = rosys.hardware.WheelsHardware(robot_brain, can=can)
     robot = rosys.hardware.RobotHardware([can, wheels], robot_brain)
-    camera_provider = rosys.vision.UsbCameraProviderHardware()
+    camera_provider = rosys.vision.UsbCameraProvider()
 else:
     wheels = rosys.hardware.WheelsSimulation()
     robot = rosys.hardware.RobotSimulation([wheels])
-    camera_provider = rosys.vision.UsbCameraProviderSimulation()
+    camera_provider = rosys.vision.SimulatedCameraProvider()
     camera_provider.restore = lambda _: None  # NOTE: disable persistence
     test_cam = camera_provider.create_calibrated('test_cam', width=800, height=600)
     app.on_startup(lambda: camera_provider.add_camera(test_cam))
