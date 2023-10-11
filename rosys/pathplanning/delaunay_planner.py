@@ -171,6 +171,11 @@ class DelaunayPlanner:
 
         grid_entries = _find_grid_passages(self.obstacle_map, self.pose_groups, start, True)
         grid_exits = _find_grid_passages(self.obstacle_map, self.pose_groups, goal, False)
+        if not grid_entries:
+            raise RuntimeError('could not find start segment')
+        if not grid_exits:
+            raise RuntimeError('could not find exit segment')
+
         for enter, exit_ in itertools.product(grid_entries, grid_exits):
             p, g = enter.coordinate
             p_, g_ = exit_.coordinate
@@ -264,28 +269,24 @@ def _is_healthy(spline: Spline, curvature_limit: float = 10.0) -> bool:
 class Passage:
     segment: PathSegment
     coordinate: tuple[int, int]
-    length: float
 
 
-def _find_grid_passages(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPoseGroup],
-                        pose: Pose, entering: bool) -> list[Passage]:
+def _find_grid_passages(obstacle_map: ObstacleMap,
+                        pose_groups: list[DelaunayPoseGroup],
+                        pose: Pose,
+                        entering: bool,
+                        max_num_groups: int = 10,
+                        max_num_results: int = 3) -> list[Passage]:
     group_distances = [g.point.distance(pose) for g in pose_groups]
     group_indices = np.argsort(group_distances)
     results: list[Passage] = []
-    for i, (g, group) in enumerate(zip(group_indices, np.array(pose_groups)[group_indices][:10])):
-        if i >= 3 and results:
-            break
+    for g, group in zip(group_indices, np.array(pose_groups)[group_indices][:max_num_groups]):
         for p, group_pose in enumerate(group.poses):
             for backward in [False, True]:
                 poses = (pose, group_pose) if entering else (group_pose, pose)
                 spline = Spline.from_poses(*poses, backward=backward)
                 if _is_healthy(spline) and not obstacle_map.test_spline(spline, backward):
-                    passage = Passage(
-                        segment=PathSegment(spline=spline, backward=backward),
-                        coordinate=(p, g),
-                        length=spline.estimated_length(),
-                    )
+                    passage = Passage(segment=PathSegment(spline=spline, backward=backward), coordinate=(p, g))
                     results.append(passage)
-    if results:
-        return results
-    raise RuntimeError(f'could not find terminal segment for {"start" if entering else "end"}')
+    results.sort(key=lambda passage: passage.segment.spline.estimated_length())
+    return results[:max_num_results]
