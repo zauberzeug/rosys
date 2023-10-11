@@ -8,7 +8,7 @@ import PIL as pil
 
 import rosys
 
-from .camera import Camera
+from .camera import CalibratedCameraMixin, Camera
 from .image import Image, ImageSize
 
 
@@ -50,7 +50,7 @@ class SimulatedCameraDevice:
 
 
 @dataclass(slots=True, kw_only=True)
-class SimulatedCamera(Camera):
+class SimulatedCamera(CalibratedCameraMixin, Camera):
     device: Optional[SimulatedCameraDevice] = None
     resolution: ImageSize
     _color: str
