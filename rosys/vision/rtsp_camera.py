@@ -131,6 +131,8 @@ class RtspCamera(TransformCameraMixin, Camera):
         self.capture_task = None
 
     async def activate(self) -> None:
+        if self.is_connected:
+            return
         task = rosys.background_tasks.create(self.capture_images(), name=f'capture {self.id}')
         if task is None:
             logging.warning(f'could not create task for {self.id}')

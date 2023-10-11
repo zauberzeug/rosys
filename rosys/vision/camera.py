@@ -7,8 +7,7 @@ from typing import Optional
 
 import numpy as np
 
-from rosys import persistence
-
+from .. import persistence, rosys
 from ..geometry import Rectangle, Rotation
 from .calibration import Calibration, Extrinsics, Intrinsics
 from .image import Image, ImageSize
@@ -102,15 +101,23 @@ class Camera(abc.ABC):
     images: deque[Image] = field(default_factory=lambda: deque(maxlen=Camera.MAX_IMAGES), metadata=persistence.exclude)
     name: Optional[str] = None
 
+    activate_after_init: bool = True
+
     fps: Optional[int] = None
     """current frames per second (read only)"""
 
     _resolution: Optional[ImageSize] = None
     """physical resolution of the camera which should be used; camera may go into error state with wrong values"""
 
+    _activation_lock: asyncio.Lock = field(default_factory=asyncio.Lock, metadata=persistence.exclude)
+    activating: bool = False
+
     def __post_init__(self) -> None:
         if self.name is None:
             self.name = self.id
+        if self.activate_after_init:
+            # start a new task to activate the camera
+            rosys.on_startup(self.activate)
 
     @property
     def image_resolution(self) -> Optional[ImageSize]:
@@ -122,6 +129,8 @@ class Camera(abc.ABC):
         return False
 
     async def activate(self) -> None:
+        # NOTE: due to a race condition, this method may be called multiple times even after any check for is_connected
+        #       Make sure it is idempotent!
         pass
 
     async def deactivate(self) -> None:

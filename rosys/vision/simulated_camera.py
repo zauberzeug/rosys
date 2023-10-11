@@ -60,7 +60,6 @@ class SimulatedCamera(CalibratedCameraMixin, Camera):
         return self.device is not None
 
     async def activate(self) -> None:
-        print(f'activating simulated camera: {self.id}')
         if self.device is None:
             self.device = SimulatedCameraDevice(video_id=self.id, color=self._color, size=self.resolution)
 
