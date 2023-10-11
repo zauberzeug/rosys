@@ -33,16 +33,6 @@ class SimulatedCameraProvider(CameraProvider):
         if self.USE_PERSISTENCE:
             persistence.register(self)
 
-    @property
-    def cameras(self) -> dict[str, SimulatedCamera]:
-        return self._cameras
-
-    def backup(self) -> dict:
-        return {'cameras': persistence.to_dict(self._cameras)}
-
-    def restore(self, data: dict[str, Any]) -> None:
-        persistence.replace_dict(self._cameras, SimulatedCamera, data.get('cameras', {}))
-
     async def step(self) -> None:
         for camera in self._cameras.values():
             if not camera.is_connected:

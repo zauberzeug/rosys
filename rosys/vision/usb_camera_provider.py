@@ -33,16 +33,6 @@ class UsbCameraProvider(CameraProvider):
         self.needs_backup: bool = False
         # persistence.register(self)
 
-    @property
-    def cameras(self) -> dict[str, UsbCamera]:
-        return self._cameras
-
-    def backup(self) -> dict:
-        return {'cameras': persistence.to_dict(self._cameras)}
-
-    def restore(self, data: dict[str, Any]) -> None:
-        persistence.replace_dict(self._cameras, UsbCamera, data.get('cameras', {}))
-
     async def capture_images(self) -> None:
         for uid, camera in self._cameras.items():
             try:
@@ -82,8 +72,8 @@ class UsbCameraProvider(CameraProvider):
             lines = infos.splitlines()
             if 'dev/video' not in lines[1]:
                 continue
-            if not self._cameras[uid].is_connected:
-                await self._cameras[uid].activate()
+            # if not self._cameras[uid].is_connected:
+                # await self._cameras[uid].activate()
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():

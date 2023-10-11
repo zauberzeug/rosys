@@ -3,7 +3,7 @@ import urllib.parse
 from typing import Generic, Optional, TypeVar
 from uuid import uuid4
 
-from .. import rosys
+from .. import persistence, rosys
 from ..event import Event
 from .camera import Camera
 from .image import Image
@@ -36,10 +36,17 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
 
         self.needs_backup: bool = False
 
+        self._cameras: dict[str, T] = {}
+
+    def backup(self) -> dict:
+        return {'cameras': persistence.to_dict(self._cameras)}
+
+    def restore(self, data: dict[str, dict]) -> None:
+        persistence.replace_dict(self._cameras, Camera, data.get('cameras', {}))
+
     @property
-    @abc.abstractmethod
     def cameras(self) -> dict[str, T]:
-        pass
+        return self._cameras
 
     @property
     def images(self) -> list[Image]:

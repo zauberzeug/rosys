@@ -41,16 +41,6 @@ class RtspCameraProvider(CameraProvider):
         if self.USE_PERSISTENCE:
             persistence.register(self)
 
-    @property
-    def cameras(self) -> dict[str, RtspCamera]:
-        return self._cameras
-
-    def backup(self) -> dict:
-        return {'cameras': persistence.to_dict(self._cameras)}
-
-    def restore(self, data: dict[str, Any]) -> None:
-        persistence.replace_dict(self._cameras, RtspCamera, data.get('cameras', {}))
-
     async def update_device_list(self) -> None:
         if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
             return
