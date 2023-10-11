@@ -3,7 +3,6 @@ from .camera import CalibratedCameraMixin, Camera, ExposureCameraMixin, Transfor
 from .camera_objects_ import CameraObjects as camera_objects
 from .camera_projector import CameraProjector
 from .camera_provider import CameraProvider
-from .combining_camera_provider import CombiningCameraProvider
 from .detections import BoxDetection, Detection, Detections, PointDetection
 from .detector import Detector
 from .detector_hardware import DetectorHardware
