@@ -83,8 +83,7 @@ class Schedule:
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.location = (data['location'][0], data['location'][1]
-                         ) if 'location' in data and data['location'] is not None else None
+        self.location = (data['location'][0], data['location'][1]) if data.get('location') else None
         self.sunrise_offset = cast(float, data.get('sunrise_offset'))
         self.sunset_offset = cast(float, data.get('sunset_offset'))
         self.is_enabled = cast(bool, data.get('is_enabled', False))
