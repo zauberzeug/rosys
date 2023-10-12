@@ -101,7 +101,7 @@ class Camera(abc.ABC):
     images: deque[Image] = field(default_factory=lambda: deque(maxlen=Camera.MAX_IMAGES), metadata=persistence.exclude)
     name: Optional[str] = None
 
-    activate_after_init: bool = True
+    connect_after_init: bool = True
 
     fps: Optional[int] = None
     """current frames per second (read only)"""
@@ -112,9 +112,9 @@ class Camera(abc.ABC):
     def __post_init__(self) -> None:
         if self.name is None:
             self.name = self.id
-        if self.activate_after_init:
+        if self.connect_after_init:
             # start a new task to activate the camera
-            rosys.on_startup(self.activate)
+            rosys.on_startup(self.connect)
 
     @property
     def image_resolution(self) -> Optional[ImageSize]:
@@ -125,12 +125,12 @@ class Camera(abc.ABC):
         """To be interpreted as "ready to capture images"."""
         return False
 
-    async def activate(self) -> None:
+    async def connect(self) -> None:
         # NOTE: due to a race condition, this method may be called multiple times even after any check for is_connected
         #       Make sure it is idempotent!
         pass
 
-    async def deactivate(self) -> None:
+    async def disconnect(self) -> None:
         pass
 
     @property

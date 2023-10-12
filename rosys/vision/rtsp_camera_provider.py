@@ -72,7 +72,7 @@ class RtspCameraProvider(CameraProvider):
                 camera.url = url
                 if mac in self._cameras and camera.capture_task is None and camera.authorized:
                     self.log.info(f'activating authorized camera {camera.id} with url {camera.url}...')
-                    await camera.activate()
+                    await camera.connect()
 
     def get_rtsp_url(self, ip: str, vendor_mac: str) -> Optional[str]:
         if vendor_mac == 'e0:62:90':  # Jovision IP Cameras
@@ -84,7 +84,7 @@ class RtspCameraProvider(CameraProvider):
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
-            await camera.deactivate()
+            await camera.disconnect()
 
     def invalidate(self) -> None:
         self.needs_backup = True

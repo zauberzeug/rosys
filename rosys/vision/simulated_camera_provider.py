@@ -43,7 +43,7 @@ class SimulatedCameraProvider(CameraProvider):
     async def simulate_device_discovery(self) -> None:
         for camera in self._cameras.values():
             if not camera.is_connected:
-                await camera.activate()
+                await camera.connect()
                 continue
             if self.simulate_device_failure:
                 # disconnect cameras rendomly with probabilty rising with time

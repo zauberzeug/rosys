@@ -130,7 +130,7 @@ class RtspCamera(TransformCameraMixin, Camera):
             self.resolution = size
         self.capture_task = None
 
-    async def activate(self) -> None:
+    async def connect(self) -> None:
         if self.is_connected:
             return
         task = rosys.background_tasks.create(self.capture_images(), name=f'capture {self.id}')
@@ -139,7 +139,7 @@ class RtspCamera(TransformCameraMixin, Camera):
             return
         self.capture_task = task
 
-    async def deactivate(self) -> None:
+    async def disconnect(self) -> None:
         if self.capture_task is not None:
             self.capture_task.cancel()
             self.capture_task = None

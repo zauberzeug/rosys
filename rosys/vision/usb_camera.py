@@ -163,7 +163,7 @@ class UsbCamera(ExposureCameraMixin, TransformCameraMixin, Camera):
     def is_connected(self) -> bool:
         return self.device is not None
 
-    async def activate(self) -> None:
+    async def connect(self) -> None:
         if self.is_connected:
             return
         device = await UsbCameraHardwareDeviceFactory.device_from_uid(self.id)
@@ -174,7 +174,7 @@ class UsbCamera(ExposureCameraMixin, TransformCameraMixin, Camera):
         self.device = device
         # logger.info(f'activated {self.id}')
 
-    async def deactivate(self) -> None:
+    async def disconnect(self) -> None:
         if not self.is_connected:
             return
 

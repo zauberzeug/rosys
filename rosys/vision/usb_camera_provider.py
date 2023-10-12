@@ -46,7 +46,7 @@ class UsbCameraProvider(CameraProvider):
                 self.add_image(camera, image)
             except Exception:
                 self.log.exception(f'could not capture image from {uid}')
-                await camera.deactivate()
+                await camera.disconnect()
 
     async def update_parameters(self) -> None:
         for camera in self._cameras.values():
@@ -77,7 +77,7 @@ class UsbCameraProvider(CameraProvider):
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
-            await camera.deactivate()
+            await camera.disconnect()
 
     @staticmethod
     def is_operable() -> bool:

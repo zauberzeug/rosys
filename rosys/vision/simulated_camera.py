@@ -59,11 +59,11 @@ class SimulatedCamera(CalibratedCameraMixin, Camera):
     def is_connected(self) -> bool:
         return self.device is not None
 
-    async def activate(self) -> None:
+    async def connect(self) -> None:
         if self.device is None:
             self.device = SimulatedCameraDevice(video_id=self.id, color=self._color, size=self.resolution)
 
-    async def deactivate(self) -> None:
+    async def disconnect(self) -> None:
         self.device = None
 
     async def capture_image(self) -> Optional[Image]:
