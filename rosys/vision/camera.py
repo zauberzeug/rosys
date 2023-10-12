@@ -109,9 +109,6 @@ class Camera(abc.ABC):
     _resolution: Optional[ImageSize] = None
     """physical resolution of the camera which should be used; camera may go into error state with wrong values"""
 
-    _activation_lock: asyncio.Lock = field(default_factory=asyncio.Lock, metadata=persistence.exclude)
-    activating: bool = False
-
     def __post_init__(self) -> None:
         if self.name is None:
             self.name = self.id
