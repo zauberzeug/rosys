@@ -29,10 +29,6 @@ class RtspCameraProvider(CameraProvider):
 
         self.last_scan: Optional[float] = None
         self._cameras: dict[str, RtspCamera] = {}
-        if sys.platform.startswith('darwin'):
-            self.arpscan_cmd = 'sudo arp-scan'
-        else:
-            self.arpscan_cmd = 'sudo /usr/sbin/arp-scan'
 
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, 1)
@@ -41,17 +37,29 @@ class RtspCameraProvider(CameraProvider):
         if self.USE_PERSISTENCE:
             persistence.register(self)
 
-    async def scan_for_cameras(self) -> None:
+    @staticmethod
+    async def run_arp_scan(interface) -> Optional[str]:
+        if sys.platform.startswith('darwin'):
+            arpscan_cmd = 'sudo arp-scan'
+        else:
+            arpscan_cmd = 'sudo /usr/sbin/arp-scan'  # TODO is this necessary? sbin should be in path
+
+        cmd = f'{arpscan_cmd} -I {interface} --localnet'
+        output = await rosys.run.sh(cmd, timeout=10)
+
+        if output is None or 'sudo' in output:
+            raise Exception('Could not run arp-scan! Make sure it is installed can be run with sudo.'
+                            'Try running sudo visudo and add the following line: "rosys ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan"')
+
+        return output
+
+    @staticmethod
+    async def scan_for_cameras() -> None:
         cameras_ids = []
         for interface in netifaces.interfaces():
-            cmd = f'{self.arpscan_cmd} -I {interface} --localnet'
-            output = await rosys.run.sh(cmd, timeout=10)
-            if output is None or 'ERROR' in output:
+            output = await RtspCameraProvider.run_arp_scan(interface)
+            if 'ERROR' in output:
                 continue
-            if 'sudo' in output:
-                self.log.error('could not run arp-scan, try running "sudo visudo" '
-                               'and add the following line: "rosys ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan"')
-                break
             for line in output.splitlines():
                 infos = line.split()
                 if len(infos) < 2:
@@ -59,10 +67,9 @@ class RtspCameraProvider(CameraProvider):
                 try:
                     ip, mac = infos[:2]
                 except Exception:
-                    self.log.exception(f'could not parse {line}')
+                    logging.exception(f'could not parse {line}')
                     continue
-                url = self.get_rtsp_url(ip, mac[:8])
-                if url is None:
+                if not RtspCamera.known_vendor(mac):
                     continue
                 cameras_ids.append(mac)
 
@@ -86,7 +93,7 @@ class RtspCameraProvider(CameraProvider):
             return f'rtsp://admin:admin@{ip}/profile{self.jovision_profile}'
         if vendor_mac in ['e4:24:6c', '3c:e3:6b']:  # Dahua IP Cameras
             return f'rtsp://admin:Adminadmin@{ip}/cam/realmonitor?channel=1&subtype=0'
-        self.log.debug(f'ignoring vendor mac {vendor_mac} because it seems not to be a known camera')
+        logging.debug(f'ignoring vendor mac {vendor_mac} because it seems not to be a known camera')
         return None
 
     async def shutdown(self) -> None:

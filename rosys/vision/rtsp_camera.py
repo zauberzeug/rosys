@@ -196,8 +196,7 @@ class RtspCamera(TransformCameraMixin, Camera):
             return
         ip = await find_ip_from_mac(self.id)
         if ip is None:
-            logging.warning(f'could not find IP address for {self.id}')
-            return
+            raise Exception(f'could not find IP address for {self.id}')
 
         device = RtspCameraOpenCvDevice(mac=self.id, ip=ip, jovision_profile=self.jovision_profile)
         if device is None:
@@ -221,3 +220,7 @@ class RtspCamera(TransformCameraMixin, Camera):
         bytes_ = await rosys.run.cpu_bound(process_ndarray_image, image, self.rotation, self.crop)
 
         return Image(time=rosys.time(), camera_id=self.id, size=self.image_resolution, data=bytes_)
+
+    @staticmethod
+    def known_vendor(mac: str) -> bool:
+        return mac[:8] in ['e0:62:90', 'e4:24:6c', '3c:e3:6b']
