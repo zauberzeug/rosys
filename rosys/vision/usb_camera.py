@@ -19,7 +19,36 @@ from .image_rotation import ImageRotation
 MJPG = cv2.VideoWriter_fourcc(*'MJPG')
 
 
-@dataclass(slots=True, kw_only=True)
+async def get_video_devices_info() -> list[str]:
+    output = await rosys.run.sh(['v4l2-ctl', '--list-devices'])
+    if output is None:
+        return None
+    output = '\n'.join([s for s in output.split('\n') if not s.startswith('Cannot open device')])
+    return output.split('\n\n')
+
+
+async def find_video_id(camera_uid: str) -> Optional[int]:
+    device_infos = await get_video_devices_info()
+    if device_infos is None:
+        return None
+
+    for infos in device_infos:
+        match = re.search(r'\((.*)\)', infos)
+        if match is None:
+            continue
+        uid = match.group(1)
+        if not uid == camera_uid:
+            continue
+
+        lines = infos.splitlines()
+        if 'dev/video' not in lines[1]:
+            continue
+
+        num = int(lines[1].strip().lstrip('/dev/video'))
+
+        return num
+
+
 class UsbCameraHardwareDevice:
     video_id: int
     capture: cv2.VideoCapture
@@ -27,10 +56,25 @@ class UsbCameraHardwareDevice:
     exposure_max: int = 0
     exposure_default: int = 0
     has_manual_exposure: bool = False
-    last_state: dict = field(default_factory=dict)
-    video_formats: set[str] = field(default_factory=set)
+    last_state: dict = dict()
+    video_formats: set[str] = set()
 
-    # TODO should this be a dataclass?
+    def __init__(self, video_id: int, capture: cv2.VideoCapture):
+        self.video_id = video_id
+        self.capture = capture
+
+    @staticmethod
+    async def from_uid(camera_id: str) -> Optional['UsbCameraHardwareDevice']:
+        video_id = await find_video_id(camera_id)
+        if video_id is None:
+            return None
+
+        capture = UsbCameraHardwareDevice.create_capture(video_id)
+
+        if capture is None:
+            return None
+
+        return UsbCameraHardwareDevice(video_id=video_id, capture=capture)
 
     async def load_value_ranges(self) -> None:
         output = await self.run_v4l('--all')
@@ -66,51 +110,6 @@ class UsbCameraHardwareDevice:
             if self.capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
                 self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
-
-class UsbCameraHardwareDeviceFactory:
-    @staticmethod
-    async def device_from_uid(camera_id: str) -> Optional[UsbCameraHardwareDevice]:
-        video_id = await UsbCameraHardwareDeviceFactory.find_video_id(camera_id)
-        if video_id is None:
-            return None
-
-        capture = UsbCameraHardwareDeviceFactory.create_capture(video_id)
-
-        if capture is None:
-            return None
-
-        return UsbCameraHardwareDevice(video_id=video_id, capture=capture)
-
-    @staticmethod
-    async def get_video_devices_info() -> list[str]:
-        output = await rosys.run.sh(['v4l2-ctl', '--list-devices'])
-        if output is None:
-            return None
-        output = '\n'.join([s for s in output.split('\n') if not s.startswith('Cannot open device')])
-        return output.split('\n\n')
-
-    @staticmethod
-    async def find_video_id(camera_uid: str) -> Optional[int]:
-        device_infos = await UsbCameraHardwareDeviceFactory.get_video_devices_info()
-        if device_infos is None:
-            return None
-
-        for infos in device_infos:
-            match = re.search(r'\((.*)\)', infos)
-            if match is None:
-                continue
-            uid = match.group(1)
-            if not uid == camera_uid:
-                continue
-
-            lines = infos.splitlines()
-            if 'dev/video' not in lines[1]:
-                continue
-
-            num = int(lines[1].strip().lstrip('/dev/video'))
-
-            return num
-
     @staticmethod
     def create_capture(index: int):
         capture = cv2.VideoCapture(index)
@@ -136,7 +135,7 @@ class UsbCamera(ExposureCameraMixin, TransformCameraMixin, Camera):
     async def connect(self) -> None:
         if self.is_connected:
             return
-        device = await UsbCameraHardwareDeviceFactory.device_from_uid(self.id)
+        device = await UsbCameraHardwareDevice.from_uid(self.id)
         if device is None:
             # logger.error(f'could not activate {self.id}')
             return
