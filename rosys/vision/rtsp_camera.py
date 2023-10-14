@@ -3,19 +3,20 @@ import io
 import logging
 import shlex
 import subprocess
+import sys
 from dataclasses import dataclass
 from io import BytesIO
 from typing import Any, AsyncGenerator, Optional
 
+import cv2
 import imgsize
 import PIL
 
-import rosys
-
-from .. import persistence
+from .. import persistence, rosys
 from ..geometry import Rectangle
 from .camera import Camera, TransformCameraMixin
-from .image import ImageSize
+from .image import Image, ImageSize
+from .image_processing import process_ndarray_image
 from .image_rotation import ImageRotation
 
 
@@ -38,19 +39,60 @@ def process_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle
     return img_byte_arr.getvalue()
 
 
-@dataclass(slots=True, kw_only=True)
-class RtspCamera(TransformCameraMixin, Camera):
+async def find_ip_from_mac(mac: str) -> Optional[str]:
+    """Find the IP address of a device with a given MAC address."""
+    if sys.platform.startswith('darwin'):
+        arp_cmd = 'arp -a'
+    else:
+        arp_cmd = 'arp'
+    output = await rosys.run.sh(arp_cmd)
+    if output is None:
+        return None
+    for line in output.splitlines():
+        infos = line.split()
+        if len(infos) < 2:
+            continue
+        if infos[1] == mac:
+            return infos[0]
+    return None
+
+
+def determine_rtsp_url(mac: str, ip: str, jovision_profile: int = 0) -> Optional[str]:
+    vendor_mac = mac[:8].lower()
+    if vendor_mac == 'e0:62:90':  # Jovision IP Cameras
+        return f'rtsp://admin:admin@{ip}/profile{jovision_profile}'
+    if vendor_mac in ['e4:24:6c', '3c:e3:6b']:  # Dahua IP Cameras
+        return f'rtsp://admin:Adminadmin@{ip}/cam/realmonitor?channel=1&subtype=0'
+    return None
+
+
+class RtspCameraOpenCvDevice:
+    mac_address: str
+    ip_address: str
+    capture: cv2.VideoCapture
+
+    def __init__(self, mac, ip, jovision_profile=0) -> None:
+        print(f'connecting to {mac} at {ip}')
+        self.ip_address = ip
+        url = determine_rtsp_url(mac, self.ip_address, jovision_profile)
+        if url is None:
+            raise Exception(f'could not determine RTSP URL for {mac}')
+        self.capture = cv2.VideoCapture(url)
+
+    def url(self) -> str:
+        return self.capture.get(cv2.CAP_PROP_POS_MSEC)
+
+    def __del__(self) -> None:
+        self.capture.release()
+
+
+class RtspCameraGstreamerDevice:
+    url: str
     capture_task: Optional[asyncio.Task] = None
     capture_process: Optional[subprocess.Popen] = None
-    goal_fps: int = 6
 
-    detect: bool = False
-    url: Optional[str] = None
-    authorized: bool = True
-
-    @property
-    def is_connected(self) -> bool:
-        return self.capture_task is not None
+    def __init__(self, url: str) -> None:
+        self.url = url
 
     async def capture_images(self) -> None:
         async def stream() -> AsyncGenerator[bytes, None]:
@@ -58,7 +100,6 @@ class RtspCamera(TransformCameraMixin, Camera):
             # if platform.system() == 'Darwin':
             #     command = f'gst-launch-1.0 rtspsrc location="{self.url}" latency=0 protocols=tcp drop-on-latency=true buffer-mode=none ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
             # else:
-            logging.info(f'capture images from {self.id} with URL {self.url}')
             assert self.url is not None
             if 'subtype=0' in self.url:
                 # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
@@ -130,21 +171,53 @@ class RtspCamera(TransformCameraMixin, Camera):
             self.resolution = size
         self.capture_task = None
 
+
+@dataclass(slots=True, kw_only=True)
+class RtspCamera(TransformCameraMixin, Camera):
+    device: RtspCameraOpenCvDevice = None
+    capture_process: Optional[subprocess.Popen] = None
+    goal_fps: int = 6
+    jovision_profile: int = 0
+
+    detect: bool = False
+    authorized: bool = True
+
+    @property
+    def is_connected(self) -> bool:
+        return self.device is not None
+
+    @property
+    def url(self) -> Optional[str]:
+        if self.is_connected:
+            return self.device.url
+
     async def connect(self) -> None:
         if self.is_connected:
             return
-        task = rosys.background_tasks.create(self.capture_images(), name=f'capture {self.id}')
-        if task is None:
-            logging.warning(f'could not create task for {self.id}')
+        ip = await find_ip_from_mac(self.id)
+        if ip is None:
+            logging.warning(f'could not find IP address for {self.id}')
             return
-        self.capture_task = task
+
+        device = RtspCameraOpenCvDevice(mac=self.id, ip=ip, jovision_profile=self.jovision_profile)
+        if device is None:
+            logging.warning(f'could not create device for {self.id}')
+            return
+        self.device = device
 
     async def disconnect(self) -> None:
-        if self.capture_task is not None:
-            self.capture_task.cancel()
-            self.capture_task = None
-        if self.capture_process is not None:
-            try:
-                self.capture_process.kill()
-            except Exception:
-                logging.info('could not kill process')
+        if not self.is_connected:
+            return
+        self.device.capture.release()
+        self.device = None
+
+    async def capture_image(self) -> Optional[Image]:
+        if not self.is_connected:
+            return None
+        assert self.device is not None
+
+        _, image = self.device.capture.read()
+
+        bytes_ = await rosys.run.cpu_bound(process_ndarray_image, image, self.rotation, self.crop)
+
+        return Image(time=rosys.time(), camera_id=self.id, size=self.image_resolution, data=bytes_)
