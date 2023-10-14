@@ -26,7 +26,6 @@ class UsbCameraProvider(CameraProvider):
         self._cameras: dict[str, UsbCamera] = {}
 
         rosys.on_shutdown(self.shutdown)
-        rosys.on_repeat(self.capture_images, 0.2)
         rosys.on_repeat(self.update_parameters, 1)
         rosys.on_repeat(self.update_device_list, 1)
 

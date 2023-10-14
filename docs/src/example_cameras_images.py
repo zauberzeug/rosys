@@ -11,7 +11,7 @@ def refresh() -> None:
     for uid, camera in camera_provider.cameras.items():
         if uid not in feeds:
             feeds[uid] = ui.interactive_image()
-        feeds[uid].set_source(camera_provider.get_latest_image_url(camera))
+        feeds[uid].set_source(camera.get_latest_image_url())
 
 
 feeds: dict[str, ui.interactive_image] = {}

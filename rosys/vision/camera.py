@@ -4,14 +4,17 @@ import abc
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Optional
+from uuid import uuid4
 
 import numpy as np
 
 from .. import persistence, rosys
+from ..event import Event
 from ..geometry import Rectangle, Rotation
 from .calibration import Calibration, Extrinsics, Intrinsics
 from .image import Image, ImageSize
 from .image_rotation import ImageRotation
+from .image_route import create_image_route
 
 
 class ExposureCameraMixin(abc.ABC):
@@ -69,7 +72,7 @@ class CalibratedCameraMixin(abc.ABC):
 
     @property
     def is_calibrated(self) -> bool:
-        return self
+        return self.calibration is not None
 
     def set_perfect_calibration(
         self,
@@ -106,15 +109,39 @@ class Camera(abc.ABC):
     fps: Optional[int] = None
     """current frames per second (read only)"""
 
+    streaming: bool = False
+
     _resolution: Optional[ImageSize] = None
     """physical resolution of the camera which should be used; camera may go into error state with wrong values"""
 
     def __post_init__(self) -> None:
+        self.NEW_IMAGE = Event()
+        """a new image is available (argument: image)"""
+
+        self.base_path = f'images/{str(uuid4())}'
+
+        create_image_route(self)
+
         if self.name is None:
             self.name = self.id
         if self.connect_after_init:
             # start a new task to activate the camera
             rosys.on_startup(self.connect)
+
+        async def stream() -> None:
+            if self.streaming:
+                await self.capture_image()
+
+        rosys.on_repeat(stream, interval=.1)
+
+    def get_image_url(self, image: Image) -> str:
+        return f'{self.base_path}/{image.time}'
+
+    def get_latest_image_url(self) -> str:
+        image = self.latest_captured_image
+        if image is None:
+            return f'{self.base_path}/placeholder'
+        return self.get_image_url(image)
 
     @property
     def image_resolution(self) -> Optional[ImageSize]:
@@ -144,3 +171,10 @@ class Camera(abc.ABC):
 
     def get_recent_images(self, current_time: float, timespan: float = 10.0) -> list[Image]:
         return [i for i in self.captured_images if i.time > current_time - timespan]
+
+    def _add_image(self, image: Image) -> None:
+        self.images.append(image)
+        self.NEW_IMAGE.emit(image)
+
+    async def capture_image(self) -> None:
+        raise NotImplementedError("Implement capture_image() in your camera class!")

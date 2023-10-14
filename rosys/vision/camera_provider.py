@@ -1,13 +1,10 @@
 import abc
-import urllib.parse
 from typing import Generic, Optional, TypeVar
-from uuid import uuid4
 
 from .. import persistence, rosys
 from ..event import Event
 from .camera import Camera
 from .image import Image
-from .image_route import create_image_route
 
 T = TypeVar('T', bound=Camera)
 
@@ -31,8 +28,7 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
         self.NEW_IMAGE = Event()
         """a new image is available (argument: image)"""
 
-        self.base_path = f'images/{str(uuid4())}'
-        create_image_route(self)
+        # self.base_path = f'images/{str(uuid4())}'
 
         self.needs_backup: bool = False
 
@@ -43,6 +39,8 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
 
     def restore(self, data: dict[str, dict]) -> None:
         persistence.replace_dict(self._cameras, Camera, data.get('cameras', {}))
+        for camera in self._cameras:
+            camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
     @property
     def cameras(self) -> dict[str, T]:
@@ -52,18 +50,10 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
     def images(self) -> list[Image]:
         return sorted((i for c in self.cameras.values() for i in c.images), key=lambda i: i.time)
 
-    def get_image_url(self, image: Image) -> str:
-        return f'{self.base_path}/{urllib.parse.quote_plus(image.camera_id)}/{image.time}'
-
-    def get_latest_image_url(self, camera: Camera) -> str:
-        image = camera.latest_captured_image
-        if image is None:
-            return f'{self.base_path}/placeholder'
-        return self.get_image_url(image)
-
     def add_camera(self, camera: T) -> None:
         self.cameras[camera.id] = camera
         self.CAMERA_ADDED.emit(camera)
+        camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
         self.needs_backup = True
 
     def remove_camera(self, camera_id: str) -> None:

@@ -116,6 +116,7 @@ class UsbCameraHardwareDeviceFactory:
         capture = cv2.VideoCapture(index)
         if capture is None:
             return None
+        capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         if not capture.isOpened():
             capture.release()
             return None
@@ -153,7 +154,7 @@ class UsbCamera(ExposureCameraMixin, TransformCameraMixin, Camera):
 
         # logger.info(f'deactivated {self.id}')
 
-    async def capture_image(self) -> Optional[Image]:
+    async def capture_image(self) -> None:
         if not self.is_connected:
             return None
         assert self.device.capture is not None
@@ -169,7 +170,8 @@ class UsbCamera(ExposureCameraMixin, TransformCameraMixin, Camera):
         else:
             bytes_ = await rosys.run.cpu_bound(process_ndarray_image, image, self.rotation, self.crop)
 
-        return Image(time=rosys.time(), camera_id=self.id, size=self.image_resolution, data=bytes_)
+        image = Image(time=rosys.time(), camera_id=self.id, size=self.image_resolution, data=bytes_)
+        self._add_image(image)
 
     async def set_exposure(self) -> None:
         if not self.is_connected:

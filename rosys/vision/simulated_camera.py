@@ -66,7 +66,7 @@ class SimulatedCamera(CalibratedCameraMixin, Camera):
     async def disconnect(self) -> None:
         self.device = None
 
-    async def capture_image(self) -> Optional[Image]:
+    async def capture_image(self) -> None:
         if self.device is None:
             return None
         image = Image(time=rosys.time(), camera_id=self.id, size=self.resolution)
@@ -74,4 +74,4 @@ class SimulatedCamera(CalibratedCameraMixin, Camera):
             image.data = b'test data'
         else:
             image.data = await rosys.run.cpu_bound(self.device.create_image_data)
-        return image
+        self._add_image(image)

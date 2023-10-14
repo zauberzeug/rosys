@@ -26,19 +26,11 @@ class SimulatedCameraProvider(CameraProvider):
 
         self.simulate_device_failure = simulate_failing
 
-        rosys.on_repeat(self.step, .01)
         rosys.on_repeat(self.simulate_device_discovery, 5.0)
 
         self.needs_backup: bool = False
         if self.USE_PERSISTENCE:
             persistence.register(self)
-
-    async def step(self) -> None:
-        for camera in self._cameras.values():
-            if not camera.is_connected:
-                continue
-            image = await camera.capture_image()
-            self.add_image(camera, image)
 
     async def simulate_device_discovery(self) -> None:
         for camera in self._cameras.values():
