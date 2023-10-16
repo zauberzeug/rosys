@@ -1,3 +1,4 @@
+import asyncio
 import io
 import logging
 import re
@@ -84,6 +85,7 @@ class UsbCameraProviderHardware(CameraProvider):
         rosys.on_repeat(self.update_parameters, 1)
         rosys.on_repeat(self.update_device_list, 1)
         rosys.on_repeat(lambda: self.prune_images(max_age_seconds=1.0), 5.0)
+        self.lock = asyncio.Lock()
 
         self.needs_backup: bool = False
         persistence.register(self)
@@ -113,7 +115,8 @@ class UsbCameraProviderHardware(CameraProvider):
                 if device.capture is None:
                     self.log.warning(f'unexpected missing capture handle for {uid}')
                     continue
-                image = await rosys.run.io_bound(self.capture_image, uid)
+                async with self.lock:
+                    image = await rosys.run.io_bound(self.capture_image, uid)
                 if image is None:
                     await self.deactivate(camera)
                     continue
@@ -137,7 +140,8 @@ class UsbCameraProviderHardware(CameraProvider):
     async def update_parameters(self) -> None:
         for uid, camera in self._cameras.items():
             if camera.active and uid in self.devices and self.devices[uid].capture is not None:
-                await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
+                async with self.lock:
+                    await rosys.run.io_bound(self.set_parameters, camera, self.devices[uid])
 
     def capture_image(self, id_) -> cv2.UMat:
         device = self.devices[id_]
