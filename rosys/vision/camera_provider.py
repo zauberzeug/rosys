@@ -34,7 +34,8 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
         self.base_path = f'images/{str(uuid4())}'
         create_image_route(self)
 
-        self.needs_backup: bool = False  # HACK: for the case that the camera provider derives from PersistentModule
+    def request_backup(self) -> None:
+        pass  # HACK: for the case that the camera provider derives from PersistentModule
 
     @property
     @abc.abstractmethod
@@ -57,12 +58,12 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
     def add_camera(self, camera: T) -> None:
         self.cameras[camera.id] = camera
         self.CAMERA_ADDED.emit(camera)
-        self.needs_backup = True
+        self.request_backup()
 
     def remove_camera(self, camera_id: str) -> None:
         del self.cameras[camera_id]
         self.CAMERA_REMOVED.emit(camera_id)
-        self.needs_backup = True
+        self.request_backup()
 
     def remove_all_cameras(self) -> None:
         for camera_id in list(self.cameras):
@@ -70,7 +71,7 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
 
     def remove_calibration(self, camera_id: str) -> None:
         self.cameras[camera_id].calibration = None
-        self.needs_backup = True
+        self.request_backup()
 
     def remove_all_calibrations(self) -> None:
         for camera_id in self.cameras:
