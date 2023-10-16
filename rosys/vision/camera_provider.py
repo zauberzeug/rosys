@@ -22,6 +22,8 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
     """
 
     def __init__(self) -> None:
+        super().__init__()
+
         self.CAMERA_ADDED = Event()
         """a new camera has been added (argument: camera)"""
 
