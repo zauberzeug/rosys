@@ -177,4 +177,4 @@ class AreaManipulation:
 
     def _emit_change_event(self, area: Optional[Area] = None) -> None:
         self.path_planner.AREAS_CHANGED.emit([area] if area else None)
-        self.path_planner.invalidate()
+        self.path_planner.request_backup()

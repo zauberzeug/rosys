@@ -63,7 +63,7 @@ def to_bytes(image: Any) -> bytes:
     return image[0].tobytes()
 
 
-class UsbCameraProviderHardware(CameraProvider):
+class UsbCameraProviderHardware(CameraProvider, persistence.PersistentModule):
     """This module collects and provides real USB cameras.
 
     Camera devices are discovered through video4linux (v4l) and accessed with openCV.
@@ -84,9 +84,6 @@ class UsbCameraProviderHardware(CameraProvider):
         rosys.on_repeat(self.update_parameters, 1)
         rosys.on_repeat(self.update_device_list, 1)
         rosys.on_repeat(lambda: self.prune_images(max_age_seconds=1.0), 5.0)
-
-        self.needs_backup: bool = False
-        persistence.register(self)
 
     @property
     def cameras(self) -> dict[str, UsbCamera]:

@@ -25,7 +25,7 @@ class Translator:
     Sun = 'Sun'
 
 
-class Schedule:
+class Schedule(persistence.PersistentModule):
 
     def __init__(self,
                  automator: Automator, *,
@@ -47,6 +47,8 @@ class Schedule:
         param sunset_offset: optional offset for deactivation after sunset (minutes, default: 0.0)
         param is_enabled: whether the schedule is enabled (default: False)
         """
+        super().__init__()
+
         self.log = logging.getLogger('rosys.schedule')
 
         self.SCHEDULE_CHANGED = Event()
@@ -69,9 +71,6 @@ class Schedule:
         self._sun_stop_hour = 24.0
         rosys.on_repeat(self.step, 1)
 
-        self.needs_backup: bool = False
-        persistence.register(self)
-
     def backup(self) -> dict:
         return {
             'location': self.location,
@@ -92,7 +91,7 @@ class Schedule:
         self.SCHEDULE_CHANGED.emit()
 
     def invalidate(self) -> None:
-        self.needs_backup = True
+        self.request_backup()
         self.SCHEDULE_CHANGED.emit()
 
     def time_to_index(self, weekday: int, hour: int, minute: int) -> int:
