@@ -10,6 +10,7 @@ from typing import Any, AsyncGenerator, Optional
 
 import cv2
 import imgsize
+import netifaces
 import PIL
 
 from .. import persistence, rosys
@@ -41,19 +42,23 @@ def process_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle
 
 async def find_ip_from_mac(mac: str) -> Optional[str]:
     """Find the IP address of a device with a given MAC address."""
-    if sys.platform.startswith('darwin'):
-        arp_cmd = 'arp -a'
-    else:
-        arp_cmd = 'arp'
-    output = await rosys.run.sh(arp_cmd)
-    if output is None:
-        return None
-    for line in output.splitlines():
-        infos = line.split()
-        if len(infos) < 2:
-            continue
-        if infos[1] == mac:
-            return infos[0]
+    for interface in netifaces.interfaces():
+        if sys.platform.startswith('darwin'):
+            arp_cmd = 'sudo arp-scan'
+        else:
+            arp_cmd = 'sudo /usr/sbin/arp-scan'
+        cmd = f'{arp_cmd} -I {interface} --localnet'
+        print(cmd)
+        output = await rosys.run.sh(cmd, timeout=10)
+        print(output)
+        if output is None:
+            return None
+        for line in output.splitlines():
+            infos = line.split()
+            if len(infos) < 2:
+                continue
+            if infos[1] == mac:
+                return infos[0]
     return None
 
 
