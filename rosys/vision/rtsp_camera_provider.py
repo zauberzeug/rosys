@@ -17,7 +17,7 @@ SCAN_INTERVAL = 10
 
 class RtspCameraProvider(CameraProvider):
     """This module collects and provides real RTSP streaming cameras."""
-    USE_PERSISTENCE: bool = True
+    USE_PERSISTENCE: bool = False
 
     def __init__(self, *, frame_rate: int = 6, jovision_profile: int = 0) -> None:
         super().__init__()
@@ -37,6 +37,14 @@ class RtspCameraProvider(CameraProvider):
         if self.USE_PERSISTENCE:
             persistence.register(self)
 
+    def backup(self) -> dict:
+        return {'cameras': persistence.to_dict(self._cameras)}
+
+    def restore(self, data: dict[str, dict]) -> None:
+        persistence.replace_dict(self._cameras, RtspCamera, data.get('cameras', {}))
+        for camera in self._cameras.values():
+            camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
+
     @staticmethod
     async def run_arp_scan(interface) -> Optional[str]:
         if sys.platform.startswith('darwin'):
@@ -46,8 +54,10 @@ class RtspCameraProvider(CameraProvider):
 
         cmd = f'{arpscan_cmd} -I {interface} --localnet'
         output = await rosys.run.sh(cmd, timeout=10)
-
-        if output is None or 'sudo' in output:
+        if output is None:
+            return 'ERROR'
+        if 'sudo' in output:
+            print(output)
             raise Exception('Could not run arp-scan! Make sure it is installed can be run with sudo.'
                             'Try running sudo visudo and add the following line: "rosys ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan"')
 
@@ -82,11 +92,12 @@ class RtspCameraProvider(CameraProvider):
         camera_ids = await self.scan_for_cameras()
         for mac in camera_ids:
             if mac not in self._cameras:
-                self.add_camera(RtspCamera(id=mac, goal_fps=self.frame_rate))
+                self.add_camera(RtspCamera(id=mac, goal_fps=self.frame_rate, jovision_profile=self.jovision_profile))
             camera = self._cameras[mac]
-            if mac in self._cameras and camera.capture_task is None and camera.authorized:
-                self.log.info(f'activating authorized camera {camera.id} with url {camera.url}...')
+            if not camera.is_connected:
+                self.log.info(f'activating authorized camera {camera.id}...')
                 await camera.connect()
+                print(f'activated camera {camera.id}', flush=True)
 
     def get_rtsp_url(self, ip: str, vendor_mac: str) -> Optional[str]:
         if vendor_mac == 'e0:62:90':  # Jovision IP Cameras

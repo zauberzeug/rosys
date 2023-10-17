@@ -4,7 +4,7 @@ import logging
 import shlex
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from io import BytesIO
 from typing import Any, AsyncGenerator, Optional
 
@@ -17,7 +17,7 @@ from .. import persistence, rosys
 from ..geometry import Rectangle
 from .camera import Camera, TransformCameraMixin
 from .image import Image, ImageSize
-from .image_processing import process_ndarray_image
+from .image_processing import process_jpeg_image
 from .image_rotation import ImageRotation
 
 
@@ -74,44 +74,77 @@ def determine_rtsp_url(mac: str, ip: str, jovision_profile: int = 0) -> Optional
 class RtspCameraOpenCvDevice:
     mac_address: str
     ip_address: str
-    capture: cv2.VideoCapture
+    capture: Optional[cv2.VideoCapture] = None
 
-    def __init__(self, mac, ip, jovision_profile=0) -> None:
-        print(f'connecting to {mac} at {ip}')
+    def __init__(self, mac, ip, jovision_profile=1) -> None:
+        print(f'connecting to {mac} at {ip}', flush=True)
         self.ip_address = ip
         url = determine_rtsp_url(mac, self.ip_address, jovision_profile)
         if url is None:
             raise Exception(f'could not determine RTSP URL for {mac}')
+        print('|||||||||||||||||||||||||||||||||', flush=True)
+        print(f'connecting to {url}', flush=True)
+        logging.info(f'Starting VideoStream for {url}')
+        print('|||||||||||||||||||||||||||||||||', flush=True)
         self.capture = cv2.VideoCapture(url)
+        if not self.capture.isOpened():
+            raise Exception(f'could not connect to {url}')
 
     def url(self) -> str:
         return self.capture.get(cv2.CAP_PROP_POS_MSEC)
 
     def __del__(self) -> None:
-        self.capture.release()
+        if self.capture is not None:
+            self.capture.release()
 
 
 class RtspCameraGstreamerDevice:
+    mac: str
+    ip_address: str
     url: str
+    _image_buffer: Optional[bytes] = None
     capture_task: Optional[asyncio.Task] = None
     capture_process: Optional[subprocess.Popen] = None
+    rotation: Optional[ImageRotation] = None
+    crop: Optional[Rectangle] = None
+    _authorized: bool = True
+    resolution: Optional[ImageSize] = None
 
-    def __init__(self, url: str) -> None:
+    def __init__(self, mac, ip, jovision_profile) -> None:
+        self.mac = mac
+        print(f'connecting to {mac} at {ip}', flush=True)
+        self.ip_address = ip
+        url = determine_rtsp_url(mac, self.ip_address, jovision_profile)
+        if url is None:
+            raise Exception(f'could not determine RTSP URL for {mac}')
         self.url = url
+        print(f'connecting to {url}', flush=True)
+        logging.info(f'Starting VideoStream for {url}')
+        self.capture_task = rosys.background_tasks.create(self.start_gsreamer_task(url), name=f'capture {self.mac}')
 
-    async def capture_images(self) -> None:
-        async def stream() -> AsyncGenerator[bytes, None]:
-            assert self.url is not None
-            # if platform.system() == 'Darwin':
-            #     command = f'gst-launch-1.0 rtspsrc location="{self.url}" latency=0 protocols=tcp drop-on-latency=true buffer-mode=none ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate=6/1" ! jpegenc ! fdsink'
-            # else:
-            assert self.url is not None
-            if 'subtype=0' in self.url:
+    @property
+    def authorized(self) -> bool:
+        return self._authorized
+
+    def capture(self) -> Optional[bytes]:
+        image = self._image_buffer
+        self._image_buffer = None
+        return image
+
+    def shutdown() -> None:
+        if self.capture_process is not None:
+            self.capture_process.terminate()
+            self.capture_process = None
+
+    async def start_gsreamer_task(self, url: str) -> None:
+        async def stream(url: str) -> AsyncGenerator[bytes, None]:
+            goal_fps = 10
+            if 'subtype=0' in url:
                 # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
-                url = self.url.replace('subtype=0', 'subtype=1')
-                command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.goal_fps}/1"! jpegenc ! fdsink'
+                url = url.replace('subtype=0', 'subtype=1')
+                command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={goal_fps}/1"! jpegenc ! fdsink'
             else:
-                command = f'gst-launch-1.0 rtspsrc location="{self.url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.goal_fps}/1" ! jpegenc ! fdsink'
+                command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={goal_fps}/1" ! jpegenc ! fdsink'
             process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             assert process.stdout is not None
             assert process.stderr is not None
@@ -162,27 +195,19 @@ class RtspCameraGstreamerDevice:
             error = await process.stderr.read()
             logging.info(f'process {process.pid} exited with {process.returncode} and error {error.decode()}')
             if 'Unauthorized' in error.decode():
-                self.authorized = False
+                self._authorized = False
 
-        async for image in stream():
-            if self.crop or self.rotation != ImageRotation.NONE:
-                image = await rosys.run.cpu_bound(process_image, image, self.rotation, self.crop)
-            try:
-                with PeekableBytesIO(image) as f:
-                    width, height = imgsize.get_size(f)
-            except imgsize.UnknownSize:
-                continue
-            size = ImageSize(width=width, height=height)
-            self.resolution = size
+        async for image in stream(url):
+            self._image_buffer = image
+
         self.capture_task = None
 
 
 @dataclass(slots=True, kw_only=True)
 class RtspCamera(TransformCameraMixin, Camera):
-    device: RtspCameraOpenCvDevice = None
-    capture_process: Optional[subprocess.Popen] = None
+    device: Optional[RtspCameraGstreamerDevice] = field(default=None, metadata=persistence.exclude)
     goal_fps: int = 6
-    jovision_profile: int = 0
+    jovision_profile: int = 1
 
     detect: bool = False
     authorized: bool = True
@@ -203,7 +228,7 @@ class RtspCamera(TransformCameraMixin, Camera):
         if ip is None:
             raise Exception(f'could not find IP address for {self.id}')
 
-        device = RtspCameraOpenCvDevice(mac=self.id, ip=ip, jovision_profile=self.jovision_profile)
+        device = RtspCameraGstreamerDevice(mac=self.id, ip=ip, jovision_profile=self.jovision_profile)
         if device is None:
             logging.warning(f'could not create device for {self.id}')
             return
@@ -212,7 +237,8 @@ class RtspCamera(TransformCameraMixin, Camera):
     async def disconnect(self) -> None:
         if not self.is_connected:
             return
-        self.device.capture.release()
+        assert self.device is not None
+        self.device.shutdown()
         self.device = None
 
     async def capture_image(self) -> Optional[Image]:
@@ -220,11 +246,12 @@ class RtspCamera(TransformCameraMixin, Camera):
             return None
         assert self.device is not None
 
-        _, image = self.device.capture.read()
+        image = self.device.capture()
+        if not image:
+            return None
+        bytes_ = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
 
-        bytes_ = await rosys.run.cpu_bound(process_ndarray_image, image, self.rotation, self.crop)
-
-        return Image(time=rosys.time(), camera_id=self.id, size=self.image_resolution, data=bytes_)
+        self._add_image(Image(time=rosys.time(), camera_id=self.id, size=self.device.resolution, data=bytes_))
 
     @staticmethod
     def known_vendor(mac: str) -> bool:
