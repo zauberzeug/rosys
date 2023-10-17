@@ -19,6 +19,21 @@ from .camera import Camera, TransformCameraMixin
 from .image import Image, ImageSize
 from .image_processing import process_jpeg_image
 from .image_rotation import ImageRotation
+from .jovision_rtsp_interface import JovisionInterface
+
+
+class VendorType:
+    JOVISION = 1
+    DAHUA = 2
+    OTHER = 3
+
+    @staticmethod
+    def mac_to_vendor(mac: str) -> int:
+        if mac.startswith('e0:62:90'):
+            return VendorType.JOVISION
+        if mac.startswith('e4:24:6c') or mac.startswith('3c:e3:6b'):
+            return VendorType.DAHUA
+        return VendorType.OTHER
 
 
 class PeekableBytesIO(io.BytesIO):
@@ -82,10 +97,8 @@ class RtspCameraOpenCvDevice:
         url = determine_rtsp_url(mac, self.ip_address, jovision_profile)
         if url is None:
             raise Exception(f'could not determine RTSP URL for {mac}')
-        print('|||||||||||||||||||||||||||||||||', flush=True)
         print(f'connecting to {url}', flush=True)
         logging.info(f'Starting VideoStream for {url}')
-        print('|||||||||||||||||||||||||||||||||', flush=True)
         self.capture = cv2.VideoCapture(url)
         if not self.capture.isOpened():
             raise Exception(f'could not connect to {url}')
@@ -109,11 +122,16 @@ class RtspCameraGstreamerDevice:
     crop: Optional[Rectangle] = None
     _authorized: bool = True
     resolution: Optional[ImageSize] = None
+    settings_interface = Optional[JovisionInterface]
 
     def __init__(self, mac, ip, jovision_profile) -> None:
         self.mac = mac
-        print(f'connecting to {mac} at {ip}', flush=True)
         self.ip_address = ip
+
+        vendor_type = VendorType.mac_to_vendor(mac)
+        if vendor_type == VendorType.JOVISION:
+            self.settings_interface = JovisionInterface(ip)
+
         url = determine_rtsp_url(mac, self.ip_address, jovision_profile)
         if url is None:
             raise Exception(f'could not determine RTSP URL for {mac}')
@@ -131,7 +149,7 @@ class RtspCameraGstreamerDevice:
         self._image_buffer = None
         return image
 
-    def shutdown() -> None:
+    def shutdown(self) -> None:
         if self.capture_process is not None:
             self.capture_process.terminate()
             self.capture_process = None
@@ -233,6 +251,7 @@ class RtspCamera(TransformCameraMixin, Camera):
             logging.warning(f'could not create device for {self.id}')
             return
         self.device = device
+        await self.get_fps()
 
     async def disconnect(self) -> None:
         if not self.is_connected:
@@ -252,6 +271,27 @@ class RtspCamera(TransformCameraMixin, Camera):
         bytes_ = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
 
         self._add_image(Image(time=rosys.time(), camera_id=self.id, size=self.device.resolution, data=bytes_))
+
+    async def set_fps(self, fps: int) -> None:
+        if self.device is None or self.device.settings_interface is None:
+            return
+        await self.disconnect()
+        self.device.settings_interface.set_fps(fps, self.jovision_profile)
+        await self.connect()
+        await self.get_fps()
+
+    async def get_fps(self) -> Optional[int]:
+        if self.device is None or self.device.settings_interface is None:
+            return None
+        fps = self.device.settings_interface.get_fps(self.jovision_profile)
+        self.fps = fps
+
+    async def set_jovision_profile(self, profile: int) -> None:
+        if self.device is None:
+            return
+        await self.disconnect()
+        self.jovision_profile = profile
+        await self.connect()
 
     @staticmethod
     def known_vendor(mac: str) -> bool:
