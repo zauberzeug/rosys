@@ -32,6 +32,14 @@ class SimulatedCameraProvider(CameraProvider):
         if self.USE_PERSISTENCE:
             persistence.register(self)
 
+    def backup(self) -> dict:
+        return {'cameras': persistence.to_dict(self._cameras)}
+
+    def restore(self, data: dict[str, dict]) -> None:
+        persistence.replace_dict(self._cameras, SimulatedCamera, data.get('cameras', {}))
+        for camera in self._cameras.values():
+            camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
+
     async def simulate_device_discovery(self) -> None:
         for camera in self._cameras.values():
             if not camera.is_connected:

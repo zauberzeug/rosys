@@ -32,6 +32,14 @@ class UsbCameraProvider(CameraProvider):
         self.needs_backup: bool = False
         # persistence.register(self)
 
+    def backup(self) -> dict:
+        return {'cameras': persistence.to_dict(self._cameras)}
+
+    def restore(self, data: dict[str, dict]) -> None:
+        persistence.replace_dict(self._cameras, UsbCamera, data.get('cameras', {}))
+        for camera in self._cameras.values():
+            camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
+
     async def capture_images(self) -> None:
         for uid, camera in self._cameras.items():
             try:
