@@ -109,17 +109,17 @@ class Camera(abc.ABC):
     fps: Optional[int] = None
     """current frames per second (read only)"""
 
-    streaming: bool = False
+    streaming: bool = True
 
     _resolution: Optional[ImageSize] = None
     """physical resolution of the camera which should be used; camera may go into error state with wrong values"""
 
+    NEW_IMAGE: Event = field(default_factory=Event, metadata=persistence.exclude)
+    """a new image is available (argument: image)"""
+
+    base_path: str = field(default_factory=lambda: f'images/{str(uuid4())}', metadata=persistence.exclude)
+
     def __post_init__(self) -> None:
-        self.NEW_IMAGE = Event()
-        """a new image is available (argument: image)"""
-
-        self.base_path = f'images/{str(uuid4())}'
-
         create_image_route(self)
 
         if self.name is None:
@@ -129,7 +129,7 @@ class Camera(abc.ABC):
             rosys.on_startup(self.connect)
 
         async def stream() -> None:
-            if self.streaming:
+            if self.streaming and self.is_connected:
                 await self.capture_image()
 
         rosys.on_repeat(stream, interval=.1)

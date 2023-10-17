@@ -39,7 +39,7 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
 
     def restore(self, data: dict[str, dict]) -> None:
         persistence.replace_dict(self._cameras, Camera, data.get('cameras', {}))
-        for camera in self._cameras:
+        for camera in self._cameras.values():
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
     @property
