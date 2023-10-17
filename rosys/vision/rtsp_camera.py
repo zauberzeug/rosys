@@ -275,21 +275,20 @@ class RtspCamera(TransformCameraMixin, Camera):
     async def set_fps(self, fps: int) -> None:
         if self.device is None or self.device.settings_interface is None:
             return
+        self.device.settings_interface.set_fps(stream_id=self.jovision_profile, fps=fps)
         await self.disconnect()
-        self.device.settings_interface.set_fps(fps, self.jovision_profile)
         await self.connect()
         await self.get_fps()
 
     async def get_fps(self) -> Optional[int]:
         if self.device is None or self.device.settings_interface is None:
             return None
-        fps = self.device.settings_interface.get_fps(self.jovision_profile)
+        fps = self.device.settings_interface.get_fps(stream_id=self.jovision_profile)
         self.fps = fps
 
     async def set_jovision_profile(self, profile: int) -> None:
         if self.device is None:
             return
-        await self.disconnect()
         self.jovision_profile = profile
         await self.connect()
 
