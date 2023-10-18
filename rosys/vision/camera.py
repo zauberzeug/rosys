@@ -42,13 +42,16 @@ class ConfigurableCameraMixin(abc.ABC):
         setter: Callable
         getter: Callable
 
-    _parameters: dict[str, Any] = {}
+    _parameters: dict[str, Any]
+
+    def __init__(self) -> None:
+        self._parameters = {}
 
     def _register_parameter(self, name: str, getter: Callable, setter: Callable, default_value: Any,
                             min_value: Any = None, max_value: Any = None, step: Any = None) -> None:
-
-        self._parameters[name] = self.Parameter(info=self.ParameterInfo(name=name, min=min_value, max=max_value, step=step),
-                                                getter=getter, setter=setter, value=default_value)
+        self._parameters[name] = ConfigurableCameraMixin.Parameter(info=ConfigurableCameraMixin.ParameterInfo(name=name, min=min_value, max=max_value, step=step),
+                                                                   getter=getter, setter=setter, value=default_value)
+        print([param.info.name for param in self._parameters.values()])
 
     async def _apply_parameters(self, new_values: dict[str, Any]) -> None:
         for param in new_values:
@@ -61,27 +64,33 @@ class ConfigurableCameraMixin(abc.ABC):
 
     async def update_parameters(self, new_values: dict[str, Any]) -> None:
         for param in new_values:
-            self._parameters[param].value = new_values[param]
+            if param in self._parameters:
+                self._parameters[param].value = new_values[param]
 
         await self._apply_parameters(new_values)
 
-    async def get_parameters(self, names: Optional[List[Any]]) -> dict[str, Any]:
+    async def get_parameters(self, names: Optional[list[Any]]) -> dict[str, Any]:
         if names is None:
             names = self._parameters.keys()
         return {param: self._parameters[param].getter() for param in names}
 
-    def get_capabilities(self) -> list[ParameterInfo]:
+    def get_capabilities(self) -> list[ConfigurableCameraMixin.ParameterInfo]:
         return [param.info for param in self._parameters.values()]
 
 
 class TransformCameraMixin(abc.ABC):
-    crop: Optional[Rectangle] = None
+    crop: Optional[Rectangle]
     """region to crop on the original resolution before rotation"""
 
-    rotation: ImageRotation = ImageRotation.NONE
+    rotation: ImageRotation
     """rotation which should be applied after grabbing and cropping"""
 
-    resolution: Optional[ImageSize] = None
+    resolution: Optional[ImageSize]
+
+    def __init__(self) -> None:
+        self.crop = None
+        self.rotation = ImageRotation.NONE
+        self.resolution = None
 
     @property
     def image_resolution(self) -> Optional[ImageSize]:
@@ -112,8 +121,12 @@ class TransformCameraMixin(abc.ABC):
 
 
 class CalibratedCameraMixin(abc.ABC):
-    calibration: Optional[Calibration] = None
-    focal_length: Optional[float] = None
+    calibration: Optional[Calibration]
+    focal_length: Optional[float]
+
+    def __init__(self) -> None:
+        self.calibration = None
+        self.focal_length = None
 
     @property
     def is_calibrated(self) -> bool:
@@ -141,34 +154,45 @@ class CalibratedCameraMixin(abc.ABC):
         return Intrinsics(matrix=K, distortion=D, rotation=rotation, size=size)
 
 
-@dataclass(slots=True, kw_only=True)
 class Camera(abc.ABC):
     MAX_IMAGES = 256
 
     id: str
-    images: deque[Image] = field(default_factory=lambda: deque(maxlen=Camera.MAX_IMAGES), metadata=persistence.exclude)
-    name: Optional[str] = None
+    images: deque[Image]
+    name: Optional[str]
 
-    connect_after_init: bool = True
+    connect_after_init: bool
 
-    fps: Optional[int] = None
+    fps: Optional[int]
     """current frames per second (read only)"""
 
-    streaming: bool = True
+    streaming: bool
 
-    _resolution: Optional[ImageSize] = None
+    _resolution: Optional[ImageSize]
     """physical resolution of the camera which should be used; camera may go into error state with wrong values"""
 
-    NEW_IMAGE: Event = field(default_factory=Event, metadata=persistence.exclude)
+    NEW_IMAGE: Event
     """a new image is available (argument: image)"""
 
-    base_path: str = field(default_factory=lambda: f'images/{str(uuid4())}', metadata=persistence.exclude)
+    base_path: str
 
-    def __post_init__(self) -> None:
+    def __init__(self, id, name=None, connect_after_init=True, streaming=True) -> None:
+        self.id = id
+        self.images = deque(maxlen=self.MAX_IMAGES)
+        self.connect_after_init = connect_after_init
+        self.fps = None
+        self.streaming = streaming
+        self._resolution = None
+        self.NEW_IMAGE = Event()
+        self.base_path = f'images/{str(uuid4())}'
+
         create_image_route(self)
 
-        if self.name is None:
+        if name is None:
             self.name = self.id
+        else:
+            self.name = name
+
         if self.connect_after_init:
             # start a new task to activate the camera
             rosys.on_startup(self.connect)

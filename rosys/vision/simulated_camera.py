@@ -8,7 +8,7 @@ import PIL as pil
 
 import rosys
 
-from .camera import CalibratedCameraMixin, Camera
+from .camera import CalibratedCameraMixin, Camera, ConfigurableCameraMixin
 from .image import Image, ImageSize
 
 
@@ -49,11 +49,22 @@ class SimulatedCameraDevice:
         return img_byte_arr.getvalue()
 
 
-@dataclass(slots=True, kw_only=True)
-class SimulatedCamera(CalibratedCameraMixin, Camera):
-    device: Optional[SimulatedCameraDevice] = None
+class SimulatedCamera(ConfigurableCameraMixin, CalibratedCameraMixin, Camera):
+    device: Optional[SimulatedCameraDevice]
     resolution: ImageSize
     _color: str
+
+    def __init__(self, id, resolution, _color) -> None:
+        ConfigurableCameraMixin.__init__(self)
+        CalibratedCameraMixin.__init__(self)
+        Camera.__init__(self, id=id)
+        self.device = None
+        self.id = id
+        self.resolution = resolution
+        self._color = _color
+
+        self._register_parameter(name='color', setter=self.set_color, getter=self.get_color, default_value='#ffffff')
+        self._register_parameter(name='width', setter=lambda x: x, getter=lambda: 0, default_value=800)
 
     @property
     def is_connected(self) -> bool:
@@ -75,3 +86,9 @@ class SimulatedCamera(CalibratedCameraMixin, Camera):
         else:
             image.data = await rosys.run.cpu_bound(self.device.create_image_data)
         self._add_image(image)
+
+    async def set_color(self, val: str) -> None:
+        self.device.color = val
+
+    async def get_color(self) -> str:
+        return self.device.color

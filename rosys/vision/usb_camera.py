@@ -123,14 +123,19 @@ class UsbCameraHardwareDevice:
         return capture
 
 
-@dataclass(slots=True, kw_only=True)
 class UsbCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
-    device: Optional[UsbCameraHardwareDevice] = field(default=None, metadata=persistence.exclude)
-    detect: bool = False
-    color: Optional[str] = None
+    device: Optional[UsbCameraHardwareDevice]
+    detect: bool
+    color: Optional[str]
 
-    def __post_init__(self) -> None:
-        super(UsbCamera, self).__post_init__()
+    def __init__(self, id, name=None, connect_after_init=True, streaming=True) -> None:
+        ConfigurableCameraMixin.__init__(self)
+        TransformCameraMixin.__init__(self)
+        Camera.__init__(self, id=id, name=name, connect_after_init=connect_after_init, streaming=streaming)
+        self.device = None
+        self.detect = False
+        self.color = None
+
         self._register_parameter(name='auto_exposure', setter=self.set_exposure,
                                  getter=self.get_exposure, default_value=True)
         self._register_parameter(name='exposure', setter=self.set_exposure, getter=self.get_exposure, default_value=0)
