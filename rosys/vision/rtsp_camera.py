@@ -225,7 +225,6 @@ class RtspCameraGstreamerDevice:
         self.capture_task = None
 
 
-@dataclass(slots=True, kw_only=True)
 class RtspCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
     device: Optional[RtspCameraGstreamerDevice] = field(default=None, metadata=persistence.exclude)
     jovision_profile: int = 1
@@ -233,13 +232,16 @@ class RtspCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
     detect: bool = False
     authorized: bool = True
 
-    def __post_init__(self) -> None:
-        super().__post_init__()
+    def __init__(self, id: str, name: Optional[str] = None, connect_after_init: bool = True, streaming: bool = True,
+                 goal_fps=5, jovision_profile=1) -> None:
+        ConfigurableCameraMixin.__init__(self)
+        TransformCameraMixin.__init__(self)
+        Camera.__init__(self, id=id, name=name, connect_after_init=connect_after_init, streaming=streaming)
 
         self._register_parameter(name='fps', getter=self.get_fps, setter=self.set_fps,
-                                 min_value=1, max_value=30, step=1, default_value=6)
+                                 min_value=1, max_value=30, step=1, default_value=goal_fps)
         self._register_parameter(name='jovision_profile', getter=self.get_jovision_profile, setter=self.set_jovision_profile,
-                                 min_value=1, max_value=2, step=1, default_value=1)
+                                 min_value=1, max_value=2, step=1, default_value=jovision_profile)
 
     @property
     def is_connected(self) -> bool:
