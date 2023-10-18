@@ -11,7 +11,7 @@ from cv2 import UMat
 import rosys
 
 from .. import persistence
-from .camera import Camera, ExposureCameraMixin, TransformCameraMixin
+from .camera import Camera, ConfigurableCameraMixin, TransformCameraMixin
 from .image import Image, ImageSize
 from .image_processing import process_jpeg_image, process_ndarray_image, to_bytes
 from .image_rotation import ImageRotation
@@ -62,6 +62,7 @@ class UsbCameraHardwareDevice:
     def __init__(self, video_id: int, capture: cv2.VideoCapture):
         self.video_id = video_id
         self.capture = capture
+        self.set_video_format()
 
     @staticmethod
     async def from_uid(camera_id: str) -> Optional['UsbCameraHardwareDevice']:
@@ -123,10 +124,19 @@ class UsbCameraHardwareDevice:
 
 
 @dataclass(slots=True, kw_only=True)
-class UsbCamera(ExposureCameraMixin, TransformCameraMixin, Camera):
+class UsbCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
     device: Optional[UsbCameraHardwareDevice] = field(default=None, metadata=persistence.exclude)
     detect: bool = False
     color: Optional[str] = None
+
+    def __post_init__(self) -> None:
+        super(UsbCamera, self).__post_init__()
+        self._register_parameter(name='auto_exposure', setter=self.set_exposure,
+                                 getter=self.get_exposure, default_value=True)
+        self._register_parameter(name='exposure', setter=self.set_exposure, getter=self.get_exposure, default_value=0)
+        self._register_parameter(name='width', setter=self.set_width, getter=self.get_width, default_value=800)
+        self._register_parameter(name='height', setter=self.set_height, getter=self.get_height, default_value=600)
+        self._register_parameter(name='fps', setter=self.set_fps, getter=self.get_fps, default_value=10)
 
     @property
     def is_connected(self) -> bool:
@@ -141,6 +151,7 @@ class UsbCamera(ExposureCameraMixin, TransformCameraMixin, Camera):
             return
 
         self.device = device
+
         # logger.info(f'activated {self.id}')
 
     async def disconnect(self) -> None:
@@ -172,45 +183,81 @@ class UsbCamera(ExposureCameraMixin, TransformCameraMixin, Camera):
         image = Image(time=rosys.time(), camera_id=self.id, size=self.image_resolution, data=bytes_)
         self._add_image(image)
 
-    async def set_exposure(self) -> None:
+    async def set_auto_exposure(self, auto: bool) -> None:
+        if not self.is_connected:
+            return
+
+        device = self.device
+
+        if device.has_manual_exposure:
+            is_auto_exposure = await self.get_auto_exposure()
+            if auto and not is_auto_exposure:
+                # self.log.info(f'activating auto-exposure for {self.id}')
+                device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
+            else:
+                device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)
+                await self.set_exposure(self._parameters['exposure'].value)
+
+    async def set_exposure(self, value: int) -> None:
         if not self.is_connected:
             return
 
         device = self.device
         assert device.capture is not None
-        if not self.auto_exposure and self.exposure is None and device.exposure_max > 0:
-            self.exposure = device.exposure_default / device.exposure_max
 
         if device.has_manual_exposure:
-            auto_exposure = device.capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
-            if self.auto_exposure and not auto_exposure:
-                # self.log.info(f'activating auto-exposure for {self.id}')
-                device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)  # `v4l2-ctl -L` says "3: Aperture Priority Mode"
-            if auto_exposure and not self.auto_exposure:
-                # self.log.info(f'deactivating auto-exposure of {self.id}')
-                device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)  # `v4l2-ctl -L` says "1: Manual Mode"
-            if not self.auto_exposure and device.exposure_max > 0:
+            is_auto_exposure = await self.get_auto_exposure()
+            if not is_auto_exposure:
                 exposure = device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
-                if self.exposure is not None and self.exposure != exposure:
-                    # self.log.info(f'updating exposure of {self.id} from {exposure} to {self.exposure})')
-                    device.capture.set(cv2.CAP_PROP_EXPOSURE, int(self.exposure * device.exposure_max))
+                if value != exposure:
+                    device.capture.set(cv2.CAP_PROP_EXPOSURE, int(value * device.exposure_max))
 
-    async def set_parameters(self) -> None:
+    async def get_auto_exposure(self) -> Optional[bool]:
+        if not self.is_connected:
+            return None
+        device = self.device
+        return device.capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
+
+    async def get_exposure(self) -> Optional[int]:
+        if not self.is_connected:
+            return None
+        device = self.device
+        if not device.has_manual_exposure:
+            return None
+        return device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
+
+    async def set_width(self, width: int) -> None:
         if not self.is_connected:
             return
         device = self.device
+        device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
 
-        await self.set_exposure()
-        self.device.set_video_format()
+    async def get_width(self) -> int:
+        if not self.is_connected:
+            return None
+        device = self.device
+        return int(device.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
 
-        self.fps = int(device.capture.get(cv2.CAP_PROP_FPS))
+    async def set_height(self, height: int) -> None:
+        if not self.is_connected:
+            return
+        device = self.device
+        device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
-        resolution = ImageSize(
-            width=int(device.capture.get(cv2.CAP_PROP_FRAME_WIDTH)),
-            height=int(device.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
-        )
+    async def get_height(self) -> int:
+        if not self.is_connected:
+            return None
+        device = self.device
+        return int(device.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-        if self.resolution and self.resolution != resolution:
-            # self.log.info(f'updating resolution of {self.id} from {resolution} to {self.resolution}')
-            device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.resolution.width)
-            device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.resolution.height)
+    async def set_fps(self, fps: int) -> None:
+        if not self.is_connected:
+            return
+        device = self.device
+        device.capture.set(cv2.CAP_PROP_FPS, fps)
+
+    async def get_fps(self) -> int:
+        if not self.is_connected:
+            return None
+        device = self.device
+        return int(device.capture.get(cv2.CAP_PROP_FPS))

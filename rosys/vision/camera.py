@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 from collections import deque
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Callable, Generic, Optional, TypeVar
 from uuid import uuid4
 
 import numpy as np
@@ -16,17 +16,62 @@ from .image import Image, ImageSize
 from .image_rotation import ImageRotation
 from .image_route import create_image_route
 
+PARAMETER_TYPE = TypeVar('PARAMETER_TYPE')
 
-class ExposureCameraMixin(abc.ABC):
-    auto_exposure: Optional[bool] = True
-    """toggles auto exposure"""
 
-    exposure: Optional[float] = None
-    """manual exposure of the camera (between 0-1); set auto_exposure to False for this value to take effect"""
+class ConfigurableCameraMixin(abc.ABC):
+    """A generalized interface for adjusting camera parameters like exposure, brightness or fps."""
+    @dataclass(slots=True, kw_only=True)
+    class ParameterInfo:
+        name: str
+        min: Optional[PARAMETER_TYPE] = None
+        max: Optional[PARAMETER_TYPE] = None
+        step: Optional[PARAMETER_TYPE] = None
 
-    @abc.abstractmethod
-    async def set_exposure(self) -> None:
-        pass
+        def __post_init__(self):
+            if any([self.min, self.max, self.step]) and not all([self.min, self.max, self.step]):
+                raise ValueError('min, max and step must be either all set or all None')
+
+    @dataclass(slots=True, kw_only=True)
+    class Parameter(Generic[PARAMETER_TYPE]):
+        """A camera parameter which can be adjusted.
+            Value ranges can either be a list of options or a min/max value with an optional step size.
+        """
+        info: ConfigurableCameraMixin.ParameterInfo
+        value: Optional[PARAMETER_TYPE] = None
+        setter: Callable
+        getter: Callable
+
+    _parameters: dict[str, Any] = {}
+
+    def _register_parameter(self, name: str, getter: Callable, setter: Callable, default_value: Any,
+                            min_value: Any = None, max_value: Any = None, step: Any = None) -> None:
+
+        self._parameters[name] = self.Parameter(info=self.ParameterInfo(name=name, min=min_value, max=max_value, step=step),
+                                                getter=getter, setter=setter, value=default_value)
+
+    async def _apply_parameters(self, new_values: dict[str, Any]) -> None:
+        for param in new_values:
+            if param not in self._parameters:
+                raise ValueError(f'Cannot set unknown parameter "{param}"')
+            await self._parameters[param].setter(new_values[param])
+
+    async def _apply_all_parameters(self) -> None:
+        await self._apply_parameters({param: self._parameters[param].value for param in self._parameters})
+
+    async def update_parameters(self, new_values: dict[str, Any]) -> None:
+        for param in new_values:
+            self._parameters[param].value = new_values[param]
+
+        await self._apply_parameters(new_values)
+
+    async def get_parameters(self, names: Optional[List[Any]]) -> dict[str, Any]:
+        if names is None:
+            names = self._parameters.keys()
+        return {param: self._parameters[param].getter() for param in names}
+
+    def get_capabilities(self) -> list[ParameterInfo]:
+        return [param.info for param in self._parameters.values()]
 
 
 class TransformCameraMixin(abc.ABC):

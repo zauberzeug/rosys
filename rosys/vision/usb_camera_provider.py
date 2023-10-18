@@ -26,7 +26,6 @@ class UsbCameraProvider(CameraProvider):
         self._cameras: dict[str, UsbCamera] = {}
 
         rosys.on_shutdown(self.shutdown)
-        rosys.on_repeat(self.update_parameters, 1)
         rosys.on_repeat(self.update_device_list, 1)
 
         self.needs_backup: bool = False
@@ -54,11 +53,6 @@ class UsbCameraProvider(CameraProvider):
             except Exception:
                 self.log.exception(f'could not capture image from {uid}')
                 await camera.disconnect()
-
-    async def update_parameters(self) -> None:
-        for camera in self._cameras.values():
-            if camera.is_connected:
-                await camera.set_parameters()
 
     @staticmethod
     async def scan_for_cameras() -> list[UsbCamera]:
