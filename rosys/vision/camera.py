@@ -160,6 +160,10 @@ class Camera(abc.ABC):
     async def disconnect(self) -> None:
         pass
 
+    async def reconnect(self) -> None:
+        await self.disconnect()
+        await self.connect()
+
     @property
     def captured_images(self) -> list[Image]:
         return [i for i in self.images if i.data]
