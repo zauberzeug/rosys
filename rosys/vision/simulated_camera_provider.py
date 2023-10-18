@@ -33,10 +33,11 @@ class SimulatedCameraProvider(CameraProvider):
             persistence.register(self)
 
     def backup(self) -> dict:
-        return {'cameras': persistence.to_dict(self._cameras)}
+        # TODO store cameras
+        return {}
 
     def restore(self, data: dict[str, dict]) -> None:
-        persistence.replace_dict(self._cameras, SimulatedCamera, data.get('cameras', {}))
+        # TODO load cameras
         for camera in self._cameras.values():
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
