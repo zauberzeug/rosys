@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from nicegui import app, ui
+from nicegui import ui
 
 import rosys
 
@@ -16,7 +16,7 @@ else:
     camera_provider = rosys.vision.UsbCameraProviderSimulation()
     camera_provider.restore = lambda _: None  # NOTE: disable persistence
     test_cam = camera_provider.create_calibrated('test_cam', width=800, height=600)
-    app.on_startup(lambda: camera_provider.add_camera(test_cam))
+    rosys.on_startup(lambda: camera_provider.add_camera(test_cam))
 steerer = rosys.driving.Steerer(wheels)
 odometer = rosys.driving.Odometer(wheels)
 
