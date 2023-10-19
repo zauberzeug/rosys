@@ -20,7 +20,7 @@ jobs:
         run: |
           poetry config virtualenvs.create false --local
           poetry install
-          apt update && apt install -y v4l-utils
+          sudo apt update && apt install -y v4l-utils
       - name: test
         run: pytest
       - name: examples
