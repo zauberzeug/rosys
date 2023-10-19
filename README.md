@@ -54,7 +54,7 @@ Modules can depend on other modules which is mostly implemented by passing them 
 
 ### Lifecycle Hooks and Loops
 
-Modules can register functions via `rosys.on_startup` or `rosys.on_shutdown` as well as repeatedly with a given interval with `on_repeat`.
+Modules can register functions via `rosys.on_startup` or `rosys.on_shutdown` as well as repeatedly with a given interval with `rosys.on_repeat`.
 
 <!-- prettier-ignore-start -->
 !!! note
