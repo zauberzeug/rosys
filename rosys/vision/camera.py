@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import abc
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Callable, Generic, Optional, TypeVar
 from uuid import uuid4
 
 import numpy as np
 
-from .. import persistence, rosys
+from .. import rosys
 from ..event import Event
 from ..geometry import Rectangle, Rotation
 from .calibration import Calibration, Extrinsics, Intrinsics
@@ -51,7 +51,6 @@ class ConfigurableCameraMixin(abc.ABC):
                             min_value: Any = None, max_value: Any = None, step: Any = None) -> None:
         self._parameters[name] = ConfigurableCameraMixin.Parameter(info=ConfigurableCameraMixin.ParameterInfo(name=name, min=min_value, max=max_value, step=step),
                                                                    getter=getter, setter=setter, value=default_value)
-        print([param.info.name for param in self._parameters.values()])
 
     async def _apply_parameters(self, new_values: dict[str, Any]) -> None:
         for param in new_values:
@@ -85,19 +84,16 @@ class TransformCameraMixin(abc.ABC):
     rotation: ImageRotation
     """rotation which should be applied after grabbing and cropping"""
 
-    resolution: Optional[ImageSize]
+    _resolution: Optional[ImageSize]
 
     def __init__(self) -> None:
         self.crop = None
         self.rotation = ImageRotation.NONE
-        self.resolution = None
+        self._resolution = None
 
-    @property
-    def image_resolution(self) -> Optional[ImageSize]:
-        if self.resolution is None:
-            return None
-        width = int(self.crop.width) if self.crop else self.resolution.width
-        height = int(self.crop.height) if self.crop else self.resolution.height
+    def _resolution_after_transform(self, original_resolution) -> Optional[ImageSize]:
+        width = int(self.crop.width) if self.crop else original_resolution.width
+        height = int(self.crop.height) if self.crop else original_resolution.height
         if self.rotation in {ImageRotation.LEFT, ImageRotation.RIGHT}:
             width, height = height, width
         return ImageSize(width=width, height=height)
@@ -160,31 +156,28 @@ class Camera(abc.ABC):
     id: str
     images: deque[Image]
     name: Optional[str]
+    base_path: str
 
     connect_after_init: bool
+    streaming: bool
 
     fps: Optional[int]
     """current frames per second (read only)"""
 
-    streaming: bool
-
-    _resolution: Optional[ImageSize]
-    """physical resolution of the camera which should be used; camera may go into error state with wrong values"""
+    # _resolution: Optional[ImageSize]
+    # """physical resolution of the camera which should be used; camera may go into error state with wrong values"""
 
     NEW_IMAGE: Event
     """a new image is available (argument: image)"""
-
-    base_path: str
 
     def __init__(self, id, name=None, connect_after_init=True, streaming=True) -> None:
         self.id = id
         self.images = deque(maxlen=self.MAX_IMAGES)
         self.connect_after_init = connect_after_init
-        self.fps = None
         self.streaming = streaming
-        self._resolution = None
-        self.NEW_IMAGE = Event()
+        self.fps = None
         self.base_path = f'images/{str(uuid4())}'
+        self.NEW_IMAGE = Event()
 
         create_image_route(self)
 
@@ -201,7 +194,7 @@ class Camera(abc.ABC):
             if self.streaming and self.is_connected:
                 await self.capture_image()
 
-        rosys.on_repeat(stream, interval=.1)
+        rosys.on_repeat(stream, interval=.01)
 
     def get_image_url(self, image: Image) -> str:
         return f'{self.base_path}/{image.time}'
@@ -222,7 +215,7 @@ class Camera(abc.ABC):
         return False
 
     async def connect(self) -> None:
-        # NOTE: due to a race condition, this method may be called multiple times even after any check for is_connected
+        # NOTE: this method may be executed concurrently even after any check for is_connected
         #       Make sure it is idempotent!
         pass
 

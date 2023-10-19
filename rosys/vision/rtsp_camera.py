@@ -226,17 +226,21 @@ class RtspCameraGstreamerDevice:
 
 
 class RtspCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
-    device: Optional[RtspCameraGstreamerDevice] = field(default=None, metadata=persistence.exclude)
-    jovision_profile: int = 1
+    device: Optional[RtspCameraGstreamerDevice]
+    jovision_profile: int
 
-    detect: bool = False
-    authorized: bool = True
+    detect: bool
+    authorized: bool
 
     def __init__(self, id: str, name: Optional[str] = None, connect_after_init: bool = True, streaming: bool = True,
                  goal_fps=5, jovision_profile=1) -> None:
         ConfigurableCameraMixin.__init__(self)
         TransformCameraMixin.__init__(self)
         Camera.__init__(self, id=id, name=name, connect_after_init=connect_after_init, streaming=streaming)
+
+        self.device = None
+        self.jovision_profile = jovision_profile
+        self.authorized = True
 
         self._register_parameter(name='fps', getter=self.get_fps, setter=self.set_fps,
                                  min_value=1, max_value=30, step=1, default_value=goal_fps)
@@ -274,17 +278,26 @@ class RtspCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
         self.device.shutdown()
         self.device = None
 
-    async def capture_image(self) -> Optional[Image]:
+    async def capture_image(self) -> None:
         if not self.is_connected:
             return None
         assert self.device is not None
 
         image = self.device.capture()
         if not image:
-            return None
-        bytes_ = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
+            return
+        final_image_bytes = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
 
-        self._add_image(Image(time=rosys.time(), camera_id=self.id, size=self.device.resolution, data=bytes_))
+        try:
+            with PeekableBytesIO(final_image_bytes) as f:
+                width, height = imgsize.get_size(f)
+        except imgsize.UnknownSize:
+            return
+
+        final_image_resolution = ImageSize(width=width, height=height)
+
+        self._add_image(Image(time=rosys.time(), camera_id=self.id,
+                        size=final_image_resolution, data=final_image_bytes))
 
     async def set_fps(self, fps: int) -> None:
         if self.device is None or self.device.settings_interface is None:

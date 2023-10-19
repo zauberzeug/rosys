@@ -152,12 +152,9 @@ class UsbCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
             return
         device = await UsbCameraHardwareDevice.from_uid(self.id)
         if device is None:
-            # logger.error(f'could not activate {self.id}')
             return
 
         self.device = device
-
-        # logger.info(f'activated {self.id}')
 
     async def disconnect(self) -> None:
         if not self.is_connected:
@@ -167,25 +164,26 @@ class UsbCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
         await rosys.run.io_bound(self.device.capture.release)
         self.device = None
 
-        # logger.info(f'deactivated {self.id}')
-
     async def capture_image(self) -> None:
         if not self.is_connected:
             return None
         assert self.device.capture is not None
 
-        _, image = self.device.capture.read()
+        _, captured_image = self.device.capture.read()
+        if captured_image is None:
+            return
 
-        device = self.device
-
-        if 'MJPG' in device.video_formats:
-            bytes_ = await rosys.run.io_bound(to_bytes, image)
+        if 'MJPG' in self.device.video_formats:
+            bytes_ = await rosys.run.io_bound(to_bytes, captured_image)
             if self.crop or self.rotation != ImageRotation.NONE:
                 bytes_ = await rosys.run.cpu_bound(process_jpeg_image, bytes_, self.rotation, self.crop)
         else:
-            bytes_ = await rosys.run.cpu_bound(process_ndarray_image, image, self.rotation, self.crop)
+            bytes_ = await rosys.run.cpu_bound(process_ndarray_image, captured_image, self.rotation, self.crop)
 
-        image = Image(time=rosys.time(), camera_id=self.id, size=self.image_resolution, data=bytes_)
+        final_image_resolution = self._resolution_after_transform(
+            ImageSize(width=captured_image.shape[1], height=captured_image.shape[0]))
+
+        image = Image(time=rosys.time(), camera_id=self.id, size=final_image_resolution, data=bytes_)
         self._add_image(image)
 
     async def set_auto_exposure(self, auto: bool) -> None:

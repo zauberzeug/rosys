@@ -1,5 +1,6 @@
 import io
 import math
+import random
 import time
 from dataclasses import dataclass
 from typing import Optional
@@ -54,17 +55,18 @@ class SimulatedCamera(ConfigurableCameraMixin, CalibratedCameraMixin, Camera):
     resolution: ImageSize
     _color: str
 
-    def __init__(self, id, resolution, _color) -> None:
+    def __init__(self, id, resolution=ImageSize(width=800, height=600), color=None) -> None:
         ConfigurableCameraMixin.__init__(self)
         CalibratedCameraMixin.__init__(self)
         Camera.__init__(self, id=id)
         self.device = None
         self.id = id
         self.resolution = resolution
-        self._color = _color
+        if color is None:
+            color = f'#{random.randint(0, 0xffffff):06x}'
+        self._color = color
 
         self._register_parameter(name='color', setter=self.set_color, getter=self.get_color, default_value='#ffffff')
-        self._register_parameter(name='width', setter=lambda x: x, getter=lambda: 0, default_value=800)
 
     @property
     def is_connected(self) -> bool:
