@@ -60,6 +60,6 @@ plugins:
             show_signature_annotations: true
             merge_init_into_class: true
             separate_signature: true
-      watch:
-        - rosys
-        - README.md
+watch:
+  - rosys
+  - README.md
