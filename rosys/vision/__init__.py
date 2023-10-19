@@ -12,6 +12,6 @@ from .multi_camera_provider import MultiCameraProvider
 from .rtsp_camera import RtspCamera
 from .rtsp_camera_provider import RtspCameraProvider
 from .simulated_camera import SimulatedCamera
-from .simulated_camera_provider import SimulatedCameraProvider
+from .simulated_camera_provider import SimulatedCameraProvider, SimulatedDeviceScanner
 from .usb_camera import UsbCamera
 from .usb_camera_provider import UsbCameraProvider

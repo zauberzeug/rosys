@@ -12,6 +12,20 @@ from .image import ImageSize
 from .simulated_camera import SimulatedCamera
 
 
+class SimulatedDeviceScanner:
+    def __init__(self, n_devices) -> None:
+        self.n_devices = n_devices
+
+    async def scan_for_cameras(self) -> list[str]:
+        return [f'cam{i}' for i in range(self.n_devices)]
+
+    def add_device(self) -> None:
+        self.n_devices += 1
+
+    def remove_device(self) -> None:
+        self.n_devices -= min(0, self.n_devices)
+
+
 class SimulatedCameraProvider(CameraProvider):
     """This module collects and simulates USB cameras and generates synthetic images.
 
@@ -64,7 +78,7 @@ class SimulatedCameraProvider(CameraProvider):
     @staticmethod
     def create(uid: str, width: int = 800, height: int = 600, color: Optional[str] = None) -> SimulatedCamera:
         color = color or f'#{random.randint(0, 0xffffff):06x}'
-        return SimulatedCamera(id=uid, resolution=ImageSize(width=width, height=height), _color=color)
+        return SimulatedCamera(id=uid, resolution=ImageSize(width=width, height=height), color=color)
 
     @staticmethod
     def create_calibrated(uid: str, *,
