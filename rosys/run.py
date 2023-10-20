@@ -9,7 +9,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from functools import wraps
 from pathlib import Path
-from typing import Callable, Generator, Optional
+from typing import Callable, Generator, Optional, cast
 
 from nicegui import run
 from psutil import Popen
@@ -64,19 +64,19 @@ async def sh(command: list[str] | str, *,
             cmd_list = ['timeout', '--signal=SIGKILL', str(timeout)] + cmd_list
         cmd = ' '.join(cmd_list) if shell else cmd_list
         # log.info(f'running sh: "{cmd}"')
-        proc = subprocess.Popen(  # pylint: disable=consider-using-with
+        with subprocess.Popen(  # pylint: disable=consider-using-with
             cmd,
             cwd=working_dir,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             shell=shell,
             start_new_session=True,
-        )
-        running_sh_processes.append(proc)
-        stdout, *_ = proc.communicate()
-        _kill(proc)
-        running_sh_processes.remove(proc)
-        return stdout.decode('utf-8')
+        ) as proc:
+            running_sh_processes.append(cast(Popen, proc))
+            stdout, *_ = proc.communicate()
+            _kill(cast(Popen, proc))
+            running_sh_processes.remove(cast(Popen, proc))
+            return stdout.decode('utf-8')
 
     if is_stopping():
         return ''
