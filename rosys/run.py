@@ -74,7 +74,9 @@ async def sh(command: list[str] | str, *,
                 start_new_session=True,
             ) as proc:
                 running_sh_processes.append(cast(Popen, proc))
-                stdout, *_ = proc.communicate()
+                stdout, stderr = proc.communicate()
+                proc.stdout.close()
+                proc.stderr.close()
                 _kill(cast(Popen, proc))
                 running_sh_processes.remove(cast(Popen, proc))
                 return stdout.decode('utf-8')
