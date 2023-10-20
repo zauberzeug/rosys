@@ -64,19 +64,24 @@ async def sh(command: list[str] | str, *,
             cmd_list = ['timeout', '--signal=SIGKILL', str(timeout)] + cmd_list
         cmd = ' '.join(cmd_list) if shell else cmd_list
         # log.info(f'running sh: "{cmd}"')
-        with subprocess.Popen(  # pylint: disable=consider-using-with
-            cmd,
-            cwd=working_dir,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=shell,
-            start_new_session=True,
-        ) as proc:
-            running_sh_processes.append(cast(Popen, proc))
-            stdout, *_ = proc.communicate()
+        try:
+            with subprocess.Popen(  # pylint: disable=consider-using-with
+                cmd,
+                cwd=working_dir,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=shell,
+                start_new_session=True,
+            ) as proc:
+                running_sh_processes.append(cast(Popen, proc))
+                stdout, *_ = proc.communicate()
+                _kill(cast(Popen, proc))
+                running_sh_processes.remove(cast(Popen, proc))
+                return stdout.decode('utf-8')
+        except Exception:
+            log.exception(f'failed to run command "{cmd}"')
             _kill(cast(Popen, proc))
-            running_sh_processes.remove(cast(Popen, proc))
-            return stdout.decode('utf-8')
+            return ''
 
     if is_stopping():
         return ''
