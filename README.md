@@ -54,7 +54,15 @@ Modules can depend on other modules which is mostly implemented by passing them 
 
 ### Lifecycle Hooks and Loops
 
-Modules can register functions for being called `on_startup` or `on_shutdown` as well as repeatedly with a given interval with `on_repeat`.
+Modules can register functions via `rosys.on_startup` or `rosys.on_shutdown` as well as repeatedly with a given interval with `rosys.on_repeat`.
+
+<!-- prettier-ignore-start -->
+!!! note
+    Note that NiceGUI's `app` object also provides methods `app.on_startup` and `app.on_shutdown`, but it is recommended to use RoSys' counterparts:
+    `rosys.on_startup` ensures the callback is executed _after_ persistent modules have been loaded from storage.
+    If you, e.g., set the `rosys.config.simulation_speed` programmatically via `app.on_startup()` instead of `rosys.on_startup`,
+    the change is overwritten by RoSys' `persistence.restore()`.
+<!-- prettier-ignore-end -->
 
 ### Events
 

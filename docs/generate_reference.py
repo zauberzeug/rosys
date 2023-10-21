@@ -25,7 +25,7 @@ def extract_events(filepath: str) -> dict[str, str]:
 
 for path in sorted(Path('.').rglob('__init__.py')):
     identifier = str(path.parent).replace('/', '.')
-    if identifier in ['rosys', 'rosys.test', 'rosys.hardware.communication']:
+    if identifier in ['rosys', 'rosys.test', 'rosys.hardware.communication', 'rosys.persistence']:
         continue
 
     try:
