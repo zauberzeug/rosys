@@ -61,7 +61,7 @@ async def sh(command: list[str] | str, *,
     def popen() -> str:
         cmd_list = command if isinstance(command, list) else shlex.split(command)
         if timeout is not None:
-            cmd_list = ['timeout', '--signal=SIGKILL', str(timeout)] + cmd_list
+            cmd_list = ['timeout', '--signal=SIGTERM', str(timeout)] + cmd_list
         cmd = ' '.join(cmd_list) if shell else cmd_list
         # log.info(f'running sh: "{cmd}"')
         try:
