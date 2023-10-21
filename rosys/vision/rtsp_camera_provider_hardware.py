@@ -1,6 +1,7 @@
 import asyncio
 import io
 import logging
+import os
 import shlex
 import subprocess
 import sys
@@ -47,10 +48,13 @@ class RtspCameraProviderHardware(CameraProvider, persistence.PersistentModule):
         self._cameras: dict[str, RtspCamera] = {}
         self._capture_tasks: dict[str, asyncio.Task] = {}
         self._processes: list[Process] = []
+
         if sys.platform.startswith('darwin'):
-            self.arpscan_cmd = 'sudo arp-scan'
+            self.arpscan_cmd = 'arp-scan'
         else:
-            self.arpscan_cmd = 'sudo /usr/sbin/arp-scan'
+            self.arpscan_cmd = '/usr/sbin/arp-scan'
+        if os.getuid() != 0:
+            self.arpscan_cmd = f'sudo {self.arpscan_cmd}'
 
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, 1)
