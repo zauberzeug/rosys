@@ -97,9 +97,17 @@ async def sh(command: list[str] | str, *,
 def _kill(proc: Popen) -> None:
     try:
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-        log.info(f'killed {proc.pid}')
+        log.info(f'sent SIGTERM to {proc.pid}')
+        try:
+            proc.wait(timeout=5)  # wait for 5 seconds
+        except subprocess.TimeoutExpired:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)  # force kill if process didn't terminate
+            log.info(f'sent SIGKILL to {proc.pid}')
+            proc.wait()  # ensure the process is reaped
     except ProcessLookupError:
         pass
+    except Exception as e:
+        log.error(f"Failed to kill and/or wait for process {proc.pid}: {e}")
 
 
 def tear_down() -> None:
