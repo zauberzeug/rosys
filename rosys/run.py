@@ -82,7 +82,8 @@ async def sh(command: list[str] | str, *,
                 return stdout.decode('utf-8')
         except Exception:
             log.exception(f'failed to run command "{cmd}"')
-            _kill(cast(Popen, proc))
+            if 'proc' in locals() and proc:
+                _kill(cast(Popen, proc))
             return ''
 
     if is_stopping():
