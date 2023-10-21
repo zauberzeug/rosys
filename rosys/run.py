@@ -79,7 +79,7 @@ async def sh(command: list[str] | str, *,
                 proc.stderr.close()
                 _kill(cast(Popen, proc))
                 running_sh_processes.remove(cast(Popen, proc))
-                return stdout.decode('utf-8')
+                return stdout.decode('utf-8') if proc.returncode == 0 else stderr.decode('utf-8')
         except Exception:
             log.exception(f'failed to run command "{cmd}"')
             if 'proc' in locals() and proc:
