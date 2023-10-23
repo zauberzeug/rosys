@@ -56,22 +56,25 @@ class ConfigurableCameraMixin(abc.ABC):
         for param in new_values:
             if param not in self._parameters:
                 raise ValueError(f'Cannot set unknown parameter "{param}"')
-            await self._parameters[param].setter(new_values[param])
+            if new_values[param] is not None and new_values[param] != self._parameters[param].value:
+                await self._parameters[param].setter(new_values[param])
 
     async def _apply_all_parameters(self) -> None:
         await self._apply_parameters({param: self._parameters[param].value for param in self._parameters})
 
-    async def update_parameters(self, new_values: dict[str, Any]) -> None:
-        for param in new_values:
-            if param in self._parameters:
-                self._parameters[param].value = new_values[param]
+    async def _update_parameter_values(self) -> None:
+        for param in self._parameters.values():
+            val = await param.getter()
+            if val is not None:
+                param.value = val
 
+    async def set_parameters(self, new_values: dict[str, Any]) -> None:
         await self._apply_parameters(new_values)
+        await self._update_parameter_values()
 
-    async def get_parameters(self, names: Optional[list[Any]]) -> dict[str, Any]:
-        if names is None:
-            names = self._parameters.keys()
-        return {param: self._parameters[param].getter() for param in names}
+    @property
+    def parameters(self) -> dict[str, Any]:
+        return {param: self._parameters[param].value for param in self._parameters}
 
     def get_capabilities(self) -> list[ConfigurableCameraMixin.ParameterInfo]:
         return [param.info for param in self._parameters.values()]
