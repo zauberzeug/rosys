@@ -95,14 +95,21 @@ class RtspCameraProvider(CameraProvider):
             return
         self.last_scan = rosys.time()
         camera_ids = await self.scan_for_cameras()
+        newly_disconnected_cameras = set([camera.id for camera in self._cameras.values() if camera.is_connected])
         for mac in camera_ids:
             if mac not in self._cameras:
                 self.add_camera(RtspCamera(id=mac, goal_fps=self.frame_rate, jovision_profile=self.jovision_profile))
+            if mac in newly_disconnected_cameras:
+                newly_disconnected_cameras.remove(mac)
             camera = self._cameras[mac]
             if not camera.is_connected:
                 self.log.info(f'activating authorized camera {camera.id}...')
                 await camera.connect()
                 print(f'activated camera {camera.id}', flush=True)
+
+        for mac in newly_disconnected_cameras:
+            print(f'disconnecting camera {mac} since it cannot be found anymore', flush=True)
+            await self._cameras[mac].disconnect()
 
     def get_rtsp_url(self, ip: str, vendor_mac: str) -> Optional[str]:
         if vendor_mac == 'e0:62:90':  # Jovision IP Cameras
