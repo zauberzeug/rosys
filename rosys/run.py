@@ -9,7 +9,7 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from contextlib import contextmanager
 from functools import wraps
 from pathlib import Path
-from typing import Callable, Generator, Optional, cast
+from typing import Callable, Generator, Optional
 
 from nicegui import run
 from psutil import Popen
@@ -63,9 +63,8 @@ async def sh(command: list[str] | str, *,
         if timeout is not None:
             cmd_list = ['timeout', '--signal=SIGTERM', str(timeout)] + cmd_list
         cmd = ' '.join(cmd_list) if shell else cmd_list
-        # log.info(f'running sh: "{cmd}"')
         try:
-            with subprocess.Popen(  # pylint: disable=consider-using-with
+            with subprocess.Popen(
                 cmd,
                 cwd=working_dir,
                 stdout=subprocess.PIPE,
@@ -73,17 +72,19 @@ async def sh(command: list[str] | str, *,
                 shell=shell,
                 start_new_session=True,
             ) as proc:
-                running_sh_processes.append(cast(Popen, proc))
+                running_sh_processes.append(proc)
                 stdout, stderr = proc.communicate()
+                assert proc.stdout is not None
+                assert proc.stderr is not None
                 proc.stdout.close()
                 proc.stderr.close()
-                _kill(cast(Popen, proc))
-                running_sh_processes.remove(cast(Popen, proc))
+                _kill(proc)
+                running_sh_processes.remove(proc)
                 return stdout.decode('utf-8') if proc.returncode == 0 else stderr.decode('utf-8')
         except Exception:
             log.exception(f'failed to run command "{cmd}"')
             if 'proc' in locals() and proc:
-                _kill(cast(Popen, proc))
+                _kill(proc)
             return ''
 
     if is_stopping():
@@ -107,8 +108,8 @@ def _kill(proc: Popen) -> None:
             proc.wait()  # ensure the process is reaped
     except ProcessLookupError:
         pass
-    except Exception as e:
-        log.error(f"Failed to kill and/or wait for process {proc.pid}: {e}")
+    except Exception:
+        log.exception(f'Failed to kill and/or wait for process {proc.pid}')
 
 
 def tear_down() -> None:

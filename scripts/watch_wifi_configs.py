@@ -11,7 +11,7 @@ PATH = Path('~/.rosys/wifi').expanduser()
 
 
 def nmcli(cmd: str) -> None:
-    cmd = 'nmcli connection ' + cmd
+    cmd = f'nmcli connection {cmd}'
     if os.getuid() != 0:
         cmd = f'sudo {cmd}'
     subprocess.Popen(cmd, shell=True)
