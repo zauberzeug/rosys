@@ -249,12 +249,13 @@ class RtspCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
 
     @property
     def is_connected(self) -> bool:
-        return self.device is not None
+        return self.device is not None and self.device.capture_task is not None
 
     @property
     def url(self) -> Optional[str]:
         if self.is_connected:
             return self.device.url
+        return None
 
     async def connect(self) -> None:
         if self.is_connected:
@@ -269,7 +270,7 @@ class RtspCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
             return
 
         self.device = device
-        await self._apply_all_parameters()
+        # await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
         if not self.is_connected:
@@ -304,13 +305,12 @@ class RtspCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
             return
         self.device.settings_interface.set_fps(stream_id=self.jovision_profile, fps=fps)
         await self.reconnect()
-        await self.get_fps()
 
     async def get_fps(self) -> Optional[int]:
         if self.device is None or self.device.settings_interface is None:
             return None
         fps = self.device.settings_interface.get_fps(stream_id=self.jovision_profile)
-        self.fps = fps
+        return fps
 
     async def set_jovision_profile(self, profile: int) -> None:
         if self.device is None:
