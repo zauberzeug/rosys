@@ -17,7 +17,7 @@ SCAN_INTERVAL = 10
 
 class RtspCameraProvider(CameraProvider):
     """This module collects and provides real RTSP streaming cameras."""
-    USE_PERSISTENCE: bool = False
+    USE_PERSISTENCE: bool = True
 
     def __init__(self, *, frame_rate: int = 6, jovision_profile: int = 0) -> None:
         super().__init__()

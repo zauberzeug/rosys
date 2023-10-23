@@ -31,7 +31,7 @@ class SimulatedCameraProvider(CameraProvider):
 
     In the current implementation the images only contain the camera ID and the current time.
     """
-    USE_PERSISTENCE: bool = False
+    USE_PERSISTENCE: bool = True
 
     def __init__(self, simulate_failing=False) -> None:
         super().__init__()
@@ -47,11 +47,16 @@ class SimulatedCameraProvider(CameraProvider):
             persistence.register(self)
 
     def backup(self) -> dict:
-        # TODO store cameras
+        cameras = {}
+        for camera in self._cameras.values():
+            cameras[camera.id] = camera.__to_dict__()
         return {}
 
     def restore(self, data: dict[str, dict]) -> None:
-        # TODO load cameras
+        for camera_id, camera_data in data.get('cameras', {}).items():
+            camera = SimulatedCamera.from_dict(camera_data)
+            self.add_camera(camera)
+
         for camera in self._cameras.values():
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 

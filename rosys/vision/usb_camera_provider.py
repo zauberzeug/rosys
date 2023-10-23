@@ -17,6 +17,8 @@ class UsbCameraProvider(CameraProvider):
     Therefore the program v4l2ctl and openCV (including python bindings) must be available.
     """
 
+    USE_PERSISTENCE: bool = True
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -29,14 +31,20 @@ class UsbCameraProvider(CameraProvider):
         rosys.on_repeat(self.update_device_list, 1)
 
         self.needs_backup: bool = False
-        # persistence.register(self)
+        if self.USE_PERSISTENCE:
+            persistence.register(self)
 
     def backup(self) -> dict:
-        # TODO store cameras
-        return {}
+        cameras = {}
+        for camera in self._cameras.values():
+            cameras[camera.id] = camera.__to_dict__()
+        return {'cameras': cameras}
 
     def restore(self, data: dict[str, dict]) -> None:
-        # TODO load cameras
+        for camera_id, camera_data in data.get('cameras', {}).items():
+            camera = UsbCamera.from_dict(camera_data)
+            self.add_camera(camera)
+
         for camera in self._cameras.values():
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 

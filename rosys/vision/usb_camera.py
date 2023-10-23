@@ -128,7 +128,8 @@ class UsbCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
     detect: bool
     color: Optional[str]
 
-    def __init__(self, id, name=None, connect_after_init=True, streaming=True) -> None:
+    def __init__(self, id, name=None, connect_after_init=True, streaming=True,
+                 auto_exposure=True, exposure=False, width=800, height=600, fps=10) -> None:
         ConfigurableCameraMixin.__init__(self)
         TransformCameraMixin.__init__(self)
         Camera.__init__(self, id=id, name=name, connect_after_init=connect_after_init, streaming=streaming)
@@ -137,11 +138,39 @@ class UsbCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
         self.color = None
 
         self._register_parameter(name='auto_exposure', setter=self.set_exposure,
-                                 getter=self.get_exposure, default_value=True)
-        self._register_parameter(name='exposure', setter=self.set_exposure, getter=self.get_exposure, default_value=0)
-        self._register_parameter(name='width', setter=self.set_width, getter=self.get_width, default_value=800)
-        self._register_parameter(name='height', setter=self.set_height, getter=self.get_height, default_value=600)
-        self._register_parameter(name='fps', setter=self.set_fps, getter=self.get_fps, default_value=10)
+                                 getter=self.get_exposure, default_value=auto_exposure)
+        self._register_parameter(name='exposure', setter=self.set_exposure,
+                                 getter=self.get_exposure, default_value=exposure)
+        self._register_parameter(name='width', setter=self.set_width, getter=self.get_width, default_value=width)
+        self._register_parameter(name='height', setter=self.set_height, getter=self.get_height, default_value=height)
+        self._register_parameter(name='fps', setter=self.set_fps, getter=self.get_fps, default_value=fps)
+
+    def __to_dict__(self) -> dict[str, Any]:
+        camera_dict = {
+            'id': self.id,
+            'name': self.name,
+            'connect_after_init': self.connect_after_init,
+            'streaming': self.streaming,
+            'parameters': {}
+        }
+        for param_name, param in self._parameters.items():
+            camera_dict['parameters'][param_name] = param.value
+        return camera_dict
+
+    @staticmethod
+    def from_dict(data: dict[str, Any]) -> 'UsbCamera':
+        if 'parameters' not in data:
+            data['parameters'] = {}
+        fps = data['parameters'].get('fps', None)
+        auto_exposure = data['parameters'].get('auto_exposure', None)
+        exposure = data['parameters'].get('exposure', None)
+        width = data['parameters'].get('width', None)
+        height = data['parameters'].get('height', None)
+
+        camera = UsbCamera(id=data['id'], name=data['name'], connect_after_init=data['connect_after_init'],
+                           streaming=data['streaming'], auto_exposure=auto_exposure, exposure=exposure,
+                           width=width, height=height, fps=fps)
+        return camera
 
     @property
     def is_connected(self) -> bool:
@@ -155,6 +184,8 @@ class UsbCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
             return
 
         self.device = device
+        await self._apply_all_parameters()
+        await self._update_parameter_values()
 
     async def disconnect(self) -> None:
         if not self.is_connected:

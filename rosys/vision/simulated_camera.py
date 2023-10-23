@@ -68,6 +68,18 @@ class SimulatedCamera(ConfigurableCameraMixin, CalibratedCameraMixin, Camera):
 
         self._register_parameter(name='color', setter=self.set_color, getter=self.get_color, default_value='#ffffff')
 
+    def __to_dict__(self) -> dict:
+        return {
+            'id': self.id,
+            'width': self.resolution.width,
+            'height': self.resolution.height,
+            'color': self._color,
+        }
+
+    @staticmethod
+    def from_dict(data: dict) -> 'SimulatedCamera':
+        return SimulatedCamera(id=data['id'], resolution=ImageSize(width=data['width'], height=data['height']), color=data['color'])
+
     @property
     def is_connected(self) -> bool:
         return self.device is not None
