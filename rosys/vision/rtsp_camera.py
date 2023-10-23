@@ -63,11 +63,9 @@ async def find_ip_from_mac(mac: str) -> Optional[str]:
         else:
             arp_cmd = 'sudo /usr/sbin/arp-scan'
         cmd = f'{arp_cmd} -I {interface} --localnet'
-        print(cmd)
         output = await rosys.run.sh(cmd, timeout=10)
-        print(output)
         if output is None:
-            return None
+            continue
         for line in output.splitlines():
             infos = line.split()
             if len(infos) < 2:
