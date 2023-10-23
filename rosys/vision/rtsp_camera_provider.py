@@ -31,7 +31,7 @@ class RtspCameraProvider(CameraProvider):
         self._cameras: dict[str, RtspCamera] = {}
 
         rosys.on_shutdown(self.shutdown)
-        rosys.on_repeat(self.update_device_list, 1)
+        rosys.on_repeat(self.update_device_list, 10.)
 
         self.needs_backup: bool = False
         if self.USE_PERSISTENCE:
