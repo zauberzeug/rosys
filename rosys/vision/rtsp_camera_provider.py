@@ -38,11 +38,15 @@ class RtspCameraProvider(CameraProvider):
             persistence.register(self)
 
     def backup(self) -> dict:
-        # TODO store cameras
-        return {}
+        cameras = {}
+        for camera in self._cameras.values():
+            cameras[camera.id] = camera.__to_dict__()
+        return {'cameras': cameras}
 
     def restore(self, data: dict[str, dict]) -> None:
-        # TODO load cameras
+        for camera_id, camera_data in data.get('cameras', {}).items():
+            camera = RtspCamera.from_dict(camera_data)
+            self.add_camera(camera)
         for camera in self._cameras.values():
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 

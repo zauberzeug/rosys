@@ -245,6 +245,28 @@ class RtspCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
         self._register_parameter(name='jovision_profile', getter=self.get_jovision_profile, setter=self.set_jovision_profile,
                                  min_value=1, max_value=2, step=1, default_value=jovision_profile)
 
+    def __to_dict__(self) -> dict[str, Any]:
+        camera_dict = {
+            'id': self.id,
+            'name': self.name,
+            'connect_after_init': self.connect_after_init,
+            'streaming': self.streaming,
+            'parameters': {}
+        }
+        for param_name, param in self._parameters.items():
+            camera_dict['parameters'][param_name] = param.value
+        return camera_dict
+
+    @staticmethod
+    def from_dict(data: dict[str, Any]) -> 'RtspCamera':
+        if 'parameters' not in data:
+            data['parameters'] = {}
+        fps = data['parameters'].get('fps', None)
+        jovision_profile = data['parameters'].get('jovision_profile', None)
+        camera = RtspCamera(id=data['id'], name=data['name'], connect_after_init=data['connect_after_init'],
+                            streaming=data['streaming'], goal_fps=fps, jovision_profile=jovision_profile)
+        return camera
+
     @property
     def is_connected(self) -> bool:
         return self.device is not None and self.device.capture_task is not None
