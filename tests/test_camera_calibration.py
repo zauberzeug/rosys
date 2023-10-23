@@ -6,7 +6,9 @@ from rosys.vision import CalibratedCameraMixin, Calibration, Camera
 
 
 class CalibratedCamera(CalibratedCameraMixin, Camera):
-    pass
+    def __init__(self, **kwargs) -> None:
+        CalibratedCameraMixin.__init__(self)
+        Camera.__init__(self, **kwargs)
 
 
 def demo_data() -> tuple[Camera, list[Point3d]]:
