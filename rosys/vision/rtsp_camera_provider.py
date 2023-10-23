@@ -51,7 +51,7 @@ class RtspCameraProvider(CameraProvider):
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
     @staticmethod
-    async def run_arp_scan(interface) -> Optional[str]:
+    async def run_arp_scan(interface) -> str:
         if sys.platform.startswith('darwin'):
             arpscan_cmd = 'sudo arp-scan'
         else:
@@ -69,7 +69,7 @@ class RtspCameraProvider(CameraProvider):
         return output
 
     @staticmethod
-    async def scan_for_cameras() -> None:
+    async def scan_for_cameras() -> list[str]:
         cameras_ids = []
         for interface in netifaces.interfaces():
             output = await RtspCameraProvider.run_arp_scan(interface)
