@@ -45,17 +45,17 @@ class JovisionInterface:
     def __init__(self, ip: str) -> None:
         self.IP = ip
 
-    def get_settings_url(self):
+    def _get_settings_url(self):
         return f'http://{self.IP}/cgi-bin/jvsweb.cgi'
 
-    def get_headers(self):
+    def _get_headers(self):
         return {'Cookie': 'passwdRule=1; username=admin; password=admin;'}
 
-    def send_settings(self, settings: list[JovisionCameraSettings]):
+    def _send_settings(self, settings: list[JovisionCameraSettings]):
         """
         Set the settings for all streams
         """
-        url = self.get_settings_url()
+        url = self._get_settings_url()
         n_streams = len(settings)
         cmd = {
             'method': 'stream_set_params',
@@ -80,24 +80,17 @@ class JovisionInterface:
             'cmd': json.dumps(cmd),
             '_': int(time.time() * 1000)  # current time as a timestamp
         }
-        headers = self.get_headers()
-        print(url)
-        print(params)
-        print(headers)
+        headers = self._get_headers()
 
         response = requests.get(url, params=params, headers=headers, timeout=1)
-
-        print(response.status_code)
-        print(response.text)
 
     def set_fps(self, stream_id, fps):
         current_settings = self.get_current_settings()
         for settings in current_settings:
             if settings.stream_id == stream_id:
-                print(f'Changing fps from {settings.fps} to {fps}')
                 settings.fps = fps
                 break
-        self.send_settings(current_settings)
+        self._send_settings(current_settings)
 
     def get_fps(self, stream_id) -> Optional[int]:
         current_settings = self.get_current_settings()
@@ -108,10 +101,7 @@ class JovisionInterface:
         return None
 
     def get_current_settings(self) -> list[JovisionCameraSettings]:
-        """
-        Get the current settings of the camera for all streams
-        """
-        url = self.get_settings_url()
+        url = self._get_settings_url()
         cmd = {
             'method': 'stream_get_params',
             'user': {
@@ -126,7 +116,7 @@ class JovisionInterface:
             'cmd': json.dumps(cmd),
             '_': int(time.time() * 1000)
         }
-        headers = self.get_headers()
+        headers = self._get_headers()
 
         response = requests.get(url, params=params, headers=headers, timeout=1)
 
@@ -148,8 +138,8 @@ class JovisionInterface:
         return settings
 
     def get_parameter_ranges(self):
-       # TODO do something with the values
-        url = self.get_settings_url()
+        raise NotImplementedError
+        url = self._get_settings_url()
         cmd = {
             'method': 'stream_get_all_ability',
             'user': {
@@ -164,7 +154,7 @@ class JovisionInterface:
             'cmd': json.dumps(cmd),
             '_': time.time() * 1000
         }
-        headers = self.get_headers()
+        headers = self._get_headers()
 
         response = requests.get(url, params=params, headers=headers, timeout=1)
 
