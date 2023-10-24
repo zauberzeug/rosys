@@ -6,12 +6,12 @@ import signal
 import subprocess
 import uuid
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures.process import BrokenProcessPool
 from contextlib import contextmanager
-from functools import wraps
+from functools import partial, wraps
 from pathlib import Path
-from typing import Callable, Generator, Optional
+from typing import Any, Callable, Generator, Optional
 
-from nicegui import run
 from psutil import Popen
 
 from .helpers import is_stopping, is_test
@@ -23,8 +23,17 @@ running_sh_processes: list[Popen] = []
 log = logging.getLogger('rosys.run')
 
 
-io_bound = run.io_bound
-cpu_bound = run.cpu_bound
+async def io_bound(callback: Callable, *args: Any, **kwargs: Any):
+    if is_stopping():
+        return
+    loop = asyncio.get_running_loop()
+    try:
+        return await loop.run_in_executor(thread_pool, partial(callback, *args, **kwargs))
+    except RuntimeError as e:
+        if 'cannot schedule new futures after shutdown' not in str(e):
+            raise
+    except asyncio.exceptions.CancelledError:
+        pass
 
 
 def awaitable(func: Callable) -> Callable:
@@ -33,6 +42,22 @@ def awaitable(func: Callable) -> Callable:
     async def inner(*args, **kwargs):
         return await io_bound(func, *args, **kwargs)
     return inner
+
+
+async def cpu_bound(callback: Callable, *args: Any):
+    if is_stopping():
+        return
+    with cpu():
+        try:
+            loop = asyncio.get_running_loop()
+            return await loop.run_in_executor(process_pool, callback, *args)
+        except BrokenProcessPool:
+            pass
+        except RuntimeError as e:
+            if 'cannot schedule new futures after shutdown' not in str(e):
+                raise
+        except asyncio.exceptions.CancelledError:
+            pass
 
 
 @contextmanager
