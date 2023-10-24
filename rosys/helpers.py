@@ -44,10 +44,11 @@ def eliminate_2pi(angle_: float) -> float:
 
 def ramp(x: float, in1: float, in2: float, out1: float, out2: float, clip: bool = False) -> float:
     """Map a value x from one range (in1, in2) to another (out1, out2)."""
-    if clip and x < min(in1, in2):
-        return out1
-    if clip and x > max(in1, in2):
-        return out2
+    if clip:
+        if x < in1 < in2 or in2 < in1 < x:
+            return out1
+        if x < in2 < in1 or in1 < in2 < x:
+            return out2
     return (x - in1) * (out2 - out1) / (in2 - in1) + out1
 
 
