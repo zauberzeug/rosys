@@ -11,9 +11,7 @@ from typing import Any, Awaitable, Callable, Literal, Optional
 
 import numpy as np
 import psutil
-from nicegui import app, background_tasks
-from nicegui import globals as nicegui_globals
-from nicegui import ui
+from nicegui import Client, app, background_tasks, ui
 
 from . import event, persistence, run
 from .config import Config
@@ -72,7 +70,7 @@ def notify(message: str,
     notifications.append(Notification(time=time(), message=message))
     NEW_NOTIFICATION.emit(message)
     # NOTE show notifications on all pages
-    for client in nicegui_globals.clients.values():
+    for client in Client.instances.values():
         if not client.has_socket_connection:
             continue
         with client:

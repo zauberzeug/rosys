@@ -23,7 +23,7 @@ class kpi_page(ABC):
                 ui.markdown(f'### {self.title}').style('margin:1.5em;margin-top:-1.2em;')
                 toggle = ui.toggle(self.timespans, value=list(self.timespans)[0], on_change=lambda e: show(e.value))
             with ui.row():
-                positive_chart = ui.chart({
+                positive_chart = ui.highchart({
                     'title': {'text': self.positive_title},
                     'chart': {'type': 'column'},
                     'xAxis': {},
@@ -31,7 +31,7 @@ class kpi_page(ABC):
                     'credits': False,
                     'exporting': False,
                 })
-                negative_chart = ui.chart({
+                negative_chart = ui.highchart({
                     'title': {'text': self.negative_title},
                     'chart': {'type': 'column'},
                     'plotOptions': {'series': {'stacking': 'normal'}},

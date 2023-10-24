@@ -9,7 +9,7 @@ from contextlib import contextmanager
 from typing import Any, Awaitable, Callable, Generator, Optional
 
 import numpy as np
-from nicegui import globals as nicegui_globals
+from nicegui import app
 
 
 async def invoke(handler: Callable, *args: Any) -> Any:
@@ -93,7 +93,7 @@ def from_dict(data_class_type, data):
 
 
 def is_stopping() -> bool:
-    return nicegui_globals.state == nicegui_globals.State.STOPPING
+    return app.is_stopping
 
 
 def is_test() -> bool:
