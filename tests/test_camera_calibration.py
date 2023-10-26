@@ -2,12 +2,12 @@ import numpy as np
 
 from rosys.geometry import Point3d
 from rosys.test import approx
-from rosys.vision import CalibratedCameraMixin, Calibration, Camera
+from rosys.vision import CalibratableCameraMixin, Calibration, Camera
 
 
-class CalibratedCamera(CalibratedCameraMixin, Camera):
+class CalibratedCamera(CalibratableCameraMixin, Camera):
     def __init__(self, **kwargs) -> None:
-        CalibratedCameraMixin.__init__(self)
+        CalibratableCameraMixin.__init__(self)
         Camera.__init__(self, **kwargs)
 
 

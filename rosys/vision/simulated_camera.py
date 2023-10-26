@@ -9,7 +9,7 @@ import PIL as pil
 
 import rosys
 
-from .camera import CalibratedCameraMixin, Camera, ConfigurableCameraMixin
+from .camera import CalibratableCameraMixin, Camera, ConfigurableCameraMixin
 from .image import Image, ImageSize
 
 
@@ -50,14 +50,14 @@ class SimulatedCameraDevice:
         return img_byte_arr.getvalue()
 
 
-class SimulatedCamera(ConfigurableCameraMixin, CalibratedCameraMixin, Camera):
+class SimulatedCamera(ConfigurableCameraMixin, CalibratableCameraMixin, Camera):
     device: Optional[SimulatedCameraDevice]
     resolution: ImageSize
     _color: str
 
     def __init__(self, id, resolution=ImageSize(width=800, height=600), color=None) -> None:
         ConfigurableCameraMixin.__init__(self)
-        CalibratedCameraMixin.__init__(self)
+        CalibratableCameraMixin.__init__(self)
         Camera.__init__(self, id=id)
         self.device = None
         self.id = id

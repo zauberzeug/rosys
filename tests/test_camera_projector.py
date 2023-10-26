@@ -1,11 +1,11 @@
 import numpy as np
 
-from rosys.vision import CalibratedCameraMixin, Camera, CameraProjector
+from rosys.vision import CalibratableCameraMixin, Camera, CameraProjector
 
 
-class CalibratedCamera(CalibratedCameraMixin, Camera):
+class CalibratedCamera(CalibratableCameraMixin, Camera):
     def __init__(self, **kwargs) -> None:
-        CalibratedCameraMixin.__init__(self)
+        CalibratableCameraMixin.__init__(self)
         Camera.__init__(self, **kwargs)
 
 

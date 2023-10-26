@@ -11,7 +11,7 @@ from cv2 import UMat
 import rosys
 
 from .. import persistence
-from .camera import Camera, ConfigurableCameraMixin, TransformCameraMixin
+from .camera import Camera, ConfigurableCameraMixin, TransformableCameraMixin
 from .image import Image, ImageSize
 from .image_processing import process_jpeg_image, process_ndarray_image, to_bytes
 from .image_rotation import ImageRotation
@@ -123,7 +123,7 @@ class UsbCameraHardwareDevice:
         return capture
 
 
-class UsbCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
+class UsbCamera(ConfigurableCameraMixin, TransformableCameraMixin, Camera):
     device: Optional[UsbCameraHardwareDevice]
     detect: bool
     color: Optional[str]
@@ -131,7 +131,7 @@ class UsbCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
     def __init__(self, id, name=None, connect_after_init=True, streaming=True,
                  auto_exposure=True, exposure=False, width=800, height=600, fps=10) -> None:
         ConfigurableCameraMixin.__init__(self)
-        TransformCameraMixin.__init__(self)
+        TransformableCameraMixin.__init__(self)
         Camera.__init__(self, id=id, name=name, connect_after_init=connect_after_init, streaming=streaming)
         self.device = None
         self.detect = False

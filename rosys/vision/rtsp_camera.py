@@ -16,7 +16,7 @@ import PIL
 
 from .. import persistence, rosys
 from ..geometry import Rectangle
-from .camera import Camera, ConfigurableCameraMixin, TransformCameraMixin
+from .camera import Camera, ConfigurableCameraMixin, TransformableCameraMixin
 from .image import Image, ImageSize
 from .image_processing import process_jpeg_image
 from .image_rotation import ImageRotation
@@ -196,7 +196,7 @@ class RtspCameraGstreamerDevice:
         self.capture_task = None
 
 
-class RtspCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
+class RtspCamera(ConfigurableCameraMixin, TransformableCameraMixin, Camera):
     device: Optional[RtspCameraGstreamerDevice]
     jovision_profile: int
 
@@ -206,7 +206,7 @@ class RtspCamera(ConfigurableCameraMixin, TransformCameraMixin, Camera):
     def __init__(self, id: str, name: Optional[str] = None, connect_after_init: bool = True, streaming: bool = True,
                  goal_fps=5, jovision_profile=1) -> None:
         ConfigurableCameraMixin.__init__(self)
-        TransformCameraMixin.__init__(self)
+        TransformableCameraMixin.__init__(self)
         Camera.__init__(self, id=id, name=name, connect_after_init=connect_after_init, streaming=streaming)
 
         self.device = None
