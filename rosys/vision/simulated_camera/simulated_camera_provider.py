@@ -1,38 +1,23 @@
-import io
 import random
-from typing import Any, Optional
+from typing import Optional
 
 import numpy as np
 
 from rosys import persistence
 
-from .. import rosys
-from .camera_provider import CameraProvider
-from .image import ImageSize
+from ... import rosys
+from ..camera_provider import CameraProvider
+from ..image import ImageSize
 from .simulated_camera import SimulatedCamera
 
 
-class SimulatedDeviceScanner:
-    def __init__(self, n_devices) -> None:
-        self.n_devices = n_devices
-
-    async def scan_for_cameras(self) -> list[str]:
-        return [f'cam{i}' for i in range(self.n_devices)]
-
-    def add_device(self) -> None:
-        self.n_devices += 1
-
-    def remove_device(self) -> None:
-        self.n_devices -= min(0, self.n_devices)
-
-
 class SimulatedCameraProvider(CameraProvider, persistence.PersistentModule):
-    """This module collects and simulates USB cameras and generates synthetic images.
+    """This module collects and simulates cameras and generates synthetic images.
 
     In the current implementation the images only contain the camera ID and the current time.
     """
 
-    def __init__(self, simulate_failing=False) -> None:
+    def __init__(self, simulate_failing: bool = False) -> None:
         super().__init__()
 
         self._cameras: dict[str, SimulatedCamera] = {}
@@ -48,7 +33,7 @@ class SimulatedCameraProvider(CameraProvider, persistence.PersistentModule):
         return {}
 
     def restore(self, data: dict[str, dict]) -> None:
-        for camera_id, camera_data in data.get('cameras', {}).items():
+        for camera_data in data.get('cameras', {}).values():
             camera = SimulatedCamera.from_dict(camera_data)
             self.add_camera(camera)
 
@@ -61,7 +46,7 @@ class SimulatedCameraProvider(CameraProvider, persistence.PersistentModule):
                 await camera.connect()
                 continue
             if self.simulate_device_failure:
-                # disconnect cameras rendomly with probabilty rising with time
+                # disconnect cameras randomly with probability rising with time
                 time_since_last_activation = rosys.time() - camera.device.creation_time
                 if random.random() < time_since_last_activation / 30.:
                     camera.device = None
