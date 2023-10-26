@@ -3,8 +3,8 @@ import re
 import shutil
 from typing import Optional
 
-from .. import persistence, rosys
-from .camera_provider import CameraProvider
+from ... import persistence, rosys
+from ..camera_provider import CameraProvider
 from .usb_camera import UsbCamera
 
 SCAN_INTERVAL = 10
@@ -35,7 +35,7 @@ class UsbCameraProvider(CameraProvider, persistence.PersistentModule):
         return {'cameras': cameras}
 
     def restore(self, data: dict[str, dict]) -> None:
-        for camera_id, camera_data in data.get('cameras', {}).items():
+        for camera_data in data.get('cameras', {}).values():
             camera = UsbCamera.from_dict(camera_data)
             self.add_camera(camera)
 
