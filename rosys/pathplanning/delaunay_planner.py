@@ -20,9 +20,15 @@ from .obstacle_map import ObstacleMap
 
 GRID_RESOLUTION = 1.0
 MIN_MARGIN = 1.0
-# try to find a collision-free simple path between start and goal (see https://trello.com/c/FtP4yHqA/777#comment-62d0323e97ba19392bcbceb8)
+
 TRY_SINGLE_PATH = True
-TRY_SINGLE_SHUNTING = True  # try to find collision-free path with minimal switching (single shunting)
+"""Try to find a collision-free simple path between start and goal.
+
+See https://trello.com/c/FtP4yHqA/777#comment-62d0323e97ba19392bcbceb8 for more information.
+"""
+
+TRY_SINGLE_SHUNTING = True
+"""Try to find collision-free path with minimal switching (single shunting)."""
 
 
 class DelaunayPlanner:
@@ -131,13 +137,17 @@ class DelaunayPlanner:
         assert self.obstacle_map is not None
         assert self.graph is not None
         assert self.pose_groups is not None
+        paths: list[list[PathSegment]] = []
+
         if TRY_SINGLE_PATH:
             for backward in [True, False]:
                 simple_spline = Spline.from_poses(start, goal, backward=backward)
                 if _is_healthy(simple_spline) and not self.obstacle_map.test_spline(simple_spline, backward):
-                    self.log.info('found single spline to reach goal')
-                    return [PathSegment(spline=simple_spline, backward=backward)]
-        paths: list[list[PathSegment]] = []
+                    paths.append([PathSegment(spline=simple_spline, backward=backward)])
+        if paths:
+            self.log.info('found single spline to reach goal')
+            return min(paths, key=lambda path: path[0].spline.estimated_length())
+
         if TRY_SINGLE_SHUNTING:
             for backward in [True, False]:
                 for length in [1, 1.5, 2]:
@@ -155,8 +165,17 @@ class DelaunayPlanner:
                         PathSegment(spline=spline1, backward=backward),
                         PathSegment(spline=spline2, backward=not backward),
                     ])
+        if paths:
+            self.log.info('found single shunt to reach goal')
+            return min(paths, key=lambda path: path[0].spline.estimated_length() + path[1].spline.estimated_length())
+
         grid_entries = _find_grid_passages(self.obstacle_map, self.pose_groups, start, True)
         grid_exits = _find_grid_passages(self.obstacle_map, self.pose_groups, goal, False)
+        if not grid_entries:
+            raise RuntimeError('could not find start segment')
+        if not grid_exits:
+            raise RuntimeError('could not find exit segment')
+
         for enter, exit_ in itertools.product(grid_entries, grid_exits):
             p, g = enter.coordinate
             p_, g_ = exit_.coordinate
@@ -250,28 +269,24 @@ def _is_healthy(spline: Spline, curvature_limit: float = 10.0) -> bool:
 class Passage:
     segment: PathSegment
     coordinate: tuple[int, int]
-    length: float
 
 
-def _find_grid_passages(obstacle_map: ObstacleMap, pose_groups: list[DelaunayPoseGroup],
-                        pose: Pose, entering: bool) -> list[Passage]:
+def _find_grid_passages(obstacle_map: ObstacleMap,
+                        pose_groups: list[DelaunayPoseGroup],
+                        pose: Pose,
+                        entering: bool,
+                        max_num_groups: int = 10,
+                        max_num_results: int = 3) -> list[Passage]:
     group_distances = [g.point.distance(pose) for g in pose_groups]
     group_indices = np.argsort(group_distances)
     results: list[Passage] = []
-    for i, (g, group) in enumerate(zip(group_indices, np.array(pose_groups)[group_indices][:10])):
-        if i >= 3 and results:
-            break
+    for g, group in zip(group_indices, np.array(pose_groups)[group_indices][:max_num_groups]):
         for p, group_pose in enumerate(group.poses):
             for backward in [False, True]:
                 poses = (pose, group_pose) if entering else (group_pose, pose)
                 spline = Spline.from_poses(*poses, backward=backward)
                 if _is_healthy(spline) and not obstacle_map.test_spline(spline, backward):
-                    passage = Passage(
-                        segment=PathSegment(spline=spline, backward=backward),
-                        coordinate=(p, g),
-                        length=spline.estimated_length(),
-                    )
+                    passage = Passage(segment=PathSegment(spline=spline, backward=backward), coordinate=(p, g))
                     results.append(passage)
-    if results:
-        return results
-    raise RuntimeError(f'could not find terminal segment for {"start" if entering else "end"}')
+    results.sort(key=lambda passage: passage.segment.spline.estimated_length())
+    return results[:max_num_results]

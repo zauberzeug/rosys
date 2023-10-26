@@ -2,7 +2,7 @@ import abc
 import logging
 from typing import Optional
 
-from aenum import Enum, auto
+from aenum import Enum
 
 from ..event import Event
 from .detections import Detections
@@ -13,13 +13,13 @@ from .uploads import Uploads
 class Autoupload(Enum):
     """Configures the auto-submitting of images to the Learning Loop"""
 
-    FILTERED = auto()
+    FILTERED = 'filtered'
     """only submit images with novel detections and in an uncertainty range (this is the default)"""
 
-    DISABLED = auto()
+    DISABLED = 'disabled'
     """no auto-submitting"""
 
-    ALL = auto()
+    ALL = 'all'
     """submit all images which are run through the detector"""
 
 

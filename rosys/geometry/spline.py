@@ -59,6 +59,13 @@ class Spline:
 
     @staticmethod
     def from_poses(start: Pose, end: Pose, *, control_dist: Optional[float] = None, backward: bool = False) -> Spline:
+        """Generate a spline from two poses.
+
+        :param start: the start pose (including yaw facing in the driving direction)
+        :param end: the end pose (including yaw facing in the driving direction)
+        :param control_dist: the distance of the control points from the start and end points (default: half the distance between start and end)
+        :param backward: whether the spline should move backwards (opposite to the start and end pose yaw)
+        """
         distance = 0.5 * (start.distance(end) if control_dist is None else control_dist) * (-1 if backward else 1)
         return Spline(
             start=start.point,

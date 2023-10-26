@@ -38,7 +38,7 @@ class AsyncioPage(ui.element):
 
         with self:
             ui.button('load', on_click=update)
-            chart = ui.chart(options={
+            chart = ui.highchart(options={
                 'title': False,
                 'chart': {'type': 'boxplot'},
                 'xAxis': {'categories': []},

@@ -8,6 +8,7 @@ from .robot_brain import RobotBrain
 class Module(abc.ABC):
 
     def __init__(self) -> None:
+        super().__init__()
         self.log = logging.getLogger(__name__)
 
 

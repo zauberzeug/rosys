@@ -86,22 +86,31 @@ async def sh(command: list[str] | str, *,
     def popen() -> str:
         cmd_list = command if isinstance(command, list) else shlex.split(command)
         if timeout is not None:
-            cmd_list = ['timeout', '--signal=SIGKILL', str(timeout)] + cmd_list
+            cmd_list = ['timeout', '--signal=SIGTERM', str(timeout)] + cmd_list
         cmd = ' '.join(cmd_list) if shell else cmd_list
-        # log.info(f'running sh: "{cmd}"')
-        proc = subprocess.Popen(  # pylint: disable=consider-using-with
-            cmd,
-            cwd=working_dir,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            shell=shell,
-            start_new_session=True,
-        )
-        running_sh_processes.append(proc)
-        stdout, *_ = proc.communicate()
-        _kill(proc)
-        running_sh_processes.remove(proc)
-        return stdout.decode('utf-8')
+        try:
+            with subprocess.Popen(
+                cmd,
+                cwd=working_dir,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                shell=shell,
+                start_new_session=True,
+            ) as proc:
+                running_sh_processes.append(proc)
+                stdout, stderr = proc.communicate()
+                assert proc.stdout is not None
+                assert proc.stderr is not None
+                proc.stdout.close()
+                proc.stderr.close()
+                _kill(proc)
+                running_sh_processes.remove(proc)
+                return stdout.decode('utf-8') if proc.returncode == 0 else stderr.decode('utf-8')
+        except Exception:
+            log.exception(f'failed to run command "{cmd}"')
+            if 'proc' in locals() and proc:
+                _kill(proc)
+            return ''
 
     if is_stopping():
         return ''
@@ -115,9 +124,17 @@ async def sh(command: list[str] | str, *,
 def _kill(proc: Popen) -> None:
     try:
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-        log.info(f'killed {proc.pid}')
+        log.info(f'sent SIGTERM to {proc.pid}')
+        try:
+            proc.wait(timeout=5)  # wait for 5 seconds
+        except subprocess.TimeoutExpired:
+            os.killpg(os.getpgid(proc.pid), signal.SIGKILL)  # force kill if process didn't terminate
+            log.info(f'sent SIGKILL to {proc.pid}')
+            proc.wait()  # ensure the process is reaped
     except ProcessLookupError:
         pass
+    except Exception:
+        log.exception(f'Failed to kill and/or wait for process {proc.pid}')
 
 
 def tear_down() -> None:

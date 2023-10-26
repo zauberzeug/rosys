@@ -6,8 +6,7 @@ import logging
 from dataclasses import dataclass
 from typing import Awaitable, Callable
 
-from nicegui import background_tasks
-from nicegui import globals as nicegui_globals
+from nicegui import background_tasks, context, core
 
 from .helpers import invoke
 
@@ -44,7 +43,7 @@ class Event:
 
     def register_ui(self, callback: Callable) -> Event:
         self.register(callback)
-        client = nicegui_globals.get_client()
+        client = context.get_client()
         if not client.shared:
             async def register_disconnect():
                 try:
@@ -73,7 +72,7 @@ class Event:
             try:
                 result = invoke(listener.callback, *args)
                 if isinstance(result, Awaitable):
-                    if nicegui_globals.loop.is_running():
+                    if core.loop.is_running():
                         name = f'{listener.filepath}:{listener.line}'
                         tasks.append(background_tasks.create(result, name=name))
                     else:

@@ -19,6 +19,8 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
     """
 
     def __init__(self) -> None:
+        super().__init__()
+
         self.CAMERA_ADDED = Event()
         """a new camera has been added (argument: camera)"""
 
@@ -30,7 +32,8 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
 
         # self.base_path = f'images/{str(uuid4())}'
 
-        self.needs_backup: bool = False
+    def request_backup(self) -> None:
+        pass  # HACK: for the case that the camera provider derives from PersistentModule
 
         self._cameras: dict[str, T] = {}
 
@@ -54,20 +57,20 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
         self.cameras[camera.id] = camera
         self.CAMERA_ADDED.emit(camera)
         camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
-        self.needs_backup = True
+        self.request_backup()
 
     def remove_camera(self, camera_id: str) -> None:
         del self.cameras[camera_id]
         self.CAMERA_REMOVED.emit(camera_id)
-        self.needs_backup = True
+        self.request_backup()
 
     def remove_all_cameras(self) -> None:
-        for camera_id in self.cameras:
+        for camera_id in list(self.cameras):
             self.remove_camera(camera_id)
 
     def remove_calibration(self, camera_id: str) -> None:
         self.cameras[camera_id].calibration = None
-        self.needs_backup = True
+        self.request_backup()
 
     def remove_all_calibrations(self) -> None:
         for camera_id in self.cameras:
@@ -84,6 +87,3 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
             else:
                 while camera.images and camera.images[0].time < rosys.time() - max_age_seconds:
                     del camera.images[0]
-
-    def invalidate(self) -> None:
-        self.needs_backup = True
