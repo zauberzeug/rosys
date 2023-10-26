@@ -11,16 +11,21 @@ from .simulated_device import SimulatedDevice
 class SimulatedCamera(ConfigurableCameraMixin, Camera):
 
     def __init__(self,
-                 id, *,
+                 *,
+                 id: str,
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
                  resolution=ImageSize(width=800, height=600),
                  color: Optional[str] = None,
+                 **kwargs
                  ) -> None:
-        super().__init__(self, id=id, name=name, connect_after_init=connect_after_init, streaming=streaming)
+        super().__init__(id=id,
+                         name=name,
+                         connect_after_init=connect_after_init,
+                         streaming=streaming,
+                         **kwargs)
         self.device: Optional[SimulatedDevice] = None
-        self.id = id
         self.resolution = resolution
         if color is None:
             color = f'#{random.randint(0, 0xffffff):06x}'
@@ -46,7 +51,7 @@ class SimulatedCamera(ConfigurableCameraMixin, Camera):
 
     async def connect(self) -> None:
         if self.device is None:
-            self.device = SimulatedDevice(video_id=self.id, color=self._color, size=self.resolution)
+            self.device = SimulatedDevice(id=self.id, color=self._color, size=self.resolution)
 
     async def disconnect(self) -> None:
         self.device = None

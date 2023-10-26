@@ -17,7 +17,8 @@ class UsbCamera(ConfigurableCameraMixin, TransformableCameraMixin, Camera):
     color: Optional[str]
 
     def __init__(self,
-                 id: str, *,
+                 *,
+                 id: str,
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
@@ -25,11 +26,13 @@ class UsbCamera(ConfigurableCameraMixin, TransformableCameraMixin, Camera):
                  exposure: bool = False,
                  width: int = 800,
                  height: int = 600,
-                 fps: int = 10) -> None:
+                 fps: int = 10,
+                 **kwargs) -> None:
         super().__init__(id=id,
                          name=name,
                          connect_after_init=connect_after_init,
-                         streaming=streaming)
+                         streaming=streaming,
+                         **kwargs)
         self.device = None
         self.detect = False
         self.color = None

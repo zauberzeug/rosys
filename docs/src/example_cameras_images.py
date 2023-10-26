@@ -1,20 +1,11 @@
 #!/usr/bin/env python3
 from nicegui import ui
 
-from rosys.vision import SimulatedCameraProvider, camera_provider
+from rosys.vision import ImageSize, SimulatedCamera
 
-camera_provider = SimulatedCameraProvider()
-camera_provider.add_camera(camera_provider.create_calibrated('test_cam', width=800, height=600))
+camera = SimulatedCamera(id='test_cam', resolution=ImageSize(width=800, height=600))
 
-
-def refresh() -> None:
-    for uid, camera in camera_provider.cameras.items():
-        if uid not in feeds:
-            feeds[uid] = ui.interactive_image()
-        feeds[uid].set_source(camera.get_latest_image_url())
-
-
-feeds: dict[str, ui.interactive_image] = {}
-ui.timer(0.3, refresh)
+image = ui.interactive_image()
+ui.timer(0.3, lambda: image.set_source(camera.get_latest_image_url()))
 
 ui.run(title='RoSys')

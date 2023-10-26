@@ -13,10 +13,10 @@ if rosys.hardware.SerialCommunication.is_possible():
 else:
     wheels = rosys.hardware.WheelsSimulation()
     robot = rosys.hardware.RobotSimulation([wheels])
+    rosys.vision.SimulatedCameraProvider.USE_PERSISTENCE = False
     camera_provider = rosys.vision.SimulatedCameraProvider()
-    camera_provider.restore = lambda _: None  # NOTE: disable persistence
-    test_cam = camera_provider.create_calibrated('test_cam', width=800, height=600)
-    rosys.on_startup(lambda: camera_provider.add_camera(test_cam))
+    camera = rosys.vision.SimulatedCamera(id='test_cam', resolution=rosys.vision.ImageSize(width=800, height=600))
+    rosys.on_startup(lambda: camera_provider.add_camera(camera))
 steerer = rosys.driving.Steerer(wheels)
 odometer = rosys.driving.Odometer(wheels)
 

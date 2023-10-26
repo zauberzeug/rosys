@@ -67,17 +67,20 @@ class RtspCamera(ConfigurableCameraMixin, TransformableCameraMixin, Camera):
     authorized: bool
 
     def __init__(self,
-                 id: str, *,
+                 *,
+                 id: str,
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
                  goal_fps: int = 5,
-                 jovision_profile: int = 1) -> None:
-        super.__init__(self,
-                       id=id,
-                       name=name,
-                       connect_after_init=connect_after_init,
-                       streaming=streaming)
+                 jovision_profile: int = 1,
+                 **kwargs,
+                 ) -> None:
+        super().__init__(id=id,
+                         name=name,
+                         connect_after_init=connect_after_init,
+                         streaming=streaming,
+                         **kwargs)
 
         self.device = None
         self.jovision_profile = jovision_profile

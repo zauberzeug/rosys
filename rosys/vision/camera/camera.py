@@ -14,7 +14,6 @@ from ..image_route import create_image_route
 class Camera(abc.ABC):
     MAX_IMAGES = 256
 
-    id: str
     images: deque[Image]
     name: Optional[str]
     base_path: str
@@ -28,8 +27,14 @@ class Camera(abc.ABC):
     NEW_IMAGE: Event
     """a new image is available (argument: image)"""
 
-    def __init__(self, id: str, *, name: Optional[str] = None, connect_after_init: bool = True, streaming: bool = True) -> None:
-        super().__init__()
+    def __init__(self,
+                 *,
+                 id: str,
+                 name: Optional[str] = None,
+                 connect_after_init: bool = True,
+                 streaming: bool = True,
+                 **kwargs) -> None:
+        super().__init__(**kwargs)
         self.id = id
         self.images = deque(maxlen=self.MAX_IMAGES)
         self.connect_after_init = connect_after_init
