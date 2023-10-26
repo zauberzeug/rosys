@@ -4,9 +4,7 @@ from rosys.vision import CalibratableCameraMixin, Camera, CameraProjector
 
 
 class CalibratedCamera(CalibratableCameraMixin, Camera):
-    def __init__(self, **kwargs) -> None:
-        CalibratableCameraMixin.__init__(self)
-        Camera.__init__(self, **kwargs)
+    pass
 
 
 def test_projection():

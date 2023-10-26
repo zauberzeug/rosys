@@ -6,12 +6,10 @@ from rosys.vision import CalibratableCameraMixin, Calibration, Camera
 
 
 class CalibratedCamera(CalibratableCameraMixin, Camera):
-    def __init__(self, **kwargs) -> None:
-        CalibratableCameraMixin.__init__(self)
-        Camera.__init__(self, **kwargs)
+    pass
 
 
-def demo_data() -> tuple[Camera, list[Point3d]]:
+def demo_data() -> tuple[CalibratedCamera, list[Point3d]]:
     cam = CalibratedCamera(id='1')
     cam.set_perfect_calibration(x=0.1, y=0.2, z=3, roll=np.deg2rad(180+10), pitch=np.deg2rad(20), yaw=np.deg2rad(30))
     world_points = [
