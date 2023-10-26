@@ -7,10 +7,10 @@ import netifaces
 import requests
 from requests.auth import HTTPDigestAuth
 
-from .. import persistence, rosys
-from .camera_provider import CameraProvider
-from .image import Image, ImageSize
-from .rtsp_camera import RtspCamera
+from ... import persistence, rosys
+from ..camera_provider import CameraProvider
+from ..image import Image, ImageSize
+from . import RtspCamera
 
 SCAN_INTERVAL = 10
 
@@ -39,7 +39,7 @@ class RtspCameraProvider(CameraProvider, persistence.PersistentModule):
         return {'cameras': cameras}
 
     def restore(self, data: dict[str, dict]) -> None:
-        for camera_id, camera_data in data.get('cameras', {}).items():
+        for camera_data in data.get('cameras', {}).values():
             camera = RtspCamera.from_dict(camera_data)
             self.add_camera(camera)
         for camera in self._cameras.values():
@@ -77,7 +77,7 @@ class RtspCameraProvider(CameraProvider, persistence.PersistentModule):
                 if len(infos) < 2:
                     continue
                 try:
-                    ip, mac = infos[:2]
+                    mac = infos[1]
                 except Exception:
                     logging.exception(f'could not parse {line}')
                     continue
@@ -107,14 +107,6 @@ class RtspCameraProvider(CameraProvider, persistence.PersistentModule):
         for mac in newly_disconnected_cameras:
             print(f'disconnecting camera {mac} since it cannot be found anymore', flush=True)
             await self._cameras[mac].disconnect()
-
-    def get_rtsp_url(self, ip: str, vendor_mac: str) -> Optional[str]:
-        if vendor_mac == 'e0:62:90':  # Jovision IP Cameras
-            return f'rtsp://admin:admin@{ip}/profile{self.jovision_profile}'
-        if vendor_mac in ['e4:24:6c', '3c:e3:6b']:  # Dahua IP Cameras
-            return f'rtsp://admin:Adminadmin@{ip}/cam/realmonitor?channel=1&subtype=0'
-        logging.debug(f'ignoring vendor mac {vendor_mac} because it seems not to be a known camera')
-        return None
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
