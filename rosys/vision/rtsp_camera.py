@@ -87,36 +87,7 @@ def determine_rtsp_url(mac: str, ip: str, jovision_profile: int = 0) -> Optional
     return None
 
 
-class RtspCameraOpenCvDevice:
-    mac_address: str
-    ip_address: str
-    capture: Optional[cv2.VideoCapture] = None
-
-    def __init__(self, mac, ip, jovision_profile=1) -> None:
-        print(f'connecting to {mac} at {ip}', flush=True)
-        self.ip_address = ip
-        url = determine_rtsp_url(mac, self.ip_address, jovision_profile)
-        if url is None:
-            raise Exception(f'could not determine RTSP URL for {mac}')
-        print(f'connecting to {url}', flush=True)
-        logging.info(f'Starting VideoStream for {url}')
-        self.capture = cv2.VideoCapture(url)
-        if not self.capture.isOpened():
-            raise Exception(f'could not connect to {url}')
-
-    def url(self) -> str:
-        return self.capture.get(cv2.CAP_PROP_POS_MSEC)
-
-    def __del__(self) -> None:
-        if self.capture is not None:
-            self.capture.release()
-
-
 class RtspCameraGstreamerDevice:
-    mac: str
-    ip_address: str
-    url: str
-    fps: int
     _image_buffer: Optional[bytes] = None
     capture_task: Optional[asyncio.Task] = None
     capture_process: Optional[subprocess.Popen] = None
@@ -126,9 +97,8 @@ class RtspCameraGstreamerDevice:
     resolution: Optional[ImageSize] = None
     settings_interface = Optional[JovisionInterface]
 
-    def __init__(self, mac, ip, jovision_profile) -> None:
+    def __init__(self, mac: str, ip: str, jovision_profile: int) -> None:
         self.mac = mac
-        self.ip_address = ip
 
         vendor_type = VendorType.mac_to_vendor(mac)
         if vendor_type == VendorType.JOVISION:
@@ -139,13 +109,13 @@ class RtspCameraGstreamerDevice:
             logging.info(f'using default fps of 10')
             self.fps = 10
 
-        url = determine_rtsp_url(mac, self.ip_address, jovision_profile)
-        if url is None:
+        self.url = determine_rtsp_url(mac, self.ip, jovision_profile)
+        if self.url is None:
             raise Exception(f'could not determine RTSP URL for {mac}')
-        self.url = url
-        print(f'connecting to {url}', flush=True)
-        logging.info(f'Starting VideoStream for {url}')
-        self.capture_task = rosys.background_tasks.create(self.start_gsreamer_task(url), name=f'capture {self.mac}')
+        print(f'connecting to {self.url}', flush=True)
+        logging.info(f'Starting VideoStream for {self.url}')
+        self.capture_task = rosys.background_tasks.create(
+            self.start_gsreamer_task(self.url), name=f'capture {self.mac}')
 
     @property
     def authorized(self) -> bool:

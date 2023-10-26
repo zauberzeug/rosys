@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 from collections import deque
 from dataclasses import dataclass
-from typing import Any, Callable, Generic, Optional, TypeVar
+from typing import Any, Callable, Optional
 from uuid import uuid4
 
 import numpy as np
@@ -16,29 +16,27 @@ from .image import Image, ImageSize
 from .image_rotation import ImageRotation
 from .image_route import create_image_route
 
-PARAMETER_TYPE = TypeVar('PARAMETER_TYPE')
-
 
 class ConfigurableCameraMixin(abc.ABC):
     """A generalized interface for adjusting camera parameters like exposure, brightness or fps."""
     @dataclass(slots=True, kw_only=True)
     class ParameterInfo:
         name: str
-        min: Optional[PARAMETER_TYPE] = None
-        max: Optional[PARAMETER_TYPE] = None
-        step: Optional[PARAMETER_TYPE] = None
+        min: Optional[Any] = None
+        max: Optional[Any] = None
+        step: Optional[Any] = None
 
         def __post_init__(self):
             if any([self.min, self.max, self.step]) and not all([self.min, self.max, self.step]):
                 raise ValueError('min, max and step must be either all set or all None')
 
     @dataclass(slots=True, kw_only=True)
-    class Parameter(Generic[PARAMETER_TYPE]):
+    class Parameter:
         """A camera parameter which can be adjusted.
             Value ranges can either be a list of options or a min/max value with an optional step size.
         """
         info: ConfigurableCameraMixin.ParameterInfo
-        value: Optional[PARAMETER_TYPE] = None
+        value: Optional[Any] = None
         setter: Callable
         getter: Callable
 
@@ -167,9 +165,6 @@ class Camera(abc.ABC):
     fps: Optional[int]
     """current frames per second (read only)"""
 
-    # _resolution: Optional[ImageSize]
-    # """physical resolution of the camera which should be used; camera may go into error state with wrong values"""
-
     NEW_IMAGE: Event
     """a new image is available (argument: image)"""
 
@@ -207,10 +202,6 @@ class Camera(abc.ABC):
         if image is None:
             return f'{self.base_path}/placeholder'
         return self.get_image_url(image)
-
-    @property
-    def image_resolution(self) -> Optional[ImageSize]:
-        return self._resolution
 
     @property
     def is_connected(self) -> bool:
