@@ -1,5 +1,6 @@
 import io
 import logging
+import os
 import sys
 from typing import Any, Optional
 
@@ -53,9 +54,11 @@ class RtspCameraProvider(CameraProvider):
     @staticmethod
     async def run_arp_scan(interface) -> str:
         if sys.platform.startswith('darwin'):
-            arpscan_cmd = 'sudo arp-scan'
+            arpscan_cmd = 'arp-scan'
         else:
-            arpscan_cmd = 'sudo /usr/sbin/arp-scan'  # TODO is this necessary? sbin should be in path
+            arpscan_cmd = '/usr/sbin/arp-scan'  # TODO is this necessary? sbin should be in path
+        if os.getuid() != 0:
+            arpscan_cmd = f'sudo {arpscan_cmd}'
 
         cmd = f'{arpscan_cmd} -I {interface} --localnet'
         output = await rosys.run.sh(cmd, timeout=10)

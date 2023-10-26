@@ -1,6 +1,7 @@
 import asyncio
 import io
 import logging
+import os
 import shlex
 import subprocess
 import sys
@@ -59,10 +60,12 @@ async def find_ip_from_mac(mac: str) -> Optional[str]:
     """Find the IP address of a device with a given MAC address."""
     for interface in netifaces.interfaces():
         if sys.platform.startswith('darwin'):
-            arp_cmd = 'sudo arp-scan'
+            arpscan_cmd = 'arp-scan'
         else:
-            arp_cmd = 'sudo /usr/sbin/arp-scan'
-        cmd = f'{arp_cmd} -I {interface} --localnet'
+            arpscan_cmd = '/usr/sbin/arp-scan'  # TODO is this necessary? sbin should be in path
+        if os.getuid() != 0:
+            arpscan_cmd = f'sudo {arpscan_cmd}'
+        cmd = f'{arpscan_cmd} -I {interface} --localnet'
         output = await rosys.run.sh(cmd, timeout=10)
         if output is None:
             continue
