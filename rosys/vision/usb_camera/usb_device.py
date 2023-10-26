@@ -35,6 +35,8 @@ async def find_video_id(camera_uid: str) -> Optional[int]:
 
         return int(lines[1].strip().lstrip('/dev/video'))
 
+    return None
+
 
 class UsbDevice:
     video_id: int

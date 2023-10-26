@@ -58,7 +58,7 @@ class UsbCameraProvider(CameraProvider, persistence.PersistentModule):
                 await camera.disconnect()
 
     @staticmethod
-    async def scan_for_cameras() -> list[UsbCamera]:
+    async def scan_for_cameras() -> list[str]:
         uids = []
 
         output = await rosys.run.sh(['v4l2-ctl', '--list-devices'])

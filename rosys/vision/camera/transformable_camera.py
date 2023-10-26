@@ -15,7 +15,8 @@ class TransformableCameraMixin(abc.ABC):
 
     _resolution: Optional[ImageSize]
 
-    def __init__(self) -> None:
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
         self.crop = None
         self.rotation = ImageRotation.NONE
         self._resolution = None

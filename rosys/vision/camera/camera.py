@@ -28,7 +28,8 @@ class Camera(abc.ABC):
     NEW_IMAGE: Event
     """a new image is available (argument: image)"""
 
-    def __init__(self, id, name=None, connect_after_init=True, streaming=True) -> None:
+    def __init__(self, id: str, *, name: Optional[str] = None, connect_after_init: bool = True, streaming: bool = True) -> None:
+        super().__init__()
         self.id = id
         self.images = deque(maxlen=self.MAX_IMAGES)
         self.connect_after_init = connect_after_init

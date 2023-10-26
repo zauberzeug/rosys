@@ -12,7 +12,8 @@ class CalibratableCameraMixin(abc.ABC):
     calibration: Optional[Calibration]
     focal_length: Optional[float]
 
-    def __init__(self) -> None:
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
         self.calibration = None
         self.focal_length = None
 

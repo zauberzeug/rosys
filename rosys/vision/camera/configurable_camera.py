@@ -31,7 +31,8 @@ class ConfigurableCameraMixin(abc.ABC):
     """A generalized interface for adjusting camera parameters like exposure, brightness or fps."""
     _parameters: dict[str, Any]
 
-    def __init__(self) -> None:
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
         self._parameters = {}
 
     def _register_parameter(self, name: str, getter: Callable, setter: Callable, default_value: Any,
