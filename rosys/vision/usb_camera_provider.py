@@ -1,7 +1,7 @@
 import logging
 import re
 import shutil
-from typing import Any, Optional
+from typing import Optional
 
 from .. import persistence, rosys
 from .camera_provider import CameraProvider
@@ -10,14 +10,12 @@ from .usb_camera import UsbCamera
 SCAN_INTERVAL = 10
 
 
-class UsbCameraProvider(CameraProvider):
+class UsbCameraProvider(CameraProvider, persistence.PersistentModule):
     """This module collects and provides real USB cameras.
 
     Camera devices are discovered through video4linux (v4l) and accessed with openCV.
     Therefore the program v4l2ctl and openCV (including python bindings) must be available.
     """
-
-    USE_PERSISTENCE: bool = True
 
     def __init__(self) -> None:
         super().__init__()
@@ -29,10 +27,6 @@ class UsbCameraProvider(CameraProvider):
 
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, 1)
-
-        self.needs_backup: bool = False
-        if self.USE_PERSISTENCE:
-            persistence.register(self)
 
     def backup(self) -> dict:
         cameras = {}

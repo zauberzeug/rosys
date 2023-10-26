@@ -1,8 +1,7 @@
-import io
 import logging
 import os
 import sys
-from typing import Any, Optional
+from typing import Optional
 
 import netifaces
 import requests
@@ -16,9 +15,8 @@ from .rtsp_camera import RtspCamera
 SCAN_INTERVAL = 10
 
 
-class RtspCameraProvider(CameraProvider):
+class RtspCameraProvider(CameraProvider, persistence.PersistentModule):
     """This module collects and provides real RTSP streaming cameras."""
-    USE_PERSISTENCE: bool = True
 
     def __init__(self, *, frame_rate: int = 6, jovision_profile: int = 0) -> None:
         super().__init__()
@@ -33,10 +31,6 @@ class RtspCameraProvider(CameraProvider):
 
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, 10.)
-
-        self.needs_backup: bool = False
-        if self.USE_PERSISTENCE:
-            persistence.register(self)
 
     def backup(self) -> dict:
         cameras = {}
@@ -125,9 +119,6 @@ class RtspCameraProvider(CameraProvider):
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
             await camera.disconnect()
-
-    def invalidate(self) -> None:
-        self.needs_backup = True
 
     def get_image_snapshot(self, camera: RtspCamera) -> Optional[Image]:
         assert camera.url is not None
