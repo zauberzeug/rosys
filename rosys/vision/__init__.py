@@ -10,7 +10,5 @@ from .detector_simulation import DetectorSimulation, SimulatedObject
 from .image import Image, ImageSize
 from .multi_camera_provider import MultiCameraProvider
 from .rtsp_camera import RtspCamera, RtspCameraProvider
-from .simulated_camera import SimulatedCamera
-from .simulated_camera_provider import SimulatedCameraProvider, SimulatedDeviceScanner
-from .usb_camera import UsbCamera
-from .usb_camera_provider import UsbCameraProvider
+from .simulated_camera import SimulatedCamera, SimulatedCameraProvider
+from .usb_camera import UsbCamera, UsbCameraProvider

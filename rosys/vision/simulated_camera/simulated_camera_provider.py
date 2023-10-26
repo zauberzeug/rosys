@@ -64,12 +64,3 @@ class SimulatedCameraProvider(CameraProvider, persistence.PersistentModule):
     def create(uid: str, width: int = 800, height: int = 600, color: Optional[str] = None) -> SimulatedCamera:
         color = color or f'#{random.randint(0, 0xffffff):06x}'
         return SimulatedCamera(id=uid, resolution=ImageSize(width=width, height=height), color=color)
-
-    @staticmethod
-    def create_calibrated(uid: str, *,
-                          width: int = 800, height: int = 600, color: Optional[str] = None,
-                          x: float = 0.0, y: float = 0.0, z: float = 1.0,
-                          roll: float = np.pi, pitch: float = 0.0, yaw: float = 0.0) -> SimulatedCamera:
-        camera = SimulatedCameraProvider.create(uid, width, height, color)
-        camera.set_perfect_calibration(width=width, height=height, x=x, y=y, z=z, roll=roll, pitch=pitch, yaw=yaw)
-        return camera
