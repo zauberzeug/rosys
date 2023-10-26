@@ -29,7 +29,7 @@ class SimulatedCameraProvider(CameraProvider, persistence.PersistentModule):
     def backup(self) -> dict:
         cameras = {}
         for camera in self._cameras.values():
-            cameras[camera.id] = camera.__to_dict__()
+            cameras[camera.id] = camera.to_dict()
         return {}
 
     def restore(self, data: dict[str, dict]) -> None:

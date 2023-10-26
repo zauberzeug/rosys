@@ -45,7 +45,7 @@ class UsbCamera(ConfigurableCameraMixin, TransformableCameraMixin, Camera):
         self._register_parameter(name='height', setter=self.set_height, getter=self.get_height, default_value=height)
         self._register_parameter(name='fps', setter=self.set_fps, getter=self.get_fps, default_value=fps)
 
-    def __to_dict__(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         camera_dict = {
             'id': self.id,
             'name': self.name,

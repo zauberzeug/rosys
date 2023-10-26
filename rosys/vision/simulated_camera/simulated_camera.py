@@ -33,7 +33,7 @@ class SimulatedCamera(ConfigurableCameraMixin, Camera):
 
         self._register_parameter(name='color', setter=self.set_color, getter=self.get_color, default_value='#ffffff')
 
-    def __to_dict__(self) -> dict:
+    def to_dict(self) -> dict:
         return {
             'id': self.id,
             'width': self.resolution.width,
