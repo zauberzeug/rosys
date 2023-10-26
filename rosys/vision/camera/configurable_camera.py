@@ -1,6 +1,6 @@
 import abc
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, overload
 
 
 @dataclass(slots=True, kw_only=True)
@@ -9,10 +9,6 @@ class ParameterInfo:
     min: Optional[Any] = None
     max: Optional[Any] = None
     step: Optional[Any] = None
-
-    def __post_init__(self):
-        if any([self.min, self.max, self.step]) and not all([self.min, self.max, self.step]):
-            raise ValueError('min, max and step must be either all set or all None')
 
 
 @dataclass(slots=True, kw_only=True)
@@ -34,6 +30,15 @@ class ConfigurableCameraMixin(abc.ABC):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self._parameters = {}
+
+    @overload
+    def _register_parameter(self, name: str, getter: Callable, setter: Callable, default_value: Any) -> None:
+        ...
+
+    @overload
+    def _register_parameter(self, name: str, getter: Callable, setter: Callable, default_value: Any,
+                            min_value: Any, max_value: Any, step: Any) -> None:
+        ...
 
     def _register_parameter(self, name: str, getter: Callable, setter: Callable, default_value: Any,
                             min_value: Any = None, max_value: Any = None, step: Any = None) -> None:
