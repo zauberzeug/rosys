@@ -1,8 +1,6 @@
 import random
 from typing import Optional
 
-import numpy as np
-
 from rosys import persistence
 
 from ... import rosys
