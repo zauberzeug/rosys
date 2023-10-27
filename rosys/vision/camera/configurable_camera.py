@@ -78,23 +78,22 @@ class ConfigurableCamera(Camera):
             if not self.is_connected:
                 return None
             self._pending_operations += 1
-
-        value = await getter()
-
-        async with self.device_connection_lock:
-            self._pending_operations -= 1
-            self.device_connection_lock.notify_all()
-
-        return value
+        try:
+            value = await getter()
+            return value
+        finally:
+            async with self.device_connection_lock:
+                self._pending_operations -= 1
+                self.device_connection_lock.notify_all()
 
     async def _secure_parameter_setter(self, setter, value) -> None:
         async with self._device_connection():
             if not self.is_connected:
                 return None
             self._pending_operations += 1
-
-        await setter(value)
-
-        async with self._device_connection():
-            self._pending_operations -= 1
-            self.device_connection_lock.notify_all()
+        try:
+            await setter(value)
+        finally:
+            async with self._device_connection():
+                self._pending_operations -= 1
+                self.device_connection_lock.notify_all()
