@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import logging
 import re
 from typing import Optional
 
@@ -39,8 +42,6 @@ async def find_video_id(camera_uid: str) -> Optional[int]:
 
 
 class UsbDevice:
-    video_id: int
-    capture: cv2.VideoCapture
     exposure_min: int = 0
     exposure_max: int = 0
     exposure_default: int = 0
@@ -49,19 +50,21 @@ class UsbDevice:
     video_formats: set[str] = set()
 
     def __init__(self, video_id: int, capture: cv2.VideoCapture):
-        self.video_id = video_id
-        self.capture = capture
+        self.video_id: int = video_id
+        self.capture: cv2.VideoCapture = capture
         self.set_video_format()
 
     @staticmethod
-    async def from_uid(camera_id: str) -> Optional['UsbDevice']:
+    async def from_uid(camera_id: str) -> Optional[UsbDevice]:
         video_id = await find_video_id(camera_id)
         if video_id is None:
+            logging.error(f'Could not find video device for camera {camera_id}')
             return None
 
         capture = UsbDevice.create_capture(video_id)
 
         if capture is None:
+            logging.error(f'Could not open video device {video_id}')
             return None
 
         return UsbDevice(video_id=video_id, capture=capture)

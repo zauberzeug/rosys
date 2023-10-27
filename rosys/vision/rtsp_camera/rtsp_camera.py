@@ -108,9 +108,11 @@ class RtspCamera(ConfigurableCameraMixin, TransformableCameraMixin, Camera):
 
     @property
     def url(self) -> Optional[str]:
-        if self.is_connected:
-            return self.device.url
-        return None
+        if not self.is_connected:
+            return None
+        assert self.device is not None
+
+        return self.device.url
 
     async def connect(self) -> None:
         if self.is_connected:

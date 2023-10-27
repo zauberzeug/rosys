@@ -45,14 +45,13 @@ class SimulatedCameraProvider(CameraProvider, persistence.PersistentModule):
             if not camera.is_connected:
                 await camera.connect()
                 continue
+            assert camera.device is not None
+
             if self.simulate_device_failure:
                 # disconnect cameras randomly with probability rising with time
                 time_since_last_activation = rosys.time() - camera.device.creation_time
                 if random.random() < time_since_last_activation / 30.:
                     camera.device = None
-
-    def get_next_video_id(self) -> int:
-        return max([camera.device.video_id for camera in self._cameras.values() if camera.is_connected], default=0) + 1
 
     def add_cameras(self, num_cameras: int) -> None:
         for _ in range(num_cameras):
