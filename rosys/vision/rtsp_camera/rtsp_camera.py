@@ -12,19 +12,10 @@ from ... import rosys
 from ...geometry import Rectangle
 from ..camera import Camera, ConfigurableCameraMixin, TransformableCameraMixin
 from ..image import Image, ImageSize
-from ..image_processing import process_jpeg_image
+from ..image_processing import PeekableBytesIO, process_jpeg_image
 from ..image_rotation import ImageRotation
 from .rtsp_device import RtspDevice
 from .vendors import VendorType, mac_to_vendor
-
-
-class PeekableBytesIO(io.BytesIO):
-
-    def peek(self, n=-1):
-        position = self.tell()
-        data = self.read(n)
-        self.seek(position)
-        return data
 
 
 def process_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:

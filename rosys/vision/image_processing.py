@@ -9,6 +9,15 @@ from ..geometry import Rectangle
 from .image_rotation import ImageRotation
 
 
+class PeekableBytesIO(io.BytesIO):
+
+    def peek(self, n=-1):
+        position = self.tell()
+        data = self.read(n)
+        self.seek(position)
+        return data
+
+
 def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
     image = PIL.Image.open(io.BytesIO(data))
     if crop is not None:
