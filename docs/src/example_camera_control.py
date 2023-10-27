@@ -7,21 +7,23 @@ import rosys
 from rosys.vision import Camera, ConfigurableCameraMixin, RtspCamera
 
 
-def add_card(camera: Camera) -> None:
+def add_card(camera: Camera, container: ui.element) -> None:
     uid = camera.id
     if uid not in streams:
-        camera_card = ui.card().tight()
-        camera_cards[uid] = camera_card
-        print(f'adding card for {uid}')
-        with camera_grid:
-            with camera_card:
-                streams[uid] = ui.interactive_image()
-                ui.label(uid).classes('m-2')
-                with ui.row():
-                    ui.switch('stream').bind_value(camera, 'streaming')
-                    ui.button('capture', on_click=camera.capture_image)
-                if isinstance(camera, ConfigurableCameraMixin):
-                    create_camera_settings_panel(camera)
+        with container:
+            camera_card = ui.card().tight()
+            camera_cards[uid] = camera_card
+            print(f'adding card for {uid}')
+            with camera_grid:
+                with camera_card:
+                    streams[uid] = ui.interactive_image()
+                    ui.label(uid).classes('m-2')
+                    with ui.row():
+                        ui.switch('stream').bind_value(camera, 'streaming')
+                        ui.button('capture', on_click=camera.capture_image)
+                        ui.button('disconnect', on_click=camera.disconnect).bind_enabled_from(camera, 'is_connected')
+                    if isinstance(camera, ConfigurableCameraMixin):
+                        create_camera_settings_panel(camera)
 
     streams[uid].set_source(camera.get_latest_image_url())
 
@@ -69,7 +71,7 @@ def update_camera_cards():
 
     for provider in [rtsp_camera_provider, usb_camera_provider, simulated_camera_provider]:
         for camera in provider.cameras.values():
-            add_card(camera)
+            add_card(camera, camera_grid)
 
 
 logging.basicConfig(level=logging.INFO)
