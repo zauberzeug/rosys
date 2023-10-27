@@ -113,33 +113,45 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         return self.device.url
 
     async def connect(self) -> None:
-        if self.is_connected:
-            return
-        ip = await find_ip_from_mac(self.id)
-        if ip is None:
-            raise Exception(f'could not find IP address for {self.id}')
+        async with self._device_connection():
+            if self.is_connected:
+                return
 
-        device = RtspDevice(mac=self.id, ip=ip, jovision_profile=self.jovision_profile)
-        if device is None:
-            logging.warning(f'could not create device for {self.id}')
-            return
+            ip = await find_ip_from_mac(self.id)
+            if ip is None:
+                raise Exception(f'could not find IP address for {self.id}')
 
-        self.device = device
+            device = RtspDevice(mac=self.id, ip=ip, jovision_profile=self.jovision_profile)
+            if device is None:
+                logging.warning(f'could not create device for {self.id}')
+                return
+
+            self.device = device
+
         # await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
-        if not self.is_connected:
-            return
-        assert self.device is not None
-        self.device.shutdown()
-        self.device = None
+        async with self._device_connection():
+            if not self.is_connected:
+                return
+            logging.info(f'camera {self.id}: disconnect initialized...')
+            while self._pending_operations > 0:
+                logging.info(f'camera {self.id}: waiting for pending operations to finish...')
+                await self.device_connection_lock.wait()
+
+            assert self.device is not None
+            self.device.shutdown()
+            self.device = None
 
     async def capture_image(self) -> None:
-        if not self.is_connected:
-            return None
-        assert self.device is not None
+        async with self._device_connection():
+            if not self.is_connected:
+                return
 
-        image = self.device.capture()
+            assert self.device is not None
+
+            image = self.device.capture()
+
         if not image:
             return
         final_image_bytes = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
