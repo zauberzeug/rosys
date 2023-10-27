@@ -30,12 +30,10 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
         self.NEW_IMAGE = Event()
         """a new image is available (argument: image)"""
 
-        # self.base_path = f'images/{str(uuid4())}'
+        self._cameras: dict[str, T] = {}
 
     def request_backup(self) -> None:
         pass  # HACK: for the case that the camera provider derives from PersistentModule
-
-        self._cameras: dict[str, T] = {}
 
     def backup(self) -> dict:
         return {'cameras': persistence.to_dict(self._cameras)}
@@ -54,7 +52,7 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
         return sorted((i for c in self.cameras.values() for i in c.images), key=lambda i: i.time)
 
     def add_camera(self, camera: T) -> None:
-        self.cameras[camera.id] = camera
+        self._cameras[camera.id] = camera
         self.CAMERA_ADDED.emit(camera)
         camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
         self.request_backup()
@@ -67,18 +65,6 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
     def remove_all_cameras(self) -> None:
         for camera_id in list(self.cameras):
             self.remove_camera(camera_id)
-
-    def remove_calibration(self, camera_id: str) -> None:
-        self.cameras[camera_id].calibration = None
-        self.request_backup()
-
-    def remove_all_calibrations(self) -> None:
-        for camera_id in self.cameras:
-            self.remove_calibration(camera_id)
-
-    def add_image(self, camera: Camera, image: Image) -> None:
-        camera.images.append(image)
-        self.NEW_IMAGE.emit(image)
 
     def prune_images(self, max_age_seconds: Optional[float] = None):
         for camera in self.cameras.values():
