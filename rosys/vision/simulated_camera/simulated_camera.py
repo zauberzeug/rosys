@@ -67,7 +67,15 @@ class SimulatedCamera(ConfigurableCameraMixin, Camera):
         self._add_image(image)
 
     async def set_color(self, val: str) -> None:
+        if not self.is_connected:
+            return
+        assert self.device is not None
+
         self.device.color = val
 
-    async def get_color(self) -> str:
+    async def get_color(self) -> Optional[str]:
+        if not self.is_connected:
+            return None
+        assert self.device is not None
+
         return self.device.color
