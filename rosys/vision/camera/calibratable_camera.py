@@ -1,4 +1,3 @@
-import abc
 from typing import Optional, Self
 
 import numpy as np
@@ -6,9 +5,10 @@ import numpy as np
 from ...geometry import Rotation
 from ..calibration import Calibration, Extrinsics, Intrinsics
 from ..image import ImageSize
+from .camera import Camera
 
 
-class CalibratableCameraMixin(abc.ABC):
+class CalibratableCameraMixin(Camera):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -24,7 +24,7 @@ class CalibratableCameraMixin(abc.ABC):
                           width: int = 800, height: int = 600,
                           x: float = 0.0, y: float = 0.0, z: float = 1.0,
                           roll: float = np.pi, pitch: float = 0.0, yaw: float = 0.0,
-                          **kwargs) -> type[Self]:
+                          **kwargs) -> Self:
         camera = cls(**kwargs)
         camera.set_perfect_calibration(width=width, height=height, x=x, y=y, z=z, roll=roll, pitch=pitch, yaw=yaw)
         return camera

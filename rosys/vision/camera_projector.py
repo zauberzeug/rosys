@@ -6,7 +6,7 @@ import numpy as np
 
 from .. import rosys
 from .calibration import Calibration
-from .camera import Camera
+from .camera import CalibratableCameraMixin
 from .camera_provider import CameraProvider
 
 ProjectionCoordinates = list[list[Optional[list[float]]]]
@@ -49,7 +49,7 @@ class CameraProjector:
             )
 
     @staticmethod
-    def project(camera: Camera, rows: int = 12, columns: int = 16) -> ProjectionCoordinates:
+    def project(camera: CalibratableCameraMixin, rows: int = 12, columns: int = 16) -> ProjectionCoordinates:
         assert camera.calibration is not None
         c, r = np.meshgrid(np.linspace(0, camera.calibration.intrinsics.size.width, columns),
                            np.linspace(0, camera.calibration.intrinsics.size.height, rows))

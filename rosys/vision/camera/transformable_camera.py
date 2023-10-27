@@ -1,12 +1,12 @@
-import abc
 from typing import Optional
 
 from ...geometry import Rectangle
 from ..image import ImageSize
 from ..image_rotation import ImageRotation
+from .camera import Camera
 
 
-class TransformableCameraMixin(abc.ABC):
+class TransformableCameraMixin(Camera):
     crop: Optional[Rectangle]
     """region to crop on the original resolution before rotation"""
 
@@ -21,7 +21,7 @@ class TransformableCameraMixin(abc.ABC):
         self.rotation = ImageRotation.NONE
         self._resolution = None
 
-    def _resolution_after_transform(self, original_resolution: ImageSize) -> Optional[ImageSize]:
+    def _resolution_after_transform(self, original_resolution: ImageSize) -> ImageSize:
         width = int(self.crop.width) if self.crop else original_resolution.width
         height = int(self.crop.height) if self.crop else original_resolution.height
         if self.rotation in {ImageRotation.LEFT, ImageRotation.RIGHT}:

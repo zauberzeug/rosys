@@ -1,6 +1,7 @@
-import abc
 from dataclasses import dataclass
 from typing import Any, Callable, Optional, overload
+
+from .camera import Camera
 
 
 @dataclass(slots=True, kw_only=True)
@@ -23,7 +24,7 @@ class Parameter:
     getter: Callable
 
 
-class ConfigurableCameraMixin(abc.ABC):
+class ConfigurableCameraMixin(Camera):
     """A generalized interface for adjusting camera parameters like exposure, brightness or fps."""
     _parameters: dict[str, Any]
 
