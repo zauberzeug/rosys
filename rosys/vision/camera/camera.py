@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import abc
+import asyncio
 from collections import deque
-from typing import Optional
+from contextlib import asynccontextmanager
+from typing import AsyncGenerator, Optional
 from uuid import uuid4
 
 from ... import rosys
@@ -33,6 +35,7 @@ class Camera(abc.ABC):
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
+                 image_grab_inteval: float = 0.01,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.id = id
@@ -43,6 +46,8 @@ class Camera(abc.ABC):
         self.base_path = f'images/{str(uuid4())}'
         self.NEW_IMAGE = Event()
 
+        self.device_connection_lock = asyncio.Condition()
+
         create_image_route(self)
 
         if name is None:
@@ -52,13 +57,17 @@ class Camera(abc.ABC):
 
         if self.connect_after_init:
             # start a new task to activate the camera
-            rosys.on_startup(self.connect)
+            # if there is a running event loop
+            if asyncio.get_event_loop().is_running():
+                asyncio.create_task(self.connect())
+            else:
+                rosys.on_startup(self.connect)
 
         async def stream() -> None:
             if self.streaming and self.is_connected:
                 await self.capture_image()
 
-        rosys.on_repeat(stream, interval=.01)
+        rosys.on_repeat(stream, interval=image_grab_inteval)
 
     def get_image_url(self, image: Image) -> str:
         return f'{self.base_path}/{image.time}'
@@ -73,6 +82,14 @@ class Camera(abc.ABC):
     def is_connected(self) -> bool:
         """To be interpreted as "ready to capture images"."""
         return False
+
+    @asynccontextmanager
+    async def _device_connection(self) -> AsyncGenerator[None, None]:
+        await self.device_connection_lock.acquire()
+        try:
+            yield
+        finally:
+            self.device_connection_lock.release()
 
     async def connect(self) -> None:
         # NOTE: this method may be executed concurrently even after any check for is_connected

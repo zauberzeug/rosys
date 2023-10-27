@@ -19,18 +19,18 @@ class Parameter:
     Value ranges can either be a list of options or a min/max value with an optional step size.
     """
     info: ParameterInfo
-    value: Optional[Any] = None
+    value: Any
     setter: Callable
     getter: Callable
 
 
 class ConfigurableCameraMixin(Camera):
     """A generalized interface for adjusting camera parameters like exposure, brightness or fps."""
-    _parameters: dict[str, Any]
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self._parameters = {}
+        self._parameters: dict[str, Parameter] = {}
+        self._pending_operations: int = 0
 
     @overload
     def _register_parameter(self, name: str, getter: Callable, setter: Callable, default_value: Any) -> None:
@@ -51,14 +51,14 @@ class ConfigurableCameraMixin(Camera):
             if param not in self._parameters:
                 raise ValueError(f'Cannot set unknown parameter "{param}"')
             if new_values[param] is not None and new_values[param] != self._parameters[param].value:
-                await self._parameters[param].setter(new_values[param])
+                await self._secure_parameter_setter(self._parameters[param].setter, new_values[param])
 
     async def _apply_all_parameters(self) -> None:
         await self._apply_parameters({param: self._parameters[param].value for param in self._parameters})
 
     async def _update_parameter_values(self) -> None:
         for param in self._parameters.values():
-            val = await param.getter()
+            val = await self._secure_parameter_getter(param.getter)
             if val is not None:
                 param.value = val
 
@@ -72,3 +72,29 @@ class ConfigurableCameraMixin(Camera):
 
     def get_capabilities(self) -> list[ParameterInfo]:
         return [param.info for param in self._parameters.values()]
+
+    async def _secure_parameter_getter(self, getter) -> Any:
+        async with self._device_connection():
+            if not self.is_connected:
+                return None
+            self._pending_operations += 1
+
+        value = await getter()
+
+        async with self.device_connection_lock:
+            self._pending_operations -= 1
+            self.device_connection_lock.notify_all()
+
+        return value
+
+    async def _secure_parameter_setter(self, setter, value) -> None:
+        async with self._device_connection():
+            if not self.is_connected:
+                return None
+            self._pending_operations += 1
+
+        await setter(value)
+
+        async with self._device_connection():
+            self._pending_operations -= 1
+            self.device_connection_lock.notify_all()
