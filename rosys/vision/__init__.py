@@ -1,5 +1,5 @@
 from .calibration import Calibration, Extrinsics, Intrinsics
-from .camera import CalibratableCameraMixin, Camera, ConfigurableCameraMixin, TransformableCameraMixin
+from .camera import CalibratableCamera, Camera, ConfigurableCamera, TransformableCamera
 from .camera_objects_ import CameraObjects as camera_objects
 from .camera_projector import CameraProjector
 from .camera_provider import CameraProvider

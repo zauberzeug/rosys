@@ -5,7 +5,7 @@ from nicegui.elements.scene_objects import Cylinder, Group, Text, Texture
 
 from .. import run
 from .calibration import Calibration
-from .camera import CalibratableCameraMixin
+from .camera import CalibratableCamera
 from .camera_projector import CameraProjector
 from .camera_provider import CameraProvider
 
@@ -32,7 +32,7 @@ class CameraObjects(Group):
         ui.timer(1.0, self.update)
 
     @property
-    def calibrated_cameras(self) -> dict[str, CalibratableCameraMixin]:
+    def calibrated_cameras(self) -> dict[str, CalibratableCamera]:
         return {id: camera for id, camera in self.camera_provider.cameras.items() if camera.calibration}
 
     def find_objects(self, type_: str) -> dict[str, Object3D]:

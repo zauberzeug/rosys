@@ -5,15 +5,15 @@ import cv2
 
 import rosys
 
-from ..camera.configurable_camera import ConfigurableCameraMixin
-from ..camera.transformable_camera import TransformableCameraMixin
+from ..camera.configurable_camera import ConfigurableCamera
+from ..camera.transformable_camera import TransformableCamera
 from ..image import Image, ImageSize
 from ..image_processing import process_jpeg_image, process_ndarray_image, to_bytes
 from ..image_rotation import ImageRotation
 from .usb_device import UsbDevice
 
 
-class UsbCamera(ConfigurableCameraMixin, TransformableCameraMixin):
+class UsbCamera(ConfigurableCamera, TransformableCamera):
 
     def __init__(self,
                  *,

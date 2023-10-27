@@ -8,7 +8,7 @@ from ..image import ImageSize
 from .camera import Camera
 
 
-class CalibratableCameraMixin(Camera):
+class CalibratableCamera(Camera):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)

@@ -4,7 +4,7 @@ import logging
 from nicegui import ui
 
 import rosys
-from rosys.vision import Camera, ConfigurableCameraMixin, RtspCamera
+from rosys.vision import Camera, ConfigurableCamera, RtspCamera
 
 
 def add_card(camera: Camera, container: ui.element) -> None:
@@ -22,13 +22,13 @@ def add_card(camera: Camera, container: ui.element) -> None:
                         ui.switch('stream').bind_value(camera, 'streaming')
                         ui.button('capture', on_click=camera.capture_image)
                         ui.button('disconnect', on_click=camera.disconnect).bind_enabled_from(camera, 'is_connected')
-                    if isinstance(camera, ConfigurableCameraMixin):
+                    if isinstance(camera, ConfigurableCamera):
                         create_camera_settings_panel(camera)
 
     streams[uid].set_source(camera.get_latest_image_url())
 
 
-def create_camera_settings_panel(camera: ConfigurableCameraMixin) -> None:
+def create_camera_settings_panel(camera: ConfigurableCamera) -> None:
     camera_parameters = camera.get_capabilities()
     parameter_names = [parameter.name for parameter in camera_parameters]
     with ui.expansion('Einstellungen').classes('w-full').bind_enabled_from(camera, 'is_connected'):

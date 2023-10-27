@@ -6,7 +6,7 @@ from ..image_rotation import ImageRotation
 from .camera import Camera
 
 
-class TransformableCameraMixin(Camera):
+class TransformableCamera(Camera):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)

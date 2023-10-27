@@ -1,9 +1,9 @@
 import numpy as np
 
-from rosys.vision import CalibratableCameraMixin, Camera, CameraProjector
+from rosys.vision import CalibratableCamera, Camera, CameraProjector
 
 
-class CalibratedCamera(CalibratableCameraMixin, Camera):
+class CalibratedCamera(CalibratableCamera, Camera):
     pass
 
 

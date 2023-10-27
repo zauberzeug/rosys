@@ -10,8 +10,8 @@ import PIL
 
 from ... import rosys
 from ...geometry import Rectangle
-from ..camera.configurable_camera import ConfigurableCameraMixin
-from ..camera.transformable_camera import TransformableCameraMixin
+from ..camera.configurable_camera import ConfigurableCamera
+from ..camera.transformable_camera import TransformableCamera
 from ..image import Image, ImageSize
 from ..image_processing import PeekableBytesIO, process_jpeg_image
 from ..image_rotation import ImageRotation
@@ -51,7 +51,7 @@ async def find_ip_from_mac(mac: str) -> Optional[str]:
     return None
 
 
-class RtspCamera(ConfigurableCameraMixin, TransformableCameraMixin):
+class RtspCamera(ConfigurableCamera, TransformableCamera):
     def __init__(self,
                  *,
                  id: str,

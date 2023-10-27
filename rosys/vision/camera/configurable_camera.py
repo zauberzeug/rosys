@@ -24,7 +24,7 @@ class Parameter:
     getter: Callable
 
 
-class ConfigurableCameraMixin(Camera):
+class ConfigurableCamera(Camera):
     """A generalized interface for adjusting camera parameters like exposure, brightness or fps."""
 
     def __init__(self, **kwargs) -> None:

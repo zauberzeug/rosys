@@ -1,11 +1,11 @@
-from .calibratable_camera import CalibratableCameraMixin
+from .calibratable_camera import CalibratableCamera
 from .camera import Camera
-from .configurable_camera import ConfigurableCameraMixin
-from .transformable_camera import TransformableCameraMixin
+from .configurable_camera import ConfigurableCamera
+from .transformable_camera import TransformableCamera
 
 __all__ = [
-    'CalibratableCameraMixin',
+    'CalibratableCamera',
     'Camera',
-    'ConfigurableCameraMixin',
-    'TransformableCameraMixin',
+    'ConfigurableCamera',
+    'TransformableCamera',
 ]

@@ -2,10 +2,10 @@ import numpy as np
 
 from rosys.geometry import Point3d
 from rosys.test import approx
-from rosys.vision import CalibratableCameraMixin, Calibration, Camera
+from rosys.vision import CalibratableCamera, Calibration, Camera
 
 
-class CalibratedCamera(CalibratableCameraMixin, Camera):
+class CalibratedCamera(CalibratableCamera, Camera):
     pass
 
 
