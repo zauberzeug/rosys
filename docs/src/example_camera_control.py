@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+import logging
+
 from nicegui import ui
 
 import rosys
@@ -7,9 +9,10 @@ from rosys.vision import Camera, ConfigurableCameraMixin, RtspCamera
 
 def add_card(camera: Camera) -> None:
     uid = camera.id
-    camera_card = ui.card().tight()
-    camera_cards[uid] = camera_card
     if uid not in streams:
+        camera_card = ui.card().tight()
+        camera_cards[uid] = camera_card
+        print(f'adding card for {uid}')
         with camera_grid:
             with camera_card:
                 streams[uid] = ui.interactive_image()
@@ -69,6 +72,7 @@ def update_camera_cards():
             add_card(camera)
 
 
+logging.basicConfig(level=logging.INFO)
 streams: dict[str, ui.interactive_image] = {}
 camera_cards: dict[str, ui.card] = {}
 camera_grid = ui.row()
