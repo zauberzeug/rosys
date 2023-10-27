@@ -115,20 +115,16 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         async with self._device_connection():
             if not self.is_connected:
                 return None
-            self._pending_operations += 1
 
-        assert self.device is not None
+            assert self.device is not None
 
-        _, captured_image = self.device.capture.read()
-
-        async with self._device_connection():
-            self._pending_operations -= 1
-            self.device_connection_lock.notify_all()
+            _, captured_image = self.device.capture.read()
+            image_is_MJPG = 'MJPG' in self.device.video_formats
 
         if captured_image is None:
             return
 
-        if 'MJPG' in self.device.video_formats:
+        if image_is_MJPG:
             bytes_ = await rosys.run.io_bound(to_bytes, captured_image)
             if self.crop or self.rotation != ImageRotation.NONE:
                 bytes_ = await rosys.run.cpu_bound(process_jpeg_image, bytes_, self.rotation, self.crop)
