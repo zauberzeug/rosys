@@ -7,19 +7,15 @@ from .camera import Camera
 
 
 class TransformableCameraMixin(Camera):
-    crop: Optional[Rectangle]
-    """region to crop on the original resolution before rotation"""
-
-    rotation: ImageRotation
-    """rotation which should be applied after grabbing and cropping"""
-
-    _resolution: Optional[ImageSize]
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.crop = None
-        self.rotation = ImageRotation.NONE
-        self._resolution = None
+        self.crop: Optional[Rectangle] = None
+        """region to crop on the original resolution before rotation"""
+        self.rotation: ImageRotation = ImageRotation.NONE
+        """rotation which should be applied after grabbing and cropping"""
+
+        self._resolution: Optional[ImageSize] = None
 
     def _resolution_after_transform(self, original_resolution: ImageSize) -> ImageSize:
         width = int(self.crop.width) if self.crop else original_resolution.width

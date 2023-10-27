@@ -16,19 +16,6 @@ from ..image_route import create_image_route
 class Camera(abc.ABC):
     MAX_IMAGES = 256
 
-    images: deque[Image]
-    name: Optional[str]
-    base_path: str
-
-    connect_after_init: bool
-    streaming: bool
-
-    fps: Optional[int]
-    """current frames per second (read only)"""
-
-    NEW_IMAGE: Event
-    """a new image is available (argument: image)"""
-
     def __init__(self,
                  *,
                  id: str,
@@ -38,15 +25,14 @@ class Camera(abc.ABC):
                  image_grab_inteval: float = 0.01,
                  **kwargs) -> None:
         super().__init__(**kwargs)
-        self.id = id
-        self.images = deque(maxlen=self.MAX_IMAGES)
-        self.connect_after_init = connect_after_init
-        self.streaming = streaming
-        self.fps = None
-        self.base_path = f'images/{str(uuid4())}'
-        self.NEW_IMAGE = Event()
+        self.id: str = id
+        self.images: deque = deque(maxlen=self.MAX_IMAGES)
+        self.connect_after_init: bool = connect_after_init
+        self.streaming: bool = streaming
+        self.base_path: str = f'images/{str(uuid4())}'
+        self.NEW_IMAGE: Event = Event()
 
-        self.device_connection_lock = asyncio.Condition()
+        self.device_connection_lock: asyncio.Condition = asyncio.Condition()
 
         create_image_route(self)
 

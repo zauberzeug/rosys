@@ -52,12 +52,6 @@ async def find_ip_from_mac(mac: str) -> Optional[str]:
 
 
 class RtspCamera(ConfigurableCameraMixin, TransformableCameraMixin):
-    device: Optional[RtspDevice]
-    jovision_profile: int
-
-    detect: bool
-    authorized: bool
-
     def __init__(self,
                  *,
                  id: str,
@@ -74,9 +68,8 @@ class RtspCamera(ConfigurableCameraMixin, TransformableCameraMixin):
                          streaming=streaming,
                          **kwargs)
 
-        self.device = None
-        self.jovision_profile = jovision_profile
-        self.authorized = True
+        self.device: Optional[RtspDevice] = None
+        self.jovision_profile: int = jovision_profile
 
         self._register_parameter(name='fps', getter=self.get_fps, setter=self.set_fps,
                                  min_value=1, max_value=30, step=1, default_value=goal_fps)
@@ -106,6 +99,10 @@ class RtspCamera(ConfigurableCameraMixin, TransformableCameraMixin):
     @property
     def is_connected(self) -> bool:
         return self.device is not None and self.device.capture_task is not None
+
+    @property
+    def authorized(self) -> bool:
+        raise NotImplementedError
 
     @property
     def url(self) -> Optional[str]:

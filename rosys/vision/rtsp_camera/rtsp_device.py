@@ -14,31 +14,29 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 
 
 class RtspDevice:
-    _image_buffer: Optional[bytes] = None
-    capture_task: Optional[asyncio.Task] = None
-    capture_process: Optional[subprocess.Popen] = None
-    rotation: Optional[ImageRotation] = None
-    crop: Optional[Rectangle] = None
-    _authorized: bool = True
-    resolution: Optional[ImageSize] = None
-    settings_interface = Optional[JovisionInterface]
 
     def __init__(self, mac: str, ip: str, jovision_profile: int) -> None:
         self.mac = mac
 
+        self.capture_task: Optional[asyncio.Task] = None
+        self.capture_process: Optional[subprocess.Popen] = None
+        self._image_buffer: Optional[bytes] = None
+        self._authorized: bool = True
+
         vendor_type = mac_to_vendor(mac)
+
+        self.settings_interface: Optional[JovisionInterface] = None
         if vendor_type == VendorType.JOVISION:
             self.settings_interface = JovisionInterface(ip)
             self.fps = self.settings_interface.get_fps(stream_id=jovision_profile)
         else:
-            logging.info(f'no settings interface for vendor type {vendor_type}')
-            logging.info(f'using default fps of 10')
+            logging.warn(f'no settings interface for vendor type {vendor_type}')
+            logging.warn(f'using default fps of 10')
             self.fps = 10
 
         self.url = mac_to_url(mac, ip, jovision_profile)
         if self.url is None:
             raise Exception(f'could not determine RTSP URL for {mac}')
-        print(f'connecting to {self.url}', flush=True)
         logging.info(f'Starting VideoStream for {self.url}')
         self.capture_task = background_tasks.create(self.start_gsreamer_task(self.url), name=f'capture {self.mac}')
 

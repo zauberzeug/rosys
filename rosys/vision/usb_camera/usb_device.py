@@ -42,16 +42,17 @@ async def find_video_id(camera_uid: str) -> Optional[int]:
 
 
 class UsbDevice:
-    exposure_min: int = 0
-    exposure_max: int = 0
-    exposure_default: int = 0
-    has_manual_exposure: bool = False
-    last_state: dict = dict()
-    video_formats: set[str] = set()
 
     def __init__(self, video_id: int, capture: cv2.VideoCapture):
         self.video_id: int = video_id
         self.capture: cv2.VideoCapture = capture
+
+        self.exposure_min: int = 0
+        self.exposure_max: int = 0
+        self.exposure_default: int = 0
+        self.has_manual_exposure: bool = False
+        self.video_formats: set[str] = set()
+
         self.set_video_format()
 
     @staticmethod
