@@ -10,7 +10,8 @@ import PIL
 
 from ... import rosys
 from ...geometry import Rectangle
-from ..camera import Camera, ConfigurableCameraMixin, TransformableCameraMixin
+from ..camera.configurable_camera import ConfigurableCameraMixin
+from ..camera.transformable_camera import TransformableCameraMixin
 from ..image import Image, ImageSize
 from ..image_processing import PeekableBytesIO, process_jpeg_image
 from ..image_rotation import ImageRotation
@@ -50,7 +51,7 @@ async def find_ip_from_mac(mac: str) -> Optional[str]:
     return None
 
 
-class RtspCamera(ConfigurableCameraMixin, TransformableCameraMixin, Camera):
+class RtspCamera(ConfigurableCameraMixin, TransformableCameraMixin):
     device: Optional[RtspDevice]
     jovision_profile: int
 

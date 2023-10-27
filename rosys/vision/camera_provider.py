@@ -3,7 +3,7 @@ from typing import Generic, Optional, TypeVar
 
 from .. import persistence, rosys
 from ..event import Event
-from .camera import Camera
+from .camera.camera import Camera
 from .image import Image
 
 T = TypeVar('T', bound=Camera)

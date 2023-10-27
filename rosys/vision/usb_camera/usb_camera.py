@@ -5,7 +5,8 @@ import cv2
 
 import rosys
 
-from ..camera import ConfigurableCameraMixin, TransformableCameraMixin
+from ..camera.configurable_camera import ConfigurableCameraMixin
+from ..camera.transformable_camera import TransformableCameraMixin
 from ..image import Image, ImageSize
 from ..image_processing import process_jpeg_image, process_ndarray_image, to_bytes
 from ..image_rotation import ImageRotation

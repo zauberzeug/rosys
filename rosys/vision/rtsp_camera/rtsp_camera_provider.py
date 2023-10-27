@@ -10,7 +10,7 @@ from requests.auth import HTTPDigestAuth
 from ... import persistence, rosys
 from ..camera_provider import CameraProvider
 from ..image import Image, ImageSize
-from . import RtspCamera
+from .rtsp_camera import RtspCamera
 
 SCAN_INTERVAL = 10
 
@@ -102,10 +102,8 @@ class RtspCameraProvider(CameraProvider, persistence.PersistentModule):
             if not camera.is_connected:
                 self.log.info(f'activating authorized camera {camera.id}...')
                 await camera.connect()
-                print(f'activated camera {camera.id}', flush=True)
 
         for mac in newly_disconnected_cameras:
-            print(f'disconnecting camera {mac} since it cannot be found anymore', flush=True)
             await self._cameras[mac].disconnect()
 
     async def shutdown(self) -> None:

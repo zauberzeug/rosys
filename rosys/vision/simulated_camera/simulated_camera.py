@@ -3,12 +3,12 @@ from typing import Optional
 
 import rosys
 
-from ..camera import Camera, ConfigurableCameraMixin
+from ..camera.configurable_camera import ConfigurableCameraMixin
 from ..image import Image, ImageSize
 from .simulated_device import SimulatedDevice
 
 
-class SimulatedCamera(ConfigurableCameraMixin, Camera):
+class SimulatedCamera(ConfigurableCameraMixin):
 
     def __init__(self,
                  *,
