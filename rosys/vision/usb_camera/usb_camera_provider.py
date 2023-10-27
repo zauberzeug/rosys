@@ -42,21 +42,6 @@ class UsbCameraProvider(CameraProvider, persistence.PersistentModule):
         for camera in self._cameras.values():
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
-    async def capture_images(self) -> None:
-        for uid, camera in self._cameras.items():
-            try:
-                if not camera.is_connected:
-                    continue
-
-                image = await camera.capture_image()
-                if image is None:
-                    raise Exception(f'could not capture image from {uid}')
-
-                self.add_image(camera, image)
-            except Exception:
-                self.log.exception(f'could not capture image from {uid}')
-                await camera.disconnect()
-
     @staticmethod
     async def scan_for_cameras() -> list[str]:
         uids = []
@@ -81,6 +66,8 @@ class UsbCameraProvider(CameraProvider, persistence.PersistentModule):
         for uid in camera_uids:
             if not uid in self._cameras:
                 self.add_camera(UsbCamera(id=uid))
+            elif not self._cameras[uid].is_connected:
+                await self._cameras[uid].connect()
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
