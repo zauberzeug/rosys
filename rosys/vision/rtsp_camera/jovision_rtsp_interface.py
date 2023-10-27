@@ -172,16 +172,3 @@ class JovisionInterface:
             min_ngop = stream['minNGOP']
             b_support_h265 = stream['bSupportH265']
             b_support_smart_enc = stream['bSupportSmartEnc']
-
-
-if __name__ == '__main__':
-    ip = '192.168.1.242'
-    rtsp_interface = JovisionInterface(ip)
-    settings = rtsp_interface.get_current_settings()
-    print(settings)
-
-    rtsp_interface.get_parameter_ranges()
-
-    rtsp_interface.set_fps(0, 20)
-    settings = rtsp_interface.get_current_settings()
-    print(settings)
