@@ -96,7 +96,7 @@ class CameraObjects(Group):
                 continue
             coordinates = [[point and [point[0], point[1], 0] for point in row] for row in projection.coordinates]
 
-            url = f'{self.camera_provider.get_image_url(image)}?shrink={self.image_shrink_factor}'
+            url = f'{camera.get_image_url(image)}?shrink={self.image_shrink_factor}'
             if image.camera_id not in self.textures:
                 with self:
                     self.textures[image.camera_id] = Texture(url, coordinates).with_name(f'image_{image.id}')
