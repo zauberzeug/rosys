@@ -14,7 +14,6 @@ MJPG = cv2.VideoWriter_fourcc(*'MJPG')
 
 async def find_video_id(camera_uid: str) -> Optional[int]:
     device_nodes = device_nodes_from_uid(camera_uid)
-    print(device_nodes)
     possible_video_ids = []
     for node in device_nodes:
         if node.startswith('/dev/video'):
@@ -43,7 +42,6 @@ class UsbDevice:
     @staticmethod
     async def from_uid(camera_id: str) -> Optional[UsbDevice]:
         video_id = await find_video_id(camera_id)
-        print(video_id)
         if video_id is None:
             logging.error(f'Could not find video device for camera {camera_id}')
             return None

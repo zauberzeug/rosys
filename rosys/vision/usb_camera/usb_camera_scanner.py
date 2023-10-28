@@ -45,8 +45,6 @@ def device_nodes_from_uid(uid: str) -> set[str]:
         dev_uid = uid_from_device(device)
 
         if dev_uid == uid:
-            print(device.device_node)
             if device.device_node is not None:
                 node_paths.add(device.device_node)
-    print(node_paths)
     return node_paths
