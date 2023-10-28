@@ -71,7 +71,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
     @property
     def is_connected(self) -> bool:
-        return self.device is not None and self.device.capture.isOpened()
+        return self.device is not None
 
     async def connect(self) -> None:
         logging.info(f'Connecting camera {self.id}...')
@@ -118,8 +118,12 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
             assert self.device is not None
 
-            _, captured_image = self.device.capture.read()
+            capture_success, captured_image = self.device.capture.read()
             image_is_MJPG = 'MJPG' in self.device.video_formats
+
+        if not capture_success:
+            await self.disconnect()
+            return
 
         if captured_image is None:
             return
