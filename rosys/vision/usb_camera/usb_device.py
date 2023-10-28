@@ -7,38 +7,23 @@ from typing import Optional
 import cv2
 
 from ... import rosys
+from .usb_camera_scanner import device_nodes_from_uid
 
 MJPG = cv2.VideoWriter_fourcc(*'MJPG')
 
 
-async def get_video_devices_info() -> list[str]:
-    output = await rosys.run.sh(['v4l2-ctl', '--list-devices'])
-    if output is None:
-        return None
-    output = '\n'.join([s for s in output.split('\n') if not s.startswith('Cannot open device')])
-    return output.split('\n\n')
-
-
 async def find_video_id(camera_uid: str) -> Optional[int]:
-    device_infos = await get_video_devices_info()
-    if device_infos is None:
+    device_nodes = device_nodes_from_uid(camera_uid)
+    print(device_nodes)
+    possible_video_ids = []
+    for node in device_nodes:
+        if node.startswith('/dev/video'):
+            possible_video_ids.append(int(node.strip().lstrip('/dev/video')))
+
+    if len(possible_video_ids) == 0:
         return None
-
-    for infos in device_infos:
-        match = re.search(r'\((.*)\)', infos)
-        if match is None:
-            continue
-        uid = match.group(1)
-        if not uid == camera_uid:
-            continue
-
-        lines = infos.splitlines()
-        if 'dev/video' not in lines[1]:
-            continue
-
-        return int(lines[1].strip().lstrip('/dev/video'))
-
-    return None
+    else:
+        return min(possible_video_ids)
 
 
 class UsbDevice:
@@ -58,6 +43,7 @@ class UsbDevice:
     @staticmethod
     async def from_uid(camera_id: str) -> Optional[UsbDevice]:
         video_id = await find_video_id(camera_id)
+        print(video_id)
         if video_id is None:
             logging.error(f'Could not find video device for camera {camera_id}')
             return None

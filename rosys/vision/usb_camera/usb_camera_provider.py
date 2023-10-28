@@ -6,6 +6,7 @@ from typing import Optional
 from ... import persistence, rosys
 from ..camera_provider import CameraProvider
 from .usb_camera import UsbCamera
+from .usb_camera_scanner import scan_for_connected_devices
 
 SCAN_INTERVAL = 10
 
@@ -44,19 +45,9 @@ class UsbCameraProvider(CameraProvider, persistence.PersistentModule):
 
     @staticmethod
     async def scan_for_cameras() -> list[str]:
-        uids = []
+        uids = scan_for_connected_devices()
 
-        output = await rosys.run.sh(['v4l2-ctl', '--list-devices'])
-        if output is None:
-            raise Exception('Could not scan for USB cameras. Is video4linux (lib4vl) installed?')
-        output = '\n'.join([s for s in output.split('\n') if not s.startswith('Cannot open device')])
-        for infos in output.split('\n\n'):
-            match = re.search(r'\((.*)\)', infos)
-            if match is None:
-                continue
-            uids.append(match.group(1))
-
-        return uids
+        return list(uids)
 
     async def update_device_list(self) -> None:
         if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
