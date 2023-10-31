@@ -1,4 +1,14 @@
+__pycache__/
+*.egg-info/
+.cache/
+.pio/
+detector/
+*.env
+*.swp
+site/
+.nicegui/
 .pytest_cache/
 .vscode/
 .github/
 tests/
+.git/
