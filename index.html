@@ -16,7 +16,7 @@
       
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.5">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.7">
     
     
       
@@ -24,7 +24,7 @@
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.6a10b989.min.css">
+      <link rel="stylesheet" href="assets/stylesheets/main.4b4a2bd9.min.css">
       
       
 
@@ -1117,7 +1117,17 @@ It is based on the above-described simulation mode and accelerates the robot's t
 They can hold their own state, register lifecycle hooks, run methods repeatedly and subscribe to or raise <a href="#events">events</a>.
 Modules can depend on other modules which is mostly implemented by passing them into the constructor.</p>
 <h3 id="lifecycle-hooks-and-loops">Lifecycle Hooks and Loops<a class="headerlink" href="#lifecycle-hooks-and-loops" title="Permanent link">&para;</a></h3>
-<p>Modules can register functions for being called <code>on_startup</code> or <code>on_shutdown</code> as well as repeatedly with a given interval with <code>on_repeat</code>.</p>
+<p>Modules can register functions via <code>rosys.on_startup</code> or <code>rosys.on_shutdown</code> as well as repeatedly with a given interval with <code>rosys.on_repeat</code>.</p>
+<!-- prettier-ignore-start -->
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note that NiceGUI's <code>app</code> object also provides methods <code>app.on_startup</code> and <code>app.on_shutdown</code>, but it is recommended to use RoSys' counterparts:
+<code>rosys.on_startup</code> ensures the callback is executed <em>after</em> persistent modules have been loaded from storage.
+If you, e.g., set the <code>rosys.config.simulation_speed</code> programmatically via <code>app.on_startup()</code> instead of <code>rosys.on_startup</code>,
+the change is overwritten by RoSys' <code>persistence.restore()</code>.</p>
+</div>
+<!-- prettier-ignore-end -->
+
 <h3 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h3>
 <p>Modules can provide events to allow connecting otherwise separated modules of the system.
 For example, one module might read sensor data and raise an event <code>NEW_SENSOR_DATA</code>, without knowing of any consumers.

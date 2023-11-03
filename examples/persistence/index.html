@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.5">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.7">
     
     
       
@@ -26,7 +26,7 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.6a10b989.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.4b4a2bd9.min.css">
       
       
 
@@ -772,22 +772,21 @@
 
 
 <h1 id="persistence">Persistence<a class="headerlink" href="#persistence" title="Permanent link">&para;</a></h1>
-<p>RoSys' persistence module provides an easy interface to backup and restore parts of the object state.
+<p>RoSys' <code>PersistentModule</code> provides an easy interface to backup and restore parts of the object state.
 The following example demonstrates a <code>Model</code> class that has <code>value</code>, which is manipulated with a <code>ui.slider</code>.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
 
 <span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
+
 <span class="kn">from</span> <span class="nn">rosys</span> <span class="kn">import</span> <span class="n">persistence</span>
 
 
-<span class="k">class</span> <span class="nc">Model</span><span class="p">:</span>
+<span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">persistence</span><span class="o">.</span><span class="n">PersistentModule</span><span class="p">):</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
-
-        <span class="n">persistence</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">needs_backup</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="k">def</span> <span class="nf">restore</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;value&#39;</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
@@ -803,12 +802,12 @@ The following example demonstrates a <code>Model</code> class that has <code>val
 
 <span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
 </code></pre></div>
-<p>By registering itself with the <code>persistence</code> module and implementing <code>backup</code>, <code>restore</code> and <code>needs_backup</code>, RoSys will automatically write the value to a file in the directory ~/.rosys/.
-The filename contains the name of the module from where the <code>register</code> call was made.
+<p>By deriving from <code>PersistentModule</code> and implementing <code>backup</code> and <code>restore</code>, RoSys will automatically write the value to a file in the directory ~/.rosys/.
+The filename contains the name of the module.
 After restarting the script, the value will be restored to its last state.</p>
-<p>The <code>needs_backup</code> flag can be set to <code>True</code> to enforce a backup within RoSys' next backup cycle, which happens every 10 seconds.
-During shutdown, all backups are performed, independent of the <code>needs_backup</code> flag.</p>
-<p>The <code>backup</code> function can return any dictionary that represents the current state.
+<p>The <code>request_backup</code> method can be called to enforce a backup within RoSys' next backup cycle, which happens every 10 seconds.
+During shutdown, all backups are performed, independent of whether <code>request_backup</code> has been called.</p>
+<p>The <code>backup</code> function can return any JSON-serializable dictionary that represents the current state.
 It should match the <code>restore</code> function so that it can translate it back to object state.</p>
 <p>You should choose wisely which values to persist.
 Try to avoid consuming unnecessary CPU and IO bandwidth for volatile things like wheel odometry or other sensor readings.</p>
@@ -818,6 +817,7 @@ Try to avoid consuming unnecessary CPU and IO bandwidth for volatile things like
 <li><code>from_dict</code>: converts a dictionary into a dataclass of given type</li>
 <li><code>replace_dict</code>: replaces the content of a dictionary using <code>from_dict</code> for each item</li>
 <li><code>replace_list</code>: replaces the content of a list using <code>from_dict</code> for each item</li>
+<li><code>replace_set</code>: replaces the content of a set using <code>from_dict</code> for each item</li>
 <li><code>replace_dataclass</code>: replaces the attributes of a dataclass with the values of a dictionary</li>
 </ul>
 

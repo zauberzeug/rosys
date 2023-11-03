@@ -2,16 +2,15 @@
 from typing import Any
 
 from nicegui import ui
+
 from rosys import persistence
 
 
-class Model:
+class Model(persistence.PersistentModule):
 
     def __init__(self) -> None:
+        super().__init__()
         self.value: float = 1.0
-
-        persistence.register(self)
-        self.needs_backup = False
 
     def restore(self, data: dict[str, Any]) -> None:
         self.value = data.get('value', 1.0)
