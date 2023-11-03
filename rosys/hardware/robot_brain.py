@@ -151,8 +151,10 @@ class RobotBrain:
             from esp import Esp  # pylint: disable=import-error,import-outside-toplevel
             params = self.lizard_firmware.flash_params
             devices = [param for param in params if param.startswith('/dev/')]
-            esp = Esp(nand='nand' in params, xavier='xavier' in params,
-                      orin='orin' in params, device=devices[0] if devices else None)
+            esp = Esp(nand='nand' in params,
+                      xavier='xavier' in params,
+                      orin='orin' in params,
+                      ce=devices[0] if devices else None)
             with esp.pin_config():
                 esp.activate()
         except Exception:
