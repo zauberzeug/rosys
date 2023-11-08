@@ -3,11 +3,10 @@ import logging
 
 from nicegui import ui
 
-import rosys
-from rosys.vision import Camera, ConfigurableCamera, RtspCamera
+import rosys.vision
 
 
-def add_card(camera: Camera, container: ui.element) -> None:
+def add_card(camera: rosys.vision.Camera, container: ui.element) -> None:
     uid = camera.id
     if uid not in streams:
         with container:
@@ -22,54 +21,51 @@ def add_card(camera: Camera, container: ui.element) -> None:
                         ui.switch('stream').bind_value(camera, 'streaming')
                         ui.button('capture', on_click=camera.capture_image)
                         ui.button('disconnect', on_click=camera.disconnect).bind_enabled_from(camera, 'is_connected')
-                    if isinstance(camera, ConfigurableCamera):
+                    if isinstance(camera, rosys.vision.ConfigurableCamera):
                         create_camera_settings_panel(camera)
 
     streams[uid].set_source(camera.get_latest_image_url())
 
 
-def create_camera_settings_panel(camera: ConfigurableCamera) -> None:
+def create_camera_settings_panel(camera: rosys.vision.ConfigurableCamera) -> None:
     camera_parameters = camera.get_capabilities()
     parameter_names = [parameter.name for parameter in camera_parameters]
-    with ui.expansion('Einstellungen').classes('w-full').bind_enabled_from(camera, 'is_connected'):
-        if isinstance(camera, RtspCamera):
-            ui.label('URL').classes('text-s').bind_text_from(camera,
-                                                             'url', backward=lambda x: x or 'url nicht verfügbar')
+    with ui.expansion('Settings').classes('w-full').bind_enabled_from(camera, 'is_connected'):
+        if isinstance(camera, rosys.vision.RtspCamera):
+            ui.label('URL') \
+                .bind_text_from(camera, 'url', backward=lambda x: x or 'URL not available')
         if 'fps' in parameter_names:
-            with ui.card().classes():
-                with ui.row():
-                    ui.label("FPS: ").classes('text-s')
-                    ui.select(options=list(range(1, 31)), on_change=lambda event: camera.set_parameters({'fps': event.value})).classes(
-                        'text-s').bind_value_from(camera, 'parameters', backward=lambda params: params['fps'])
+            with ui.card(), ui.row():
+                ui.label('FPS:')
+                ui.select(options=list(range(1, 31)), on_change=lambda e: camera.set_parameters({'fps': e.value})) \
+                    .bind_value_from(camera, 'parameters', backward=lambda params: params['fps'])
         if 'jovision_profile' in parameter_names:
-            with ui.card().classes():
-                with ui.row():
-                    ui.switch('High Quality', on_change=lambda event: camera.set_parameters(
-                        {'jovision_profile': 0 if event.value else 1})).classes('text-s')
+            with ui.card():
+                ui.switch('High Quality',
+                          on_change=lambda e: camera.set_parameters({'jovision_profile': 0 if e.value else 1}))
         if 'exposure' in parameter_names:
-            with ui.card().classes():
-                with ui.row():
-                    ui.label("Exposure: ").classes('text-s')
-                    ui.select(options=list(range(0, 255)), on_change=lambda event: camera.set_parameters({'exposure': event.value})).classes(
-                        'text-s').bind_value_from(camera, 'parameters', backward=lambda params: params['exposure'])
-
+            with ui.card(), ui.row():
+                ui.label('Exposure:')
+                ui.select(options=list(range(0, 255)), on_change=lambda e: camera.set_parameters({'exposure': e.value})) \
+                    .bind_value_from(camera, 'parameters', backward=lambda params: params['exposure'])
         if 'auto_exposure' in parameter_names:
-            with ui.card().classes():
-                with ui.row():
-                    ui.switch('Auto Exposure', on_change=lambda event: camera.set_parameters(
-                        {'auto_exposure': event.value})).bind_value_from(camera, 'parameters', backward=lambda params: params['auto_exposure']).classes('text-s')
+            with ui.card():
+                ui.switch('Auto Exposure', on_change=lambda e: camera.set_parameters({'auto_exposure': e.value})) \
+                    .bind_value_from(camera, 'parameters', backward=lambda params: params['auto_exposure'])
         if 'color' in parameter_names:
-            with ui.card().classes():
-                with ui.row():
-                    ui.label("Color: ").classes('text-s')
-                    with ui.button(icon='colorize'):
-                        ui.color_picker(on_pick=lambda event: camera.set_parameters(
-                            {'color': event.color})).classes('text-s')
+            with ui.card(), ui.row():
+                ui.label('Color:')
+                with ui.button(icon='colorize'):
+                    ui.color_picker(on_pick=lambda e: camera.set_parameters({'color': e.color}))
 
 
-def update_camera_cards():
-
-    for provider in [rtsp_camera_provider, usb_camera_provider, simulated_camera_provider]:
+def update_camera_cards() -> None:
+    providers: list[rosys.vision.CameraProvider] = [
+        rtsp_camera_provider,
+        usb_camera_provider,
+        simulated_camera_provider,
+    ]
+    for provider in providers:
         for camera in provider.cameras.values():
             add_card(camera, camera_grid)
 
@@ -83,7 +79,7 @@ rtsp_camera_provider = rosys.vision.RtspCameraProvider()
 usb_camera_provider = rosys.vision.UsbCameraProvider()
 simulated_camera_provider = rosys.vision.SimulatedCameraProvider()
 
-ui.timer(.01, update_camera_cards)
+ui.timer(0.1, update_camera_cards)
 
 simulated_camera_provider.add_cameras(1)
 
