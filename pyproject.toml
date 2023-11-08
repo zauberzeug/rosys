@@ -46,6 +46,7 @@ imgsize = "^2.1"
 netifaces = "^0.11.0"
 httpx = "^0.24.0"
 matplotlib = "^3.7.2"
+pyudev = ">=0.21.0"
 
 [tool.poetry.dev-dependencies]
 autopep8 = "^1.5.5"
