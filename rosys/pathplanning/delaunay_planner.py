@@ -231,6 +231,8 @@ class DelaunayPlanner:
                 if not shortcuts:
                     break  # exit while loop
             paths.append(path)
+        if not paths:
+            raise RuntimeError('could not find path')
         return min(paths, key=len)
 
 
