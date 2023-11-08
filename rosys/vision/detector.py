@@ -1,8 +1,7 @@
 import abc
 import logging
+from enum import Enum
 from typing import Optional
-
-from aenum import Enum
 
 from ..event import Event
 from .detections import Detections
