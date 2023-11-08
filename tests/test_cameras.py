@@ -1,7 +1,8 @@
+import platform
+
 import pytest
 
-from rosys.vision import (Camera, RtspCamera, RtspCameraProvider, SimulatedCamera, SimulatedCameraProvider, UsbCamera,
-                          UsbCameraProvider)
+from rosys.vision import RtspCamera, RtspCameraProvider, SimulatedCameraProvider, UsbCamera, UsbCameraProvider
 
 
 async def test_simulated_camera():
@@ -15,6 +16,8 @@ async def test_simulated_camera():
 
 
 async def test_usb_camera():
+    if platform.system() != 'Linux':
+        pytest.skip('UsbCamera is only supported on Linux.')
     connected_uids = await UsbCameraProvider.scan_for_cameras()
     if len(connected_uids) == 0:
         pytest.skip('No USB camera detected. This test requires a physical USB camera to be connected.')
@@ -26,7 +29,12 @@ async def test_usb_camera():
 
 
 async def test_rtsp_camera():
-    connected_uids = await RtspCameraProvider.scan_for_cameras()
+    try:
+        connected_uids = await RtspCameraProvider.scan_for_cameras()
+    except Exception as e:
+        if 'Could not run arp-scan!' in str(e):
+            pytest.skip('arp-scan is not installed. This test requires arp-scan to be installed.')
+        raise
     if len(connected_uids) == 0:
         pytest.skip('No RTSP camera detected. This test requires a physical RTSP camera on the local network.')
     camera = RtspCamera(id=connected_uids[0])
