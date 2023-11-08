@@ -11,7 +11,10 @@ from ..image import ImageSize
 
 class SimulatedDevice:
 
-    def __init__(self, id: str, size: ImageSize, color: str = '#ffffff') -> None:
+    def __init__(self,
+                 id: str,  # pylint: disable=redefined-builtin
+                 size: ImageSize,
+                 color: str = '#ffffff') -> None:
         self.id = id
         self.size = size
         self.color = color

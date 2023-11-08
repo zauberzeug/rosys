@@ -2,13 +2,12 @@ import asyncio
 import logging
 import shlex
 import subprocess
+from asyncio.subprocess import Process
 from io import BytesIO
 from typing import AsyncGenerator, Optional
 
-from ... import background_tasks
-from ...geometry import Rectangle
-from ..image import ImageSize
-from ..image_rotation import ImageRotation
+from nicegui import background_tasks
+
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
 
@@ -19,7 +18,7 @@ class RtspDevice:
         self.mac = mac
 
         self.capture_task: Optional[asyncio.Task] = None
-        self.capture_process: Optional[subprocess.Popen] = None
+        self.capture_process: Optional[Process] = None
         self._image_buffer: Optional[bytes] = None
         self._authorized: bool = True
 
@@ -30,13 +29,13 @@ class RtspDevice:
             self.settings_interface = JovisionInterface(ip)
             self.fps = self.settings_interface.get_fps(stream_id=jovision_profile)
         else:
-            logging.warn(f'no settings interface for vendor type {vendor_type}')
-            logging.warn(f'using default fps of 10')
+            logging.warning(f'no settings interface for vendor type {vendor_type}')
+            logging.warning('using default fps of 10')
             self.fps = 10
 
         self.url = mac_to_url(mac, ip, jovision_profile)
         if self.url is None:
-            raise Exception(f'could not determine RTSP URL for {mac}')
+            raise ValueError(f'could not determine RTSP URL for {mac}')
         logging.info(f'Starting VideoStream for {self.url}')
         self.capture_task = background_tasks.create(self.start_gsreamer_task(self.url), name=f'capture {self.mac}')
 

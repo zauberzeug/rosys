@@ -6,7 +6,7 @@ from typing import Optional
 
 import cv2
 
-from ... import rosys
+from ... import run
 from .usb_camera_scanner import device_nodes_from_uid
 
 MJPG = cv2.VideoWriter_fourcc(*'MJPG')
@@ -19,10 +19,7 @@ async def find_video_id(camera_uid: str) -> Optional[int]:
         if node.startswith('/dev/video'):
             possible_video_ids.append(int(node.strip().lstrip('/dev/video')))
 
-    if len(possible_video_ids) == 0:
-        return None
-    else:
-        return min(possible_video_ids)
+    return min(possible_video_ids) if possible_video_ids else None
 
 
 class UsbDevice:
@@ -74,7 +71,7 @@ class UsbDevice:
     async def run_v4l(self, *args) -> str:
         cmd = ['v4l2-ctl', '-d', str(self.video_id)]
         cmd.extend(args)
-        return await rosys.run.sh(cmd)
+        return await run.sh(cmd)
 
     def set_video_format(self) -> None:
         if 'MJPG' in self.video_formats:

@@ -1,5 +1,4 @@
 import logging
-import re
 import shutil
 from typing import Optional
 

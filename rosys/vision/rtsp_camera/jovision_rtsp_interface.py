@@ -134,6 +134,7 @@ class JovisionInterface:
 
     def get_parameter_ranges(self):
         raise NotImplementedError
+        # pylint: disable=unreachable
         url = self._get_settings_url()
         cmd = {
             'method': 'stream_get_all_ability',

@@ -3,8 +3,7 @@ from typing import Any, Optional
 
 import cv2
 
-import rosys
-
+from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image, ImageSize
@@ -17,7 +16,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
     def __init__(self,
                  *,
-                 id: str,
+                 id: str,  # pylint: disable=redefined-builtin
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,

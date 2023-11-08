@@ -1,8 +1,7 @@
 import random
 from typing import Optional
 
-import rosys
-
+from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
 from ..image import Image, ImageSize
 from .simulated_device import SimulatedDevice
@@ -12,7 +11,7 @@ class SimulatedCamera(ConfigurableCamera):
 
     def __init__(self,
                  *,
-                 id: str,
+                 id: str,  # pylint: disable=redefined-builtin
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,

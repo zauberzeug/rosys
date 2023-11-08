@@ -18,7 +18,7 @@ class Camera(abc.ABC):
 
     def __init__(self,
                  *,
-                 id: str,
+                 id: str,  # pylint: disable=redefined-builtin
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,

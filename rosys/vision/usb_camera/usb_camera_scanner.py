@@ -33,7 +33,6 @@ def scan_for_connected_devices() -> set[str]:
 
 
 def device_nodes_from_uid(uid: str) -> set[str]:
-
     context = pyudev.Context()
 
     # List all devices connected to the system

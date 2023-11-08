@@ -60,8 +60,8 @@ class RtspCameraProvider(CameraProvider, persistence.PersistentModule):
             return 'ERROR'
         if 'sudo' in output:
             print(output)
-            raise Exception('Could not run arp-scan! Make sure it is installed can be run with sudo.'
-                            'Try running sudo visudo and add the following line: "rosys ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan"')
+            raise RuntimeError('Could not run arp-scan! Make sure it is installed and can be run with sudo.'
+                               'Try running sudo visudo and add the following line: "rosys ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan"')
 
         return output
 
@@ -92,7 +92,7 @@ class RtspCameraProvider(CameraProvider, persistence.PersistentModule):
             return
         self.last_scan = rosys.time()
         camera_ids = await self.scan_for_cameras()
-        newly_disconnected_cameras = set([camera.id for camera in self._cameras.values() if camera.is_connected])
+        newly_disconnected_cameras = {id for id, camera in self._cameras.items() if camera.is_connected}
         for mac in camera_ids:
             if mac not in self._cameras:
                 self.add_camera(RtspCamera(id=mac, goal_fps=self.frame_rate, jovision_profile=self.jovision_profile))

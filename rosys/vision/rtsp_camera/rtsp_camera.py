@@ -54,7 +54,7 @@ async def find_ip_from_mac(mac: str) -> Optional[str]:
 class RtspCamera(ConfigurableCamera, TransformableCamera):
     def __init__(self,
                  *,
-                 id: str,
+                 id: str,  # pylint: disable=redefined-builtin
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
@@ -119,7 +119,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
             ip = await find_ip_from_mac(self.id)
             if ip is None:
-                raise Exception(f'could not find IP address for {self.id}')
+                raise RuntimeError(f'could not find IP address for {self.id}')
 
             device = RtspDevice(mac=self.id, ip=ip, jovision_profile=self.jovision_profile)
             if device is None:

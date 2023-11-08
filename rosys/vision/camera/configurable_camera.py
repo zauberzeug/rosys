@@ -54,7 +54,7 @@ class ConfigurableCamera(Camera):
                 await self._secure_parameter_setter(self._parameters[param].setter, new_values[param])
 
     async def _apply_all_parameters(self) -> None:
-        await self._apply_parameters({param: self._parameters[param].value for param in self._parameters})
+        await self._apply_parameters(self.parameters)
 
     async def _update_parameter_values(self) -> None:
         for param in self._parameters.values():
@@ -68,7 +68,7 @@ class ConfigurableCamera(Camera):
 
     @property
     def parameters(self) -> dict[str, Any]:
-        return {param: self._parameters[param].value for param in self._parameters}
+        return {key: param.value for key, param in self._parameters.items()}
 
     def get_capabilities(self) -> list[ParameterInfo]:
         return [param.info for param in self._parameters.values()]
