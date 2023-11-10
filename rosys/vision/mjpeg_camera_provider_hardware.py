@@ -99,8 +99,8 @@ class MJpegCameraProviderHardware(CameraProvider, persistence.PersistentModule):
                                 if footer_pos == -1:
                                     pos = max(0, buffer.tell() - 1)
                                     break
-                                image = buffer.getvalue()[header:footer_pos + 2]
-                                yield image  # Or process the image as needed
+                                image_data = buffer.getvalue()[header:footer_pos + 2]
+                                yield remove_exif(image_data)
                                 buffer = BytesIO(buffer.getvalue()[footer_pos + 2:])
                                 pos = 0
                                 header = None
@@ -159,3 +159,21 @@ def process_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle
     img_byte_arr = io.BytesIO()
     image.save(img_byte_arr, format='JPEG')
     return img_byte_arr.getvalue()
+
+
+def remove_exif(image_data: bytes) -> bytes:  # written by ChatGPT
+    pos = 2  # Skip SOI marker
+    while pos < len(image_data):
+        if image_data[pos] == 0xFF:
+            if image_data[pos + 1] == 0xE1:  # APP1 marker (EXIF)
+                length = image_data[pos + 2] << 8 | image_data[pos + 3]
+                image_data = image_data[:pos] + image_data[pos + length + 2:]
+                continue  # Check for multiple EXIF segments
+            elif image_data[pos + 1] == 0xD9:  # EOI marker
+                break  # End of image
+            else:
+                length = image_data[pos + 2] << 8 | image_data[pos + 3]
+                pos += length + 2  # Skip to next marker
+        else:
+            pos += 1  # Increment position if not a marker
+    return image_data
