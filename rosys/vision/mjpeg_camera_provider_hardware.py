@@ -100,7 +100,14 @@ class MJpegCameraProviderHardware(CameraProvider, persistence.PersistentModule):
                                     pos = max(0, buffer.tell() - 1)
                                     break
                                 image_data = buffer.getvalue()[header:footer_pos + 2]
-                                yield remove_exif(image_data)
+                                try:
+                                    with PIL.Image.open(BytesIO(image_data)) as img:
+                                        clean_image = BytesIO()
+                                        img.save(clean_image, format='JPEG', quality=95, exif=None)
+                                        image_data = clean_image.getvalue()
+                                    yield image_data
+                                except Exception:
+                                    pass
                                 buffer = BytesIO(buffer.getvalue()[footer_pos + 2:])
                                 pos = 0
                                 header = None
