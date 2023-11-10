@@ -19,8 +19,11 @@ log = logging.getLogger('rosys.image_route')
 
 
 def create_image_route(camera) -> None:
+    async def get_camera_image(timestamp: str, shrink: int = 1) -> Response:
+        return await _get_image(camera, timestamp, shrink)
+
     app.add_api_route('/' + camera.base_path + '/placeholder', _get_placeholder)
-    app.add_api_route('/' + camera.base_path + '/{timestamp}', partial(_get_image, camera=camera))
+    app.add_api_route('/' + camera.base_path + '/{timestamp}', get_camera_image)
 
 
 async def _get_placeholder(shrink: int = 1) -> Response:

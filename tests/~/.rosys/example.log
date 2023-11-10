@@ -1,0 +1,30 @@
+2023-10-11 09:40:39 - DEBUG - starting loop "_garbage_collection" with interval 600.000s
+2023-10-11 09:40:39 - DEBUG - starting loop "_watch_emitted_events" with interval 0.100s
+2023-10-11 09:40:39 - DEBUG - starting loop "backup" with interval 10.000s
+2023-10-11 09:40:39 - DEBUG - starting loop "Steerer.step" with interval 0.050s
+2023-10-11 09:40:39 - DEBUG - starting loop "Odometer.prune_history" with interval 1.000s
+2023-10-11 09:40:39 - DEBUG - starting loop "RobotSimulation.step" with interval 0.010s
+2023-10-11 09:40:39 - DEBUG - invoking shutdown handler "Wheels.stop"
+2023-10-11 09:40:39 - DEBUG - creating data backup
+2023-10-11 09:40:39 - DEBUG - tear down "run" tasks
+2023-10-11 09:40:39 - INFO - teardown thread_pool
+2023-10-11 09:40:39 - INFO - teardown process_pool
+2023-10-11 09:40:39 - INFO - teardown complete
+2023-10-11 09:40:39 - DEBUG - canceling all remaining tasks
+2023-10-11 09:40:39 - DEBUG - clearing tasks
+2023-10-11 09:40:39 - DEBUG - finished shutdown
+2023-10-11 09:42:52 - DEBUG - starting loop "_garbage_collection" with interval 600.000s
+2023-10-11 09:42:52 - DEBUG - starting loop "_watch_emitted_events" with interval 0.100s
+2023-10-11 09:42:52 - DEBUG - starting loop "backup" with interval 10.000s
+2023-10-11 09:42:52 - DEBUG - starting loop "Steerer.step" with interval 0.050s
+2023-10-11 09:42:52 - DEBUG - starting loop "Odometer.prune_history" with interval 1.000s
+2023-10-11 09:42:52 - DEBUG - starting loop "RobotSimulation.step" with interval 0.010s
+2023-10-11 09:42:52 - DEBUG - invoking shutdown handler "Wheels.stop"
+2023-10-11 09:42:52 - DEBUG - creating data backup
+2023-10-11 09:42:52 - DEBUG - tear down "run" tasks
+2023-10-11 09:42:52 - INFO - teardown thread_pool
+2023-10-11 09:42:52 - INFO - teardown process_pool
+2023-10-11 09:42:52 - INFO - teardown complete
+2023-10-11 09:42:52 - DEBUG - canceling all remaining tasks
+2023-10-11 09:42:52 - DEBUG - clearing tasks
+2023-10-11 09:42:52 - DEBUG - finished shutdown
