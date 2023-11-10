@@ -95,6 +95,5 @@ class Camera(abc.ABC):
         self.images.append(image)
         self.NEW_IMAGE.emit(image)
 
-    @abc.abstractmethod
     async def capture_image(self) -> None:
-        pass
+        raise NotImplementedError('Implement capture_image() in your camera class!')

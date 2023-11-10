@@ -39,6 +39,10 @@ class RtspCameraProvider(CameraProvider, persistence.PersistentModule):
         for camera in self._cameras.values():
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
+    @staticmethod
+    async def scan_for_cameras() -> list[str]:
+        return await find_known_cameras()
+
     async def update_device_list(self) -> None:
         if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
             return
