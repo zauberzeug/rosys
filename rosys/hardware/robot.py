@@ -26,7 +26,10 @@ class RobotHardware(Robot):
         rosys.on_repeat(self.update, 0.01)
 
     def generate_lizard_code(self) -> str:
-        code = ''
+        code = remove_indentation('''
+            rdyp = Output(15)
+            en3 = Output(12)
+        ''')
         for module in self.modules:
             code += cast(ModuleHardware, module).lizard_code + '\n'
         output_fields = []
@@ -34,8 +37,6 @@ class RobotHardware(Robot):
             output_fields.extend(cast(ModuleHardware, module).core_message_fields)
         code += remove_indentation(f'''
             core.output("core.millis {' '.join(output_fields)}")
-            rdyp = Output(15)
-            en3 = Output(12)
             rdyp.on()
             en3.on()
         ''')
