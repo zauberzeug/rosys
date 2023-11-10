@@ -5,7 +5,7 @@ from .camera_projector import CameraProjector
 from .camera_provider import CameraProvider
 from .combining_camera_provider import CombiningCameraProvider
 from .detections import BoxDetection, Detection, Detections, PointDetection
-from .detector import Detector
+from .detector import Autoupload, Detector
 from .detector_hardware import DetectorHardware
 from .detector_simulation import DetectorSimulation, SimulatedObject
 from .image import Image, ImageSize
