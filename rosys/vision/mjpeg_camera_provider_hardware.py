@@ -1,5 +1,4 @@
 import asyncio
-import hashlib
 import io
 import logging
 import os
@@ -36,7 +35,7 @@ class PeekableBytesIO(io.BytesIO):
 
 
 class MJpegCameraProviderHardware(CameraProvider, persistence.PersistentModule):
-    """This module collects and provides real motion jepeg streaming cameras."""
+    """This module collects and provides real motion jpeg streaming cameras."""
 
     def __init__(self, *, frame_rate: int = 6) -> None:
         super().__init__()
@@ -74,7 +73,6 @@ class MJpegCameraProviderHardware(CameraProvider, persistence.PersistentModule):
         self.log.info(f'Capturing images from {camera.url}')
 
         async def stream() -> AsyncGenerator[bytes, None]:
-            # Create an HTTP client for persistent connection
             async with httpx.AsyncClient() as client:
                 assert camera.url is not None
                 async with client.stream('GET', camera.url) as response:
@@ -86,34 +84,23 @@ class MJpegCameraProviderHardware(CameraProvider, persistence.PersistentModule):
                     buffer = BytesIO()
                     header = None
                     pos = 0
-
-                    # Iterate over the bytes in the stream
                     async for chunk in response.aiter_bytes():
                         buffer.write(chunk)
-
-                        # Search for JPEG start (0xff 0xd8) and end (0xff 0xd9) markers
                         while True:
                             if header is None:
-                                # Look for the start of a JPEG file
                                 header_pos = buffer.getvalue().find(b'\xff\xd8', pos)
                                 if header_pos == -1:
-                                    # Not found, skip this chunk
                                     pos = max(0, buffer.tell() - 1)
                                     break
                                 pos = header_pos + 2
                                 header = header_pos
                             else:
-                                # Look for the end of the JPEG file
                                 footer_pos = buffer.getvalue().find(b'\xff\xd9', pos)
                                 if footer_pos == -1:
-                                    # Not found, skip this chunk
                                     pos = max(0, buffer.tell() - 1)
                                     break
-                                # Extract the JPEG image
                                 image = buffer.getvalue()[header:footer_pos + 2]
                                 yield image  # Or process the image as needed
-
-                                # Reset the buffer to start looking for the next image
                                 buffer = BytesIO(buffer.getvalue()[footer_pos + 2:])
                                 pos = 0
                                 header = None
@@ -147,10 +134,9 @@ class MJpegCameraProviderHardware(CameraProvider, persistence.PersistentModule):
             return
         self._capture_tasks.pop(camera.id).cancel()
 
-    async def create_camera(self, url: str) -> RtspCamera:
-        cam_id = hashlib.sha256(url.encode('utf-8')).hexdigest()[:8]
-        camera = RtspCamera(id=cam_id, url=url)
-        self.log.info(f'adding camera {url} with id {cam_id}')
+    async def create_camera(self, name: str, url: str) -> RtspCamera:
+        camera = RtspCamera(id=name, url=url)
+        self.log.info(f'adding camera {url} with id {name}')
         self.add_camera(camera)
         await self.activate(camera)
         return camera
