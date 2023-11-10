@@ -5,7 +5,6 @@ import asyncio
 from collections import deque
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator, Optional
-from uuid import uuid4
 
 from ... import rosys
 from ...event import Event
@@ -22,38 +21,31 @@ class Camera(abc.ABC):
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
-                 image_grab_inteval: float = 0.01,
+                 image_grab_interval: float = 0.1,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.id: str = id
+        self.name = name or self.id
+        self.connect_after_init = connect_after_init
         self.images: deque = deque(maxlen=self.MAX_IMAGES)
-        self.connect_after_init: bool = connect_after_init
         self.streaming: bool = streaming
-        self.base_path: str = f'images/{str(uuid4())}'
+        self.base_path: str = f'images/{id}'
         self.NEW_IMAGE: Event = Event()
 
         self.device_connection_lock: asyncio.Condition = asyncio.Condition()
 
         create_image_route(self)
 
-        if name is None:
-            self.name = self.id
-        else:
-            self.name = name
-
-        if self.connect_after_init:
-            # start a new task to activate the camera
-            # if there is a running event loop
+        if connect_after_init:
             if asyncio.get_event_loop().is_running():
                 asyncio.create_task(self.connect())
             else:
                 rosys.on_startup(self.connect)
 
         async def stream() -> None:
-            if self.streaming and self.is_connected:
+            if self.streaming:
                 await self.capture_image()
-
-        rosys.on_repeat(stream, interval=image_grab_inteval)
+        rosys.on_repeat(stream, interval=image_grab_interval)
 
     def get_image_url(self, image: Image) -> str:
         return f'{self.base_path}/{image.time}'
@@ -78,8 +70,6 @@ class Camera(abc.ABC):
             self.device_connection_lock.release()
 
     async def connect(self) -> None:
-        # NOTE: this method may be executed concurrently even after any check for is_connected
-        #       Make sure it is idempotent!
         pass
 
     async def disconnect(self) -> None:
@@ -105,5 +95,6 @@ class Camera(abc.ABC):
         self.images.append(image)
         self.NEW_IMAGE.emit(image)
 
+    @abc.abstractmethod
     async def capture_image(self) -> None:
-        raise NotImplementedError("Implement capture_image() in your camera class!")
+        pass

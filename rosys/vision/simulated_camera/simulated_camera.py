@@ -1,5 +1,5 @@
 import random
-from typing import Optional
+from typing import Optional, Self
 
 from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
@@ -40,28 +40,33 @@ class SimulatedCamera(ConfigurableCamera):
             'color': self._color,
         }
 
-    @staticmethod
-    def from_dict(data: dict) -> 'SimulatedCamera':
-        return SimulatedCamera(id=data['id'], resolution=ImageSize(width=data['width'], height=data['height']), color=data['color'])
+    @classmethod
+    def from_dict(cls, data: dict) -> Self:
+        return cls(
+            id=data['id'],
+            resolution=ImageSize(width=data['width'], height=data['height']),
+            color=data['color'],
+        )
 
     @property
     def is_connected(self) -> bool:
         return self.device is not None
 
     async def connect(self) -> None:
-        if self.device is None:
+        if not self.is_connected:
             self.device = SimulatedDevice(id=self.id, color=self._color, size=self.resolution)
 
     async def disconnect(self) -> None:
         self.device = None
 
     async def capture_image(self) -> None:
-        if self.device is None:
+        if not self.is_connected:
             return None
         image = Image(time=rosys.time(), camera_id=self.id, size=self.resolution)
         if rosys.is_test:
             image.data = b'test data'
         else:
+            assert self.device is not None
             image.data = await rosys.run.cpu_bound(self.device.create_image_data)
         self._add_image(image)
 

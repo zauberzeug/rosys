@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, Self
 
 import cv2
 
@@ -54,8 +54,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> 'UsbCamera':
-
+    def from_dict(cls, data: dict[str, Any]) -> Self:
         return cls(
             id=data['id'],
             name=data['name'],
@@ -134,8 +133,8 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         else:
             bytes_ = await rosys.run.cpu_bound(process_ndarray_image, captured_image, self.rotation, self.crop)
 
-        final_image_resolution = self._resolution_after_transform(
-            ImageSize(width=captured_image.shape[1], height=captured_image.shape[0]))
+        image_size = ImageSize(width=captured_image.shape[1], height=captured_image.shape[0])
+        final_image_resolution = self._resolution_after_transform(image_size)
 
         image = Image(time=rosys.time(), camera_id=self.id, size=final_image_resolution, data=bytes_)
         self._add_image(image)

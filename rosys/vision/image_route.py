@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from functools import partial
 from typing import TYPE_CHECKING, Optional
 
 import cv2
@@ -13,15 +14,13 @@ from .image import Image
 
 if TYPE_CHECKING:
     from .camera import Camera
-    from .camera_provider import CameraProvider
 
 log = logging.getLogger('rosys.image_route')
 
 
 def create_image_route(camera) -> None:
-    async def get_image(timestamp: str, shrink: int = 1) -> Response:
-        return await _get_image(camera, timestamp, shrink)
-    app.add_api_route('/' + camera.base_path + '/{timestamp}', get_image)
+    app.add_api_route('/' + camera.base_path + '/placeholder', _get_placeholder)
+    app.add_api_route('/' + camera.base_path + '/{timestamp}', partial(_get_image, camera=camera))
 
 
 async def _get_placeholder(shrink: int = 1) -> Response:
@@ -29,8 +28,6 @@ async def _get_placeholder(shrink: int = 1) -> Response:
 
 
 async def _get_image(camera: Camera, timestamp: str, shrink: int = 1) -> Response:
-    if timestamp == 'placeholder':
-        return await _get_placeholder(shrink)
     try:
         if not camera:
             return Response(content='Camera not found', status_code=404)

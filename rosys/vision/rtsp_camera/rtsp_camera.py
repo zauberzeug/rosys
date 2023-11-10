@@ -1,57 +1,17 @@
-import io
 import logging
-import os
-import sys
 from typing import Any, Optional, Self
 
-import imgsize
-import netifaces
-import PIL
-
 from ... import rosys
-from ...geometry import Rectangle
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
-from ..image import Image, ImageSize
-from ..image_processing import PeekableBytesIO, process_jpeg_image
-from ..image_rotation import ImageRotation
+from ..image import Image
+from ..image_processing import get_image_size_from_bytes, process_jpeg_image
+from .arp_scan import find_ip
 from .rtsp_device import RtspDevice
-from .vendors import VendorType, mac_to_vendor
-
-
-def process_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
-    image = PIL.Image.open(io.BytesIO(data))
-    if crop is not None:
-        image = image.crop((int(crop.x), int(crop.y), int(crop.x + crop.width), int(crop.y + crop.height)))
-    image = image.rotate(int(rotation), expand=True)  # NOTE: PIL handles rotation with 90 degree steps efficiently
-    img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='JPEG')
-    return img_byte_arr.getvalue()
-
-
-async def find_ip_from_mac(mac: str) -> Optional[str]:
-    """Find the IP address of a device with a given MAC address."""
-    for interface in netifaces.interfaces():
-        if sys.platform.startswith('darwin'):
-            arpscan_cmd = 'arp-scan'
-        else:
-            arpscan_cmd = '/usr/sbin/arp-scan'  # TODO is this necessary? sbin should be in path
-        if os.getuid() != 0:
-            arpscan_cmd = f'sudo {arpscan_cmd}'
-        cmd = f'{arpscan_cmd} -I {interface} --localnet'
-        output = await rosys.run.sh(cmd, timeout=10)
-        if output is None:
-            continue
-        for line in output.splitlines():
-            infos = line.split()
-            if len(infos) < 2:
-                continue
-            if infos[1] == mac:
-                return infos[0]
-    return None
 
 
 class RtspCamera(ConfigurableCamera, TransformableCamera):
+
     def __init__(self,
                  *,
                  id: str,  # pylint: disable=redefined-builtin
@@ -101,10 +61,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         return self.device is not None and self.device.capture_task is not None
 
     @property
-    def authorized(self) -> bool:
-        raise NotImplementedError
-
-    @property
     def url(self) -> Optional[str]:
         if not self.is_connected:
             return None
@@ -117,18 +73,13 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             if self.is_connected:
                 return
 
-            ip = await find_ip_from_mac(self.id)
+            ip = await find_ip(self.id)
             if ip is None:
                 raise RuntimeError(f'could not find IP address for {self.id}')
 
-            device = RtspDevice(mac=self.id, ip=ip, jovision_profile=self.jovision_profile)
-            if device is None:
-                logging.warning(f'could not create device for {self.id}')
-                return
+            self.device = RtspDevice(mac=self.id, ip=ip, jovision_profile=self.jovision_profile)
 
-            self.device = device
-
-        # await self._apply_all_parameters()
+        await self._apply_all_parameters()  # TODO: avoid reconnecting here
 
     async def disconnect(self) -> None:
         async with self._device_connection():
@@ -147,25 +98,21 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         async with self._device_connection():
             if not self.is_connected:
                 return
-
             assert self.device is not None
 
-            image = self.device.capture()
+            image_bytes = self.device.capture()
 
-        if not image:
+        if not image_bytes:
             return
-        final_image_bytes = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
+        transformed_image_bytes = await rosys.run.cpu_bound(process_jpeg_image, image_bytes, self.rotation, self.crop)
 
         try:
-            with PeekableBytesIO(final_image_bytes) as f:
-                width, height = imgsize.get_size(f)
-        except imgsize.UnknownSize:
+            final_image_resolution = get_image_size_from_bytes(transformed_image_bytes)
+        except ValueError:
             return
 
-        final_image_resolution = ImageSize(width=width, height=height)
-
-        self._add_image(Image(time=rosys.time(), camera_id=self.id,
-                        size=final_image_resolution, data=final_image_bytes))
+        image = Image(time=rosys.time(), camera_id=self.id, size=final_image_resolution, data=transformed_image_bytes)
+        self._add_image(image)
 
     async def set_fps(self, fps: int) -> None:
         if self.device is None or self.device.settings_interface is None:
@@ -189,11 +136,3 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         if self.device is None:
             return None
         return self.jovision_profile
-
-    @staticmethod
-    def known_vendor(mac: str) -> bool:
-        return mac_to_vendor(mac) != VendorType.OTHER
-
-    async def _apply_parameters(self, new_values: dict[str, Any]) -> None:
-        await super()._apply_parameters(new_values)
-        await self.reconnect()

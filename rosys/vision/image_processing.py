@@ -2,10 +2,12 @@ import io
 from typing import Any, Optional
 
 import cv2
+import imgsize
 import numpy as np
 import PIL
 
 from ..geometry import Rectangle
+from .image import ImageSize
 from .image_rotation import ImageRotation
 
 
@@ -18,7 +20,17 @@ class PeekableBytesIO(io.BytesIO):
         return data
 
 
+def get_image_size_from_bytes(image: bytes) -> ImageSize:
+    try:
+        with PeekableBytesIO(image) as f:
+            width, height = imgsize.get_size(f)
+    except imgsize.UnknownSize as e:
+        raise ValueError('Could not determine image size') from e
+    return ImageSize(width=width, height=height)
+
+
 def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
+    """Rotate and crop a JPEG image."""
     image = PIL.Image.open(io.BytesIO(data))
     if crop is not None:
         image = image.crop((int(crop.x), int(crop.y), int(crop.x + crop.width), int(crop.y + crop.height)))
@@ -29,6 +41,7 @@ def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rect
 
 
 def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
+    """Rotate and crop a NumPy image."""
     if crop is not None:
         image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]
     if rotation == ImageRotation.LEFT:
@@ -41,4 +54,5 @@ def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Opti
 
 
 def to_bytes(image: Any) -> bytes:
+    # TODO: type hint and docstring
     return image[0].tobytes()

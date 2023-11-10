@@ -8,9 +8,7 @@ import requests
 
 @dataclass
 class JovisionCameraSettings:
-    """
-    Dataclass that holds the settings of an RTSP camera
-    """
+    """Dataclass that holds the settings of an RTSP camera"""
     codec: str
     fps: int
     quality: str
@@ -31,34 +29,32 @@ class JovisionCameraSettings:
             'bitRate': self.bitrate,
             'ngop_s': 100,
             'quality': self.quality,
-            'rcMode': self.bitrate_control
+            'rcMode': self.bitrate_control,
         }
 
 
 class JovisionInterface:
-    """
-    Interface that communicates with the RTSP camera settings mimicking the webpage requests
-    """
+    """Interface that communicates with the RTSP camera settings mimicking the webpage requests"""
 
     def __init__(self, ip: str) -> None:
         self.ip = ip
 
-    def _get_settings_url(self) -> str:
+    @property
+    def settings_url(self) -> str:
         return f'http://{self.ip}/cgi-bin/jvsweb.cgi'
 
-    def _get_headers(self) -> dict[str, str]:
+    @property
+    def headers(self) -> dict[str, str]:
         return {'Cookie': 'passwdRule=1; username=admin; password=admin;'}
 
     def _send_settings(self, settings: list[JovisionCameraSettings]) -> None:
         """
         Set the settings for all streams
         """
-        url = self._get_settings_url()
-        n_streams = len(settings)
         streams: list[dict] = []
         for i, setting in enumerate(settings):
             parameter_dict = setting.to_dict()
-            parameter_dict['smartencode'] = 'open' if i < n_streams - 1 else 'close'
+            parameter_dict['smartencode'] = 'open' if i < len(settings) - 1 else 'close'
             streams.append(parameter_dict)
 
         cmd = {
@@ -76,8 +72,7 @@ class JovisionInterface:
             'cmd': json.dumps(cmd),
             '_': int(time.time() * 1000),  # current time as a timestamp
         }
-        headers = self._get_headers()
-        requests.get(url, params=params, headers=headers, timeout=1)  # type: ignore
+        requests.get(self.settings_url, params=params, headers=self.headers, timeout=1)  # type: ignore
 
     def set_fps(self, stream_id, fps) -> None:
         current_settings = self.get_current_settings()
@@ -96,12 +91,11 @@ class JovisionInterface:
         return None
 
     def get_current_settings(self) -> list[JovisionCameraSettings]:
-        url = self._get_settings_url()
         cmd = {
             'method': 'stream_get_params',
             'user': {
                 'name': 'admin',
-                'digest': "d065077d3e61cb56d45bd2dd28b83842",
+                'digest': 'd065077d3e61cb56d45bd2dd28b83842',
             },
             'param': {
                 'channelid': 0,
@@ -111,14 +105,10 @@ class JovisionInterface:
             'cmd': json.dumps(cmd),
             '_': int(time.time() * 1000),
         }
-        headers = self._get_headers()
+        response = requests.get(self.settings_url, params=params, headers=self.headers, timeout=1)  # type: ignore
 
-        response = requests.get(url, params=params, headers=headers, timeout=1)  # type: ignore
-
-        settings = []
-        streams = response.json()['result']['streams']
-        for stream in streams:
-            stream_settings = JovisionCameraSettings(
+        return [
+            JovisionCameraSettings(
                 codec=stream['venctype'],
                 fps=stream['frameRate'],
                 quality=stream['quality'],
@@ -128,31 +118,27 @@ class JovisionInterface:
                 stream_id=stream['streamid'],
                 channel_id=stream['channelid'],
             )
-            settings.append(stream_settings)
-
-        return settings
+            for stream in response.json()['result']['streams']
+        ]
 
     def get_parameter_ranges(self):
         raise NotImplementedError
         # pylint: disable=unreachable
-        url = self._get_settings_url()
         cmd = {
             'method': 'stream_get_all_ability',
             'user': {
                 'name': 'admin',
-                'digest': "8d5985ea2b9994aacb6cb3e3f826aae5"
+                'digest': '8d5985ea2b9994aacb6cb3e3f826aae5'
             },
             'param': {
-                'channelid': 0
+                'channelid': 0,
             }
         }
         params = {
             'cmd': json.dumps(cmd),
-            '_': time.time() * 1000
+            '_': time.time() * 1000,
         }
-        headers = self._get_headers()
-
-        response = requests.get(url, params=params, headers=headers, timeout=1)
+        response = requests.get(self.settings_url, params=params, headers=self.headers, timeout=1)
 
         for stream_id, stream in enumerate(response.json()['result']['all']):
             print(f'stream {stream_id}')
