@@ -66,7 +66,7 @@ class Driver:
             await self.drive_spline(segment.spline, throttle_at_end=segment == path[-1], flip_hook=segment.backward)
 
     @analysis.track
-    async def drive_to(self, target: Point) -> None:
+    async def drive_to(self, target: Point, backward: bool = False) -> None:
         if self.parameters.minimum_turning_radius:
             await self.drive_circle(target)
 
@@ -77,7 +77,7 @@ class Driver:
             control2=robot_position.interpolate(target, 2/3),
             end=target,
         )
-        await self.drive_spline(approach_spline)
+        await self.drive_spline(approach_spline, flip_hook=backward)
 
     @analysis.track
     async def drive_circle(self, target: Point) -> None:
