@@ -12,7 +12,7 @@ from .image_route import create_image_route
 T = TypeVar('T', bound=Camera)
 
 
-class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
+class CameraProvider(Generic[T], rosys.persistence.PersistentModule, metaclass=abc.ABCMeta):
     """A camera provider holds a dictionary of cameras and manages additions and removals.
 
     The camera dictionary should not be modified directly but by using the camera provider's methods.
@@ -35,9 +35,6 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
 
         self.base_path = f'images/{str(uuid4())}'
         create_image_route(self)
-
-    def request_backup(self) -> None:
-        pass  # HACK: for the case that the camera provider derives from PersistentModule
 
     @property
     @abc.abstractmethod
