@@ -73,10 +73,8 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
     async def connect(self) -> None:
         logging.info(f'Connecting camera {self.id}...')
-        async with self._device_connection():
-            if self.is_connected:
-                return
-            self._pending_operations += 1
+        if self.is_connected:
+            return
 
         device = await UsbDevice.from_uid(self.id)
 
@@ -86,38 +84,28 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
         self.device = device
 
-        async with self._device_connection():
-            self._pending_operations -= 1
-            self.device_connection_lock.notify_all()
-
         logging.info(f'camera {self.id}: connected')
 
         await self._apply_all_parameters()
         await self._update_parameter_values()
 
     async def disconnect(self) -> None:
-        async with self._device_connection():
-            if not self.is_connected:
-                return
-            logging.info(f'camera {self.id}: disconnect initialized...')
-            while self._pending_operations > 0:
-                logging.info(f'camera {self.id}: waiting for pending operations to finish...')
-                await self.device_connection_lock.wait()
+        if not self.is_connected:
+            return
 
-            assert self.device is not None
-            await rosys.run.io_bound(self.device.capture.release)
-            self.device = None
-            logging.info(f'camera {self.id}: disconnected')
+        assert self.device is not None
+        await rosys.run.io_bound(self.device.capture.release)
+        self.device = None
+        logging.info(f'camera {self.id}: disconnected')
 
     async def capture_image(self) -> None:
-        async with self._device_connection():
-            if not self.is_connected:
-                return None
+        if not self.is_connected:
+            return None
 
-            assert self.device is not None
+        assert self.device is not None
 
-            capture_success, captured_image = self.device.capture.read()
-            image_is_MJPG = 'MJPG' in self.device.video_formats
+        capture_success, captured_image = self.device.capture.read()
+        image_is_MJPG = 'MJPG' in self.device.video_formats
 
         if not capture_success:
             await self.disconnect()
@@ -145,33 +133,33 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         device = self.device
 
         if device.has_manual_exposure:
-            is_auto_exposure = await self.get_auto_exposure()
+            is_auto_exposure = self.get_auto_exposure()
             if auto and not is_auto_exposure:
                 # self.log.info(f'activating auto-exposure for {self.id}')
                 device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
             else:
                 device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)
-                await self.set_exposure(self._parameters['exposure'].value)
+                self.set_exposure(self._parameters['exposure'].value)
 
-    async def set_exposure(self, value: float) -> None:
+    def set_exposure(self, value: float) -> None:
         assert self.device is not None
 
         device = self.device
         assert device.capture is not None
 
         if device.has_manual_exposure:
-            is_auto_exposure = await self.get_auto_exposure()
+            is_auto_exposure = self.get_auto_exposure()
             if not is_auto_exposure:
                 exposure = device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
                 if value != exposure:
                     device.capture.set(cv2.CAP_PROP_EXPOSURE, int(value * device.exposure_max))
 
-    async def get_auto_exposure(self) -> Optional[bool]:
+    def get_auto_exposure(self) -> Optional[bool]:
         assert self.device is not None
         device = self.device
         return device.capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
 
-    async def get_exposure(self) -> Optional[float]:
+    def get_exposure(self) -> Optional[float]:
         assert self.device is not None
 
         device = self.device
@@ -179,32 +167,32 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
             return None
         return device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
 
-    async def set_width(self, width: int) -> None:
+    def set_width(self, width: int) -> None:
         assert self.device is not None
         device = self.device
         device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
 
-    async def get_width(self) -> int:
+    def get_width(self) -> int:
         assert self.device is not None
         device = self.device
         return int(device.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
 
-    async def set_height(self, height: int) -> None:
+    def set_height(self, height: int) -> None:
         assert self.device is not None
         device = self.device
         device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
-    async def get_height(self) -> int:
+    def get_height(self) -> int:
         assert self.device is not None
         device = self.device
         return int(device.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    async def set_fps(self, fps: int) -> None:
+    def set_fps(self, fps: int) -> None:
         assert self.device is not None
         device = self.device
         device.capture.set(cv2.CAP_PROP_FPS, fps)
 
-    async def get_fps(self) -> int:
+    def get_fps(self) -> int:
         assert self.device is not None
         device = self.device
         return int(device.capture.get(cv2.CAP_PROP_FPS))

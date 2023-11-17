@@ -69,38 +69,32 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         return self.device.url
 
     async def connect(self) -> None:
-        async with self._device_connection():
-            if self.is_connected:
-                return
+        if self.is_connected:
+            return
 
-            ip = await find_ip(self.id)
-            if ip is None:
-                raise RuntimeError(f'could not find IP address for {self.id}')
+        ip = await find_ip(self.id)
+        if ip is None:
+            raise RuntimeError(f'could not find IP address for {self.id}')
 
-            self.device = RtspDevice(mac=self.id, ip=ip, jovision_profile=self.jovision_profile)
+        self.device = RtspDevice(mac=self.id, ip=ip, jovision_profile=self.jovision_profile)
 
         await self._apply_all_parameters()  # TODO: avoid reconnecting here
 
     async def disconnect(self) -> None:
-        async with self._device_connection():
-            if not self.is_connected:
-                return
-            logging.info(f'camera {self.id}: disconnect initialized...')
-            while self._pending_operations > 0:
-                logging.info(f'camera {self.id}: waiting for pending operations to finish...')
-                await self.device_connection_lock.wait()
+        if not self.is_connected:
+            return
+        logging.info(f'camera {self.id}: disconnect initialized...')
 
-            assert self.device is not None
-            self.device.shutdown()
-            self.device = None
+        assert self.device is not None
+        self.device.shutdown()
+        self.device = None
 
     async def capture_image(self) -> None:
-        async with self._device_connection():
-            if not self.is_connected:
-                return
-            assert self.device is not None
+        if not self.is_connected:
+            return
+        assert self.device is not None
 
-            image_bytes = self.device.capture()
+        image_bytes = self.device.capture()
 
         if not image_bytes:
             return
@@ -114,25 +108,23 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         image = Image(time=rosys.time(), camera_id=self.id, size=final_image_resolution, data=transformed_image_bytes)
         self._add_image(image)
 
-    async def set_fps(self, fps: int) -> None:
+    def set_fps(self, fps: int) -> None:
         if self.device is None or self.device.settings_interface is None:
             return
         self.device.settings_interface.set_fps(stream_id=self.jovision_profile, fps=fps)
-        await self.reconnect()
 
-    async def get_fps(self) -> Optional[int]:
+    def get_fps(self) -> Optional[int]:
         if self.device is None or self.device.settings_interface is None:
             return None
         fps = self.device.settings_interface.get_fps(stream_id=self.jovision_profile)
         return fps
 
-    async def set_jovision_profile(self, profile: int) -> None:
+    def set_jovision_profile(self, profile: int) -> None:
         if self.device is None:
             return
         self.jovision_profile = profile
-        await self.reconnect()
 
-    async def get_jovision_profile(self) -> Optional[int]:
+    def get_jovision_profile(self) -> Optional[int]:
         if self.device is None:
             return None
         return self.jovision_profile

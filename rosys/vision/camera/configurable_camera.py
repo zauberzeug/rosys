@@ -48,6 +48,8 @@ class ConfigurableCamera(Camera):
         self._parameters[name] = Parameter(info=info, getter=getter, setter=setter, value=default_value)
 
     async def _apply_parameters(self, new_values: dict[str, Any]) -> None:
+        if not self.is_connected:
+            return
         for name, value in new_values.items():
             if name not in self._parameters:
                 raise ValueError(f'Cannot set unknown parameter "{name}"')
@@ -55,14 +57,16 @@ class ConfigurableCamera(Camera):
                 continue
             if value == self._parameters[name].value:
                 continue
-            await self._secure_parameter_setter(self._parameters[name].setter, value)
+            self._parameters[name].setter(value)
 
     async def _apply_all_parameters(self) -> None:
         await self._apply_parameters(self.parameters)
 
     async def _update_parameter_values(self) -> None:
+        if not self.is_connected:
+            return
         for param in self._parameters.values():
-            val = await self._secure_parameter_getter(param.getter)
+            val = param.getter()
             if val is None and self.IGNORE_NONE_VALUES:
                 continue
             param.value = val
@@ -77,27 +81,3 @@ class ConfigurableCamera(Camera):
 
     def get_capabilities(self) -> list[ParameterInfo]:
         return [param.info for param in self._parameters.values()]
-
-    async def _secure_parameter_getter(self, getter: Callable) -> Any:
-        async with self._device_connection():
-            if not self.is_connected:
-                raise RuntimeError('Cannot get parameter value while camera is not connected')
-            self._pending_operations += 1
-        try:
-            return await getter()
-        finally:
-            async with self._device_connection():
-                self._pending_operations -= 1
-                self.device_connection_lock.notify_all()
-
-    async def _secure_parameter_setter(self, setter: Callable, value: Any) -> None:
-        async with self._device_connection():
-            if not self.is_connected:
-                raise RuntimeError('Cannot set parameter value while camera is not connected')
-            self._pending_operations += 1
-        try:
-            await setter(value)
-        finally:
-            async with self._device_connection():
-                self._pending_operations -= 1
-                self.device_connection_lock.notify_all()
