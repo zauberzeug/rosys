@@ -53,6 +53,11 @@ class RtspDevice:
             self.capture_process.terminate()
             self.capture_process = None
 
+    async def restart_gstreamer(self):
+        assert self.url is not None
+        self.shutdown()
+        await self.start_gsreamer_task(self.url)
+
     async def start_gsreamer_task(self, url: str) -> None:
         async def stream(url: str) -> AsyncGenerator[bytes, None]:
             if 'subtype=0' in url:
