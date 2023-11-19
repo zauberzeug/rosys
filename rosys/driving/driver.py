@@ -68,7 +68,7 @@ class Driver:
     @analysis.track
     async def drive_to(self, target: Point, backward: bool = False) -> None:
         if self.parameters.minimum_turning_radius:
-            await self.drive_circle(target)
+            await self.drive_circle(target, backward)
 
         robot_position = self.odometer.prediction.point
         approach_spline = Spline(
@@ -80,13 +80,15 @@ class Driver:
         await self.drive_spline(approach_spline, flip_hook=backward)
 
     @analysis.track
-    async def drive_circle(self, target: Point) -> None:
+    async def drive_circle(self, target: Point, backward: bool = False) -> None:
         while True:
             angle = eliminate_2pi(self.odometer.prediction.direction(target) - self.odometer.prediction.yaw)
             if abs(angle) < np.deg2rad(5):
                 break
-            linear = 0.5
+            linear = 0.5 if not backward else -0.5
             sign = 1 if angle > 0 else -1
+            if backward:
+                sign *= -1
             angular = linear / self.parameters.minimum_turning_radius * sign
             await self.wheels.drive(*self._throttle(linear, angular))
             await rosys.sleep(0.1)
