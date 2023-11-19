@@ -35,8 +35,8 @@ class BumperHardware(Bumper, ModuleHardware):
                  estop: Optional[EStop] = None) -> None:
         self.name = name
         self.pins = pins
-        lizard_code = '\n'.join(
-            f'{name}_{pin} = {expander.name + "." if expander else ""}Input({number})' for pin, number in pins.items())
+        lizard_code = '\n'.join(f'{name}_{pin} = {expander.name + "." if expander else ""}Input({number})'
+                                for pin, number in pins.items())
         core_message_fields = [f'{name}_{pin}.level' for pin in pins]
         super().__init__(robot_brain=robot_brain,
                          lizard_code=lizard_code,
