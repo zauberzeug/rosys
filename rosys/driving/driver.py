@@ -82,7 +82,10 @@ class Driver:
     @analysis.track
     async def drive_circle(self, target: Point, backward: bool = False) -> None:
         while True:
-            angle = eliminate_2pi(self.odometer.prediction.direction(target) - self.odometer.prediction.yaw)
+            target_yaw = self.odometer.prediction.direction(target)
+            if backward:
+                target_yaw += np.pi
+            angle = eliminate_2pi(target_yaw - self.odometer.prediction.yaw)
             if abs(angle) < np.deg2rad(5):
                 break
             linear = 0.5 if not backward else -0.5
