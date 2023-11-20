@@ -12,3 +12,4 @@ site/
 .github/
 tests/
 .git/
+.mypy_cache

@@ -9,7 +9,7 @@ from .image import Image
 T = TypeVar('T', bound=Camera)
 
 
-class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
+class CameraProvider(Generic[T], rosys.persistence.PersistentModule, metaclass=abc.ABCMeta):
     """A camera provider holds a dictionary of cameras and manages additions and removals.
 
     The camera dictionary should not be modified directly but by using the camera provider's methods.

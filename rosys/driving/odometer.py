@@ -87,3 +87,11 @@ class Odometer:
         frame = Pose.from_matrix(global_pose.matrix @ local_pose.inv_matrix)
         frame.time = global_pose.time
         return frame
+
+    def reset(self):
+        self.prediction = Pose()
+        self.detection = None
+        self.current_velocity = None
+        self.last_movement: float = 0
+        self.history: list[Pose] = []
+        self.odometry_frame = Pose()
