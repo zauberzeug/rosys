@@ -62,7 +62,7 @@ class ConfigurableCamera(Camera):
     async def _apply_all_parameters(self) -> None:
         await self._apply_parameters(self.parameters)
 
-    async def _update_parameter_values(self) -> None:
+    async def _update_parameter_cache(self) -> None:
         if not self.is_connected:
             return
         for param in self._parameters.values():
@@ -73,7 +73,7 @@ class ConfigurableCamera(Camera):
 
     async def set_parameters(self, new_values: dict[str, Any]) -> None:
         await self._apply_parameters(new_values)
-        await self._update_parameter_values()
+        await self._update_parameter_cache()
 
     @property
     def parameters(self) -> dict[str, Any]:

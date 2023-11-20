@@ -87,7 +87,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         logging.info(f'camera {self.id}: connected')
 
         await self._apply_all_parameters()
-        await self._update_parameter_values()
+        await self._update_parameter_cache()
 
     async def disconnect(self) -> None:
         if not self.is_connected:

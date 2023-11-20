@@ -78,7 +78,8 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         self.device = RtspDevice(mac=self.id, ip=ip, jovision_profile=self.jovision_profile)
 
-        await self._apply_all_parameters()  # TODO: avoid reconnecting here
+        await self._apply_all_parameters()
+        await self._update_parameter_cache()
 
     async def disconnect(self) -> None:
         if not self.is_connected:
