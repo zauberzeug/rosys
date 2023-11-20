@@ -58,6 +58,7 @@ class ConfigurableCamera(Camera):
             if value == self._parameters[name].value:
                 continue
             self._parameters[name].setter(value)
+        await self._update_parameter_cache()
 
     async def _apply_all_parameters(self) -> None:
         await self._apply_parameters(self.parameters)
@@ -73,7 +74,6 @@ class ConfigurableCamera(Camera):
 
     async def set_parameters(self, new_values: dict[str, Any]) -> None:
         await self._apply_parameters(new_values)
-        await self._update_parameter_cache()
 
     @property
     def parameters(self) -> dict[str, Any]:
