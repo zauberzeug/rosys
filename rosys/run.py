@@ -115,7 +115,7 @@ async def sh(command: list[str] | str, *,
     if is_stopping():
         return ''
     try:
-        return await asyncio.wait_for(io_bound(popen), timeout)
+        return await asyncio.wait_for(io_bound(popen), timeout) or ''
     except asyncio.TimeoutError:
         log.warning(f'Command "{command}" timed out after {timeout} seconds.')
         return ''

@@ -5,7 +5,7 @@ from nicegui.elements.scene_objects import Cylinder, Group, Text, Texture
 
 from .. import run
 from .calibration import Calibration
-from .camera import Camera
+from .camera import CalibratableCamera
 from .camera_projector import CameraProjector
 from .camera_provider import CameraProvider
 
@@ -32,7 +32,7 @@ class CameraObjects(Group):
         ui.timer(1.0, self.update)
 
     @property
-    def calibrated_cameras(self) -> dict[str, Camera]:
+    def calibrated_cameras(self) -> dict[str, CalibratableCamera]:
         return {id: camera for id, camera in self.camera_provider.cameras.items() if camera.calibration}
 
     def find_objects(self, type_: str) -> dict[str, Object3D]:
@@ -96,7 +96,7 @@ class CameraObjects(Group):
                 continue
             coordinates = [[point and [point[0], point[1], 0] for point in row] for row in projection.coordinates]
 
-            url = f'{self.camera_provider.get_image_url(image)}?shrink={self.image_shrink_factor}'
+            url = f'{camera.get_image_url(image)}?shrink={self.image_shrink_factor}'
             if image.camera_id not in self.textures:
                 with self:
                     self.textures[image.camera_id] = Texture(url, coordinates).with_name(f'image_{image.id}')

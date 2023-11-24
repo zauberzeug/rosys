@@ -3,7 +3,7 @@ from nicegui import ui
 
 import rosys
 
-camera_provider = rosys.vision.RtspCameraProviderHardware()
+camera_provider = rosys.vision.RtspCameraProvider()
 
 
 def refresh() -> None:
