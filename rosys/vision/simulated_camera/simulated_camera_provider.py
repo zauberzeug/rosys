@@ -2,7 +2,6 @@ import random
 
 from ... import persistence, rosys
 from ..camera_provider import CameraProvider
-from ..image import ImageSize
 from .simulated_camera import SimulatedCamera
 
 
@@ -50,4 +49,4 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera], persistence.Persi
         for _ in range(num_cameras):
             new_id = f'cam{len(self._cameras)}'
             print(f'adding simulated camera: {new_id}')
-            self.add_camera(SimulatedCamera(id=new_id, resolution=ImageSize(width=640, height=480)))
+            self.add_camera(SimulatedCamera(id=new_id, width=640, height=480))

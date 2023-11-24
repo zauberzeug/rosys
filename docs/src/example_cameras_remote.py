@@ -15,7 +15,7 @@ else:
     robot = rosys.hardware.RobotSimulation([wheels])
     rosys.vision.SimulatedCameraProvider.USE_PERSISTENCE = False
     camera_provider = rosys.vision.SimulatedCameraProvider()
-    camera = rosys.vision.SimulatedCamera(id='test_cam', resolution=rosys.vision.ImageSize(width=800, height=600))
+    camera = rosys.vision.SimulatedCamera(id='test_cam', width=800, height=600)
     rosys.on_startup(lambda: camera_provider.add_camera(camera))
 steerer = rosys.driving.Steerer(wheels)
 odometer = rosys.driving.Odometer(wheels)
