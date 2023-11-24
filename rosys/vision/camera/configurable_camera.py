@@ -34,20 +34,20 @@ class ConfigurableCamera(Camera):
         self._pending_operations: int = 0
 
     @overload
-    def _register_parameter(self, name: str, getter: Callable, setter: Callable, default_value: Any) -> None:
+    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], None], default_value: Any) -> None:
         ...
 
     @overload
-    def _register_parameter(self, name: str, getter: Callable, setter: Callable, default_value: Any,
+    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], None], default_value: Any,
                             min_value: Any, max_value: Any, step: Any) -> None:
         ...
 
-    def _register_parameter(self, name: str, getter: Callable, setter: Callable, default_value: Any,
+    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], None], default_value: Any,
                             min_value: Any = None, max_value: Any = None, step: Any = None) -> None:
         info = ParameterInfo(name=name, min=min_value, max=max_value, step=step)
         self._parameters[name] = Parameter(info=info, getter=getter, setter=setter, value=default_value)
 
-    async def _apply_parameters(self, new_values: dict[str, Any]) -> None:
+    def _apply_parameters(self, new_values: dict[str, Any]) -> None:
         if not self.is_connected:
             return
         for name, value in new_values.items():
@@ -58,12 +58,12 @@ class ConfigurableCamera(Camera):
             if value == self._parameters[name].value:
                 continue
             self._parameters[name].setter(value)
-        await self._update_parameter_cache()
+        self._update_parameter_cache()
 
-    async def _apply_all_parameters(self) -> None:
-        await self._apply_parameters(self.parameters)
+    def _apply_all_parameters(self) -> None:
+        self._apply_parameters(self.parameters)
 
-    async def _update_parameter_cache(self) -> None:
+    def _update_parameter_cache(self) -> None:
         if not self.is_connected:
             return
         for param in self._parameters.values():
@@ -72,8 +72,8 @@ class ConfigurableCamera(Camera):
                 continue
             param.value = val
 
-    async def set_parameters(self, new_values: dict[str, Any]) -> None:
-        await self._apply_parameters(new_values)
+    def set_parameters(self, new_values: dict[str, Any]) -> None:
+        self._apply_parameters(new_values)
 
     @property
     def parameters(self) -> dict[str, Any]:

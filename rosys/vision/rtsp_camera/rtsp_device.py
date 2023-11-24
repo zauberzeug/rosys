@@ -33,11 +33,12 @@ class RtspDevice:
             logging.warning('using default fps of 10')
             self.fps = 10
 
-        self.url = mac_to_url(mac, ip, jovision_profile)
-        if self.url is None:
+        url = mac_to_url(mac, ip, jovision_profile)
+        if url is None:
             raise ValueError(f'could not determine RTSP URL for {mac}')
+        self.url = url
         logging.info(f'Starting VideoStream for {self.url}')
-        self.capture_task = background_tasks.create(self.start_gsreamer_task(self.url), name=f'capture {self.mac}')
+        self.start_gstreamer_task()
 
     @property
     def authorized(self) -> bool:
@@ -53,12 +54,14 @@ class RtspDevice:
             self.capture_process.terminate()
             self.capture_process = None
 
-    async def restart_gstreamer(self):
-        assert self.url is not None
-        self.shutdown()
-        await self.start_gsreamer_task(self.url)
+    def start_gstreamer_task(self) -> None:
+        self.capture_task = background_tasks.create(self.run_gstreamer(self.url), name=f'capture {self.mac}')
 
-    async def start_gsreamer_task(self, url: str) -> None:
+    def restart_gstreamer(self) -> None:
+        self.shutdown()
+        self.start_gstreamer_task()
+
+    async def run_gstreamer(self, url: str) -> None:
         async def stream(url: str) -> AsyncGenerator[bytes, None]:
             if 'subtype=0' in url:
                 url = url.replace('subtype=0', 'subtype=1')

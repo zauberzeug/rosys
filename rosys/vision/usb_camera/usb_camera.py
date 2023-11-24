@@ -36,13 +36,11 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self.detect: bool = False
         self.color: Optional[str] = None
 
-        self._register_parameter(name='auto_exposure', setter=self.set_exposure,
-                                 getter=self.get_exposure, default_value=auto_exposure)
-        self._register_parameter(name='exposure', setter=self.set_exposure,
-                                 getter=self.get_exposure, default_value=exposure)
-        self._register_parameter(name='width', setter=self.set_width, getter=self.get_width, default_value=width)
-        self._register_parameter(name='height', setter=self.set_height, getter=self.get_height, default_value=height)
-        self._register_parameter(name='fps', setter=self.set_fps, getter=self.get_fps, default_value=fps)
+        self._register_parameter('auto_exposure', self.get_exposure, self.set_exposure, auto_exposure)
+        self._register_parameter('exposure', self.get_exposure, self.set_exposure, exposure)
+        self._register_parameter('width', self.get_width, self.set_width, width)
+        self._register_parameter('height', self.get_height, self.set_height, height)
+        self._register_parameter('fps', self.get_fps, self.set_fps, fps)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -50,22 +48,13 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
             'name': self.name,
             'connect_after_init': self.connect_after_init,
             'streaming': self.streaming,
-            'parameters': {name: param.value for name, param in self._parameters.items()},
+        } | {
+            name: param.value for name, param in self._parameters.items()
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:
-        return cls(
-            id=data['id'],
-            name=data['name'],
-            connect_after_init=data['connect_after_init'],
-            streaming=data['streaming'],
-            auto_exposure=data.get('parameters', {}).get('auto_exposure', None),
-            exposure=data.get('parameters', {}).get('exposure', None),
-            width=data.get('parameters', {}).get('width', None),
-            height=data.get('parameters', {}).get('height', None),
-            fps=data.get('parameters', {}).get('fps', None)
-        )
+        return cls(**data)
 
     @property
     def is_connected(self) -> bool:
@@ -76,8 +65,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         if self.is_connected:
             return
 
-        device = await UsbDevice.from_uid(self.id)
-
+        device = UsbDevice.from_uid(self.id)
         if device is None:
             logging.warning(f'Connecting to {self.id} failed!')
             return
@@ -86,7 +74,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
         logging.info(f'camera {self.id}: connected')
 
-        await self._apply_all_parameters()
+        self._apply_all_parameters()
 
     async def disconnect(self) -> None:
         if not self.is_connected:
@@ -126,7 +114,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         image = Image(time=rosys.time(), camera_id=self.id, size=final_image_resolution, data=bytes_)
         self._add_image(image)
 
-    async def set_auto_exposure(self, auto: bool) -> None:
+    def set_auto_exposure(self, auto: bool) -> None:
         assert self.device is not None
 
         device = self.device

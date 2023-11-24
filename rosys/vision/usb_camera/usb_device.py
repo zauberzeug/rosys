@@ -12,19 +12,19 @@ from .usb_camera_scanner import device_nodes_from_uid
 MJPG = cv2.VideoWriter_fourcc(*'MJPG')
 
 
-async def find_video_id(camera_uid: str) -> Optional[int]:
+def find_video_id(camera_uid: str) -> Optional[int]:
     device_nodes = device_nodes_from_uid(camera_uid)
-    possible_video_ids = []
-    for node in device_nodes:
-        if node.startswith('/dev/video'):
-            possible_video_ids.append(int(node.strip().lstrip('/dev/video')))
-
-    return min(possible_video_ids) if possible_video_ids else None
+    video_ids = [
+        int(node.strip().removeprefix('/dev/video'))
+        for node in device_nodes
+        if node.startswith('/dev/video')
+    ]
+    return min(video_ids) if video_ids else None
 
 
 class UsbDevice:
 
-    def __init__(self, video_id: int, capture: cv2.VideoCapture):
+    def __init__(self, video_id: int, capture: cv2.VideoCapture) -> None:
         self.video_id: int = video_id
         self.capture: cv2.VideoCapture = capture
 
@@ -37,19 +37,29 @@ class UsbDevice:
         self.set_video_format()
 
     @staticmethod
-    async def from_uid(camera_id: str) -> Optional[UsbDevice]:
-        video_id = await find_video_id(camera_id)
+    def from_uid(camera_id: str) -> Optional[UsbDevice]:
+        video_id = find_video_id(camera_id)
         if video_id is None:
             logging.error(f'Could not find video device for camera {camera_id}')
             return None
 
         capture = UsbDevice.create_capture(video_id)
-
         if capture is None:
             logging.error(f'Could not open video device {video_id}')
             return None
 
         return UsbDevice(video_id=video_id, capture=capture)
+
+    @staticmethod
+    def create_capture(index: int) -> Optional[cv2.VideoCapture]:
+        capture = cv2.VideoCapture(index)
+        if capture is None:
+            return None
+        capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        if not capture.isOpened():
+            capture.release()
+            return None
+        return capture
 
     async def load_value_ranges(self) -> None:
         output = await self.run_v4l('--all')
@@ -84,14 +94,3 @@ class UsbDevice:
             # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
             if self.capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
                 self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-
-    @staticmethod
-    def create_capture(index: int):
-        capture = cv2.VideoCapture(index)
-        if capture is None:
-            return None
-        capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-        if not capture.isOpened():
-            capture.release()
-            return None
-        return capture

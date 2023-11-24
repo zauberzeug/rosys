@@ -1,14 +1,10 @@
 import numpy as np
 
-from rosys.vision import CalibratableCamera, Camera, CameraProjector
-
-
-class CalibratedCamera(CalibratableCamera, Camera):
-    pass
+from rosys.vision import CalibratableCamera, CameraProjector
 
 
 def test_projection():
-    cam = CalibratedCamera(id='1')
+    cam = CalibratableCamera(id='1')
     cam.set_perfect_calibration(
         x=0.1, y=0.2, z=3, roll=np.deg2rad(180 + 10), pitch=np.deg2rad(20), width=1600, height=1200)
     coordinates = CameraProjector.project(cam, rows=3, columns=4)
@@ -21,7 +17,7 @@ def test_projection():
          [0.19612169506058386, -1.8593343891253478], [1.8490245289440204, -1.4414912905535386]],
     ])
 
-    cam = CalibratedCamera(id='1')
+    cam = CalibratableCamera(id='1')
     cam.set_perfect_calibration(roll=np.deg2rad(180+70), width=1600, height=1200)
     coordinates = CameraProjector.project(cam, rows=3, columns=4,)
     assert CameraProjector.allclose(coordinates, [

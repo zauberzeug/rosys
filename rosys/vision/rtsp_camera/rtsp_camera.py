@@ -42,19 +42,13 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             'name': self.name,
             'connect_after_init': self.connect_after_init,
             'streaming': self.streaming,
-            'parameters': {name: param.value for name, param in self._parameters.items()},
+        } | {
+            name: param.value for name, param in self._parameters.items()
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:
-        return cls(
-            id=data['id'],
-            name=data['name'],
-            connect_after_init=data['connect_after_init'],
-            streaming=data['streaming'],
-            goal_fps=data.get('parameters', {}).get('fps'),
-            jovision_profile=data.get('parameters', {}).get('jovision_profile'),
-        )
+        return cls(**data)
 
     @property
     def is_connected(self) -> bool:
@@ -78,7 +72,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         self.device = RtspDevice(mac=self.id, ip=ip, jovision_profile=self.jovision_profile)
 
-        await self._apply_all_parameters()
+        self._apply_all_parameters()
 
     async def disconnect(self) -> None:
         if not self.is_connected:
@@ -129,8 +123,8 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             return None
         return self.jovision_profile
 
-    async def _apply_parameters(self, new_values: dict[str, Any]) -> None:
-        await super()._apply_parameters(new_values)
+    def _apply_parameters(self, new_values: dict[str, Any]) -> None:
+        super()._apply_parameters(new_values)
         if not self.is_connected:
             assert self.device is not None
-            await self.device.restart_gstreamer()
+            self.device.restart_gstreamer()

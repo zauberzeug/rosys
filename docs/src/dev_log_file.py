@@ -8,7 +8,7 @@ from nicegui import ui
 from rosys.driving import Odometer, Steerer, joystick
 from rosys.hardware import RobotSimulation, WheelsSimulation
 
-PATH = Path('~/.rosys')
+PATH = Path('~/.rosys').expanduser()
 PATH.mkdir(parents=True, exist_ok=True)
 
 logging.config.dictConfig({

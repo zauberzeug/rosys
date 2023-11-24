@@ -2,11 +2,11 @@ import platform
 
 import pytest
 
-from rosys.vision import RtspCamera, RtspCameraProvider, SimulatedCameraProvider, UsbCamera, UsbCameraProvider
+from rosys.vision import RtspCamera, RtspCameraProvider, SimulatedCamera, UsbCamera, UsbCameraProvider
 
 
 async def test_simulated_camera():
-    camera = SimulatedCameraProvider.create('test_cam', width=800, height=600)
+    camera = SimulatedCamera(id='test_cam', width=800, height=600)
     await camera.connect()
     assert camera.is_connected
     await camera.capture_image()
@@ -18,7 +18,7 @@ async def test_simulated_camera():
 async def test_usb_camera():
     if platform.system() != 'Linux':
         pytest.skip('UsbCamera is only supported on Linux.')
-    connected_uids = await UsbCameraProvider.scan_for_cameras()
+    connected_uids = list(UsbCameraProvider.scan_for_cameras())
     if len(connected_uids) == 0:
         pytest.skip('No USB camera detected. This test requires a physical USB camera to be connected.')
     camera = UsbCamera(id=connected_uids[0])

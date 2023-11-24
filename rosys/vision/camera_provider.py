@@ -32,9 +32,6 @@ class CameraProvider(Generic[T], rosys.persistence.PersistentModule, metaclass=a
 
         self._cameras: dict[str, T] = {}
 
-    def request_backup(self) -> None:
-        pass  # HACK: for the case that the camera provider derives from PersistentModule
-
     def backup(self) -> dict:
         return {'cameras': persistence.to_dict(self._cameras)}
 
