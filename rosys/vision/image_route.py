@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from functools import partial
 from typing import TYPE_CHECKING, Optional
 
 import cv2
