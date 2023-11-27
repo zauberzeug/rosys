@@ -22,14 +22,16 @@ class Camera(abc.ABC):
                  connect_after_init: bool = True,
                  streaming: bool = True,
                  image_grab_interval: float = 0.1,
-                 **kwargs) -> None:
+                 base_path_overwrite: Optional[str] = None,
+                 ** kwargs) -> None:
         super().__init__(**kwargs)
         self.id: str = id
         self.name = name or self.id
         self.connect_after_init = connect_after_init
         self.images: deque = deque(maxlen=self.MAX_IMAGES)
         self.streaming: bool = streaming
-        self.base_path: str = f'images/{id}'
+        self.base_path: str = f'images/{base_path_overwrite}' if base_path_overwrite else f'images/{id}'
+
         self.NEW_IMAGE: Event = Event()
 
         self.device_connection_lock: asyncio.Condition = asyncio.Condition()
