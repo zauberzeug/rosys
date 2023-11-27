@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 log = logging.getLogger('rosys.image_route')
 
 
-def create_image_route(camera) -> None:
+def create_image_route(camera: Camera) -> None:
     async def get_camera_image(timestamp: str, shrink: int = 1) -> Response:
         return await _get_image(camera, timestamp, shrink)
 
