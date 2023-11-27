@@ -56,6 +56,14 @@ class Camera(abc.ABC):
             return f'{self.base_path}/placeholder'
         return self.get_image_url(image)
 
+    def to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'name': self.name,
+            'connect_after_init': self.connect_after_init,
+            'streaming': self.streaming,
+        }
+
     @property
     def is_connected(self) -> bool:
         """To be interpreted as "ready to capture images"."""
