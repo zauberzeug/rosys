@@ -12,7 +12,6 @@ class CalibratableCamera(Camera):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.calibration: Optional[Calibration] = None
-        self.focal_length: Optional[float] = None
 
     @property
     def is_calibrated(self) -> bool:
