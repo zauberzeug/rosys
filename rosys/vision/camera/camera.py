@@ -30,7 +30,7 @@ class Camera(abc.ABC):
         self.connect_after_init = connect_after_init
         self.images: deque = deque(maxlen=self.MAX_IMAGES)
         self.streaming: bool = streaming
-        self.base_path: str = f'images/{base_path_overwrite}' if base_path_overwrite else f'images/{id}'
+        self.base_path: str = f'images/{base_path_overwrite or id}'
 
         self.NEW_IMAGE: Event = Event()
 
