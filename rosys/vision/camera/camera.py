@@ -23,7 +23,7 @@ class Camera(abc.ABC):
                  streaming: bool = True,
                  image_grab_interval: float = 0.1,
                  base_path_overwrite: Optional[str] = None,
-                 ** kwargs) -> None:
+                 **kwargs) -> None:
         super().__init__(**kwargs)
         self.id: str = id
         self.name = name or self.id
