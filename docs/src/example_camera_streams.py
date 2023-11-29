@@ -13,7 +13,7 @@ def refresh() -> None:
                 with ui.card().tight():
                     streams[uid] = ui.interactive_image()
                     ui.label(uid).classes('m-2')
-        streams[uid].set_source(camera_provider.get_latest_image_url(camera))
+        streams[uid].set_source(camera.get_latest_image_url())
 
 
 streams: dict[str, ui.interactive_image] = {}

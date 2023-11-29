@@ -23,14 +23,14 @@ class Camera(abc.ABC):
                  streaming: bool = True,
                  image_grab_interval: float = 0.1,
                  base_path_overwrite: Optional[str] = None,
-                 ** kwargs) -> None:
+                 **kwargs) -> None:
         super().__init__(**kwargs)
         self.id: str = id
         self.name = name or self.id
         self.connect_after_init = connect_after_init
         self.images: deque = deque(maxlen=self.MAX_IMAGES)
         self.streaming: bool = streaming
-        self.base_path: str = f'images/{base_path_overwrite}' if base_path_overwrite else f'images/{id}'
+        self.base_path: str = f'images/{base_path_overwrite or id}'
 
         self.NEW_IMAGE: Event = Event()
 
