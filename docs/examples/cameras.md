@@ -20,8 +20,9 @@ Using `rosys.ui` you can show the latest captured images from each camera:
 The `ui.timer` regularly updates the source property of the `ui.image`.
 The cameras `latest_image_uri` property provides the URI to the latest captured image.
 
-This example uses a `UsbCameraProviderSimulation` with a single simulated test camera.
-But you can replace the provider with a `UsbCameraProviderHardware`.
+This example uses a `SimulatedCamera` for demonstration.
+You can directly replace the camera with a `UsbCamera` or `RtspCamera` if you know their ids
+or use their respective providers to discover them automatically.
 
 ## Remote Operation
 
