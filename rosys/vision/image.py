@@ -29,7 +29,7 @@ class Image:
     detections: Optional[Detections] = None
     is_broken: Optional[bool] = None
 
-    DEFAULT_PLACEHOLDER_SIZE: ClassVar[tuple[int, int]] = (260, 200)
+    DEFAULT_PLACEHOLDER_SIZE: ClassVar[tuple[int, int]] = (320, 240)
 
     @property
     def id(self) -> str:
