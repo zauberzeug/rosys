@@ -1,7 +1,7 @@
 import abc
 from typing import Generic, Optional, TypeVar
 
-from .. import persistence, rosys
+from .. import rosys
 from ..event import Event
 from .camera.camera import Camera
 from .image import Image
