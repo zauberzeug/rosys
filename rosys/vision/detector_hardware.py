@@ -98,9 +98,9 @@ class DetectorHardware(Detector):
 
             if detections is not None:
                 detections_dict = detections.to_dict()
-                detections_dict['box_detections_dict'] = detections_dict.pop('boxes')
-                detections_dict['point_detections_dict'] = detections_dict.pop('points')
-                detections_dict['segmentation_detections_dict'] = detections_dict.pop('segmentations')
+                detections_dict['box_detections'] = detections_dict.pop('boxes')
+                detections_dict['point_detections'] = detections_dict.pop('points')
+                detections_dict['segmentation_detections'] = detections_dict.pop('segmentations')
                 data_dict['detections'] = detections_dict
             if tags:
                 data_dict['tags'] = tags
