@@ -18,8 +18,8 @@ class DetectorHardware(Detector):
     It automatically connects and reconnects, submits and receives detections and sends images that should be uploaded to the [Zauberzeug Learning Loop](https://zauberzeug.com/learning-loop.html).
     """
 
-    def __init__(self, *, port: int = 8004) -> None:
-        super().__init__()
+    def __init__(self, *, port: int = 8004, name: Optional[str] = None) -> None:
+        super().__init__(name=name)
 
         self.sio = socketio.AsyncClient()
         self.is_detecting: bool = False
@@ -120,7 +120,7 @@ class DetectorHardware(Detector):
                 }, timeout=3)
                 if current_image.is_broken:  # NOTE: image can be marked broken while detection is underway
                     continue
-                current_image.detections = Detections(
+                detections = Detections(
                     boxes=[persistence.from_dict(BoxDetection, d) for d in result.get('box_detections', [])],
                     points=[persistence.from_dict(PointDetection, d) for d in result.get('point_detections', [])],
                     segmentations=[
@@ -128,6 +128,7 @@ class DetectorHardware(Detector):
                         for d in result.get('segmentation_detections', [])
                     ],
                 )
+                current_image.set_detections(self.name, detections)
             except socketio.exceptions.TimeoutError:
                 self.log.debug(f'detection for {current_image.id} on {self.port} took too long')
                 self.timeout_count += 1
