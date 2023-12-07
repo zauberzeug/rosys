@@ -29,10 +29,10 @@ class Detection:
 
 @dataclass(slots=True, kw_only=True)
 class BoxDetection(Detection):
-    x: int
-    y: int
-    width: int
-    height: int
+    x: float
+    y: float
+    width: float
+    height: float
 
     @property
     def cx(self) -> float:

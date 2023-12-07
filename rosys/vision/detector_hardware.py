@@ -98,9 +98,10 @@ class DetectorHardware(Detector):
 
             if detections is not None:
                 detections_dict = detections.to_dict()
-                detections_dict['box_detections'] = detections_dict.pop('boxes')
+                detections_dict['box_detections'] = _box_detections_to_int(detections_dict.pop('boxes'))
                 detections_dict['point_detections'] = detections_dict.pop('points')
                 detections_dict['segmentation_detections'] = detections_dict.pop('segmentations')
+
                 data_dict['detections'] = detections_dict
             if tags:
                 data_dict['tags'] = tags
@@ -160,3 +161,12 @@ class DetectorHardware(Detector):
 
     def __str__(self) -> str:
         return f'{type(self).__name__} ({"connected" if self.is_connected else "disconnected"})'
+
+
+def _box_detections_to_int(detections: list[dict]) -> list[dict]:
+    for detection in detections:
+        detection['x'] = int(detection['x'])
+        detection['y'] = int(detection['y'])
+        detection['width'] = int(detection['width'])
+        detection['height'] = int(detection['height'])
+    return detections
