@@ -29,8 +29,6 @@ class Detection:
 
 @dataclass(slots=True, kw_only=True)
 class BoxDetection(Detection):
-    x: float
-    y: float
     width: float
     height: float
 
