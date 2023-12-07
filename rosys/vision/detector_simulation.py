@@ -34,8 +34,8 @@ class DetectorSimulation(Detector):
     An optional `noise` parameter controls the spatial accuracy in pixels.
     """
 
-    def __init__(self, camera_provider: CameraProvider, *, noise: float = 1.0) -> None:
-        super().__init__()
+    def __init__(self, camera_provider: CameraProvider, *, noise: float = 1.0, name: Optional[str] = None) -> None:
+        super().__init__(name=name)
 
         self.camera_provider = camera_provider
         self.noise = noise
@@ -54,15 +54,14 @@ class DetectorSimulation(Detector):
         self._uploads.queue.clear()
         self._uploads.priority_queue.clear()
 
-    async def detect(self, image: Image, *_) -> Optional[Detections]:
+    async def detect(self, image: Image, *_) -> None:
         is_blocked = image.camera_id in self.blocked_cameras
         await rosys.sleep(0.4)
-        image.detections = Detections()
+        image.set_detections(self.name, Detections())
         if not is_blocked:
             self.update_simulated_objects(image)
             self.detect_from_simulated_objects(image)
         self.NEW_DETECTIONS.emit(image)
-        return image.detections
 
     async def upload(self, image: Image) -> None:
         self.log.info(f'Uploading {image.id}')
@@ -75,7 +74,8 @@ class DetectorSimulation(Detector):
             return
         camera = self.camera_provider.cameras[image.camera_id]
         assert camera.calibration is not None
-        assert image.detections is not None
+        detections = image.get_detections(self.name)
+        assert detections is not None
         for obj in self.simulated_objects:
             viewing_direction = np.array(camera.calibration.extrinsics.rotation.R)[:, 2]
             object_direction = np.array(obj.position.tuple) - camera.calibration.extrinsics.translation
@@ -86,7 +86,7 @@ class DetectorSimulation(Detector):
                 continue
 
             if obj.size is None:
-                image.detections.points.append(PointDetection(
+                detections.points.append(PointDetection(
                     category_name=obj.category_name,
                     model_name='simulation',
                     confidence=obj.confidence,
@@ -102,7 +102,7 @@ class DetectorSimulation(Detector):
                     for dz in [-obj.size[2] / 2, obj.size[2] / 2]
                 ])
                 image_points = camera.calibration.project_array_to_image(world_points)
-                image.detections.boxes.append(BoxDetection(
+                detections.boxes.append(BoxDetection(
                     category_name=obj.category_name,
                     model_name='simulation',
                     confidence=obj.confidence,

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import io
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
 import PIL.Image
@@ -26,10 +26,24 @@ class Image:
     size: ImageSize
     time: float  # time of recording
     data: Optional[bytes] = None
-    detections: Optional[Detections] = None
+    _detections: dict[str, Detections] = field(default_factory=dict)
     is_broken: Optional[bool] = None
 
     DEFAULT_PLACEHOLDER_SIZE: ClassVar[tuple[int, int]] = (320, 240)
+
+    @property
+    def detections(self) -> Optional[Detections]:
+        if not self._detections:
+            return None
+        if len(self._detections) > 1:
+            raise RuntimeError('Image has multiple detection types. Use `get_detections` instead.')
+        return list(self._detections.values())[0]
+
+    def get_detections(self, detector_id: str) -> Optional[Detections]:
+        return self._detections.get(detector_id)
+
+    def set_detections(self, detector_id: str, detections: Detections) -> None:
+        self._detections[detector_id] = detections
 
     @property
     def id(self) -> str:
