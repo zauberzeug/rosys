@@ -41,10 +41,9 @@ class SerialCommunication(Communication):
         if device_path is None:
             return False
         try:
-            with serial.Serial(device_path) as ser:
-                pass  # Successfully opened the port
-            return True
-        except SerialException as e:
+            with serial.Serial(device_path):
+                return True  # Successfully opened the port
+        except SerialException:
             return False
 
     @staticmethod
