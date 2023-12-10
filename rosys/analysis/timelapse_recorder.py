@@ -28,9 +28,9 @@ class RosysImage(Protocol):
 
 class TimelapseRecorder:
 
-    def __init__(self) -> None:
+    def __init__(self, resolution: str = '800x600') -> None:
         self.log = logging.getLogger('rosys.timelapse_recorder')
-
+        self.resolution = resolution
         VIDEO_PATH.mkdir(parents=True, exist_ok=True)
 
     async def save(self, image: RosysImage) -> None:
@@ -51,9 +51,15 @@ class TimelapseRecorder:
         target_dir = STORAGE_PATH / id_
         target_dir.mkdir(parents=True, exist_ok=True)
         self.log.info(await rosys.run.sh(f'mv {STORAGE_PATH}/*.jpg {target_dir}', shell=True))
-        # it seems that niceness of subprocess is relative to own niceness, but we want an absolute niceness
+        source_file = target_dir / 'source.txt'
+        with source_file.open('w') as f:
+            for jpg in sorted(target_dir.glob('*.jpg')):
+                f.write(f"file '{jpg}'\n")
         absolute_niceness = 10 - os.nice(0)
-        cmd = f'nice -n {absolute_niceness} ffmpeg -hide_banner -threads 1 -r 10 -pattern_type glob -i "{target_dir}/*.jpg" -s 1600x1200 -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{id_}.mp4; mv {target_dir}/*mp4 {STORAGE_PATH}/videos; rm -r {target_dir};'
+        cmd = f'nice -n {absolute_niceness} ffmpeg -hide_banner -threads 1 -f concat -safe 0 -i "{source_file}" ' \
+            f'-s {self.resolution} -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{id_}.mp4;' \
+            f'mv {target_dir}/*mp4 {STORAGE_PATH}/videos;' \
+            f'rm -r {target_dir};'
         self.log.info(f'starting {cmd}')
         rosys.background_tasks.create(rosys.run.sh(cmd, timeout=None, shell=True), name='timelapse ffmpeg')
 
@@ -86,8 +92,15 @@ def save_info(title: str, subtitle: str, time: float, frames: int) -> None:
         img = Image.new('RGB', (1600, 1200), 'black')
         draw = ImageDraw.Draw(img)
         font = BIG_COVER_FONT if len(subtitle) < 25 and len(title) < 25 else SMALL_COVER_FONT
-        w, h = draw.textsize(title, font=font)
-        draw.text((img.width / 2 - w / 2, img.height / 2 - h / 2 - 200), title, font=font, fill='white')
-        w, h = draw.textsize(subtitle, font=font)
-        draw.text((img.width / 2 - w / 2, img.height / 2 - h / 2 + 100), subtitle, font=font, fill='white')
+
+        title_box = draw.textbbox((0, 0), title, font=font)
+        title_x = (img.width - title_box[2]) / 2
+        title_y = (img.height / 2) - 200 - (title_box[3] / 2)
+        draw.text((title_x, title_y), title, font=font, fill='white')
+
+        subtitle_box = draw.textbbox((0, 0), subtitle, font=font)
+        subtitle_x = (img.width - subtitle_box[2]) / 2
+        subtitle_y = (img.height / 2) + 100 - (subtitle_box[3] / 2)
+        draw.text((subtitle_x, subtitle_y), subtitle, font=font, fill='white')
+
         img.save(STORAGE_PATH / f'{time:.0f}{i:04}.jpg')
