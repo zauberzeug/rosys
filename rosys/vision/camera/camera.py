@@ -102,7 +102,7 @@ class Camera(abc.ABC):
         return next((i for i in reversed(self.captured_images) if i.detections), None)
 
     def get_recent_images(self, *, current_time: Optional[float] = None, timespan: float = 10.0) -> list[Image]:
-        """Returns all images that were captured.
+        """Returns all images that were captured. Latest images are at the end of the list.
 
         :param current_time: the starting time for the search; defaults to the current time
         :param timespan: the timespan to search back in seconds

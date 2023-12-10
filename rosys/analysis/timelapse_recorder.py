@@ -11,6 +11,7 @@ import humanize
 from PIL import Image, ImageDraw, ImageFont
 
 from .. import rosys
+from ..vision import Camera
 
 STORAGE_PATH = Path('~/.rosys/timelapse').expanduser()
 VIDEO_PATH = STORAGE_PATH / 'videos'
@@ -28,10 +29,19 @@ class RosysImage(Protocol):
 
 class TimelapseRecorder:
 
-    def __init__(self, resolution: str = '800x600') -> None:
+    def __init__(self, *, resolution: str = '800x600', frame_rate=1) -> None:
         self.log = logging.getLogger('rosys.timelapse_recorder')
         self.resolution = resolution
+        self.camera: Optional[Camera] = None
         VIDEO_PATH.mkdir(parents=True, exist_ok=True)
+        rosys.on_repeat(self.capture, frame_rate)
+
+    async def capture(self) -> None:
+        if self.camera is None:
+            return
+        images = self.camera.get_recent_images()
+        if images:
+            await self.save(images[-1])
 
     async def save(self, image: RosysImage) -> None:
         await rosys.run.cpu_bound(save_image, image, STORAGE_PATH)
@@ -62,10 +72,6 @@ class TimelapseRecorder:
             f'rm -r {target_dir};'
         self.log.info(f'starting {cmd}')
         rosys.background_tasks.create(rosys.run.sh(cmd, timeout=None, shell=True), name='timelapse ffmpeg')
-
-    def clear_jpegs(self) -> None:
-        for jpg in STORAGE_PATH.glob('**/*.jpg'):
-            jpg.unlink()
 
     async def create_info(self, title: str, subtitle: str, frames: int = 20, time: Optional[float] = None) -> None:
         await rosys.run.cpu_bound(save_info, title, subtitle, rosys.time() if time is None else time, frames)
