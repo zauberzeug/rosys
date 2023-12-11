@@ -134,7 +134,7 @@ class Schedule(persistence.PersistentModule):
                 self.automator.start(self.on_deactivate(), paused=self.automator.is_paused)
             self._is_active = False
 
-    def ui(self) -> ui.row:
+    def ui(self) -> ui.column:
         def update() -> None:
             def color(weekday: int, hour: int, minutes: list[int]) -> str:
                 # https://maketintsandshades.com/#21ba45,c10015

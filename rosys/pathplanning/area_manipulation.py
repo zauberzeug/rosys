@@ -31,8 +31,8 @@ class Translator:
 
 class AreaManipulation:
     mode = binding.BindableProperty(on_change=lambda sender, value: sender.MODE_CHANGED.emit(value))
-    area_type: Optional[str] = binding.BindableProperty()
-    area_color: str = binding.BindableProperty()
+    area_type = binding.BindableProperty()
+    area_color = binding.BindableProperty()
 
     def __init__(self, path_planner: PathPlanner) -> None:
         self.path_planner = path_planner

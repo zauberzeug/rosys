@@ -72,7 +72,7 @@ class Event:
             try:
                 result = invoke(listener.callback, *args)
                 if isinstance(result, Awaitable):
-                    if core.loop.is_running():
+                    if core.loop and core.loop.is_running():
                         name = f'{listener.filepath}:{listener.line}'
                         tasks.append(background_tasks.create(result, name=name))
                     else:
