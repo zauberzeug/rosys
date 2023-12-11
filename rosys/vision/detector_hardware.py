@@ -89,7 +89,7 @@ class DetectorHardware(Detector):
             rosys.background_tasks.create(upload_priority_images(), name='upload_priority_images')
             self.uploads.priority_queue.clear()
 
-    async def upload(self, image: Image, tags: list[str] = []) -> None:
+    async def upload(self, image: Image, *, tags: list[str] = []) -> None:
         try:
             self.log.info(f'uploading to port {self.port}')
 
