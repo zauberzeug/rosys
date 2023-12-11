@@ -29,19 +29,30 @@ class RosysImage(Protocol):
 
 class TimelapseRecorder:
 
-    def __init__(self, *, width: int = 800, height: int = 600, frame_rate=1) -> None:
+    def __init__(self, *, width: int = 800, height: int = 600, capture_rate=1) -> None:
+        """Creates a timelapse recorder to capture images from a camera and creates a video of the sequence afterwards.
+
+        param: width: width of the images to capture (default 800)
+        param: height: height of the images to capture (default 600)
+        param: capture_rate: images per second to capture (default 1)
+        """
         self.log = logging.getLogger('rosys.timelapse_recorder')
         self.width = width
         self.height = height
+        self.capture_rate = capture_rate
+        self.last_capture_time = rosys.time()
         self.camera: Optional[Camera] = None
         VIDEO_PATH.mkdir(parents=True, exist_ok=True)
-        rosys.on_repeat(self.capture, frame_rate)
+        rosys.on_repeat(self.capture, 0.01)
 
     async def capture(self) -> None:
         if self.camera is None:
             return
+        if rosys.time() - self.last_capture_time < 1 / self.capture_rate:
+            return
         images = self.camera.get_recent_images()
         if images:
+            self.last_capture_time = rosys.time()
             await self.save(images[-1])
 
     async def save(self, image: RosysImage) -> None:
@@ -93,7 +104,7 @@ def save_image(image: RosysImage, path: Path) -> None:
     draw.text((x - 1, y + 1), text, font=IMAGE_FONT, fill=(0, 0, 0))
     draw.text((x + 1, y + 1), text, font=IMAGE_FONT, fill=(0, 0, 0))
     draw.text((x, y), text, font=IMAGE_FONT, fill=(255, 255, 255))
-    img.save(path / f'{int(image.time)}0000.jpg', 'JPEG')
+    img.save(path / f'{int(image.time* 1000)}.jpg', 'JPEG')
 
 
 def save_info(title: str, subtitle: str, time: float, frames: int) -> None:
