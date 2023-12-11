@@ -51,6 +51,8 @@ class TimelapseRecorder:
         jpgs = sorted(STORAGE_PATH.glob('*.jpg'))
         if len(jpgs) < 20:
             self.log.info(f'very few images ({len(jpgs)}); not creating video')
+            for jpg in jpgs:
+                jpg.unlink()
             return
         start_unix = int(jpgs[0].stem[:-4])
         start = datetime.fromtimestamp(start_unix)
