@@ -29,9 +29,10 @@ class RosysImage(Protocol):
 
 class TimelapseRecorder:
 
-    def __init__(self, *, resolution: str = '800x600', frame_rate=1) -> None:
+    def __init__(self, *, width: int = 800, height: int = 600, frame_rate=1) -> None:
         self.log = logging.getLogger('rosys.timelapse_recorder')
-        self.resolution = resolution
+        self.width = width
+        self.height = height
         self.camera: Optional[Camera] = None
         VIDEO_PATH.mkdir(parents=True, exist_ok=True)
         rosys.on_repeat(self.capture, frame_rate)
@@ -67,7 +68,7 @@ class TimelapseRecorder:
                 f.write(f"file '{jpg}'\n")
         absolute_niceness = 10 - os.nice(0)
         cmd = f'nice -n {absolute_niceness} ffmpeg -hide_banner -threads 1 -f concat -safe 0 -i "{source_file}" ' \
-            f'-s {self.resolution} -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{id_}.mp4;' \
+            f'-s {self.width}x{self.height} -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{id_}.mp4;' \
             f'mv {target_dir}/*mp4 {STORAGE_PATH}/videos;' \
             f'rm -r {target_dir};'
         self.log.info(f'starting {cmd}')
