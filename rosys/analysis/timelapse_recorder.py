@@ -81,8 +81,8 @@ def save_image(image: RosysImage, path: Path) -> None:
     assert image.data is not None
     img = Image.open(io.BytesIO(image.data))
     draw = ImageDraw.Draw(img)
-    x = img.width - 300
-    y = img.height - 18
+    x = 20
+    y = 20
     text = f'{datetime.fromtimestamp(image.time).strftime(r"%Y-%m-%d %H:%M:%S")}, cam {image.camera_id}'
     # shadow
     draw.text((x - 1, y - 1), text, font=IMAGE_FONT, fill=(0, 0, 0))
