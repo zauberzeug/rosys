@@ -16,7 +16,8 @@ class VideosPage:
             def videos():
                 for mp4 in sorted(VIDEO_FILES.glob('*.mp4'), reverse=True):
                     with ui.row():
-                        ui.video(mp4).classes('w-[800px]')
+                        with ui.card().tight():
+                            ui.video(mp4).classes('w-[800px]')
                         ui.button(on_click=lambda mp4=mp4: mp4.unlink()).props('icon=delete flat')
 
             async def watch_videos():
