@@ -36,7 +36,8 @@ class Image:
         if not self._detections:
             return None
         if len(self._detections) > 1:
-            raise RuntimeError('Image has multiple detection types. Use `get_detections` instead.')
+            raise RuntimeError(
+                f'Image has multiple detection types ({", ".join(self._detections.keys())}). Use `get_detections(type)` instead.')
         return list(self._detections.values())[0]
 
     def get_detections(self, detector_id: str) -> Optional[Detections]:

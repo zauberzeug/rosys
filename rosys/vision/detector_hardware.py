@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Any, Optional
 
 import socketio
 import socketio.exceptions
@@ -89,10 +89,24 @@ class DetectorHardware(Detector):
             rosys.background_tasks.create(upload_priority_images(), name='upload_priority_images')
             self.uploads.priority_queue.clear()
 
-    async def upload(self, image: Image) -> None:
+    async def upload(self, image: Image, *, tags: list[str] = []) -> None:
         try:
             self.log.info(f'uploading to port {self.port}')
-            await self.sio.emit('upload', {'image': image.data, 'mac': image.camera_id})
+
+            data_dict: dict[str, Any] = {'image': image.data, 'mac': image.camera_id}
+            detections = image.get_detections(self.name)
+
+            if detections is not None:
+                detections_dict = detections.to_dict()
+                detections_dict['box_detections'] = _box_detections_to_int(detections_dict.pop('boxes'))
+                detections_dict['point_detections'] = detections_dict.pop('points')
+                detections_dict['segmentation_detections'] = detections_dict.pop('segmentations')
+
+                data_dict['detections'] = detections_dict
+            if tags:
+                data_dict['tags'] = tags
+            await self.sio.emit('upload', data_dict)
+
         except Exception:
             self.log.exception(f'could not upload {image.id}')
 
@@ -147,3 +161,12 @@ class DetectorHardware(Detector):
 
     def __str__(self) -> str:
         return f'{type(self).__name__} ({"connected" if self.is_connected else "disconnected"})'
+
+
+def _box_detections_to_int(detections: list[dict]) -> list[dict]:
+    for detection in detections:
+        detection['x'] = int(detection['x'])
+        detection['y'] = int(detection['y'])
+        detection['width'] = int(detection['width'])
+        detection['height'] = int(detection['height'])
+    return detections
