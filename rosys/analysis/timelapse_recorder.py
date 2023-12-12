@@ -62,8 +62,7 @@ class TimelapseRecorder:
         jpgs = sorted(STORAGE_PATH.glob('*.jpg'))
         if len(jpgs) < 20:
             self.log.info(f'very few images ({len(jpgs)}); not creating video')
-            for jpg in jpgs:
-                jpg.unlink()
+            self.discard_video()
             return
         start_unix = int(jpgs[0].stem[:-4])
         start = datetime.fromtimestamp(start_unix)
@@ -87,6 +86,10 @@ class TimelapseRecorder:
         self.log.info(f'starting {cmd}')
         rosys.background_tasks.create(rosys.run.sh(cmd, timeout=None, shell=True), name='timelapse ffmpeg')
 
+    def discard_video(self) -> None:
+        for jpg in STORAGE_PATH.glob('*.jpg'):
+            jpg.unlink()
+
     async def create_info(self, title: str, subtitle: str, frames: int = 20, time: Optional[float] = None) -> None:
         await rosys.run.cpu_bound(save_info, title, subtitle, rosys.time() if time is None else time, frames)
 
@@ -104,7 +107,7 @@ def save_image(image: RosysImage, path: Path) -> None:
     draw.text((x - 1, y + 1), text, font=IMAGE_FONT, fill=(0, 0, 0))
     draw.text((x + 1, y + 1), text, font=IMAGE_FONT, fill=(0, 0, 0))
     draw.text((x, y), text, font=IMAGE_FONT, fill=(255, 255, 255))
-    img.save(path / f'{int(image.time* 1000)}.jpg', 'JPEG')
+    img.save(path / f'{int(image.time* 10000)}.jpg', 'JPEG')
 
 
 def save_info(title: str, subtitle: str, time: float, frames: int) -> None:
