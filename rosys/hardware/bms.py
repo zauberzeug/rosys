@@ -23,6 +23,7 @@ class Bms(Module, abc.ABC):
         super().__init__(**kwargs)
 
         self.state = BmsState()
+        self.raw_data: dict = {}
 
         self.VOLTAGE_MEASURED = Event()
         """new voltage measurements are available for processing (argument: list of voltages)"""
@@ -66,6 +67,7 @@ class BmsHardware(Bms, ModuleHardware):
         self.state.temperature = np.mean(result['temperatures']) if 'temperatures' in result else None
         self.state.is_charging = (self.state.current or 0) > -0.4
         self.state.last_update = rosys.time()
+        self.raw_data = result
 
 
 class BmsSimulation(Bms, ModuleSimulation):
