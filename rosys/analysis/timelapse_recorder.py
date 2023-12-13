@@ -16,9 +16,9 @@ from ..vision import Camera
 STORAGE_PATH = Path('~/.rosys/timelapse').expanduser()
 VIDEO_PATH = STORAGE_PATH / 'videos'
 FONT = str(Path(__file__).parent / 'assets' / 'RobotoMono-Medium.ttf')
-IMAGE_FONT = ImageFont.truetype(FONT, 12)
-BIG_COVER_FONT = ImageFont.truetype(FONT, 100)
-SMALL_COVER_FONT = ImageFont.truetype(FONT, 60)
+IMAGE_FONT = ImageFont.truetype(FONT, 16)
+BIG_COVER_FONT = ImageFont.truetype(FONT, 50)
+SMALL_COVER_FONT = ImageFont.truetype(FONT, 30)
 
 
 class RosysImage(Protocol):
@@ -41,6 +41,7 @@ class TimelapseRecorder:
         self.height = height
         self.capture_rate = capture_rate
         self.last_capture_time = rosys.time()
+        self._notifications: list[list[str]] = []
         self.camera: Optional[Camera] = None
         VIDEO_PATH.mkdir(parents=True, exist_ok=True)
         rosys.on_repeat(self.capture, 0.01)
@@ -56,7 +57,11 @@ class TimelapseRecorder:
             await self.save(images[-1])
 
     async def save(self, image: RosysImage) -> None:
-        await rosys.run.cpu_bound(save_image, image, STORAGE_PATH)
+        await rosys.run.cpu_bound(_save_image,
+                                  image,
+                                  STORAGE_PATH,
+                                  (self.width, self.height),
+                                  self._notifications.pop(0) if self._notifications else [])
 
     async def compress_video(self) -> None:
         jpgs = sorted(STORAGE_PATH.glob('*.jpg'))
@@ -93,21 +98,35 @@ class TimelapseRecorder:
     async def create_info(self, title: str, subtitle: str, frames: int = 20, time: Optional[float] = None) -> None:
         await rosys.run.cpu_bound(save_info, title, subtitle, rosys.time() if time is None else time, frames)
 
+    def notify(self, message: str, frames: int = 10):
+        '''Place message in the next n frames'''
+        while len(self._notifications) < frames:
+            self._notifications.append([])
+        for i in range(frames):
+            self._notifications[i].append(message)
 
-def save_image(image: RosysImage, path: Path) -> None:
+
+def _save_image(image: RosysImage, path: Path, size: tuple[int, int], notifications: list[str]) -> None:
     assert image.data is not None
     img = Image.open(io.BytesIO(image.data))
+    img = img.resize(size)
     draw = ImageDraw.Draw(img)
-    x = 20
-    y = 20
-    text = f'{datetime.fromtimestamp(image.time).strftime(r"%Y-%m-%d %H:%M:%S")}, cam {image.camera_id}'
+    x = y = 20
+    write(f'{datetime.fromtimestamp(image.time).strftime(r"%Y-%m-%d %H:%M:%S")}, cam {image.camera_id}', draw, x, y)
+    for message in notifications:
+        y += 30
+        write(message, draw, x, y)
+    img.save(path / f'{int(image.time* 10000)}.jpg', 'JPEG')
+
+
+def write(text: str, draw: ImageDraw.Draw, x: int, y: int):
     # shadow
     draw.text((x - 1, y - 1), text, font=IMAGE_FONT, fill=(0, 0, 0))
     draw.text((x + 1, y - 1), text, font=IMAGE_FONT, fill=(0, 0, 0))
     draw.text((x - 1, y + 1), text, font=IMAGE_FONT, fill=(0, 0, 0))
     draw.text((x + 1, y + 1), text, font=IMAGE_FONT, fill=(0, 0, 0))
+    # actual text
     draw.text((x, y), text, font=IMAGE_FONT, fill=(255, 255, 255))
-    img.save(path / f'{int(image.time* 10000)}.jpg', 'JPEG')
 
 
 def save_info(title: str, subtitle: str, time: float, frames: int) -> None:
