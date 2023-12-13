@@ -73,7 +73,7 @@ class TimelapseRecorder:
         id_ = start.strftime(r'%Y%m%d_%H-%M-%S_' + duration.replace(' ', '_'))
         target_dir = STORAGE_PATH / id_
         target_dir.mkdir(parents=True, exist_ok=True)
-        self.log.info(await rosys.run.sh(f'mv {STORAGE_PATH}/*.jpg {target_dir}', shell=True))
+        await rosys.run.sh(f'mv {STORAGE_PATH}/*.jpg {target_dir}', shell=True)
         source_file = target_dir / 'source.txt'
         with source_file.open('w') as f:
             for jpg in sorted(target_dir.glob('*.jpg')):
