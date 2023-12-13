@@ -4,7 +4,6 @@ from typing import Callable, Optional
 import numpy as np
 
 from .. import helpers, rosys
-from ..event import Event
 from ..helpers import remove_indentation
 from .bms_message import BmsMessage
 from .bms_state import BmsState
@@ -24,9 +23,6 @@ class Bms(Module, abc.ABC):
 
         self.state = BmsState()
         self.raw_data: dict = {}
-
-        self.VOLTAGE_MEASURED = Event()
-        """new voltage measurements are available for processing (argument: list of voltages)"""
 
 
 class BmsHardware(Bms, ModuleHardware):
