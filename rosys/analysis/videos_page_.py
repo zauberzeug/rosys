@@ -18,7 +18,9 @@ class VideosPage:
                     with ui.row():
                         with ui.card().tight():
                             ui.video(mp4).classes('w-[800px]')
-                        ui.button(on_click=lambda mp4=mp4: mp4.unlink()).props('icon=delete flat')
+                        with ui.column():
+                            ui.button(on_click=lambda mp4=mp4: mp4.unlink()).props('icon=delete flat')
+                            ui.button(on_click=lambda mp4=mp4: ui.download(mp4)).props('icon=download flat')
 
             async def watch_videos():
                 async for _ in awatch(VIDEO_FILES):
