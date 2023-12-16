@@ -33,6 +33,10 @@ class DriveState:
     turn_angle: float
 
 
+class DrivingAbortedException(Exception):
+    pass
+
+
 class Driver:
     """The driver module allows following a given path.
 
@@ -46,6 +50,7 @@ class Driver:
         self.odometer = odometer
         self.parameters = DriveParameters()
         self.state: Optional[DriveState] = None
+        self.abort_driving = False
 
     @analysis.track
     async def drive_square(self) -> None:
@@ -106,6 +111,9 @@ class Driver:
         carrot = Carrot(spline=spline, offset=carrot_offset)
 
         while True:
+            if self.abort_driving:
+                self.abort_driving = False
+                raise DrivingAbortedException()
             dYaw = self.parameters.hook_bending_factor * self.odometer.current_velocity.angular if self.odometer.current_velocity else 0
             hook = self.odometer.prediction.transform_pose(Pose(yaw=dYaw)).transform(hook_offset)
             if self.parameters.can_drive_backwards:
