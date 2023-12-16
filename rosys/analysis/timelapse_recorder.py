@@ -39,6 +39,7 @@ class TimelapseRecorder:
         self.log = logging.getLogger('rosys.timelapse_recorder')
         self.width = width
         self.height = height
+        self.avoid_broken_images = True
         self.capture_rate = capture_rate
         self.last_capture_time = rosys.time()
         self._notifications: list[list[str]] = []
@@ -51,7 +52,9 @@ class TimelapseRecorder:
             return
         if rosys.time() - self.last_capture_time < 1 / self.capture_rate:
             return
-        images = self.camera.get_recent_images()
+        images = self.camera.get_recent_images(timespan=2)
+        if self.avoid_broken_images:
+            images = [i for i in images if not i.is_broken]
         if images:
             self.last_capture_time = rosys.time()
             await self.save(images[-1])
