@@ -54,7 +54,7 @@ class TimelapseRecorder:
             return
         images = self.camera.get_recent_images(timespan=2)
         if self.avoid_broken_images:
-            images = [i for i in images if not i.is_broken]
+            images = [i for i in images if not i.is_broken and i.time < rosys.time() - 0.02]
         if images:
             self.last_capture_time = rosys.time()
             await self.save(images[-1])
