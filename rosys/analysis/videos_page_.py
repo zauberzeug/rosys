@@ -1,7 +1,7 @@
 from pathlib import Path
 
+import watchfiles
 from nicegui import background_tasks, ui
-from watchfiles import awatch
 
 VIDEO_FILES = Path('~/.rosys/timelapse/videos').expanduser()
 
@@ -23,7 +23,7 @@ class VideosPage:
                             ui.button(on_click=lambda mp4=mp4: ui.download(mp4)).props('icon=download flat')
 
             async def watch_videos():
-                async for _ in awatch(VIDEO_FILES):
+                async for _ in watchfiles.awatch(VIDEO_FILES):
                     videos.refresh()
 
             videos()
