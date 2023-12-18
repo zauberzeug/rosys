@@ -18,7 +18,7 @@ async def test_simulated_camera():
 async def test_usb_camera():
     if platform.system() != 'Linux':
         pytest.skip('UsbCamera is only supported on Linux.')
-    connected_uids = list(UsbCameraProvider.scan_for_cameras())
+    connected_uids = list(await UsbCameraProvider.scan_for_cameras())
     if len(connected_uids) == 0:
         pytest.skip('No USB camera detected. This test requires a physical USB camera to be connected.')
     camera = UsbCamera(id=connected_uids[0])
