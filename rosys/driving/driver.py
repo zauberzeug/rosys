@@ -33,6 +33,10 @@ class DriveState:
     turn_angle: float
 
 
+class DrivingAbortedException(Exception):
+    pass
+
+
 class Driver:
     """The driver module allows following a given path.
 
@@ -46,6 +50,11 @@ class Driver:
         self.odometer = odometer
         self.parameters = DriveParameters()
         self.state: Optional[DriveState] = None
+        self._abort = False
+
+    def abort(self) -> None:
+        """Abort the current drive routine."""
+        self._abort = True
 
     @analysis.track
     async def drive_square(self) -> None:
@@ -56,6 +65,9 @@ class Driver:
     @analysis.track
     async def drive_arc(self) -> None:
         while self.odometer.prediction.x < 2:
+            if self._abort:
+                self._abort = False
+                raise DrivingAbortedException()
             await self.wheels.drive(1, np.deg2rad(25))
             await rosys.sleep(0.1)
         await self.wheels.stop()
@@ -82,6 +94,9 @@ class Driver:
     @analysis.track
     async def drive_circle(self, target: Point, backward: bool = False) -> None:
         while True:
+            if self._abort:
+                self._abort = False
+                raise DrivingAbortedException()
             target_yaw = self.odometer.prediction.direction(target)
             if backward:
                 target_yaw += np.pi
@@ -106,6 +121,9 @@ class Driver:
         carrot = Carrot(spline=spline, offset=carrot_offset)
 
         while True:
+            if self._abort:
+                self._abort = False
+                raise DrivingAbortedException()
             dYaw = self.parameters.hook_bending_factor * self.odometer.current_velocity.angular if self.odometer.current_velocity else 0
             hook = self.odometer.prediction.transform_pose(Pose(yaw=dYaw)).transform(hook_offset)
             if self.parameters.can_drive_backwards:
