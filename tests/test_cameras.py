@@ -15,6 +15,7 @@ async def test_simulated_camera():
     assert camera.images[0].size.height == 600
 
 
+@pytest.mark.usefixtures('integration')
 async def test_usb_camera():
     if platform.system() != 'Linux':
         pytest.skip('UsbCamera is only supported on Linux.')
