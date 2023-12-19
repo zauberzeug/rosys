@@ -37,9 +37,10 @@ class CameraProvider(Generic[T], rosys.persistence.PersistentModule, metaclass=a
             'cameras': {id: camera.to_dict() for id, camera in self._cameras.items()},
         }
 
-    @abc.abstractmethod
     def restore(self, data: dict[str, dict]) -> None:
-        pass
+        persistence.replace_dict(self._cameras, Camera, data.get('cameras', {}))
+        for camera in self._cameras.values():
+            camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
     @property
     def cameras(self) -> dict[str, T]:
