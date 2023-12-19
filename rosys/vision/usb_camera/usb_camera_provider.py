@@ -35,7 +35,7 @@ class UsbCameraProvider(CameraProvider[UsbCamera], persistence.PersistentModule)
 
     @staticmethod
     async def scan_for_cameras() -> set[str]:
-        return await rosys.run.io_bound(scan_for_connected_devices)
+        return (await rosys.run.io_bound(scan_for_connected_devices)) or set()
 
     async def update_device_list(self) -> None:
         camera_uids = await self.scan_for_cameras()
