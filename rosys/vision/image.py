@@ -52,7 +52,7 @@ class Image:
         return f'{self.camera_id}/{self.time}'
 
     @classmethod
-    def create_placeholder(cls, text: str, time: Optional[float] = None, camera_id: Optional[str] = None, shrink: int = 1) -> type[Self]:
+    def create_placeholder(cls, text: str, time: Optional[float] = None, camera_id: Optional[str] = None, shrink: int = 1) -> Self:
         h, w = cls.DEFAULT_PLACEHOLDER_SIZE
         img = PIL.Image.new('RGB', (h // shrink, w // shrink), color=(73, 109, 137))
         d = PIL.ImageDraw.Draw(img)
