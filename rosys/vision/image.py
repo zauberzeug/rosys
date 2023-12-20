@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-import io
 from dataclasses import dataclass, field
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Self
 
+import cv2
+import numpy as np
 import PIL.Image
 import PIL.ImageDraw
 
@@ -51,17 +52,15 @@ class Image:
         return f'{self.camera_id}/{self.time}'
 
     @classmethod
-    def create_placeholder(cls, text: str, time: Optional[float] = None, camera_id: Optional[str] = None, shrink: int = 1) -> Image:
+    def create_placeholder(cls, text: str, time: Optional[float] = None, camera_id: Optional[str] = None, shrink: int = 1) -> type[Self]:
         h, w = cls.DEFAULT_PLACEHOLDER_SIZE
         img = PIL.Image.new('RGB', (h // shrink, w // shrink), color=(73, 109, 137))
         d = PIL.ImageDraw.Draw(img)
         d.text((img.width / 2 - len(text) * 3, img.height / 2 - 5), text, fill=(255, 255, 255))
-        bytesio = io.BytesIO()
-        img.save(bytesio, format='PNG')
-        image = Image(
+        _, encoded_image = cv2.imencode('.png', np.array(img)[:, :, ::-1])  # NOTE: cv2 expects BGR
+        return cls(
             camera_id=camera_id or 'no_cam_id',
             time=time or 0,
             size=ImageSize(width=img.width, height=img.height),
+            data=encoded_image.tobytes(),
         )
-        image.data = bytesio.getvalue()
-        return image

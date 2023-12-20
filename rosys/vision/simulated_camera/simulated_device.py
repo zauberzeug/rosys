@@ -29,7 +29,7 @@ class SimulatedDevice:
         d.text((position.x, position.y), text, fill=(0, 0, 0))
         d.text((position.x + 1, position.y + 1), text, fill=(255, 255, 255))
 
-        _, encoded_image = cv2.imencode('.jpg', np.array(img))
+        _, encoded_image = cv2.imencode('.jpg', np.array(img)[:, :, ::-1])  # NOTE: cv2 expects BGR
         return encoded_image.tobytes()
 
 
