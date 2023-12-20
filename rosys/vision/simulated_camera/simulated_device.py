@@ -1,6 +1,6 @@
-import io
 import time
 
+import cv2
 import numpy as np
 import PIL
 
@@ -29,9 +29,8 @@ class SimulatedDevice:
         d.text((position.x, position.y), text, fill=(0, 0, 0))
         d.text((position.x + 1, position.y + 1), text, fill=(255, 255, 255))
 
-        img_byte_arr = io.BytesIO()
-        img.save(img_byte_arr, format='JPEG')
-        return img_byte_arr.getvalue()
+        _, encoded_image = cv2.imencode('.jpg', np.array(img))
+        return encoded_image.tobytes()
 
 
 def floating_text_position(box_width: int, box_height: int, speed: float = 100, angle: float = np.deg2rad(45)) -> Point:
