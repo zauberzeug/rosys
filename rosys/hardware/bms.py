@@ -24,6 +24,22 @@ class Bms(Module, abc.ABC):
         self.state = BmsState()
         self.raw_data: dict = {}
 
+    def is_above_percent(self, value: float) -> bool:
+        """Returns whether the battery is charged above the given percentage."""
+        return self.state.percentage is not None and self.state.percentage > value
+
+    def is_below_percent(self, value: float) -> bool:
+        """Returns whether the battery is charged below the given percentage."""
+        return self.state.percentage is not None and self.state.percentage < value
+
+    def is_above_voltage(self, value: float) -> bool:
+        """Returns whether the battery voltage is above the given value."""
+        return self.state.voltage is not None and self.state.voltage > value
+
+    def is_below_voltage(self, value: float) -> bool:
+        """Returns whether the battery voltage is below the given value."""
+        return self.state.voltage is not None and self.state.voltage < value
+
 
 class BmsHardware(Bms, ModuleHardware):
     """This module implements the hardware interface for the BMS module."""
