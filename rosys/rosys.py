@@ -108,6 +108,8 @@ async def sleep(seconds: float) -> None:
         while time() <= sleep_end_time:
             await asyncio.sleep(0)
     else:
+        if config.simulation_speed <= 0:
+            config.simulation_speed = 0.01
         scaled_seconds = seconds / config.simulation_speed
         count = int(np.ceil(scaled_seconds))
         if count > 0:
