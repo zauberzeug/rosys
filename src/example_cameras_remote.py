@@ -9,14 +9,14 @@ if rosys.hardware.SerialCommunication.is_possible():
     can = rosys.hardware.CanHardware(robot_brain)
     wheels = rosys.hardware.WheelsHardware(robot_brain, can=can)
     robot = rosys.hardware.RobotHardware([can, wheels], robot_brain)
-    camera_provider = rosys.vision.UsbCameraProviderHardware()
+    camera_provider = rosys.vision.UsbCameraProvider()
 else:
     wheels = rosys.hardware.WheelsSimulation()
     robot = rosys.hardware.RobotSimulation([wheels])
-    camera_provider = rosys.vision.UsbCameraProviderSimulation()
-    camera_provider.restore = lambda _: None  # NOTE: disable persistence
-    test_cam = camera_provider.create_calibrated('test_cam', width=800, height=600)
-    rosys.on_startup(lambda: camera_provider.add_camera(test_cam))
+    rosys.vision.SimulatedCameraProvider.USE_PERSISTENCE = False
+    camera_provider = rosys.vision.SimulatedCameraProvider()
+    camera = rosys.vision.SimulatedCamera(id='test_cam', width=800, height=600)
+    rosys.on_startup(lambda: camera_provider.add_camera(camera))
 steerer = rosys.driving.Steerer(wheels)
 odometer = rosys.driving.Odometer(wheels)
 
@@ -25,7 +25,7 @@ async def add_main_camera(camera: rosys.vision.Camera) -> None:
     camera_card.clear()  # remove "seeking camera" label
     with camera_card:
         main_cam = ui.interactive_image()
-        ui.timer(0.1, lambda: main_cam.set_source(camera_provider.get_latest_image_url(camera)))
+        ui.timer(0.1, lambda: main_cam.set_source(camera.get_latest_image_url()))
 
 camera_provider.CAMERA_ADDED.register_ui(add_main_camera)
 
