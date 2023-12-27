@@ -1926,18 +1926,18 @@ test = ["codecov (>=2.1)", "pytest (>=7.2)", "pytest-cov (>=4.0)"]
 
 [[package]]
 name = "nicegui"
-version = "1.4.7"
+version = "1.4.8"
 description = "Create web-based user interfaces with Python. The nice way."
 optional = false
 python-versions = ">=3.8,<4.0"
 files = [
-    {file = "nicegui-1.4.7-py3-none-any.whl", hash = "sha256:3882c523e4349120000127f1ded13e2712f2a0c042d1e5e3690499eb76ef5f00"},
-    {file = "nicegui-1.4.7.tar.gz", hash = "sha256:db9bf984352380f09bb0eb1719feb63fa68af790d372e1f782c7aa5e17be036d"},
+    {file = "nicegui-1.4.8-py3-none-any.whl", hash = "sha256:0104e8bd6ae010b5b989c079ae0679f7514293db76f1f6609610f2920488b6fc"},
+    {file = "nicegui-1.4.8.tar.gz", hash = "sha256:69dea9579fade7a5db401445fff954d00775921aa9c10693967f2ec3faf44454"},
 ]
 
 [package.dependencies]
 aiofiles = ">=23.1.0,<24.0.0"
-fastapi = ">=0.93,<1.0.0"
+fastapi = ">=0.108.0,<1.0.0"
 fastapi-socketio = ">=0.0.10,<0.0.11"
 httpx = ">=0.24.0,<1.0.0"
 ifaddr = ">=0.2.0,<0.3.0"
@@ -3642,4 +3642,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <3.12"
-content-hash = "7b74255a05f8c72730ad4dc69442a02a9f018c0a3810a8a390dff885877c368a"
+content-hash = "4862a000b0ed6e8425a767bcf32e8aa6d5dad06c3f3a6cf3b29aa31c5e9bb039"
