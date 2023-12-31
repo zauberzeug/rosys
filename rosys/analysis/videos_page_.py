@@ -17,10 +17,12 @@ class VideosPage:
                 for mp4 in sorted(VIDEO_FILES.glob('*.mp4'), reverse=True):
                     with ui.row():
                         with ui.card().tight():
-                            ui.video(mp4).classes('w-[800px]')
+                            video = ui.video(mp4).classes('w-[800px]')
                         with ui.column():
-                            ui.button(on_click=lambda mp4=mp4: mp4.unlink()).props('icon=delete flat')
-                            ui.button(on_click=lambda mp4=mp4: ui.download(mp4)).props('icon=download flat')
+                            ui.button(on_click=lambda mp4=mp4: mp4.unlink()) \
+                                .props('icon=delete flat')
+                            ui.button(on_click=lambda mp4=mp4: ui.download(video._props['src'])) \
+                                .props('icon=download flat')
 
             async def watch_videos():
                 async for _ in watchfiles.awatch(VIDEO_FILES):
