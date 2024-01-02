@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import watchfiles
-from nicegui import background_tasks, ui
+from nicegui import background_tasks, run, ui
 
 VIDEO_FILES = Path('~/.rosys/timelapse/videos').expanduser()
 
@@ -10,11 +10,11 @@ class VideosPage:
 
     def __init__(self) -> None:
         @ui.page('/videos', title='Videos')
-        def page():
+        async def page():
 
             @ui.refreshable
-            def videos():
-                for mp4 in sorted(VIDEO_FILES.glob('*.mp4'), reverse=True):
+            async def videos():
+                for mp4 in sorted(await run.io_bound(VIDEO_FILES.glob, '*.mp4'), reverse=True):
                     with ui.row():
                         with ui.card().tight():
                             video = ui.video(mp4).classes('w-[800px]')
@@ -28,5 +28,5 @@ class VideosPage:
                 async for _ in watchfiles.awatch(VIDEO_FILES):
                     videos.refresh()
 
-            videos()
+            await videos()
             background_tasks.create(watch_videos(), name='watch videos files')
