@@ -5,6 +5,7 @@ from typing import Optional
 import serial
 from nicegui import ui
 from nicegui.events import ValueChangeEventArguments
+from serial.serialutil import SerialException
 
 from ... import rosys
 from .communication import Communication
@@ -36,7 +37,14 @@ class SerialCommunication(Communication):
 
     @staticmethod
     def is_possible() -> bool:
-        return SerialCommunication.get_device_path() is not None
+        device_path = SerialCommunication.get_device_path()
+        if device_path is None:
+            return False
+        try:
+            with serial.Serial(device_path):
+                return True  # Successfully opened the port
+        except SerialException:
+            return False
 
     @staticmethod
     def get_device_path() -> Optional[str]:

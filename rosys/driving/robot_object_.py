@@ -19,6 +19,7 @@ class RobotObject(Group):
         super().__init__()
         self.shape = shape
         self.odometer = odometer
+        self.robot_object: Extrusion | Stl
         with self:
             outline = [list(point) for point in self.shape.outline]
             self.robot_object = Extrusion(outline, self.shape.height, wireframe=debug)

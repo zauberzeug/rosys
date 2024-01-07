@@ -17,6 +17,7 @@
     "--disable=R0914", // Too many local variables
     "--disable=R0915", // Too many statements
     "--disable=R1702", // Too many nested blocks
+    "--disable=R1705", // Unnecessary "else" after "return"
     "--disable=W0102", // Dangerous default value as argument
     "--disable=W0511", // TODO
     "--disable=W0718", // Catching too general exception
@@ -31,7 +32,7 @@
   "[python]": {
     "editor.defaultFormatter": "ms-python.autopep8",
     "editor.codeActionsOnSave": {
-      "source.organizeImports": true
+      "source.organizeImports": "explicit"
     }
   }
 }

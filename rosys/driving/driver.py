@@ -33,6 +33,10 @@ class DriveState:
     turn_angle: float
 
 
+class DrivingAbortedException(Exception):
+    pass
+
+
 class Driver:
     """The driver module allows following a given path.
 
@@ -46,6 +50,11 @@ class Driver:
         self.odometer = odometer
         self.parameters = DriveParameters()
         self.state: Optional[DriveState] = None
+        self._abort = False
+
+    def abort(self) -> None:
+        """Abort the current drive routine."""
+        self._abort = True
 
     @analysis.track
     async def drive_square(self) -> None:
@@ -56,6 +65,9 @@ class Driver:
     @analysis.track
     async def drive_arc(self) -> None:
         while self.odometer.prediction.x < 2:
+            if self._abort:
+                self._abort = False
+                raise DrivingAbortedException()
             await self.wheels.drive(1, np.deg2rad(25))
             await rosys.sleep(0.1)
         await self.wheels.stop()
@@ -68,7 +80,7 @@ class Driver:
     @analysis.track
     async def drive_to(self, target: Point, backward: bool = False) -> None:
         if self.parameters.minimum_turning_radius:
-            await self.drive_circle(target)
+            await self.drive_circle(target, backward)
 
         robot_position = self.odometer.prediction.point
         approach_spline = Spline(
@@ -80,13 +92,21 @@ class Driver:
         await self.drive_spline(approach_spline, flip_hook=backward)
 
     @analysis.track
-    async def drive_circle(self, target: Point) -> None:
+    async def drive_circle(self, target: Point, backward: bool = False) -> None:
         while True:
-            angle = eliminate_2pi(self.odometer.prediction.direction(target) - self.odometer.prediction.yaw)
+            if self._abort:
+                self._abort = False
+                raise DrivingAbortedException()
+            target_yaw = self.odometer.prediction.direction(target)
+            if backward:
+                target_yaw += np.pi
+            angle = eliminate_2pi(target_yaw - self.odometer.prediction.yaw)
             if abs(angle) < np.deg2rad(5):
                 break
-            linear = 0.5
+            linear = 0.5 if not backward else -0.5
             sign = 1 if angle > 0 else -1
+            if backward:
+                sign *= -1
             angular = linear / self.parameters.minimum_turning_radius * sign
             await self.wheels.drive(*self._throttle(linear, angular))
             await rosys.sleep(0.1)
@@ -101,6 +121,9 @@ class Driver:
         carrot = Carrot(spline=spline, offset=carrot_offset)
 
         while True:
+            if self._abort:
+                self._abort = False
+                raise DrivingAbortedException()
             dYaw = self.parameters.hook_bending_factor * self.odometer.current_velocity.angular if self.odometer.current_velocity else 0
             hook = self.odometer.prediction.transform_pose(Pose(yaw=dYaw)).transform(hook_offset)
             if self.parameters.can_drive_backwards:

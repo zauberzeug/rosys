@@ -60,6 +60,8 @@ class AppControls:
         robot_brain.LINE_RECEIVED.register(self.parse)
 
     async def refresh(self) -> None:
+        if not self.main_buttons:  # happens on shutdown
+            return
         before = ' '.join(str(b) for b in self.main_buttons.values())
         self.main_buttons['play'].visible = self.automator.is_stopped
         self.main_buttons['pause'].visible = self.automator.is_running

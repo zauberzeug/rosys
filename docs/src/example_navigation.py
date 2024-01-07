@@ -9,8 +9,8 @@ from rosys.hardware import RobotSimulation, WheelsSimulation
 from rosys.pathplanning import Obstacle, PathPlanner, obstacle_object, path_object
 
 shape = Prism.default_robot_shape()
+PathPlanner.USE_PERSISTENCE = False
 path_planner = PathPlanner(shape)
-path_planner.restore = lambda _: None  # NOTE: disable persistence
 path_planner.obstacles['0'] = Obstacle(id='0', outline=[Point(x=3, y=0), Point(x=0, y=3), Point(x=3, y=3)])
 wheels = WheelsSimulation()
 robot = RobotSimulation([wheels])

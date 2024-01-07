@@ -18,6 +18,14 @@ class Intrinsics:
     rotation: Rotation
     size: ImageSize
 
+    @staticmethod
+    def create_default(width: int = 800, height: int = 600, *, focal_length: float = 570) -> Intrinsics:
+        size = ImageSize(width=width, height=height)
+        K: list[list[float]] = [[focal_length, 0, size.width / 2], [0, focal_length, size.height / 2], [0, 0, 1]]
+        D: list[float] = [0] * 5
+        rotation = Rotation.zero()
+        return Intrinsics(matrix=K, distortion=D, rotation=rotation, size=size)
+
 
 log = logging.getLogger('rosys.world.calibration')
 

@@ -1,18 +1,15 @@
 import abc
-import urllib.parse
 from typing import Generic, Optional, TypeVar
-from uuid import uuid4
 
 from .. import rosys
 from ..event import Event
-from .camera import Camera
+from .camera.camera import Camera
 from .image import Image
-from .image_route import create_image_route
 
 T = TypeVar('T', bound=Camera)
 
 
-class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
+class CameraProvider(Generic[T], rosys.persistence.PersistentModule, metaclass=abc.ABCMeta):
     """A camera provider holds a dictionary of cameras and manages additions and removals.
 
     The camera dictionary should not be modified directly but by using the camera provider's methods.
@@ -31,35 +28,32 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
         """a camera has been removed (argument: camera id)"""
 
         self.NEW_IMAGE = Event()
-        """an new image is available (argument: image)"""
+        """a new image is available (argument: image)"""
 
-        self.base_path = f'images/{str(uuid4())}'
-        create_image_route(self)
+        self._cameras: dict[str, T] = {}
 
-    def request_backup(self) -> None:
-        pass  # HACK: for the case that the camera provider derives from PersistentModule
+    def backup(self) -> dict:
+        return {
+            'cameras': {id: camera.to_dict() for id, camera in self._cameras.items()},
+        }
+
+    def restore(self, data: dict[str, dict]) -> None:
+        rosys.persistence.replace_dict(self._cameras, Camera, data.get('cameras', {}))
+        for camera in self._cameras.values():
+            camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
     @property
-    @abc.abstractmethod
     def cameras(self) -> dict[str, T]:
-        pass
+        return self._cameras
 
     @property
     def images(self) -> list[Image]:
         return sorted((i for c in self.cameras.values() for i in c.images), key=lambda i: i.time)
 
-    def get_image_url(self, image: Image) -> str:
-        return f'{self.base_path}/{urllib.parse.quote_plus(image.camera_id)}/{image.time}'
-
-    def get_latest_image_url(self, camera: Camera) -> str:
-        image = camera.latest_captured_image
-        if image is None:
-            return f'{self.base_path}/placeholder'
-        return self.get_image_url(image)
-
     def add_camera(self, camera: T) -> None:
-        self.cameras[camera.id] = camera
+        self._cameras[camera.id] = camera
         self.CAMERA_ADDED.emit(camera)
+        camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
         self.request_backup()
 
     def remove_camera(self, camera_id: str) -> None:
@@ -70,18 +64,6 @@ class CameraProvider(Generic[T], metaclass=abc.ABCMeta):
     def remove_all_cameras(self) -> None:
         for camera_id in list(self.cameras):
             self.remove_camera(camera_id)
-
-    def remove_calibration(self, camera_id: str) -> None:
-        self.cameras[camera_id].calibration = None
-        self.request_backup()
-
-    def remove_all_calibrations(self) -> None:
-        for camera_id in self.cameras:
-            self.remove_calibration(camera_id)
-
-    def add_image(self, camera: Camera, image: Image) -> None:
-        camera.images.append(image)
-        self.NEW_IMAGE.emit(image)
 
     def prune_images(self, max_age_seconds: Optional[float] = None):
         for camera in self.cameras.values():

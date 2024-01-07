@@ -4,7 +4,6 @@ from typing import Callable, Optional
 import numpy as np
 
 from .. import helpers, rosys
-from ..event import Event
 from ..helpers import remove_indentation
 from .bms_message import BmsMessage
 from .bms_state import BmsState
@@ -23,9 +22,23 @@ class Bms(Module, abc.ABC):
         super().__init__(**kwargs)
 
         self.state = BmsState()
+        self.raw_data: dict = {}
 
-        self.VOLTAGE_MEASURED = Event()
-        """new voltage measurements are available for processing (argument: list of voltages)"""
+    def is_above_percent(self, value: float) -> bool:
+        """Returns whether the battery is charged above the given percentage."""
+        return self.state.percentage is not None and self.state.percentage > value
+
+    def is_below_percent(self, value: float) -> bool:
+        """Returns whether the battery is charged below the given percentage."""
+        return self.state.percentage is not None and self.state.percentage < value
+
+    def is_above_voltage(self, value: float) -> bool:
+        """Returns whether the battery voltage is above the given value."""
+        return self.state.voltage is not None and self.state.voltage > value
+
+    def is_below_voltage(self, value: float) -> bool:
+        """Returns whether the battery voltage is below the given value."""
+        return self.state.voltage is not None and self.state.voltage < value
 
 
 class BmsHardware(Bms, ModuleHardware):
@@ -66,6 +79,7 @@ class BmsHardware(Bms, ModuleHardware):
         self.state.temperature = np.mean(result['temperatures']) if 'temperatures' in result else None
         self.state.is_charging = (self.state.current or 0) > -0.4
         self.state.last_update = rosys.time()
+        self.raw_data = result
 
 
 class BmsSimulation(Bms, ModuleSimulation):

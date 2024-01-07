@@ -9,29 +9,28 @@ from fastapi import Response
 from nicegui import app
 
 from .. import run
-from .camera import Camera
 from .image import Image
 
 if TYPE_CHECKING:
-    from .camera_provider import CameraProvider
+    from .camera import Camera
 
 log = logging.getLogger('rosys.image_route')
 
 
-def create_image_route(camera_provider: CameraProvider) -> None:
-    async def get_image(camera_id: str, timestamp: str, shrink: int = 1) -> Response:
-        return await _get_image(camera_provider.cameras, camera_id, timestamp, shrink)
-    app.add_api_route('/' + camera_provider.base_path + '/{camera_id}/{timestamp}', get_image)
-    app.add_api_route('/' + camera_provider.base_path + '/placeholder', _get_placeholder)
+def create_image_route(camera: Camera) -> None:
+    async def get_camera_image(timestamp: str, shrink: int = 1) -> Response:
+        return await _get_image(camera, timestamp, shrink)
+
+    app.add_api_route('/' + camera.base_path + '/placeholder', _get_placeholder)
+    app.add_api_route('/' + camera.base_path + '/{timestamp}', get_camera_image)
 
 
 async def _get_placeholder(shrink: int = 1) -> Response:
     return Response(content=Image.create_placeholder('no image', shrink=shrink).data, media_type='image/jpeg')
 
 
-async def _get_image(cameras: dict[str, Camera], camera_id: str, timestamp: str, shrink: int = 1) -> Response:
+async def _get_image(camera: Camera, timestamp: str, shrink: int = 1) -> Response:
     try:
-        camera = cameras.get(camera_id)
         if not camera:
             return Response(content='Camera not found', status_code=404)
         jpeg = await _try_get_jpeg(camera, timestamp, shrink)
@@ -59,4 +58,5 @@ async def _try_get_jpeg(camera: Camera, timestamp: str, shrink: int) -> Optional
 def _shrink(factor: int, array: np.ndarray) -> bytes:
     decoded = cv2.imdecode(array, cv2.IMREAD_COLOR)
     img = decoded[::factor, ::factor]
-    return cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 60])[1].tobytes()
+    _, encoded_image = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 60])
+    return encoded_image.tobytes()

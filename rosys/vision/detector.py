@@ -2,9 +2,9 @@ import abc
 import logging
 from enum import Enum
 from typing import Optional
+from uuid import uuid4
 
 from ..event import Event
-from .detections import Detections
 from .image import Image
 from .uploads import Uploads
 
@@ -28,13 +28,14 @@ class Detector(abc.ABC):
     It also holds an upload queue for sending images with uncertain results to an active learning infrastructure like the [Zauberzeug Learning Loop](https://zauberzeug.com/learning-loop.html).
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, name: Optional[str] = None) -> None:
+        self.name = name or str(uuid4())
         self.NEW_DETECTIONS = Event()
         """detection on an image is completed (argument: image)"""
         self.log = logging.getLogger('rosys.detector')
 
     @abc.abstractmethod
-    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> Optional[Detections]:
+    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> None:
         pass
 
     @abc.abstractmethod
