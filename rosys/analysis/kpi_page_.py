@@ -22,24 +22,23 @@ class kpi_page(ABC):
             with ui.row().style('margin:1em'):
                 ui.markdown(f'### {self.title}').style('margin:1.5em;margin-top:-1.2em;')
                 toggle = ui.toggle(self.timespans, value=list(self.timespans)[0], on_change=lambda e: show(e.value))
-            with ui.row():
-                positive_chart = ui.highchart({
+            with ui.row().classes('w-full'):
+                positive_chart = ui.echart({
                     'title': {'text': self.positive_title},
-                    'chart': {'type': 'column'},
-                    'xAxis': {},
-                    'yAxis': {'title': False},
-                    'credits': False,
-                    'exporting': False,
+                    'xAxis': {'type': 'category'},
+                    'yAxis': {'type': 'value'},
+                    'series': [],
+                    'legend': {'bottom': 10},
+                    'tooltip': {},
                 })
-                negative_chart = ui.highchart({
+                negative_chart = ui.echart({
                     'title': {'text': self.negative_title},
-                    'chart': {'type': 'column'},
-                    'plotOptions': {'series': {'stacking': 'normal'}},
-                    'xAxis': {},
-                    'yAxis': {'title': False},
-                    'colors': [to_hex(hsv_to_rgb((0, 1, i / 100.0))) for i in reversed(range(20, 120, 20))],
-                    'credits': False,
-                    'exporting': False,
+                    'xAxis': {'type': 'category'},
+                    'yAxis': {'type': 'value'},
+                    'series': [],
+                    'color': [to_hex(hsv_to_rgb((0, 1, i / 100.0))) for i in reversed(range(20, 120, 20))],
+                    'legend': {'bottom': 10},
+                    'tooltip': {},
                 })
             ui.timer(5, lambda: show(toggle.value))
 
@@ -60,14 +59,16 @@ class kpi_page(ABC):
 
                 keys = set(key for day in time_buckets for key in day.incidents if key in self.positives)
                 data = {self.positives[key]: [day.incidents.get(key, 0) for day in time_buckets] for key in keys}
-                positive_chart.options['xAxis']['categories'] = [_label(b) for b in time_buckets]
-                positive_chart.options['series'] = [{'name': k, 'data': v} for k, v in sorted(data.items())]
+                positive_chart.options['xAxis']['data'] = [_label(b) for b in time_buckets]
+                positive_chart.options['series'] = [{'type': 'bar', 'name': k, 'data': v}
+                                                    for k, v in sorted(data.items())]
                 positive_chart.update()
 
                 keys = set(key for day in time_buckets for key in day.incidents if key in self.negatives)
                 data = {self.negatives[key]: [day.incidents.get(key, 0) for day in time_buckets] for key in keys}
-                negative_chart.options['xAxis']['categories'] = [_label(b) for b in time_buckets]
-                negative_chart.options['series'] = [{'name': k, 'data': v} for k, v in sorted(data.items())]
+                negative_chart.options['xAxis']['data'] = [_label(b) for b in time_buckets]
+                negative_chart.options['series'] = [{'type': 'bar', 'stack': 'total', 'emphasis': {'focus': 'series'}, 'name': k, 'data': v}
+                                                    for k, v in sorted(data.items())]
                 negative_chart.update()
 
     @property
