@@ -19,8 +19,12 @@ class MjpegCamera(TransformableCamera):
     def from_dict(cls, data: dict) -> Self:
         return cls(**data)
 
+    @property
+    def is_connected(self) -> bool:
+        return self.device is not None and self.device.capture_task is not None
+
     async def connect(self) -> None:
-        if self.device is not None:
+        if self.is_connected:
             return
 
         ip = await find_ip(self.id)
