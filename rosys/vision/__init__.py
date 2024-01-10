@@ -8,6 +8,7 @@ from .detector import Autoupload, Detector
 from .detector_hardware import DetectorHardware
 from .detector_simulation import DetectorSimulation, SimulatedObject
 from .image import Image, ImageSize
+from .mjpeg_camera import MjpegCamera, MjpegCameraProvider
 from .mjpeg_camera_provider_hardware import MJpegCameraProviderHardware
 from .multi_camera_provider import MultiCameraProvider
 from .rtsp_camera import RtspCamera, RtspCameraProvider
