@@ -10,10 +10,19 @@ from .mjpeg_device import MjpegDevice
 
 
 class MjpegCamera(TransformableCamera):
-    def __init__(self, *, id: str, name: str | None = None, connect_after_init: bool = True, streaming: bool = True, image_grab_interval: float = 0.1, base_path_overwrite: str | None = None, **kwargs) -> None:
+    def __init__(self, *, id: str, name: str | None = None, connect_after_init: bool = True, streaming: bool = True, image_grab_interval: float = 0.1, base_path_overwrite: str | None = None,
+                 username: str | None = None, password: str | None = None, **kwargs: Any) -> None:
         super().__init__(id=id, name=name, connect_after_init=connect_after_init, streaming=streaming,
                          image_grab_interval=image_grab_interval, base_path_overwrite=base_path_overwrite, **kwargs)
+        self.username = username
+        self.password = password
         self.device: Optional[MjpegDevice] = None
+
+    def to_dict(self) -> dict:
+        return super().to_dict() | {
+            'username': self.username,
+            'password': self.password,
+        }
 
     @classmethod
     def from_dict(cls, data: dict) -> Self:
@@ -31,7 +40,7 @@ class MjpegCamera(TransformableCamera):
         if ip is None:
             return
 
-        self.device = MjpegDevice(self.id, ip)
+        self.device = MjpegDevice(self.id, ip, username=self.username, password=self.password)
 
     async def disconnect(self) -> None:
         if self.device is None:

@@ -13,7 +13,7 @@ from ..rtsp_camera.vendors import mac_to_url
 
 class MjpegDevice:
 
-    def __init__(self, mac: str, ip: str, username: str = 'root', password: str = 'root'):
+    def __init__(self, mac: str, ip: str, username: Optional[str] = None, password: Optional[str] = None):
         self.mac = mac
         self.ip = ip
         self.capture_task: Optional[Task] = None
@@ -21,8 +21,10 @@ class MjpegDevice:
         self._image_buffer: Optional[bytes] = None
         self._authorized: bool = True
 
-        self.username = username
-        self.password = password
+        if username is not None and password is not None:
+            self.authentication = httpx.DigestAuth(username, password)
+        else:
+            self.authentication = None
 
         self.log = logging.getLogger('rosys.mjpeg_device ' + self.mac)
 
@@ -46,11 +48,11 @@ class MjpegDevice:
         async def stream() -> AsyncGenerator[bytes, None]:
             async with httpx.AsyncClient() as client:
                 assert self.url is not None
-                async with client.stream('GET', self.url, auth=httpx.DigestAuth(self.password, self.username)) as response:
+                async with client.stream('GET', self.url, auth=self.authentication) as response:
                     response: httpx.Response
                     if response.status_code != 200:
                         self.log.error(
-                            f'could not connect to {self.url}: {response.status_code} {response.reason_phrase}')
+                            f'could not connect to {self.url} (credentials: {self.authentication}): {response.status_code} {response.reason_phrase}')
                         return
                     buffer = BytesIO()
                     header = None
