@@ -46,6 +46,7 @@ netifaces = "^0.11.0"
 httpx = "^0.24.0"
 matplotlib = "^3.7.2"
 pyudev = ">=0.21.0"
+esptool = "^4.3"
 
 [tool.poetry.dev-dependencies]
 autopep8 = "^1.5.5"
@@ -58,7 +59,6 @@ icecream = "^2.1.0"
 debugpy = "^1.2.1"
 py-spy = "^0.3.10"
 isort = "^5.10.1"
-esptool = "^4.3"
 cryptography = "^41.0.4" # https://github.com/zauberzeug/rosys/security/dependabot/36
 
 [build-system]
