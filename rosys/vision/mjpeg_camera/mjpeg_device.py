@@ -5,23 +5,24 @@ from io import BytesIO
 from typing import AsyncGenerator, Optional
 
 import httpx
-from image_processing import remove_exif
 from nicegui import background_tasks
 
-
-def mac_to_url(mac: str, ip: str) -> Optional[str]:
-    pass
+from ..image_processing import remove_exif
+from ..rtsp_camera.vendors import mac_to_url
 
 
 class MjpegDevice:
 
-    def __init__(self, mac: str, ip: str):
+    def __init__(self, mac: str, ip: str, username: str = 'root', password: str = 'root'):
         self.mac = mac
         self.ip = ip
         self.capture_task: Optional[Task] = None
         self.capture_process: Optional[Process] = None
         self._image_buffer: Optional[bytes] = None
         self._authorized: bool = True
+
+        self.username = username
+        self.password = password
 
         self.log = logging.getLogger('rosys.mjpeg_device ' + self.mac)
 
@@ -45,7 +46,7 @@ class MjpegDevice:
         async def stream() -> AsyncGenerator[bytes, None]:
             async with httpx.AsyncClient() as client:
                 assert self.url is not None
-                async with client.stream('GET', self.url) as response:
+                async with client.stream('GET', self.url, auth=httpx.DigestAuth(self.password, self.username)) as response:
                     response: httpx.Response
                     if response.status_code != 200:
                         self.log.error(
