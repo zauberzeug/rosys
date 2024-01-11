@@ -1,5 +1,6 @@
 from .asyncio_warnings import AsyncioWarnings
 from .kpi_buckets import Day, Month, TimeBucket, Week
+from .kpi_chart import KpiChart
 from .kpi_logger import KpiLogger, date_to_str, str_to_date
 from .kpi_page_ import kpi_page
 from .legacy.asyncio_monitor import AsyncioMonitor
