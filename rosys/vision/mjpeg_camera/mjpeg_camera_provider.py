@@ -4,8 +4,8 @@ from typing import Optional
 from ... import persistence, rosys
 from ..camera_provider import CameraProvider
 from ..rtsp_camera.arp_scan import find_cameras
-from ..rtsp_camera.vendors import VendorType, mac_to_vendor
 from .mjpeg_camera import MjpegCamera
+from .vendors import VendorType, mac_to_vendor
 
 
 class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentModule):

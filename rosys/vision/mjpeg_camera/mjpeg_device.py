@@ -8,7 +8,7 @@ import httpx
 from nicegui import background_tasks
 
 from ..image_processing import remove_exif
-from ..rtsp_camera.vendors import mac_to_url
+from .vendors import mac_to_url
 
 
 class MjpegDevice:
