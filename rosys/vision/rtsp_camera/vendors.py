@@ -25,6 +25,4 @@ def mac_to_url(mac: str, ip: str, jovision_profile: int = 0) -> Optional[str]:
         return f'rtsp://admin:admin@{ip}/profile{jovision_profile}'
     if vendor == VendorType.DAHUA:
         return f'rtsp://admin:Adminadmin@{ip}/cam/realmonitor?channel=1&subtype=0'
-    if vendor == VendorType.AXIS:
-        return f'http://{ip}/axis-cgi/mjpg/video.cgi'
     return None
