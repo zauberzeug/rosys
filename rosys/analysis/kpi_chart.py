@@ -5,4 +5,6 @@ from dataclasses import dataclass
 class KpiChart:
     title: str
     indicators: dict[str, str]
-    color: str = ""  # choose from matplotlib colormaps
+    colormap: str = ""  # choose from matplotlib colormaps
+    scale: float = 1.0
+    unit: str = ""
