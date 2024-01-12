@@ -33,7 +33,7 @@ class kpi_page(ABC):
                         'yAxis': {'type': 'value', 'name': chart.unit},
                         'legend': {'bottom': 10},
                         'tooltip': {},
-                        'color': [to_hex(colormaps[chart.colormap if chart.colormap else 'viridis'](i/10)) for i in range(9, -1, -2)],
+                        'color': [to_hex(colormaps[chart.colormap or 'viridis'](i / 10)) for i in range(9, -1, -2)],
                         'series': [],
                     }))
             ui.timer(5, lambda: show(toggle.value))
@@ -59,7 +59,9 @@ class kpi_page(ABC):
                     styling = {'type': 'bar', 'stack': 'total', 'emphasis': {'focus': 'series'}}
                     ui_chart.options['xAxis']['data'] = [_label(b) for b in time_buckets]
                     ui_chart.options['series'] = [
-                        {**styling, 'name': k, 'data': [round(item * chart.scale, 2) for item in v]} for k, v in sorted(data.items())]
+                        {**styling, 'name': k, 'data': [round(item * chart.scale, 2) for item in v]}
+                        for k, v in sorted(data.items())
+                    ]
                     ui_chart.update()
 
     @property

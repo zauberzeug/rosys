@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from datetime import datetime, timedelta
 from random import randint
 
@@ -33,16 +34,16 @@ class kpi_page(rosys_kpi_page):
     def charts(self) -> list[KpiChart]:
         positives = KpiChart(title='Positive Events', indicators={
             'finished_task': 'Finished Tasks',
-        }, color='Greens')
+        }, colormap='Greens')
         neutral_events = KpiChart(title='Neutral Events', indicators={
             'connection_established': 'Connection was established',
-            'tests_run': 'Tests'
+            'tests_run': 'Tests',
         })
         negatives = KpiChart(title='Exceptions', indicators={
             'wheels_slipped': 'Wheels Slipping',
             'wheels_blocking': 'Wheels Blocking',
             'bumps': 'Robot bumped into something',
-        }, color='Reds')
+        }, colormap='Reds')
         return [positives, neutral_events, negatives]
 
     @property
@@ -57,6 +58,5 @@ class kpi_page(rosys_kpi_page):
 kpi_logger = KpiLogger()
 generate_example_kpis(kpi_logger)
 kpi_page(kpi_logger)
-
 
 ui.run(title='KPI Example')
