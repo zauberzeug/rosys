@@ -45,6 +45,7 @@ async def find_known_cameras() -> list[str]:
 
 
 async def find_ip(mac: str) -> Optional[str]:
+    """Find the IP address of a camera with the given MAC address."""
     async for mac_, ip in find_cameras():
         if mac_ == mac:
             return ip

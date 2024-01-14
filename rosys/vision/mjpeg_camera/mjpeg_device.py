@@ -20,14 +20,8 @@ class MjpegDevice:
         self.capture_process: Optional[Process] = None
         self._image_buffer: Optional[bytes] = None
         self._authorized: bool = True
-
-        if username is not None and password is not None:
-            self.authentication = httpx.DigestAuth(username, password)
-        else:
-            self.authentication = None
-
+        self.authentication = None if username is None or password is None else httpx.DigestAuth(username, password)
         self.log = logging.getLogger('rosys.mjpeg_device ' + self.mac)
-
         url = mac_to_url(mac, ip)
         if url is None:
             raise ValueError(f'could not determine URL for {mac}')

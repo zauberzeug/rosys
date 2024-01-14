@@ -7,8 +7,7 @@ class VendorType:
 
 
 def mac_to_vendor(mac: str) -> int:
-    if mac.startswith('00:40:8c') or mac.startswith('ac:cc:8e')\
-            or mac.startswith('b8:a4:4f') or mac.startswith('e8:27:25'):
+    if any(mac.startswith(prefix) for prefix in ['00:40:8c', 'ac:cc:8e', 'b8:a4:4f', 'e8:27:25']):
         return VendorType.AXIS
     return VendorType.OTHER
 
