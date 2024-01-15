@@ -10,8 +10,18 @@ from .mjpeg_device import MjpegDevice
 
 
 class MjpegCamera(TransformableCamera):
-    def __init__(self, *, id: str, name: str | None = None, connect_after_init: bool = True, streaming: bool = True, image_grab_interval: float = 0.1, base_path_overwrite: str | None = None,
-                 username: str | None = None, password: str | None = None, **kwargs: Any) -> None:
+    def __init__(self,
+                 *,
+                 id: str,
+                 name: str | None = None,
+                 connect_after_init: bool = True,
+                 streaming: bool = True,
+                 image_grab_interval: float = 0.1,
+                 base_path_overwrite: str | None = None,
+                 username: str | None = None,
+                 password: str | None = None,
+                 **kwargs: Any,
+                 ) -> None:
         super().__init__(id=id, name=name, connect_after_init=connect_after_init, streaming=streaming,
                          image_grab_interval=image_grab_interval, base_path_overwrite=base_path_overwrite, **kwargs)
         self.username = username
@@ -61,6 +71,8 @@ class MjpegCamera(TransformableCamera):
 
         if self.crop or self.rotation != ImageRotation.NONE:
             image = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
+        if image is None:
+            return
         try:
             final_image_resolution = get_image_size_from_bytes(image)
         except ValueError:

@@ -3,10 +3,12 @@ from itertools import groupby
 from typing import Sequence
 
 import humanize
-from matplotlib.colors import hsv_to_rgb, to_hex
+from matplotlib import colormaps
+from matplotlib.colors import to_hex
 from nicegui import ui
 
 from .kpi_buckets import Month, TimeBucket, Week
+from .kpi_chart import KpiChart
 from .kpi_logger import KpiLogger, str_to_date
 
 
@@ -22,25 +24,18 @@ class kpi_page(ABC):
             with ui.row().style('margin:1em'):
                 ui.markdown(f'### {self.title}').style('margin:1.5em;margin-top:-1.2em;')
                 toggle = ui.toggle(self.timespans, value=list(self.timespans)[0], on_change=lambda e: show(e.value))
-            with ui.row():
-                positive_chart = ui.highchart({
-                    'title': {'text': self.positive_title},
-                    'chart': {'type': 'column'},
-                    'xAxis': {},
-                    'yAxis': {'title': False},
-                    'credits': False,
-                    'exporting': False,
-                })
-                negative_chart = ui.highchart({
-                    'title': {'text': self.negative_title},
-                    'chart': {'type': 'column'},
-                    'plotOptions': {'series': {'stacking': 'normal'}},
-                    'xAxis': {},
-                    'yAxis': {'title': False},
-                    'colors': [to_hex(hsv_to_rgb((0, 1, i / 100.0))) for i in reversed(range(20, 120, 20))],
-                    'credits': False,
-                    'exporting': False,
-                })
+            with ui.row().classes('w-full'):
+                ui_charts = []
+                for chart in self.charts:
+                    ui_charts.append(ui.echart({
+                        'title': {'text': chart.title},
+                        'xAxis': {'type': 'category'},
+                        'yAxis': {'type': 'value', 'name': chart.unit},
+                        'legend': {'bottom': 10},
+                        'tooltip': {},
+                        'color': [to_hex(colormaps[chart.colormap or 'viridis'](i / 10)) for i in range(9, -1, -2)],
+                        'series': [],
+                    }))
             ui.timer(5, lambda: show(toggle.value))
 
             def show(num_days: int) -> None:
@@ -58,17 +53,16 @@ class kpi_page(ABC):
                 else:
                     raise ValueError(f'Unsupported number of days: {num_days}')
 
-                keys = set(key for day in time_buckets for key in day.incidents if key in self.positives)
-                data = {self.positives[key]: [day.incidents.get(key, 0) for day in time_buckets] for key in keys}
-                positive_chart.options['xAxis']['categories'] = [_label(b) for b in time_buckets]
-                positive_chart.options['series'] = [{'name': k, 'data': v} for k, v in sorted(data.items())]
-                positive_chart.update()
-
-                keys = set(key for day in time_buckets for key in day.incidents if key in self.negatives)
-                data = {self.negatives[key]: [day.incidents.get(key, 0) for day in time_buckets] for key in keys}
-                negative_chart.options['xAxis']['categories'] = [_label(b) for b in time_buckets]
-                negative_chart.options['series'] = [{'name': k, 'data': v} for k, v in sorted(data.items())]
-                negative_chart.update()
+                for chart, ui_chart in zip(self.charts, ui_charts):
+                    keys = set(key for day in time_buckets for key in day.incidents if key in chart.indicators)
+                    data = {chart.indicators[key]: [day.incidents.get(key, 0) for day in time_buckets] for key in keys}
+                    styling = {'type': 'bar', 'stack': 'total', 'emphasis': {'focus': 'series'}}
+                    ui_chart.options['xAxis']['data'] = [_label(b) for b in time_buckets]
+                    ui_chart.options['series'] = [
+                        {**styling, 'name': k, 'data': [round(item * chart.scale, 2) for item in v]}
+                        for k, v in sorted(data.items())
+                    ]
+                    ui_chart.update()
 
     @property
     def language(self) -> str:
@@ -81,27 +75,12 @@ class kpi_page(ABC):
 
     @property
     @abstractmethod
-    def positive_title(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
-    def negative_title(self) -> str:
-        pass
-
-    @property
-    @abstractmethod
-    def positives(self) -> dict[str, str]:
-        pass
-
-    @property
-    @abstractmethod
-    def negatives(self) -> dict[str, str]:
-        pass
-
-    @property
-    @abstractmethod
     def timespans(self) -> dict[int, str]:
+        pass
+
+    @property
+    @abstractmethod
+    def charts(self) -> list[KpiChart]:
         pass
 
 

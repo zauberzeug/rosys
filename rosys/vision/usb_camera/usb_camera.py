@@ -91,7 +91,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
         assert self.device is not None
 
-        capture_success, captured_image = self.device.capture.read()
+        capture_success, captured_image = await rosys.run.io_bound(self.device.capture.read)
         image_is_MJPG = 'MJPG' in self.device.video_formats
 
         if not capture_success:
