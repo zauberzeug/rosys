@@ -28,9 +28,9 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
         for camera in self._cameras.values():
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
-    async def scan_for_cameras(self) -> list[str]:
+    @staticmethod
+    async def scan_for_cameras() -> list[str]:
         cam_list = [mac async for mac, _ in find_cameras() if mac_to_vendor(mac) == VendorType.AXIS]
-        print(cam_list)
         return cam_list
 
     async def update_device_list(self) -> None:
