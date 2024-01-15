@@ -33,7 +33,7 @@ class KeyboardControl:
             self.steerer.update(self.direction.y, self.direction.x)
 
         # update individual speed components via arrow keys
-        if e.key.shift and e.key.is_cursorkey:
+        if e.modifiers.shift and e.key.is_cursorkey:
             if e.action.keydown and self.direction.x == 0 and self.direction.y == 0:
                 self.steerer.start()
 
