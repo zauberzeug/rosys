@@ -5,7 +5,7 @@ from nicegui import ui
 from nicegui.events import KeyEventArguments
 
 from ..geometry import Point
-from .steerer import Steerer
+from .steerer import State, Steerer
 
 
 class KeyboardControl:
@@ -21,6 +21,7 @@ class KeyboardControl:
         ui.keyboard(on_key=self.handle_keys, repeating=False)
         self.direction = Point(x=0, y=0)
         self.speed = default_speed
+        ui.timer(0.5, self._check_connection)
 
     def handle_keys(self, e: KeyEventArguments) -> None:
         self.log.debug(f'{e.key.name} -> {e.action} {e.modifiers}')
@@ -55,4 +56,13 @@ class KeyboardControl:
         if e.key.shift and e.action.keyup:
             self.direction.y = 0
             self.direction.x = 0
+            self.steerer.stop()
+
+    async def _check_connection(self) -> None:
+        if self.steerer.state != State.STEERING:
+            return
+        try:
+            await ui.run_javascript('Date()', timeout=0.5)
+        except TimeoutError:
+            self.log.warning('lost connection to browser')
             self.steerer.stop()
