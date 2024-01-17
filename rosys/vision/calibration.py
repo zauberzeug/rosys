@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, overload
 
 import cv2
 import numpy as np
@@ -49,59 +49,55 @@ class Calibration:
     def rotation_array(self) -> np.ndarray:
         return np.dot(self.extrinsics.rotation.R, self.intrinsics.rotation.R)
 
-    def project_to_image(self, world_point: Point3d) -> Point:
-        world_points = np.array([world_point.tuple], dtype=np.float32)
+    @overload
+    def project_to_image(self, world_coordinates: Point3d) -> Point: ...
+
+    @overload
+    def project_to_image(self, world_coordinates: np.ndarray) -> np.ndarray: ...
+
+    def project_to_image(self, world_coordinates: Point3d | np.ndarray) -> Point | np.ndarray:
+        if isinstance(world_coordinates, Point3d):
+            world_array = np.array([world_coordinates.tuple], dtype=np.float32)
+            image_array = self.project_to_image(world_array)
+            return Point(x=image_array[0, 0], y=image_array[0, 1])  # pylint: disable=unsubscriptable-object
+
         R = self.rotation_array
         Rod = cv2.Rodrigues(R.T)[0]
         t = -R.T @ self.extrinsics.translation
         K = np.array(self.intrinsics.matrix)
         D = np.array(self.intrinsics.distortion, dtype=float)
-        image_points, _ = cv2.projectPoints(world_points, Rod, t, K, D)
-        return Point(x=image_points[0, 0, 0], y=image_points[0, 0, 1])
+        image_array, _ = cv2.projectPoints(world_coordinates, Rod, t, K, D)
+        return image_array.reshape(-1, 2)
 
-    def project_array_to_image(self, world_points: np.ndarray) -> np.ndarray:
-        R = self.rotation_array
-        Rod = cv2.Rodrigues(R.T)[0]
-        t = -R.T @ self.extrinsics.translation
-        K = np.array(self.intrinsics.matrix)
-        D = np.array(self.intrinsics.distortion, dtype=float)
-        image_points, _ = cv2.projectPoints(world_points, Rod, t, K, D)
-        return image_points.reshape(-1, 2)
+    @overload
+    def project_from_image(self, image_coordinates: Point, target_height: float = 0) -> Point3d: ...
 
-    def project_from_image(self, image_point: Point, target_height: float = 0) -> Optional[Point3d]:
-        K = np.array(self.intrinsics.matrix)
-        D = np.array(self.intrinsics.distortion)
-        image_points = np.array(image_point.tuple, dtype=np.float32).reshape((1, 1, 2))
-        image_points_ = cv2.undistortPoints(image_points, K, D).reshape(-1, 2)
-        image_points__ = cv2.convertPointsToHomogeneous(image_points_).reshape(-1, 3)
-        objPoints = image_points__ @ self.rotation_array.T
-        Z = self.extrinsics.translation[-1]
-        t = np.array(self.extrinsics.translation)
-        floor_points = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
+    @overload
+    def project_from_image(self, image_coordinates: np.ndarray, target_height: float = 0) -> np.ndarray: ...
 
-        reprojection = self.project_to_image(Point3d(x=floor_points[0, 0], y=floor_points[0, 1], z=target_height))
-        if objPoints[0, -1] * np.sign(Z) > 0 or reprojection.distance(image_point) > 2:
-            log.warning(f'reprojection failed with {reprojection.distance(image_point)} px')
-            return None
+    def project_from_image(self, image_coordinates: Point | np.ndarray, target_height: float = 0) -> Optional[Point3d] | np.ndarray:
+        if isinstance(image_coordinates, Point):
+            image_points = np.array(image_coordinates.tuple, dtype=np.float32)
+            world_points = self.project_from_image(image_points, target_height=target_height)
+            if np.isnan(world_points).any():
+                return None
+            return Point3d(x=world_points[0, 0], y=world_points[0, 1], z=world_points[0, 2])  # pylint: disable=unsubscriptable-object
 
-        return Point3d(x=floor_points[0, 0], y=floor_points[0, 1], z=target_height)
-
-    def project_array_from_image(self, image_points: np.ndarray, target_height: float = 0) -> np.ndarray:
         K = np.array(self.intrinsics.matrix)
         D = np.array(self.intrinsics.distortion)
-        image_points_ = cv2.undistortPoints(image_points.astype(np.float32), K, D).reshape(-1, 2)
-        image_points__ = cv2.convertPointsToHomogeneous(image_points_).reshape(-1, 3)
-        objPoints = image_points__ @ self.rotation_array.T
+        image_coordinates_ = cv2.undistortPoints(image_coordinates.astype(np.float32), K, D).reshape(-1, 2)
+        image_coordinates__ = cv2.convertPointsToHomogeneous(image_coordinates_).reshape(-1, 3)
+        objPoints = image_coordinates__ @ self.rotation_array.T
         Z = self.extrinsics.translation[-1]
         t = np.array(self.extrinsics.translation)
-        floor_points = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
+        world_points = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
 
-        reprojection = self.project_array_to_image(floor_points)
+        reprojection = self.project_to_image(world_points)
         sign = objPoints[:, -1] * np.sign(Z)
-        distance = np.linalg.norm(reprojection - image_points, axis=1)
-        floor_points[np.logical_or(sign > 0, distance > 2), :] = np.nan
+        distance = np.linalg.norm(reprojection - image_coordinates, axis=1)
+        world_points[np.logical_or(sign > 0, distance > 2), :] = np.nan
 
-        return floor_points
+        return world_points
 
     @staticmethod
     def from_points(

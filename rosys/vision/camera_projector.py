@@ -54,7 +54,7 @@ class CameraProjector:
         c, r = np.meshgrid(np.linspace(0, camera.calibration.intrinsics.size.width, columns),
                            np.linspace(0, camera.calibration.intrinsics.size.height, rows))
         image_points = np.stack((c.flatten(), r.flatten()), axis=1)
-        floor_points = camera.calibration.project_array_from_image(image_points).reshape(rows, columns, 3)
+        floor_points = camera.calibration.project_from_image(image_points).reshape(rows, columns, 3)
         invalid = np.isnan(floor_points).any(axis=2)
         return [
             [

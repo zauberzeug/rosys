@@ -44,9 +44,9 @@ def test_array_projection():
     world_points = [p for p in world_points if p.z == 1]
 
     world_point_array = np.array([p.tuple for p in world_points])
-    image_point_array = cam.calibration.project_array_to_image(world_point_array)
+    image_point_array = cam.calibration.project_to_image(world_point_array)
     for i, world_point in enumerate(world_points):
         image_point = cam.calibration.project_to_image(world_point)
-        assert np.allclose(image_point.tuple, image_point_array[i])
-    world_point_array_ = cam.calibration.project_array_from_image(image_point_array, target_height=1)
+        assert np.allclose(image_point.tuple, image_point_array[i])  # pylint: disable=unsubscriptable-object
+    world_point_array_ = cam.calibration.project_from_image(image_point_array, target_height=1)
     assert np.allclose(world_point_array, world_point_array_, atol=1e-6)
