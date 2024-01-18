@@ -5,7 +5,10 @@ import pyudev
 
 def uid_from_device(device: pyudev.Device) -> Optional[str]:
     parts = [device.get('ID_VENDOR_ID'), device.get('ID_MODEL_ID'), device.get('ID_SERIAL_SHORT')]
-    return '-'.join(parts) if all(parts) else None
+    if all(parts):
+        return '-'.join(parts)
+    else:
+        return device.get('ID_PATH') or device.get('DEVNAME') or None
 
 
 def scan_for_connected_devices() -> set[str]:
