@@ -177,12 +177,13 @@ def augment(line: str) -> str:
 def check(line: Optional[str]) -> str:
     if line is None:
         return ''
-    if line[-3:-2] == '@':
-        check_ = int(line[-2:], 16)
-        line = line[:-3]
-        checksum = 0
-        for c in line:
-            checksum ^= ord(c)
-        if checksum != check_:
-            return ''
+    if line[-3:-2] != '@':
+        return ''
+    check_ = int(line[-2:], 16)
+    line = line[:-3]
+    checksum = 0
+    for c in line:
+        checksum ^= ord(c)
+    if checksum != check_:
+        return ''
     return line
