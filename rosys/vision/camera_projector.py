@@ -25,7 +25,7 @@ class CameraProjector:
     It is mainly used for visualization purposes.
     """
 
-    def __init__(self, camera_provider: CameraProvider) -> None:
+    def __init__(self, camera_provider: CameraProvider[CalibratableCamera]) -> None:
         self.camera_provider = camera_provider
 
         self.projections: dict[str, Projection] = {}
