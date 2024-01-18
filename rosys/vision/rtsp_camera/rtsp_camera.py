@@ -37,12 +37,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                                  min_value=1, max_value=2, step=1, default_value=jovision_profile)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            'id': self.id,
-            'name': self.name,
-            'connect_after_init': self.connect_after_init,
-            'streaming': self.streaming,
-        } | {
+        return super().to_dict() | {
             name: param.value for name, param in self._parameters.items()
         }
 
