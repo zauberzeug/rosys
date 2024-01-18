@@ -22,6 +22,7 @@ def test_calibration_from_points():
     image_size = cam.calibration.intrinsics.size
 
     image_points = [cam.calibration.project_to_image(p) for p in world_points]
+    assert not any(p is None for p in image_points)
     focal_length = cam.calibration.intrinsics.matrix[0][0]
     calibration = Calibration.from_points(world_points, image_points, image_size, focal_length)
 
@@ -35,6 +36,7 @@ def test_projection():
     cam, world_points = demo_data()
     for world_point in world_points:
         image_point = cam.calibration.project_to_image(world_point)
+        assert image_point is not None
         world_point_ = cam.calibration.project_from_image(image_point, target_height=world_point.z)
         assert np.allclose(world_point.tuple, world_point_.tuple, atol=1e-6)
 
@@ -44,9 +46,16 @@ def test_array_projection():
     world_points = [p for p in world_points if p.z == 1]
 
     world_point_array = np.array([p.tuple for p in world_points])
-    image_point_array = cam.calibration.project_array_to_image(world_point_array)
+    image_point_array = cam.calibration.project_to_image(world_point_array)
     for i, world_point in enumerate(world_points):
         image_point = cam.calibration.project_to_image(world_point)
-        assert np.allclose(image_point.tuple, image_point_array[i])
-    world_point_array_ = cam.calibration.project_array_from_image(image_point_array, target_height=1)
+        assert np.allclose(image_point.tuple, image_point_array[i])  # pylint: disable=unsubscriptable-object
+    world_point_array_ = cam.calibration.project_from_image(image_point_array, target_height=1)
     assert np.allclose(world_point_array, world_point_array_, atol=1e-6)
+
+
+def test_project_from_behind():
+    cam = CalibratableCamera(id='1')
+    cam.set_perfect_calibration(z=1, roll=np.deg2rad(180 + 10))
+    assert cam.calibration.project_to_image(Point3d(x=0, y=1, z=1)) is not None
+    assert cam.calibration.project_to_image(Point3d(x=0, y=-1, z=1)) is None
