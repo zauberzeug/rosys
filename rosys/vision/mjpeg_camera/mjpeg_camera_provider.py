@@ -17,6 +17,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
         self.password = password
 
         self.log = logging.getLogger('rosys.mjpeg_camera_provider')
+        rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, 5.)
 
     def restore(self, data: dict[str, dict]) -> None:
@@ -46,3 +47,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
 
         for mac in newly_disconnected_cameras:
             await self._cameras[mac].disconnect()
+
+    async def shutdown(self) -> None:
+        for camera in self._cameras.values():
+            await camera.disconnect()

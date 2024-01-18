@@ -42,7 +42,7 @@ class MjpegDevice:
         async def stream() -> AsyncGenerator[bytes, None]:
             async with httpx.AsyncClient() as client:
                 assert self.url is not None
-                async with client.stream('GET', self.url, auth=self.authentication) as response:
+                async with client.stream('GET', self.url, auth=self.authentication) as response:  # type: ignore
                     if response.status_code != 200:
                         self.log.error(f'could not connect to {self.url} '
                                        f'(credentials: {self.authentication}): '
@@ -78,6 +78,8 @@ class MjpegDevice:
 
         async for image in stream():
             self._image_buffer = image
+
+        self.capture_task = None
 
     def capture(self) -> Optional[bytes]:
         return self._image_buffer

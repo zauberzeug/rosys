@@ -43,12 +43,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self._register_parameter('fps', self.get_fps, self.set_fps, fps)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            'id': self.id,
-            'name': self.name,
-            'connect_after_init': self.connect_after_init,
-            'streaming': self.streaming,
-        } | {
+        return super().to_dict() | {
             name: param.value for name, param in self._parameters.items()
         }
 
