@@ -50,3 +50,10 @@ def test_array_projection():
         assert np.allclose(image_point.tuple, image_point_array[i])  # pylint: disable=unsubscriptable-object
     world_point_array_ = cam.calibration.project_from_image(image_point_array, target_height=1)
     assert np.allclose(world_point_array, world_point_array_, atol=1e-6)
+
+
+def test_project_from_behind():
+    cam = CalibratableCamera(id='1')
+    cam.set_perfect_calibration(z=1, roll=np.deg2rad(180 + 10))
+    assert cam.calibration.project_to_image(Point3d(x=0, y=1, z=1)) is not None
+    assert cam.calibration.project_to_image(Point3d(x=0, y=-1, z=1)) is None

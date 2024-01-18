@@ -55,10 +55,12 @@ class Calibration:
     @overload
     def project_to_image(self, world_coordinates: np.ndarray) -> np.ndarray: ...
 
-    def project_to_image(self, world_coordinates: Point3d | np.ndarray) -> Point | np.ndarray:
+    def project_to_image(self, world_coordinates: Point3d | np.ndarray) -> Optional[Point] | np.ndarray:
         if isinstance(world_coordinates, Point3d):
             world_array = np.array([world_coordinates.tuple], dtype=np.float32)
             image_array = self.project_to_image(world_array)
+            if np.isnan(image_array).any():
+                return None
             return Point(x=image_array[0, 0], y=image_array[0, 1])  # pylint: disable=unsubscriptable-object
 
         R = self.rotation_array
@@ -67,6 +69,8 @@ class Calibration:
         K = np.array(self.intrinsics.matrix)
         D = np.array(self.intrinsics.distortion, dtype=float)
         image_array, _ = cv2.projectPoints(world_coordinates, Rod, t, K, D)
+        local_coordinates = (world_coordinates - np.array(self.extrinsics.translation)) @ R
+        image_array[local_coordinates[:, 2] < 0, :] = np.nan
         return image_array.reshape(-1, 2)
 
     @overload
