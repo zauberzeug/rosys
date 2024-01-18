@@ -30,8 +30,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
 
     @staticmethod
     async def scan_for_cameras() -> list[str]:
-        cam_list = [mac async for mac, _ in find_cameras() if mac_to_vendor(mac) == VendorType.AXIS]
-        return cam_list
+        return [mac async for mac, _ in find_cameras() if mac_to_vendor(mac) == VendorType.AXIS]
 
     async def update_device_list(self) -> None:
         newly_disconnected_cameras = {id for id, camera in self._cameras.items() if camera.is_connected}

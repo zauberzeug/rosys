@@ -13,7 +13,7 @@ from .vendors import mac_to_url
 
 class MjpegDevice:
 
-    def __init__(self, mac: str, ip: str, username: Optional[str] = None, password: Optional[str] = None):
+    def __init__(self, mac: str, ip: str, username: Optional[str] = None, password: Optional[str] = None) -> None:
         self.mac = mac
         self.ip = ip
         self.capture_task: Optional[Task] = None
@@ -43,10 +43,10 @@ class MjpegDevice:
             async with httpx.AsyncClient() as client:
                 assert self.url is not None
                 async with client.stream('GET', self.url, auth=self.authentication) as response:
-                    response: httpx.Response
                     if response.status_code != 200:
-                        self.log.error(
-                            f'could not connect to {self.url} (credentials: {self.authentication}): {response.status_code} {response.reason_phrase}')
+                        self.log.error(f'could not connect to {self.url} '
+                                       f'(credentials: {self.authentication}): '
+                                       f'{response.status_code} {response.reason_phrase}')
                         return
                     buffer = BytesIO()
                     header = None

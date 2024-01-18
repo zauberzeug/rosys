@@ -10,9 +10,10 @@ from .mjpeg_device import MjpegDevice
 
 
 class MjpegCamera(TransformableCamera):
+
     def __init__(self,
                  *,
-                 id: str,
+                 id: str,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
