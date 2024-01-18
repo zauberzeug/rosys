@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.3">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.4">
     
     
       
@@ -1020,7 +1020,7 @@
           <li class="md-nav__item">
   <a href="#rosys.vision.DetectorHardware.detect" class="md-nav__link">
     <span class="md-ellipsis">
-      detect()
+      detect
     </span>
   </a>
   
@@ -1106,7 +1106,6 @@
 
 
 
-
 <h2 id="rosys.vision.Autoupload" class="doc doc-heading">
           <span class="doc doc-object-name doc-class-name">Autoupload</span>
 
@@ -1136,7 +1135,6 @@
 
 
 
-
 <h3 id="rosys.vision.Autoupload.ALL" class="doc doc-heading">
           <span class="doc doc-object-name doc-attribute-name">ALL</span>
 
@@ -1161,7 +1159,6 @@
 
 
 
-
 <h3 id="rosys.vision.Autoupload.DISABLED" class="doc doc-heading">
           <span class="doc doc-object-name doc-attribute-name">DISABLED</span>
 
@@ -1183,7 +1180,6 @@
 </div>
 
 <div class="doc doc-object doc-attribute">
-
 
 
 
@@ -1215,6 +1211,7 @@
 
   </div>
 
+
 </div><h3 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -1236,13 +1233,14 @@
 
 
 
-
 <h2 id="rosys.vision.CameraProjector" class="doc doc-heading">
           <span class="doc doc-object-name doc-class-name">CameraProjector</span>
 
 
 <a href="#rosys.vision.CameraProjector" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="n">CameraProjector</span><span class="p">(</span><span class="n">camera_provider</span><span class="p">:</span> <span class="n">CameraProvider</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">CameraProjector</span><span class="p">(</span>
+    <span class="n">camera_provider</span><span class="p">:</span> <span class="n">CameraProvider</span><span class="p">[</span><span class="n">CalibratableCamera</span><span class="p">],</span>
+<span class="p">)</span>
 </code></pre></div>
 
   <div class="doc doc-contents first">
@@ -1270,10 +1268,10 @@
 
   </div>
 
+
 </div>
 
 <div class="doc doc-object doc-class">
-
 
 
 
@@ -1314,6 +1312,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
   </div>
 
+
 </div><h3 id="events_1">Events<a class="headerlink" href="#events_1" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -1340,7 +1339,6 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
 
 <div class="doc doc-object doc-class">
-
 
 
 
@@ -1378,10 +1376,10 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
   </div>
 
+
 </div>
 
 <div class="doc doc-object doc-class">
-
 
 
 
@@ -1420,6 +1418,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
   </div>
 
+
 </div><h3 id="events_2">Events<a class="headerlink" href="#events_2" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -1438,7 +1437,6 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
 
 <div class="doc doc-object doc-class">
-
 
 
 
@@ -1478,7 +1476,6 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
 
 
-
 <h3 id="rosys.vision.DetectorHardware.detect" class="doc doc-heading">
           <span class="doc doc-object-name doc-function-name">detect</span>
 
@@ -1509,10 +1506,10 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
   </div>
 
+
 </div>
 
 <div class="doc doc-object doc-class">
-
 
 
 
@@ -1522,7 +1519,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
 <a href="#rosys.vision.DetectorSimulation" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="n">DetectorSimulation</span><span class="p">(</span>
-    <span class="n">camera_provider</span><span class="p">:</span> <span class="n">CameraProvider</span><span class="p">,</span>
+    <span class="n">camera_provider</span><span class="p">:</span> <span class="n">CameraProvider</span><span class="p">[</span><span class="n">CalibratableCamera</span><span class="p">],</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">noise</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1559,10 +1556,10 @@ An optional <code>noise</code> parameter controls the spatial accuracy in pixels
 
   </div>
 
+
 </div>
 
 <div class="doc doc-object doc-class">
-
 
 
 
@@ -1601,10 +1598,10 @@ An optional <code>noise</code> parameter controls the spatial accuracy in pixels
 
   </div>
 
+
 </div>
 
 <div class="doc doc-object doc-class">
-
 
 
 
@@ -1644,10 +1641,10 @@ An optional <code>noise</code> parameter controls the spatial accuracy in pixels
 
   </div>
 
+
 </div>
 
 <div class="doc doc-object doc-class">
-
 
 
 
@@ -1686,10 +1683,10 @@ An optional <code>noise</code> parameter controls the spatial accuracy in pixels
 
   </div>
 
+
 </div>
 
 <div class="doc doc-object doc-class">
-
 
 
 
@@ -1729,10 +1726,10 @@ Therefore the program v4l2ctl and openCV (including python bindings) must be ava
 
   </div>
 
+
 </div>
 
 <div class="doc doc-object doc-class">
-
 
 
 
@@ -1742,7 +1739,7 @@ Therefore the program v4l2ctl and openCV (including python bindings) must be ava
 
 <a href="#rosys.vision.camera_objects" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="n">camera_objects</span><span class="p">(</span>
-    <span class="n">camera_provider</span><span class="p">:</span> <span class="n">CameraProvider</span><span class="p">,</span>
+    <span class="n">camera_provider</span><span class="p">:</span> <span class="n">CameraProvider</span><span class="p">[</span><span class="n">CalibratableCamera</span><span class="p">],</span>
     <span class="n">camera_projector</span><span class="p">:</span> <span class="n">CameraProjector</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">px_per_m</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span>
@@ -1778,6 +1775,7 @@ With <code>debug=True</code> camera IDs are shown (default: <code>False</code>).
   </div>
 
   </div>
+
 
 </div>
 
@@ -1826,10 +1824,10 @@ With <code>debug=True</code> camera IDs are shown (default: <code>False</code>).
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.c011b7c0.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.d7c377c4.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.7389ff0e.min.js"></script>
       
     
   </body>
