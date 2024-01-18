@@ -22,6 +22,7 @@ def test_calibration_from_points():
     image_size = cam.calibration.intrinsics.size
 
     image_points = [cam.calibration.project_to_image(p) for p in world_points]
+    assert not any(p is None for p in image_points)
     focal_length = cam.calibration.intrinsics.matrix[0][0]
     calibration = Calibration.from_points(world_points, image_points, image_size, focal_length)
 
@@ -35,6 +36,7 @@ def test_projection():
     cam, world_points = demo_data()
     for world_point in world_points:
         image_point = cam.calibration.project_to_image(world_point)
+        assert image_point is not None
         world_point_ = cam.calibration.project_from_image(image_point, target_height=world_point.z)
         assert np.allclose(world_point.tuple, world_point_.tuple, atol=1e-6)
 

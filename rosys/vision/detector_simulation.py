@@ -83,6 +83,8 @@ class DetectorSimulation(Detector):
             if np.dot(viewing_direction, object_direction) < 0:
                 continue
             image_point = camera.calibration.project_to_image(obj.position)
+            if image_point is None:
+                continue
             if not (0 <= image_point.x < image.size.width and 0 <= image_point.y < image.size.height):
                 continue
 
@@ -103,6 +105,8 @@ class DetectorSimulation(Detector):
                     for dz in [-obj.size[2] / 2, obj.size[2] / 2]
                 ])
                 image_points = camera.calibration.project_to_image(world_points)
+                if np.any(np.isnan(image_points)):
+                    continue
                 detections.boxes.append(BoxDetection(
                     category_name=obj.category_name,
                     model_name='simulation',

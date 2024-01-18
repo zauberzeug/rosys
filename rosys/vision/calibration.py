@@ -50,7 +50,7 @@ class Calibration:
         return np.dot(self.extrinsics.rotation.R, self.intrinsics.rotation.R)
 
     @overload
-    def project_to_image(self, world_coordinates: Point3d) -> Point: ...
+    def project_to_image(self, world_coordinates: Point3d) -> Optional[Point]: ...
 
     @overload
     def project_to_image(self, world_coordinates: np.ndarray) -> np.ndarray: ...
@@ -74,7 +74,7 @@ class Calibration:
         return image_array.reshape(-1, 2)
 
     @overload
-    def project_from_image(self, image_coordinates: Point, target_height: float = 0) -> Point3d: ...
+    def project_from_image(self, image_coordinates: Point, target_height: float = 0) -> Optional[Point3d]: ...
 
     @overload
     def project_from_image(self, image_coordinates: np.ndarray, target_height: float = 0) -> np.ndarray: ...
@@ -99,7 +99,7 @@ class Calibration:
         reprojection = self.project_to_image(world_points)
         sign = objPoints[:, -1] * np.sign(Z)
         distance = np.linalg.norm(reprojection - image_coordinates, axis=1)
-        world_points[np.logical_or(sign > 0, distance > 2), :] = np.nan
+        world_points[np.logical_not(np.logical_and(sign < 0, distance < 2)), :] = np.nan
 
         return world_points
 
