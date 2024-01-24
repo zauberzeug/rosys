@@ -52,9 +52,12 @@ class BmsHardware(Bms, ModuleHardware):
                  rx_pin: int = 26,
                  tx_pin: int = 27,
                  baud: int = 9600,
-                 num: int = 1) -> None:
+                 num: int = 1,
+                 base_consumption: float = -0.4
+                 ) -> None:
         self.name = name
         self.expander = expander
+        self.base_consumption = base_consumption
         lizard_code = remove_indentation(f'''
             {name} = {expander.name + "." if expander else ""}Serial({rx_pin}, {tx_pin}, {baud}, {num})
             {name}.unmute()
@@ -77,7 +80,7 @@ class BmsHardware(Bms, ModuleHardware):
         self.state.voltage = result.get('total voltage')
         self.state.current = result.get('current')
         self.state.temperature = np.mean(result['temperatures']) if 'temperatures' in result else None
-        self.state.is_charging = (self.state.current or 0) > -0.4
+        self.state.is_charging = (self.state.current or 0) > self.base_consumption
         self.state.last_update = rosys.time()
         self.raw_data = result
 
