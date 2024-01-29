@@ -15,13 +15,14 @@ class KeyboardControl:
     You can change the speed with the number keys 1 to 9 and the initial speed via the `default_speed` argument.
     """
 
-    def __init__(self, steerer: Steerer, *, default_speed: float = 2.0) -> None:
+    def __init__(self, steerer: Steerer, *, default_speed: float = 2.0, connection_timeout: float = 0.5, check_connection_interval: float = 0.5) -> None:
         self.steerer = steerer
         self.log = logging.getLogger('rosys.ui.keyboard_control')
         ui.keyboard(on_key=self.handle_keys, repeating=False)
         self.direction = Point(x=0, y=0)
         self.speed = default_speed
-        ui.timer(0.5, self._check_connection)
+        self.connection_timeout = connection_timeout
+        ui.timer(check_connection_interval, self._check_connection)
 
     def handle_keys(self, e: KeyEventArguments) -> None:
         self.log.debug(f'{e.key.name} -> {e.action} {e.modifiers}')
@@ -62,7 +63,7 @@ class KeyboardControl:
         if self.steerer.state != State.STEERING:
             return
         try:
-            await ui.run_javascript('Date()', timeout=0.5)
+            await ui.run_javascript('Date()', timeout=self.connection_timeout)
         except TimeoutError:
             self.log.warning('lost connection to browser')
             self.steerer.stop()
