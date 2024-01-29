@@ -5,6 +5,7 @@ import numpy as np
 from nicegui import ui
 from nicegui.events import KeyEventArguments
 
+from ..event import Event
 from ..geometry import Point
 from .steerer import State, Steerer
 
@@ -16,7 +17,14 @@ class KeyboardControl:
     You can change the speed with the number keys 1 to 9 and the initial speed via the `default_speed` argument.
     """
 
-    def __init__(self, steerer: Steerer, *, default_speed: float = 2.0, connection_timeout: float = 1.0, check_connection_interval: float = 1.0) -> None:
+    def __init__(self,
+                 steerer: Steerer, *,
+                 default_speed: float = 2.0,
+                 connection_timeout: float = 1.0,
+                 check_connection_interval: float = 1.0) -> None:
+        self.CONNECTION_INTERRUPTED = Event()
+        """the keyboard control has lost connection to the browser."""
+
         self.steerer = steerer
         self.log = logging.getLogger('rosys.ui.keyboard_control')
         ui.keyboard(on_key=self.handle_keys, repeating=False)
@@ -70,4 +78,5 @@ class KeyboardControl:
         except TimeoutError:
             print('took:', time.time() - t)
             self.log.warning('lost connection to browser')
+            self.CONNECTION_INTERRUPTED.emit()
             self.steerer.stop()
