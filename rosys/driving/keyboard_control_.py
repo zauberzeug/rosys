@@ -1,5 +1,4 @@
 import logging
-import time
 
 import numpy as np
 from nicegui import ui
@@ -72,11 +71,8 @@ class KeyboardControl:
         if self.steerer.state != State.STEERING:
             return
         try:
-            t = time.time()
             await ui.run_javascript('Date()', timeout=self.connection_timeout)
-            print('took:', time.time() - t)
         except TimeoutError:
-            print('took:', time.time() - t)
             self.log.warning('lost connection to browser')
             self.CONNECTION_INTERRUPTED.emit()
             self.steerer.stop()
