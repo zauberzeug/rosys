@@ -48,7 +48,8 @@ class EStopHardware(EStop, ModuleHardware):
         await self.robot_brain.send(f'en3.level({"false" if active else "true"})')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        active = any(int(words.pop(0)) == 0 for _ in self.pins)
+        corelist = [int(words.pop(0)) == 0 for _ in self.pins]
+        active = any(corelist)
         if active and not self.active:
             self.ESTOP_TRIGGERED.emit()
         self.active = active
