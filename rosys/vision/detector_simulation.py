@@ -6,8 +6,7 @@ import numpy as np
 
 from .. import rosys
 from ..geometry import Point3d
-from .camera import CalibratableCamera
-from .camera_provider import CameraProvider
+from .calibratable_camera_provider import CalibratableCameraProvider
 from .detections import BoxDetection, Detections, PointDetection
 from .detector import Detector
 from .image import Image
@@ -35,7 +34,7 @@ class DetectorSimulation(Detector):
     An optional `noise` parameter controls the spatial accuracy in pixels.
     """
 
-    def __init__(self, camera_provider: CameraProvider[CalibratableCamera], *, noise: float = 1.0, name: Optional[str] = None) -> None:
+    def __init__(self, camera_provider: CalibratableCameraProvider, *, noise: float = 1.0, name: Optional[str] = None) -> None:
         super().__init__(name=name)
 
         self.camera_provider = camera_provider

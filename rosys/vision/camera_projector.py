@@ -5,9 +5,9 @@ from typing import Optional
 import numpy as np
 
 from .. import rosys
+from .calibratable_camera_provider import CalibratableCameraProvider
 from .calibration import Calibration
 from .camera import CalibratableCamera
-from .camera_provider import CameraProvider
 
 ProjectionCoordinates = list[list[Optional[list[float]]]]
 
@@ -25,7 +25,7 @@ class CameraProjector:
     It is mainly used for visualization purposes.
     """
 
-    def __init__(self, camera_provider: CameraProvider[CalibratableCamera]) -> None:
+    def __init__(self, camera_provider: CalibratableCameraProvider) -> None:
         self.camera_provider = camera_provider
 
         self.projections: dict[str, Projection] = {}
