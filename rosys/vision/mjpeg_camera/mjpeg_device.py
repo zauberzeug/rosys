@@ -13,7 +13,7 @@ from .vendors import mac_to_url
 
 class MjpegDevice:
 
-    def __init__(self, mac: str, ip: str, username: Optional[str] = None, password: Optional[str] = None) -> None:
+    def __init__(self, mac: str, ip: str, *, index: Optional[int] = None, username: Optional[str] = None, password: Optional[str] = None) -> None:
         self.mac = mac
         self.ip = ip
         self.capture_task: Optional[Task] = None
@@ -22,7 +22,8 @@ class MjpegDevice:
         self._authorized: bool = True
         self.authentication = None if username is None or password is None else httpx.DigestAuth(username, password)
         self.log = logging.getLogger('rosys.mjpeg_device ' + self.mac)
-        url = mac_to_url(mac, ip)
+        url = mac_to_url(mac, ip, index=index)
+        print(f'URL: {url}')
         if url is None:
             raise ValueError(f'could not determine URL for {mac}')
         self.url = url
