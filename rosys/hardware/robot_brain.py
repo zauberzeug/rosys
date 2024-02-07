@@ -154,6 +154,7 @@ class RobotBrain:
             esp = Esp(nand='nand' in params,
                       xavier='xavier' in params,
                       orin='orin' in params,
+                      v05='v05' in params,
                       device=devices[0] if devices else None)
             with esp.pin_config():
                 esp.activate()
