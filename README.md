@@ -107,7 +107,7 @@ Python (and Linux) is fast enough for most high-level logic, but has no realtime
 Safety-relevant behavior should therefore be put on a suitable microcontroller.
 It governs the hardware of the robot and must be able to perform safety actions like triggering emergency hold etc.
 
-We suggest to use an industrial PC with an integrated controller like the [Zauberzeug Robot Brain](https://www.zauberzeug.com/robot-brain.html).
+We suggest to use an industrial PC with an integrated controller like the [Zauberzeug Robot Brain](https://www.zauberzeug.com/products/robot-brain).
 It provides a Linux system to run RoSys, offers AI acceleration via NVidia Jetson, two integrated [ESP32](https://www.espressif.com/en/products/socs/esp32) microcontrollers and six I/O sockets with up to 24 GPIOs for digital I/Os, CAN, RS485, SPI, I2C, etc.
 It also has two hardware ENABLE switches and one which is controllable via software.
 

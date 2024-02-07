@@ -19,7 +19,7 @@ The robot can be controlled by keyboard or joystick.
 
 ## Robot Brain
 
-The [Zauberzeug Robot Brain](https://zauberzeug.com/robot-brain.html) is an industrial-grade controller which combines artificial intelligence with machinery.
+The [Zauberzeug Robot Brain](https://zauberzeug.com/products/robot-brain) is an industrial-grade controller which combines artificial intelligence with machinery.
 It has a built-in ESP32 microcontroller with [Lizard](https://lizard.dev/) installed to do the actual hardware communication in realtime.
 
 Serial communication is used to send and receive messages between the built-in NVidia Jetson and the microcontroller.

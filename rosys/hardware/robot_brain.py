@@ -12,7 +12,7 @@ from .lizard_firmware import LizardFirmware
 
 
 class RobotBrain:
-    """This module manages the communication with a [Zauberzeug Robot Brain](https://zauberzeug.com/robot-brain.html).
+    """This module manages the communication with a [Zauberzeug Robot Brain](https://zauberzeug.com/products/robot-brain).
 
     It expects a communication object, which is used for the actual read and write operations.
     Besides providing some basic methods like configuring or restarting the microcontroller, it augments and verifies checksums for each message.

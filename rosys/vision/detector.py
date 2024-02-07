@@ -25,7 +25,7 @@ class Autoupload(Enum):
 class Detector(abc.ABC):
     """A detector allows detecting objects in images.
 
-    It also holds an upload queue for sending images with uncertain results to an active learning infrastructure like the [Zauberzeug Learning Loop](https://zauberzeug.com/learning-loop.html).
+    It also holds an upload queue for sending images with uncertain results to an active learning infrastructure like the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
     """
 
     def __init__(self, *, name: Optional[str] = None) -> None:
