@@ -33,8 +33,6 @@ class MjpegCamera(TransformableCamera):
         if len(parts) == 2 and parts[1].isdigit():
             self.index = int(parts[1])
 
-        print(f'ID: {self.id}')
-
         self.mac = parts[0]
         self.device: Optional[MjpegDevice] = None
 

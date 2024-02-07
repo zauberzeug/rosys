@@ -23,7 +23,6 @@ class MjpegDevice:
         self.authentication = None if username is None or password is None else httpx.DigestAuth(username, password)
         self.log = logging.getLogger('rosys.mjpeg_device ' + self.mac)
         url = mac_to_url(mac, ip, index=index)
-        print(f'URL: {url}')
         if url is None:
             raise ValueError(f'could not determine URL for {mac}')
         self.url = url
