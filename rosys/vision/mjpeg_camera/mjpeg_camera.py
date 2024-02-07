@@ -27,6 +27,15 @@ class MjpegCamera(TransformableCamera):
                          image_grab_interval=image_grab_interval, base_path_overwrite=base_path_overwrite, **kwargs)
         self.username = username
         self.password = password
+
+        self.index: Optional[int] = None
+        parts = self.id.split('-')
+        if len(parts) == 2 and parts[1].isdigit():
+            self.index = int(parts[1])
+
+        print(f'ID: {self.id}')
+
+        self.mac = parts[0]
         self.device: Optional[MjpegDevice] = None
 
     def to_dict(self) -> dict:
@@ -47,11 +56,11 @@ class MjpegCamera(TransformableCamera):
         if self.is_connected:
             return
 
-        ip = await find_ip(self.id)
+        ip = await find_ip(self.mac)
         if ip is None:
             return
 
-        self.device = MjpegDevice(self.id, ip, username=self.username, password=self.password)
+        self.device = MjpegDevice(self.mac, ip, index=self.index, username=self.username, password=self.password)
 
     async def disconnect(self) -> None:
         if self.device is None:

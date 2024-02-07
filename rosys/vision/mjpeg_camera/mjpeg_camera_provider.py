@@ -1,6 +1,8 @@
 import logging
 from typing import Optional
 
+import httpx
+
 from ... import persistence, rosys
 from ..camera_provider import CameraProvider
 from ..rtsp_camera.arp_scan import find_cameras
@@ -29,18 +31,31 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
         for camera in self._cameras.values():
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
-    @staticmethod
-    async def scan_for_cameras() -> list[str]:
-        return [mac async for mac, _ in find_cameras() if mac_to_vendor(mac) == VendorType.AXIS]
+    async def scan_for_cameras(self) -> list[str]:
+        ids = []
+        async for mac, ip in find_cameras():
+            if mac_to_vendor(mac) == VendorType.AXIS:
+                authentication = None if self.username is None or self.password is None else httpx.DigestAuth(
+                    self.username, self.password)
+                url = f'http://{ip}/axis-cgi/videostatus.cgi'
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(url, auth=authentication)
+                if response.status_code == 200:
+                    camera_infos = response.text.split('\n')
+                    for info_line in camera_infos:
+                        if 'video' in info_line:
+                            i = int(info_line.split(' ')[1])
+                            ids.append(f'{mac}-{i}')
+        return ids
 
     async def update_device_list(self) -> None:
         newly_disconnected_cameras = {id for id, camera in self._cameras.items() if camera.is_connected}
-        for mac in await self.scan_for_cameras():
-            if mac not in self._cameras:
-                self.add_camera(MjpegCamera(id=mac, username=self.username, password=self.password))
-            if mac in newly_disconnected_cameras:
-                newly_disconnected_cameras.remove(mac)
-            camera = self._cameras[mac]
+        for camera_id in await self.scan_for_cameras():
+            if camera_id not in self._cameras:
+                self.add_camera(MjpegCamera(id=camera_id, username=self.username, password=self.password))
+            if camera_id in newly_disconnected_cameras:
+                newly_disconnected_cameras.remove(camera_id)
+            camera = self._cameras[camera_id]
             if not camera.is_connected:
                 self.log.info(f'activating authorized camera {camera.id}...')
                 await camera.connect()

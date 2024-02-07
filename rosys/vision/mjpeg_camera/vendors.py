@@ -12,8 +12,8 @@ def mac_to_vendor(mac: str) -> int:
     return VendorType.OTHER
 
 
-def mac_to_url(mac: str, ip: str) -> Optional[str]:
+def mac_to_url(mac: str, ip: str, index: Optional[int]) -> Optional[str]:
     vendor = mac_to_vendor(mac)
     if vendor == VendorType.AXIS:
-        return f'http://{ip}/axis-cgi/mjpg/video.cgi'
+        return f'http://{ip}/axis-cgi/mjpg/video.cgi' + (f'?camera={index}' if index is not None else '')
     return None
