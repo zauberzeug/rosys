@@ -58,7 +58,7 @@ icecream = "^2.1.0"
 debugpy = "^1.2.1"
 py-spy = "^0.3.10"
 isort = "^5.10.1"
-cryptography = "^41.0.4" # https://github.com/zauberzeug/rosys/security/dependabot/36
+cryptography = "^42.0.0" # https://github.com/zauberzeug/rosys/security/dependabot/41
 
 [build-system]
 requires = [
