@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.4">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.8">
     
     
       
@@ -26,7 +26,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.50c56a3b.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.f2e4d321.min.css">
       
       
 
@@ -756,6 +756,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="keyboard_control">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Events
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1174,6 +1189,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="keyboard_control">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      Events
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1532,7 +1562,11 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
 
 <a href="#rosys.driving.keyboard_control" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="n">keyboard_control</span><span class="p">(</span>
-    <span class="n">steerer</span><span class="p">:</span> <span class="n">Steerer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">default_speed</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span>
+    <span class="n">steerer</span><span class="p">:</span> <span class="n">Steerer</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">default_speed</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">,</span>
+    <span class="n">connection_timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">check_connection_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -1563,7 +1597,22 @@ You can change the speed with the number keys 1 to 9 and the initial speed via t
   </div>
 
 
-</div>
+</div><h3 id="events_2">Events<a class="headerlink" href="#events_2" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CONNECTION_INTERRUPTED</td>
+<td>the keyboard control has lost connection to the browser.</td>
+</tr>
+</tbody>
+</table>
+
 
 <div class="doc doc-object doc-class">
 
@@ -1689,10 +1738,10 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.c011b7c0.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.7389ff0e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.8fd75fb4.min.js"></script>
       
     
   </body>

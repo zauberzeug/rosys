@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.4">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.8">
     
     
       
@@ -26,7 +26,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.50c56a3b.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.f2e4d321.min.css">
       
       
 
@@ -1792,7 +1792,8 @@
     <span class="n">rx_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">26</span><span class="p">,</span>
     <span class="n">tx_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">27</span><span class="p">,</span>
     <span class="n">baud</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">9600</span><span class="p">,</span>
-    <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">num</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">charge_detect_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.4</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -2329,7 +2330,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
   <div class="doc doc-contents first">
 
   
-      <p>This module manages the communication with a <a href="https://zauberzeug.com/robot-brain.html">Zauberzeug Robot Brain</a>.</p>
+      <p>This module manages the communication with a <a href="https://zauberzeug.com/products/robot-brain">Zauberzeug Robot Brain</a>.</p>
 <p>It expects a communication object, which is used for the actual read and write operations.
 Besides providing some basic methods like configuring or restarting the microcontroller, it augments and verifies checksums for each message.</p>
 
@@ -2732,10 +2733,10 @@ A simulated pose is regularly updated with these velocities, while the velocitie
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.c011b7c0.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../assets/javascripts/bundle.7389ff0e.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.8fd75fb4.min.js"></script>
       
     
   </body>
