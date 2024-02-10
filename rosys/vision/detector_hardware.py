@@ -95,7 +95,7 @@ class DetectorHardware(Detector):
                 detections_dict['point_detections'] = detections_dict.pop('points')
                 detections_dict['segmentation_detections'] = detections_dict.pop('segmentations')
                 data_dict['detections'] = detections_dict
-            data_dict['tags'] = tags + image.tags
+            data_dict['tags'] = list(image.tags.union(tags))
             await self.sio.emit('upload', data_dict)
 
         except Exception:
