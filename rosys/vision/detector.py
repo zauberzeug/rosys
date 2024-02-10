@@ -36,11 +36,13 @@ class Detector(abc.ABC):
 
     @abc.abstractmethod
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> None:
-        pass
+        """Runs detections on the image. Afterwards the `image.detections` property is filled."""
 
     @abc.abstractmethod
-    async def upload(self, image: Image) -> None:
-        pass
+    async def upload(self, image: Image, *, tags: list[str] = []) -> None:
+        """Uploads the image to the Learning Loop. 
+
+        The `tags` are added to the image. If image has detections they are also uploaded."""
 
     @property
     @abc.abstractmethod
