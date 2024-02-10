@@ -29,7 +29,7 @@ class Image:
     data: Optional[bytes] = None
     _detections: dict[str, Detections] = field(default_factory=dict)
     is_broken: Optional[bool] = None
-    tags: set[str] = set()
+    tags: set[str] = field(default_factory=set)
 
     DEFAULT_PLACEHOLDER_SIZE: ClassVar[tuple[int, int]] = (320, 240)
 

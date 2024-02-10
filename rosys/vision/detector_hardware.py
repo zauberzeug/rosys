@@ -42,9 +42,9 @@ class DetectorHardware(Detector):
 
     async def step(self) -> None:
         if not self.is_connected:
-            self.log.info(f'trying reconnect {self.port}')
+            self.log.info(f'trying reconnect {self.name}')
             if not await self.connect():
-                self.log.exception(f'connection to {self.port} failed; trying again')
+                self.log.exception(f'connection to {self.name} at port {self.port} failed; trying again')
                 await rosys.sleep(3.0)
                 return
 

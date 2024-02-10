@@ -36,7 +36,7 @@ class Detector(abc.ABC):
         self.uploads = Uploads()
 
     @abc.abstractmethod
-    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> None:
+    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED, tags: list[str] = []) -> None:
         """Runs detections on the image. Afterwards the `image.detections` property is filled."""
 
     @abc.abstractmethod
