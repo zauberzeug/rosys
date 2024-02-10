@@ -9,7 +9,6 @@ from .. import persistence, rosys
 from .detections import BoxDetection, Detections, PointDetection, SegmentationDetection
 from .detector import Autoupload, Detector
 from .image import Image
-from .uploads import Uploads
 
 
 class DetectorHardware(Detector):
@@ -26,7 +25,6 @@ class DetectorHardware(Detector):
         self.next_image: Optional[Image] = None
         self.port = port
         self.timeout_count = 0
-        self._uploads = Uploads()
 
         @self.sio.on('disconnect')
         def on_sio_disconnect() -> None:
@@ -37,10 +35,6 @@ class DetectorHardware(Detector):
             self.log.warning(f'sio connect error on {port}: {err}')
 
         rosys.on_repeat(self.step, 1.0)
-
-    @property
-    def uploads(self) -> Uploads:
-        return self._uploads
 
     @property
     def is_connected(self) -> bool:
@@ -95,16 +89,13 @@ class DetectorHardware(Detector):
 
             data_dict: dict[str, Any] = {'image': image.data, 'mac': image.camera_id}
             detections = image.get_detections(self.name)
-
             if detections is not None:
                 detections_dict = detections.to_dict()
                 detections_dict['box_detections'] = _box_detections_to_int(detections_dict.pop('boxes'))
                 detections_dict['point_detections'] = detections_dict.pop('points')
                 detections_dict['segmentation_detections'] = detections_dict.pop('segmentations')
-
                 data_dict['detections'] = detections_dict
-            if tags:
-                data_dict['tags'] = tags
+            data_dict['tags'] = tags + image.tags
             await self.sio.emit('upload', data_dict)
 
         except Exception:

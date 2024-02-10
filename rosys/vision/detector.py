@@ -33,6 +33,7 @@ class Detector(abc.ABC):
         self.NEW_DETECTIONS = Event()
         """detection on an image is completed (argument: image)"""
         self.log = logging.getLogger('rosys.detector')
+        self.uploads = Uploads()
 
     @abc.abstractmethod
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> None:
@@ -43,8 +44,3 @@ class Detector(abc.ABC):
         """Uploads the image to the Learning Loop. 
 
         The `tags` are added to the image. If image has detections they are also uploaded."""
-
-    @property
-    @abc.abstractmethod
-    def uploads(self) -> Uploads:
-        pass
