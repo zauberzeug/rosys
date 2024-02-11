@@ -43,4 +43,6 @@ class Detector(abc.ABC):
     async def upload(self, image: Image, *, tags: list[str] = []) -> None:
         """Uploads the image to the Learning Loop. 
 
-        The `tags` are added to the image. If image has detections they are also uploaded."""
+        The `tags` are added to the image.
+        If the image has detections, they are also uploaded.
+        """
