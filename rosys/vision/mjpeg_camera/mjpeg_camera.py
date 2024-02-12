@@ -1,4 +1,4 @@
-from typing import Any, Optional, Self
+from typing import Any, Optional, Self, overload
 
 from ... import rosys
 from ..camera import TransformableCamera
@@ -50,11 +50,21 @@ class MjpegCamera(TransformableCamera):
     def is_connected(self) -> bool:
         return self.device is not None and self.device.capture_task is not None
 
+    @overload
     async def connect(self) -> None:
+        ...
+
+    @overload
+    async def connect(self, ip: str):
+        ...
+
+    async def connect(self, ip: Optional[str] = None):
+
         if self.is_connected:
             return
 
-        ip = await find_ip(self.mac)
+        if not ip:
+            ip = await find_ip(self.mac)
         if ip is None:
             return
 
