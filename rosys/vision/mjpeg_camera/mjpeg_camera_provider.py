@@ -31,8 +31,8 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
         for camera in self._cameras.values():
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
-    async def scan_for_cameras(self) -> list[str]:
-        ids = []
+    async def scan_for_cameras(self) -> list[tuple[str, str]]:
+        ids_ips: list[tuple[str, str]] = []
         async for mac, ip in find_cameras():
             if mac_to_vendor(mac) == VendorType.AXIS:
                 authentication = None if self.username is None or self.password is None else httpx.DigestAuth(
@@ -45,20 +45,21 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
                     for info_line in camera_infos:
                         if 'video' in info_line:
                             i = int(info_line.split(' ')[1])
-                            ids.append(f'{mac}-{i}')
-        return ids
+                            ids_ips.append((f'{mac}-{i}', ip))
+        return ids_ips
 
     async def update_device_list(self) -> None:
         newly_disconnected_cameras = {id for id, camera in self._cameras.items() if camera.is_connected}
-        for camera_id in await self.scan_for_cameras():
+        for camera_id, ip in await self.scan_for_cameras():
             if camera_id not in self._cameras:
-                self.add_camera(MjpegCamera(id=camera_id, username=self.username, password=self.password))
+                self.add_camera(MjpegCamera(id=camera_id, username=self.username,
+                                password=self.password, connect_after_init=False))
             if camera_id in newly_disconnected_cameras:
                 newly_disconnected_cameras.remove(camera_id)
             camera = self._cameras[camera_id]
             if not camera.is_connected:
                 self.log.info(f'activating authorized camera {camera.id}...')
-                await camera.connect()
+                await camera.connect(ip=ip)
 
         for mac in newly_disconnected_cameras:
             await self._cameras[mac].disconnect()
