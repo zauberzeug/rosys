@@ -44,8 +44,11 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
                     camera_infos = response.text.split('\n')
                     for info_line in camera_infos:
                         if 'video' in info_line:
-                            i = int(info_line.split(' ')[1])
-                            ids_ips.append((f'{mac}-{i}', ip))
+                            video_name, status = info_line.split(' = ')
+                            print(status)
+                            if status == 'video':
+                                i = int(video_name.split(' ')[1])
+                                ids_ips.append((f'{mac}-{i}', ip))
         return ids_ips
 
     async def update_device_list(self) -> None:
@@ -59,6 +62,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
             camera = self._cameras[camera_id]
             if not camera.is_connected:
                 self.log.info(f'activating authorized camera {camera.id}...')
+                print(f'connecting to {camera.id} at {ip}')
                 await camera.connect(ip=ip)
 
         for mac in newly_disconnected_cameras:
