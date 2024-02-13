@@ -145,21 +145,11 @@ class RobotBrain:
             await rosys.sleep(0.1)
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
-    def enable_esp(self) -> None:
-        try:
-            sys.path.insert(1, str(Path('~/.lizard').expanduser()))
-            from esp import Esp  # pylint: disable=import-error,import-outside-toplevel
-            params = self.lizard_firmware.flash_params
-            devices = [param for param in params if param.startswith('/dev/')]
-            esp = Esp(nand='nand' in params,
-                      xavier='xavier' in params,
-                      orin='orin' in params,
-                      v05='v05' in params,
-                      device=devices[0] if devices else None)
-            with esp.pin_config():
-                esp.activate()
-        except Exception:
-            self.log.exception('Could not enable ESP')
+    async def enable_esp(self) -> None:
+        rosys.notify('Enabling ESP...')
+        output = await rosys.run.sh(['sudo', './flash.py'] + self.lizard_firmware.flash_params + ['enable'], timeout=None, working_dir=self.lizard_firmware.PATH)
+        self.log.info(f'enabled ESP:\n {output}')
+        rosys.notify('Finished.', 'positive')
 
     def __del__(self) -> None:
         self.communication.disconnect()
