@@ -4,6 +4,7 @@ from asyncio.subprocess import Process
 from io import BytesIO
 from typing import AsyncGenerator, Optional
 
+import httpcore
 import httpx
 from nicegui import background_tasks
 
@@ -42,39 +43,43 @@ class MjpegDevice:
         async def stream() -> AsyncGenerator[bytes, None]:
             async with httpx.AsyncClient() as client:
                 assert self.url is not None
-                async with client.stream('GET', self.url, auth=self.authentication) as response:  # type: ignore
-                    if response.status_code != 200:
-                        self.log.error(f'could not connect to {self.url} '
-                                       f'(credentials: {self.authentication}): '
-                                       f'{response.status_code} {response.reason_phrase}')
-                        return
-                    buffer = BytesIO()
-                    header = None
-                    pos = 0
-                    try:
-                        async for chunk in response.aiter_bytes():
-                            buffer.write(chunk)
-                            while True:
-                                if header is None:
-                                    header_pos = buffer.getvalue().find(b'\xff\xd8', pos)
-                                    if header_pos == -1:
-                                        pos = max(0, buffer.tell() - 1)
-                                        break
-                                    pos = header_pos + 2
-                                    header = header_pos
-                                else:
-                                    footer_pos = buffer.getvalue().find(b'\xff\xd9', pos)
-                                    if footer_pos == -1:
-                                        pos = max(0, buffer.tell() - 1)
-                                        break
-                                    image_data = buffer.getvalue()[header:footer_pos + 2]
-                                    yield remove_exif(image_data)
-                                    buffer = BytesIO(buffer.getvalue()[footer_pos + 2:])
-                                    pos = 0
-                                    header = None
-                    except httpx.ReadTimeout:
-                        self.log.warning(f'Connection to {self.url} timed out')
-                        return
+                try:
+                    async with client.stream('GET', self.url, auth=self.authentication) as response:  # type: ignore
+                        if response.status_code != 200:
+                            self.log.error(f'could not connect to {self.url} '
+                                           f'(credentials: {self.authentication}): '
+                                           f'{response.status_code} {response.reason_phrase}')
+                            return
+                        buffer = BytesIO()
+                        header = None
+                        pos = 0
+                        try:
+                            async for chunk in response.aiter_bytes():
+                                buffer.write(chunk)
+                                while True:
+                                    if header is None:
+                                        header_pos = buffer.getvalue().find(b'\xff\xd8', pos)
+                                        if header_pos == -1:
+                                            pos = max(0, buffer.tell() - 1)
+                                            break
+                                        pos = header_pos + 2
+                                        header = header_pos
+                                    else:
+                                        footer_pos = buffer.getvalue().find(b'\xff\xd9', pos)
+                                        if footer_pos == -1:
+                                            pos = max(0, buffer.tell() - 1)
+                                            break
+                                        image_data = buffer.getvalue()[header:footer_pos + 2]
+                                        yield remove_exif(image_data)
+                                        buffer = BytesIO(buffer.getvalue()[footer_pos + 2:])
+                                        pos = 0
+                                        header = None
+                        except httpx.ReadTimeout:
+                            self.log.warning(f'Connection to {self.url} timed out')
+                            return
+                except Exception:
+                    self.log.warning(f'Initial connection to {self.url} failed. Was something disconnected?')
+                    return
 
         async for image in stream():
             self._image_buffer = image
