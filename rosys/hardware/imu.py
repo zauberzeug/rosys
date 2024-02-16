@@ -19,29 +19,41 @@ class Imu(Module):
 
     @property
     def roll(self) -> Optional[float]:
-        e = self.positional_quaternion.elements
-        t0 = +2.0 * (e[0] * e[1] + e[2] * e[3])
-        t1 = +1.0 - 2.0 * (e[1] * e[1] + e[2] * e[2])
-        return np.degrees(np.arctan2(t0, t1))
+        if not self.positional_quaternion:
+            return None
+        else:
+            e = self.positional_quaternion.elements
+            t0 = +2.0 * (e[0] * e[1] + e[2] * e[3])
+            t1 = +1.0 - 2.0 * (e[1] * e[1] + e[2] * e[2])
+            return np.degrees(np.arctan2(t0, t1))
 
     @property
     def pitch(self) -> Optional[float]:
-        e = self.positional_quaternion.elements
-        t2 = +2.0 * (e[0] * e[2] - e[3] * e[1])
-        t2 = +1.0 if t2 > +1.0 else t2
-        t2 = -1.0 if t2 < -1.0 else t2
-        return np.degrees(np.arcsin(t2))
+        if not self.positional_quaternion:
+            return None
+        else:
+            e = self.positional_quaternion.elements
+            t2 = +2.0 * (e[0] * e[2] - e[3] * e[1])
+            t2 = +1.0 if t2 > +1.0 else t2
+            t2 = -1.0 if t2 < -1.0 else t2
+            return np.degrees(np.arcsin(t2))
 
     @property
     def yaw(self) -> Optional[float]:
-        e = self.positional_quaternion.elements
-        t3 = +2.0 * (e[0] * e[3] + e[1] * e[2])
-        t4 = +1.0 - 2.0 * (e[2] * e[2] + e[3] * e[3])
-        return np.degrees(np.arctan2(t3, t4))
+        if not self.positional_quaternion:
+            return None
+        else:
+            e = self.positional_quaternion.elements
+            t3 = +2.0 * (e[0] * e[3] + e[1] * e[2])
+            t4 = +1.0 - 2.0 * (e[2] * e[2] + e[3] * e[3])
+            return np.degrees(np.arctan2(t3, t4))
 
     @property
-    def euler(self) -> tuple[float, float, float]:
-        return self.roll, self.pitch, self.yaw
+    def euler(self) -> Optional[tuple[float, float, float]]:
+        if not self.positional_quaternion:
+            return None
+        else:
+            return self.roll, self.pitch, self.yaw
 
     def emit_measurement(self) -> None:
         self.NEW_MEASUREMENT.emit(self.euler)
