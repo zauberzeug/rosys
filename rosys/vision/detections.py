@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 
+import numpy as np
+
 from ..geometry import Point
 
 
@@ -50,6 +52,23 @@ class BoxDetection(Detection):
         return f'<rect x="{x}" y="{y}" width="{self.width/shrink}" height="{self.height/shrink}" stroke-width="2" stroke="{color}" fill="none" />' \
             f'<text x="{x}" y="{y - 7}" text-anchor="start" stroke="{color}" fill="{color}" font-size="10">{self.category_name} ({int(self.confidence*100)}%)</text>'
 
+    def intersection_over_union(self, other_detection: BoxDetection) -> float:
+        # https://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/
+        xA = max(self.x, other_detection.x)
+        yA = max(self.y, other_detection.y)
+        xB = min(self.x + self.width, other_detection.x + other_detection.width)
+        yB = min(self.y + self.height, other_detection.y + other_detection.height)
+        inter_area = max(xB - xA, 0) * max(yB - yA, 0)
+        union = self.area + other_detection.area - inter_area
+        if union == 0:
+            print('WARNING: Something went wrong while calculating the intersection over union. Returning 0.')
+            return 0
+        return inter_area / union
+
+    @property
+    def area(self) -> float:
+        return self.width * self.height
+
 
 @dataclass(slots=True, kw_only=True)
 class Shape:
@@ -93,6 +112,9 @@ class PointDetection(Detection):
     @property
     def cy(self) -> float:
         return self.y
+
+    def distance(self, other: 'PointDetection') -> float:
+        return np.sqrt((other.x - self.x)**2 + (other.y - self.y)**2)
 
     def __str__(self) -> str:
         return f'x:{self.x:.0f} y:{self.y:.0f} cat:{self.category_name} conf:{self.confidence:.2f}'

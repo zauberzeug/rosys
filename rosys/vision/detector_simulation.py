@@ -8,9 +8,8 @@ from .. import rosys
 from ..geometry import Point3d
 from .calibratable_camera_provider import CalibratableCameraProvider
 from .detections import BoxDetection, Detections, PointDetection
-from .detector import Detector
+from .detector import Autoupload, Detector
 from .image import Image
-from .uploads import Uploads
 
 
 @dataclass(slots=True, kw_only=True)
@@ -42,19 +41,14 @@ class DetectorSimulation(Detector):
 
         self.blocked_cameras: set[str] = set()
         self.simulated_objects: list[SimulatedObject] = []
-        self._uploads = Uploads()
 
         rosys.on_repeat(self.step, 0.1)
 
-    @property
-    def uploads(self) -> Uploads:
-        return self._uploads
-
     def step(self) -> None:
-        self._uploads.queue.clear()
-        self._uploads.priority_queue.clear()
+        self.uploads.queue.clear()
+        self.uploads.priority_queue.clear()
 
-    async def detect(self, image: Image, *_) -> None:
+    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED, tags: list[str] = []) -> None:
         is_blocked = image.camera_id in self.blocked_cameras
         await rosys.sleep(0.4)
         image.set_detections(self.name, Detections())
@@ -63,7 +57,7 @@ class DetectorSimulation(Detector):
             self.detect_from_simulated_objects(image)
         self.NEW_DETECTIONS.emit(image)
 
-    async def upload(self, image: Image) -> None:
+    async def upload(self, image: Image, *, tags: list[str] = []) -> None:
         self.log.info(f'Uploading {image.id}')
 
     def update_simulated_objects(self, image: Image) -> None:
