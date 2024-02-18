@@ -15,7 +15,7 @@ class Imu(Module):
         self.gyro_calibration: float = 0.0
 
         self.NEW_MEASUREMENT = Event()
-        """a new measurement has been received (argument: rotation)"""
+        """a new measurement has been received (argument: Tuple[Roll, Pitch, Yaw])"""
 
     @property
     def roll(self) -> Optional[float]:
