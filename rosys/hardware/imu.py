@@ -1,17 +1,17 @@
 from typing import Optional
-from pyquaternion import Quaternion
-import numpy as np
+
 from ..event import Event
+from ..geometry import Rotation
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot_brain import RobotBrain
 
 
 class Imu(Module):
 
-    def __init__(self, offset_quaternion: Quaternion, **kwargs) -> None:
+    def __init__(self, offset_rotation: Rotation, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.offset_quaternion = offset_quaternion
-        self.positional_quaternion: Optional[Quaternion] = None
+        self.offset_rotation = offset_rotation
+        self.rotation: Optional[Rotation] = None
         self.gyro_calibration: float = 0.0
 
         self.NEW_MEASUREMENT = Event()
@@ -19,41 +19,19 @@ class Imu(Module):
 
     @property
     def roll(self) -> Optional[float]:
-        if not self.positional_quaternion:
-            return None
-        else:
-            e = self.positional_quaternion.elements
-            t0 = +2.0 * (e[0] * e[1] + e[2] * e[3])
-            t1 = +1.0 - 2.0 * (e[1] * e[1] + e[2] * e[2])
-            return np.degrees(np.arctan2(t0, t1))
+        return self.rotation.roll if self.rotation else None
 
     @property
     def pitch(self) -> Optional[float]:
-        if not self.positional_quaternion:
-            return None
-        else:
-            e = self.positional_quaternion.elements
-            t2 = +2.0 * (e[0] * e[2] - e[3] * e[1])
-            t2 = +1.0 if t2 > +1.0 else t2
-            t2 = -1.0 if t2 < -1.0 else t2
-            return np.degrees(np.arcsin(t2))
+        return self.rotation.pitch if self.rotation else None
 
     @property
     def yaw(self) -> Optional[float]:
-        if not self.positional_quaternion:
-            return None
-        else:
-            e = self.positional_quaternion.elements
-            t3 = +2.0 * (e[0] * e[3] + e[1] * e[2])
-            t4 = +1.0 - 2.0 * (e[2] * e[2] + e[3] * e[3])
-            return np.degrees(np.arctan2(t3, t4))
+        return self.rotation.yaw if self.rotation else None
 
     @property
     def euler(self) -> Optional[tuple[float, float, float]]:
-        if not self.positional_quaternion:
-            return None
-        else:
-            return self.roll, self.pitch, self.yaw
+        return self.rotation.euler if self.rotation else None
 
     def emit_measurement(self) -> None:
         self.NEW_MEASUREMENT.emit(self.euler)
@@ -75,17 +53,22 @@ class ImuHardware(Imu, ModuleHardware):
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         self.gyro_calibration = float(words.pop(0))
-        self.positional_quaternion = Quaternion((words.pop(0), words.pop(0), words.pop(0), words.pop(0)))
+        rotation = Rotation.from_quaternion(
+            float(words.pop(0)),
+            float(words.pop(0)),
+            float(words.pop(0)),
+            float(words.pop(0)),
+        )
 
         if self.gyro_calibration < 1.0:
             return
 
-        self.positional_quaternion = self.positional_quaternion * self.offset_quaternion.inverse
+        self.rotation = rotation * self.offset_rotation.T
         self.emit_measurement()
 
 
 class ImuSimulation(Imu, ModuleSimulation):
 
-    def set_quaternion(self, quaternion) -> None:
-        self.positional_quaternion = quaternion * self.offset_quaternion
+    def set_rotation(self, rotation: Rotation) -> None:
+        self.rotation = rotation * self.offset_rotation.T
         self.emit_measurement()

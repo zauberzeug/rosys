@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import cv2
 import numpy as np
+from pyquaternion import Quaternion
 
 
 @dataclass(slots=True, kw_only=True)
@@ -20,6 +21,10 @@ class Rotation:
         Ry = np.array([[np.cos(pitch), 0, np.sin(pitch)], [0, 1, 0], [-np.sin(pitch), 0, np.cos(pitch)]])
         Rz = np.array([[np.cos(yaw), -np.sin(yaw), 0], [np.sin(yaw), np.cos(yaw), 0], [0, 0, 1]])
         return Rotation(R=(Rz @ Ry @ Rx).tolist())
+
+    @staticmethod
+    def from_quaternion(w: float, x: float, y: float, z: float) -> Rotation:
+        return Rotation(R=Quaternion(w, x, y, z).rotation_matrix.tolist())
 
     @staticmethod
     def from_rvec(rvec) -> Rotation:
@@ -47,6 +52,10 @@ class Rotation:
     @property
     def euler(self) -> tuple[float, float, float]:
         return self.roll, self.pitch, self.yaw
+
+    @property
+    def quaternion(self) -> tuple[float, float, float, float]:
+        return Quaternion(matrix=np.array(self.R)).elements
 
     @property
     def total_angle(self) -> float:
