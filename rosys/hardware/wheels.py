@@ -88,6 +88,7 @@ class WheelsSimulation(Wheels, ModuleSimulation):
         self.linear_velocity: float = 0
         self.angular_velocity: float = 0
         self.inertia_factor: float = 0.0
+        self.friction_factor: float = 0.0
         self.is_blocking: bool = False
         self.is_slipping: bool = False
 
@@ -98,6 +99,8 @@ class WheelsSimulation(Wheels, ModuleSimulation):
         self.angular_velocity = 0 if self.is_blocking else f * self.angular_velocity + (1 - f) * angular
 
     async def step(self, dt: float) -> None:
+        self.linear_velocity *= 1 - self.friction_factor
+        self.angular_velocity *= 1 - self.friction_factor
         if not self.is_slipping:
             self.pose += PoseStep(linear=dt*self.linear_velocity, angular=dt*self.angular_velocity, time=rosys.time())
         velocity = Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=rosys.time())
