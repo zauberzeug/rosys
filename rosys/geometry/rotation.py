@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import cv2
 import numpy as np
+from pyquaternion import Quaternion
 
 
 @dataclass(slots=True, kw_only=True)
@@ -15,11 +16,15 @@ class Rotation:
         return Rotation(R=[[1, 0, 0], [0, 1, 0], [0, 0, 1]])
 
     @staticmethod
-    def from_euler(omega: float, phi: float, kappa: float) -> Rotation:
-        Rx = np.array([[1, 0, 0], [0, np.cos(omega), -np.sin(omega)], [0, np.sin(omega), np.cos(omega)]])
-        Ry = np.array([[np.cos(phi), 0, np.sin(phi)], [0, 1, 0], [-np.sin(phi), 0, np.cos(phi)]])
-        Rz = np.array([[np.cos(kappa), -np.sin(kappa), 0], [np.sin(kappa), np.cos(kappa), 0], [0, 0, 1]])
+    def from_euler(roll: float, pitch: float, yaw: float) -> Rotation:
+        Rx = np.array([[1, 0, 0], [0, np.cos(roll), -np.sin(roll)], [0, np.sin(roll), np.cos(roll)]])
+        Ry = np.array([[np.cos(pitch), 0, np.sin(pitch)], [0, 1, 0], [-np.sin(pitch), 0, np.cos(pitch)]])
+        Rz = np.array([[np.cos(yaw), -np.sin(yaw), 0], [np.sin(yaw), np.cos(yaw), 0], [0, 0, 1]])
         return Rotation(R=(Rz @ Ry @ Rx).tolist())
+
+    @staticmethod
+    def from_quaternion(w: float, x: float, y: float, z: float) -> Rotation:
+        return Rotation(R=Quaternion(w, x, y, z).rotation_matrix.tolist())
 
     @staticmethod
     def from_rvec(rvec) -> Rotation:
@@ -33,12 +38,24 @@ class Rotation:
         return Rotation(R=np.array(self.R).T.tolist())
 
     @property
+    def roll(self) -> float:
+        return np.arctan2(self.R[2][1], self.R[2][2])
+
+    @property
+    def pitch(self) -> float:
+        return np.arctan2(-self.R[2][0], np.sqrt(self.R[2][1]**2 + self.R[2][2]**2))
+
+    @property
+    def yaw(self) -> float:
+        return np.arctan2(self.R[1][0], self.R[0][0])
+
+    @property
     def euler(self) -> tuple[float, float, float]:
-        return (
-            np.arctan2(self.R[2][1], self.R[2][2]),
-            np.arctan2(-self.R[2][0], np.sqrt(self.R[2][1]**2 + self.R[2][2]**2)),
-            np.arctan2(self.R[1][0], self.R[0][0]),
-        )
+        return self.roll, self.pitch, self.yaw
+
+    @property
+    def quaternion(self) -> tuple[float, float, float, float]:
+        return Quaternion(matrix=np.array(self.R)).elements
 
     @property
     def total_angle(self) -> float:
@@ -50,5 +67,5 @@ class Rotation:
         return self.__str__()
 
     def __str__(self) -> str:
-        omega, phi, kappa = np.round(np.rad2deg(self.euler), 2)
-        return f'{omega:6.1f} {phi:6.1f} {kappa:6.1f}'
+        roll, pitch, yaw = np.round(np.rad2deg(self.euler), 2)
+        return f'{roll:6.1f} {pitch:6.1f} {yaw:6.1f}'

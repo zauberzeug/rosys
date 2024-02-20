@@ -46,6 +46,7 @@ httpx = "^0.24.0"
 matplotlib = "^3.7.2"
 pyudev = ">=0.21.0"
 esptool = "^4.3"
+pyquaternion = "^0.9.9"
 
 [tool.poetry.dev-dependencies]
 autopep8 = "^1.5.5"
