@@ -17,6 +17,7 @@ class Robot(abc.ABC):
 
 
 class RobotHardware(Robot):
+    """A module that iterates over all HardwareModules and builds the lizard code"""
 
     def __init__(self, modules: list[Module], robot_brain: RobotBrain) -> None:
         super().__init__(modules)
