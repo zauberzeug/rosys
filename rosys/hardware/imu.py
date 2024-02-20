@@ -69,6 +69,6 @@ class ImuHardware(Imu, ModuleHardware):
 
 class ImuSimulation(Imu, ModuleSimulation):
 
-    def set_rotation(self, rotation: Rotation) -> None:
+    def simulate_measurement(self, rotation: Rotation) -> None:
         self.rotation = rotation * self.offset_rotation.T
         self.emit_measurement()
