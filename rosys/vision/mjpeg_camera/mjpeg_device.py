@@ -4,7 +4,6 @@ from asyncio.subprocess import Process
 from io import BytesIO
 from typing import AsyncGenerator, Optional
 
-import httpcore
 import httpx
 from nicegui import background_tasks
 
