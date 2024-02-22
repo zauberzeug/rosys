@@ -38,14 +38,18 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
                 authentication = None if self.username is None or self.password is None else httpx.DigestAuth(
                     self.username, self.password)
                 url = f'http://{ip}/axis-cgi/videostatus.cgi'
-                async with httpx.AsyncClient() as client:
-                    response = await client.get(url, auth=authentication)
+                try:
+                    async with httpx.AsyncClient() as client:
+                        response = await client.get(url, auth=authentication)
+                except httpx.HTTPError as e:
+                    self.log.warning(f'Error while looking for cameras at axis router ({url}): {e}')
+                    continue
+
                 if response.status_code == 200:
                     camera_infos = response.text.split('\n')
                     for info_line in camera_infos:
                         if 'video' in info_line:
                             video_name, status = info_line.split(' = ')
-                            print(status)
                             if status == 'video':
                                 i = int(video_name.split(' ')[1])
                                 ids_ips.append((f'{mac}-{i}', ip))
@@ -61,8 +65,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
                 newly_disconnected_cameras.remove(camera_id)
             camera = self._cameras[camera_id]
             if not camera.is_connected:
-                self.log.info(f'activating authorized camera {camera.id}...')
-                print(f'connecting to {camera.id} at {ip}')
+                self.log.info(f'activating authorized camera "{camera.id}" at ip "{ip}" ...')
                 await camera.connect(ip=ip)
 
         for mac in newly_disconnected_cameras:
