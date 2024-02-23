@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.8">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.10">
     
     
       
@@ -26,7 +26,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../assets/stylesheets/main.f2e4d321.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.7e359304.min.css">
       
       
 
@@ -284,10 +284,8 @@
     
     
     
-    
     <li class="md-nav__item md-nav__item--nested">
       
-        
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
@@ -527,10 +525,8 @@
     
     
     
-    
     <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
-        
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
@@ -897,6 +893,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rosys.hardware.Robot" class="md-nav__link">
+    <span class="md-ellipsis">
+      Robot
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rosys.hardware.RobotBrain" class="md-nav__link">
     <span class="md-ellipsis">
       RobotBrain
@@ -917,6 +922,24 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotHardware" class="md-nav__link">
+    <span class="md-ellipsis">
+      RobotHardware
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotSimulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      RobotSimulation
+    </span>
+  </a>
   
 </li>
       
@@ -1080,10 +1103,8 @@
     
     
     
-    
     <li class="md-nav__item md-nav__item--nested">
       
-        
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_7" >
@@ -1510,6 +1531,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rosys.hardware.Robot" class="md-nav__link">
+    <span class="md-ellipsis">
+      Robot
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rosys.hardware.RobotBrain" class="md-nav__link">
     <span class="md-ellipsis">
       RobotBrain
@@ -1530,6 +1560,24 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotHardware" class="md-nav__link">
+    <span class="md-ellipsis">
+      RobotHardware
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotSimulation" class="md-nav__link">
+    <span class="md-ellipsis">
+      RobotSimulation
+    </span>
+  </a>
   
 </li>
       
@@ -2319,6 +2367,48 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
 
 
+<h2 id="rosys.hardware.Robot" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">Robot</span>
+
+
+<a href="#rosys.hardware.Robot" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">Robot</span><span class="p">(</span><span class="n">modules</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Module</span><span class="p">])</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+          <p class="doc doc-class-bases">
+            Bases: <code><span title="abc.ABC">ABC</span></code></p>
+
+  
+      <p>A robot that consists of a number of modules.</p>
+<p>It can be either a hardware robot or a simulation.</p>
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h2 id="rosys.hardware.RobotBrain" class="doc doc-heading">
           <span class="doc doc-object-name doc-class-name">RobotBrain</span>
 
@@ -2370,6 +2460,92 @@ Besides providing some basic methods like configuring or restarting the microcon
 </tbody>
 </table>
 
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.hardware.RobotHardware" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">RobotHardware</span>
+
+
+<a href="#rosys.hardware.RobotHardware" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">RobotHardware</span><span class="p">(</span>
+    <span class="n">modules</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Module</span><span class="p">],</span> <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span>
+<span class="p">)</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.robot.Robot" href="#rosys.hardware.Robot">Robot</a></code></p>
+
+  
+      <p>A robot that consists of hardware modules.</p>
+<p>It generates Lizard code, forwards output to the hardware modules and sends commands to the robot brain.</p>
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.hardware.RobotSimulation" class="doc doc-heading">
+          <span class="doc doc-object-name doc-class-name">RobotSimulation</span>
+
+
+<a href="#rosys.hardware.RobotSimulation" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">RobotSimulation</span><span class="p">(</span><span class="n">modules</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Module</span><span class="p">])</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+          <p class="doc doc-class-bases">
+            Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.robot.Robot" href="#rosys.hardware.Robot">Robot</a></code></p>
+
+  
+      <p>A robot that consists of simulated modules.</p>
+<p>It regularly calls the step method of all modules to allow them to update their internal state.</p>
+
+
+  
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+  </div>
+
+
+</div>
 
 <div class="doc doc-object doc-class">
 
