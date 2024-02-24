@@ -118,8 +118,8 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             return None
         return self.jovision_profile
 
-    def _apply_parameters(self, new_values: dict[str, Any]) -> None:
-        super()._apply_parameters(new_values)
+    def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
+        super()._apply_parameters(new_values, force_set)
         if not self.is_connected:
             assert self.device is not None
             self.device.restart_gstreamer()
