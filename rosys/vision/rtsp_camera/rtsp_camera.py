@@ -18,7 +18,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
-                 goal_fps: int = 5,
+                 fps: int = 5,
                  jovision_profile: int = 1,
                  **kwargs,
                  ) -> None:
@@ -32,7 +32,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.jovision_profile: int = jovision_profile
 
         self._register_parameter(name='fps', getter=self.get_fps, setter=self.set_fps,
-                                 min_value=1, max_value=30, step=1, default_value=goal_fps)
+                                 min_value=1, max_value=30, step=1, default_value=fps)
         self._register_parameter(name='jovision_profile', getter=self.get_jovision_profile, setter=self.set_jovision_profile,
                                  min_value=1, max_value=2, step=1, default_value=jovision_profile)
 
