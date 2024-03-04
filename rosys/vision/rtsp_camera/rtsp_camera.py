@@ -1,5 +1,7 @@
 import logging
-from typing import Any, Optional, Self
+from typing import Any, Optional
+
+from typing_extensions import Self
 
 from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera

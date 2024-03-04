@@ -1,6 +1,7 @@
-from typing import Optional, Self
+from typing import Optional
 
 import numpy as np
+from typing_extensions import Self
 
 from ...geometry import Rotation
 from ..calibration import Calibration, Extrinsics, Intrinsics

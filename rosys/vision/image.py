@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import ClassVar, Optional, Self
+from typing import ClassVar, Optional
 
 import cv2
 import numpy as np
 import PIL.Image
 import PIL.ImageDraw
+from typing_extensions import Self
 
 from .detections import Detections
 

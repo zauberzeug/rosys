@@ -1,5 +1,6 @@
 from enum import Enum
-from typing import Self
+
+from typing_extensions import Self
 
 
 class ImageRotation(str, Enum):
