@@ -34,25 +34,27 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
     async def scan_for_cameras(self) -> list[tuple[str, str]]:
         ids_ips: list[tuple[str, str]] = []
         async for mac, ip in find_cameras():
-            if mac_to_vendor(mac) == VendorType.AXIS:
-                authentication = None if self.username is None or self.password is None else httpx.DigestAuth(
-                    self.username, self.password)
-                url = f'http://{ip}/axis-cgi/videostatus.cgi'
-                try:
-                    async with httpx.AsyncClient() as client:
-                        response = await client.get(url, auth=authentication)
-                except httpx.HTTPError as e:
-                    self.log.warning(f'Error while looking for cameras at axis router ({url}): {e}')
-                    continue
+            if mac_to_vendor(mac) != VendorType.AXIS:
+                continue
 
-                if response.status_code == 200:
-                    camera_infos = response.text.split('\n')
-                    for info_line in camera_infos:
-                        if 'video' in info_line:
-                            video_name, status = info_line.split(' = ')
-                            if status == 'video':
-                                i = int(video_name.split(' ')[1])
-                                ids_ips.append((f'{mac}-{i}', ip))
+            authentication = None if self.username is None or self.password is None else \
+                httpx.DigestAuth(self.username, self.password)
+            url = f'http://{ip}/axis-cgi/videostatus.cgi'
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.get(url, auth=authentication)
+            except httpx.HTTPError as e:
+                self.log.warning(f'Error while looking for cameras at axis router ({url}): {e}')
+                continue
+            if response.status_code != 200:
+                continue
+
+            camera_infos = response.text.split('\n')
+            for info_line in camera_infos:
+                if info_line.endswith(' = video'):
+                    video_name = info_line.removesuffix(' = video')
+                    index = video_name.split(' ')[1]
+                    ids_ips.append((f'{mac}-{index}', ip))
         return ids_ips
 
     async def update_device_list(self) -> None:

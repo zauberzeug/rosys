@@ -13,7 +13,8 @@ from .vendors import mac_to_url
 
 class MjpegDevice:
 
-    def __init__(self, mac: str, ip: str, *, index: Optional[int] = None, username: Optional[str] = None, password: Optional[str] = None) -> None:
+    def __init__(self, mac: str, ip: str, *,
+                 index: Optional[int] = None, username: Optional[str] = None, password: Optional[str] = None) -> None:
         self.mac = mac
         self.ip = ip
         self.capture_task: Optional[Task] = None
@@ -75,10 +76,8 @@ class MjpegDevice:
                                         header = None
                         except httpx.ReadTimeout:
                             self.log.warning(f'Connection to {self.url} timed out')
-                            return
                 except Exception:
                     self.log.warning(f'Initial connection to {self.url} failed. Was something disconnected?')
-                    return
 
         async for image in stream():
             self._image_buffer = image
