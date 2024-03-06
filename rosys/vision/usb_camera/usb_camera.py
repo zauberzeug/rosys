@@ -57,18 +57,16 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         return self.device is not None
 
     async def connect(self) -> None:
-        logging.info(f'Connecting camera {self.id}...')
         if self.is_connected:
             return
 
         device = UsbDevice.from_uid(self.id)
         if device is None:
-            logging.warning(f'Connecting to {self.id} failed!')
+            logging.warning(f'Connecting camera {self.id}: failed')
             return
 
         self.device = device
-
-        logging.info(f'camera {self.id}: connected')
+        logging.info(f'Connecting camera {self.id}: succeeded')
 
         self._apply_all_parameters()
 

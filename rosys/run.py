@@ -139,14 +139,14 @@ def _kill(proc: Popen) -> None:
 
 def tear_down() -> None:
     # stopping process as described in https://www.cloudcity.io/blog/2019/02/27/things-i-wish-they-told-me-about-multiprocessing-in-python/
-    log.info('teardown thread_pool')
+    log.info('teardown thread_pool...')
     thread_pool.shutdown(wait=False, cancel_futures=True)
     for process in running_sh_processes:
         _kill(process)
     running_sh_processes.clear()
     if not is_test():
-        log.info('teardown process_pool')
+        log.info('teardown process_pool...')
         for process in process_pool._processes.values():  # pylint: disable=protected-access
             process.kill()
         process_pool.shutdown(wait=True, cancel_futures=True)
-    log.info('teardown complete')
+    log.info('teardown complete.')

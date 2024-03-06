@@ -164,9 +164,10 @@ class RobotBrain:
 
     async def enable_esp(self) -> None:
         rosys.notify('Enabling ESP...')
-        output = await rosys.run.sh(['sudo', './flash.py'] + self.lizard_firmware.flash_params + ['enable'], timeout=None, working_dir=self.lizard_firmware.PATH)
-        self.log.info(f'enabled ESP:\n {output}')
-        rosys.notify('Finished.', 'positive')
+        command = ['sudo', './flash.py'] + self.lizard_firmware.flash_params + ['enable']
+        output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
+        self.log.debug(output)
+        rosys.notify('Enabling ESP: done', 'positive')
 
     def __del__(self) -> None:
         self.communication.disconnect()

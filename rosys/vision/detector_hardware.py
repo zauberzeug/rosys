@@ -85,8 +85,7 @@ class DetectorHardware(Detector):
 
     async def upload(self, image: Image, *, tags: list[str] = []) -> None:
         try:
-            self.log.info(f'uploading to port {self.port}')
-
+            self.log.info(f'Upload detections to port {self.port}')
             data_dict: dict[str, Any] = {'image': image.data, 'mac': image.camera_id}
             detections = image.get_detections(self.name)
             if detections is not None:
