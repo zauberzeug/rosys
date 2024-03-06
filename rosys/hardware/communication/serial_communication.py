@@ -1,3 +1,4 @@
+import logging
 import os
 from collections import deque
 from typing import Optional
@@ -31,7 +32,6 @@ class SerialCommunication(Communication):
         self.log.debug(f'connecting serial on {self.device_path} with baud rate {baud_rate}')
         self.serial = serial.Serial(self.device_path, baud_rate)
         self.buffer = ''
-        self.log_io: bool = False
         self.undo_queue: deque[str] = deque(maxlen=100)
         self.redo_queue: deque[str] = deque(maxlen=100)
 
@@ -72,8 +72,7 @@ class SerialCommunication(Communication):
             self.buffer += s
             if '\n' in self.buffer:
                 line, self.buffer = self.buffer.split('\r\n', 1)
-                if self.log_io:
-                    self.log.debug(f'read: {line}')
+                self.log.debug(f'read: {line}')
                 return line
         except Exception:
             self.log.exception(f'Could not decode serial data: {s}')
@@ -83,8 +82,7 @@ class SerialCommunication(Communication):
         if not self.serial.isOpen():
             return
         self.serial.write(f'{msg}\n'.encode())
-        if self.log_io:
-            self.log.debug(f'send: {msg}')
+        self.log.debug(f'send: {msg}')
 
     def debug_ui(self) -> None:
         super().debug_ui()
@@ -116,7 +114,8 @@ class SerialCommunication(Communication):
                 rosys.notify('disconnected from Lizard')
 
         ui.switch('Serial Communication', value=self.serial.isOpen(), on_change=toggle)
-        ui.switch('Serial Logging').bind_value(self, 'log_io')
+        ui.switch('Serial Logging', value=self.log.getEffectiveLevel() <= logging.DEBUG,
+                  on_change=lambda e: self.log.setLevel(logging.DEBUG if e.value else logging.INFO))
         command = ui.input('Serial Command')
         command.on('keydown.enter', input_enter)
         command.on('keydown.up', input_up)
