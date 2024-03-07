@@ -67,7 +67,7 @@ class RtspDevice:
                 url = url.replace('subtype=0', 'subtype=1')
 
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
-            command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.fps}/1" ! fdsink'
+            command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.fps}/1" ! jpegenc ! appsink'
             process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             assert process.stdout is not None
             assert process.stderr is not None
