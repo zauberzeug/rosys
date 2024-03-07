@@ -9,13 +9,12 @@ from .. import persistence, rosys
 from .detections import BoxDetection, Detections, PointDetection, SegmentationDetection
 from .detector import Autoupload, Detector
 from .image import Image
-from .uploads import Uploads
 
 
 class DetectorHardware(Detector):
     """This detector communicates with a [YOLO detector](https://hub.docker.com/r/zauberzeug/yolov5-detector) via Socket.IO.
 
-    It automatically connects and reconnects, submits and receives detections and sends images that should be uploaded to the [Zauberzeug Learning Loop](https://zauberzeug.com/learning-loop.html).
+    It automatically connects and reconnects, submits and receives detections and sends images that should be uploaded to the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
     """
 
     def __init__(self, *, port: int = 8004, name: Optional[str] = None) -> None:
@@ -26,7 +25,6 @@ class DetectorHardware(Detector):
         self.next_image: Optional[Image] = None
         self.port = port
         self.timeout_count = 0
-        self._uploads = Uploads()
 
         @self.sio.on('disconnect')
         def on_sio_disconnect() -> None:
@@ -39,18 +37,14 @@ class DetectorHardware(Detector):
         rosys.on_repeat(self.step, 1.0)
 
     @property
-    def uploads(self) -> Uploads:
-        return self._uploads
-
-    @property
     def is_connected(self) -> bool:
         return self.sio.connected
 
     async def step(self) -> None:
         if not self.is_connected:
-            self.log.info(f'trying reconnect {self.port}')
+            self.log.info(f'trying reconnect {self.name}')
             if not await self.connect():
-                self.log.exception(f'connection to {self.port} failed; trying again')
+                self.log.exception(f'connection to {self.name} at port {self.port} failed; trying again')
                 await rosys.sleep(3.0)
                 return
 
@@ -91,27 +85,22 @@ class DetectorHardware(Detector):
 
     async def upload(self, image: Image, *, tags: list[str] = []) -> None:
         try:
-            self.log.info(f'uploading to port {self.port}')
-
+            self.log.info(f'Upload detections to port {self.port}')
             data_dict: dict[str, Any] = {'image': image.data, 'mac': image.camera_id}
             detections = image.get_detections(self.name)
-
             if detections is not None:
                 detections_dict = detections.to_dict()
                 detections_dict['box_detections'] = _box_detections_to_int(detections_dict.pop('boxes'))
                 detections_dict['point_detections'] = detections_dict.pop('points')
                 detections_dict['segmentation_detections'] = detections_dict.pop('segmentations')
-
                 data_dict['detections'] = detections_dict
-            if tags:
-                data_dict['tags'] = tags
+            data_dict['tags'] = list(image.tags.union(tags))
             await self.sio.emit('upload', data_dict)
 
         except Exception:
             self.log.exception(f'could not upload {image.id}')
 
     async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED, tags: list[str] = []) -> None:
-        """Runs detections on the image. Afterwards the `image.detections` property is filled."""
         if not self.is_connected:
             return
 

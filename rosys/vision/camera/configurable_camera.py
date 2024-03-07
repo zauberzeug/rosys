@@ -47,7 +47,7 @@ class ConfigurableCamera(Camera):
         info = ParameterInfo(name=name, min=min_value, max=max_value, step=step)
         self._parameters[name] = Parameter(info=info, getter=getter, setter=setter, value=default_value)
 
-    def _apply_parameters(self, new_values: dict[str, Any]) -> None:
+    def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
         if not self.is_connected:
             return
         for name, value in new_values.items():
@@ -55,13 +55,13 @@ class ConfigurableCamera(Camera):
                 raise ValueError(f'Cannot set unknown parameter "{name}"')
             if value is None and self.IGNORE_NONE_VALUES:
                 continue
-            if value == self._parameters[name].value:
+            if not force_set and value == self._parameters[name].value:
                 continue
             self._parameters[name].setter(value)
         self._update_parameter_cache()
 
     def _apply_all_parameters(self) -> None:
-        self._apply_parameters(self.parameters)
+        self._apply_parameters(self.parameters, force_set=True)
 
     def _update_parameter_cache(self) -> None:
         if not self.is_connected:

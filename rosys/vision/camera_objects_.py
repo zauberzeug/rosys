@@ -4,10 +4,10 @@ from nicegui.elements.scene_object3d import Object3D
 from nicegui.elements.scene_objects import Cylinder, Group, Text, Texture
 
 from .. import run
+from .calibratable_camera_provider import CalibratableCameraProvider
 from .calibration import Calibration
 from .camera import CalibratableCamera
 from .camera_projector import CameraProjector
-from .camera_provider import CameraProvider
 
 
 class CameraObjects(Group):
@@ -18,7 +18,7 @@ class CameraObjects(Group):
     With `debug=True` camera IDs are shown (default: `False`).
     """
 
-    def __init__(self, camera_provider: CameraProvider, camera_projector: CameraProjector, *,
+    def __init__(self, camera_provider: CalibratableCameraProvider, camera_projector: CameraProjector, *,
                  px_per_m: float = 10000, debug: bool = False) -> None:
         super().__init__()
 

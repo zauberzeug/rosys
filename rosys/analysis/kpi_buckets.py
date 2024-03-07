@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Self, Sequence
+from typing import Sequence
+
+from typing_extensions import Self
 
 
 @dataclass(slots=True, kw_only=True)

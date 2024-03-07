@@ -1,5 +1,7 @@
 import random
-from typing import Optional, Self
+from typing import Optional
+
+from typing_extensions import Self
 
 from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera

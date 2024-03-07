@@ -10,6 +10,10 @@ from .robot_brain import RobotBrain
 
 
 class Robot(abc.ABC):
+    """A robot that consists of a number of modules.
+
+    It can be either a hardware robot or a simulation.
+    """
 
     def __init__(self, modules: list[Module]) -> None:
         self.log = logging.getLogger(__name__)
@@ -17,6 +21,10 @@ class Robot(abc.ABC):
 
 
 class RobotHardware(Robot):
+    """A robot that consists of hardware modules.
+
+    It generates Lizard code, forwards output to the hardware modules and sends commands to the robot brain.
+    """
 
     def __init__(self, modules: list[Module], robot_brain: RobotBrain) -> None:
         super().__init__(modules)
@@ -63,6 +71,10 @@ class RobotHardware(Robot):
 
 
 class RobotSimulation(Robot):
+    """A robot that consists of simulated modules.
+
+    It regularly calls the step method of all modules to allow them to update their internal state.
+    """
 
     def __init__(self, modules: list[Module]) -> None:
         super().__init__(modules)

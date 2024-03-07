@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from itertools import combinations, pairwise
-from typing import Optional, Self
+from typing import Optional
+
+from typing_extensions import Self
 
 from ..geometry import LineSegment, Point, Polygon
 

@@ -25,7 +25,7 @@ class Autoupload(Enum):
 class Detector(abc.ABC):
     """A detector allows detecting objects in images.
 
-    It also holds an upload queue for sending images with uncertain results to an active learning infrastructure like the [Zauberzeug Learning Loop](https://zauberzeug.com/learning-loop.html).
+    It also holds an upload queue for sending images with uncertain results to an active learning infrastructure like the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
     """
 
     def __init__(self, *, name: Optional[str] = None) -> None:
@@ -33,16 +33,16 @@ class Detector(abc.ABC):
         self.NEW_DETECTIONS = Event()
         """detection on an image is completed (argument: image)"""
         self.log = logging.getLogger('rosys.detector')
+        self.uploads = Uploads()
 
     @abc.abstractmethod
-    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED) -> None:
-        pass
+    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED, tags: list[str] = []) -> None:
+        """Runs detections on the image. Afterwards the `image.detections` property is filled."""
 
     @abc.abstractmethod
-    async def upload(self, image: Image) -> None:
-        pass
+    async def upload(self, image: Image, *, tags: list[str] = []) -> None:
+        """Uploads the image to the Learning Loop. 
 
-    @property
-    @abc.abstractmethod
-    def uploads(self) -> Uploads:
-        pass
+        The `tags` are added to the image.
+        If the image has detections, they are also uploaded.
+        """

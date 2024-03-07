@@ -5,9 +5,9 @@ from typing import Optional
 import numpy as np
 
 from .. import rosys
+from .calibratable_camera_provider import CalibratableCameraProvider
 from .calibration import Calibration
 from .camera import CalibratableCamera
-from .camera_provider import CameraProvider
 
 ProjectionCoordinates = list[list[Optional[list[float]]]]
 
@@ -25,7 +25,7 @@ class CameraProjector:
     It is mainly used for visualization purposes.
     """
 
-    def __init__(self, camera_provider: CameraProvider) -> None:
+    def __init__(self, camera_provider: CalibratableCameraProvider) -> None:
         self.camera_provider = camera_provider
 
         self.projections: dict[str, Projection] = {}
@@ -54,7 +54,7 @@ class CameraProjector:
         c, r = np.meshgrid(np.linspace(0, camera.calibration.intrinsics.size.width, columns),
                            np.linspace(0, camera.calibration.intrinsics.size.height, rows))
         image_points = np.stack((c.flatten(), r.flatten()), axis=1)
-        floor_points = camera.calibration.project_array_from_image(image_points).reshape(rows, columns, 3)
+        floor_points = camera.calibration.project_from_image(image_points).reshape(rows, columns, 3)
         invalid = np.isnan(floor_points).any(axis=2)
         return [
             [

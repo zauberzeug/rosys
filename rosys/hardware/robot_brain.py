@@ -1,6 +1,5 @@
 import logging
-import sys
-from pathlib import Path
+from collections import deque
 from typing import Optional
 
 from nicegui import ui
@@ -10,12 +9,18 @@ from ..event import Event
 from .communication import Communication
 from .lizard_firmware import LizardFirmware
 
+CLOCK_OFFSET_HISTORY_LENGTH = 100
+
 
 class RobotBrain:
-    """This module manages the communication with a [Zauberzeug Robot Brain](https://zauberzeug.com/robot-brain.html).
+    """This module manages the communication with a [Zauberzeug Robot Brain](https://zauberzeug.com/products/robot-brain).
 
     It expects a communication object, which is used for the actual read and write operations.
     Besides providing some basic methods like configuring or restarting the microcontroller, it augments and verifies checksums for each message.
+
+    It also keeps track of the clock offset between the microcontroller and the host system, which is used to synchronize the hardware time with the system time.
+    The clock offset is calculated by comparing the hardware time with the system time and averaging the differences over a number of samples.
+    If the offset changes significantly, a notification is sent and the offset history is cleared.
     """
 
     def __init__(self, communication: Communication) -> None:
@@ -29,10 +34,15 @@ class RobotBrain:
         self.lizard_firmware = LizardFirmware(self)
 
         self.waiting_list: dict[str, Optional[str]] = {}
-        self.clock_offset: Optional[float] = None
+        self._clock_offset: Optional[float] = None
+        self._clock_offsets: deque[float] = deque(maxlen=CLOCK_OFFSET_HISTORY_LENGTH)
         self.hardware_time: Optional[float] = None
 
         rosys.on_startup(self.enable_esp)
+
+    @property
+    def clock_offset(self) -> Optional[float]:
+        return self._clock_offset
 
     def developer_ui(self) -> None:
         async def online_update() -> None:
@@ -131,8 +141,15 @@ class RobotBrain:
                 continue
             lines.append((self.hardware_time, line))
         if millis is not None:
-            self.clock_offset = rosys.time() - millis / 1000
+            self._handle_clock_offset(rosys.time() - millis / 1000)
         return lines
+
+    def _handle_clock_offset(self, offset: float) -> None:
+        if self._clock_offset is not None and abs(offset - self._clock_offset) > 0.1:
+            self.log.info(f'Clock offset changed from {self._clock_offset:.3f} to {offset:.3f}')
+            self._clock_offsets.clear()
+        self._clock_offsets.append(offset)
+        self._clock_offset = sum(self._clock_offsets) / len(self._clock_offsets)
 
     async def send(self, msg: str) -> None:
         await self.communication.send(augment(msg))
@@ -145,20 +162,12 @@ class RobotBrain:
             await rosys.sleep(0.1)
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
-    def enable_esp(self) -> None:
-        try:
-            sys.path.insert(1, str(Path('~/.lizard').expanduser()))
-            from esp import Esp  # pylint: disable=import-error,import-outside-toplevel
-            params = self.lizard_firmware.flash_params
-            devices = [param for param in params if param.startswith('/dev/')]
-            esp = Esp(nand='nand' in params,
-                      xavier='xavier' in params,
-                      orin='orin' in params,
-                      device=devices[0] if devices else None)
-            with esp.pin_config():
-                esp.activate()
-        except Exception:
-            self.log.exception('Could not enable ESP')
+    async def enable_esp(self) -> None:
+        rosys.notify('Enabling ESP...')
+        command = ['sudo', './flash.py'] + self.lizard_firmware.flash_params + ['enable']
+        output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
+        self.log.debug(output)
+        rosys.notify('Enabling ESP: done', 'positive')
 
     def __del__(self) -> None:
         self.communication.disconnect()
@@ -177,12 +186,13 @@ def augment(line: str) -> str:
 def check(line: Optional[str]) -> str:
     if line is None:
         return ''
-    if line[-3:-2] == '@':
-        check_ = int(line[-2:], 16)
-        line = line[:-3]
-        checksum = 0
-        for c in line:
-            checksum ^= ord(c)
-        if checksum != check_:
-            return ''
+    if line[-3:-2] != '@':
+        return ''
+    check_ = int(line[-2:], 16)
+    line = line[:-3]
+    checksum = 0
+    for c in line:
+        checksum ^= ord(c)
+    if checksum != check_:
+        return ''
     return line

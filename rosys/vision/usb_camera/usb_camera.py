@@ -1,7 +1,8 @@
 import logging
-from typing import Any, Optional, Self
+from typing import Any, Optional
 
 import cv2
+from typing_extensions import Self
 
 from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
@@ -43,12 +44,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self._register_parameter('fps', self.get_fps, self.set_fps, fps)
 
     def to_dict(self) -> dict[str, Any]:
-        return {
-            'id': self.id,
-            'name': self.name,
-            'connect_after_init': self.connect_after_init,
-            'streaming': self.streaming,
-        } | {
+        return super().to_dict() | {
             name: param.value for name, param in self._parameters.items()
         }
 
@@ -61,18 +57,16 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         return self.device is not None
 
     async def connect(self) -> None:
-        logging.info(f'Connecting camera {self.id}...')
         if self.is_connected:
             return
 
         device = UsbDevice.from_uid(self.id)
         if device is None:
-            logging.warning(f'Connecting to {self.id} failed!')
+            logging.warning(f'Connecting camera {self.id}: failed')
             return
 
         self.device = device
-
-        logging.info(f'camera {self.id}: connected')
+        logging.info(f'Connecting camera {self.id}: succeeded')
 
         self._apply_all_parameters()
 
@@ -91,7 +85,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
         assert self.device is not None
 
-        capture_success, captured_image = self.device.capture.read()
+        capture_success, captured_image = await rosys.run.io_bound(self.device.capture.read)
         image_is_MJPG = 'MJPG' in self.device.video_formats
 
         if not capture_success:

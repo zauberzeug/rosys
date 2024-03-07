@@ -96,7 +96,7 @@ class LizardFirmware:
         rosys.notify(f'Flashing Lizard firmware {self.local_version} to Core...')
         self.robot_brain.communication.disconnect()
         await rosys.sleep(0.3)
-        output = await rosys.run.sh(['./flash.py'] + self.flash_params, timeout=None, working_dir=self.PATH)
+        output = await rosys.run.sh(['sudo', './flash.py'] + self.flash_params, timeout=None, working_dir=self.PATH)
         self.log.info(f'flashed Lizard:\n {output}')
         self.robot_brain.communication.connect()
         await self.read_core_version()

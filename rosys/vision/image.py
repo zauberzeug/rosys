@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import ClassVar, Optional, Self
+from typing import ClassVar, Optional
 
 import cv2
 import numpy as np
 import PIL.Image
 import PIL.ImageDraw
+from typing_extensions import Self
 
 from .detections import Detections
 
@@ -29,6 +30,7 @@ class Image:
     data: Optional[bytes] = None
     _detections: dict[str, Detections] = field(default_factory=dict)
     is_broken: Optional[bool] = None
+    tags: set[str] = field(default_factory=set)
 
     DEFAULT_PLACEHOLDER_SIZE: ClassVar[tuple[int, int]] = (320, 240)
 
