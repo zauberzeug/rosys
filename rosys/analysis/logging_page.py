@@ -2,7 +2,14 @@ import logging
 
 from nicegui import ui
 
-LEVELS = {value: key for key, value in logging.getLevelNamesMapping().items()}
+LEVELS = {
+    logging.NOTSET: 'NOTSET',
+    logging.DEBUG: 'DEBUG',
+    logging.INFO: 'INFO',
+    logging.WARNING: 'WARNING',
+    logging.ERROR: 'ERROR',
+    logging.CRITICAL: 'CRITICAL',
+}
 
 
 class LoggingPage:
