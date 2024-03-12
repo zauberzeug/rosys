@@ -34,7 +34,7 @@ def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rect
     image = PIL.Image.open(io.BytesIO(data))
     if crop is not None:
         image = image.crop((int(crop.x), int(crop.y), int(crop.x + crop.width), int(crop.y + crop.height)))
-    if not rotation == ImageRotation.NONE:
+    if rotation != ImageRotation.NONE:
         image = image.rotate(int(rotation), expand=True)  # NOTE: PIL handles rotation with 90 degree steps efficiently
     return cv2.imencode('.jpg', np.array(image))[1].tobytes()
 
