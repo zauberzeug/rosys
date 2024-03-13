@@ -22,7 +22,7 @@ class EStop(Module, abc.ABC):
 
         self.active: bool = False
         self.is_soft_estop_active: bool = False
-        self.pressed_estop: list[int] = []
+        self.pressed_estops: list[int] = []
 
     @abc.abstractmethod
     async def set_soft_estop(self, active: bool) -> None:
@@ -51,7 +51,7 @@ class EStopHardware(EStop, ModuleHardware):
     def handle_core_output(self, time: float, words: list[str]) -> None:
         corelist = [int(words.pop(0)) == 0 for _ in self.pins]
         active = any(corelist)
-        self.pressed_estop = [index for index, value in enumerate(corelist) if value]
+        self.pressed_estops = [index for index, value in enumerate(corelist) if value]
         if active and not self.active:
             self.ESTOP_TRIGGERED.emit()
         self.active = active
