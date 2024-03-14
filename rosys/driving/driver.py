@@ -38,7 +38,10 @@ class DrivingAbortedException(Exception):
 
 
 class PoseProvider(Protocol):
-    pose: Pose
+
+    @property
+    def pose(self) -> Pose:
+        ...
 
 
 class Driver:
