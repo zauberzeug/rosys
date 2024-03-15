@@ -27,8 +27,8 @@ class Translator:
 
 class Schedule(persistence.PersistentModule):
 
-    def __init__(self,
-                 automator: Automator, *,
+    def __init__(self, *,
+                 automator: Optional[Automator] = None,
                  on_activate: Optional[Callable] = None,
                  on_deactivate: Optional[Callable] = None,
                  location: Optional[tuple[float, float]] = None,
@@ -39,13 +39,14 @@ class Schedule(persistence.PersistentModule):
                  ) -> None:
         """Schedules automations according to a time plan.
 
-        param on_activate: automation to execute when entering an active period
-        param on_deactivate: automation to execute when entering an inactive period
-        param location: optional geographic coordinates to activate the robot at daylight only
-        param locations: optional dictionary with geographic coordinates to choose from
-        param sunrise_offset: optional offset for activation after sunrise (minutes, default: 0.0)
-        param sunset_offset: optional offset for deactivation after sunset (minutes, default: 0.0)
-        param is_enabled: whether the schedule is enabled (default: False)
+        :param automator: optional automator to use for executing the automations
+        :param on_activate: automation to execute when entering an active period
+        :param on_deactivate: automation to execute when entering an inactive period
+        :param location: optional geographic coordinates to activate the robot at daylight only
+        :param locations: optional dictionary with geographic coordinates to choose from
+        :param sunrise_offset: optional offset for activation after sunrise (minutes, default: 0.0)
+        :param sunset_offset: optional offset for deactivation after sunset (minutes, default: 0.0)
+        :param is_enabled: whether the schedule is enabled (default: False)
         """
         super().__init__()
 
@@ -125,13 +126,19 @@ class Schedule(persistence.PersistentModule):
             self.log.info('activate')
             if self.on_activate:
                 self.log.info('start automation')
-                self.automator.start(self.on_activate(), paused=self.automator.is_paused)
+                if self.automator:
+                    self.automator.start(self.on_activate(), paused=self.automator.is_paused)
+                else:
+                    self.on_activate()
             self._is_active = True
         if self._is_active and not self.can_be_active():
             self.log.info('deactivate')
             if self.on_deactivate:
                 self.log.info('start automation')
-                self.automator.start(self.on_deactivate(), paused=self.automator.is_paused)
+                if self.automator:
+                    self.automator.start(self.on_deactivate(), paused=self.automator.is_paused)
+                else:
+                    self.on_deactivate()
             self._is_active = False
 
     def ui(self) -> ui.column:
