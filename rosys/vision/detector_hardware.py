@@ -9,6 +9,7 @@ from .. import persistence, rosys
 from .detections import BoxDetection, Detections, PointDetection, SegmentationDetection
 from .detector import Autoupload, Detector
 from .image import Image
+from .lazy_worker import LazyWorker
 
 
 class DetectorHardware(Detector):
@@ -21,8 +22,7 @@ class DetectorHardware(Detector):
         super().__init__(name=name)
 
         self.sio = socketio.AsyncClient()
-        self.is_detecting: bool = False
-        self.next_image: Optional[Image] = None
+        self.lazy_worker = LazyWorker(self._detect)
         self.port = port
         self.timeout_count = 0
 
@@ -100,53 +100,50 @@ class DetectorHardware(Detector):
         except Exception:
             self.log.exception(f'could not upload {image.id}')
 
-    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED, tags: list[str] = []) -> None:
-        if not self.is_connected:
-            return
+    async def detect(self,
+                     image: Image,
+                     autoupload: Autoupload = Autoupload.FILTERED,
+                     tags: list[str] = [],
+                     ) -> Detections | None:
+        return await self.lazy_worker.run(image, autoupload, tags)
 
-        self.next_image = image
-        if self.is_detecting:
-            return
-
-        while self.next_image is not None and not rosys.is_stopping():
-            current_image = self.next_image
-            self.next_image = None
-            if current_image.is_broken:
-                continue
-            try:
-                self.is_detecting = True
-                result: dict = await self.sio.call('detect', {
-                    'image': current_image.data,
-                    'mac': current_image.camera_id,
-                    'autoupload': autoupload.value,
-                    'tags': tags,
-                }, timeout=3)
-                if current_image.is_broken:  # NOTE: image can be marked broken while detection is underway
-                    continue
-                detections = Detections(
-                    boxes=[persistence.from_dict(BoxDetection, d) for d in result.get('box_detections', [])],
-                    points=[persistence.from_dict(PointDetection, d) for d in result.get('point_detections', [])],
-                    segmentations=[
-                        persistence.from_dict(SegmentationDetection, d)
-                        for d in result.get('segmentation_detections', [])
-                    ],
-                )
-                current_image.set_detections(self.name, detections)
-            except socketio.exceptions.TimeoutError:
-                self.log.debug(f'detection for {current_image.id} on {self.port} took too long')
-                self.timeout_count += 1
-            except asyncio.exceptions.CancelledError:
-                self.log.debug('task has been cancelled')
-            except Exception:
-                self.log.exception(f'could not detect {current_image.id}')
-            else:
-                self.timeout_count = 0
-                if not current_image.is_broken:
-                    self.NEW_DETECTIONS.emit(current_image)
-            finally:
-                self.is_detecting = False
-                if self.timeout_count > 5:
-                    await self.disconnect()
+    async def _detect(self, image: Image, autoupload: Autoupload, tags: list[str]) -> Detections | None:
+        if image.is_broken:
+            return None
+        try:
+            result: dict = await self.sio.call('detect', {
+                'image': image.data,
+                'mac': image.camera_id,
+                'autoupload': autoupload.value,
+                'tags': tags,
+            }, timeout=3)
+            if image.is_broken:  # NOTE: image can be marked broken while detection is underway
+                return None
+            detections = Detections(
+                boxes=[persistence.from_dict(BoxDetection, d) for d in result.get('box_detections', [])],
+                points=[persistence.from_dict(PointDetection, d) for d in result.get('point_detections', [])],
+                segmentations=[
+                    persistence.from_dict(SegmentationDetection, d)
+                    for d in result.get('segmentation_detections', [])
+                ],
+            )
+            image.set_detections(self.name, detections)
+            self.timeout_count = 0
+            if image.is_broken:
+                return None
+            self.NEW_DETECTIONS.emit(image)
+            return detections
+        except socketio.exceptions.TimeoutError:
+            self.log.debug(f'detection for {image.id} on {self.port} took too long')
+            self.timeout_count += 1
+        except asyncio.exceptions.CancelledError:
+            self.log.debug('task has been cancelled')
+        except Exception:
+            self.log.exception(f'could not detect {image.id}')
+        finally:
+            if self.timeout_count > 5:
+                await self.disconnect()
+        return None
 
     def __str__(self) -> str:
         return f'{type(self).__name__} ({"connected" if self.is_connected else "disconnected"})'
