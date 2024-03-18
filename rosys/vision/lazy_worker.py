@@ -1,34 +1,32 @@
 import asyncio
-import uuid
-from typing import Awaitable, Callable, Generic, ParamSpec, TypeVar
+from typing import Any, Coroutine, Generic, TypeVar
 
 _T = TypeVar('_T')
-_P = ParamSpec('_P')
 
 
-class LazyWorker(Generic[_P, _T]):
+class LazyWorker(Generic[_T]):
 
-    def __init__(self, func: Callable[_P, Awaitable[_T]]) -> None:
-        self.func = func
-        self.waiting: uuid.UUID | None = None
+    def __init__(self) -> None:
+        self.waiting: asyncio.Task | None = None
         self.is_free = asyncio.Event()
         self.is_free.set()
 
-    async def run(self, *args: _P.args, **kwargs: _P.kwargs) -> _T | None:
-        id_ = uuid.uuid4()
-        self.waiting = id_
+    async def run(self, coro: Coroutine[Any, None, _T]) -> _T | None:
+        task: asyncio.Task[_T] = asyncio.create_task(coro)
+        self.waiting = task
         while True:
-            if self.waiting != id_:
+            if self.waiting != task:
+                task.cancel()
                 return None
             try:
                 await asyncio.wait_for(self.is_free.wait(), timeout=0.1)
             except asyncio.TimeoutError:
                 continue
-            if self.waiting == id_:
+            if self.waiting == task:
                 break
 
         self.is_free.clear()
         self.waiting = None
-        result = await self.func(*args, **kwargs)
+        result = await task
         self.is_free.set()
         return result

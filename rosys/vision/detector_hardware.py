@@ -22,7 +22,7 @@ class DetectorHardware(Detector):
         super().__init__(name=name)
 
         self.sio = socketio.AsyncClient()
-        self.lazy_worker = LazyWorker(self._detect)
+        self.lazy_worker = LazyWorker[Detections | None]()
         self.port = port
         self.timeout_count = 0
 
@@ -105,7 +105,7 @@ class DetectorHardware(Detector):
                      autoupload: Autoupload = Autoupload.FILTERED,
                      tags: list[str] = [],
                      ) -> Detections | None:
-        return await self.lazy_worker.run(image, autoupload, tags)
+        return await self.lazy_worker.run(self._detect(image, autoupload, tags))
 
     async def _detect(self, image: Image, autoupload: Autoupload, tags: list[str]) -> Detections | None:
         if image.is_broken:
