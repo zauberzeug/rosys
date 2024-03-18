@@ -5,6 +5,7 @@ from typing import Optional
 from uuid import uuid4
 
 from ..event import Event
+from .detections import Detections
 from .image import Image
 from .uploads import Uploads
 
@@ -36,7 +37,11 @@ class Detector(abc.ABC):
         self.uploads = Uploads()
 
     @abc.abstractmethod
-    async def detect(self, image: Image, autoupload: Autoupload = Autoupload.FILTERED, tags: list[str] = []) -> None:
+    async def detect(self,
+                     image: Image,
+                     autoupload: Autoupload = Autoupload.FILTERED,
+                     tags: list[str] = [],
+                     ) -> Detections | None:
         """Runs detections on the image. Afterwards the `image.detections` property is filled."""
 
     @abc.abstractmethod
