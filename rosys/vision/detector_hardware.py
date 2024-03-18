@@ -6,10 +6,10 @@ import socketio
 import socketio.exceptions
 
 from .. import persistence, rosys
+from ..helpers import LazyWorker
 from .detections import BoxDetection, Detections, PointDetection, SegmentationDetection
 from .detector import Autoupload, Detector
 from .image import Image
-from .lazy_worker import LazyWorker
 
 
 class DetectorHardware(Detector):
