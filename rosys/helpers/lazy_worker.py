@@ -1,10 +1,10 @@
 import asyncio
-from typing import Any, Coroutine, Generic, TypeVar
+from typing import Any, Coroutine, TypeVar
 
 _T = TypeVar('_T')
 
 
-class LazyWorker(Generic[_T]):
+class LazyWorker:
 
     def __init__(self) -> None:
         self.waiting: asyncio.Task | None = None

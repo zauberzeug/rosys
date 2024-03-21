@@ -22,7 +22,7 @@ class DetectorHardware(Detector):
         super().__init__(name=name)
 
         self.sio = socketio.AsyncClient()
-        self.lazy_worker = LazyWorker[Detections | None]()
+        self.lazy_worker = LazyWorker()
         self.port = port
         self.timeout_count = 0
 
