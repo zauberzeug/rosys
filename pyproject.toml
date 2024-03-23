@@ -22,7 +22,6 @@ numpy = "^1.20.1"
 scipy = "^1.7.2"
 opencv-python = "^4.5.5"
 opencv-contrib-python-headless = "^4.5.4"
-sh = "^1.14.2"
 psutil = "^5.9.0"
 networkx = "^2.6.2"
 more-itertools = "^8.10.0"
@@ -60,6 +59,7 @@ debugpy = "^1.2.1"
 py-spy = "^0.3.10"
 isort = "^5.10.1"
 cryptography = "^42.0.4" # https://github.com/zauberzeug/rosys/security/dependabot/42
+sh = "^1.14.2"
 
 [build-system]
 requires = [
