@@ -49,7 +49,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
         newly_disconnected_cameras = {id for id, camera in self._cameras.items() if camera.is_connected}
         for mac in await find_known_cameras():
             if mac not in self._cameras:
-                self.add_camera(RtspCamera(id=mac, goal_fps=self.frame_rate, jovision_profile=self.jovision_profile))
+                self.add_camera(RtspCamera(id=mac, fps=self.frame_rate, jovision_profile=self.jovision_profile))
             if mac in newly_disconnected_cameras:
                 newly_disconnected_cameras.remove(mac)
             camera = self._cameras[mac]

@@ -30,7 +30,7 @@ class DriverObject(Group):
         ui.timer(config.ui_update_interval, self.update)
 
     def update(self) -> None:
-        robot_pose = self.driver.odometer.prediction
+        robot_pose = self.driver.prediction
         self.robot_group.move(robot_pose.x, robot_pose.y).rotate(0, 0, robot_pose.yaw)
 
         if self.driver.state:

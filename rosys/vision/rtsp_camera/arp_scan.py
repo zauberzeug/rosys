@@ -18,7 +18,7 @@ async def run_arp_scan(interface: str) -> str:
         arpscan_cmd = f'sudo {arpscan_cmd}'
     cmd = f'{arpscan_cmd} -I {interface} --localnet'
     output = await rosys.run.sh(cmd, timeout=10)
-    if 'sudo' in output:
+    if 'sudo' in output and not 'name resolution' in output:
         raise RuntimeError('Could not run arp-scan! Make sure it is installed and can be run with sudo.'
                            'Try running sudo visudo and add the following line: "rosys ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan"')
     return output
