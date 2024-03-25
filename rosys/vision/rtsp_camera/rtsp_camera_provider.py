@@ -19,6 +19,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
         self.jovision_profile = jovision_profile
 
         self.log = logging.getLogger('rosys.rtsp_camera_provider')
+        self.log.level = logging.DEBUG
 
         self.last_scan: Optional[float] = None
 
@@ -43,11 +44,14 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
         return await find_known_cameras()
 
     async def update_device_list(self) -> None:
+        self.log.debug('Scanning for cameras...')
         if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
+            self.log.debug('...skipping scan')
             return
         self.last_scan = rosys.time()
         newly_disconnected_cameras = {id for id, camera in self._cameras.items() if camera.is_connected}
         for mac in await find_known_cameras():
+            self.log.debug(f'found camera {mac}')
             if mac not in self._cameras:
                 self.add_camera(RtspCamera(id=mac, fps=self.frame_rate, jovision_profile=self.jovision_profile))
             if mac in newly_disconnected_cameras:
@@ -57,7 +61,10 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
                 self.log.info(f'activating authorized camera {camera.id}...')
                 await camera.connect()
 
+        self.log.debug('scan finshed.')
+
         for mac in newly_disconnected_cameras:
+            self.log.info(f'deactivating camera {mac}...')
             await self._cameras[mac].disconnect()
 
     async def shutdown(self) -> None:

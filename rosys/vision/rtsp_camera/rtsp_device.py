@@ -1,44 +1,81 @@
 import asyncio
 import logging
-import shlex
-import subprocess
-from asyncio.subprocess import Process
-from io import BytesIO
-from typing import AsyncGenerator, Optional
+import multiprocessing
+from typing import Optional
 
-from nicegui import background_tasks
+import gi
 
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
 
+gi.require_version('Gst', '1.0')
+from gi.repository import GLib, Gst  # noqa: E402
+
+Gst.init(None)
+
+
+def run_gstreamer_process(pipe_conn, url, fps):
+    # pipeline_str = f'rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! h264parse ! omxh264dec ! video/x-raw(memory:NVMM),format=NV12 ! nvvidconv ! video/x-raw,framerate={fps}/1,format=BGRx ! videoconvert ! video/x-raw,format=BGR ! jpegenc ! appsink name=appsink emit-signals=true drop=true max-buffers=1'
+    # cpu pipeline
+    # pipeline_str = f'rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! h264parse ! avdec_h264 ! jpegenc ! appsink name=appsink emit-signals=true drop=true max-buffers=1'
+    # test pipeline with simple videosource
+    pipeline_str = 'videotestsrc ! videoconvert ! video/x-raw,format=BGR ! jpegenc ! appsink name=appsink emit-signals=true drop=true max-buffers=1'
+    pipeline = Gst.parse_launch(pipeline_str)
+    appsink = pipeline.get_by_name("appsink")
+
+    def on_new_sample(sink, _):
+        sample = sink.emit("pull-sample")
+        if sample:
+            buffer = sample.get_buffer()
+            buffer_data = buffer.extract_dup(0, buffer.get_size())
+            pipe_conn.send(buffer_data)
+        return Gst.FlowReturn.OK
+
+    appsink.connect("new-sample", on_new_sample, None)
+    pipeline.set_state(Gst.State.PLAYING)
+
+    loop = GLib.MainLoop()
+    loop.run()
+
 
 class RtspDevice:
-
     def __init__(self, mac: str, ip: str, jovision_profile: int) -> None:
         self.mac = mac
-
+        self.ip = ip
+        self.jovision_profile = jovision_profile
         self.capture_task: Optional[asyncio.Task] = None
-        self.capture_process: Optional[Process] = None
         self._image_buffer: Optional[bytes] = None
         self._authorized: bool = True
+        self.url = None
+        self.fps = 10  # Default FPS
+        self.settings_interface = None
+        self.log = logging.getLogger(f'rosys.rtsp_device.{mac}')
+        self.log.setLevel(logging.DEBUG)
 
+        # Example vendor handling
         vendor_type = mac_to_vendor(mac)
-
-        self.settings_interface: Optional[JovisionInterface] = None
         if vendor_type == VendorType.JOVISION:
             self.settings_interface = JovisionInterface(ip)
             self.fps = self.settings_interface.get_fps(stream_id=jovision_profile)
         else:
-            logging.warning(f'no settings interface for vendor type {vendor_type}')
-            logging.warning('using default fps of 10')
-            self.fps = 10
+            self.log.warning(f'No settings interface for vendor type {vendor_type}')
+            self.log.warning('Using default fps of 10')
 
-        url = mac_to_url(mac, ip, jovision_profile)
-        if url is None:
-            raise ValueError(f'could not determine RTSP URL for {mac}')
-        self.url = url
-        logging.info(f'Starting VideoStream for {self.url}')
+        self.url = mac_to_url(mac, ip, jovision_profile)
+        if self.url is None:
+            raise ValueError(f'Could not determine RTSP URL for {mac}')
+        self.log.info(f'Starting VideoStream for {self.url}')
+
+        self.parent_conn, self.child_conn = multiprocessing.Pipe()
+
         self.start_gstreamer_task()
+
+    def set_jovision_profile(self, profile: int) -> None:
+        self.jovision_profile = profile
+        self.url = mac_to_url(self.mac, self.ip, profile)
+        if self.url is None:
+            raise ValueError(f'Could not determine RTSP URL for {self.mac}')
+        # note: changes are only applied after a restart of the gstreamer process
 
     @property
     def authorized(self) -> bool:
@@ -49,78 +86,30 @@ class RtspDevice:
         self._image_buffer = None
         return image
 
-    def shutdown(self) -> None:
-        if self.capture_process is not None:
+    def shutdown(self):
+        if self.capture_process.is_alive():
             self.capture_process.terminate()
-            self.capture_process = None
+        self.capture_process.join()
+        if self.capture_task and not self.capture_task.done():
+            self.capture_task.cancel()
 
-    def start_gstreamer_task(self) -> None:
-        self.capture_task = background_tasks.create(self.run_gstreamer(self.url), name=f'capture {self.mac}')
-
-    def restart_gstreamer(self) -> None:
+    def restart_gstreamer(self):
         self.shutdown()
         self.start_gstreamer_task()
 
-    async def run_gstreamer(self, url: str) -> None:
-        async def stream(url: str) -> AsyncGenerator[bytes, None]:
-            if 'subtype=0' in url:
-                url = url.replace('subtype=0', 'subtype=1')
+    async def run_gstreamer(self):
+        while True:
+            if self.parent_conn.poll():
+                image_data = self.parent_conn.recv()
+                self._image_buffer = image_data
+                self.log.debug('Got image data from gstreamer process (%d bytes)', len(image_data))
+            await asyncio.sleep(0.1)  # Adjust as needed
 
-            # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
-            command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.fps}/1" ! jpegenc ! fdsink'
-            process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            assert process.stdout is not None
-            assert process.stderr is not None
-            self.capture_process = process
+    def start_gstreamer_task(self):
+        self.log.info('Starting gstreamer process...')
+        self.capture_process = multiprocessing.Process(
+            target=run_gstreamer_process, args=(self.child_conn, self.url, self.fps))
+        self.capture_process.start()
 
-            buffer = BytesIO()
-            pos = 0
-            header = None
-
-            while process.returncode is None:
-                assert process.stdout is not None
-                new = await process.stdout.read(4096)
-                if not new:
-                    break
-                buffer.write(new)
-
-                img_range = None
-                while True:
-                    if header is None:
-                        h = buffer.getvalue().find(b'\xff\xd8', pos)
-                        if h == -1:
-                            pos = buffer.tell() - 1
-                            break
-                        pos = h + 2
-                        header = h
-                    else:
-                        f = buffer.getvalue().find(b'\xff\xd9', pos)
-                        if f == -1:
-                            pos = buffer.tell() - 1
-                            break
-                        img_range = (header, f + 2)
-                        pos = f + 2
-                        header = None
-
-                if img_range:
-                    yield buffer.getvalue()[img_range[0]:img_range[1]]
-
-                    rest = buffer.getvalue()[img_range[1]:]
-                    buffer.seek(0)
-                    buffer.truncate()
-                    buffer.write(rest)
-
-                    pos = 0
-                    if header is not None:
-                        header -= img_range[1]
-
-            assert process.stderr is not None
-            error = await process.stderr.read()
-            logging.info(f'process {process.pid} exited with {process.returncode} and error {error.decode()}')
-            if 'Unauthorized' in error.decode():
-                self._authorized = False
-
-        async for image in stream(url):
-            self._image_buffer = image
-
-        self.capture_task = None
+        if self.capture_task is None or self.capture_task.done():
+            self.capture_task = asyncio.create_task(self.run_gstreamer())

@@ -49,7 +49,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     @property
     def is_connected(self) -> bool:
-        return self.device is not None and self.device.capture_task is not None
+        return self.device is not None and self.device.capture_process is not None
 
     @property
     def url(self) -> Optional[str]:
@@ -89,7 +89,8 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         if not image_bytes:
             return
-        transformed_image_bytes = await rosys.run.cpu_bound(process_jpeg_image, image_bytes, self.rotation, self.crop)
+        # transformed_image_bytes = await rosys.run.cpu_bound(process_jpeg_image, image_bytes, self.rotation, self.crop)
+        transformed_image_bytes = image_bytes
 
         try:
             final_image_resolution = get_image_size_from_bytes(transformed_image_bytes)
@@ -114,6 +115,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         if self.device is None:
             return
         self.jovision_profile = profile
+        self.device.set_jovision_profile(profile)
 
     def get_jovision_profile(self) -> Optional[int]:
         if self.device is None:
