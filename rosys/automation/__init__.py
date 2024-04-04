@@ -4,3 +4,12 @@ from .automation_controls_ import AutomationControls as automation_controls
 from .automator import Automator
 from .parallelize import parallelize
 from .schedule import Schedule
+
+__all__ = [
+    'AppButton',
+    'app_controls',
+    'automation_controls',
+    'Automator',
+    'parallelize',
+    'Schedule',
+]
