@@ -2,13 +2,11 @@ import os
 import sys
 from typing import AsyncIterator, Optional
 
-import netifaces
-
 from ... import rosys
 from .vendors import VendorType, mac_to_vendor
 
 
-async def run_arp_scan(interface: str) -> str:
+async def run_arp_scan() -> str:
     """Run an arp-scan on the given interface and return the output."""
     if sys.platform.startswith('darwin'):
         arpscan_cmd = 'arp-scan'
@@ -16,8 +14,9 @@ async def run_arp_scan(interface: str) -> str:
         arpscan_cmd = '/usr/sbin/arp-scan'  # TODO is this necessary? sbin should be in path
     if os.getuid() != 0:
         arpscan_cmd = f'sudo {arpscan_cmd}'
-    cmd = f'{arpscan_cmd} -I {interface} --localnet'
+    cmd = f'{arpscan_cmd} --localnet'
     output = await rosys.run.sh(cmd, timeout=10)
+
     if 'sudo' in output and not 'name resolution' in output:
         raise RuntimeError('Could not run arp-scan! Make sure it is installed and can be run with sudo.'
                            'Try running sudo visudo and add the following line: "rosys ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan"')
@@ -26,17 +25,16 @@ async def run_arp_scan(interface: str) -> str:
 
 async def find_cameras() -> AsyncIterator[tuple[str, str]]:
     """Find all cameras in the local network and return MAC and IP addresses."""
-    for interface in netifaces.interfaces():
-        output = await run_arp_scan(interface)
-        if 'ERROR' in output:
+    output = await run_arp_scan()
+    if 'ERROR' in output:
+        return
+    for line in output.splitlines():
+        infos = line.split()
+        if len(infos) < 2:
             continue
-        for line in output.splitlines():
-            infos = line.split()
-            if len(infos) < 2:
-                continue
-            mac = infos[1]
-            ip = infos[0]
-            yield mac, ip
+        mac = infos[1]
+        ip = infos[0]
+        yield mac, ip
 
 
 async def find_known_cameras() -> list[str]:
