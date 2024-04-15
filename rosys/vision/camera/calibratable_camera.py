@@ -5,6 +5,7 @@ from typing_extensions import Self
 
 from ...geometry import Rotation
 from ..calibration import Calibration, Extrinsics, Intrinsics
+from ..image_route import create_calibratable_camera_image_route
 from .camera import Camera
 
 
@@ -13,6 +14,8 @@ class CalibratableCamera(Camera):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.calibration: Optional[Calibration] = None
+
+        create_calibratable_camera_image_route(self)
 
     @property
     def is_calibrated(self) -> bool:
