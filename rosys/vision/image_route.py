@@ -12,7 +12,7 @@ from .. import run
 from .image import Image
 
 if TYPE_CHECKING:
-    from .camera import Camera
+    from .camera import CalibratableCamera, Camera
 
 log = logging.getLogger('rosys.image_route')
 
@@ -29,6 +29,17 @@ def create_image_route(camera: Camera) -> None:
 
     app.add_api_route(placeholder_url, _get_placeholder)
     app.add_api_route(timestamp_url, get_camera_image)
+
+
+def create_calibratable_camera_image_route(camera: CalibratableCamera) -> None:
+    undistorted_url = '/' + camera.base_path + '/{timestamp}/undistorted'
+
+    app.remove_route(undistorted_url)
+
+    async def get_camera_image_undistorted(timestamp: str, shrink: int = 1) -> Response:
+        return await _get_image_undistorted(camera, timestamp, shrink)
+
+    app.add_api_route(undistorted_url, get_camera_image_undistorted)
 
 
 async def _get_placeholder(shrink: int = 1) -> Response:
@@ -48,6 +59,21 @@ async def _get_image(camera: Camera, timestamp: str, shrink: int = 1) -> Respons
         raise
 
 
+async def _get_image_undistorted(camera: CalibratableCamera, timestamp: str, shrink: int = 1) -> Response:
+    try:
+        if not camera:
+            return Response(content='Camera not found', status_code=404)
+        if not camera.is_calibrated:
+            return Response(content='Camera not calibrated', status_code=404)
+        jpeg = await _try_get_undistorted_jpeg(camera, timestamp, shrink)
+        if not jpeg:
+            return Response(content='Image not found', status_code=404)
+        return Response(content=jpeg, headers={'cache-control': 'max-age=7776000'}, media_type='image/jpeg')
+    except Exception:
+        log.exception('could not get image')
+        raise
+
+
 async def _try_get_jpeg(camera: Camera, timestamp: str, shrink: int) -> Optional[bytes]:
     for image in reversed(camera.images):
         if str(image.time) == timestamp and image.data is not None:
@@ -56,13 +82,31 @@ async def _try_get_jpeg(camera: Camera, timestamp: str, shrink: int) -> Optional
                 array = np.frombuffer(image.data, dtype=np.uint8)
                 if array is None:
                     return None
-                jpeg = await run.cpu_bound(_shrink, shrink, array)
+                image_array = cv2.imdecode(array, cv2.IMREAD_COLOR)
+                jpeg = await run.cpu_bound(_shrink, shrink, image_array)
             return jpeg
     return None
 
 
+async def _try_get_undistorted_jpeg(camera: CalibratableCamera, timestamp: str, shrink: int) -> Optional[bytes]:
+    if not camera.calibration:
+        return None
+
+    for image in reversed(camera.images):
+        if str(image.time) == timestamp and image.data is not None:
+            array = np.frombuffer(image.data, dtype=np.uint8)
+            if array is None:
+                return None
+            try:
+                array = cv2.imdecode(array, cv2.IMREAD_COLOR)
+                undistorted = camera.calibration.undistort_array(array, crop=True)
+            except ValueError:
+                return None
+            return await run.cpu_bound(_shrink, shrink, undistorted)
+    return None
+
+
 def _shrink(factor: int, array: np.ndarray) -> bytes:
-    decoded = cv2.imdecode(array, cv2.IMREAD_COLOR)
-    img = decoded[::factor, ::factor]
+    img = array[::factor, ::factor]
     _, encoded_image = cv2.imencode('.jpg', img, [int(cv2.IMWRITE_JPEG_QUALITY), 60])
     return encoded_image.tobytes()
