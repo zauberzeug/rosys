@@ -36,7 +36,7 @@ for path in sorted(Path('.').rglob('__init__.py')):
 
     doc_path = path.parent.with_suffix('.md')
     found_something = False
-    for name in dir(module):
+    for name in getattr(module, '__all__', dir(module)):
         if name.startswith('_'):
             continue  # skip private fields
         cls = getattr(module, name)

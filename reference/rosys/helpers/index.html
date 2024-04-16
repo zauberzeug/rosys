@@ -8,19 +8,25 @@
       
       
       
+        <link rel="canonical" href="https://rosys.io/reference/rosys/helpers/">
       
       
+        <link rel="prev" href="../hardware/">
       
-      <link rel="icon" href="/assets/images/favicon.png">
+      
+        <link rel="next" href="../pathplanning/">
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.18">
     
     
       
-        <title>RoSys</title>
+        <title>helpers - RoSys</title>
       
     
     
-      <link rel="stylesheet" href="/assets/stylesheets/main.66ac8b77.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.66ac8b77.min.css">
       
       
 
@@ -39,11 +45,11 @@
       
     
     
-      <link rel="stylesheet" href="/assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="/stylesheets/extra.css">
+      <link rel="stylesheet" href="../../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("/",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -61,6 +67,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#rosys.helpers.ramp" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -73,7 +84,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/." title="RoSys" class="md-header__button md-logo" aria-label="RoSys" data-md-component="logo">
+    <a href="../../.." title="RoSys" class="md-header__button md-logo" aria-label="RoSys" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -93,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              helpers
             
           </span>
         </div>
@@ -180,7 +191,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/." title="RoSys" class="md-nav__button md-logo" aria-label="RoSys" data-md-component="logo">
+    <a href="../../.." title="RoSys" class="md-nav__button md-logo" aria-label="RoSys" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -210,7 +221,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -230,7 +241,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/installation/" class="md-nav__link">
+      <a href="../../../installation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -250,7 +261,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/getting_started/" class="md-nav__link">
+      <a href="../../../getting_started/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -282,7 +293,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="/examples/steering/" class="md-nav__link ">
+            <a href="../../../examples/steering/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -313,7 +324,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/examples/steering/" class="md-nav__link">
+      <a href="../../../examples/steering/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -334,7 +345,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/examples/click-and-drive/" class="md-nav__link">
+      <a href="../../../examples/click-and-drive/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -355,7 +366,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/examples/play-pause-stop/" class="md-nav__link">
+      <a href="../../../examples/play-pause-stop/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -376,7 +387,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/examples/navigation/" class="md-nav__link">
+      <a href="../../../examples/navigation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -397,7 +408,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/examples/hardware/" class="md-nav__link">
+      <a href="../../../examples/hardware/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -418,7 +429,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/examples/simulation_speed/" class="md-nav__link">
+      <a href="../../../examples/simulation_speed/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -439,7 +450,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/examples/cameras/" class="md-nav__link">
+      <a href="../../../examples/cameras/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -460,7 +471,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/examples/schedule/" class="md-nav__link">
+      <a href="../../../examples/schedule/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -481,7 +492,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/examples/persistence/" class="md-nav__link">
+      <a href="../../../examples/persistence/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -506,17 +517,19 @@
       
   
   
+    
   
   
+  
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
         
           
           <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
@@ -530,7 +543,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Module Reference
@@ -544,7 +557,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/reference/rosys/analysis/" class="md-nav__link">
+      <a href="../analysis/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -565,7 +578,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/reference/rosys/automation/" class="md-nav__link">
+      <a href="../automation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -586,7 +599,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/reference/rosys/driving/" class="md-nav__link">
+      <a href="../driving/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -607,7 +620,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/reference/rosys/hardware/" class="md-nav__link">
+      <a href="../hardware/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -625,10 +638,28 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="/reference/rosys/helpers/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    helpers
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -637,6 +668,42 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.helpers.ramp" class="md-nav__link">
+    <span class="md-ellipsis">
+      ramp
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.helpers.remove_indentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      remove_indentation
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -649,7 +716,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/reference/rosys/pathplanning/" class="md-nav__link">
+      <a href="../pathplanning/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -670,7 +737,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/reference/rosys/system/" class="md-nav__link">
+      <a href="../system/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -703,7 +770,7 @@
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="/reference/rosys/vision/" class="md-nav__link ">
+            <a href="../vision/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -734,7 +801,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/reference/rosys/vision/camera/" class="md-nav__link">
+      <a href="../vision/camera/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -755,7 +822,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/reference/rosys/vision/rtsp_camera/" class="md-nav__link">
+      <a href="../vision/rtsp_camera/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -776,7 +843,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/reference/rosys/vision/simulated_camera/" class="md-nav__link">
+      <a href="../vision/simulated_camera/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -797,7 +864,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/reference/rosys/vision/usb_camera/" class="md-nav__link">
+      <a href="../vision/usb_camera/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -833,7 +900,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/development/" class="md-nav__link">
+      <a href="../../../development/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -853,7 +920,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/troubleshooting/" class="md-nav__link">
+      <a href="../../../troubleshooting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -884,6 +951,32 @@
   
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.helpers.ramp" class="md-nav__link">
+    <span class="md-ellipsis">
+      ramp
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.helpers.remove_indentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      remove_indentation
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -894,8 +987,71 @@
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+  <h1>helpers</h1>
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="rosys.helpers.ramp" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">ramp</span>
+
+
+<a href="#rosys.helpers.ramp" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">ramp</span><span class="p">(</span>
+    <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">in1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">in2</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">out1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">out2</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="n">clip</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+  
+      <p>Map a value x from one range (in1, in2) to another (out1, out2).</p>
+
+  </div>
+
+</div>
+
+
+<div class="doc doc-object doc-function">
+
+
+
+<h2 id="rosys.helpers.remove_indentation" class="doc doc-heading">
+          <span class="doc doc-object-name doc-function-name">remove_indentation</span>
+
+
+<a href="#rosys.helpers.remove_indentation" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">remove_indentation</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
+</code></pre></div>
+
+  <div class="doc doc-contents first">
+  
+      <p>Remove indentation from a multi-line string based on the indentation of the first line.</p>
+
+  </div>
+
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -929,10 +1085,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "/", "features": ["content.code.annotate"], "search": "/assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../..", "features": ["content.code.annotate"], "search": "../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="/assets/javascripts/bundle.3220b9d7.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.3220b9d7.min.js"></script>
       
     
   </body>
