@@ -48,6 +48,7 @@ esptool = "^4.3"
 pyquaternion = "^0.9.9"
 pillow = ">=10.3.0" # https://github.com/zauberzeug/rosys/security/dependabot/44
 idna = ">=3.7" # https://github.com/zauberzeug/rosys/security/dependabot/45
+uvicorn = "!=0.29.0" # test_examples.py fails with 0.29.0 due to persistency not correctly writting during teardown
 
 [tool.poetry.dev-dependencies]
 autopep8 = "^1.5.5"
