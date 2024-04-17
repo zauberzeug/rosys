@@ -15,6 +15,8 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 class RtspDevice:
 
     def __init__(self, mac: str, ip: str, jovision_profile: int) -> None:
+        self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device')
+
         self.mac = mac
 
         self.capture_task: Optional[asyncio.Task] = None
@@ -29,15 +31,15 @@ class RtspDevice:
             self.settings_interface = JovisionInterface(ip)
             self.fps = self.settings_interface.get_fps(stream_id=jovision_profile)
         else:
-            logging.warning(f'no settings interface for vendor type {vendor_type}')
-            logging.warning('using default fps of 10')
+            self.log.warning('[%s] No settings interface for vendor type %s', self.mac, vendor_type)
+            self.log.warning('[%s] Using default fps of 10', self.mac)
             self.fps = 10
 
         url = mac_to_url(mac, ip, jovision_profile)
         if url is None:
             raise ValueError(f'could not determine RTSP URL for {mac}')
         self.url = url
-        logging.info(f'Starting VideoStream for {self.url}')
+        self.log.info('[%s] Starting VideoStream for %s', self.mac, self.url)
         self.start_gstreamer_task()
 
     @property
@@ -122,5 +124,7 @@ class RtspDevice:
 
         async for image in stream(url):
             self._image_buffer = image
+
+        self.log.info('[%s] stream ended', self.mac)
 
         self.capture_task = None

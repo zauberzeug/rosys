@@ -59,11 +59,12 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         return self.device.url
 
-    async def connect(self) -> None:
+    async def connect(self, ip: Optional[str] = None) -> None:
         if self.is_connected:
             return
 
-        ip = await find_ip(self.id)
+        if not ip:
+            ip = await find_ip(self.id)
         if ip is None:
             raise RuntimeError(f'could not find IP address for {self.id}')
 
