@@ -90,7 +90,7 @@ class PlannerProcess(Process):
                     assert self.planner.obstacle_map is not None
                     self.respond(cmd, self.planner.obstacle_map.get_distance(cmd.pose.x, cmd.pose.y, cmd.pose.yaw))
             except Exception as e:
-                self.log.exception(f'failed to compute cmd "{cmd}"')
+                self.log.exception('failed to compute cmd "%s"', cmd)
                 self.respond(cmd, e)
 
     def respond(self, cmd: PlannerCommand, content: Any) -> None:

@@ -50,7 +50,7 @@ class Event:
                     await client.connected(timeout=10.0)
                     client.on_disconnect(lambda: self.unregister(callback))
                 except TimeoutError:
-                    log.warning(f'could not register disconnect for {callback=}')
+                    log.warning('could not register disconnect for callback=%s', callback)
                     self.unregister(callback)
             background_tasks.create(register_disconnect())
         return self
@@ -64,7 +64,7 @@ class Event:
             try:
                 await invoke(listener.callback, *args)
             except Exception:
-                log.exception(f'could not call {listener=}')
+                log.exception('could not call listener=%s', listener)
 
     def emit(self, *args) -> None:
         """Fires event without waiting for the result."""
@@ -78,7 +78,7 @@ class Event:
                     else:
                         startup_coroutines.append(result)
             except Exception:
-                log.exception(f'could not emit {listener=}')
+                log.exception('could not emit listener=%s', listener)
 
 
 def reset() -> None:

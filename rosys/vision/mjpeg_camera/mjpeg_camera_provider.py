@@ -44,7 +44,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
                 async with httpx.AsyncClient() as client:
                     response = await client.get(url, auth=authentication)
             except httpx.HTTPError as e:
-                self.log.warning(f'Error while looking for cameras at axis router ({url}): {e}')
+                self.log.warning('Error while looking for cameras at axis router (%s): %s', url, e)
                 continue
             if response.status_code != 200:
                 continue
@@ -67,7 +67,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
                 newly_disconnected_cameras.remove(camera_id)
             camera = self._cameras[camera_id]
             if not camera.is_connected:
-                self.log.info(f'activating authorized camera "{camera.id}" at ip "{ip}" ...')
+                self.log.info('activating authorized camera "%s" at ip "%s" ...', camera.id, ip)
                 await camera.connect(ip=ip)
 
         for mac in newly_disconnected_cameras:

@@ -29,7 +29,7 @@ class SerialCommunication(Communication):
         self.device_path = self.get_device_path()
         if self.device_path is None:
             raise FileNotFoundError('No serial port found')
-        self.log.debug(f'connecting serial on {self.device_path} with baud rate {baud_rate}')
+        self.log.debug('connecting serial on %s with baud rate %s', self.device_path, baud_rate)
         self.serial = serial.Serial(self.device_path, baud_rate)
         self.buffer = ''
         self.undo_queue: deque[str] = deque(maxlen=100)
@@ -56,12 +56,12 @@ class SerialCommunication(Communication):
     def connect(self) -> None:
         if not self.serial.isOpen():
             self.serial.open()
-            self.log.debug(f'reconnected serial on {self.device_path}')
+            self.log.debug('reconnected serial on %s', self.device_path)
 
     def disconnect(self) -> None:
         if self.serial.isOpen():
             self.serial.close()
-            self.log.debug(f'disconnected serial on {self.device_path}')
+            self.log.debug('disconnected serial on %s', self.device_path)
 
     async def read(self) -> Optional[str]:
         if not self.serial.isOpen():
@@ -72,17 +72,17 @@ class SerialCommunication(Communication):
             self.buffer += s
             if '\n' in self.buffer:
                 line, self.buffer = self.buffer.split('\r\n', 1)
-                self.log.debug(f'read: {line}')
+                self.log.debug('read: %s', line)
                 return line
         except Exception:
-            self.log.exception(f'Could not decode serial data: {s}')
+            self.log.exception('Could not decode serial data: %s', s)
         return None
 
     async def send(self, msg: str) -> None:
         if not self.serial.isOpen():
             return
         self.serial.write(f'{msg}\n'.encode())
-        self.log.debug(f'send: {msg}')
+        self.log.debug('send: %s', msg)
 
     def debug_ui(self) -> None:
         super().debug_ui()

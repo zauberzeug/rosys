@@ -54,7 +54,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
                 newly_disconnected_cameras.remove(mac)
             camera = self._cameras[mac]
             if not camera.is_connected:
-                self.log.info(f'activating authorized camera {camera.id}...')
+                self.log.info('activating authorized camera %s...', camera.id)
                 await camera.connect(ip)
 
         for mac in newly_disconnected_cameras:

@@ -38,7 +38,7 @@ class MjpegDevice:
         self.start_capture_task()
 
     async def run_capture_task(self) -> None:
-        self.log.info(f'Capturing images from {self.url}')
+        self.log.info('Capturing images from %s', self.url)
 
         async def stream() -> AsyncGenerator[bytes, None]:
             async with httpx.AsyncClient() as client:
@@ -46,9 +46,8 @@ class MjpegDevice:
                 try:
                     async with client.stream('GET', self.url, auth=self.authentication) as response:  # type: ignore
                         if response.status_code != 200:
-                            self.log.error(f'could not connect to {self.url} '
-                                           f'(credentials: {self.authentication}): '
-                                           f'{response.status_code} {response.reason_phrase}')
+                            self.log.error('could not connect to %s (credentials: %s): %s %s',
+                                           self.url, self.authentication, response.status_code, response.reason_phrase)
                             return
                         buffer = BytesIO()
                         header = None
@@ -75,9 +74,9 @@ class MjpegDevice:
                                         pos = 0
                                         header = None
                         except httpx.ReadTimeout:
-                            self.log.warning(f'Connection to {self.url} timed out')
+                            self.log.warning('Connection to %s timed out', self.url)
                 except Exception:
-                    self.log.warning(f'Initial connection to {self.url} failed. Was something disconnected?')
+                    self.log.warning('Initial connection to %s failed. Was something disconnected?', self.url)
 
         async for image in stream():
             self._image_buffer = image

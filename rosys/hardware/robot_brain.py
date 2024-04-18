@@ -146,7 +146,7 @@ class RobotBrain:
 
     def _handle_clock_offset(self, offset: float) -> None:
         if self._clock_offset is not None and abs(offset - self._clock_offset) > 0.1:
-            self.log.info(f'Clock offset changed from {self._clock_offset:.3f} to {offset:.3f}')
+            self.log.info('Clock offset changed from %.3f to %.3f', self._clock_offset, offset)
             self._clock_offsets.clear()
         self._clock_offsets.append(offset)
         self._clock_offset = sum(self._clock_offsets) / len(self._clock_offsets)

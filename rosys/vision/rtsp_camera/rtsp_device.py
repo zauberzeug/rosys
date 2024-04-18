@@ -118,7 +118,7 @@ class RtspDevice:
 
             assert process.stderr is not None
             error = await process.stderr.read()
-            logging.info(f'process {process.pid} exited with {process.returncode} and error {error.decode()}')
+            logging.info('process %s exited with %s and error %s', process.pid, process.returncode, error.decode())
             if 'Unauthorized' in error.decode():
                 self._authorized = False
 

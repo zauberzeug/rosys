@@ -47,9 +47,9 @@ def restore() -> None:
     for name, module in modules.items():
         filepath = backup_path / f'{name}.json'
         if not filepath.exists():
-            log.warning(f'Backup file "{filepath}" not found.')
+            log.warning('Backup file "%s" not found.', filepath)
             continue
         try:
             module.restore(json.loads(filepath.read_text()))
         except Exception:
-            log.exception(f'failed to restore {module}')
+            log.exception('failed to restore %s', module)

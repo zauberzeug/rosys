@@ -71,14 +71,14 @@ class LizardFirmware:
     def read_local_checksum(self) -> None:
         checksum = sum(ord(c) for c in self.robot_brain.lizard_code) % 0x10000
         self.local_checksum = f'{checksum:04x}'
-        self.log.info(f'local checksum: {self.local_checksum}')
+        self.log.info('local checksum: %s', self.local_checksum)
 
     async def read_core_checksum(self) -> None:
         deadline = rosys.time() + 5.0
         while rosys.time() < deadline:
             if response := await self.robot_brain.send_and_await('core.startup_checksum()', 'checksum:', timeout=1):
                 self.core_checksum = response.split()[-1]
-                self.log.info(f'core checksum: {self.core_checksum}')
+                self.log.info('core checksum: %s', self.core_checksum)
                 return
             self.log.warning('Could not read startup checksum from Core')
 
@@ -97,7 +97,7 @@ class LizardFirmware:
         self.robot_brain.communication.disconnect()
         await rosys.sleep(0.3)
         output = await rosys.run.sh(['sudo', './flash.py'] + self.flash_params, timeout=None, working_dir=self.PATH)
-        self.log.info(f'flashed Lizard:\n {output}')
+        self.log.info('flashed Lizard:\n%s', output)
         self.robot_brain.communication.connect()
         await self.read_core_version()
         rosys.notify('Finished.', 'positive')
