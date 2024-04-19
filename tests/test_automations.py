@@ -5,6 +5,7 @@ from rosys.driving import Driver
 from rosys.geometry import Pose, Spline
 from rosys.hardware import Robot
 from rosys.test import assert_pose, forward
+import rosys
 
 
 async def test_driving_an_arc(driver: Driver, automator: Automator, robot: Robot):
@@ -76,3 +77,21 @@ async def test_aborting_a_drive(driver: Driver, automator: Automator, robot: Rob
     await forward(seconds=1)
     assert_pose(1, 0, deg=0)
     assert cause == ['an exception occurred in an automation']
+
+
+async def test_finally_block(automator: Automator):
+    events: list[str] = []
+
+    async def run() -> None:
+        try:
+            while True:
+                events.append('tick')
+                await rosys.sleep(3)
+        finally:
+            events.append('tock')
+
+    automator.start(run())
+    await forward(seconds=10)
+    automator.stop(because='test')
+    await forward(seconds=1)
+    assert events == ['tick', 'tick', 'tick', 'tick', 'tock']
