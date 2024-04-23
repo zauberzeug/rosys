@@ -71,12 +71,12 @@ class TimelapseRecorder:
         """Creates a video from the captured images"""
         jpgs = sorted(STORAGE_PATH.glob('*.jpg'))
         if len(jpgs) < 20:
-            self.log.info(f'very few images ({len(jpgs)}); not creating video')
+            self.log.info('very few images (%s); not creating video', len(jpgs))
             self.discard_video()
             return
         start = datetime.fromtimestamp(float(jpgs[0].stem))
         end = datetime.fromtimestamp(float(jpgs[-1].stem))
-        self.log.info(f'creating video from {start} to {end}')
+        self.log.info('creating video from %s to %s', start, end)
         duration = humanize.naturaldelta(end - start)
         await self.create_info(start.strftime(r'%d.%m.%Y %H:%M:%S'), duration, time=start.timestamp() - 1)
         id_ = start.strftime(r'%Y%m%d_%H-%M-%S_' + duration.replace(' ', '_'))
@@ -94,7 +94,7 @@ class TimelapseRecorder:
             f'mv {target_dir}/*mp4 {STORAGE_PATH}/videos;'
             f'rm -r {target_dir};'
         )
-        self.log.info(f'starting {cmd}')
+        self.log.info('starting %s', cmd)
         rosys.background_tasks.create(rosys.run.sh(cmd, timeout=None, shell=True), name='timelapse ffmpeg')
 
     def discard_video(self) -> None:

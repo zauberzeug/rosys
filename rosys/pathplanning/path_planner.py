@@ -68,8 +68,8 @@ class PathPlanner(persistence.PersistentModule):
             self.process.terminate()
         else:
             if self.process.exitcode:
-                self.log.info(f'bad exitcode for process: {self.process.exitcode}')
-        self.log.info(f'teardown of {self.process} completed')
+                self.log.info('bad exitcode for process: %s', self.process.exitcode)
+        self.log.info('teardown of %s completed', self.process)
 
     async def step(self) -> None:
         try:

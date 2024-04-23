@@ -122,6 +122,7 @@ class Automator:
         if not self.is_stopped:
             assert self.automation is not None
             self.automation.stop()
+            self.automation = None
             self.AUTOMATION_STOPPED.emit(because)
             track.reset()
             rosys.notify(f'automation stopped because {because}')

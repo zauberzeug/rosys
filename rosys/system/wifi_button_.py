@@ -48,7 +48,7 @@ class WifiButton(ui.button):
         ui.timer(5, callback=self.update_wifi_status)
 
     def add(self) -> None:
-        log.info(f'adding {self.ssid.value}, {self.password.value}')
+        log.info('adding %s, %s', self.ssid.value, self.password.value)
         # NOTE a daemon on the host system must watch the .rosys/wifi dir and reload the configuration with nmcli or similar
         config = Path('~/.rosys/wifi').expanduser() / self.ssid.value
         config.mkdir(parents=True, exist_ok=True)

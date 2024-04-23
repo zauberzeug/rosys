@@ -63,7 +63,7 @@ class DetectorSimulation(Detector):
         return image.get_detections(self.name)
 
     async def upload(self, image: Image, *, tags: list[str] = []) -> None:
-        self.log.info(f'Uploading {image.id}')
+        self.log.info('Uploading %s', image.id)
 
     def update_simulated_objects(self, image: Image) -> None:
         pass

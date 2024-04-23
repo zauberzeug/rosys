@@ -62,11 +62,11 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
         device = UsbDevice.from_uid(self.id)
         if device is None:
-            logging.warning(f'Connecting camera {self.id}: failed')
+            logging.warning('Connecting camera %s: failed', self.id)
             return
 
         self.device = device
-        logging.info(f'Connecting camera {self.id}: succeeded')
+        logging.info('Connecting camera %s: succeeded', self.id)
 
         self._apply_all_parameters()
 
@@ -77,7 +77,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         await rosys.run.io_bound(self.device.capture.release)
         self.device = None
-        logging.info(f'camera {self.id}: disconnected')
+        logging.info('camera %s: disconnected', self.id)
 
     async def capture_image(self) -> None:
         if not self.is_connected:

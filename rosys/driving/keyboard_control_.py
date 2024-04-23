@@ -33,7 +33,7 @@ class KeyboardControl:
         ui.timer(check_connection_interval, self._check_connection)
 
     def handle_keys(self, e: KeyEventArguments) -> None:
-        self.log.debug(f'{e.key.name} -> {e.action} {e.modifiers}')
+        self.log.debug('%s -> %s %s', e.key.name, e.action, e.modifiers)
 
         # change speed via number key
         if e.action.keydown and e.key.number:

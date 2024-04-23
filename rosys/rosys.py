@@ -125,11 +125,11 @@ def _run_handler(handler: Callable) -> None:
         if isinstance(result, Awaitable):
             tasks.append(background_tasks.create(result, name=handler.__qualname__))
     except Exception:
-        log.exception(f'error while starting handler "{handler.__qualname__}"')
+        log.exception('error while starting handler "%s"', handler.__qualname__)
 
 
 def _start_loop(handler: Callable, interval: float) -> None:
-    log.debug(f'starting loop "{handler.__qualname__}" with interval {interval:.3f}s')
+    log.debug('starting loop "%s" with interval %.3fs', handler.__qualname__, interval)
     tasks.append(background_tasks.create(_repeat_one_handler(handler, interval), name=handler.__qualname__))
 
 
@@ -172,7 +172,7 @@ async def startup() -> None:
 
 async def _garbage_collection(mbyte_limit: float = 300) -> None:
     if psutil.virtual_memory().free < mbyte_limit * 1_000_000:
-        log.warning(f'less than {mbyte_limit} mb of memory remaining -> start garbage collection')
+        log.warning('less than %s mb of memory remaining -> start garbage collection', mbyte_limit)
         gc.collect()
         await sleep(1)  # NOTE ensure all warnings appear before sending "finished" message
         log.warning('finished garbage collection')
@@ -195,7 +195,7 @@ async def _repeat_one_handler(handler: Callable, interval: float) -> None:
         start = time()
         try:
             if is_stopping():
-                log.info(f'{handler} must be stopped')
+                log.info('%s must be stopped', handler)
                 break
             await invoke(handler)
             dt = time() - start
@@ -203,7 +203,7 @@ async def _repeat_one_handler(handler: Callable, interval: float) -> None:
             return
         except Exception:
             dt = time() - start
-            log.exception(f'error in "{handler.__qualname__}"')
+            log.exception('error in "%s"', handler.__qualname__)
             if interval == 0 and dt < 0.1:
                 delay = 0.1 - dt
                 log.warning(
@@ -219,7 +219,7 @@ async def _repeat_one_handler(handler: Callable, interval: float) -> None:
 
 async def shutdown() -> None:
     for handler in shutdown_handlers:
-        log.debug(f'invoking shutdown handler "{handler.__qualname__}"')
+        log.debug('invoking shutdown handler "%s"', handler.__qualname__)
         await invoke(handler)
     log.debug('creating data backup')
     await persistence.backup(force=True)

@@ -40,12 +40,12 @@ class UsbDevice:
     def from_uid(camera_id: str) -> Optional[UsbDevice]:
         video_id = find_video_id(camera_id)
         if video_id is None:
-            logging.error(f'Could not find video device for camera {camera_id}')
+            logging.error('Could not find video device for camera %s', camera_id)
             return None
 
         capture = UsbDevice.create_capture(video_id)
         if capture is None:
-            logging.error(f'Could not open video device {video_id}')
+            logging.error('Could not open video device %s', video_id)
             return None
 
         return UsbDevice(video_id=video_id, capture=capture)

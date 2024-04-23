@@ -37,9 +37,9 @@ async def find_cameras() -> AsyncIterator[tuple[str, str]]:
         yield mac, ip
 
 
-async def find_known_cameras() -> list[str]:
+async def find_known_cameras() -> list[tuple[str, str]]:
     """Find all cameras of known vendors and return MAC addresses."""
-    return [mac async for mac, _ in find_cameras() if mac_to_vendor(mac) != VendorType.OTHER]
+    return [(mac, ip) async for mac, ip in find_cameras() if mac_to_vendor(mac) != VendorType.OTHER]
 
 
 async def find_ip(mac: str) -> Optional[str]:

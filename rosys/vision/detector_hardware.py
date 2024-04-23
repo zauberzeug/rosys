@@ -28,11 +28,11 @@ class DetectorHardware(Detector):
 
         @self.sio.on('disconnect')
         def on_sio_disconnect() -> None:
-            self.log.warning(f'sio disconnect on port {port}')
+            self.log.warning('sio disconnect on port %s', port)
 
         @self.sio.on('connect_error')
         def on_sio_connect_error(err) -> None:
-            self.log.warning(f'sio connect error on {port}: {err}')
+            self.log.warning('sio connect error on %s: %s', port, err)
 
         rosys.on_repeat(self.step, 1.0)
 
@@ -42,9 +42,9 @@ class DetectorHardware(Detector):
 
     async def step(self) -> None:
         if not self.is_connected:
-            self.log.info(f'trying reconnect {self.name}')
+            self.log.info('trying reconnect %s', self.name)
             if not await self.connect():
-                self.log.exception(f'connection to {self.name} at port {self.port} failed; trying again')
+                self.log.exception('connection to %s at port %s failed; trying again', self.name, self.port)
                 await rosys.sleep(3.0)
                 return
 
@@ -54,7 +54,7 @@ class DetectorHardware(Detector):
     async def connect(self) -> bool:
         try:
             url = f'ws://localhost:{self.port}'
-            self.log.info(f'connecting to detector at {url}')
+            self.log.info('connecting to detector at %s', url)
             await self.sio.connect(url, socketio_path='/ws/socket.io', wait_timeout=3.0)
             self.log.info('connected successfully')
             return True
@@ -85,7 +85,7 @@ class DetectorHardware(Detector):
 
     async def upload(self, image: Image, *, tags: list[str] = []) -> None:
         try:
-            self.log.info(f'Upload detections to port {self.port}')
+            self.log.info('Upload detections to port %s', self.port)
             data_dict: dict[str, Any] = {'image': image.data, 'mac': image.camera_id}
             detections = image.get_detections(self.name)
             if detections is not None:
@@ -98,7 +98,7 @@ class DetectorHardware(Detector):
             await self.sio.emit('upload', data_dict)
 
         except Exception:
-            self.log.exception(f'could not upload {image.id}')
+            self.log.exception('could not upload %s', image.id)
 
     async def detect(self,
                      image: Image,
@@ -134,12 +134,12 @@ class DetectorHardware(Detector):
             self.NEW_DETECTIONS.emit(image)
             return detections
         except socketio.exceptions.TimeoutError:
-            self.log.debug(f'detection for {image.id} on {self.port} took too long')
+            self.log.debug('detection for %s on %s took too long', image.id, self.port)
             self.timeout_count += 1
         except asyncio.exceptions.CancelledError:
             self.log.debug('task has been cancelled')
         except Exception:
-            self.log.exception(f'could not detect {image.id}')
+            self.log.exception('could not detect %s', image.id)
         finally:
             if self.timeout_count > 5:
                 await self.disconnect()

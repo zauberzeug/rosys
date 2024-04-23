@@ -58,7 +58,7 @@ async def forward(seconds: Optional[float] = None,
     else:
         raise ValueError('invalid arguments')
 
-    log.info(f'\033[94m{msg}\033[0m')
+    log.info('\033[94m%s\033[0m', msg)
     while not condition():
         if rosys.time() > start_time + timeout:
             raise TimeoutError(f'condition took more than {timeout} s')

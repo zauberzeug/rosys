@@ -107,7 +107,7 @@ async def sh(command: list[str] | str, *,
                 running_sh_processes.remove(proc)
                 return stdout.decode('utf-8') if proc.returncode == 0 else stderr.decode('utf-8')
         except Exception:
-            log.exception(f'failed to run command "{cmd}"')
+            log.exception('failed to run command "%s"', cmd)
             if 'proc' in locals() and proc:
                 _kill(proc)
             return ''
@@ -117,24 +117,24 @@ async def sh(command: list[str] | str, *,
     try:
         return await asyncio.wait_for(io_bound(popen), timeout) or ''
     except asyncio.TimeoutError:
-        log.warning(f'Command "{command}" timed out after {timeout} seconds.')
+        log.warning('Command "%s" timed out after %s seconds.', command, timeout)
         return ''
 
 
 def _kill(proc: Popen) -> None:
     try:
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
-        log.info(f'sent SIGTERM to {proc.pid}')
+        log.info('sent SIGTERM to %s', proc.pid)
         try:
             proc.wait(timeout=5)  # wait for 5 seconds
         except subprocess.TimeoutExpired:
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)  # force kill if process didn't terminate
-            log.info(f'sent SIGKILL to {proc.pid}')
+            log.info(f'sent SIGKILL to %s', proc.pid)
             proc.wait()  # ensure the process is reaped
     except ProcessLookupError:
         pass
     except Exception:
-        log.exception(f'Failed to kill and/or wait for process {proc.pid}')
+        log.exception('Failed to kill and/or wait for process %s', proc.pid)
 
 
 def tear_down() -> None:

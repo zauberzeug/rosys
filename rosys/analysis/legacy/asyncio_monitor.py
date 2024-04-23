@@ -74,7 +74,7 @@ class AsyncioMonitor:
         else:
             match_task = task_pattern.match(description)
             if match_task is None:
-                self.log.warning(f'could not parse task "{description}"')
+                self.log.warning('could not parse task "%s"', description)
                 return None
             name = match_task.group(1)
             details = match_task.group(2)

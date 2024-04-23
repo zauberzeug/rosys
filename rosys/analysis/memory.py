@@ -25,8 +25,8 @@ class MemoryMiddleware(BaseHTTPMiddleware):
         mem = get_process_memory()
         response = await call_next(request)
         if response.headers.get('x-nicegui-content') == 'page' and self.last_mem is not None:
-            log.info(f'GET {request.get("path")} increased memory by {bytes2human(mem - self.last_mem)} '
-                     f'and is now {bytes2human(mem)}')
+            log.info('GET %s increased memory by %s and is now %s',
+                     request.get('path'), bytes2human(mem - self.last_mem), bytes2human(mem))
         self.last_mem = mem
         return response
 
@@ -46,7 +46,7 @@ def compare_tracemalloc_snapshots(snapshot, prev_snapshot):
     for stat in stats[:10]:
         trace = '\n'.join(stat.traceback.format())
         usage = f'{bytes2human(stat.size_diff)} new, {bytes2human(stat.size)} total; {stat.count_diff} new memory blocks, {stat.count} total'
-        log.info(f'{trace}"\n"{usage}')
+        log.info('%s"\n"%s', trace, usage)
 
 
 def observe_memory_growth(with_tracemalloc: bool = False) -> None:
@@ -62,10 +62,7 @@ def observe_memory_growth(with_tracemalloc: bool = False) -> None:
         gc.collect()
         growth = get_process_memory() - prev_memory
         # log.info('==============')
-        log.info(
-            f'memory growth: {bytes2human(growth)}, '
-            f"now it's {get_humanreadable_process_memory()}"
-        )
+        log.info("memory growth: %s, now it's %s", bytes2human(growth), get_humanreadable_process_memory())
         # log.info('==============')
         prev_memory = get_process_memory()
         if with_tracemalloc:
