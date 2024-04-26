@@ -34,6 +34,8 @@ async def find_cameras() -> AsyncIterator[tuple[str, str]]:
             continue
         mac = infos[1]
         ip = infos[0]
+        if mac in ['packets', 'arp-scan'] or ip == "Interface:":
+            continue
         yield mac, ip
 
 
