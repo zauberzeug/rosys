@@ -1,12 +1,13 @@
+from enum import IntEnum
 from typing import Optional
 
 
-class VendorType:
+class VendorType(IntEnum):
     AXIS = 1
     OTHER = -1
 
 
-def mac_to_vendor(mac: str) -> int:
+def mac_to_vendor(mac: str) -> VendorType:
     if any(mac.startswith(prefix) for prefix in ['00:40:8c', 'ac:cc:8e', 'b8:a4:4f', 'e8:27:25']):
         return VendorType.AXIS
     return VendorType.OTHER
