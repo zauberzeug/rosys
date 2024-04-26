@@ -81,7 +81,7 @@ class Calibration:
         D = np.array(self.intrinsics.distortion, dtype=float)
         if self.intrinsics.fisheye:
             image_array, _ = cv2.fisheye.projectPoints(
-                world_coordinates, Rod, t, K, D)
+                world_coordinates.reshape(-1, 1, 3), Rod, t, K, D)
         else:
             image_array, _ = cv2.projectPoints(world_coordinates, Rod, t, K, D)
 
@@ -107,21 +107,28 @@ class Calibration:
                 return None
             return Point3d(x=world_points[0, 0], y=world_points[0, 1], z=world_points[0, 2])  # pylint: disable=unsubscriptable-object
 
-        K = np.array(self.intrinsics.matrix)
-        D = np.array(self.intrinsics.distortion)
-        image_coordinates_ = self.undistort_points(image_coordinates.astype(np.float32).reshape(-1, 1, 2))
-        image_coordinates__ = cv2.convertPointsToHomogeneous(image_coordinates_).reshape(-1, 3)
+        image_coordinates__ = self.points_to_rays(image_coordinates.astype(np.float32).reshape(-1, 1, 2))
         objPoints = image_coordinates__ @ self.rotation_array.T
         Z = self.extrinsics.translation[-1]
         t = np.array(self.extrinsics.translation)
         world_points = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
 
-        reprojection = self.project_to_image(world_points)
-        sign = objPoints[:, -1] * np.sign(Z)
-        distance = np.linalg.norm(reprojection - image_coordinates, axis=1)
-        world_points[np.logical_not(np.logical_and(sign < 0, distance < 2)), :] = np.nan
+        # reprojection = self.project_to_image(world_points)
+        # sign = objPoints[:, -1] * np.sign(Z)
+        # distance = np.linalg.norm(reprojection - image_coordinates, axis=1)
+        # world_points[np.logical_not(np.logical_and(sign < 0, distance < 2)), :] = np.nan
 
         return world_points
+
+    def points_to_rays(self, image_points: np.ndarray) -> np.ndarray:
+        K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
+        D = np.array(self.intrinsics.distortion)
+        if self.intrinsics.fisheye:
+            undistorted = cv2.fisheye.undistortPoints(image_points, K, D)
+        else:
+            undistorted = cv2.undistortPoints(image_points, K, D)
+
+        return cv2.convertPointsToHomogeneous(undistorted).reshape(-1, 3)
 
     def undistort_points(self, image_points: np.ndarray, crop=False) -> np.ndarray:
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
@@ -131,7 +138,7 @@ class Calibration:
             return cv2.fisheye.undistortPoints(image_points, K, D, P=newcameramatrix)
         else:
             newcameramatrix = self.undistorted_camera_matrix(crop=crop)
-            return cv2.undistortPoints(image_points, K, D, P=newcameramatrix)
+            return cv2.undistortPoints(image_points, K, D, P=newcameramatrix, R=np.eye(3))
 
     def distort_points(self, image_points: np.ndarray, crop=False) -> np.ndarray:
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
@@ -149,24 +156,33 @@ class Calibration:
 
     @staticmethod
     def from_points(
-            world_points: list[Point3d], image_points: list[Point], image_size: ImageSize, f0: float, rational_model: bool = False) -> Calibration:
-        world_point_array = np.array(
-            [p.tuple for p in world_points], dtype=np.float32).reshape((1, -1, 3))
-        image_point_array = np.array(
-            [p.tuple for p in image_points], dtype=np.float32).reshape((1, -1, 2))
+        world_points: list[Point3d], image_points: list[Point], image_size: ImageSize, f0: float,
+            rational_model: bool = False, fisheye: bool = False) -> Calibration:
+        if fisheye and rational_model:
+            raise ValueError('Rational model is not supported for fisheye cameras')
+
+        world_point_array = [np.array(
+            [p.tuple for p in world_points], dtype=np.float32).reshape((-1, 1, 3))]
+        image_point_array = [np.array(
+            [p.tuple for p in image_points], dtype=np.float32).reshape((-1, 1, 2))]
         K0 = np.array([[f0, 0, image_size.width / 2], [0, f0,
                       image_size.height / 2], [0, 0, 1]], dtype=np.float32)
 
-        flags = cv2.CALIB_USE_INTRINSIC_GUESS
-        if rational_model:
-            flags |= cv2.CALIB_RATIONAL_MODEL
-
-        _, K, D, rvecs, tvecs = cv2.calibrateCamera(world_point_array, image_point_array, image_size.tuple, K0, None,
-                                                    flags=flags)
+        if fisheye:
+            flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
+            _, K, D, rvecs, tvecs = cv2.fisheye.calibrate(
+                objectPoints=world_point_array, imagePoints=image_point_array, image_size=image_size.tuple, K=K0, D=None, flags=flags)
+        else:
+            flags = cv2.CALIB_USE_INTRINSIC_GUESS
+            if rational_model:
+                flags |= cv2.CALIB_RATIONAL_MODEL
+            _, K, D, rvecs, tvecs = cv2.calibrateCamera(
+                objectPoints=world_point_array, imagePoints=image_point_array, imageSize=image_size.tuple, cameraMatrix=K0, distCoeffs=None,
+                flags=flags)
 
         rotation0 = Rotation(R=np.eye(3).tolist())
         intrinsics = Intrinsics(matrix=K.tolist(), distortion=D.tolist()[
-                                0], rotation=rotation0, size=image_size)
+            0], rotation=rotation0, size=image_size, fisheye=fisheye)
 
         rotation = Rotation.from_rvec(rvecs[0]).T
         translation = (-np.array(rotation.R).dot(tvecs)).flatten().tolist()
