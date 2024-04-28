@@ -1,4 +1,4 @@
-mkdocs
+mkdocs==1.5.3
 mkdocs-material
 mdx-include
 mkdocs-pymdownx-material-extras
