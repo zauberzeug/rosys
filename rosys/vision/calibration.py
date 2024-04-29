@@ -113,10 +113,10 @@ class Calibration:
         t = np.array(self.extrinsics.translation)
         world_points = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
 
-        # reprojection = self.project_to_image(world_points)
-        # sign = objPoints[:, -1] * np.sign(Z)
-        # distance = np.linalg.norm(reprojection - image_coordinates, axis=1)
-        # world_points[np.logical_not(np.logical_and(sign < 0, distance < 2)), :] = np.nan
+        reprojection = self.project_to_image(world_points)
+        sign = objPoints[:, -1] * np.sign(Z)
+        distance = np.linalg.norm(reprojection - image_coordinates, axis=1)
+        world_points[np.logical_not(np.logical_and(sign < 0, distance < 2)), :] = np.nan
 
         return world_points
 
