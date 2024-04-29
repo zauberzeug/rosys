@@ -62,20 +62,14 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
         return ids_ips
 
     async def update_device_list(self) -> None:
-        newly_disconnected_cameras = {id for id, camera in self._cameras.items() if camera.is_connected}
         for camera_id, ip in await self.scan_for_cameras():
             if camera_id not in self._cameras:
                 self.add_camera(MjpegCamera(id=camera_id, username=self.username,
                                 password=self.password, connect_after_init=False))
-            if camera_id in newly_disconnected_cameras:
-                newly_disconnected_cameras.remove(camera_id)
             camera = self._cameras[camera_id]
             if not camera.is_connected:
                 self.log.info('activating authorized camera "%s" at ip "%s" ...', camera.id, ip)
                 await camera.connect(ip=ip)
-
-        for mac in newly_disconnected_cameras:
-            await self._cameras[mac].disconnect()
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
