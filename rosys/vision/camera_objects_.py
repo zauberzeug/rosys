@@ -18,8 +18,13 @@ class CameraObjects(Group):
     With `debug=True` camera IDs are shown (default: `False`).
     """
 
-    def __init__(self, camera_provider: CalibratableCameraProvider, camera_projector: CameraProjector, *,
-                 px_per_m: float = 10000, debug: bool = False) -> None:
+    def __init__(self,
+                 camera_provider: CalibratableCameraProvider,
+                 camera_projector: CameraProjector,
+                 *,
+                 px_per_m: float = 10000,
+                 debug: bool = False,
+                 ) -> None:
         super().__init__()
 
         self.camera_provider = camera_provider
