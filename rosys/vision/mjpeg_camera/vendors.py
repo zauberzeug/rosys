@@ -1,8 +1,8 @@
-from enum import IntEnum
+from enum import Enum
 from typing import Optional
 
 
-class VendorType(IntEnum):
+class VendorType(Enum):
     AXIS = 1
     MOTEC = 2
     OTHER = -1

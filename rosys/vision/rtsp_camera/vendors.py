@@ -1,8 +1,8 @@
-from enum import IntEnum
+from enum import Enum
 from typing import Optional
 
 
-class VendorType(IntEnum):
+class VendorType(Enum):
     JOVISION = 1
     DAHUA = 2
     AXIS = 3
