@@ -19,13 +19,14 @@ def demo_data() -> tuple[CalibratableCamera, list[Point3d]]:
 
 def demo_fisheye_data() -> tuple[CalibratableCamera, list[Point3d]]:
     cam = CalibratableCamera(id='1')
-    cam.set_perfect_calibration(x=0.1, y=0.2, z=3, roll=np.deg2rad(180+10), pitch=np.deg2rad(20), yaw=np.deg2rad(30))
+    cam.set_perfect_calibration(width=800, height=600, x=0.1, y=0.2, z=3,
+                                roll=np.deg2rad(180+10), pitch=np.deg2rad(20), yaw=np.deg2rad(30))
     cam.calibration.intrinsics.distortion = [0.1, 0.4, -0.5, 0.2]
     cam.calibration.intrinsics.fisheye = True
     world_points = [
         Point3d(x=x, y=y, z=z)
-        for x in [-1.0, 0.0, 1.0]
-        for y in [-1.0, 0.0, 1.0]
+        for x in [-2.0, -0.5, 0.0, 0.5, 2.0]
+        for y in [-1.0, -0.5, 0.0, 0.5, 1.0]
         for z in [-1.0, 0.0, 1.0]
     ]
     return cam, world_points
@@ -53,6 +54,7 @@ def test_fisheye_calibration_from_points():
     image_points = [cam.calibration.project_to_image(p) for p in world_points]
     assert not any(p is None for p in image_points)
     focal_length = cam.calibration.intrinsics.matrix[0][0]
+    print(focal_length)
     calibration = Calibration.from_points(world_points, image_points, image_size, focal_length, fisheye=True)
 
     approx(calibration.intrinsics.matrix, cam.calibration.intrinsics.matrix)
