@@ -84,4 +84,4 @@ class MjpegDevice:
     def shutdown(self) -> None:
         if self.capture_task is not None:
             self.capture_task.cancel()
-        self.capture_task = None
+            self.capture_task = None
