@@ -67,6 +67,10 @@ class Calibration:
     def project_to_image(self, world_coordinates: np.ndarray) -> np.ndarray: ...
 
     def project_to_image(self, world_coordinates: Point3d | np.ndarray) -> Optional[Point] | np.ndarray:
+        '''
+        Projects a point in world coordinates to the image plane.
+        This takes into account the camera's intrinsic and extrinsic parameters.
+        '''
         if isinstance(world_coordinates, Point3d):
             world_array = np.array([world_coordinates.tuple], dtype=np.float32)
             image_array = self.project_to_image(world_array)
@@ -100,6 +104,17 @@ class Calibration:
     def project_from_image(self, image_coordinates: np.ndarray, target_height: float = 0) -> np.ndarray: ...
 
     def project_from_image(self, image_coordinates: Point | np.ndarray, target_height: float = 0) -> Optional[Point3d] | np.ndarray:
+        '''
+        Projects a point in image coordinates to a plane in world xy dimensions at a given height.
+
+        Argments:
+            image_coordinates: The image coordinates to project.
+            target_height: The height of the plane in world coordinates.
+
+        Returns:
+            The world coordinates of the projected point.
+        '''
+
         if isinstance(image_coordinates, Point):
             image_points = np.array(image_coordinates.tuple, dtype=np.float32)
             world_points = self.project_from_image(image_points, target_height=target_height)
@@ -121,6 +136,9 @@ class Calibration:
         return world_points
 
     def points_to_rays(self, image_points: np.ndarray) -> np.ndarray:
+        '''
+        Converts image points to rays in homogeneous coordinates with respect to the camera coordinate frame.
+        '''
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
         D = np.array(self.intrinsics.distortion)
         if self.intrinsics.fisheye:
@@ -130,7 +148,17 @@ class Calibration:
 
         return cv2.convertPointsToHomogeneous(undistorted).reshape(-1, 3)
 
-    def undistort_points(self, image_points: np.ndarray, crop=False) -> np.ndarray:
+    def undistort_points(self, image_points: np.ndarray, crop: bool = False) -> np.ndarray:
+        '''
+        Generalized wrapper for undistorting image points.
+
+        Arguments:
+            image_points: The image points to undistort.
+            crop: Whether cropping is applied to the image during undistortion.
+
+        Returns:
+            The undistorted image points.
+        '''
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
         D = np.array(self.intrinsics.distortion)
         if self.intrinsics.fisheye:
@@ -141,6 +169,17 @@ class Calibration:
             return cv2.undistortPoints(image_points, K, D, P=newcameramatrix, R=np.eye(3))
 
     def distort_points(self, image_points: np.ndarray, crop=False) -> np.ndarray:
+        '''
+        Generalized wrapper for distorting image points.
+
+        Arguments:
+            image_points: The image points to distort.
+            crop: Whether cropping is applied to the image during distortion.
+
+        Returns:
+            The distorted image points.
+        '''
+
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
         D = np.array(self.intrinsics.distortion)
         if self.intrinsics.fisheye:
@@ -158,6 +197,21 @@ class Calibration:
     def from_points(
         world_points: list[Point3d], image_points: list[Point], image_size: ImageSize, f0: float,
             rational_model: bool = False, fisheye: bool = False) -> Calibration:
+        '''
+        Estimates the camera calibration from corresponding world and image points.
+
+        Arguments:
+            world_points: The observed points in 3D world coordinates.
+            image_points: The observed points in 2D image coordinates.
+            image_size: The size of the image.
+            f0: An initial guess for the focal length.
+            rational_model: Whether to use the rational camera model (only applies to pinhole cameras).
+            fisheye: Whether to use the fisheye camera model.
+
+        Returns:
+            The estimated camera calibration.
+        '''
+
         if fisheye and rational_model:
             raise ValueError('Rational model is not supported for fisheye cameras')
 
@@ -194,6 +248,15 @@ class Calibration:
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 
     def undistorted_camera_matrix(self, crop=False) -> np.ndarray:
+        '''
+        Computes the camera matrix for the undistorted image.
+
+        Arguments:
+            crop: Whether cropping is applied to the image during undistortion.
+
+        Returns:
+            The camera matrix for the undistorted image.
+        '''
         K = np.array(self.intrinsics.matrix)
         D = np.array(self.intrinsics.distortion)
         h, w = self.intrinsics.size.height, self.intrinsics.size.width
@@ -207,6 +270,17 @@ class Calibration:
         return newcameramtx
 
     def undistort_array(self, image_array: np.ndarray, crop=False) -> np.ndarray:
+        '''
+        Undistorts an image represented as a numpy array.
+        The image is expected to be decoded (i.e. not encoded bytes of a jpg image).
+
+        Arguments:
+            image_array: The image to undistort.
+            crop: Whether cropping is applied to the image during undistortion.
+
+        Returns:
+            The undistorted image.
+        '''
         if image_array.shape[0] != self.intrinsics.size.height or image_array.shape[1] != self.intrinsics.size.width:
             log.warning('Image size does not match calibration size (image: %s, calibration: %s)',
                         image_array.shape, self.intrinsics.size)
@@ -238,6 +312,15 @@ class Calibration:
         return dst
 
     def undistorted_size(self, size: ImageSize) -> ImageSize:
+        '''
+        Computes the size of the undistorted image after cropping.
+
+        Arguments:
+            size: The size of the distorted image.
+
+        Returns:
+            The size of the undistorted image.
+        '''
         if self.intrinsics.fisheye:
             return size
 
@@ -250,6 +333,17 @@ class Calibration:
         return ImageSize(width=w, height=h)
 
     def undistort_image(self, image: Image) -> Image:
+        '''
+        Undistorts an image represented as an Image object.
+        If you already have the image as an unencoded numpy array, use undistort_array instead.
+
+        Arguments:
+            image: The image to undistort.
+
+        Returns:
+            The undistorted image.
+        '''
+
         array = image.to_array()
         if array is None:
             return image
