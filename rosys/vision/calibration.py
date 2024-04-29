@@ -167,11 +167,14 @@ class Calibration:
             [p.tuple for p in image_points], dtype=np.float32).reshape((-1, 1, 2))]
         K0 = np.array([[f0, 0, image_size.width / 2], [0, f0,
                       image_size.height / 2], [0, 0, 1]], dtype=np.float32)
+        D0 = np.array([0.0, 0.0, 0.0, 0.0], dtype=np.float32).reshape(1, 4)
 
         if fisheye:
-            flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
+            flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC | cv2.fisheye.CALIB_CHECK_COND | \
+                cv2.fisheye.CALIB_FIX_SKEW | cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
             _, K, D, rvecs, tvecs = cv2.fisheye.calibrate(
-                objectPoints=world_point_array, imagePoints=image_point_array, image_size=image_size.tuple, K=K0, D=None, flags=flags)
+                objectPoints=world_point_array, imagePoints=image_point_array, image_size=image_size.tuple, K=K0, D=D0, flags=flags,
+                criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 1e-6))
         else:
             flags = cv2.CALIB_USE_INTRINSIC_GUESS
             if rational_model:
