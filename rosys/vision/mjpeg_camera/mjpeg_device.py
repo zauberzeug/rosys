@@ -1,6 +1,5 @@
 import logging
 from asyncio import Task
-from asyncio.subprocess import Process
 from io import BytesIO
 from typing import AsyncGenerator, Optional
 
@@ -18,16 +17,13 @@ class MjpegDevice:
         self.mac = mac
         self.ip = ip
         self.capture_task: Optional[Task] = None
-        self.capture_process: Optional[Process] = None
         self._image_buffer: Optional[bytes] = None
-        self._authorized: bool = True
         self.authentication = None if username is None or password is None else httpx.DigestAuth(username, password)
         self.log = logging.getLogger('rosys.mjpeg_device ' + self.mac)
         url = mac_to_url(mac, ip, index=index)
         if url is None:
             raise ValueError(f'could not determine URL for {mac}')
         self.url = url
-
         self.start_capture_task()
 
     def start_capture_task(self):
@@ -80,13 +76,12 @@ class MjpegDevice:
 
         async for image in stream():
             self._image_buffer = image
-
         self.capture_task = None
 
     def capture(self) -> Optional[bytes]:
         return self._image_buffer
 
     def shutdown(self) -> None:
-        if self.capture_process is not None:
-            self.capture_process.terminate()
-            self.capture_process = None
+        if self.capture_task is not None:
+            self.capture_task.cancel()
+        self.capture_task = None
