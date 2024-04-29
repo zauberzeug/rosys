@@ -43,9 +43,6 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
         return [mac for mac, _ in await find_known_cameras()]
 
     async def update_device_list(self) -> None:
-        if self.last_scan is not None and rosys.time() < self.last_scan + SCAN_INTERVAL:
-            return
-        self.last_scan = rosys.time()
         for mac, ip in await find_known_cameras():
             if mac not in self._cameras:
                 self.add_camera(RtspCamera(id=mac, fps=self.frame_rate, jovision_profile=self.jovision_profile))
