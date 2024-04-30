@@ -31,6 +31,9 @@ def get_image_size_from_bytes(image: bytes) -> ImageSize:
 
 def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
     """Rotate and crop a JPEG image."""
+    if crop is None and rotation == ImageRotation.NONE:
+        return data
+
     image = PIL.Image.open(io.BytesIO(data))
     if crop is not None:
         image = image.crop((int(crop.x), int(crop.y), int(crop.x + crop.width), int(crop.y + crop.height)))
