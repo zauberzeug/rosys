@@ -1,12 +1,9 @@
 import logging
-from typing import Optional
 
 from ... import persistence, rosys
 from ..camera_provider import CameraProvider
 from .arp_scan import find_known_cameras
 from .rtsp_camera import RtspCamera
-
-SCAN_INTERVAL = 10
 
 
 class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModule):
@@ -19,8 +16,6 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
         self.jovision_profile = jovision_profile
 
         self.log = logging.getLogger('rosys.rtsp_camera_provider')
-
-        self.last_scan: Optional[float] = None
 
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.update_device_list, 10.)
