@@ -55,11 +55,6 @@ def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Opti
     return cv2.imencode('.jpg', image)[1].tobytes()
 
 
-def to_bytes(image: Any) -> bytes:
-    # TODO: type hint and docstring
-    return image[0].tobytes()
-
-
 def remove_exif(image_data: bytes) -> bytes:  # written by ChatGPT
     pos = 2  # Skip SOI marker
     while pos < len(image_data):

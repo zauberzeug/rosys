@@ -2,6 +2,7 @@ import logging
 from typing import Any, Optional
 
 import cv2
+import numpy as np
 from typing_extensions import Self
 
 from ... import rosys
@@ -94,6 +95,9 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
         if captured_image is None:
             return
+
+        def to_bytes(image: list[np.ndarray]) -> bytes:
+            return image[0].tobytes()
 
         if image_is_MJPG:
             bytes_ = await rosys.run.io_bound(to_bytes, captured_image)
