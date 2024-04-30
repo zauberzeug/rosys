@@ -60,6 +60,10 @@ class Calibration:
     def rotation_array(self) -> np.ndarray:
         return np.dot(self.extrinsics.rotation.R, self.intrinsics.rotation.R)
 
+    @property
+    def center_point(self) -> Point3d:
+        return Point3d(x=self.extrinsics.translation[0], y=self.extrinsics.translation[1], z=self.extrinsics.translation[2])
+
     @overload
     def project_to_image(self, world_coordinates: Point3d) -> Optional[Point]: ...
 
@@ -127,10 +131,10 @@ class Calibration:
         Z = self.extrinsics.translation[-1]
         t = np.array(self.extrinsics.translation)
         world_points = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
-
         reprojection = self.project_to_image(world_points)
+
         sign = objPoints[:, -1] * np.sign(Z)
-        distance = np.linalg.norm(reprojection - image_coordinates, axis=1)
+        distance = np.linalg.norm(reprojection - image_coordinates.reshape(-1, 2), axis=1)
         world_points[np.logical_not(np.logical_and(sign < 0, distance < 2)), :] = np.nan
 
         return world_points
