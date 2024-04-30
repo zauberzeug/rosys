@@ -1,10 +1,10 @@
 import io
-from typing import Any, Optional
+import logging
+from typing import Optional
 
 import cv2
 import imgsize
 import numpy as np
-import PIL
 
 from ..geometry import Rectangle
 from .image import ImageSize
@@ -33,17 +33,16 @@ def encode_image_as_jpeg(image: np.ndarray) -> bytes:
     return cv2.imencode('.jpg', image)[1].tobytes()
 
 
-def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
+def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes | None:
     """Rotate and crop a JPEG image."""
     if crop is None and rotation == ImageRotation.NONE:
         return data
-
-    image = PIL.Image.open(io.BytesIO(data))
-    if crop is not None:
-        image = image.crop((int(crop.x), int(crop.y), int(crop.x + crop.width), int(crop.y + crop.height)))
-    if rotation != ImageRotation.NONE:
-        image = image.rotate(int(rotation), expand=True)  # NOTE: PIL handles rotation with 90 degree steps efficiently
-    return encode_image_as_jpeg(np.array(image))
+    array = np.frombuffer(data, dtype=np.uint8)
+    decoded = cv2.imdecode(array, cv2.IMREAD_COLOR)
+    if decoded is None:
+        logging.warning('could not decode image buffer')
+        return None
+    return process_ndarray_image(decoded, rotation, crop)
 
 
 def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:

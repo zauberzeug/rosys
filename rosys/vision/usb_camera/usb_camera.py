@@ -105,6 +105,8 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                 bytes_ = await rosys.run.cpu_bound(process_jpeg_image, bytes_, self.rotation, self.crop)
         else:
             bytes_ = await rosys.run.cpu_bound(process_ndarray_image, captured_image, self.rotation, self.crop)
+        if bytes_ is None:
+            return
 
         image_size = ImageSize(width=captured_image.shape[1], height=captured_image.shape[0])
         final_image_resolution = self._resolution_after_transform(image_size)

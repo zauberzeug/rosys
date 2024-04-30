@@ -90,6 +90,8 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         if not image_bytes:
             return
         transformed_image_bytes = await rosys.run.cpu_bound(process_jpeg_image, image_bytes, self.rotation, self.crop)
+        if transformed_image_bytes is None:
+            return
 
         try:
             final_image_resolution = get_image_size_from_bytes(transformed_image_bytes)
