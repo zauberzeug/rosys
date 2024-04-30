@@ -29,6 +29,10 @@ def get_image_size_from_bytes(image: bytes) -> ImageSize:
     return ImageSize(width=width, height=height)
 
 
+def encode_image_as_jpeg(image: np.ndarray) -> bytes:
+    return cv2.imencode('.jpg', image)[1].tobytes()
+
+
 def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
     """Rotate and crop a JPEG image."""
     if crop is None and rotation == ImageRotation.NONE:
@@ -39,11 +43,11 @@ def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rect
         image = image.crop((int(crop.x), int(crop.y), int(crop.x + crop.width), int(crop.y + crop.height)))
     if rotation != ImageRotation.NONE:
         image = image.rotate(int(rotation), expand=True)  # NOTE: PIL handles rotation with 90 degree steps efficiently
-    return cv2.imencode('.jpg', np.array(image))[1].tobytes()
+    return encode_image_as_jpeg(np.array(image))
 
 
 def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
-    """Rotate and crop a NumPy image."""
+    """Rotate and crop a NumPy image and encode it as JPEG."""
     if crop is not None:
         image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]
     if rotation == ImageRotation.LEFT:
@@ -52,7 +56,7 @@ def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Opti
         image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
     elif rotation == ImageRotation.UPSIDE_DOWN:
         image = cv2.rotate(image, cv2.ROTATE_180)
-    return cv2.imencode('.jpg', image)[1].tobytes()
+    return encode_image_as_jpeg(image)
 
 
 def remove_exif(image_data: bytes) -> bytes:  # written by ChatGPT
