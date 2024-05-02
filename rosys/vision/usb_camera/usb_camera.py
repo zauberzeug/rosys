@@ -2,13 +2,14 @@ import logging
 from typing import Any, Optional
 
 import cv2
+import numpy as np
 from typing_extensions import Self
 
 from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image, ImageSize
-from ..image_processing import process_jpeg_image, process_ndarray_image, to_bytes
+from ..image_processing import process_jpeg_image, process_ndarray_image
 from ..image_rotation import ImageRotation
 from .usb_device import UsbDevice
 
@@ -95,12 +96,17 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         if captured_image is None:
             return
 
+        def to_bytes(image: list[np.ndarray]) -> bytes:
+            return image[0].tobytes()
+
         if image_is_MJPG:
             bytes_ = await rosys.run.io_bound(to_bytes, captured_image)
             if self.crop or self.rotation != ImageRotation.NONE:
                 bytes_ = await rosys.run.cpu_bound(process_jpeg_image, bytes_, self.rotation, self.crop)
         else:
             bytes_ = await rosys.run.cpu_bound(process_ndarray_image, captured_image, self.rotation, self.crop)
+        if bytes_ is None:
+            return
 
         image_size = ImageSize(width=captured_image.shape[1], height=captured_image.shape[0])
         final_image_resolution = self._resolution_after_transform(image_size)

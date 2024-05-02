@@ -1,10 +1,10 @@
 import io
-from typing import Any, Optional
+import logging
+from typing import Optional
 
 import cv2
 import imgsize
 import numpy as np
-import PIL
 
 from ..geometry import Rectangle
 from .image import ImageSize
@@ -29,19 +29,24 @@ def get_image_size_from_bytes(image: bytes) -> ImageSize:
     return ImageSize(width=width, height=height)
 
 
-def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
+def encode_image_as_jpeg(image: np.ndarray) -> bytes:
+    return cv2.imencode('.jpg', image)[1].tobytes()
+
+
+def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes | None:
     """Rotate and crop a JPEG image."""
-    image = PIL.Image.open(io.BytesIO(data))
-    if crop is not None:
-        image = image.crop((int(crop.x), int(crop.y), int(crop.x + crop.width), int(crop.y + crop.height)))
-    image = image.rotate(int(rotation), expand=True)  # NOTE: PIL handles rotation with 90 degree steps efficiently
-    img_byte_arr = io.BytesIO()
-    image.save(img_byte_arr, format='JPEG')
-    return img_byte_arr.getvalue()
+    if crop is None and rotation == ImageRotation.NONE:
+        return data
+    array = np.frombuffer(data, dtype=np.uint8)
+    decoded = cv2.imdecode(array, cv2.IMREAD_COLOR)
+    if decoded is None:
+        logging.warning('could not decode image buffer')
+        return None
+    return process_ndarray_image(decoded, rotation, crop)
 
 
 def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
-    """Rotate and crop a NumPy image."""
+    """Rotate and crop a NumPy image and encode it as JPEG."""
     if crop is not None:
         image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]
     if rotation == ImageRotation.LEFT:
@@ -50,12 +55,7 @@ def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Opti
         image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
     elif rotation == ImageRotation.UPSIDE_DOWN:
         image = cv2.rotate(image, cv2.ROTATE_180)
-    return cv2.imencode('.jpg', image)[1].tobytes()
-
-
-def to_bytes(image: Any) -> bytes:
-    # TODO: type hint and docstring
-    return image[0].tobytes()
+    return encode_image_as_jpeg(image)
 
 
 def remove_exif(image_data: bytes) -> bytes:  # written by ChatGPT
