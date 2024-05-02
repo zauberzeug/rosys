@@ -100,7 +100,11 @@ async def _try_get_undistorted_jpeg(camera: CalibratableCamera, timestamp: str, 
             try:
                 array = cv2.imdecode(array, cv2.IMREAD_COLOR)
                 undistorted = camera.calibration.undistort_array(array, crop=True)
-            except ValueError:
+                if undistorted is None or undistorted.size == 0:
+                    logging.warning('undistort_array returned an empty image')
+                    return None
+            except Exception as e:
+                log.exception('Could not undistort image: %s', e)
                 return None
             return await run.cpu_bound(_shrink, shrink, undistorted)
     return None
