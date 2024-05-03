@@ -3,6 +3,7 @@ import numpy as np
 from rosys.geometry import Point3d
 from rosys.test import approx
 from rosys.vision import CalibratableCamera, Calibration
+from rosys.vision.calibration import CameraModel
 
 
 def demo_data() -> tuple[CalibratableCamera, list[Point3d]]:
@@ -22,7 +23,7 @@ def demo_fisheye_data() -> tuple[CalibratableCamera, list[Point3d]]:
     cam.set_perfect_calibration(width=800, height=600, x=0.1, y=0.2, z=3,
                                 roll=np.deg2rad(180+10), pitch=np.deg2rad(20), yaw=np.deg2rad(30))
     cam.calibration.intrinsics.distortion = [0.1, 0.4, -0.5, 0.2]
-    cam.calibration.intrinsics.fisheye = True
+    cam.calibration.intrinsics.model = CameraModel.FISHEYE
     world_points = [
         Point3d(x=x, y=y, z=z)
         for x in [-2.0, -0.5, 0.0, 0.5, 2.0]
@@ -55,7 +56,8 @@ def test_fisheye_calibration_from_points():
     assert not any(p is None for p in image_points)
     focal_length = cam.calibration.intrinsics.matrix[0][0]
     print(focal_length)
-    calibration = Calibration.from_points(world_points, image_points, image_size, focal_length, fisheye=True)
+    calibration = Calibration.from_points(world_points, image_points, image_size,
+                                          focal_length, camera_model=CameraModel.FISHEYE)
 
     approx(calibration.intrinsics.matrix, cam.calibration.intrinsics.matrix)
     approx(calibration.intrinsics.rotation.R, cam.calibration.intrinsics.rotation.R)
@@ -118,6 +120,6 @@ def test_fisheye_project_from_behind():
     cam = CalibratableCamera(id='1')
     cam.set_perfect_calibration(z=1, roll=np.deg2rad(180 + 10))
     cam.calibration.intrinsics.distortion = [0.1, 0.2, 0.3, 0.4]
-    cam.calibration.intrinsics.fisheye = True
+    cam.calibration.intrinsics.model = CameraModel.FISHEYE
     assert cam.calibration.project_to_image(Point3d(x=0, y=1, z=1)) is not None
     assert cam.calibration.project_to_image(Point3d(x=0, y=-1, z=1)) is None
