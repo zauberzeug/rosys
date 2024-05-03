@@ -196,10 +196,11 @@ class Calibration:
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
         D = np.array(self.intrinsics.distortion)
         if self.intrinsics.model == CameraModel.PINHOLE:
-            return cv2.undistortPoints(image_points, K, D)
+            undistorted = cv2.undistortPoints(image_points, K, D)
         elif self.intrinsics.model == CameraModel.FISHEYE:
             undistorted = cv2.fisheye.undistortPoints(image_points, K, D)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
+            # TODO: we might need to handle this differently since this is not a perspective projection
             undistorted = cv2.omnidir.undistortPoints(
                 image_points, K, D, xi=self.intrinsics.xi)
         else:
