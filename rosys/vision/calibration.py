@@ -213,7 +213,6 @@ class Calibration:
         elif self.intrinsics.model == CameraModel.FISHEYE:
             undistorted = cv2.fisheye.undistortPoints(image_points, K, D)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
-            # TODO: we might need to handle this differently since this is not a perspective projection
             R = np.array(self.intrinsics.rotation.R, dtype=np.float32)
             xi = np.array(self.intrinsics.xi, dtype=np.float32)
             undistorted = cv2.omnidir.undistortPoints(
@@ -244,7 +243,6 @@ class Calibration:
             newcameramatrix = self.undistorted_camera_matrix(crop=crop)
             return cv2.fisheye.undistortPoints(image_points, K, D, P=newcameramatrix)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
-            # newcameramatrix = self.undistorted_camera_matrix(crop=crop)
             R = np.array(self.intrinsics.rotation.R, dtype=np.float32)
             xi = np.array(self.intrinsics.xi, dtype=np.float32)
             return cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R)
@@ -379,10 +377,6 @@ class Calibration:
             newcameramtx = np.array([[new_size.width/4, 0, new_size.width/2],
                                      [0, new_size.height/4, new_size.height/2],
                                      [0, 0, 1]])
-            # new_size = ImageSize(width=w, height=h)
-            # newcameramtx = np.array([[new_size.width/3.1415, 0, 0],
-            #                          [0, new_size.height/3.1415, 0],
-            #                          [0, 0, 1]])
         else:
             raise ValueError(
                 f'Unknown camera model "{self.intrinsics.model}"')
