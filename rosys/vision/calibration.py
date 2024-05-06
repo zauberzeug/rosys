@@ -214,8 +214,10 @@ class Calibration:
             undistorted = cv2.fisheye.undistortPoints(image_points, K, D)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             # TODO: we might need to handle this differently since this is not a perspective projection
+            R = np.array(self.intrinsics.rotation.R, dtype=np.float32)
+            xi = np.array(self.intrinsics.xi, dtype=np.float32)
             undistorted = cv2.omnidir.undistortPoints(
-                image_points, K, D, xi=self.intrinsics.xi)
+                image_points, K, D, xi=xi, R=R)
         else:
             raise ValueError(
                 f'Unknown camera model "{self.intrinsics.model}"')
@@ -242,8 +244,10 @@ class Calibration:
             newcameramatrix = self.undistorted_camera_matrix(crop=crop)
             return cv2.fisheye.undistortPoints(image_points, K, D, P=newcameramatrix)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
-            newcameramatrix = self.undistorted_camera_matrix(crop=crop)
-            return cv2.omnidir.undistortPoints(image_points, K, D, xi=self.intrinsics.xi, P=newcameramatrix)
+            # newcameramatrix = self.undistorted_camera_matrix(crop=crop)
+            R = np.array(self.intrinsics.rotation.R, dtype=np.float32)
+            xi = np.array(self.intrinsics.xi, dtype=np.float32)
+            return cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R)
 
     def distort_points(self, image_points: np.ndarray, crop=False) -> np.ndarray:
         '''
@@ -327,10 +331,10 @@ class Calibration:
             flags = cv2.omnidir.CALIB_USE_GUESS + cv2.omnidir.CALIB_FIX_SKEW
             world_point_array[0] = world_point_array[0].astype(np.float64)
             image_point_array[0] = image_point_array[0].astype(np.float64)
-            rms, K, xi, D, rvecs, tvecs, status = cv2.omnidir.calibrate(
+            rms, K, xi_arr, D, rvecs, tvecs, status = cv2.omnidir.calibrate(
                 objectPoints=world_point_array, imagePoints=image_point_array, size=image_size.tuple, K=K0, xi=np.array([0.0], dtype=np.float32), D=D0, flags=flags,
                 criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-6))
-            xi = xi[0]
+            xi = xi_arr[0]
             if D.size != 4:
                 raise ValueError(
                     f'Omnidirectional calibration failed (got invalid distortion coefficients D="{D}")')
