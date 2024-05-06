@@ -4,12 +4,38 @@ import abc
 import asyncio
 from collections import deque
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
+from typing import AsyncGenerator, Callable, Coroutine, Optional
 
 from ... import rosys
 from ...event import Event
 from ..image import Image
 from ..image_route import create_image_route
+
+
+class Repeat:
+    def __init__(self, interval: float, handler: Callable[[], Coroutine[None, None, None]], **kwargs) -> None:
+        self.interval = interval
+        self.task: asyncio.Task | None = None
+        self.handler = handler
+        self.kwargs = kwargs
+
+    def start(self) -> None:
+        async def repeat() -> None:
+            while True:
+                call_start = rosys.time()
+                await self.handler(**self.kwargs)
+
+                await asyncio.sleep(self.interval - (rosys.time() - call_start))
+
+        if asyncio.get_event_loop().is_running():
+            self.task = asyncio.create_task(repeat())
+        else:
+            rosys.on_startup(self.start)
+
+    def stop(self) -> None:
+        if self.task:
+            self.task.cancel()
+            self.task = None
 
 
 class Camera(abc.ABC):
@@ -47,7 +73,11 @@ class Camera(abc.ABC):
         async def stream() -> None:
             if self.streaming:
                 await self.capture_image()
-        rosys.on_repeat(stream, interval=image_grab_interval)
+        self.image_loop = Repeat(interval=image_grab_interval, handler=stream)
+        self.image_loop.start()
+
+    def __del__(self):
+        self.image_loop.stop()
 
     def get_image_url(self, image: Image) -> str:
         return f'{self.base_path}/{image.time}'
