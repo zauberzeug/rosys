@@ -309,19 +309,21 @@ class Calibration:
 
         xi: float = 0.0
 
+        optimization_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-6)
+
         if camera_model == CameraModel.PINHOLE:
             flags = cv2.CALIB_USE_INTRINSIC_GUESS
             if rational_model:
                 flags |= cv2.CALIB_RATIONAL_MODEL
             _, K, D, rvecs, tvecs = cv2.calibrateCamera(
                 objectPoints=world_point_array, imagePoints=image_point_array, imageSize=image_size.tuple, cameraMatrix=K0, distCoeffs=None,
-                flags=flags, criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-6))
+                flags=flags, criteria=optimization_criteria)
         elif camera_model == CameraModel.FISHEYE:
             flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC | cv2.fisheye.CALIB_CHECK_COND | \
                 cv2.fisheye.CALIB_FIX_SKEW | cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
             _, K, D, rvecs, tvecs = cv2.fisheye.calibrate(
                 objectPoints=world_point_array, imagePoints=image_point_array, image_size=image_size.tuple, K=K0, D=D0, flags=flags,
-                criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-6))
+                criteria=optimization_criteria)
             if D.size != 4:
                 raise ValueError(
                     f'Fisheye calibration failed (got invalid distortion coefficients D="{D}")')
@@ -331,7 +333,7 @@ class Calibration:
             image_point_array[0] = image_point_array[0].astype(np.float64)
             rms, K, xi_arr, D, rvecs, tvecs, status = cv2.omnidir.calibrate(
                 objectPoints=world_point_array, imagePoints=image_point_array, size=image_size.tuple, K=K0, xi=np.array([0.0], dtype=np.float32), D=D0, flags=flags,
-                criteria=(cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-6))
+                criteria=optimization_criteria)
             xi = xi_arr[0]
             if D.size != 4:
                 raise ValueError(
@@ -386,7 +388,7 @@ class Calibration:
     def undistort_array(self, image_array: np.ndarray, crop=False) -> np.ndarray:
         '''
         Undistorts an image represented as a numpy array.
-        The image is expected to be decoded (i.e. not encoded bytes of a jpg image).
+        The image is expected to be decoded (in particular not encoded bytes of a jpg image).
 
         Arguments:
             image_array: The image to undistort.
