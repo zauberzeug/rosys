@@ -81,7 +81,7 @@ class Extrinsics:
         if rotation is not None:
             n_params = len(rotation)
             if n_params == 3:
-                rotation = Rotation(R=cv2.Rodrigues(np.array(rotation))[0])
+                rotation = Rotation(R=cv2.Rodrigues(np.array(rotation))[0].tolist())
             elif n_params == 9:
                 rotation = Rotation(R=rotation)
             else:
