@@ -77,7 +77,20 @@ class Extrinsics:
 
     @classmethod
     def from_dict(cls, data: dict) -> Extrinsics:
-        return cls(rotation=Rotation(R=data['rotation']), translation=data['translation'])
+        rotation = data.get('rotation', None)
+        if rotation is not None:
+            n_params = len(rotation)
+            if n_params == 3:
+                rotation = Rotation(R=cv2.Rodrigues(np.array(rotation))[0])
+            elif n_params == 9:
+                rotation = Rotation(R=rotation)
+            else:
+                raise ValueError(
+                    f'Invalid number of rotation parameters: {n_params}')
+        else:
+            rotation = Rotation.from_euler(np.pi, 0, 0)
+
+        return cls(rotation=rotation, translation=data['translation'])
 
 
 @dataclass(slots=True, kw_only=True)
