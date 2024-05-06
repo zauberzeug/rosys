@@ -149,8 +149,16 @@ For each commit the pytests are executed.
 
 ## Releases
 
-We publish releases by creating a new version on GitHub and describe the changes.
-A GitHub Action then performs the following steps:
+We publish releases using tags and milestones on GitHub. In the Release notes we describe our changes.
+To create a new release perform the following steps:
 
-- If the pytests are successful, a poetry build and deployment to [pypi](https://pypi.org/project/rosys/) is issued.
-- A multi-arch Docker image is built and pushed to [Docker Hub](https://hub.docker.com/r/zauberzeug/rosys).
+1. `./fetch_milestone.py {0.x.y}` with the current milestone name that is to be published.
+2. Edit the text the script produces with more details and more mentions of people that participated.
+3. In your local repo add a new tag with `v0.{x.y}` as the name to the current main head.
+4. Push to GitHub which starts GitHub Action that performs the following steps:
+   - If the pytests are successful, a poetry build and deployment to [pypi](https://pypi.org/project/rosys/) is issued.
+   - A multi-arch Docker image is built and pushed to [Docker Hub](https://hub.docker.com/r/zauberzeug/rosys).
+5. Close the milestone on GitHub.
+6. Create a new milestone on GitHub with the next version (`0.{x.y+1}`).
+7. Wait for the GitHub Action that was started with your push to finish.
+8. Edit the draft of Release notes with the text you created at step 2.
