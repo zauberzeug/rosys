@@ -369,15 +369,16 @@ class Calibration:
                 K, D, (w, h), np.eye(3), balance=balance, new_size=(w, h), fov_scale=1)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             if crop:
-                new_size = ImageSize(width=w, height=h)
-                newcameramtx = np.array([[new_size.width/4, 0, new_size.width/2],
-                                         [0, new_size.height/4, new_size.height/2],
-                                         [0, 0, 1]])
-            else:
-                new_size = ImageSize(width=w, height=h)
-                newcameramtx = np.array([[new_size.width/3.1415, 0, 0],
-                                         [0, new_size.height/3.1415, 0],
-                                         [0, 0, 1]])
+                logging.warning(
+                    'Cropping is not yet supported for omnidirectional cameras')
+            new_size = ImageSize(width=w, height=h)
+            newcameramtx = np.array([[new_size.width/4, 0, new_size.width/2],
+                                     [0, new_size.height/4, new_size.height/2],
+                                     [0, 0, 1]])
+            # new_size = ImageSize(width=w, height=h)
+            # newcameramtx = np.array([[new_size.width/3.1415, 0, 0],
+            #                          [0, new_size.height/3.1415, 0],
+            #                          [0, 0, 1]])
         else:
             raise ValueError(
                 f'Unknown camera model "{self.intrinsics.model}"')
@@ -426,22 +427,14 @@ class Calibration:
             dst = cv2.remap(image_array, map1, map2,
                             interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
-            # perspective rectification is used for cropping, cylindrical for full FOV
-            xi = self.intrinsics.xi
-            if crop:
-                new_size = ImageSize(width=w, height=h)
-                flags = cv2.omnidir.RECTIFY_PERSPECTIVE
-                new_K = self.undistorted_camera_matrix(crop=crop)
-            else:
-                new_size = ImageSize(width=w, height=h)
-                flags = cv2.omnidir.RECTIFY_CYLINDRICAL
-                new_K = self.undistorted_camera_matrix(crop=crop)
+            new_size = ImageSize(width=w, height=h)
+            flags = cv2.omnidir.RECTIFY_PERSPECTIVE
+            new_K = self.undistorted_camera_matrix(crop=crop)
 
-            # map1, map2 = cv2.omnidir.initUndistortRectifyMap(
-            #     K, D, xi, new_K, (w, h), flags)
-            # dst = cv2.remap(image_array, map1, map2,
-            #                 interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
-            dst = cv2.omnidir.undistortImage(image_array, Knew=new_K, D=D, xi=xi, flags=flags, new_size=(w, h))
+            R = np.array(self.intrinsics.rotation.R)
+            xi = np.array(self.intrinsics.xi)
+            dst = cv2.omnidir.undistortImage(image_array, K=K, D=D, xi=xi, Knew=new_K,
+                                             flags=flags, new_size=(w, h), R=R)
         else:
             raise ValueError(
                 f'Unknown camera model "{self.intrinsics.model}"')
