@@ -19,6 +19,10 @@ class CameraModel(enum.Enum):
 
     @classmethod
     def from_str(cls, string: str) -> CameraModel:
+        """
+        Convert a string to the corresponding CameraModel.
+        """
+
         if string == 'PINHOLE':
             return CameraModel.PINHOLE
         if string == 'FISHEYE':
@@ -30,6 +34,16 @@ class CameraModel(enum.Enum):
 
 @dataclass(slots=True, kw_only=True)
 class Intrinsics:
+    """
+    The intrinsic parameters of a camera.
+
+    model: The camera model to use.
+    matrix: The camera matrix K.
+    distortion: The distortion coefficients D.
+    xi: The omnidirectional camera parameter xi (only for CameraModel.OMNIDIRECTIONAL).
+    rotation: An inner rotation matrix, useful for visual-inertial calibration or omnidirectional projection.
+    size: The size of the image.
+    """
     model: CameraModel = CameraModel.PINHOLE
     matrix: list[list[float]]
     distortion: list[float]
@@ -71,6 +85,13 @@ log = logging.getLogger('rosys.world.calibration')
 
 @dataclass(slots=True, kw_only=True)
 class Extrinsics:
+    """
+    The extrinsic parameters of a camera.
+
+    rotation: The rotation matrix R.
+    translation: The translation vector t.
+    """
+
     rotation: Rotation = field(
         default_factory=lambda: Rotation.from_euler(np.pi, 0, 0))
     translation: list[float] = field(default_factory=lambda: [0.0, 0.0, 1.0])
@@ -95,6 +116,9 @@ class Extrinsics:
 
 @dataclass(slots=True, kw_only=True)
 class Calibration:
+    """
+    Represents the full calibration of a camera.
+    """
     intrinsics: Intrinsics
     extrinsics: Extrinsics = field(default_factory=Extrinsics)
 
@@ -119,10 +143,10 @@ class Calibration:
         self, world_coordinates: np.ndarray) -> np.ndarray: ...
 
     def project_to_image(self, world_coordinates: Point3d | np.ndarray) -> Optional[Point] | np.ndarray:
-        '''
+        """
         Projects a point in world coordinates to the image plane.
         This takes into account the camera's intrinsic and extrinsic parameters.
-        '''
+        """
         if isinstance(world_coordinates, Point3d):
             world_array = np.array([world_coordinates.tuple], dtype=np.float32)
             image_array = self.project_to_image(world_array)
@@ -167,7 +191,7 @@ class Calibration:
                            target_height: float = 0) -> np.ndarray: ...
 
     def project_from_image(self, image_coordinates: Point | np.ndarray, target_height: float = 0) -> Optional[Point3d] | np.ndarray:
-        '''
+        """
         Projects a point in image coordinates to a plane in world xy dimensions at a given height.
 
         Argments:
@@ -176,7 +200,7 @@ class Calibration:
 
         Returns:
             The world coordinates of the projected point.
-        '''
+        """
 
         if isinstance(image_coordinates, Point):
             image_points = np.array(image_coordinates.tuple, dtype=np.float32)
@@ -203,9 +227,9 @@ class Calibration:
         return world_points
 
     def points_to_rays(self, image_points: np.ndarray) -> np.ndarray:
-        '''
+        """
         Converts image points to rays in homogeneous coordinates with respect to the camera coordinate frame.
-        '''
+        """
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
         D = np.array(self.intrinsics.distortion)
         if self.intrinsics.model == CameraModel.PINHOLE:
@@ -224,7 +248,7 @@ class Calibration:
         return cv2.convertPointsToHomogeneous(undistorted).reshape(-1, 3)
 
     def undistort_points(self, image_points: np.ndarray, crop: bool = False) -> np.ndarray:
-        '''
+        """
         Generalized wrapper for undistorting image points.
 
         Arguments:
@@ -233,7 +257,7 @@ class Calibration:
 
         Returns:
             The undistorted image points.
-        '''
+        """
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
         D = np.array(self.intrinsics.distortion)
         if self.intrinsics.model == CameraModel.PINHOLE:
@@ -248,7 +272,7 @@ class Calibration:
             return cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R)
 
     def distort_points(self, image_points: np.ndarray, crop=False) -> np.ndarray:
-        '''
+        """
         Generalized wrapper for distorting image points.
 
         Arguments:
@@ -257,7 +281,7 @@ class Calibration:
 
         Returns:
             The distorted image points.
-        '''
+        """
 
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
         D = np.array(self.intrinsics.distortion)
@@ -280,7 +304,7 @@ class Calibration:
     def from_points(
         world_points: list[Point3d], image_points: list[Point], image_size: ImageSize, f0: float,
             rational_model: bool = False, camera_model: CameraModel = CameraModel.PINHOLE) -> Calibration:
-        '''
+        """
         Estimates the camera calibration from corresponding world and image points.
 
         Arguments:
@@ -293,7 +317,7 @@ class Calibration:
 
         Returns:
             The estimated camera calibration.
-        '''
+        """
 
         if rational_model and camera_model != CameraModel.PINHOLE:
             raise ValueError(
@@ -352,7 +376,7 @@ class Calibration:
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 
     def undistorted_camera_matrix(self, crop=False) -> np.ndarray:
-        '''
+        """
         Computes the camera matrix for the undistorted image.
 
         Arguments:
@@ -360,7 +384,7 @@ class Calibration:
 
         Returns:
             The camera matrix for the undistorted image.
-        '''
+        """
         K = np.array(self.intrinsics.matrix)
         D = np.array(self.intrinsics.distortion)
         h, w = self.intrinsics.size.height, self.intrinsics.size.width
@@ -386,7 +410,7 @@ class Calibration:
         return newcameramtx
 
     def undistort_array(self, image_array: np.ndarray, crop=False) -> np.ndarray:
-        '''
+        """
         Undistorts an image represented as a numpy array.
         The image is expected to be decoded (in particular not encoded bytes of a jpg image).
 
@@ -396,7 +420,7 @@ class Calibration:
 
         Returns:
             The undistorted image.
-        '''
+        """
         if image_array.shape[0] != self.intrinsics.size.height or image_array.shape[1] != self.intrinsics.size.width:
             log.warning('Image size does not match calibration size (image: %s, calibration: %s)',
                         image_array.shape, self.intrinsics.size)
@@ -442,7 +466,7 @@ class Calibration:
         return dst
 
     def undistorted_size(self, size: ImageSize) -> ImageSize:
-        '''
+        """
         Computes the size of the undistorted image after cropping.
 
         Arguments:
@@ -450,7 +474,7 @@ class Calibration:
 
         Returns:
             The size of the undistorted image.
-        '''
+        """
         if self.intrinsics.model == CameraModel.FISHEYE:
             return size
         if self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
@@ -464,7 +488,7 @@ class Calibration:
         return ImageSize(width=w, height=h)
 
     def undistort_image(self, image: Image) -> Image:
-        '''
+        """
         Undistorts an image represented as an Image object.
         If you already have the image as an unencoded numpy array, use undistort_array instead.
 
@@ -473,7 +497,7 @@ class Calibration:
 
         Returns:
             The undistorted image.
-        '''
+        """
 
         array = image.to_array()
         if array is None:
