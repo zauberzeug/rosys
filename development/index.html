@@ -1422,12 +1422,20 @@ The UI element <code>track.ui()</code> will show the stack of functions that are
 <p>We run our continuous integration with GitHub Actions.
 For each commit the pytests are executed.</p>
 <h2 id="releases">Releases<a class="headerlink" href="#releases" title="Permanent link">&para;</a></h2>
-<p>We publish releases by creating a new version on GitHub and describe the changes.
-A GitHub Action then performs the following steps:</p>
-<ul>
+<p>We publish releases using tags and milestones on GitHub. In the Release notes we describe our changes.
+To create a new release perform the following steps:</p>
+<ol>
+<li><code>./fetch_milestone.py {0.x.y}</code> with the current milestone name that is to be published.</li>
+<li>Edit the text the script produces with more details and more mentions of people that participated.</li>
+<li>In your local repo add a new tag with <code>v0.{x.y}</code> as the name to the current main head.</li>
+<li>Push to GitHub which starts GitHub Action that performs the following steps:</li>
 <li>If the pytests are successful, a poetry build and deployment to <a href="https://pypi.org/project/rosys/">pypi</a> is issued.</li>
 <li>A multi-arch Docker image is built and pushed to <a href="https://hub.docker.com/r/zauberzeug/rosys">Docker Hub</a>.</li>
-</ul>
+<li>Close the milestone on GitHub.</li>
+<li>Create a new milestone on GitHub with the next version (<code>0.{x.y+1}</code>).</li>
+<li>Wait for the GitHub Action that was started with your push to finish.</li>
+<li>Edit the draft of Release notes with the text you created at step 2.</li>
+</ol>
 
 
 
