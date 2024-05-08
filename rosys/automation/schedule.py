@@ -200,8 +200,8 @@ class Schedule(persistence.PersistentModule):
     def update_sun_limits(self) -> None:
         if self.location:
             sun = suntime.Sun(lat=self.location[0], lon=self.location[1])
-            start_time = sun.get_sunrise_time(datetime.now()) + timedelta(minutes=self.sunrise_offset)
-            stop_time = sun.get_sunset_time(datetime.now()) + timedelta(minutes=self.sunset_offset)
+            start_time = sun.get_sunrise_time(datetime.now()).astimezone() + timedelta(minutes=self.sunrise_offset)
+            stop_time = sun.get_sunset_time(datetime.now()).astimezone() + timedelta(minutes=self.sunset_offset)
             self._sun_start_hour = start_time.hour + start_time.minute / 60 + start_time.second / 60 / 60
             self._sun_stop_hour = stop_time.hour + stop_time.minute / 60 + stop_time.second / 60 / 60
         else:
