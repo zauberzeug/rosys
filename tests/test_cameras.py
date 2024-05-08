@@ -37,8 +37,8 @@ async def test_rtsp_camera():
         raise
     if len(connected_uids) == 0:
         pytest.skip('No RTSP camera detected. This test requires a physical RTSP camera on the local network.')
-    camera = RtspCamera(id=connected_uids[0])
-    await camera.connect()
+    camera = RtspCamera(id=connected_uids[0][0], connect_after_init=False)
+    await camera.connect(ip=connected_uids[0][1])
     assert camera.is_connected
     await camera.capture_image()
     assert len(camera.images) == 1
