@@ -145,7 +145,7 @@ class Automator:
         self.stop(because)
         self.enabled = False
 
-    def set_default_automation(self, default_automation: Callable) -> None:
+    def set_default_automation(self, default_automation: Callable | None) -> None:
         """Sets the default automation.
 
         You can pass a function that returns a new coroutine on every call.
