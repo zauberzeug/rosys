@@ -9,11 +9,12 @@ from .vendors import VendorType, mac_to_vendor
 
 
 def get_network_interface() -> str | None:
+    """Return the first network interface that is not a loopback or virtual interface."""
     for interface in netifaces.interfaces():
-        if any((interface.startswith(prefix) for prefix in ['lo', 'can', 'docker', 'veth', 'br'])):
+        if any(interface.startswith(prefix) for prefix in ['lo', 'can', 'docker', 'veth', 'br']):
             continue
         addresses = netifaces.ifaddresses(interface)
-        if not netifaces.AF_INET in addresses:
+        if netifaces.AF_INET not in addresses:
             continue
         return interface
     return None
@@ -34,7 +35,7 @@ async def run_arp_scan() -> str:
         cmd += f' -I {interface}'
     output = await rosys.run.sh(cmd, timeout=10)
 
-    if 'sudo' in output and not 'name resolution' in output:
+    if 'sudo' in output and 'name resolution' not in output:
         raise RuntimeError('Could not run arp-scan! Make sure it is installed and can be run with sudo.'
                            'Try running sudo visudo and add the following line: "rosys ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan"')
     if 'Could not obtain MAC address for interface' in output:
