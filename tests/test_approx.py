@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
 import pytest
-from rosys.test import approx
+
+from rosys.testing import approx
 
 
 def test_approx_bools():
@@ -63,4 +64,5 @@ def test_approx_dataclasses_with_kw_and_slots():
         x: float
     approx(A(x=1), A(x=1))
     with pytest.raises(AssertionError):
+        approx(A(x=1), A(x=2))
         approx(A(x=1), A(x=2))

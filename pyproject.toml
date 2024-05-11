@@ -73,3 +73,14 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
 ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+# NOTE: changing default location of pytest_cache because the uvicorn file watcher somehow triggered too many reloads
+cache_dir = "../.pytest_cache" 
+testpaths = [
+    "tests"
+]
+
+[tool.poetry.plugins.pytest11]
+pytest-rosys = "rosys.testing.fixtures"

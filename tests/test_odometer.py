@@ -1,8 +1,9 @@
 import numpy as np
+
 from rosys.driving import Odometer
 from rosys.event import Event
 from rosys.geometry import Pose, Velocity
-from rosys.test import approx
+from rosys.testing import approx
 
 
 class DummyVelocityProvider:
@@ -37,4 +38,5 @@ def test_odometry_frame():
     local_pose = Pose(x=2.0, y=-0.5, yaw=np.deg2rad(45), time=1)
     detection = Pose(x=1.5, y=4.0, yaw=np.deg2rad(135), time=2)
     odometry_frame = Odometer._compute_odometry_frame(local_pose, detection)
+    approx(odometry_frame, Pose(x=1.0, y=2.0, yaw=np.deg2rad(90), time=2))
     approx(odometry_frame, Pose(x=1.0, y=2.0, yaw=np.deg2rad(90), time=2))
