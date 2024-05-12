@@ -39,4 +39,3 @@ def test_odometry_frame():
     detection = Pose(x=1.5, y=4.0, yaw=np.deg2rad(135), time=2)
     odometry_frame = Odometer._compute_odometry_frame(local_pose, detection)
     approx(odometry_frame, Pose(x=1.0, y=2.0, yaw=np.deg2rad(90), time=2))
-    approx(odometry_frame, Pose(x=1.0, y=2.0, yaw=np.deg2rad(90), time=2))
