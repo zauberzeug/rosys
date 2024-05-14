@@ -16,7 +16,7 @@ class MjpegDevice:
     def __init__(self, mac: str, ip: str, *,
                  index: Optional[int] = None,
                  username: Optional[str] = None, password: Optional[str] = None,
-                 control_port: Optional[int] = 8885) -> None:
+                 control_port: int = 8885) -> None:
         self.mac = mac
         self.ip = ip
         self.capture_task: Optional[Task] = None
