@@ -27,6 +27,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         super().__init__(id=id,
                          name=name,
                          connect_after_init=connect_after_init,
+                         polling_interval=1.0/fps,
                          streaming=streaming,
                          **kwargs)
 
@@ -106,6 +107,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         if self.device is None or self.device.settings_interface is None:
             return
         self.device.settings_interface.set_fps(stream_id=self.jovision_profile, fps=fps)
+        self.polling_interval = 1.0 / fps
 
     def get_fps(self) -> Optional[int]:
         if self.device is None or self.device.settings_interface is None:
