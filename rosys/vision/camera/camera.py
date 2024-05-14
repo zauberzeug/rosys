@@ -47,7 +47,7 @@ class Camera(abc.ABC):
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
-                 image_grab_interval: float = 0.1,
+                 polling_interval: float = 0.1,
                  base_path_overwrite: Optional[str] = None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
@@ -73,11 +73,19 @@ class Camera(abc.ABC):
         async def stream() -> None:
             if self.streaming:
                 await self.capture_image()
-        self.image_loop = Repeat(interval=image_grab_interval, handler=stream)
+        self.image_loop = Repeat(interval=polling_interval, handler=stream)
         self.image_loop.start()
 
     def __del__(self):
         self.image_loop.stop()
+
+    @property
+    def polling_interval(self) -> float:
+        return self.image_loop.interval
+
+    @polling_interval.setter
+    def polling_interval(self, interval: float) -> None:
+        self.image_loop.interval = interval
 
     def get_image_url(self, image: Image) -> str:
         return f'{self.base_path}/{image.time}'
