@@ -67,8 +67,8 @@ class Image:
             data=encoded_image.tobytes(),
         )
 
-    def to_array(self) -> Optional[np.ndarray]:
+    def to_array(self) -> np.ndarray:
         if self.data is None:
-            return None
+            raise ValueError('Image data is None')
 
         return cv2.imdecode(np.frombuffer(self.data, dtype=np.uint8), cv2.IMREAD_COLOR)
