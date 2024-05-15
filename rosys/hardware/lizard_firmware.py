@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 class LizardFirmware:
     GITHUB_URL = 'https://api.github.com/repos/zauberzeug/lizard/releases/latest'
     PATH = Path('~/.lizard').expanduser()
+    PATH.mkdir(exist_ok=True)
 
     def __init__(self, robot_brain: 'RobotBrain') -> None:
         self.log = logging.getLogger('rosys.lizard_firmware')

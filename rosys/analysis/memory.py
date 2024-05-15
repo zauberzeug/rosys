@@ -37,7 +37,7 @@ def get_process_memory() -> int:
     return mem_info.rss
 
 
-def get_humanreadable_process_memory() -> int:
+def get_humanreadable_process_memory() -> str:
     return bytes2human(get_process_memory())
 
 
