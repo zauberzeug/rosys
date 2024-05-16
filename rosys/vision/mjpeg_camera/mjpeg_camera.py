@@ -19,14 +19,13 @@ class MjpegCamera(TransformableCamera):
                  name: str | None = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
-                 image_grab_interval: float = 0.1,
                  base_path_overwrite: str | None = None,
                  username: str | None = None,
                  password: str | None = None,
                  **kwargs: Any,
                  ) -> None:
         super().__init__(id=id, name=name, connect_after_init=connect_after_init, streaming=streaming,
-                         image_grab_interval=image_grab_interval, base_path_overwrite=base_path_overwrite, **kwargs)
+                         polling_interval=0.1, base_path_overwrite=base_path_overwrite, **kwargs)
         self.username = username
         self.password = password
 
