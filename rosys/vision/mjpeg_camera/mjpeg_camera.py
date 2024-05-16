@@ -95,34 +95,30 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
         self._add_image(Image(camera_id=self.id, data=image, time=rosys.time(), size=final_image_resolution))
 
-    def _set_fps(self, fps: int) -> None:
+    async def _set_fps(self, fps: int) -> None:
         if self.device is None:
             raise ValueError('Device is not connected')
         assert self.device.settings_interface is not None
 
-        asyncio.create_task(self.device.settings_interface.set_fps(fps))
+        await self.device.settings_interface.set_fps(fps)
 
-    def _get_fps(self) -> int:
+    async def _get_fps(self) -> int:
         if self.device is None:
             raise ValueError('Device is not connected')
         assert self.device.settings_interface is not None
 
-        task = asyncio.create_task(self.device.settings_interface.get_fps())
+        return await self.device.settings_interface.get_fps()
 
-        return task.result()
-
-    def _set_resolution(self, resolution: tuple[int, int]) -> None:
+    async def _set_resolution(self, resolution: tuple[int, int]) -> None:
         if self.device is None:
             raise ValueError('Device is not connected')
         assert self.device.settings_interface is not None
 
-        asyncio.create_task(self.device.settings_interface.set_stream_resolution(*resolution))
+        await self.device.settings_interface.set_stream_resolution(*resolution)
 
-    def _get_resolution(self) -> tuple[int, int]:
+    async def _get_resolution(self) -> tuple[int, int]:
         if self.device is None:
             raise ValueError('Device is not connected')
         assert self.device.settings_interface is not None
 
-        task = asyncio.create_task(self.device.settings_interface.get_stream_resolution())
-
-        return task.result()
+        return await self.device.settings_interface.get_stream_resolution()
