@@ -19,8 +19,10 @@ def get_network_adapter() -> str | None:
     return None
 
 
-async def run_arp_scan() -> str:
-    """Run an arp-scan on the given interface and return the output."""
+async def run_arp_scan(interface: Optional[str] = None) -> str:
+    """Run an arp-scan on the given interface and return the output.
+    :param interface: The network interface to use for the arp-scan.
+    """
     if sys.platform.startswith('darwin'):
         arpscan_cmd = 'arp-scan'
     else:
@@ -29,9 +31,13 @@ async def run_arp_scan() -> str:
         arpscan_cmd = f'sudo {arpscan_cmd}'
 
     cmd = f'{arpscan_cmd} --localnet'
-    adapter = get_network_adapter()
-    if adapter is not None:
-        cmd += f' -I {adapter}'
+    if interface:
+        cmd += f' --interface={interface}'
+    else:
+        adapter = get_network_adapter()
+        if adapter:
+            cmd += f' -I {adapter}'
+
     output = await rosys.run.sh(cmd, timeout=10)
 
     if 'sudo' in output and 'name resolution' not in output:
@@ -42,9 +48,11 @@ async def run_arp_scan() -> str:
     return output
 
 
-async def find_cameras() -> AsyncIterator[tuple[str, str]]:
-    """Find all cameras in the local network and return MAC and IP addresses."""
-    output = await run_arp_scan()
+async def find_cameras(network_interface: Optional[str] = None) -> AsyncIterator[tuple[str, str]]:
+    """Find all cameras in the local network and return MAC and IP addresses.
+    :param network_interface: The network interface to use for the arp-scan.
+    """
+    output = await run_arp_scan(interface=network_interface)
     if 'ERROR' in output:
         return
     for line in output.splitlines():
@@ -58,14 +66,16 @@ async def find_cameras() -> AsyncIterator[tuple[str, str]]:
         yield mac, ip
 
 
-async def find_known_cameras() -> list[tuple[str, str]]:
-    """Find all cameras of known vendors and return MAC addresses."""
-    return [(mac, ip) async for mac, ip in find_cameras() if mac_to_vendor(mac) != VendorType.OTHER]
+async def find_known_cameras(network_interface: Optional[str] = None) -> list[tuple[str, str]]:
+    """Find all cameras of known vendors and return MAC addresses.
+    :param network_interface: The network interface to use for the arp-scan.
+    """
+    return [(mac, ip) async for mac, ip in find_cameras(network_interface=network_interface) if mac_to_vendor(mac) != VendorType.OTHER]
 
 
-async def find_ip(mac: str) -> Optional[str]:
+async def find_ip(mac: str, network_interface: Optional[str] = None) -> Optional[str]:
     """Find the IP address of a camera with the given MAC address."""
-    async for mac_, ip in find_cameras():
+    async for mac_, ip in find_cameras(network_interface=network_interface):
         if mac_ == mac:
             return ip
     return None
