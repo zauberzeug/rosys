@@ -12,32 +12,6 @@ from ..image import Image
 from ..image_route import create_image_route
 
 
-class Repeat:
-    def __init__(self, interval: float, handler: Callable[[], Coroutine[None, None, None]], **kwargs) -> None:
-        self.interval = interval
-        self.task: asyncio.Task | None = None
-        self.handler = handler
-        self.kwargs = kwargs
-
-    def start(self) -> None:
-        async def repeat() -> None:
-            while True:
-                call_start = rosys.time()
-                await self.handler(**self.kwargs)
-
-                await asyncio.sleep(self.interval - (rosys.time() - call_start))
-
-        if asyncio.get_event_loop().is_running():
-            self.task = asyncio.create_task(repeat())
-        else:
-            rosys.on_startup(self.start)
-
-    def stop(self) -> None:
-        if self.task:
-            self.task.cancel()
-            self.task = None
-
-
 class Camera(abc.ABC):
     MAX_IMAGES = 256
 
@@ -73,7 +47,7 @@ class Camera(abc.ABC):
         async def stream() -> None:
             if self.streaming:
                 await self.capture_image()
-        self.image_loop = Repeat(interval=polling_interval, handler=stream)
+        self.image_loop = rosys.Repeater(interval=polling_interval, handler=stream)
         self.image_loop.start()
 
     def __del__(self):

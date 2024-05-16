@@ -140,6 +140,51 @@ def on_repeat(handler: Callable, interval: float) -> None:
         repeat_handlers.append((handler, interval))
 
 
+class Repeater:
+    def __init__(self, interval: float, handler: Callable, **kwargs) -> None:
+        self.interval = interval
+        self.task: asyncio.Task | None = None
+        self.handler = handler
+        self.kwargs = kwargs
+
+    def start(self) -> None:
+        async def repeat() -> None:
+            while True:
+                start = time()
+                try:
+                    if is_stopping():
+                        log.info('%s must be stopped', self.handler)
+                        break
+                    await invoke(self.handler, **self.kwargs)
+                    dt = time() - start
+                except (asyncio.CancelledError, GeneratorExit):
+                    return
+                except Exception:
+                    dt = time() - start
+                    log.exception('error in "%s"', self.handler.__qualname__)
+                    if self.interval == 0 and dt < 0.1:
+                        delay = 0.1 - dt
+                        log.warning(
+                            f'"{self.handler.__qualname__}" would be called to frequently ' +
+                            f'because it only took {dt*1000:.0f} ms; ' +
+                            f'delaying this step for {delay*1000:.0f} ms')
+                        await sleep(delay)
+                try:
+                    await sleep(self.interval - dt)
+                except (asyncio.CancelledError, GeneratorExit):
+                    return
+
+        if tasks:
+            self.task = background_tasks.create(repeat())
+        else:
+            on_startup(self.start)
+
+    def stop(self) -> None:
+        if self.task:
+            self.task.cancel()
+            self.task = None
+
+
 def on_startup(handler: Callable) -> None:
     if tasks:  # RoSys is already running
         _run_handler(handler)
