@@ -1,6 +1,40 @@
-import socket
-import struct
+import asyncio
 import logging
+import struct
+
+
+# async with enter exit interface for TCP connections that provides clean read/write methods
+class AsyncTcpClient:
+
+    def __init__(self, ip: str, port: int):
+        self.ip = ip
+        self.port = port
+        self.reader = None
+        self.writer = None
+
+    async def __aenter__(self):
+        self.reader, self.writer = await asyncio.open_connection(self.ip, self.port)
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        assert self.writer is not None
+        self.writer.close()
+        await self.writer.wait_closed()
+
+    async def read(self, n_bytes: int, timeout_s=3) -> bytes:
+        assert self.reader is not None
+        data = await asyncio.wait_for(self.reader.read(n_bytes), timeout_s)
+        if not data:
+            raise TimeoutError("No response received within timeout")
+        if not len(data) == n_bytes:
+            raise RuntimeError("Received response with unexpected length %d", len(data))
+
+        return data
+
+    async def write(self, message: bytes):
+        assert self.writer is not None
+        self.writer.write(message)
+
 
 class MotecSettingsInterface:
     def __init__(self, ip: str, port: int):
@@ -8,92 +42,86 @@ class MotecSettingsInterface:
         self.port = port
 
         self.log = logging.getLogger("MotecSettingsInterface")
-        self.log.setLevel(logging.DEBUG)
 
-        self._connect()
-    
-    def __del__(self):
-        self._disconnect()
+        self.cooldown = 0.2
+        self.cooldown_time = 0.0
 
-    def _connect(self):
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s.connect((self.ip, self.port))
-        self.s.setblocking(True)
+        self.event_loop = asyncio.get_event_loop()
 
-        self.log.debug("Connected to %s:%d", self.ip, self.port)
-
-    def _disconnect(self):
-        self.s.close()
-
-    def _construct_message(self, command_id: int, value_id: int, values: 'list[int]'):
+    def _construct_message(self, command_id: int, value_id: int, values: list[int]):
         n_value_bytes = len(values)
-        if n_value_bytes > 8:
+        if n_value_bytes > 6:
             raise ValueError("Too many values provided")
-        
-        v = [0]*8
+
+        v = [0]*6
         for i, value in enumerate(values):
             v[i] = value
-        
-        return struct.pack('B'*14, 48, 2, command_id, n_value_bytes+1, value_id, 0, *v)
 
-    def _get_value(self, value_id: int) -> bytearray:
+        return struct.pack('B'*12, 48, 2, command_id, n_value_bytes+1, value_id, 0, *v)
+
+    async def _get_value(self, value_id: int, timeout_s=3) -> bytearray:
         message = self._construct_message(70, value_id, [])
         self.log.debug("Sending message [get]: %s", message)
-        self.s.send(message)
 
-        data = self.s.recv(1024)
-        values = struct.unpack('B'*12, data)[6:]
+        # send message
+        async with AsyncTcpClient(ip=self.ip, port=self.port) as client:
+            await client.write(message)
+
+            n_receive_bytes = 12
+
+            # receive response asynchronously with timeout
+            data = await client.read(n_receive_bytes, timeout_s)
+
+        values = struct.unpack('B'*n_receive_bytes, data)[6:]
         self.log.debug("Received message [get]: %s", values)
+
+        self.cooldown_time = self.event_loop.time() + self.cooldown
+
         return bytearray(values)
-    
-    def _set_value(self, value_id: int, values: list[int] | int):
+
+    async def _set_value(self, value_id: int, values: list[int] | int):
         if isinstance(values, int):
             values = [values]
 
         message = self._construct_message(38, value_id, values)
         self.log.debug("Sending message [set]: %s", message)
-        self.s.send(message)
+        # send message
+        async with AsyncTcpClient(ip=self.ip, port=self.port) as client:
+            await client.write(message)
 
-    def get_fps(self):
-        return self._get_value(178)[0]
+        self.cooldown_time = asyncio.get_event_loop().time() + self.cooldown
 
-    def set_fps(self, fps: int):
-        self._set_value(178, fps)
+    async def get_fps(self):
+        return (await self._get_value(178))[0]
 
-    def get_stream_compression(self):
-        return self._get_value(177)[0]
-    
-    def set_stream_compression(self, level: int):
+    async def set_fps(self, fps: int):
+        await self._set_value(178, fps)
+
+    async def get_stream_compression(self):
+        return (await self._get_value(177))[0]
+
+    async def set_stream_compression(self, level: int):
         if level < 1 or level > 4:
             raise ValueError("Compression level must be between 1 and 4")
 
-        self._set_value(177, level)
+        await self._set_value(177, level)
 
-    def get_stream_resolution(self) -> tuple[int, int]:
-        wmsb, wlsb, hmsb, hlsb = self._get_value(179)[:4]
+    async def get_stream_resolution(self) -> tuple[int, int]:
+        wmsb, wlsb, hmsb, hlsb = (await self._get_value(179))[:4]
         return (wmsb << 8) + wlsb, (hmsb << 8) + hlsb
-    
-    def set_stream_resolution(self, width: int, height: int):
+
+    async def set_stream_resolution(self, width: int, height: int):
         wmsb = width >> 8
         wlsb = width & 0xFF
         hmsb = height >> 8
         hlsb = height & 0xFF
-        self._set_value(179, [wmsb, wlsb, hmsb, hlsb])
+        await self._set_value(179, [wmsb, wlsb, hmsb, hlsb])
 
-    def get_stream_port(self) -> int:
-        pmsb, plsb = self._get_value(200)[:2]
+    async def get_stream_port(self) -> int:
+        pmsb, plsb = (await self._get_value(200))[:2]
         return (pmsb << 8) + plsb
-    
-    def set_stream_port(self, port: int):
+
+    async def set_stream_port(self, port: int):
         pmsb = port >> 8
         plsb = port & 0xFF
-        self._set_value(200, [pmsb, plsb])
-
-    def request_image(self):
-        """
-        Requests the camera to send an image if it is considered to only send images on request
-        """
-        message = self._construct_message(40, 185, [0]*8)
-        self.s.send(message)
-
-
+        await self._set_value(200, [pmsb, plsb])
