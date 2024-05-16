@@ -1,11 +1,12 @@
+import asyncio
 import logging
 from asyncio import Task
 from io import BytesIO
 from typing import AsyncGenerator, Optional
 
 import httpx
-from nicegui import background_tasks
 
+from ...rosys import on_startup
 from ..image_processing import remove_exif
 from .motec_settings_interface import MotecSettingsInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
@@ -15,7 +16,8 @@ class MjpegDevice:
 
     def __init__(self, mac: str, ip: str, *,
                  index: Optional[int] = None,
-                 username: Optional[str] = None, password: Optional[str] = None,
+                 username: Optional[str] = None,
+                 password: Optional[str] = None,
                  control_port: int = 8885) -> None:
         self.mac = mac
         self.ip = ip
@@ -34,7 +36,11 @@ class MjpegDevice:
         self.start_capture_task()
 
     def start_capture_task(self):
-        self.capture_task = background_tasks.create(self.run_capture_task(), name=f'capture {self.mac}')
+        loop = asyncio.get_event_loop()
+        if loop:
+            self.capture_task = loop.create_task(self.run_capture_task())
+        else:
+            on_startup(self.start_capture_task)
 
     async def restart_capture(self) -> None:
         self.shutdown()
