@@ -3,7 +3,7 @@ import pytest
 
 import rosys
 from rosys.hardware import Robot, Wheels, WheelsSimulation
-from rosys.test import assert_pose, forward
+from rosys.testing import assert_pose, forward
 
 
 @pytest.mark.usefixtures('odometer')

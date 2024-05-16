@@ -12,14 +12,12 @@ from functools import partial, wraps
 from pathlib import Path
 from typing import Any, Callable, Generator, Optional
 
-from psutil import Popen
-
 from .helpers import is_stopping, is_test
 
 process_pool = ProcessPoolExecutor()
 thread_pool = ThreadPoolExecutor(thread_name_prefix='run.py thread_pool')
 running_cpu_bound_processes: list[str] = []  # NOTE is used in tests to advance time slower until computation is done
-running_sh_processes: list[Popen] = []
+running_sh_processes: list[subprocess.Popen] = []
 log = logging.getLogger('rosys.run')
 
 
@@ -121,7 +119,7 @@ async def sh(command: list[str] | str, *,
         return ''
 
 
-def _kill(proc: Popen) -> None:
+def _kill(proc: subprocess.Popen) -> None:
     try:
         os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
         log.info('sent SIGTERM to %s', proc.pid)
@@ -129,7 +127,7 @@ def _kill(proc: Popen) -> None:
             proc.wait(timeout=5)  # wait for 5 seconds
         except subprocess.TimeoutExpired:
             os.killpg(os.getpgid(proc.pid), signal.SIGKILL)  # force kill if process didn't terminate
-            log.info(f'sent SIGKILL to %s', proc.pid)
+            log.info('sent SIGKILL to %s', proc.pid)
             proc.wait()  # ensure the process is reaped
     except ProcessLookupError:
         pass
@@ -146,7 +144,7 @@ def tear_down() -> None:
     running_sh_processes.clear()
     if not is_test():
         log.info('teardown process_pool...')
-        for process in process_pool._processes.values():  # pylint: disable=protected-access
-            process.kill()
+        for process_ in process_pool._processes.values():  # pylint: disable=protected-access
+            process_.kill()
         process_pool.shutdown(wait=True, cancel_futures=True)
     log.info('teardown complete.')

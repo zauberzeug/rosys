@@ -145,6 +145,13 @@ class Automator:
         self.stop(because)
         self.enabled = False
 
+    def set_default_automation(self, default_automation: Callable | None) -> None:
+        """Sets the default automation.
+
+        You can pass a function that returns a new coroutine on every call.
+        """
+        self.default_automation = default_automation
+
     def _handle_exception(self, e: Exception) -> None:
         self.stop(because='an exception occurred in an automation')
         self.AUTOMATION_FAILED.emit(str(e))

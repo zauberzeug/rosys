@@ -3,7 +3,7 @@ from datetime import timedelta
 import pytest
 
 from rosys.analysis import Day, KpiLogger, date_to_str, str_to_date
-from rosys.test import forward
+from rosys.testing import forward
 
 
 async def test_log_incident(kpi_logger: KpiLogger):

@@ -11,7 +11,7 @@ from rosys.geometry import Point, Pose, Prism, Spline
 from rosys.hardware import Robot
 from rosys.pathplanning import Obstacle, PathPlanner
 from rosys.pathplanning.delaunay_planner import DelaunayPlanner
-from rosys.test import assert_point, forward
+from rosys.testing import assert_point, forward
 
 
 def create_obstacle(*, x: float, y: float, radius: float = 0.5) -> Obstacle:

@@ -1,6 +1,6 @@
 import pytest
 
-pytest.register_assert_rewrite('rosys.test.helpers')  # nopep8
+pytest.register_assert_rewrite('rosys.testing.helpers')  # nopep8
 
 # pylint: disable=wrong-import-position
 from . import log_configuration
