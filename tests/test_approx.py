@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 
 import pytest
-from rosys.test import approx
+
+from rosys.testing import approx
 
 
 def test_approx_bools():

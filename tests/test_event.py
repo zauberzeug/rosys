@@ -2,7 +2,7 @@ import pytest
 
 import rosys
 from rosys.event import Event
-from rosys.test import forward
+from rosys.testing import forward
 
 TEST_EVENT = Event()
 

@@ -19,7 +19,7 @@ class Automator:
     (e.g. via an "Play"-button like offered by the [automation controls](https://rosys.io/reference/rosys/automation/#rosys.automation.automation_controls)). 
     The passed function should return a new coroutine on every call (see [Play-pause-stop](https://rosys.io/examples/play-pause-stop/) example).
 
-    _on_interrupt_: Optional callback that will be called when an automation pauses or stops.
+    _on_interrupt_: Optional callback that will be called when an automation pauses or stops (the cause is provided as string parameter).
     """
 
     def __init__(self,
@@ -55,8 +55,8 @@ class Automator:
             steerer.STEERING_STARTED.register(lambda: self.pause(because='steering started'))
 
         if on_interrupt:
-            self.AUTOMATION_PAUSED.register(lambda _: rosys.background_tasks.create(cast(Callable, on_interrupt)()))
-            self.AUTOMATION_STOPPED.register(lambda _: rosys.background_tasks.create(cast(Callable, on_interrupt)()))
+            self.AUTOMATION_PAUSED.register(on_interrupt)
+            self.AUTOMATION_STOPPED.register(on_interrupt)
 
         rosys.on_shutdown(lambda: self.stop(because='automator is shutting down'))
 
@@ -144,6 +144,13 @@ class Automator:
         """
         self.stop(because)
         self.enabled = False
+
+    def set_default_automation(self, default_automation: Callable | None) -> None:
+        """Sets the default automation.
+
+        You can pass a function that returns a new coroutine on every call.
+        """
+        self.default_automation = default_automation
 
     def _handle_exception(self, e: Exception) -> None:
         self.stop(because='an exception occurred in an automation')

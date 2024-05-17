@@ -11,7 +11,7 @@ from rosys.helpers import PackagePathFilter
 class RosysFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
-        from rosys.test.helpers import odometer as odo  # pylint: disable=import-outside-toplevel
+        from rosys.testing.helpers import odometer as odo  # pylint: disable=import-outside-toplevel
         if odo:
             record.rosys_time = rosys.time()
             record.robot_pose = f'{odo.prediction.x:.2f}, {odo.prediction.y:1.2f}, {odo.prediction.yaw_deg:1.2f}'
