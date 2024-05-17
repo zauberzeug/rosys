@@ -12,11 +12,12 @@ from .vendors import VendorType, mac_to_vendor
 
 class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentModule):
 
-    def __init__(self, username: Optional[str] = None, password: Optional[str] = None) -> None:
+    def __init__(self, username: Optional[str] = None, password: Optional[str] = None, network_interface: Optional[str] = None) -> None:
         super().__init__()
 
         self.username = username
         self.password = password
+        self.network_interface = network_interface
 
         self.log = logging.getLogger('rosys.mjpeg_camera_provider')
         rosys.on_shutdown(self.shutdown)
@@ -33,7 +34,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
 
     async def scan_for_cameras(self) -> list[tuple[str, str]]:
         ids_ips: list[tuple[str, str]] = []
-        async for mac, ip in find_cameras():
+        async for mac, ip in find_cameras(self.network_interface):
             vendor = mac_to_vendor(mac)
             if vendor == VendorType.OTHER:
                 continue
@@ -49,8 +50,11 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
                     self.log.warning('Error while looking for cameras at axis router (%s): %s', url, e)
                     continue
                 if response.status_code != 200:
+                    self.log.warning('Error while looking for cameras at axis router (%s): %s', url, response.text)
                     continue
 
+                self.log.debug('found axis camera at ip %s', ip)
+                self.log.debug('video status:\n"%s\n"', response.text)
                 camera_infos = response.text.split('\n')
                 for info_line in camera_infos:
                     if info_line.endswith(' = video'):
