@@ -45,6 +45,7 @@ class _state:
     time = start_time
     last_time_request: float = start_time
     exception: Optional[BaseException] = None  # NOTE: used for tests
+    startup_finished: bool = False
 
 
 def get_last_exception() -> Optional[BaseException]:
@@ -136,8 +137,15 @@ class Repeater:
         self._task: asyncio.Task | None = None
 
     def start(self) -> None:
-        self._task = background_tasks.create(self._repeat())
-        self.tasks.add(self._task)
+        if self.running:
+            return
+        if _state.startup_finished:
+            print('starting', self.handler.__name__)
+            self._task = background_tasks.create(self._repeat())
+            self.tasks.add(self._task)
+        else:
+            print('adding to startup_handlers', self.handler.__name__)
+            startup_handlers.append(self.start)
 
     async def _repeat(self) -> None:
         await sleep(self.interval)  # NOTE delaying first execution so not all actors rush in at the same time
@@ -167,10 +175,18 @@ class Repeater:
                 return
 
     def stop(self) -> None:
-        if self._task:
+        if not self._task:
+            return
+
+        if not self._task.done():
             self._task.cancel()
-            self.tasks.remove(self._task)
-            self._task = None
+
+        self.tasks.remove(self._task)
+        self._task = None
+
+    @property
+    def running(self) -> bool:
+        return self._task is not None and not self._task.done()
 
     @staticmethod
     def stop_all() -> None:
@@ -180,15 +196,12 @@ class Repeater:
 
 def on_repeat(handler: Callable, interval: float) -> Repeater:
     repeater = Repeater(handler, interval)
-    if tasks:  # RoSys is already running
-        repeater.start()
-    else:
-        startup_handlers.append(repeater.start)
+    repeater.start()
     return repeater
 
 
 def on_startup(handler: Callable) -> None:
-    if tasks:  # RoSys is already running
+    if _state.startup_finished:
         _run_handler(handler)
     else:
         startup_handlers.append(handler)
@@ -199,13 +212,15 @@ def on_shutdown(handler: Callable) -> None:
 
 
 async def startup() -> None:
-    if tasks:
+    if _state.startup_finished:
         raise RuntimeError('should be only executed once')
     if multiprocessing.get_start_method() != 'spawn':
         raise RuntimeError(
             'multiprocessing start method must be "spawn"; see https://pythonspeed.com/articles/python-multiprocessing/')
 
     persistence.restore()
+
+    _state.startup_finished = True
 
     for handler in startup_handlers:
         _run_handler(handler)
@@ -246,7 +261,7 @@ async def shutdown() -> None:
     log.debug('canceling all remaining tasks')
     for task in tasks:
         task.cancel()
-    log.debug('clearing tasks')
+    logging.debug('clearing tasks')
     tasks.clear()
 
     # NOTE: kill own process and all its children after uvicorn has finished (we had many restart freezes before)
@@ -267,15 +282,16 @@ def reset_before_test() -> None:
 def reset_after_test() -> None:
     assert is_test
     startup_handlers.clear()
-    # Repeater.tasks[3:] = []  # NOTE: remove all but internal handlers
+    tasks.clear()
+    _state.startup_finished = False
     shutdown_handlers.clear()
     event.reset()
 
 
 gc.disable()  # NOTE disable automatic garbage collection to optimize performance
-on_repeat(_garbage_collection, 10 * 60)
-on_repeat(_watch_emitted_events, 0.1)
-on_repeat(persistence.backup, 10)
+garbage_collector = on_repeat(_garbage_collection, 10 * 60)
+watch_emitted_events = on_repeat(_watch_emitted_events, 0.1)
+persistence_backup = on_repeat(persistence.backup, 10)
 
 app.on_startup(startup)
 app.on_shutdown(shutdown)
