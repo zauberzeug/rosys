@@ -8,7 +8,6 @@ from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image
 from ..image_processing import get_image_size_from_bytes, process_jpeg_image
-from .arp_scan import find_ip
 from .rtsp_device import RtspDevice
 
 
@@ -22,6 +21,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                  streaming: bool = True,
                  fps: int = 5,
                  jovision_profile: int = 1,
+                 ip: Optional[str] = None,
                  **kwargs,
                  ) -> None:
         super().__init__(id=id,
@@ -30,8 +30,11 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                          streaming=streaming,
                          **kwargs)
 
+        self.logger = logging.getLogger(f'rosys.vision.rtsp_camera.{self.id}')
+
         self.device: Optional[RtspDevice] = None
         self.jovision_profile: int = jovision_profile
+        self.ip: Optional[str] = ip
 
         self._register_parameter(name='fps', getter=self.get_fps, setter=self.set_fps,
                                  min_value=1, max_value=30, step=1, default_value=fps)
@@ -41,6 +44,8 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
     def to_dict(self) -> dict[str, Any]:
         return super().to_dict() | {
             name: param.value for name, param in self._parameters.items()
+        } | {
+            'ip': self.ip,
         }
 
     @classmethod
@@ -59,16 +64,15 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         return self.device.url
 
-    async def connect(self, ip: Optional[str] = None) -> None:
+    async def connect(self) -> None:
         if self.is_connected:
             return
 
-        if not ip:
-            ip = await find_ip(self.id)
-        if ip is None:
-            raise RuntimeError(f'could not find IP address for {self.id}')
+        if not self.ip:
+            self.logger.error('no IP address provided for camera %s', self.id)
+            return
 
-        self.device = RtspDevice(mac=self.id, ip=ip, jovision_profile=self.jovision_profile)
+        self.device = RtspDevice(mac=self.id, ip=self.ip, jovision_profile=self.jovision_profile)
 
         self._apply_all_parameters()
 
