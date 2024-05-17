@@ -2,8 +2,21 @@ import os
 import sys
 from typing import AsyncIterator, Optional
 
+import ifaddr
+
 from ... import rosys
 from .vendors import VendorType, mac_to_vendor
+
+
+def get_network_adapter() -> str | None:
+    """Return the first network interface that is not a loopback or virtual interface."""
+    for adapter in ifaddr.get_adapters():
+        if any(adapter.name.startswith(prefix) for prefix in ['lo', 'can', 'docker', 'veth', 'br']):
+            continue
+        if adapter.ips is None:
+            continue
+        return adapter.name
+    return None
 
 
 async def run_arp_scan() -> str:
@@ -14,12 +27,18 @@ async def run_arp_scan() -> str:
         arpscan_cmd = '/usr/sbin/arp-scan'  # TODO is this necessary? sbin should be in path
     if os.getuid() != 0:
         arpscan_cmd = f'sudo {arpscan_cmd}'
+
     cmd = f'{arpscan_cmd} --localnet'
+    adapter = get_network_adapter()
+    if adapter is not None:
+        cmd += f' -I {adapter}'
     output = await rosys.run.sh(cmd, timeout=10)
 
-    if 'sudo' in output and not 'name resolution' in output:
+    if 'sudo' in output and 'name resolution' not in output:
         raise RuntimeError('Could not run arp-scan! Make sure it is installed and can be run with sudo.'
                            'Try running sudo visudo and add the following line: "rosys ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan"')
+    if 'Could not obtain MAC address for interface' in output:
+        raise RuntimeError(f'arp-scan failed to obtain MAC address for interface {adapter}')
     return output
 
 
