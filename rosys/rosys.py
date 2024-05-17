@@ -52,7 +52,6 @@ def get_last_exception() -> Optional[BaseException]:
 
 
 notifications: list[Notification] = []
-repeat_handlers: list[tuple[Callable, float]] = []
 startup_handlers: list[Callable] = []
 shutdown_handlers: list[Callable] = []
 tasks: list[asyncio.Task] = []
@@ -128,61 +127,64 @@ def _run_handler(handler: Callable) -> None:
         log.exception('error while starting handler "%s"', handler.__qualname__)
 
 
-def _start_loop(handler: Callable, interval: float) -> None:
-    log.debug('starting loop "%s" with interval %.3fs', handler.__qualname__, interval)
-    tasks.append(background_tasks.create(_repeat_one_handler(handler, interval), name=handler.__qualname__))
-
-
-def on_repeat(handler: Callable, interval: float) -> None:
-    if tasks:  # RoSys is already running
-        _start_loop(handler, interval)
-    else:
-        repeat_handlers.append((handler, interval))
-
-
 class Repeater:
-    def __init__(self, interval: float, handler: Callable, **kwargs) -> None:
-        self.interval = interval
-        self.task: asyncio.Task | None = None
+    tasks: set[asyncio.Task] = set()
+
+    def __init__(self, handler: Callable, interval: float) -> None:
         self.handler = handler
-        self.kwargs = kwargs
+        self.interval = interval
+        self._task: asyncio.Task | None = None
 
     def start(self) -> None:
-        async def repeat() -> None:
-            while True:
-                start = time()
-                try:
-                    if is_stopping():
-                        log.info('%s must be stopped', self.handler)
-                        break
-                    await invoke(self.handler, **self.kwargs)
-                    dt = time() - start
-                except (asyncio.CancelledError, GeneratorExit):
-                    return
-                except Exception:
-                    dt = time() - start
-                    log.exception('error in "%s"', self.handler.__qualname__)
-                    if self.interval == 0 and dt < 0.1:
-                        delay = 0.1 - dt
-                        log.warning(
-                            f'"{self.handler.__qualname__}" would be called to frequently ' +
-                            f'because it only took {dt*1000:.0f} ms; ' +
-                            f'delaying this step for {delay*1000:.0f} ms')
-                        await sleep(delay)
-                try:
-                    await sleep(self.interval - dt)
-                except (asyncio.CancelledError, GeneratorExit):
-                    return
+        self._task = background_tasks.create(self._repeat())
+        self.tasks.add(self._task)
 
-        if tasks:
-            self.task = background_tasks.create(repeat())
-        else:
-            on_startup(self.start)
+    async def _repeat(self) -> None:
+        await sleep(self.interval)  # NOTE delaying first execution so not all actors rush in at the same time
+        while True:
+            start = time()
+            try:
+                if is_stopping():
+                    log.info('%s must be stopped', self.handler)
+                    break
+                await invoke(self.handler)
+                dt = time() - start
+            except (asyncio.CancelledError, GeneratorExit):
+                return
+            except Exception:
+                dt = time() - start
+                log.exception('error in "%s"', self.handler.__qualname__)
+                if self.interval == 0 and dt < 0.1:
+                    delay = 0.1 - dt
+                    log.warning(
+                        f'"{self.handler.__qualname__}" would be called to frequently ' +
+                        f'because it only took {dt*1000:.0f} ms; ' +
+                        f'delaying this step for {delay*1000:.0f} ms')
+                    await sleep(delay)
+            try:
+                await sleep(self.interval - dt)
+            except (asyncio.CancelledError, GeneratorExit):
+                return
 
     def stop(self) -> None:
-        if self.task:
-            self.task.cancel()
-            self.task = None
+        if self._task:
+            self._task.cancel()
+            self.tasks.remove(self._task)
+            self._task = None
+
+    @staticmethod
+    def stop_all() -> None:
+        for repeater in Repeater.tasks:
+            repeater.cancel()
+
+
+def on_repeat(handler: Callable, interval: float) -> Repeater:
+    repeater = Repeater(handler, interval)
+    if tasks:  # RoSys is already running
+        repeater.start()
+    else:
+        startup_handlers.append(repeater.start)
+    return repeater
 
 
 def on_startup(handler: Callable) -> None:
@@ -211,9 +213,6 @@ async def startup() -> None:
     for coroutine in event.startup_coroutines:
         await coroutine
 
-    for handler, interval in repeat_handlers:
-        _start_loop(handler, interval)
-
 
 async def _garbage_collection(mbyte_limit: float = 300) -> None:
     if psutil.virtual_memory().free < mbyte_limit * 1_000_000:
@@ -234,34 +233,6 @@ async def _watch_emitted_events() -> None:
         log.exception('failed to watch emitted events')
 
 
-async def _repeat_one_handler(handler: Callable, interval: float) -> None:
-    await sleep(interval)  # NOTE delaying first execution so not all actors rush in at the same time
-    while True:
-        start = time()
-        try:
-            if is_stopping():
-                log.info('%s must be stopped', handler)
-                break
-            await invoke(handler)
-            dt = time() - start
-        except (asyncio.CancelledError, GeneratorExit):
-            return
-        except Exception:
-            dt = time() - start
-            log.exception('error in "%s"', handler.__qualname__)
-            if interval == 0 and dt < 0.1:
-                delay = 0.1 - dt
-                log.warning(
-                    f'"{handler.__qualname__}" would be called to frequently ' +
-                    f'because it only took {dt*1000:.0f} ms; ' +
-                    f'delaying this step for {delay*1000:.0f} ms')
-                await sleep(delay)
-        try:
-            await sleep(interval - dt)
-        except (asyncio.CancelledError, GeneratorExit):
-            return
-
-
 async def shutdown() -> None:
     for handler in shutdown_handlers:
         log.debug('invoking shutdown handler "%s"', handler.__qualname__)
@@ -270,6 +241,8 @@ async def shutdown() -> None:
     await persistence.backup(force=True)
     log.debug('tear down "run" tasks')
     run.tear_down()
+    log.debug('stopping all repeaters')
+    Repeater.stop_all()
     log.debug('canceling all remaining tasks')
     for task in tasks:
         task.cancel()
@@ -294,7 +267,7 @@ def reset_before_test() -> None:
 def reset_after_test() -> None:
     assert is_test
     startup_handlers.clear()
-    repeat_handlers[3:] = []  # NOTE: remove all but internal handlers
+    # Repeater.tasks[3:] = []  # NOTE: remove all but internal handlers
     shutdown_handlers.clear()
     event.reset()
 
