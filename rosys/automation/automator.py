@@ -19,19 +19,13 @@ class Automator:
     (e.g. via an "Play"-button like offered by the [automation controls](https://rosys.io/reference/rosys/automation/#rosys.automation.automation_controls)). 
     The passed function should return a new coroutine on every call (see [Play-pause-stop](https://rosys.io/examples/play-pause-stop/) example).
 
-    _on_interrupt_: Optional callback that will be called when an automation pauses or stops.
+    _on_interrupt_: Optional callback that will be called when an automation pauses or stops (the cause is provided as string parameter).
     """
 
     def __init__(self,
                  steerer: Optional[Steerer], *,
                  default_automation: Optional[Callable] = None,
                  on_interrupt: Optional[Callable] = None) -> None:
-        """Initializes the automator.
-
-        :param steerer: If provided, manually steering the robot will pause a currently running automation.
-        :param default_automation: If provided, the automator will start this automation when start() is called without parameter.
-        :param on_interrupt: Optional callback that will be called when an automation pauses or stops (the cause is provided as string parameter).
-        """
         self.AUTOMATION_STARTED = Event()
         """an automation has been started"""
 
