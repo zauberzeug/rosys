@@ -31,9 +31,9 @@ class SimulatedCamera(ConfigurableCamera):
                          **kwargs)
         self.device: Optional[SimulatedDevice] = None
         self.resolution = ImageSize(width=width, height=height)
-        self._register_parameter('color', self.get_color, self.set_color,
+        self._register_parameter('color', self._get_color, self._set_color,
                                  color or f'#{random.randint(0, 0xffffff):06x}')
-        self._register_parameter('fps', self.get_fps, self.set_fps, min_value=1,
+        self._register_parameter('fps', self._get_fps, self._set_fps, min_value=1,
                                  max_value=30, step=1, default_value=fps)
 
     def to_dict(self) -> dict:
@@ -72,16 +72,16 @@ class SimulatedCamera(ConfigurableCamera):
             image.data = await rosys.run.cpu_bound(self.device.create_image_data)
         self._add_image(image)
 
-    def set_color(self, val: str) -> None:
+    def _set_color(self, val: str) -> None:
         assert self.device is not None
         self.device.color = val
 
-    def get_color(self) -> Optional[str]:
+    def _get_color(self) -> Optional[str]:
         assert self.device is not None
         return self.device.color
 
-    def set_fps(self, val: int) -> None:
+    def _set_fps(self, val: int) -> None:
         self.polling_interval = 1.0 / val
 
-    def get_fps(self) -> int:
+    def _get_fps(self) -> int:
         return int(1.0 / self.polling_interval)
