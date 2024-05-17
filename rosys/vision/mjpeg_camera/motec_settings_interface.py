@@ -3,8 +3,8 @@ import logging
 import struct
 
 
-# async with enter exit interface for TCP connections that provides clean read/write methods
 class AsyncTcpClient:
+    '''Async TCP client wrapper for sending and receiving messages to/from a server.'''
 
     def __init__(self, ip: str, port: int):
         self.ip = ip
@@ -22,16 +22,27 @@ class AsyncTcpClient:
         await self.writer.wait_closed()
 
     async def read(self, n_bytes: int, timeout_s=3) -> bytes:
+        '''Read n_bytes from the server with a timeout.
+        :param n_bytes: Number of bytes to read
+        :param timeout_s: Timeout in seconds
+        :return: Bytes read from the server
+
+        :raises TimeoutError: If no response is received within the timeout
+        :raises RuntimeError: If the response length is not equal to n_bytes
+        '''
         assert self.reader is not None
         data = await asyncio.wait_for(self.reader.read(n_bytes), timeout_s)
         if not data:
             raise TimeoutError("No response received within timeout")
         if not len(data) == n_bytes:
-            raise RuntimeError("Received response with unexpected length %d", len(data))
+            raise RuntimeError(f"Received response with unexpected length {len(data)}")
 
         return data
 
     async def write(self, message: bytes):
+        '''Write a message to the server.
+        :param message: Message to send
+        '''
         assert self.writer is not None
         self.writer.write(message)
 
