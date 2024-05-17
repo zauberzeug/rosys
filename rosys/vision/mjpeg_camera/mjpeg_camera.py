@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any, Optional
 
 from typing_extensions import Self
