@@ -13,6 +13,12 @@ from .vendors import VendorType, mac_to_vendor
 class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentModule):
 
     def __init__(self, username: Optional[str] = None, password: Optional[str] = None, network_interface: Optional[str] = None) -> None:
+        '''CameraProvider for MJpegCamera
+
+        :param username: username to assgin for new cameras
+        :param password: password to assign for new cameras
+        :param network_interface: network interface used to scan for cameras
+        '''
         super().__init__()
 
         self.username = username
@@ -25,8 +31,6 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
 
     def restore(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
-            camera_data['password'] = self.password
-            camera_data['username'] = self.username
             camera = MjpegCamera.from_dict(camera_data)
             self.add_camera(camera)
         for camera in self._cameras.values():
@@ -69,11 +73,12 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
         for camera_id, ip in await self.scan_for_cameras():
             if camera_id not in self._cameras:
                 self.add_camera(MjpegCamera(id=camera_id, username=self.username,
-                                password=self.password, connect_after_init=False))
+                                password=self.password, ip=ip))
             camera = self._cameras[camera_id]
             if not camera.is_connected:
                 self.log.info('activating authorized camera "%s" at ip "%s" ...', camera.id, ip)
-                await camera.connect(ip=ip)
+                camera.ip = ip
+                await camera.connect()
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
