@@ -58,11 +58,17 @@ class ConfigurableCamera(Camera):
             if not force_set and value == self._parameters[name].value:
                 continue
 
-            setter = self._parameters[name].setter
-            if asyncio.iscoroutinefunction(setter):
-                await setter(value)
-            else:
-                setter(value)
+            try:
+                setter = self._parameters[name].setter
+                if asyncio.iscoroutinefunction(setter):
+                    await setter(value)
+                else:
+                    setter(value)
+            except Exception as e:
+                if not self.is_connected:
+                    return
+                raise e
+
         await self._update_parameter_cache()
 
     async def _apply_all_parameters(self) -> None:
@@ -72,13 +78,18 @@ class ConfigurableCamera(Camera):
         if not self.is_connected:
             return
         for param in self._parameters.values():
-            if asyncio.iscoroutinefunction(param.getter):
-                val = await param.getter()
-            else:
-                val = param.getter()
-            if val is None and self.IGNORE_NONE_VALUES:
-                continue
-            param.value = val
+            try:
+                if asyncio.iscoroutinefunction(param.getter):
+                    val = await param.getter()
+                else:
+                    val = param.getter()
+                if val is None and self.IGNORE_NONE_VALUES:
+                    continue
+                param.value = val
+            except Exception as e:
+                if not self.is_connected:
+                    return
+                raise e
 
     async def set_parameters(self, new_values: dict[str, Any]) -> None:
         await self._apply_parameters(new_values)
