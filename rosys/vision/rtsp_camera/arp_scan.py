@@ -8,14 +8,14 @@ from ... import rosys
 from .vendors import VendorType, mac_to_vendor
 
 
-def get_network_adapter() -> str | None:
+def get_network_interface() -> str | None:
     """Return the first network interface that is not a loopback or virtual interface."""
-    for adapter in ifaddr.get_adapters():
-        if any(adapter.name.startswith(prefix) for prefix in ['lo', 'can', 'docker', 'veth', 'br']):
+    for interface in ifaddr.get_adapters():
+        if any(interface.name.startswith(prefix) for prefix in ['lo', 'can', 'docker', 'veth', 'br']):
             continue
-        if adapter.ips is None:
+        if interface.ips is None:
             continue
-        return adapter.name
+        return interface.name
     return None
 
 
@@ -31,12 +31,10 @@ async def run_arp_scan(interface: Optional[str] = None) -> str:
         arpscan_cmd = f'sudo {arpscan_cmd}'
 
     cmd = f'{arpscan_cmd} --localnet'
+    if not interface:
+        interface = get_network_interface()
     if interface:
-        cmd += f' --interface={interface}'
-    else:
-        adapter = get_network_adapter()
-        if adapter:
-            cmd += f' -I {adapter}'
+        cmd += f' --interface {interface}'
 
     output = await rosys.run.sh(cmd, timeout=10)
 
@@ -44,7 +42,7 @@ async def run_arp_scan(interface: Optional[str] = None) -> str:
         raise RuntimeError('Could not run arp-scan! Make sure it is installed and can be run with sudo.'
                            'Try running sudo visudo and add the following line: "rosys ALL=(ALL) NOPASSWD: /usr/sbin/arp-scan"')
     if 'Could not obtain MAC address for interface' in output:
-        raise RuntimeError(f'arp-scan failed to obtain MAC address for interface {adapter}')
+        raise RuntimeError(f'arp-scan failed to obtain MAC address for interface {interface}')
     return output
 
 
