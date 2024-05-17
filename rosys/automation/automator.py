@@ -26,6 +26,12 @@ class Automator:
                  steerer: Optional[Steerer], *,
                  default_automation: Optional[Callable] = None,
                  on_interrupt: Optional[Callable] = None) -> None:
+        """Initializes the automator.
+
+        :param steerer: If provided, manually steering the robot will pause a currently running automation.
+        :param default_automation: If provided, the automator will start this automation when start() is called without parameter.
+        :param on_interrupt: Optional callback that will be called when an automation pauses or stops (the cause is provided as string parameter).
+        """
         self.AUTOMATION_STARTED = Event()
         """an automation has been started"""
 
@@ -55,8 +61,8 @@ class Automator:
             steerer.STEERING_STARTED.register(lambda: self.pause(because='steering started'))
 
         if on_interrupt:
-            self.AUTOMATION_PAUSED.register(lambda _: rosys.background_tasks.create(cast(Callable, on_interrupt)()))
-            self.AUTOMATION_STOPPED.register(lambda _: rosys.background_tasks.create(cast(Callable, on_interrupt)()))
+            self.AUTOMATION_PAUSED.register(on_interrupt)
+            self.AUTOMATION_STOPPED.register(on_interrupt)
 
         rosys.on_shutdown(lambda: self.stop(because='automator is shutting down'))
 
