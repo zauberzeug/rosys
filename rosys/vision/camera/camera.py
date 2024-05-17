@@ -4,7 +4,7 @@ import abc
 import asyncio
 from collections import deque
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Callable, Coroutine, Optional
+from typing import AsyncGenerator, Optional
 
 from ... import rosys
 from ...event import Event
@@ -20,7 +20,7 @@ class Camera(abc.ABC):
                  id: str,  # pylint: disable=redefined-builtin
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
-                 streaming: bool = True,
+                 streaming: bool = False,
                  polling_interval: float = 0.1,
                  base_path_overwrite: Optional[str] = None,
                  **kwargs) -> None:
@@ -29,7 +29,6 @@ class Camera(abc.ABC):
         self.name = name or self.id
         self.connect_after_init = connect_after_init
         self.images: deque[Image] = deque(maxlen=self.MAX_IMAGES)
-        self.streaming: bool = streaming
         self.base_path: str = f'images/{base_path_overwrite or id}'
 
         self.NEW_IMAGE: Event = Event()
@@ -44,14 +43,23 @@ class Camera(abc.ABC):
             else:
                 rosys.on_startup(self.connect)
 
-        async def stream() -> None:
-            if self.streaming:
-                await self.capture_image()
-        self.image_loop = rosys.Repeater(interval=polling_interval, handler=stream)
-        self.image_loop.start()
+        self.image_loop = rosys.Repeater(self.capture_image, interval=polling_interval)
+        if streaming:
+            self.image_loop.start()
 
     def __del__(self):
         self.image_loop.stop()
+
+    @property
+    def streaming(self) -> bool:
+        return self.image_loop.running
+
+    @streaming.setter
+    def streaming(self, value: bool) -> None:
+        if value:
+            self.image_loop.start()
+        else:
+            self.image_loop.stop()
 
     @property
     def polling_interval(self) -> float:
