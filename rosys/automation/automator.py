@@ -55,8 +55,8 @@ class Automator:
             steerer.STEERING_STARTED.register(lambda: self.pause(because='steering started'))
 
         if on_interrupt:
-            self.AUTOMATION_PAUSED.register(lambda _: cast(Callable, on_interrupt)())
-            self.AUTOMATION_STOPPED.register(lambda _: cast(Callable, on_interrupt)())
+            self.AUTOMATION_PAUSED.register(on_interrupt)
+            self.AUTOMATION_STOPPED.register(on_interrupt)
 
         rosys.on_shutdown(lambda: self.stop(because='automator is shutting down'))
 
