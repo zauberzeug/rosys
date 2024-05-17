@@ -297,7 +297,7 @@ def register_base_startup_handlers() -> None:
 
 
 gc.disable()  # NOTE disable automatic garbage collection to optimize performance
-
+register_base_startup_handlers()
 
 app.on_startup(startup)
 app.on_shutdown(shutdown)
