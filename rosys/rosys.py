@@ -287,11 +287,17 @@ def reset_after_test() -> None:
     shutdown_handlers.clear()
     event.reset()
 
+    register_base_startup_handlers()
+
+
+def register_base_startup_handlers() -> None:
+    on_repeat(_garbage_collection, 60)
+    on_repeat(_watch_emitted_events, 0.1)
+    on_repeat(persistence.backup, 10)
+
 
 gc.disable()  # NOTE disable automatic garbage collection to optimize performance
-garbage_collector = on_repeat(_garbage_collection, 10 * 60)
-watch_emitted_events = on_repeat(_watch_emitted_events, 0.1)
-persistence_backup = on_repeat(persistence.backup, 10)
+
 
 app.on_startup(startup)
 app.on_shutdown(shutdown)
