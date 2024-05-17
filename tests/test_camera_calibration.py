@@ -36,7 +36,7 @@ def demo_fisheye_data() -> tuple[CalibratableCamera, list[Point3d]]:
 
 def demo_omnidirectional_data() -> tuple[CalibratableCamera, list[Point3d]]:
     cam = CalibratableCamera(id='1')
-    cam.set_perfect_calibration(width=800, height=600, focal_length=1100,
+    cam.set_perfect_calibration(width=800, height=600, focal_length=800,
                                 x=0.1, y=0.2, z=3,
                                 roll=np.deg2rad(180+10), pitch=np.deg2rad(20), yaw=np.deg2rad(30))
     assert cam.calibration and cam.calibration.intrinsics
@@ -99,7 +99,7 @@ def test_omnidirectional_calibration_from_points():
     assert not any(p is None for p in image_points)
     focal_length = cam.calibration.intrinsics.matrix[0][0]
     calibration = Calibration.from_points(world_points, image_points, image_size,
-                                          focal_length, camera_model=CameraModel.FISHEYE)
+                                          focal_length, camera_model=CameraModel.OMNIDIRECTIONAL)
 
     approx(calibration.intrinsics.matrix, cam.calibration.intrinsics.matrix)
     approx(calibration.intrinsics.rotation.R, cam.calibration.intrinsics.rotation.R)
