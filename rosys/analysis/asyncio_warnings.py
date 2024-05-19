@@ -51,5 +51,5 @@ class AsyncioWarnings:
             ui.number('coro limit',
                       value=loop.slow_callback_duration, format='%.3f',
                       on_change=lambda e: self.set_threshold(e.value)) \
-                .props('suffix=s hide-controls').classes('w-16')
+                .props('suffix=s').classes('w-16')
         return content
