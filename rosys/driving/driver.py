@@ -1,3 +1,4 @@
+import logging
 from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Optional, Protocol
@@ -5,7 +6,7 @@ from typing import Optional, Protocol
 import numpy as np
 
 from .. import analysis, rosys
-from ..geometry import Point, Pose, Spline
+from ..geometry import Point, Pose, Spline, Velocity
 from ..helpers import ModificationContext, eliminate_2pi, eliminate_pi, ramp
 from .drivable import Drivable
 from .odometer import Odometer
@@ -58,11 +59,16 @@ class Driver:
         self.parameters = DriveParameters()
         self.state: Optional[DriveState] = None
         self._abort = False
+        self.log = logging.getLogger('rosys.driving')
 
     @property
     def prediction(self) -> Pose:
         """The current prediction of the robot's pose based on the odometer."""
         return self.odometer.prediction if isinstance(self.odometer, Odometer) else self.odometer.pose
+
+    @property
+    def velocity(self) -> Optional[Velocity]:
+        return self.odometer.current_velocity if isinstance(self.odometer, Odometer) else None
 
     def abort(self) -> None:
         """Abort the current drive routine."""
@@ -136,7 +142,7 @@ class Driver:
             if self._abort:
                 self._abort = False
                 raise DrivingAbortedException()
-            velocity = self.odometer.current_velocity if isinstance(self.odometer, Odometer) else None
+            velocity = self.velocity
             dYaw = self.parameters.hook_bending_factor * velocity.angular if velocity else 0
             hook = self.prediction.transform_pose(Pose(yaw=dYaw)).transform(hook_offset)
             if self.parameters.can_drive_backwards:
