@@ -10,13 +10,15 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera], persistence.Persi
 
     In the current implementation the images only contain the camera ID and the current time.
     """
+    SCAN_INTERVAL = 10
 
-    def __init__(self, simulate_failing: bool = False) -> None:
+    def __init__(self, simulate_failing: bool = False, auto_scan: bool = True) -> None:
         super().__init__()
 
         self.simulate_device_failure = simulate_failing
 
-        rosys.on_repeat(self.simulate_device_discovery, 5.0)
+        if auto_scan:
+            rosys.on_repeat(self.simulate_device_discovery, self.SCAN_INTERVAL)
 
     def backup(self) -> dict:
         cameras = {}
@@ -48,5 +50,4 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera], persistence.Persi
     def add_cameras(self, num_cameras: int) -> None:
         for _ in range(num_cameras):
             new_id = f'cam{len(self._cameras)}'
-            print(f'adding simulated camera: {new_id}')
             self.add_camera(SimulatedCamera(id=new_id, width=640, height=480))

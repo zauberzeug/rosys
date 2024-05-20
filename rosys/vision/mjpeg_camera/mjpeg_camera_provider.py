@@ -11,8 +11,12 @@ from .vendors import VendorType, mac_to_vendor
 
 
 class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentModule):
+    SCAN_INTERVAL = 10
 
-    def __init__(self, username: Optional[str] = None, password: Optional[str] = None, network_interface: Optional[str] = None) -> None:
+    def __init__(self, username: Optional[str] = None,
+                 password: Optional[str] = None,
+                 network_interface: Optional[str] = None,
+                 auto_scan: bool = True) -> None:
         '''CameraProvider for MJpegCamera
 
         :param username: username to assgin for new cameras
@@ -27,7 +31,8 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
 
         self.log = logging.getLogger('rosys.mjpeg_camera_provider')
         rosys.on_shutdown(self.shutdown)
-        rosys.on_repeat(self.update_device_list, 5.)
+        if auto_scan:
+            rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
     def restore(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
@@ -76,7 +81,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
                                 password=self.password, ip=ip))
             camera = self._cameras[camera_id]
             if not camera.is_connected:
-                self.log.info('activating authorized camera "%s" at ip "%s" ...', camera.id, ip)
+                self.log.info('activating camera "%s" at ip "%s" ...', camera.id, ip)
                 camera.ip = ip
                 await camera.connect()
 

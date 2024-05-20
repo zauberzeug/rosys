@@ -9,8 +9,12 @@ from .rtsp_camera import RtspCamera
 
 class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModule):
     """This module collects and provides real RTSP streaming cameras."""
+    SCAN_INTERVAL = 10
 
-    def __init__(self, *, frame_rate: int = 6, jovision_profile: int = 0, network_interface: Optional[str] = None) -> None:
+    def __init__(self, *, frame_rate: int = 6,
+                 jovision_profile: int = 0,
+                 network_interface: Optional[str] = None,
+                 auto_scan: bool = True) -> None:
         super().__init__()
 
         self.frame_rate = frame_rate
@@ -20,7 +24,8 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
         self.log = logging.getLogger('rosys.rtsp_camera_provider')
 
         rosys.on_shutdown(self.shutdown)
-        rosys.on_repeat(self.update_device_list, 10.)
+        if auto_scan:
+            rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
     def backup(self) -> dict:
         cameras = {}
