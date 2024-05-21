@@ -17,7 +17,7 @@ def from_dict(cls: type, d: dict[str, Any]) -> Any:
     try:
         return _decode_dataclass(cls, d, False)
     except Exception:
-        log.exception(f'Failed to decode {cls} from {d}')
+        log.exception('Failed to decode %s from %s', cls, d)
         raise
 
 
