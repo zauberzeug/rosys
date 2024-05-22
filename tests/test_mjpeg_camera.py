@@ -6,8 +6,6 @@ import pytest_asyncio
 from rosys.vision import MjpegCamera, MjpegCameraProvider
 from rosys.vision.mjpeg_camera.vendors import VendorType, mac_to_vendor
 
-# from ..rosys.vision.mjpeg_camera.motec_settings_interface import MotecSettingsInterface
-
 
 @pytest.fixture(scope='session')
 def event_loop():
@@ -26,8 +24,8 @@ async def test_mjpeg_camera():
         raise
     if len(connected_uids) == 0:
         pytest.skip('No MJPEG camera detected. This test requires a physical MJPEG camera on the local network.')
-    camera = MjpegCamera(id=connected_uids[0][0], connect_after_init=False, streaming=False)
-    await camera.connect(ip=connected_uids[0][1])
+    camera = MjpegCamera(id=connected_uids[0], connect_after_init=False, streaming=False)
+    await camera.connect()
     await asyncio.sleep(0.5)
     assert camera.is_connected
     await camera.capture_image()
@@ -45,10 +43,10 @@ async def motec_settings_interface():
     if len(connected_uids) == 0:
         pytest.skip('No MJPEG camera detected. This test requires a physical MJPEG camera on the local network.')
 
-    for mac, ip in connected_uids:
+    for mac in connected_uids:
         if mac_to_vendor(mac) == VendorType.MOTEC:
             camera = MjpegCamera(id=mac, connect_after_init=False)
-            await camera.connect(ip=ip)
+            await camera.connect()
             break
     else:
         pytest.skip('No MOTEC camera detected. This test requires a physical MOTEC camera on the local network.')
