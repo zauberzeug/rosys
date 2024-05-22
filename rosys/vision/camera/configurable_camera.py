@@ -76,7 +76,7 @@ class ConfigurableCamera(Camera):
             return
         for param in self._parameters.values():
             try:
-                val = await param.getter()
+                val = param.getter()
                 if isinstance(val, Awaitable):
                     val = await val
                 if val is None and self.IGNORE_NONE_VALUES:
