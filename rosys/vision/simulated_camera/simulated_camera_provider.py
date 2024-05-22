@@ -13,7 +13,9 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera], persistence.Persi
     """
     SCAN_INTERVAL = 10
 
-    def __init__(self, simulate_failing: bool = False, auto_scan: bool = True) -> None:
+    def __init__(self, *,
+                 simulate_failing: bool = False,
+                 auto_scan: bool = True) -> None:
         super().__init__()
 
         self.simulate_device_failure = simulate_failing
@@ -36,9 +38,10 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera], persistence.Persi
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
     async def scan_for_cameras(self) -> AsyncGenerator[str, Any]:
-        '''Simulated device discovery by returning all camera's IDs.
+        """Simulated device discovery by returning all camera's IDs.
+
         If simulate_device_failure is set, disconnected cameras are returned with a fixed probability.
-        '''
+        """
         for camera in self._cameras.values():
             if not camera.is_connected and self.simulate_device_failure:
                 # return camera with fixed probability

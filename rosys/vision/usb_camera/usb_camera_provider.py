@@ -15,7 +15,7 @@ class UsbCameraProvider(CameraProvider[UsbCamera], persistence.PersistentModule)
     """
     SCAN_INTERVAL = 10
 
-    def __init__(self, auto_scan: bool = True) -> None:
+    def __init__(self, *, auto_scan: bool = True) -> None:
         super().__init__()
 
         self.log = logging.getLogger('rosys.usb_camera_provider')

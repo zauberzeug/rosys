@@ -13,7 +13,8 @@ from .vendors import VendorType, mac_to_vendor
 class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentModule):
     SCAN_INTERVAL = 10
 
-    def __init__(self, username: Optional[str] = None,
+    def __init__(self, *,
+                 username: Optional[str] = None,
                  password: Optional[str] = None,
                  network_interface: Optional[str] = None,
                  auto_scan: bool = True) -> None:
