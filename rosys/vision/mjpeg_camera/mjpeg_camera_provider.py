@@ -11,14 +11,19 @@ from .vendors import VendorType, mac_to_vendor
 
 
 class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentModule):
+    SCAN_INTERVAL = 10
 
-    def __init__(self, username: Optional[str] = None, password: Optional[str] = None, network_interface: Optional[str] = None) -> None:
-        '''CameraProvider for MJpegCamera
+    def __init__(self, *,
+                 username: Optional[str] = None,
+                 password: Optional[str] = None,
+                 network_interface: Optional[str] = None,
+                 auto_scan: bool = True) -> None:
+        """CameraProvider for MJpegCamera
 
-        :param username: username to assgin for new cameras
+        :param username: username to assign for new cameras
         :param password: password to assign for new cameras
         :param network_interface: network interface used to scan for cameras
-        '''
+        """
         super().__init__()
 
         self.username = username
@@ -27,7 +32,8 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
 
         self.log = logging.getLogger('rosys.mjpeg_camera_provider')
         rosys.on_shutdown(self.shutdown)
-        rosys.on_repeat(self.update_device_list, 5.)
+        if auto_scan:
+            rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
     def restore(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
