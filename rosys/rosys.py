@@ -140,11 +140,9 @@ class Repeater:
         if self.running:
             return
         if _state.startup_finished:
-            print('starting', self.handler.__name__)
             self._task = background_tasks.create(self._repeat())
             self.tasks.add(self._task)
-        else:
-            print('adding to startup_handlers', self.handler.__name__)
+        elif self.start not in startup_handlers:
             startup_handlers.append(self.start)
 
     async def _repeat(self) -> None:
@@ -261,7 +259,7 @@ async def shutdown() -> None:
     log.debug('canceling all remaining tasks')
     for task in tasks:
         task.cancel()
-    logging.debug('clearing tasks')
+    log.debug('clearing tasks')
     tasks.clear()
 
     # NOTE: kill own process and all its children after uvicorn has finished (we had many restart freezes before)

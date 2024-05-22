@@ -47,7 +47,7 @@ class Camera(abc.ABC):
         if streaming:
             self.image_loop.start()
 
-    def __del__(self):
+    def __del__(self) -> None:
         self.image_loop.stop()
 
     @property
@@ -66,8 +66,8 @@ class Camera(abc.ABC):
         return self.image_loop.interval
 
     @polling_interval.setter
-    def polling_interval(self, interval: float) -> None:
-        self.image_loop.interval = interval
+    def polling_interval(self, value: float) -> None:
+        self.image_loop.interval = value
 
     def get_image_url(self, image: Image) -> str:
         return f'{self.base_path}/{image.time}'
