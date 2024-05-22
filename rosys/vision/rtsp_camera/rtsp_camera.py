@@ -30,7 +30,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                          streaming=streaming,
                          **kwargs)
 
-        self.logger = logging.getLogger(f'rosys.vision.rtsp_camera.{self.id}')
+        self.log = logging.getLogger(f'rosys.vision.rtsp_camera.{self.id}')
 
         self.device: Optional[RtspDevice] = None
         self.jovision_profile: int = jovision_profile
@@ -69,7 +69,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             return
 
         if not self.ip:
-            self.logger.error('no IP address provided for camera %s', self.id)
+            self.log.error('no IP address provided for camera %s', self.id)
             return
 
         self.device = RtspDevice(mac=self.id, ip=self.ip, jovision_profile=self.jovision_profile)
