@@ -1,4 +1,3 @@
-import asyncio
 import logging
 from asyncio import Task
 from io import BytesIO
@@ -35,12 +34,8 @@ class MjpegDevice:
 
         self.start_capture_task()
 
-    def start_capture_task(self):
-        loop = asyncio.get_event_loop()
-        if loop:
-            self.capture_task = loop.create_task(self.run_capture_task())
-        else:
-            on_startup(self.start_capture_task)
+    def start_capture_task(self) -> None:
+        on_startup(self.start_capture_task)
 
     async def restart_capture(self) -> None:
         self.shutdown()
