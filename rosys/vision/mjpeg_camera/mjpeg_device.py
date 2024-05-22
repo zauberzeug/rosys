@@ -1,14 +1,9 @@
 import logging
-# profiling
-import time
 from asyncio import Task
 from typing import AsyncGenerator, Optional
 
 import httpx
-import numpy as np
 from nicegui import background_tasks
-
-import rosys
 
 from ..image_processing import remove_exif
 from .vendors import mac_to_url
