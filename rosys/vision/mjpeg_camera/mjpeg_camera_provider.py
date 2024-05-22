@@ -17,12 +17,12 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
                  password: Optional[str] = None,
                  network_interface: Optional[str] = None,
                  auto_scan: bool = True) -> None:
-        '''CameraProvider for MJpegCamera
+        """CameraProvider for MJpegCamera
 
-        :param username: username to assgin for new cameras
+        :param username: username to assign for new cameras
         :param password: password to assign for new cameras
         :param network_interface: network interface used to scan for cameras
-        '''
+        """
         super().__init__()
 
         self.username = username
@@ -81,9 +81,8 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
                                 password=self.password, ip=ip))
             camera = self._cameras[camera_id]
             if not camera.is_connected:
-                self.log.info('activating camera "%s" at ip "%s" ...', camera.id, ip)
-                camera.ip = ip
-                await camera.connect()
+                self.log.info('activating authorized camera "%s" at ip "%s" ...', camera.id, ip)
+                await camera.connect(ip=ip)
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():

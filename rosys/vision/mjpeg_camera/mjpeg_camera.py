@@ -28,7 +28,7 @@ class MjpegCamera(TransformableCamera):
                  ) -> None:
         super().__init__(id=id, name=name, connect_after_init=connect_after_init, streaming=streaming,
                          image_grab_interval=image_grab_interval, base_path_overwrite=base_path_overwrite, **kwargs)
-        self.logger = logging.getLogger(f'rosys.vision.mjpeg_camera.{self.id}')
+        self.log = logging.getLogger(f'rosys.vision.mjpeg_camera.{self.id}')
         self.username = username
         self.password = password
 
@@ -62,7 +62,7 @@ class MjpegCamera(TransformableCamera):
             return
 
         if not self.ip:
-            self.logger.error('No IP address provided')
+            self.log.error('No IP address provided')
             return
 
         self.device = MjpegDevice(self.mac, self.ip, index=self.index, username=self.username, password=self.password)
