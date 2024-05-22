@@ -44,9 +44,12 @@ class AsyncioWarnings:
         loop = asyncio.get_running_loop()
         loop.slow_callback_duration = seconds
 
-    def ui(self) -> None:
-        with ui.row().classes('items-end'):
+    def ui(self) -> ui.element:
+        with ui.row().classes('items-end') as content:
             loop = asyncio.get_running_loop()
             ui.checkbox(on_change=self.toggle)
-            ui.number('coro limit', value=loop.slow_callback_duration, format='%.3f',
-                      on_change=lambda e: self.set_threshold(e.value)).props('suffix=s').classes('w-16')
+            ui.number('coro limit',
+                      value=loop.slow_callback_duration, format='%.3f',
+                      on_change=lambda e: self.set_threshold(e.value)) \
+                .props('suffix=s').classes('w-16')
+        return content

@@ -1,4 +1,5 @@
 import random
+from typing import Any, AsyncGenerator
 
 from ... import persistence, rosys
 from ..camera_provider import CameraProvider
@@ -10,13 +11,17 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera], persistence.Persi
 
     In the current implementation the images only contain the camera ID and the current time.
     """
+    SCAN_INTERVAL = 10
 
-    def __init__(self, simulate_failing: bool = False) -> None:
+    def __init__(self, *,
+                 simulate_failing: bool = False,
+                 auto_scan: bool = True) -> None:
         super().__init__()
 
         self.simulate_device_failure = simulate_failing
 
-        rosys.on_repeat(self.simulate_device_discovery, 5.0)
+        if auto_scan:
+            rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
     def backup(self) -> dict:
         cameras = {}
@@ -32,8 +37,26 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera], persistence.Persi
         for camera in self._cameras.values():
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
-    async def simulate_device_discovery(self) -> None:
+    async def scan_for_cameras(self) -> AsyncGenerator[str, Any]:
+        """Simulated device discovery by returning all camera's IDs.
+
+        If simulate_device_failure is set, disconnected cameras are returned with a fixed probability.
+        """
         for camera in self._cameras.values():
+            if not camera.is_connected and self.simulate_device_failure:
+                # return camera with fixed probability
+                if random.random() < 0.5:
+                    yield camera.id
+            else:
+                yield camera.id
+
+    async def update_device_list(self) -> None:
+        async for camera_id in self.scan_for_cameras():
+            camera = self._cameras.get(camera_id)
+            if not camera:
+                camera = SimulatedCamera(id=camera_id, width=640, height=480)
+                self.add_camera(camera)
+
             if not camera.is_connected:
                 await camera.connect()
                 continue
@@ -43,10 +66,9 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera], persistence.Persi
                 # disconnect cameras randomly with probability rising with time
                 time_since_last_activation = rosys.time() - camera.device.creation_time
                 if random.random() < time_since_last_activation / 30.0:
-                    camera.device = None
+                    await camera.disconnect()
 
     def add_cameras(self, num_cameras: int) -> None:
         for _ in range(num_cameras):
             new_id = f'cam{len(self._cameras)}'
-            print(f'adding simulated camera: {new_id}')
             self.add_camera(SimulatedCamera(id=new_id, width=640, height=480))

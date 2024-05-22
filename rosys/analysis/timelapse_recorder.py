@@ -127,7 +127,7 @@ def _save_image(image: RosysImage, path: Path, size: tuple[int, int], notificati
     img.save(path / f'{image.time:.3f}.jpg', 'JPEG')
 
 
-def _write(text: str, draw: ImageDraw.Draw, x: int, y: int) -> None:
+def _write(text: str, draw: ImageDraw.ImageDraw, x: int, y: int) -> None:
     # shadow
     draw.text((x - 1, y - 1), text, font=IMAGE_FONT, fill=(0, 0, 0))
     draw.text((x + 1, y - 1), text, font=IMAGE_FONT, fill=(0, 0, 0))

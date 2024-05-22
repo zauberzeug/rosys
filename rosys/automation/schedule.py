@@ -1,3 +1,4 @@
+import functools
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Callable, Optional, cast
@@ -68,8 +69,6 @@ class Schedule(persistence.PersistentModule):
         self.half_hours = [True] * 2 * 24 * 7
 
         self._is_active = False
-        self._sun_start_hour = 0.0
-        self._sun_stop_hour = 24.0
         rosys.on_repeat(self.step, 1)
 
     def backup(self) -> dict:
@@ -103,7 +102,9 @@ class Schedule(persistence.PersistentModule):
         return weekday * 2 * 24 + hour * 2 + minute // 30
 
     def is_dark(self, hour: int, minute: int) -> bool:
-        return not self._sun_start_hour < hour + minute / 60 < self._sun_stop_hour
+        sun_start_hour = _get_sun_start_hour(self.location, self.sunrise_offset)
+        sun_stop_hour = _get_sun_stop_hour(self.location, self.sunset_offset)
+        return not sun_start_hour < hour + minute / 60 < sun_stop_hour
 
     def is_planned(self, weekday: int, hour: int, minute: Optional[int] = None) -> bool:
         if minute is None:
@@ -154,7 +155,6 @@ class Schedule(persistence.PersistentModule):
                 return positive if self.is_planned(weekday, hour, minutes[0]) else negative
             if not buttons:
                 return
-            self.update_sun_limits()
             for d in range(7):
                 for h in range(24):
                     b0, b1, b2 = buttons[d * 24 + h]
@@ -197,17 +197,6 @@ class Schedule(persistence.PersistentModule):
         self.location = location
         self.invalidate()
 
-    def update_sun_limits(self) -> None:
-        if self.location:
-            sun = suntime.Sun(lat=self.location[0], lon=self.location[1])
-            start_time = sun.get_sunrise_time(datetime.now()) + timedelta(minutes=self.sunrise_offset)
-            stop_time = sun.get_sunset_time(datetime.now()) + timedelta(minutes=self.sunset_offset)
-            self._sun_start_hour = start_time.hour + start_time.minute / 60 + start_time.second / 60 / 60
-            self._sun_stop_hour = stop_time.hour + stop_time.minute / 60 + stop_time.second / 60 / 60
-        else:
-            self._sun_start_hour = 0.0
-            self._sun_stop_hour = 24.0
-
     def _toggle(self, weekday: int, hour: int, minute: Optional[int] = None) -> None:
         new_value = not self.is_planned(weekday, hour, minute)
         if minute is None:
@@ -216,3 +205,21 @@ class Schedule(persistence.PersistentModule):
         else:
             self.half_hours[self.time_to_index(weekday, hour, minute)] = new_value
         self.invalidate()
+
+
+@functools.lru_cache(maxsize=100)
+def _get_sun_start_hour(location: tuple[float, float], offset: float) -> float:
+    if not location:
+        return 0.0
+    sun = suntime.Sun(lat=location[0], lon=location[1])
+    start_time = sun.get_sunrise_time(datetime.now()).astimezone() + timedelta(minutes=offset)
+    return start_time.hour + start_time.minute / 60 + start_time.second / 60 / 60
+
+
+@functools.lru_cache(maxsize=100)
+def _get_sun_stop_hour(location, offset) -> float:
+    if not location:
+        return 24.0
+    sun = suntime.Sun(lat=location[0], lon=location[1])
+    stop_time = sun.get_sunset_time(datetime.now()).astimezone() + timedelta(minutes=offset)
+    return stop_time.hour + stop_time.minute / 60 + stop_time.second / 60 / 60

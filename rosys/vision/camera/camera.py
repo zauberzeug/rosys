@@ -20,8 +20,8 @@ class Camera(abc.ABC):
                  id: str,  # pylint: disable=redefined-builtin
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
-                 streaming: bool = True,
-                 image_grab_interval: float = 0.1,
+                 streaming: bool = False,
+                 polling_interval: float = 0.1,
                  base_path_overwrite: Optional[str] = None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
@@ -29,7 +29,6 @@ class Camera(abc.ABC):
         self.name = name or self.id
         self.connect_after_init = connect_after_init
         self.images: deque[Image] = deque(maxlen=self.MAX_IMAGES)
-        self.streaming: bool = streaming
         self.base_path: str = f'images/{base_path_overwrite or id}'
 
         self.NEW_IMAGE: Event = Event()
@@ -44,10 +43,31 @@ class Camera(abc.ABC):
             else:
                 rosys.on_startup(self.connect)
 
-        async def stream() -> None:
-            if self.streaming:
-                await self.capture_image()
-        rosys.on_repeat(stream, interval=image_grab_interval)
+        self.image_loop = rosys.Repeater(self.capture_image, interval=polling_interval)
+        if streaming:
+            self.image_loop.start()
+
+    def __del__(self) -> None:
+        self.image_loop.stop()
+
+    @property
+    def streaming(self) -> bool:
+        return self.image_loop.running
+
+    @streaming.setter
+    def streaming(self, value: bool) -> None:
+        if value:
+            self.image_loop.start()
+        else:
+            self.image_loop.stop()
+
+    @property
+    def polling_interval(self) -> float:
+        return self.image_loop.interval
+
+    @polling_interval.setter
+    def polling_interval(self, value: float) -> None:
+        self.image_loop.interval = value
 
     def get_image_url(self, image: Image) -> str:
         return f'{self.base_path}/{image.time}'
