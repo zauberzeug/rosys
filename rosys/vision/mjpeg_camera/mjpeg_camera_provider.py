@@ -82,7 +82,8 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
             camera = self._cameras[camera_id]
             if not camera.is_connected:
                 self.log.info('activating authorized camera "%s" at ip "%s" ...', camera.id, ip)
-                await camera.connect(ip=ip)
+                camera.ip = ip
+                await camera.connect()
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
