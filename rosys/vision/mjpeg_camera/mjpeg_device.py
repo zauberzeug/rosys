@@ -79,7 +79,9 @@ class MjpegDevice:
         self.capture_task = None
 
     def capture(self) -> Optional[bytes]:
-        return self._image_buffer
+        image = self._image_buffer
+        self._image_buffer = None
+        return image
 
     def shutdown(self) -> None:
         if self.capture_task is not None:
