@@ -18,7 +18,6 @@ class MjpegDevice:
 
     def __init__(self, mac: str, ip: str, *,
                  index: Optional[int] = None, username: Optional[str] = None, password: Optional[str] = None) -> None:
-        print(f'Creating MjpegDevice with mac={mac}, ip={ip}, index={index}, username={username}, password={password}')
         self.mac = mac
         self.ip = ip
         self.capture_task: Optional[Task] = None
@@ -30,10 +29,6 @@ class MjpegDevice:
             raise ValueError(f'could not determine URL for {mac}')
         self.url = url
         self.start_capture_task()
-
-        self.perf_counter_ns: list[int] = []
-        rosys.on_repeat(lambda: print(
-            f'performance: mean: {np.mean(self.perf_counter_ns)} ns, std: {np.std(self.perf_counter_ns)} ns'), 5.0)
 
     def start_capture_task(self):
         self.capture_task = background_tasks.create(self.run_capture_task(), name=f'capture {self.mac}')
@@ -82,7 +77,6 @@ class MjpegDevice:
                                             break
                                         byte_search_pos = header_pos + 2
                                         header = header_pos
-                                        start_time = time.perf_counter_ns()
                                     else:
                                         footer_pos = buffer.find(b'\xff\xd9', byte_search_pos, buffer_end)
                                         if footer_pos == -1:
@@ -95,7 +89,6 @@ class MjpegDevice:
                                         header = None
                                         buffer_end -= footer_pos + 2
                                         byte_search_pos = 0
-                                        self.perf_counter_ns.append(time.perf_counter_ns() - start_time)
                         except httpx.ReadTimeout:
                             self.log.warning('Connection to %s timed out', self.url)
                 except Exception as e:
