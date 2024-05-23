@@ -133,4 +133,4 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         await super()._apply_parameters(new_values, force_set)
         if self.is_connected:
             assert self.device is not None
-            self.device.restart_gstreamer()
+            self.device.update_settings(jovision_profile=self.jovision_profile, fps=self._parameters['fps'].value)

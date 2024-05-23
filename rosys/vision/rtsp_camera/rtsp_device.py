@@ -6,6 +6,7 @@ from asyncio.subprocess import Process
 from io import BytesIO
 from typing import AsyncGenerator, Optional
 
+import rosys
 from rosys import background_tasks
 
 from .jovision_rtsp_interface import JovisionInterface
@@ -19,6 +20,7 @@ class RtspDevice:
         self.log.setLevel(logging.DEBUG)
 
         self.mac = mac
+        self.ip = ip
 
         self.capture_task: Optional[asyncio.Task] = None
         self.capture_process: Optional[Process] = None
@@ -30,7 +32,7 @@ class RtspDevice:
         self.settings_interface: Optional[JovisionInterface] = None
         if vendor_type == VendorType.JOVISION:
             self.settings_interface = JovisionInterface(ip)
-            self.fps = self.settings_interface.get_fps(stream_id=jovision_profile)
+            self.fps = self.settings_interface.get_fps(stream_id=jovision_profile) or 10
         else:
             self.log.warning('[%s] No settings interface for vendor type %s', self.mac, vendor_type)
             self.log.warning('[%s] Using default fps of 10', self.mac)
@@ -48,6 +50,7 @@ class RtspDevice:
         return self._authorized
 
     def capture(self) -> Optional[bytes]:
+        print(f'[rosys.time()] capture {self.mac}')
         image = self._image_buffer
         self._image_buffer = None
         return image
@@ -57,22 +60,33 @@ class RtspDevice:
             self.log.debug('[%s] Terminating gstreamer process', self.mac)
             self.capture_process.terminate()
             self.capture_process = None
+        if self.capture_task is not None:
+            self.capture_task.cancel()
+            self.capture_task = None
+
+    def update_settings(self, *, jovision_profile: int, fps: int) -> None:
+        self.fps = fps
+        url = mac_to_url(self.mac, self.ip, jovision_profile)
+        if url is None:
+            raise ValueError(f'Unexpected Error: could not determine RTSP URL for {self.mac}')
+        self.url = url
+        self.restart_gstreamer()
 
     def start_gstreamer_task(self) -> None:
-        self.capture_task = background_tasks.create(self.run_gstreamer(self.url), name=f'capture {self.mac}')
+        self.capture_task = background_tasks.create(self.run_gstreamer(self.url, self.fps), name=f'capture {self.mac}')
 
     def restart_gstreamer(self) -> None:
         self.shutdown()
         self.start_gstreamer_task()
 
-    async def run_gstreamer(self, url: str) -> None:
+    async def run_gstreamer(self, url: str, fps: int) -> None:
         async def stream(url: str) -> AsyncGenerator[bytes, None]:
             if 'subtype=0' in url:
                 url = url.replace('subtype=0', 'subtype=1')
 
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self.mac, url)
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
-            command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.fps}/1" ! jpegenc ! fdsink'
+            command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={fps}/1" ! jpegenc ! fdsink'
             process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             assert process.stdout is not None
             assert process.stderr is not None
@@ -126,6 +140,7 @@ class RtspDevice:
                 self._authorized = False
 
         async for image in stream(url):
+            print(rosys.time())
             self._image_buffer = image
 
         self.log.info('[%s] stream ended', self.mac)
