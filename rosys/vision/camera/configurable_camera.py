@@ -58,7 +58,7 @@ class ConfigurableCamera(Camera):
                 continue
 
             try:
-                result = self._parameters[name].setter()
+                result = self._parameters[name].setter(value)
                 if isinstance(result, Awaitable):
                     await result
             except Exception as e:
