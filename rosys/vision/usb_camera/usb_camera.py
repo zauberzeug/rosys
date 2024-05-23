@@ -32,6 +32,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                          name=name,
                          connect_after_init=connect_after_init,
                          streaming=streaming,
+                         polling_interval=1.0 / fps,
                          **kwargs)
         self._pending_operations = 0
         self.device: Optional[UsbDevice] = None
@@ -180,6 +181,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         device = self.device
         device.capture.set(cv2.CAP_PROP_FPS, fps)
+        self.polling_interval = 1.0 / fps
 
     def get_fps(self) -> int:
         assert self.device is not None

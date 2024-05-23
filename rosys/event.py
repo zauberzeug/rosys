@@ -70,7 +70,7 @@ class Event:
         """Fires event without waiting for the result."""
         for listener in self.listeners:
             try:
-                result = invoke(listener.callback, *args)
+                result = listener.callback(*args)
                 if isinstance(result, Awaitable):
                     if core.loop and core.loop.is_running():
                         name = f'{listener.filepath}:{listener.line}'

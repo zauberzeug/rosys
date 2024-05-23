@@ -1,8 +1,9 @@
 import numpy as np
+
 from rosys.driving import Odometer
 from rosys.event import Event
 from rosys.geometry import Pose, Velocity
-from rosys.test import approx
+from rosys.testing import approx
 
 
 class DummyVelocityProvider:

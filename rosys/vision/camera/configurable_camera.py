@@ -1,6 +1,5 @@
-import asyncio
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, overload
+from typing import Any, Awaitable, Callable, Optional, overload
 
 from .camera import Camera
 
@@ -59,11 +58,9 @@ class ConfigurableCamera(Camera):
                 continue
 
             try:
-                setter = self._parameters[name].setter
-                if asyncio.iscoroutinefunction(setter):
-                    await setter(value)
-                else:
-                    setter(value)
+                result = self._parameters[name].setter()
+                if isinstance(result, Awaitable):
+                    await result
             except Exception as e:
                 if not self.is_connected:
                     return
@@ -79,10 +76,9 @@ class ConfigurableCamera(Camera):
             return
         for param in self._parameters.values():
             try:
-                if asyncio.iscoroutinefunction(param.getter):
-                    val = await param.getter()
-                else:
-                    val = param.getter()
+                val = param.getter()
+                if isinstance(val, Awaitable):
+                    val = await val
                 if val is None and self.IGNORE_NONE_VALUES:
                     continue
                 param.value = val

@@ -1,7 +1,7 @@
 import pytest
 
 import rosys
-from rosys.test import forward
+from rosys.testing import forward
 
 
 @pytest.mark.usefixtures('integration')

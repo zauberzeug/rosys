@@ -23,7 +23,7 @@
     "--disable=W0511", // TODO
     "--disable=W0718", // Catching too general exception
     "--disable=W1514", // Using open without explicitly specifying an encoding
-    "--extension-pkg-allow-list=cv2,scipy.spatial,netifaces",
+    "--extension-pkg-allow-list=cv2,scipy.spatial",
     "--generated-members=cv2.*,scipy.spatial.*,sh.*"
   ],
   "python.testing.pytestArgs": ["tests"],

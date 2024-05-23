@@ -1,11 +1,11 @@
 import pytest
 
+import rosys
 from rosys.automation import Automator
 from rosys.driving import Driver
 from rosys.geometry import Pose, Spline
 from rosys.hardware import Robot
-from rosys.test import assert_pose, forward
-import rosys
+from rosys.testing import assert_pose, forward
 
 
 async def test_driving_an_arc(driver: Driver, automator: Automator, robot: Robot):
