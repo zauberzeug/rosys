@@ -28,6 +28,7 @@ async def test_usb_camera():
     assert len(camera.images) == 1
 
 
+@pytest.mark.usefixtures('integration')
 async def test_rtsp_camera():
     try:
         connected_uids = await RtspCameraProvider.scan_for_cameras()
@@ -37,7 +38,8 @@ async def test_rtsp_camera():
         raise
     if len(connected_uids) == 0:
         pytest.skip('No RTSP camera detected. This test requires a physical RTSP camera on the local network.')
-    camera = RtspCamera(id=connected_uids[0], streaming=False)
+    mac, ip = connected_uids[0]
+    camera = RtspCamera(id=mac, ip=ip, streaming=False)
     await camera.connect()
     assert camera.is_connected
     await camera.capture_image()
