@@ -7,7 +7,7 @@ from rosys.vision import MjpegCamera, MjpegCameraProvider
 from rosys.vision.mjpeg_camera.vendors import VendorType, mac_to_vendor
 
 
-@pytest.mark.asyncio(scope='session')
+@pytest.mark.usefixtures('integration')
 async def test_mjpeg_camera():
     try:
         connected_uids = await MjpegCameraProvider().scan_for_cameras()
@@ -17,7 +17,8 @@ async def test_mjpeg_camera():
         raise
     if len(connected_uids) == 0:
         pytest.skip('No MJPEG camera detected. This test requires a physical MJPEG camera on the local network.')
-    camera = MjpegCamera(id=connected_uids[0], connect_after_init=False, streaming=False)
+    uid, ip = connected_uids[0]
+    camera = MjpegCamera(id=uid, ip=ip, connect_after_init=False, streaming=False)
     await camera.connect()
     await asyncio.sleep(0.5)
     assert camera.is_connected
@@ -36,18 +37,18 @@ async def motec_settings_interface():
     if len(connected_uids) == 0:
         pytest.skip('No MJPEG camera detected. This test requires a physical MJPEG camera on the local network.')
 
-    for mac in connected_uids:
+    for mac, ip in connected_uids:
         if mac_to_vendor(mac) == VendorType.MOTEC:
-            camera = MjpegCamera(id=mac, connect_after_init=False)
+            camera = MjpegCamera(id=mac, connect_after_init=False, ip=ip, streaming=False)
             await camera.connect()
             break
     else:
         pytest.skip('No MOTEC camera detected. This test requires a physical MOTEC camera on the local network.')
 
+    assert camera.device is not None and camera.device.settings_interface is not None
     return camera.device.settings_interface
 
 
-@pytest.mark.asyncio(scope='session')
 async def test_fps(motec_settings_interface):
     fps = await motec_settings_interface.get_fps()
     try:
@@ -59,7 +60,6 @@ async def test_fps(motec_settings_interface):
         await motec_settings_interface.set_fps(fps)
 
 
-@pytest.mark.asyncio(scope='session')
 async def test_stream_compression(motec_settings_interface):
     compression_level = await motec_settings_interface.get_stream_compression()
     try:
@@ -71,7 +71,6 @@ async def test_stream_compression(motec_settings_interface):
         await motec_settings_interface.set_stream_compression(compression_level)
 
 
-@pytest.mark.asyncio(scope='session')
 async def test_stream_resolution(motec_settings_interface):
     resolution = await motec_settings_interface.get_stream_resolution()
     try:
@@ -84,7 +83,6 @@ async def test_stream_resolution(motec_settings_interface):
         await motec_settings_interface.set_stream_resolution(*resolution)
 
 
-@pytest.mark.asyncio(scope='session')
 async def test_stream_port(motec_settings_interface):
     port = await motec_settings_interface.get_stream_port()
     try:
