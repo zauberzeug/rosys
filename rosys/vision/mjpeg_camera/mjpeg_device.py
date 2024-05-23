@@ -99,7 +99,7 @@ class MjpegDevice:
     def capture(self) -> Optional[bytes]:
         image = self._image_buffer
         self._image_buffer = None
-        return remove_exif(bytes(image)) if image is not None else None
+        return remove_exif(image) if image is not None else None
 
     def shutdown(self) -> None:
         if self.capture_task is not None:

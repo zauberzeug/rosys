@@ -58,19 +58,20 @@ def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Opti
     return encode_image_as_jpeg(image)
 
 
-def remove_exif(image_data: bytes) -> bytes:  # written by ChatGPT
+def remove_exif(image_data: bytes | bytearray) -> bytes:
+    exif_marker = b'\xFF\xE1'
+
     pos = 2  # Skip SOI marker
+    image_data = bytearray(image_data)
     while pos < len(image_data):
-        if image_data[pos] == 0xFF:
-            if image_data[pos + 1] == 0xE1:  # APP1 marker (EXIF)
-                length = image_data[pos + 2] << 8 | image_data[pos + 3]
-                image_data = image_data[:pos] + image_data[pos + length + 2:]
-                continue  # Check for multiple EXIF segments
-            elif image_data[pos + 1] == 0xD9:  # EOI marker
-                break  # End of image
-            else:
-                length = image_data[pos + 2] << 8 | image_data[pos + 3]
-                pos += length + 2  # Skip to next marker
+        match_start = image_data.find(exif_marker, pos)
+        if match_start != -1:
+            match_end = match_start + 2
+            length = int.from_bytes(image_data[match_end:match_end+2], byteorder='big')
+            del image_data[match_start:match_start+length+2]  # Remove EXIF segment
+            pos = match_end
+            continue
         else:
-            pos += 1  # Increment position if not a marker
-    return image_data
+            break
+
+    return bytes(image_data)
