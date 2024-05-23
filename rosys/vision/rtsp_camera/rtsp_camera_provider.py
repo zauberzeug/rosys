@@ -9,8 +9,13 @@ from .rtsp_camera import RtspCamera
 
 class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModule):
     """This module collects and provides real RTSP streaming cameras."""
+    SCAN_INTERVAL = 10
 
-    def __init__(self, *, frame_rate: int = 6, jovision_profile: int = 0, network_interface: Optional[str] = None) -> None:
+    def __init__(self, *,
+                 frame_rate: int = 6,
+                 jovision_profile: int = 0,
+                 network_interface: Optional[str] = None,
+                 auto_scan: bool = True) -> None:
         super().__init__()
 
         self.frame_rate = frame_rate
@@ -20,7 +25,8 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
         self.log = logging.getLogger('rosys.rtsp_camera_provider')
 
         rosys.on_shutdown(self.shutdown)
-        rosys.on_repeat(self.update_device_list, 10.)
+        if auto_scan:
+            rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
     def backup(self) -> dict:
         cameras = {}
@@ -42,11 +48,12 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
     async def update_device_list(self) -> None:
         for mac, ip in await find_known_cameras(network_interface=self.network_interface):
             if mac not in self._cameras:
-                self.add_camera(RtspCamera(id=mac, fps=self.frame_rate, jovision_profile=self.jovision_profile))
+                self.add_camera(RtspCamera(id=mac, fps=self.frame_rate, jovision_profile=self.jovision_profile, ip=ip))
             camera = self._cameras[mac]
             if not camera.is_connected:
                 self.log.info('activating authorized camera %s...', camera.id)
-                await camera.connect(ip)
+                camera.ip = ip
+                await camera.connect()
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():
