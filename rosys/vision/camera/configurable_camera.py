@@ -33,15 +33,15 @@ class ConfigurableCamera(Camera):
         self._parameters: dict[str, Parameter] = {}
 
     @overload
-    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], Any], default_value: Any) -> None:
+    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], None | Awaitable[None]], default_value: Any) -> None:
         ...
 
     @overload
-    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], Any], default_value: Any,
+    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], None | Awaitable[None]], default_value: Any,
                             min_value: Any, max_value: Any, step: Any) -> None:
         ...
 
-    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], Any], default_value: Any,
+    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], None | Awaitable[None]], default_value: Any,
                             min_value: Any = None, max_value: Any = None, step: Any = None) -> None:
         info = ParameterInfo(name=name, min=min_value, max=max_value, step=step)
         self._parameters[name] = Parameter(info=info, getter=getter, setter=setter, value=default_value)
