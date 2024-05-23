@@ -11,6 +11,10 @@ class MultiCameraProvider(CameraProvider):
     def __init__(self, *camera_providers: CameraProvider) -> None:
         super().__init__()
         self.providers = camera_providers
+        for camera_provider in self.providers:
+            camera_provider.NEW_IMAGE.register(self.NEW_IMAGE.emit)
+            camera_provider.CAMERA_ADDED.register(self.CAMERA_ADDED.emit)
+            camera_provider.CAMERA_REMOVED.register(self.CAMERA_REMOVED.emit)
 
     @property
     def cameras(self) -> dict[str, Camera]:
