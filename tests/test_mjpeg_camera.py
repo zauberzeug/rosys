@@ -9,14 +9,7 @@ from rosys.vision.mjpeg_camera.vendors import VendorType, mac_to_vendor
 # from ..rosys.vision.mjpeg_camera.motec_settings_interface import MotecSettingsInterface
 
 
-@pytest.fixture(scope='session')
-def event_loop():
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
-
-
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope='session')
 async def test_mjpeg_camera():
     try:
         connected_uids = await MjpegCameraProvider().scan_for_cameras()
@@ -56,7 +49,7 @@ async def motec_settings_interface():
     return camera.device.settings_interface
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope='session')
 async def test_fps(motec_settings_interface):
     fps = await motec_settings_interface.get_fps()
     try:
@@ -68,7 +61,7 @@ async def test_fps(motec_settings_interface):
         await motec_settings_interface.set_fps(fps)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope='session')
 async def test_stream_compression(motec_settings_interface):
     compression_level = await motec_settings_interface.get_stream_compression()
     try:
@@ -80,7 +73,7 @@ async def test_stream_compression(motec_settings_interface):
         await motec_settings_interface.set_stream_compression(compression_level)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope='session')
 async def test_stream_resolution(motec_settings_interface):
     resolution = await motec_settings_interface.get_stream_resolution()
     try:
@@ -93,7 +86,7 @@ async def test_stream_resolution(motec_settings_interface):
         await motec_settings_interface.set_stream_resolution(*resolution)
 
 
-@pytest.mark.asyncio
+@pytest.mark.asyncio(scope='session')
 async def test_stream_port(motec_settings_interface):
     port = await motec_settings_interface.get_stream_port()
     try:
