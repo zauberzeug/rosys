@@ -39,7 +39,7 @@ class MjpegDevice:
             async with httpx.AsyncClient() as client:
                 assert self.url is not None
                 try:
-                    async with client.stream('GET', self.url, auth=self.authentication) as response:
+                    async with client.stream('GET', self.url, auth=self.authentication) as response:  # type: ignore
                         if response.status_code != 200:
                             self.log.error('could not connect to %s (credentials: %s): %s %s',
                                            self.url, self.authentication, response.status_code, response.reason_phrase)
@@ -76,11 +76,12 @@ class MjpegDevice:
                                         footer_pos = buffer.find(b'\xff\xd9', byte_search_pos, buffer_end)
                                         if footer_pos == -1:
                                             break
-                                        image_data = buffer[header:footer_pos + 2]
+
+                                        image_end = footer_pos + 2
+                                        image_data = buffer[header:image_end]
                                         yield image_data
 
-                                        buffer_view[:buffer_end - (footer_pos + 2)
-                                                    ] = buffer_view[footer_pos + 2:buffer_end]
+                                        buffer_view[:buffer_end - image_end] = buffer_view[image_end:buffer_end]
                                         header = None
                                         buffer_end -= footer_pos + 2
                                         byte_search_pos = 0
@@ -89,10 +90,9 @@ class MjpegDevice:
                 except Exception as e:
                     self.log.warning('Connection to %s failed. Was something disconnected?\n%s', self.url, e)
                     raise e
-        i = 0
+
         async for image in stream():
             self._image_buffer = image
-            i += 1
 
         self.capture_task = None
 
