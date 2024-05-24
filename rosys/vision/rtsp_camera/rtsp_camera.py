@@ -75,7 +75,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         self.device = RtspDevice(mac=self.id, ip=self.ip, jovision_profile=self.jovision_profile)
 
-        self._apply_all_parameters()
+        await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
         if not self.is_connected:
@@ -129,8 +129,8 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             return None
         return self.jovision_profile
 
-    def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
-        super()._apply_parameters(new_values, force_set)
+    async def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
+        await super()._apply_parameters(new_values, force_set)
         if self.is_connected:
             assert self.device is not None
             self.device.restart_gstreamer()

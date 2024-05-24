@@ -42,8 +42,8 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
     @staticmethod
-    async def scan_for_cameras(network_interface: Optional[str] = None) -> list[str]:
-        return [mac for mac, _ in await find_known_cameras(network_interface=network_interface)]
+    async def scan_for_cameras(network_interface: Optional[str] = None) -> list[tuple[str, str]]:
+        return await find_known_cameras(network_interface=network_interface)
 
     async def update_device_list(self) -> None:
         for mac, ip in await find_known_cameras(network_interface=self.network_interface):

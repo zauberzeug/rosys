@@ -6,7 +6,7 @@ from asyncio.subprocess import Process
 from io import BytesIO
 from typing import AsyncGenerator, Optional
 
-from nicegui import background_tasks
+from rosys import background_tasks
 
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
@@ -16,6 +16,7 @@ class RtspDevice:
 
     def __init__(self, mac: str, ip: str, jovision_profile: int) -> None:
         self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device')
+        self.log.setLevel(logging.DEBUG)
 
         self.mac = mac
 
@@ -53,6 +54,7 @@ class RtspDevice:
 
     def shutdown(self) -> None:
         if self.capture_process is not None:
+            self.log.debug('[%s] Terminating gstreamer process', self.mac)
             self.capture_process.terminate()
             self.capture_process = None
 
@@ -68,6 +70,7 @@ class RtspDevice:
             if 'subtype=0' in url:
                 url = url.replace('subtype=0', 'subtype=1')
 
+            self.log.debug('[%s] Starting gstreamer pipeline for %s', self.mac, url)
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
             command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.fps}/1" ! jpegenc ! fdsink'
             process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)

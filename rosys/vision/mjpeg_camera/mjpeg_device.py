@@ -1,18 +1,23 @@
+import asyncio
 import logging
 from asyncio import Task
 from typing import AsyncGenerator, Optional
 
 import httpx
-from nicegui import background_tasks
 
+from ...rosys import on_startup
 from ..image_processing import remove_exif
-from .vendors import mac_to_url
+from .motec_settings_interface import MotecSettingsInterface
+from .vendors import VendorType, mac_to_url, mac_to_vendor
 
 
 class MjpegDevice:
 
     def __init__(self, mac: str, ip: str, *,
-                 index: Optional[int] = None, username: Optional[str] = None, password: Optional[str] = None) -> None:
+                 index: Optional[int] = None,
+                 username: Optional[str] = None,
+                 password: Optional[str] = None,
+                 control_port: int = 8885) -> None:
         self.mac = mac
         self.ip = ip
         self.capture_task: Optional[Task] = None
@@ -23,10 +28,17 @@ class MjpegDevice:
         if url is None:
             raise ValueError(f'could not determine URL for {mac}')
         self.url = url
+
+        if mac_to_vendor(mac) == VendorType.MOTEC:
+            self.settings_interface = MotecSettingsInterface(ip, port=control_port)
+
         self.start_capture_task()
 
-    def start_capture_task(self):
-        self.capture_task = background_tasks.create(self.run_capture_task(), name=f'capture {self.mac}')
+    def start_capture_task(self) -> None:
+        def create_capture_task() -> None:
+            loop = asyncio.get_event_loop()
+            self.capture_task = loop.create_task(self.run_capture_task())
+        on_startup(create_capture_task)
 
     async def restart_capture(self) -> None:
         self.shutdown()
@@ -93,7 +105,7 @@ class MjpegDevice:
 
         async for image in stream():
             self._image_buffer = image
-
+        self.log.warning('Capture task stopped')
         self.capture_task = None
 
     def capture(self) -> Optional[bytes]:
