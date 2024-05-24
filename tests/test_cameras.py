@@ -6,7 +6,7 @@ from rosys.vision import RtspCamera, RtspCameraProvider, SimulatedCamera, UsbCam
 
 
 async def test_simulated_camera():
-    camera = SimulatedCamera(id='test_cam', width=800, height=600)
+    camera = SimulatedCamera(id='test_cam', width=800, height=600, streaming=False)
     await camera.connect()
     assert camera.is_connected
     await camera.capture_image()
@@ -21,7 +21,7 @@ async def test_usb_camera():
     connected_uids = list(await UsbCameraProvider.scan_for_cameras())
     if len(connected_uids) == 0:
         pytest.skip('No USB camera detected. This test requires a physical USB camera to be connected.')
-    camera = UsbCamera(id=connected_uids[0])
+    camera = UsbCamera(id=connected_uids[0], streaming=False)
     await camera.connect()
     assert camera.is_connected
     await camera.capture_image()
@@ -37,7 +37,7 @@ async def test_rtsp_camera():
         raise
     if len(connected_uids) == 0:
         pytest.skip('No RTSP camera detected. This test requires a physical RTSP camera on the local network.')
-    camera = RtspCamera(id=connected_uids[0])
+    camera = RtspCamera(id=connected_uids[0], streaming=False)
     await camera.connect()
     assert camera.is_connected
     await camera.capture_image()
