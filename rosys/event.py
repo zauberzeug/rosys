@@ -43,7 +43,7 @@ class Event:
 
     def register_ui(self, callback: Callable) -> Event:
         self.register(callback)
-        client = context.get_client()
+        client = context.client
         if not client.shared:
             async def register_disconnect():
                 try:
