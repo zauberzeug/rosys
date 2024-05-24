@@ -981,24 +981,28 @@
 
 
 <h2 id="rosys.vision.rtsp_camera.RtspCameraProvider" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">RtspCameraProvider</span>
+            <span class="doc doc-object-name doc-class-name">RtspCameraProvider</span>
 
 
 <a href="#rosys.vision.rtsp_camera.RtspCameraProvider" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">RtspCameraProvider</span><span class="p">(</span>
-    <span class="o">*</span><span class="p">,</span> <span class="n">frame_rate</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span> <span class="n">jovision_profile</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">frame_rate</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
+    <span class="n">jovision_profile</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">network_interface</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">auto_scan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="../#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.rtsp_camera.rtsp_camera.RtspCamera">RtspCamera</span>]</code>, <code><span title="rosys.persistence.PersistentModule">PersistentModule</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="../#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.rtsp_camera.rtsp_camera.RtspCamera">RtspCamera</span>]</code>, <code><span title="rosys.persistence.PersistentModule">PersistentModule</span></code></p>
 
-  
+
       <p>This module collects and provides real RTSP streaming cameras.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -1014,8 +1018,7 @@
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
 

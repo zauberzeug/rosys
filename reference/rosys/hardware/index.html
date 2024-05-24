@@ -1723,23 +1723,23 @@
 
 
 <h2 id="rosys.hardware.Bms" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">Bms</span>
+            <span class="doc doc-object-name doc-class-name">Bms</span>
 
 
 <a href="#rosys.hardware.Bms" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">Bms</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
-  
+
       <p>The BMS module communicates with a simple battery management system over a serial connection.</p>
 <p>The BMS module provides measured voltages as an event.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -1751,87 +1751,79 @@
 
 
 
-
 <div class="doc doc-object doc-function">
 
 
-
 <h3 id="rosys.hardware.Bms.is_above_percent" class="doc doc-heading">
-          <span class="doc doc-object-name doc-function-name">is_above_percent</span>
+            <span class="doc doc-object-name doc-function-name">is_above_percent</span>
 
 
 <a href="#rosys.hardware.Bms.is_above_percent" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">is_above_percent</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
 </code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Returns whether the battery is charged above the given percentage.</p>
 
-  </div>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h3 id="rosys.hardware.Bms.is_above_voltage" class="doc doc-heading">
-          <span class="doc doc-object-name doc-function-name">is_above_voltage</span>
+            <span class="doc doc-object-name doc-function-name">is_above_voltage</span>
 
 
 <a href="#rosys.hardware.Bms.is_above_voltage" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">is_above_voltage</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
 </code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Returns whether the battery voltage is above the given value.</p>
 
-  </div>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h3 id="rosys.hardware.Bms.is_below_percent" class="doc doc-heading">
-          <span class="doc doc-object-name doc-function-name">is_below_percent</span>
+            <span class="doc doc-object-name doc-function-name">is_below_percent</span>
 
 
 <a href="#rosys.hardware.Bms.is_below_percent" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">is_below_percent</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
 </code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Returns whether the battery is charged below the given percentage.</p>
 
-  </div>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h3 id="rosys.hardware.Bms.is_below_voltage" class="doc doc-heading">
-          <span class="doc doc-object-name doc-function-name">is_below_voltage</span>
+            <span class="doc doc-object-name doc-function-name">is_below_voltage</span>
 
 
 <a href="#rosys.hardware.Bms.is_below_voltage" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">is_below_voltage</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
 </code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Returns whether the battery voltage is below the given value.</p>
 
-  </div>
+    </div>
 
 </div>
 
@@ -1839,8 +1831,7 @@
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
 
@@ -1849,7 +1840,7 @@
 
 
 <h2 id="rosys.hardware.BmsHardware" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">BmsHardware</span>
+            <span class="doc doc-object-name doc-class-name">BmsHardware</span>
 
 
 <a href="#rosys.hardware.BmsHardware" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -1866,15 +1857,15 @@
 <span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bms.Bms" href="#rosys.hardware.Bms">Bms</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bms.Bms" href="#rosys.hardware.Bms">Bms</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
-  
+
       <p>This module implements the hardware interface for the BMS module.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -1890,8 +1881,7 @@
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
 
@@ -1900,7 +1890,7 @@
 
 
 <h2 id="rosys.hardware.BmsSimulation" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">BmsSimulation</span>
+            <span class="doc doc-object-name doc-class-name">BmsSimulation</span>
 
 
 <a href="#rosys.hardware.BmsSimulation" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -1910,15 +1900,15 @@
 <span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bms.Bms" href="#rosys.hardware.Bms">Bms</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bms.Bms" href="#rosys.hardware.Bms">Bms</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
 
-  
+
       <p>This module simulates a BMS module.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -1934,8 +1924,7 @@
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
 
@@ -1944,22 +1933,22 @@
 
 
 <h2 id="rosys.hardware.Bumper" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">Bumper</span>
+            <span class="doc doc-object-name doc-class-name">Bumper</span>
 
 
 <a href="#rosys.hardware.Bumper" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">Bumper</span><span class="p">(</span><span class="n">estop</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EStop</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
-  
+
       <p>A module that detects when a bumper is triggered.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -1975,8 +1964,7 @@
 
   </div>
 
-  </div>
-
+    </div>
 
 </div><h3 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h3>
 <table>
@@ -2000,7 +1988,7 @@
 
 
 <h2 id="rosys.hardware.BumperHardware" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">BumperHardware</span>
+            <span class="doc doc-object-name doc-class-name">BumperHardware</span>
 
 
 <a href="#rosys.hardware.BumperHardware" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -2014,17 +2002,17 @@
 <span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bumper.Bumper" href="#rosys.hardware.Bumper">Bumper</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bumper.Bumper" href="#rosys.hardware.Bumper">Bumper</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
-  
+
       <p>Hardware implementation of the bumper module.</p>
 <p>The module expects a dictionary of pin names and pin numbers.
 If an e-stop is provided, the module will not trigger bumpers if the e-stop is active.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2040,8 +2028,7 @@ If an e-stop is provided, the module will not trigger bumpers if the e-stop is a
 
   </div>
 
-  </div>
-
+    </div>
 
 </div><h3 id="events_1">Events<a class="headerlink" href="#events_1" title="Permanent link">&para;</a></h3>
 <table>
@@ -2065,22 +2052,22 @@ If an e-stop is provided, the module will not trigger bumpers if the e-stop is a
 
 
 <h2 id="rosys.hardware.BumperSimulation" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">BumperSimulation</span>
+            <span class="doc doc-object-name doc-class-name">BumperSimulation</span>
 
 
 <a href="#rosys.hardware.BumperSimulation" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">BumperSimulation</span><span class="p">(</span><span class="n">estop</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EStop</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bumper.Bumper" href="#rosys.hardware.Bumper">Bumper</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bumper.Bumper" href="#rosys.hardware.Bumper">Bumper</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
 
-  
+
       <p>Simulation of the bumper module.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2096,8 +2083,7 @@ If an e-stop is provided, the module will not trigger bumpers if the e-stop is a
 
   </div>
 
-  </div>
-
+    </div>
 
 </div><h3 id="events_2">Events<a class="headerlink" href="#events_2" title="Permanent link">&para;</a></h3>
 <table>
@@ -2121,24 +2107,24 @@ If an e-stop is provided, the module will not trigger bumpers if the e-stop is a
 
 
 <h2 id="rosys.hardware.Communication" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">Communication</span>
+            <span class="doc doc-object-name doc-class-name">Communication</span>
 
 
 <a href="#rosys.hardware.Communication" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">Communication</span><span class="p">()</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><span title="abc.ABC">ABC</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
-  
+
       <p>This abstract module defines an interface for communicating with a microcontroller.</p>
 <p>Besides sending and receiving messages a communication module provides a property whether communication is possible.
 It can also provide a piece of debug UI.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2154,8 +2140,7 @@ It can also provide a piece of debug UI.</p>
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
 
@@ -2164,23 +2149,23 @@ It can also provide a piece of debug UI.</p>
 
 
 <h2 id="rosys.hardware.SerialCommunication" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">SerialCommunication</span>
+            <span class="doc doc-object-name doc-class-name">SerialCommunication</span>
 
 
 <a href="#rosys.hardware.SerialCommunication" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">SerialCommunication</span><span class="p">(</span><span class="n">baud_rate</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">115200</span><span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.communication.communication.Communication" href="#rosys.hardware.Communication">Communication</a></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.communication.communication.Communication" href="#rosys.hardware.Communication">Communication</a></code></p>
 
-  
+
       <p>This module implements a communication via a serial device with a given baud rate.</p>
 <p>It contains a list of search paths for finding the serial device.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2196,8 +2181,7 @@ It can also provide a piece of debug UI.</p>
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
 
@@ -2206,24 +2190,24 @@ It can also provide a piece of debug UI.</p>
 
 
 <h2 id="rosys.hardware.WebCommunication" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">WebCommunication</span>
+            <span class="doc doc-object-name doc-class-name">WebCommunication</span>
 
 
 <a href="#rosys.hardware.WebCommunication" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">WebCommunication</span><span class="p">()</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.communication.communication.Communication" href="#rosys.hardware.Communication">Communication</a></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.communication.communication.Communication" href="#rosys.hardware.Communication">Communication</a></code></p>
 
-  
+
       <p>Remote connection to the Robot Brain's ESP.</p>
 <p>This makes it possible to keep developing on your fast computer
 while communicating with the hardware components connected to a physical Robot Brain.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2239,8 +2223,7 @@ while communicating with the hardware components connected to a physical Robot B
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
 
@@ -2249,25 +2232,25 @@ while communicating with the hardware components connected to a physical Robot B
 
 
 <h2 id="rosys.hardware.EStop" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">EStop</span>
+            <span class="doc doc-object-name doc-class-name">EStop</span>
 
 
 <a href="#rosys.hardware.EStop" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">EStop</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
-  
+
       <p>A module that detects when the e-stop is triggered.</p>
 <p>The module has a boolean field <code>active</code> that is true when the e-stop is triggered.</p>
 <p>There is also a boolean field <code>is_soft_estop_active</code> that is true when the soft e-stop is active.
 It can be set to true or false by calling <code>set_soft_estop(active: bool)</code>.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2283,8 +2266,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
   </div>
 
-  </div>
-
+    </div>
 
 </div><h3 id="events_3">Events<a class="headerlink" href="#events_3" title="Permanent link">&para;</a></h3>
 <table>
@@ -2308,7 +2290,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
 
 <h2 id="rosys.hardware.EStopHardware" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">EStopHardware</span>
+            <span class="doc doc-object-name doc-class-name">EStopHardware</span>
 
 
 <a href="#rosys.hardware.EStopHardware" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -2320,16 +2302,16 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 <span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.estop.EStop" href="#rosys.hardware.EStop">EStop</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.estop.EStop" href="#rosys.hardware.EStop">EStop</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
-  
+
       <p>Hardware implementation of the e-stop module.</p>
 <p>The module expects a dictionary of pin names and pin numbers.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2345,8 +2327,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
   </div>
 
-  </div>
-
+    </div>
 
 </div><h3 id="events_4">Events<a class="headerlink" href="#events_4" title="Permanent link">&para;</a></h3>
 <table>
@@ -2370,22 +2351,22 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
 
 <h2 id="rosys.hardware.EStopSimulation" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">EStopSimulation</span>
+            <span class="doc doc-object-name doc-class-name">EStopSimulation</span>
 
 
 <a href="#rosys.hardware.EStopSimulation" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">EStopSimulation</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.estop.EStop" href="#rosys.hardware.EStop">EStop</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.estop.EStop" href="#rosys.hardware.EStop">EStop</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
 
-  
+
       <p>Simulation of the e-stop module.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2401,8 +2382,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
   </div>
 
-  </div>
-
+    </div>
 
 </div><h3 id="events_5">Events<a class="headerlink" href="#events_5" title="Permanent link">&para;</a></h3>
 <table>
@@ -2426,7 +2406,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
 
 <h2 id="rosys.hardware.ExpanderHardware" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">ExpanderHardware</span>
+            <span class="doc doc-object-name doc-class-name">ExpanderHardware</span>
 
 
 <a href="#rosys.hardware.ExpanderHardware" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -2440,15 +2420,15 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 <span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
-  
+
       <p>The expander module represents a second ESP microcontroller connected to the core ESP via serial.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2464,8 +2444,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
 
@@ -2474,23 +2453,23 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
 
 <h2 id="rosys.hardware.Robot" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">Robot</span>
+            <span class="doc doc-object-name doc-class-name">Robot</span>
 
 
 <a href="#rosys.hardware.Robot" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">Robot</span><span class="p">(</span><span class="n">modules</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Module</span><span class="p">])</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><span title="abc.ABC">ABC</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
-  
+
       <p>A robot that consists of a number of modules.</p>
 <p>It can be either a hardware robot or a simulation.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2506,8 +2485,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
 
@@ -2516,7 +2494,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
 
 <h2 id="rosys.hardware.RobotHardware" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">RobotHardware</span>
+            <span class="doc doc-object-name doc-class-name">RobotHardware</span>
 
 
 <a href="#rosys.hardware.RobotHardware" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -2525,16 +2503,16 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 <span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.robot.Robot" href="#rosys.hardware.Robot">Robot</a></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.robot.Robot" href="#rosys.hardware.Robot">Robot</a></code></p>
 
-  
+
       <p>A robot that consists of hardware modules.</p>
 <p>It generates Lizard code, forwards output to the hardware modules and sends commands to the robot brain.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2550,8 +2528,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
 
@@ -2560,23 +2537,23 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
 
 <h2 id="rosys.hardware.RobotSimulation" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">RobotSimulation</span>
+            <span class="doc doc-object-name doc-class-name">RobotSimulation</span>
 
 
 <a href="#rosys.hardware.RobotSimulation" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">RobotSimulation</span><span class="p">(</span><span class="n">modules</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Module</span><span class="p">])</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.robot.Robot" href="#rosys.hardware.Robot">Robot</a></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.robot.Robot" href="#rosys.hardware.Robot">Robot</a></code></p>
 
-  
+
       <p>A robot that consists of simulated modules.</p>
 <p>It regularly calls the step method of all modules to allow them to update their internal state.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2592,8 +2569,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
 
@@ -2602,16 +2578,16 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
 
 <h2 id="rosys.hardware.RobotBrain" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">RobotBrain</span>
+            <span class="doc doc-object-name doc-class-name">RobotBrain</span>
 
 
 <a href="#rosys.hardware.RobotBrain" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">RobotBrain</span><span class="p">(</span><span class="n">communication</span><span class="p">:</span> <span class="n">Communication</span><span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
+    <div class="doc doc-contents first">
 
-  
+
       <p>This module manages the communication with a <a href="https://zauberzeug.com/products/robot-brain">Zauberzeug Robot Brain</a>.</p>
 <p>It expects a communication object, which is used for the actual read and write operations.
 Besides providing some basic methods like configuring or restarting the microcontroller, it augments and verifies checksums for each message.</p>
@@ -2620,7 +2596,7 @@ The clock offset is calculated by comparing the hardware time with the system ti
 If the offset changes significantly, a notification is sent and the offset history is cleared.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2636,8 +2612,7 @@ If the offset changes significantly, a notification is sent and the offset histo
 
   </div>
 
-  </div>
-
+    </div>
 
 </div><h3 id="events_6">Events<a class="headerlink" href="#events_6" title="Permanent link">&para;</a></h3>
 <table>
@@ -2661,7 +2636,7 @@ If the offset changes significantly, a notification is sent and the offset histo
 
 
 <h2 id="rosys.hardware.SerialHardware" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">SerialHardware</span>
+            <span class="doc doc-object-name doc-class-name">SerialHardware</span>
 
 
 <a href="#rosys.hardware.SerialHardware" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -2676,15 +2651,15 @@ If the offset changes significantly, a notification is sent and the offset histo
 <span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
-  
+
       <p>The serial module represents a serial connection with another device.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2700,8 +2675,7 @@ If the offset changes significantly, a notification is sent and the offset histo
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
 
@@ -2710,23 +2684,23 @@ If the offset changes significantly, a notification is sent and the offset histo
 
 
 <h2 id="rosys.hardware.Wheels" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">Wheels</span>
+            <span class="doc doc-object-name doc-class-name">Wheels</span>
 
 
 <a href="#rosys.hardware.Wheels" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">Wheels</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
-  
+
       <p>This module represents wheels for a two-wheel differential drive.</p>
 <p>Wheels can be moved using the <code>drive</code> methods and provide measured velocities as an event.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2742,8 +2716,7 @@ If the offset changes significantly, a notification is sent and the offset histo
 
   </div>
 
-  </div>
-
+    </div>
 
 </div><h3 id="events_7">Events<a class="headerlink" href="#events_7" title="Permanent link">&para;</a></h3>
 <table>
@@ -2767,7 +2740,7 @@ If the offset changes significantly, a notification is sent and the offset histo
 
 
 <h2 id="rosys.hardware.WheelsHardware" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">WheelsHardware</span>
+            <span class="doc doc-object-name doc-class-name">WheelsHardware</span>
 
 
 <a href="#rosys.hardware.WheelsHardware" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -2785,17 +2758,17 @@ If the offset changes significantly, a notification is sent and the offset histo
 <span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.wheels.Wheels" href="#rosys.hardware.Wheels">Wheels</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.wheels.Wheels" href="#rosys.hardware.Wheels">Wheels</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
-  
+
       <p>This module implements wheels hardware.</p>
 <p>Drive and stop commands are forwarded to a given Robot Brain.
 Velocities are read and emitted regularly.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2811,8 +2784,7 @@ Velocities are read and emitted regularly.</p>
 
   </div>
 
-  </div>
-
+    </div>
 
 </div><h3 id="events_8">Events<a class="headerlink" href="#events_8" title="Permanent link">&para;</a></h3>
 <table>
@@ -2836,24 +2808,24 @@ Velocities are read and emitted regularly.</p>
 
 
 <h2 id="rosys.hardware.WheelsSimulation" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">WheelsSimulation</span>
+            <span class="doc doc-object-name doc-class-name">WheelsSimulation</span>
 
 
 <a href="#rosys.hardware.WheelsSimulation" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">WheelsSimulation</span><span class="p">()</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
-          <p class="doc doc-class-bases">
-            Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.wheels.Wheels" href="#rosys.hardware.Wheels">Wheels</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.wheels.Wheels" href="#rosys.hardware.Wheels">Wheels</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
 
-  
+
       <p>This module simulates two wheels.</p>
 <p>Drive and stop commands impact internal velocities (linear and angular).
 A simulated pose is regularly updated with these velocities, while the velocities are emitted as an event.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -2869,8 +2841,7 @@ A simulated pose is regularly updated with these velocities, while the velocitie
 
   </div>
 
-  </div>
-
+    </div>
 
 </div><h3 id="events_9">Events<a class="headerlink" href="#events_9" title="Permanent link">&para;</a></h3>
 <table>

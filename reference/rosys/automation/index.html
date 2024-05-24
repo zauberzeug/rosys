@@ -717,6 +717,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#rosys.automation.Automator.set_default_automation" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_default_automation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rosys.automation.Automator.start" class="md-nav__link">
     <span class="md-ellipsis">
       start
@@ -1190,6 +1199,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#rosys.automation.Automator.set_default_automation" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_default_automation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rosys.automation.Automator.start" class="md-nav__link">
     <span class="md-ellipsis">
       start
@@ -1267,23 +1285,23 @@
 
 
 <h2 id="rosys.automation.app_controls" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">app_controls</span>
+            <span class="doc doc-object-name doc-class-name">app_controls</span>
 
 
 <a href="#rosys.automation.app_controls" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">app_controls</span><span class="p">(</span><span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span> <span class="n">automator</span><span class="p">:</span> <span class="n">Automator</span><span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
+    <div class="doc doc-contents first">
 
-  
+
       <p>The AppControls module enables the connection with a mobile-app-based user interface.</p>
 <p>It uses a given RobotBrain object to communicate with <a href="https://lizard.dev/">Lizard</a> running on a microcontroller
 and in turn being connected to a mobile app via Bluetooth Low Energy.
 It displays buttons to control a given automator.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -1295,15 +1313,13 @@ It displays buttons to control a given automator.</p>
 
 
 
-
 <div class="doc doc-object doc-function">
 
 
-
 <h3 id="rosys.automation.app_controls.notify" class="doc doc-heading">
-          <span class="doc doc-object-name doc-function-name">notify</span>
+            <span class="doc doc-object-name doc-function-name">notify</span>
 
-  
+
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
@@ -1312,23 +1328,21 @@ It displays buttons to control a given automator.</p>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">notify</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>show notification as Snackbar message on mobile device</p>
 
-  </div>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h3 id="rosys.automation.app_controls.set_info" class="doc doc-heading">
-          <span class="doc doc-object-name doc-function-name">set_info</span>
+            <span class="doc doc-object-name doc-function-name">set_info</span>
 
-  
+
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
@@ -1337,11 +1351,11 @@ It displays buttons to control a given automator.</p>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">set_info</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>replace constantly shown info text on mobile device</p>
 
-  </div>
+    </div>
 
 </div>
 
@@ -1349,8 +1363,7 @@ It displays buttons to control a given automator.</p>
 
   </div>
 
-  </div>
-
+    </div>
 
 </div><h3 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h3>
 <table>
@@ -1374,21 +1387,21 @@ It displays buttons to control a given automator.</p>
 
 
 <h2 id="rosys.automation.automation_controls" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">automation_controls</span>
+            <span class="doc doc-object-name doc-class-name">automation_controls</span>
 
 
 <a href="#rosys.automation.automation_controls" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">automation_controls</span><span class="p">(</span><span class="n">automator</span><span class="p">:</span> <span class="n">Automator</span><span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
+    <div class="doc doc-contents first">
 
-  
+
       <p>This UI element contains start/stop/pause/resume buttons for controlling a given automator.</p>
 <p>See <a href="https://rosys.io/examples/play-pause-stop/">Play-pause-stop</a> for a simple example of the automation controls.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -1404,8 +1417,7 @@ It displays buttons to control a given automator.</p>
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
 
@@ -1414,7 +1426,7 @@ It displays buttons to control a given automator.</p>
 
 
 <h2 id="rosys.automation.Automator" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">Automator</span>
+            <span class="doc doc-object-name doc-class-name">Automator</span>
 
 
 <a href="#rosys.automation.Automator" class="headerlink" title="Permanent link">&para;</a></h2>
@@ -1426,19 +1438,19 @@ It displays buttons to control a given automator.</p>
 <span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents first">
+    <div class="doc doc-contents first">
 
-  
+
       <p>An automator allows running automations, i.e. coroutines that can be paused and resumed.</p>
 <p>See <a href="https://rosys.io/examples/click-and-drive/">Click-and-drive</a> for a simple example of an automation.</p>
 <p><em>steerer</em>: If provided, manually steering the robot will pause a currently running automation.</p>
 <p><em>default_automation</em>: If provided, it allows the automator to start a new automation without passing an automation
 (e.g. via an "Play"-button like offered by the <a href="https://rosys.io/reference/rosys/automation/#rosys.automation.automation_controls">automation controls</a>). 
 The passed function should return a new coroutine on every call (see <a href="https://rosys.io/examples/play-pause-stop/">Play-pause-stop</a> example).</p>
-<p><em>on_interrupt</em>: Optional callback that will be called when an automation pauses or stops.</p>
+<p><em>on_interrupt</em>: Optional callback that will be called when an automation pauses or stops (the cause is provided as string parameter).</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -1450,103 +1462,115 @@ The passed function should return a new coroutine on every call (see <a href="ht
 
 
 
-
 <div class="doc doc-object doc-function">
 
 
-
 <h3 id="rosys.automation.Automator.disable" class="doc doc-heading">
-          <span class="doc doc-object-name doc-function-name">disable</span>
+            <span class="doc doc-object-name doc-function-name">disable</span>
 
 
 <a href="#rosys.automation.Automator.disable" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">disable</span><span class="p">(</span><span class="n">because</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Disables the automator.</p>
 <p>No automations can be started while the automator is disabled.
 If an automation is running or paused it will be stopped.
 You need to provide a cause which will be used as notification message.</p>
 
-  </div>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h3 id="rosys.automation.Automator.enable" class="doc doc-heading">
-          <span class="doc doc-object-name doc-function-name">enable</span>
+            <span class="doc doc-object-name doc-function-name">enable</span>
 
 
 <a href="#rosys.automation.Automator.enable" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">enable</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Enables the automator.</p>
 <p>It is enabled by default.
 It can be disabled by calling <code>disable()</code>.</p>
 
-  </div>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h3 id="rosys.automation.Automator.pause" class="doc doc-heading">
-          <span class="doc doc-object-name doc-function-name">pause</span>
+            <span class="doc doc-object-name doc-function-name">pause</span>
 
 
 <a href="#rosys.automation.Automator.pause" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">pause</span><span class="p">(</span><span class="n">because</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Pauses the current automation.</p>
 <p>You need to provide a cause which will be used as notification message.</p>
 
-  </div>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h3 id="rosys.automation.Automator.resume" class="doc doc-heading">
-          <span class="doc doc-object-name doc-function-name">resume</span>
+            <span class="doc doc-object-name doc-function-name">resume</span>
 
 
 <a href="#rosys.automation.Automator.resume" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">resume</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Resumes the current automation.</p>
 
-  </div>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
+<h3 id="rosys.automation.Automator.set_default_automation" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">set_default_automation</span>
+
+
+<a href="#rosys.automation.Automator.set_default_automation" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">set_default_automation</span><span class="p">(</span>
+    <span class="n">default_automation</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+      <p>Sets the default automation.</p>
+<p>You can pass a function that returns a new coroutine on every call.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
 
 <h3 id="rosys.automation.Automator.start" class="doc doc-heading">
-          <span class="doc doc-object-name doc-function-name">start</span>
+            <span class="doc doc-object-name doc-function-name">start</span>
 
 
 <a href="#rosys.automation.Automator.start" class="headerlink" title="Permanent link">&para;</a></h3>
@@ -1557,35 +1581,33 @@ It can be disabled by calling <code>disable()</code>.</p>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Starts a new automation.</p>
 <p>You can pass any coroutine.
 The automator will make sure it can be paused, resumed and stopped.</p>
 
-  </div>
+    </div>
 
 </div>
-
 
 <div class="doc doc-object doc-function">
 
 
-
 <h3 id="rosys.automation.Automator.stop" class="doc doc-heading">
-          <span class="doc doc-object-name doc-function-name">stop</span>
+            <span class="doc doc-object-name doc-function-name">stop</span>
 
 
 <a href="#rosys.automation.Automator.stop" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">stop</span><span class="p">(</span><span class="n">because</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
-  <div class="doc doc-contents ">
-  
+    <div class="doc doc-contents ">
+
       <p>Stops the current automation.</p>
 <p>You need to provide a cause which will be used as notification message.</p>
 
-  </div>
+    </div>
 
 </div>
 
@@ -1593,8 +1615,7 @@ The automator will make sure it can be paused, resumed and stopped.</p>
 
   </div>
 
-  </div>
-
+    </div>
 
 </div><h3 id="events_1">Events<a class="headerlink" href="#events_1" title="Permanent link">&para;</a></h3>
 <table>
@@ -1638,14 +1659,14 @@ The automator will make sure it can be paused, resumed and stopped.</p>
 
 
 <h2 id="rosys.automation.parallelize" class="doc doc-heading">
-          <span class="doc doc-object-name doc-module-name">parallelize</span>
+            <span class="doc doc-object-name doc-module-name">parallelize</span>
 
 
 <a href="#rosys.automation.parallelize" class="headerlink" title="Permanent link">&para;</a></h2>
 
-  <div class="doc doc-contents first">
+    <div class="doc doc-contents first">
 
-  
+
 
   <div class="doc doc-children">
 
@@ -1661,7 +1682,7 @@ The automator will make sure it can be paused, resumed and stopped.</p>
 
 
 <h3 id="rosys.automation.parallelize.parallelize" class="doc doc-heading">
-          <span class="doc doc-object-name doc-class-name">parallelize</span>
+            <span class="doc doc-object-name doc-class-name">parallelize</span>
 
 
 <a href="#rosys.automation.parallelize.parallelize" class="headerlink" title="Permanent link">&para;</a></h3>
@@ -1671,16 +1692,16 @@ The automator will make sure it can be paused, resumed and stopped.</p>
 <span class="p">)</span>
 </code></pre></div>
 
-  <div class="doc doc-contents ">
+    <div class="doc doc-contents ">
 
-  
+
       <p>Parallelize multiple coroutines.</p>
 <p>This class allows to combine multiple coroutines into one that can be passed to the
 <code>automator &lt;https://rosys.io/reference/rosys/automation/#rosys.automation.Automator&gt;</code>__
 to run them in parallel.</p>
 
 
-  
+
 
   <div class="doc doc-children">
 
@@ -1696,8 +1717,7 @@ to run them in parallel.</p>
 
   </div>
 
-  </div>
-
+    </div>
 
 </div>
 
@@ -1706,7 +1726,7 @@ to run them in parallel.</p>
 
   </div>
 
-  </div>
+    </div>
 
 </div>
 
