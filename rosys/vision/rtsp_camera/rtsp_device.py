@@ -6,7 +6,7 @@ from asyncio.subprocess import Process
 from io import BytesIO
 from typing import AsyncGenerator, Optional
 
-from rosys import background_tasks
+from nicegui import background_tasks
 
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor

@@ -1,6 +1,6 @@
 import asyncio
 import multiprocessing
-from typing import Generator
+from typing import AsyncGenerator
 
 import pytest
 from nicegui import core
@@ -18,7 +18,7 @@ log_configuration.setup()
 
 
 @pytest.fixture
-async def integration() -> Generator:
+async def integration() -> AsyncGenerator:
     core.loop = asyncio.get_event_loop()
     rosys.reset_before_test()
     await rosys.startup()

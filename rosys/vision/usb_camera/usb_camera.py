@@ -70,7 +70,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self.device = device
         logging.info('Connecting camera %s: succeeded', self.id)
 
-        self._apply_all_parameters()
+        await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
         if not self.is_connected:

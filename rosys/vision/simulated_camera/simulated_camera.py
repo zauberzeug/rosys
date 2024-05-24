@@ -56,7 +56,7 @@ class SimulatedCamera(ConfigurableCamera):
     async def connect(self) -> None:
         if not self.is_connected:
             self.device = SimulatedDevice(id=self.id, size=self.resolution)
-            self._apply_all_parameters()
+            await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
         self.device = None
