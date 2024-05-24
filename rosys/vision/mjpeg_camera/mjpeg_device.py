@@ -6,7 +6,7 @@ from typing import AsyncGenerator, Optional
 
 import httpx
 
-from ...rosys import on_shutdown, on_startup
+from ...rosys import on_startup
 from ..image_processing import remove_exif
 from .motec_settings_interface import MotecSettingsInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
