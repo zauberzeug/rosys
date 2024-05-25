@@ -101,10 +101,11 @@ class Pose:
         )
 
     def transform3d(self, point: Point3d) -> Point3d:
-        transformed_x = self.x + point.x * np.cos(self.yaw) - point.y * np.sin(self.yaw)
-        transformed_y = self.y + point.x * np.sin(self.yaw) + point.y * np.cos(self.yaw)
-        transformed_z = point.z
-        return Point3d(x=transformed_x, y=transformed_y, z=transformed_z)
+        return Point3d(
+            x=self.x + point.x * np.cos(self.yaw) - point.y * np.sin(self.yaw),
+            y=self.y + point.x * np.sin(self.yaw) + point.y * np.cos(self.yaw),
+            z=point.z,
+        )
 
     def transform_array(self, points: np.ndarray) -> np.ndarray:
         return np.stack((
