@@ -12,6 +12,14 @@ class Point3d:
     y: float
     z: float
 
+    @staticmethod
+    def from_tuple(t: tuple[float, float, float]) -> Point3d:
+        return Point3d(x=t[0], y=t[1], z=t[2])
+
+    @staticmethod
+    def from_list(l: list[float]) -> Point3d:
+        return Point3d(x=l[0], y=l[1], z=l[2])
+
     @property
     def tuple(self) -> tuple[float, float, float]:
         return (self.x, self.y, self.z)
