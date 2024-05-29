@@ -9,6 +9,7 @@ from ..image import Image
 from ..image_processing import get_image_size_from_bytes, process_jpeg_image
 from ..image_rotation import ImageRotation
 from .mjpeg_device import MjpegDevice
+from .mjpeg_device_factory import MjpegDeviceFactory
 
 
 class MjpegCamera(TransformableCamera, ConfigurableCamera):
@@ -68,7 +69,12 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             self.log.error('No IP address provided')
             return
 
-        self.device = MjpegDevice(self.mac, self.ip, index=self.index, username=self.username, password=self.password)
+        try:
+            self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
+                                                    password=self.password)
+        except ValueError as error:
+            self.log.error('Could not connect to device: %s', error)
+            return
 
     async def disconnect(self) -> None:
         if self.device is None:
