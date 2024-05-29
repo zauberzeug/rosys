@@ -19,7 +19,7 @@ def mac_to_vendor(mac: str) -> VendorType:
 def mac_to_url(mac: str, ip: str, *, index: Optional[int] = None) -> Optional[str]:
     vendor = mac_to_vendor(mac)
     if vendor == VendorType.AXIS:
-        return f'http://{ip}/axis-cgi/mjpg/video.cgi' + (f'?camera={index}' if index is not None else '')
+        return f'http://{ip}/axis-cgi/mjpg/video.cgi' + '?' + (f'camera={index}' if index is not None else '')
     if vendor == VendorType.MOTEC:
         return f'http://{ip}:1001/stream.mjpg'
     return None
