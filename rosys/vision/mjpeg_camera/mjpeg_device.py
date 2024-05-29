@@ -113,3 +113,15 @@ class MjpegDevice:
         if self.capture_task is not None:
             self.capture_task.cancel()
             self.capture_task = None
+
+    async def get_fps(self) -> int:
+        return 0
+
+    async def set_fps(self, fps: int) -> None:
+        pass
+
+    async def get_resolution(self) -> tuple[int, int]:
+        return 0, 0
+
+    async def set_resolution(self, width: int, height: int) -> None:
+        pass

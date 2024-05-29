@@ -107,27 +107,23 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
     async def _set_fps(self, fps: int) -> None:
         if self.device is None:
             raise ValueError('Device is not connected')
-        assert self.device.settings_interface is not None
 
-        await self.device.settings_interface.set_fps(fps)
+        await self.device.set_fps(fps)
 
     async def _get_fps(self) -> int:
         if self.device is None:
             raise ValueError('Device is not connected')
-        assert self.device.settings_interface is not None
 
-        return await self.device.settings_interface.get_fps()
+        return await self.device.get_fps()
 
     async def _set_resolution(self, resolution: tuple[int, int]) -> None:
         if self.device is None:
             raise ValueError('Device is not connected')
-        assert self.device.settings_interface is not None
 
-        await self.device.settings_interface.set_stream_resolution(*resolution)
+        await self.device.set_resolution(*resolution)
 
     async def _get_resolution(self) -> tuple[int, int]:
         if self.device is None:
             raise ValueError('Device is not connected')
-        assert self.device.settings_interface is not None
 
-        return await self.device.settings_interface.get_stream_resolution()
+        return await self.device.get_resolution()

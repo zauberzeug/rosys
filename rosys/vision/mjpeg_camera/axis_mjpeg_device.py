@@ -36,34 +36,28 @@ class AxisMjpegDevice(MjpegDevice):
         if vendor != VendorType.AXIS:
             raise ValueError(f'AxisMjpegDevice can only be used with AXIS devices. Got {vendor} for mac="{mac}"')
 
-    @property
-    def fps(self) -> int:
+    async def get_fps(self) -> int:
         return self.axis_settings.fps
 
-    @fps.setter
-    def fps(self, fps: int) -> None:
+    async def set_fps(self, fps: int) -> None:
         self.url = re.sub(r'fps=\d+', f'fps={fps}', self.url)
         if 'fps=' not in self.url:
             self.url += f'&fps={fps}'
         self.restart_capture()
 
-    @property
-    def resolution(self) -> tuple[int, int]:
+    async def get_resolution(self) -> tuple[int, int]:
         return self.axis_settings.resolution
 
-    @resolution.setter
-    def resolution(self, width: int, height: int) -> None:
+    async def set_resolution(self, width: int, height: int) -> None:
         self.url = re.sub(r'resolution=\d+x\d+', f'resolution={width}x{height}', self.url)
         if 'resolution=' not in self.url:
             self.url += f'&resolution={width}x{height}'
         self.restart_capture()
 
-    @property
-    def mirrored(self) -> bool:
+    async def get_mirrored(self) -> bool:
         return self.axis_settings.mirrored
 
-    @mirrored.setter
-    def mirrored(self, mirrored: bool) -> None:
+    async def set_mirrored(self, mirrored: bool) -> None:
         value = 1 if mirrored else 0
         self.url = re.sub(r'mirror=\d', f'mirror={value}', self.url)
         if 'mirror=' not in self.url:
