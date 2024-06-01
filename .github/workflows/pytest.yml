@@ -25,6 +25,9 @@ jobs:
           poetry config virtualenvs.create false --local
           poetry install
           sudo apt-get update && sudo apt-get install -y v4l-utils
+      - name: Validate OpenCV Installation
+        run: |
+          python -c "import cv2; print('cv2 version:', cv2.__version__); print('cv2.omnidir available:', hasattr(cv2, 'omnidir')); print('cv2.omnidir.projectPoints available:', hasattr(cv2.omnidir, 'projectPoints'))"
       - name: test
         run: pytest
       - name: examples
