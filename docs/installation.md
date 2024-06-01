@@ -8,6 +8,9 @@ python3 -m pip install rosys
 
 See [Getting Started](getting_started.md) for what to do next.
 
+Please note that RoSys has been developed for Unix-like systems.
+While it may partially work on Windows, we do not officially support it.
+
 ## On The Robot
 
 While the above-mentioned installation command works perfectly well in local environments, on a robot it is often easier to run RoSys inside a Docker container.

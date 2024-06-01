@@ -39,7 +39,10 @@ def backup(force: bool = False) -> None:
         if not backup_path.exists():
             backup_path.mkdir(parents=True)
         filepath = backup_path / f'{name}.json'
-        filepath.write_text(json.dumps(module.backup(), indent=4, cls=Encoder))
+        try:
+            filepath.write_text(json.dumps(module.backup(), indent=4, cls=Encoder))
+        except Exception:
+            log.exception('failed to backup %s: %s', module, str(module.backup()))
         module.needs_backup = False
 
 

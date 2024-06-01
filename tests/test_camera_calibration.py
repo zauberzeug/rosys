@@ -1,7 +1,7 @@
 import numpy as np
 
 from rosys.geometry import Point3d
-from rosys.test import approx
+from rosys.testing import approx
 from rosys.vision import CalibratableCamera, Calibration
 from rosys.vision.calibration import CameraModel
 

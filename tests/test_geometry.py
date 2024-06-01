@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from rosys.geometry import Line, LineSegment, Point, Pose, PoseStep, Rectangle, Rotation
-from rosys.test import approx
+from rosys.testing import approx
 
 
 def test_line_segment_distance():

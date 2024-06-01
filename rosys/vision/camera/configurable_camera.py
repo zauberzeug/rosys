@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, overload
+from typing import Any, Awaitable, Callable, Optional, overload
 
 from .camera import Camera
 
@@ -31,23 +31,22 @@ class ConfigurableCamera(Camera):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self._parameters: dict[str, Parameter] = {}
-        self._pending_operations: int = 0
 
     @overload
-    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], None], default_value: Any) -> None:
+    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], None | Awaitable[None]], default_value: Any) -> None:
         ...
 
     @overload
-    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], None], default_value: Any,
+    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], None | Awaitable[None]], default_value: Any,
                             min_value: Any, max_value: Any, step: Any) -> None:
         ...
 
-    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], None], default_value: Any,
+    def _register_parameter(self, name: str, getter: Callable[[], Any], setter: Callable[[Any], None | Awaitable[None]], default_value: Any,
                             min_value: Any = None, max_value: Any = None, step: Any = None) -> None:
         info = ParameterInfo(name=name, min=min_value, max=max_value, step=step)
         self._parameters[name] = Parameter(info=info, getter=getter, setter=setter, value=default_value)
 
-    def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
+    async def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
         if not self.is_connected:
             return
         for name, value in new_values.items():
@@ -57,23 +56,39 @@ class ConfigurableCamera(Camera):
                 continue
             if not force_set and value == self._parameters[name].value:
                 continue
-            self._parameters[name].setter(value)
-        self._update_parameter_cache()
 
-    def _apply_all_parameters(self) -> None:
-        self._apply_parameters(self.parameters, force_set=True)
+            try:
+                result = self._parameters[name].setter(value)
+                if isinstance(result, Awaitable):
+                    await result
+            except Exception as e:
+                if not self.is_connected:
+                    return
+                raise e
 
-    def _update_parameter_cache(self) -> None:
+        await self._update_parameter_cache()
+
+    async def _apply_all_parameters(self) -> None:
+        await self._apply_parameters(self.parameters, force_set=True)
+
+    async def _update_parameter_cache(self) -> None:
         if not self.is_connected:
             return
         for param in self._parameters.values():
-            val = param.getter()
-            if val is None and self.IGNORE_NONE_VALUES:
-                continue
-            param.value = val
+            try:
+                val = param.getter()
+                if isinstance(val, Awaitable):
+                    val = await val
+                if val is None and self.IGNORE_NONE_VALUES:
+                    continue
+                param.value = val
+            except Exception as e:
+                if not self.is_connected:
+                    return
+                raise e
 
-    def set_parameters(self, new_values: dict[str, Any]) -> None:
-        self._apply_parameters(new_values)
+    async def set_parameters(self, new_values: dict[str, Any]) -> None:
+        await self._apply_parameters(new_values)
 
     @property
     def parameters(self) -> dict[str, Any]:
