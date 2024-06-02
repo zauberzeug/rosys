@@ -77,6 +77,7 @@ class DetectorSimulation(Detector):
         assert detections is not None
         for obj in self.simulated_objects:
             viewing_direction = np.array(camera.calibration.extrinsics.rotation.R)[:, 2]
+            assert isinstance(obj.position, Point3d)
             object_direction = np.array(obj.position.tuple) - camera.calibration.extrinsics.translation
             if np.dot(viewing_direction, object_direction) < 0:
                 continue
