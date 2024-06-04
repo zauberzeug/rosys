@@ -50,7 +50,8 @@ class WheelsHardware(Wheels, ModuleHardware):
                  m_per_tick: float = 0.01,
                  width: float = 0.5,
                  is_left_reversed: bool = False,
-                 is_right_reversed: bool = False) -> None:
+                 is_right_reversed: bool = False
+                 ) -> None:
         self.name = name
         lizard_code = remove_indentation(f'''
             l = ODriveMotor({can.name}, {left_can_address})
@@ -91,6 +92,12 @@ class WheelsSimulation(Wheels, ModuleSimulation):
         self.friction_factor: float = 0.0
         self.is_blocking: bool = False
         self.is_slipping: bool = False
+        self.odrive_version = 6
+        self.motor_error = True
+        self.l0_error = 1
+        self.r0_error = 0
+        self.l1_error = 0
+        self.r1_error = 0
 
     async def drive(self, linear: float, angular: float) -> None:
         await super().drive(linear, angular)
@@ -105,3 +112,6 @@ class WheelsSimulation(Wheels, ModuleSimulation):
             self.pose += PoseStep(linear=dt*self.linear_velocity, angular=dt*self.angular_velocity, time=rosys.time())
         velocity = Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=rosys.time())
         self.VELOCITY_MEASURED.emit([velocity])
+
+    def reset_motors(self) -> None:
+        self.motor_error = False
