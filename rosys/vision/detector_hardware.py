@@ -44,7 +44,7 @@ class DetectorHardware(Detector):
         if not self.is_connected:
             self.log.info('trying reconnect %s', self.name)
             if not await self.connect():
-                self.log.exception('connection to %s at port %s failed; trying again', self.name, self.port)
+                self.log.error('connection to %s at port %s failed; trying again', self.name, self.port)
                 await rosys.sleep(3.0)
                 return
 
