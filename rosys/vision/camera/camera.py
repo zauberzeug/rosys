@@ -20,7 +20,7 @@ class Camera(abc.ABC):
                  id: str,  # pylint: disable=redefined-builtin
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
-                 streaming: bool = False,
+                 streaming: bool = True,
                  polling_interval: float = 0.1,
                  base_path_overwrite: Optional[str] = None,
                  **kwargs) -> None:
