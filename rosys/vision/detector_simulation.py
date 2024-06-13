@@ -31,9 +31,15 @@ class DetectorSimulation(Detector):
     Individual camera IDs can be added to a set of `blocked_cameras` to simulate occlusions during pytests.
     A list of `simulated_objects` can be filled to define what can be detected.
     An optional `noise` parameter controls the spatial accuracy in pixels.
+    An optional `detection_delay` parameter simulates the time it takes to process an image.
     """
 
-    def __init__(self, camera_provider: CalibratableCameraProvider, *, noise: float = 1.0, name: Optional[str] = None) -> None:
+    def __init__(self,
+                 camera_provider: CalibratableCameraProvider, *,
+                 noise: float = 1.0,
+                 detection_delay: float = 0.4,
+                 name: Optional[str] = None,
+                 ) -> None:
         super().__init__(name=name)
 
         self.camera_provider = camera_provider
@@ -41,7 +47,7 @@ class DetectorSimulation(Detector):
 
         self.blocked_cameras: set[str] = set()
         self.simulated_objects: list[SimulatedObject] = []
-        self.detection_delay = 0.4
+        self.detection_delay = detection_delay
 
         rosys.on_repeat(self.step, 0.1)
 
