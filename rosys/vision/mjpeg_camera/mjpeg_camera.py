@@ -109,6 +109,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             raise ValueError('Device is not connected')
 
         await self.device.set_fps(fps)
+        self.polling_interval = 1.0 / fps
 
     async def _get_fps(self) -> int:
         if self.device is None:
