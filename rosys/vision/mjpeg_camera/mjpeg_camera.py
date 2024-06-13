@@ -59,7 +59,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
     @property
     def is_connected(self) -> bool:
-        return self.device is not None and self.device.capture_task is not None
+        return (self.device is not None) and (self.device.capture_task is not None) and (not self.device.capture_task.done())
 
     async def connect(self) -> None:
         if self.is_connected:
