@@ -125,3 +125,9 @@ class MjpegDevice:
 
     async def set_resolution(self, width: int, height: int) -> None:
         pass
+
+    async def get_mirrored(self) -> bool:
+        return False
+
+    async def set_mirrored(self, mirrored: bool) -> None:
+        pass
