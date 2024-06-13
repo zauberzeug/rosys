@@ -33,6 +33,8 @@ class DetectorSimulation(Detector):
     An optional `noise` parameter controls the spatial accuracy in pixels.
     """
 
+    DETECTION_DELAY = 0.4
+
     def __init__(self, camera_provider: CalibratableCameraProvider, *, noise: float = 1.0, name: Optional[str] = None) -> None:
         super().__init__(name=name)
 
@@ -54,7 +56,7 @@ class DetectorSimulation(Detector):
                      tags: list[str] = [],
                      ) -> Detections | None:
         is_blocked = image.camera_id in self.blocked_cameras
-        await rosys.sleep(0.4)
+        await rosys.sleep(self.DETECTION_DELAY)
         image.set_detections(self.name, Detections())
         if not is_blocked:
             self.update_simulated_objects(image)
