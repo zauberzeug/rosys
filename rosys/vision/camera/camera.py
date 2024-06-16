@@ -20,7 +20,7 @@ class Camera(abc.ABC):
                  id: str,  # pylint: disable=redefined-builtin
                  name: Optional[str] = None,
                  connect_after_init: bool = True,
-                 streaming: bool = False,
+                 streaming: bool = True,
                  polling_interval: float = 0.1,
                  base_path_overwrite: Optional[str] = None,
                  **kwargs) -> None:
@@ -30,6 +30,8 @@ class Camera(abc.ABC):
         self.connect_after_init = connect_after_init
         self.images: deque[Image] = deque(maxlen=self.MAX_IMAGES)
         self.base_path: str = f'images/{base_path_overwrite or id}'
+
+        self.should_stream: bool = streaming
 
         self.NEW_IMAGE: Event = Event()
 
@@ -56,6 +58,7 @@ class Camera(abc.ABC):
 
     @streaming.setter
     def streaming(self, value: bool) -> None:
+        self.should_stream = value
         if value:
             self.image_loop.start()
         else:
@@ -74,7 +77,7 @@ class Camera(abc.ABC):
 
     def get_latest_image_url(self) -> str:
         image = self.latest_captured_image
-        if image is None:
+        if image is None or not self.is_connected:
             return f'{self.base_path}/placeholder'
         return self.get_image_url(image)
 
@@ -83,7 +86,7 @@ class Camera(abc.ABC):
             'id': self.id,
             'name': self.name,
             'connect_after_init': self.connect_after_init,
-            'streaming': self.streaming,
+            'streaming': self.should_stream,
         }
 
     @property
