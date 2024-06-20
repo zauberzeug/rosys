@@ -45,6 +45,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
         self._register_parameter('fps', self._get_fps, self._set_fps, default_value=10)
         self._register_parameter('resolution', self._get_resolution, self._set_resolution, default_value=(640, 480))
+        self._register_parameter('mirrored', self._get_mirrored, self._set_mirrored, default_value=False)
 
     def to_dict(self) -> dict:
         return super().to_dict() | {
@@ -128,3 +129,15 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             raise ValueError('Device is not connected')
 
         return await self.device.get_resolution()
+
+    async def _set_mirrored(self, mirrored: bool) -> None:
+        if self.device is None:
+            raise ValueError('Device is not connected')
+
+        await self.device.set_mirrored(mirrored)
+
+    async def _get_mirrored(self) -> bool:
+        if self.device is None:
+            raise ValueError('Device is not connected')
+
+        return await self.device.get_mirrored()
