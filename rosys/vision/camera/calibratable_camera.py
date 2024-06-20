@@ -20,10 +20,9 @@ class CalibratableCamera(Camera):
 
     @classmethod
     def create_calibrated(cls, *,
-                          width: int = 800, height: int = 600,
+                          width: int = 800, height: int = 600, focal_length: float = 570,
                           x: float = 0.0, y: float = 0.0, z: float = 1.0,
                           roll: float = np.pi, pitch: float = 0.0, yaw: float = 0.0,
-                          focal_length: float = 570,
                           **kwargs) -> Self:
         camera = cls(**kwargs)
         camera.set_perfect_calibration(width=width, height=height,
@@ -33,10 +32,9 @@ class CalibratableCamera(Camera):
         return camera
 
     def set_perfect_calibration(self, *,
-                                width=800, height=600,
+                                width=800, height=600, focal_length=570,
                                 x: float = 0.0, y: float = 0.0, z: float = 1.0,
                                 roll: float = np.pi, pitch: float = 0.0, yaw: float = 0.0,
-                                focal_length: float = 570,
                                 ) -> None:
         self.calibration = Calibration(
             intrinsics=Intrinsics.create_default(width, height, focal_length=focal_length),
