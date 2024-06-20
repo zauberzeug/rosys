@@ -25,10 +25,9 @@ class CalibratableCamera(Camera):
                           roll: float = np.pi, pitch: float = 0.0, yaw: float = 0.0,
                           **kwargs) -> Self:
         camera = cls(**kwargs)
-        camera.set_perfect_calibration(width=width, height=height,
+        camera.set_perfect_calibration(width=width, height=height, focal_length=focal_length,
                                        x=x, y=y, z=z,
-                                       roll=roll, pitch=pitch, yaw=yaw,
-                                       focal_length=focal_length)
+                                       roll=roll, pitch=pitch, yaw=yaw)
         return camera
 
     def set_perfect_calibration(self, *,
