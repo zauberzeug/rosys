@@ -1,6 +1,8 @@
 import asyncio
 import logging
+import os
 import shlex
+import signal
 import subprocess
 from asyncio.subprocess import Process
 from io import BytesIO
@@ -41,7 +43,8 @@ class RtspDevice:
             raise ValueError(f'could not determine RTSP URL for {mac}')
         self.url = url
         self.log.info('[%s] Starting VideoStream for %s', self.mac, self.url)
-        self.start_gstreamer_task()
+        self.setup_signal_handling()
+        self._start_gstreamer_task()
 
     @property
     def authorized(self) -> bool:
@@ -52,20 +55,55 @@ class RtspDevice:
         self._image_buffer = None
         return image
 
-    def shutdown(self) -> None:
+    async def shutdown(self) -> None:
         if self.capture_process is not None:
             self.log.debug('[%s] Terminating gstreamer process', self.mac)
-            self.capture_process.terminate()
-            self.capture_process = None
+            os.killpg(os.getpgid(self.capture_process.pid), signal.SIGTERM)
+            try:
+                await asyncio.wait_for(self.capture_process.wait(), timeout=5)
+            except asyncio.TimeoutError:
+                self.log.error('[%s] Timeout while waiting for gstreamer process to terminate', self.mac)
+                os.killpg(os.getpgid(self.capture_process.pid), signal.SIGKILL)
+                await asyncio.wait_for(self.capture_process.wait(), timeout=5)
+            if self.capture_process.returncode is None:
+                self.log.error('[%s] Failed to terminate gstreamer process', self.mac)
+                return
+            else:
+                self.log.debug('[%s] gstreamer process terminated with return code %s',
+                               self.mac, self.capture_process.returncode)
+                self.capture_process = None
+        # capture task
+        if self.capture_task is not None and not self.capture_task.done():
+            self.log.debug('[%s] Cancelling gstreamer task', self.mac)
+            self.capture_task.cancel()
+            try:
+                await asyncio.wait_for(self.capture_task, timeout=5)
+            except asyncio.CancelledError:
+                self.log.debug('[%s] gstreamer task cancelled', self.mac)
+            except asyncio.TimeoutError:
+                self.log.error('[%s] Timeout while waiting for gstreamer task to cancel', self.mac)
+            if not self.capture_task.done():
+                self.log.error('[%s] Failed to cancel gstreamer task', self.mac)
+            else:
+                self.log.debug('[%s] gstreamer task cancelled', self.mac)
+                self.capture_task = None
 
-    def start_gstreamer_task(self) -> None:
+    def _start_gstreamer_task(self) -> None:
+        self.log.debug('[%s] Starting gstreamer task', self.mac)
+        if self.capture_task is not None and not self.capture_task.done():
+            self.log.warning('[%s] capture task already running', self.mac)
+            return
         self.capture_task = background_tasks.create(self.run_gstreamer(self.url), name=f'capture {self.mac}')
 
-    def restart_gstreamer(self) -> None:
-        self.shutdown()
-        self.start_gstreamer_task()
+    async def restart_gstreamer(self) -> None:
+        await self.shutdown()
+        self._start_gstreamer_task()
 
     async def run_gstreamer(self, url: str) -> None:
+        if self.capture_process is not None and self.capture_process.returncode is None:
+            self.log.warning('[%s] capture process already running', self.mac)
+            return
+
         async def stream(url: str) -> AsyncGenerator[bytes, None]:
             if 'subtype=0' in url:
                 url = url.replace('subtype=0', 'subtype=1')
@@ -73,7 +111,8 @@ class RtspDevice:
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self.mac, url)
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
             command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.fps}/1" ! jpegenc ! fdsink'
-            process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            self.log.debug('[%s] Running command: %s', self.mac, command)
+            process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
             assert process.stdout is not None
             assert process.stderr is not None
             self.capture_process = process
@@ -121,7 +160,7 @@ class RtspDevice:
 
             assert process.stderr is not None
             error = await process.stderr.read()
-            logging.info('process %s exited with %s and error %s', process.pid, process.returncode, error.decode())
+            self.log.info('process %s exited with %s and error %s', process.pid, process.returncode, error.decode())
             if 'Unauthorized' in error.decode():
                 self._authorized = False
 
@@ -131,3 +170,8 @@ class RtspDevice:
         self.log.info('[%s] stream ended', self.mac)
 
         self.capture_task = None
+
+    def setup_signal_handling(self):
+        loop = asyncio.get_event_loop()
+        for sig in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(sig, lambda: asyncio.ensure_future(self.shutdown()))
