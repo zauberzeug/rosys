@@ -72,3 +72,7 @@ class CameraProvider(Generic[T], rosys.persistence.PersistentModule, metaclass=a
             else:
                 while camera.images and camera.images[0].time < rosys.time() - max_age_seconds:
                     del camera.images[0]
+
+    @abc.abstractmethod
+    async def update_device_list(self):
+        pass

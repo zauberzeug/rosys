@@ -1,3 +1,5 @@
+import logging
+
 from .camera import Camera
 from .camera_provider import CameraProvider
 
@@ -11,10 +13,18 @@ class MultiCameraProvider(CameraProvider):
     def __init__(self, *camera_providers: CameraProvider) -> None:
         super().__init__()
         self.providers = camera_providers
+        self.log = logging.getLogger('rosys.multi_camera_provider')
         for camera_provider in self.providers:
             camera_provider.NEW_IMAGE.register(self.NEW_IMAGE.emit)
             camera_provider.CAMERA_ADDED.register(self.CAMERA_ADDED.emit)
             camera_provider.CAMERA_REMOVED.register(self.CAMERA_REMOVED.emit)
+
+    async def update_device_list(self) -> None:
+        for provider in self.providers:
+            try:
+                await provider.update_device_list()
+            except Exception as error:
+                self.log.error('Error while scanning for cameras in "%s": %s', provider.__class__.__name__, error)
 
     @property
     def cameras(self) -> dict[str, Camera]:
