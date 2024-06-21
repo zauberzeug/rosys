@@ -16,6 +16,10 @@ class MultiCameraProvider(CameraProvider):
             camera_provider.CAMERA_ADDED.register(self.CAMERA_ADDED.emit)
             camera_provider.CAMERA_REMOVED.register(self.CAMERA_REMOVED.emit)
 
+    def request_backup(self) -> None:
+        for provider in self.providers:
+            provider.request_backup()
+
     @property
     def cameras(self) -> dict[str, Camera]:
         return {id: camera for provider in self.providers for id, camera in provider.cameras.items()}
