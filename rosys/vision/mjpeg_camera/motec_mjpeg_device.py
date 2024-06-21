@@ -15,7 +15,7 @@ class MotecMjpegDevice(MjpegDevice):
                          username=username, password=password)
 
         vendor = mac_to_vendor(mac)
-        if not vendor == VendorType.MOTEC:
+        if vendor != VendorType.MOTEC:
             raise ValueError(f'MotecMjpegDevice can only be used with MOTEC devices. Got {vendor} for mac="{mac}"')
 
         self.settings_interface = MotecSettingsInterface(ip, port=control_port or 8885)
