@@ -53,7 +53,7 @@ class EStopHardware(EStop, ModuleHardware):
         active = any(corelist)
         pressed = [index for index, value in enumerate(corelist) if value]
         if pressed != self.pressed_estops:
-            self.log.warning(f'E-Stop {pressed} triggered')
+            self.log.warning(f'E-Stop {pressed} changed')
         self.pressed_estops[:] = pressed
         if active and not self.active:
             self.ESTOP_TRIGGERED.emit()
