@@ -1623,6 +1623,7 @@ If the image has detections, they are also uploaded.</p>
     <span class="n">camera_provider</span><span class="p">:</span> <span class="n">CalibratableCameraProvider</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">noise</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">detection_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span>
 </code></pre></div>
@@ -1636,7 +1637,8 @@ If the image has detections, they are also uploaded.</p>
 <p>It requires a camera provider in order to check visibility using the cameras' calibrations.
 Individual camera IDs can be added to a set of <code>blocked_cameras</code> to simulate occlusions during pytests.
 A list of <code>simulated_objects</code> can be filled to define what can be detected.
-An optional <code>noise</code> parameter controls the spatial accuracy in pixels.</p>
+An optional <code>noise</code> parameter controls the spatial accuracy in pixels.
+An optional <code>detection_delay</code> parameter simulates the time it takes to process an image.</p>
 
 
 
