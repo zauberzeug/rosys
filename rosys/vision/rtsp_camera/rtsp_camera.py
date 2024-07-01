@@ -83,7 +83,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         logging.info('camera %s: disconnect initialized...', self.id)
 
         assert self.device is not None
-        self.device.shutdown()
+        await self.device.shutdown()
         self.device = None
 
     async def capture_image(self) -> None:
@@ -133,4 +133,4 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         await super()._apply_parameters(new_values, force_set)
         if self.is_connected:
             assert self.device is not None
-            self.device.restart_gstreamer()
+            await self.device.restart_gstreamer()
