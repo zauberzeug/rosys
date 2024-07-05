@@ -139,9 +139,10 @@ class Calibration:
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
 
-        world_coordinates = world_coordinates.reshape(-1, 3)
-        local_coordinates = (world_coordinates - np.array(self.extrinsics.translation)) @ R
-        image_array[local_coordinates[:, 2] < 0, :] = np.nan
+        if self.intrinsics.model != CameraModel.OMNIDIRECTIONAL:
+            world_coordinates = world_coordinates.reshape(-1, 3)
+            local_coordinates = (world_coordinates - np.array(self.extrinsics.translation)) @ R
+            image_array[local_coordinates[:, 2] < 0, :] = np.nan
 
         return image_array.reshape(-1, 2)
 
@@ -244,8 +245,8 @@ class Calibration:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
 
     @staticmethod
-    def from_points(world_points: list[Point3d],
-                    image_points: list[Point],
+    def from_points(world_points: list[Point3d] | list[list[Point3d]],
+                    image_points: list[Point] | list[list[Point]],
                     image_size: ImageSize,
                     f0: float,
                     rational_model: bool = False,
@@ -264,20 +265,27 @@ class Calibration:
         if rational_model and camera_model != CameraModel.PINHOLE:
             raise ValueError('Rational model is only supported for pinhole cameras')
 
-        world_point_array = [np.array([p.tuple for p in world_points], dtype=np.float32).reshape((-1, 1, 3))]
-        image_point_array = [np.array([p.tuple for p in image_points], dtype=np.float32).reshape((-1, 1, 2))]
+        if isinstance(world_points[0], Point3d) or isinstance(image_points[0], Point):
+            assert len(world_points) == len(image_points), 'Image and world points are not formatted equally'
+            world_points = [world_points]  # type: ignore
+            image_points = [image_points]  # type: ignore
+
+        world_point_array = [np.array([p.tuple for p in view], dtype=np.float32).reshape((-1, 1, 3))  # type: ignore
+                             for view in world_points]
+        image_point_array = [np.array([p.tuple for p in view], dtype=np.float32).reshape((-1, 1, 2))  # type: ignore
+                             for view in image_points]
         K0 = np.array([[f0, 0, image_size.width / 2], [0, f0, image_size.height / 2], [0, 0, 1]], dtype=np.float32)
         D0 = np.array([0.1, 0.4, -0.5, 0.2], dtype=np.float32).reshape(1, 4)
 
         xi: float = 0.0
 
-        optimization_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 100, 1e-6)
+        optimization_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 200, 1e-6)
 
         if camera_model == CameraModel.PINHOLE:
             flags = cv2.CALIB_USE_INTRINSIC_GUESS
             if rational_model:
                 flags |= cv2.CALIB_RATIONAL_MODEL
-            _, K, D, rvecs, tvecs = cv2.calibrateCamera(
+            rms, K, D, rvecs, tvecs = cv2.calibrateCamera(
                 objectPoints=world_point_array,
                 imagePoints=image_point_array,
                 imageSize=image_size.tuple,
@@ -291,7 +299,7 @@ class Calibration:
             flags |= cv2.fisheye.CALIB_CHECK_COND
             flags |= cv2.fisheye.CALIB_FIX_SKEW
             flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
-            _, K, D, rvecs, tvecs = cv2.fisheye.calibrate(
+            rms, K, D, rvecs, tvecs = cv2.fisheye.calibrate(
                 objectPoints=world_point_array,
                 imagePoints=image_point_array,
                 image_size=image_size.tuple,
@@ -310,7 +318,7 @@ class Calibration:
                 imagePoints=image_point_array,
                 size=image_size.tuple,
                 K=K0,
-                xi=np.array([0.0], dtype=np.float32),
+                xi=np.array([xi], dtype=np.float32),
                 D=D0,
                 flags=flags,
                 criteria=optimization_criteria,
@@ -330,7 +338,7 @@ class Calibration:
                                 xi=xi)
 
         rotation = Rotation.from_rvec(rvecs[0]).T
-        translation = (-np.array(rotation.R).dot(tvecs)).flatten().tolist()
+        translation = (-np.array(rotation.R).dot(tvecs[0])).flatten().tolist()
         extrinsics = Extrinsics(rotation=rotation, translation=translation)
 
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
