@@ -7,8 +7,7 @@ import httpx
 
 from ...rosys import on_startup
 from ..image_processing import remove_exif
-from .motec_settings_interface import MotecSettingsInterface
-from .vendors import VendorType, mac_to_url, mac_to_vendor
+from .vendors import mac_to_url
 
 
 class MjpegDevice:
@@ -16,10 +15,10 @@ class MjpegDevice:
     def __init__(self, mac: str, ip: str, *,
                  index: Optional[int] = None,
                  username: Optional[str] = None,
-                 password: Optional[str] = None,
-                 control_port: int = 8885) -> None:
+                 password: Optional[str] = None) -> None:
         self.mac = mac
         self.ip = ip
+        self.index = index
         self.capture_task: Optional[Task] = None
         self._image_buffer: Optional[bytearray] = None
         self.authentication = None if username is None or password is None else httpx.DigestAuth(username, password)
@@ -29,9 +28,6 @@ class MjpegDevice:
             raise ValueError(f'could not determine URL for {mac}')
         self.url = url
 
-        if mac_to_vendor(mac) == VendorType.MOTEC:
-            self.settings_interface = MotecSettingsInterface(ip, port=control_port)
-
         self.start_capture_task()
 
     def start_capture_task(self) -> None:
@@ -40,7 +36,7 @@ class MjpegDevice:
             self.capture_task = loop.create_task(self.run_capture_task())
         on_startup(create_capture_task)
 
-    async def restart_capture(self) -> None:
+    def restart_capture(self) -> None:
         self.shutdown()
         self.start_capture_task()
 
@@ -117,3 +113,21 @@ class MjpegDevice:
         if self.capture_task is not None:
             self.capture_task.cancel()
             self.capture_task = None
+
+    async def get_fps(self) -> int:
+        return 0
+
+    async def set_fps(self, fps: int) -> None:
+        pass
+
+    async def get_resolution(self) -> tuple[int, int]:
+        return 0, 0
+
+    async def set_resolution(self, width: int, height: int) -> None:
+        pass
+
+    async def get_mirrored(self) -> bool:
+        return False
+
+    async def set_mirrored(self, mirrored: bool) -> None:
+        pass

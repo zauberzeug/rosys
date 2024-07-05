@@ -56,3 +56,8 @@ def restore() -> None:
             module.restore(json.loads(filepath.read_text()))
         except Exception:
             log.exception('failed to restore %s', module)
+
+
+def write_export(to_filepath: Path) -> None:
+    data = {name: module.backup() for name, module in modules.items()}
+    to_filepath.write_text(json.dumps(data, indent=4))

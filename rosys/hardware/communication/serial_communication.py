@@ -66,16 +66,11 @@ class SerialCommunication(Communication):
     async def read(self) -> Optional[str]:
         if not self.serial.isOpen():
             return None
-        s = self.serial.read_all()
-        try:
-            s = s.decode()
-            self.buffer += s
-            if '\n' in self.buffer:
-                line, self.buffer = self.buffer.split('\r\n', 1)
-                self.log.debug('read: %s', line)
-                return line
-        except Exception:
-            self.log.exception('Could not decode serial data: %s', s)
+        self.buffer += self.serial.read_all().decode(errors='replace')
+        if '\n' in self.buffer:
+            line, self.buffer = self.buffer.split('\r\n', 1)
+            self.log.debug('read: %s', line)
+            return line
         return None
 
     async def send(self, msg: str) -> None:
