@@ -14,11 +14,10 @@ from rosys.hardware import Robot, RobotSimulation, Wheels, WheelsSimulation
 from rosys.pathplanning import PathPlanner
 from rosys.testing import helpers, log_configuration
 
-log_configuration.setup()
-
 
 @pytest.fixture
 async def integration() -> AsyncGenerator:
+    log_configuration.setup()
     core.loop = asyncio.get_event_loop()
     rosys.reset_before_test()
     await rosys.startup()
