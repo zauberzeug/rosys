@@ -24,7 +24,7 @@ jobs:
         run: |
           poetry config virtualenvs.create false --local
           poetry install
-          sudo apt-get update && sudo apt-get install -y v4l-utils
+          sudo apt-get update && sudo apt-get install -y v4l-utils psmisc
       - name: test
         run: pytest
       - name: examples
