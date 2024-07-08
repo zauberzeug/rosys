@@ -974,6 +974,10 @@ Try to avoid consuming unnecessary CPU and IO bandwidth for volatile things like
 <li><code>replace_set</code>: replaces the content of a set using <code>from_dict</code> for each item</li>
 <li><code>replace_dataclass</code>: replaces the attributes of a dataclass with the values of a dictionary</li>
 </ul>
+<p>The persistence module also provides UI buttons for exporting the contents of the ~/.rosys directory to a single file and for importing such a file.</p>
+<p>If you want to automatically keep daily backups, you can use the <code>BackupSchedule</code> module.
+It will backup all the contents of your ~/.rosys directory at a configurable directory and at a given time each day.
+When a maximum number of backup files is reached (specified with <code>backup_count</code>), it will delete the oldest file.</p>
 
 
 
