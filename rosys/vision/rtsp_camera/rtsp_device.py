@@ -84,13 +84,13 @@ class RtspDevice:
         if self.capture_task is not None and not self.capture_task.done():
             self.log.warning('[%s] capture task already running', self.mac)
             return
-        self.capture_task = background_tasks.create(self.run_gstreamer(self.url), name=f'capture {self.mac}')
+        self.capture_task = background_tasks.create(self._run_gstreamer(self.url), name=f'capture {self.mac}')
 
     async def restart_gstreamer(self) -> None:
         await self.shutdown()
         self._start_gstreamer_task()
 
-    async def run_gstreamer(self, url: str) -> None:
+    async def _run_gstreamer(self, url: str) -> None:
         if self.capture_process is not None and self.capture_process.returncode is None:
             self.log.warning('[%s] capture process already running', self.mac)
             return
