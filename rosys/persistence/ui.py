@@ -12,8 +12,7 @@ from . import registry
 def export_button(title: str = 'Export', route: str = '/export', tmp_filepath: Path = Path('/tmp/export.json')) -> ui.button:
     @app.get(route)
     def get_export() -> FileResponse:
-        data = {name: module.backup() for name, module in registry.modules.items()}
-        tmp_filepath.write_text(json.dumps(data, indent=4))
+        registry.write_export(tmp_filepath)
         return FileResponse(tmp_filepath, filename='export.json')
     return ui.button(title, on_click=lambda: ui.download(route[1:]))
 

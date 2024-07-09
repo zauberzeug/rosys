@@ -37,14 +37,17 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
 
     def restore(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
+            self.log.debug('restoring camera: %s', camera_data)
             camera = MjpegCamera.from_dict(camera_data)
             self.add_camera(camera)
         for camera in self._cameras.values():
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
     async def scan_for_cameras(self) -> list[tuple[str, str]]:
+        self.log.debug('scanning for cameras...')
         ids_ips: list[tuple[str, str]] = []
         async for mac, ip in find_cameras(self.network_interface):
+            self.log.debug('device found: %s %s', mac, ip)
             vendor = mac_to_vendor(mac)
             if vendor == VendorType.OTHER:
                 continue
@@ -73,16 +76,18 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
                         ids_ips.append((f'{mac}-{index}', ip))
             else:
                 ids_ips.append((mac, ip))
+        self.log.debug('scanning done. Found %d cameras', len(ids_ips))
         return ids_ips
 
     async def update_device_list(self) -> None:
         for camera_id, ip in await self.scan_for_cameras():
             if camera_id not in self._cameras:
+                self.log.info('found new camera "%s" at ip "%s"', camera_id, ip)
                 self.add_camera(MjpegCamera(id=camera_id, username=self.username,
                                 password=self.password, ip=ip))
             camera = self._cameras[camera_id]
             if not camera.is_connected:
-                self.log.info('activating authorized camera "%s" at ip "%s" ...', camera.id, ip)
+                self.log.info('activating camera "%s" at ip "%s" ...', camera.id, ip)
                 camera.ip = ip
                 await camera.connect()
 

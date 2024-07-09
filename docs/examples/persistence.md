@@ -28,3 +28,9 @@ Note that the persistence module contains a number of helper functions:
 - `replace_list`: replaces the content of a list using `from_dict` for each item
 - `replace_set`: replaces the content of a set using `from_dict` for each item
 - `replace_dataclass`: replaces the attributes of a dataclass with the values of a dictionary
+
+The persistence module also provides UI buttons for exporting the contents of the ~/.rosys directory to a single file and for importing such a file.
+
+If you want to automatically keep daily backups, you can use the `BackupSchedule` module.
+It will backup all the contents of your ~/.rosys directory at a configurable directory and at a given time each day.
+When a maximum number of backup files is reached (specified with `backup_count`), it will delete the oldest file.
