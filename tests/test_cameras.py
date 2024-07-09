@@ -1,3 +1,4 @@
+import asyncio
 import platform
 
 import pytest
@@ -41,5 +42,6 @@ async def test_rtsp_camera(integration):
     camera = RtspCamera(id=mac, ip=ip, streaming=False)
     await camera.connect()
     assert camera.is_connected
+    await asyncio.sleep(1)
     await camera.capture_image()
     assert len(camera.images) == 1
