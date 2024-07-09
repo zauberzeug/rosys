@@ -74,5 +74,5 @@ class CameraProvider(Generic[T], rosys.persistence.PersistentModule, metaclass=a
                     del camera.images[0]
 
     @abc.abstractmethod
-    async def update_device_list(self):
+    async def update_device_list(self) -> None:
         pass

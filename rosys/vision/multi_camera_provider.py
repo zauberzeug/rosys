@@ -23,8 +23,8 @@ class MultiCameraProvider(CameraProvider):
         for provider in self.providers:
             try:
                 await provider.update_device_list()
-            except Exception as error:
-                self.log.error('Error while scanning for cameras in "%s": %s', provider.__class__.__name__, error)
+            except Exception as e:
+                self.log.error('Error while scanning for cameras in "%s": %s', provider.__class__.__name__, e)
 
     def request_backup(self) -> None:
         for provider in self.providers:
