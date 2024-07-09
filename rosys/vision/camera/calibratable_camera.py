@@ -20,19 +20,22 @@ class CalibratableCamera(Camera):
 
     @classmethod
     def create_calibrated(cls, *,
-                          width: int = 800, height: int = 600,
+                          width: int = 800, height: int = 600, focal_length: float = 570,
                           x: float = 0.0, y: float = 0.0, z: float = 1.0,
                           roll: float = np.pi, pitch: float = 0.0, yaw: float = 0.0,
                           **kwargs) -> Self:
         camera = cls(**kwargs)
-        camera.set_perfect_calibration(width=width, height=height, x=x, y=y, z=z, roll=roll, pitch=pitch, yaw=yaw)
+        camera.set_perfect_calibration(width=width, height=height, focal_length=focal_length,
+                                       x=x, y=y, z=z,
+                                       roll=roll, pitch=pitch, yaw=yaw)
         return camera
 
     def set_perfect_calibration(self, *,
-                                width=800, height=600,
+                                width: int = 800, height: int = 600, focal_length: float = 570,
                                 x: float = 0.0, y: float = 0.0, z: float = 1.0,
-                                roll: float = np.pi, pitch: float = 0.0, yaw: float = 0.0) -> None:
+                                roll: float = np.pi, pitch: float = 0.0, yaw: float = 0.0,
+                                ) -> None:
         self.calibration = Calibration(
-            intrinsics=Intrinsics.create_default(width, height),
+            intrinsics=Intrinsics.create_default(width, height, focal_length=focal_length),
             extrinsics=Extrinsics(rotation=Rotation.from_euler(roll, pitch, yaw), translation=[x, y, z]),
         )

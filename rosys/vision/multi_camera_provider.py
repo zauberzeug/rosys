@@ -26,6 +26,10 @@ class MultiCameraProvider(CameraProvider):
             except Exception as error:
                 self.log.error('Error while scanning for cameras in "%s": %s', provider.__class__.__name__, error)
 
+    def request_backup(self) -> None:
+        for provider in self.providers:
+            provider.request_backup()
+
     @property
     def cameras(self) -> dict[str, Camera]:
         return {id: camera for provider in self.providers for id, camera in provider.cameras.items()}
