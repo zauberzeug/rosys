@@ -65,6 +65,19 @@ class RtspDevice:
                 self.log.debug('[%s] Successfully shut down process (code %s)',
                                self.mac, self.capture_process.returncode)
                 self.capture_process = None
+        if self.capture_task is not None and not self.capture_task.done():
+            self.log.debug('[%s] Cancelling gstreamer task', self.mac)
+            self.capture_task.cancel()
+            try:
+                await asyncio.wait_for(self.capture_task, timeout=5)
+            except asyncio.TimeoutError:
+                self.log.warning('[%s] Timeout while waiting for capture task to cancel', self.mac)
+                return
+            except asyncio.CancelledError:
+                self.log.debug('[%s] Task was successfully cancelled', self.mac)
+            else:
+                self.log.debug('[%s] Task finished', self.mac)
+            self.capture_task = None
 
     def _start_gstreamer_task(self) -> None:
         self.log.debug('[%s] Starting gstreamer task', self.mac)
