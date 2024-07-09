@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import os
 import shlex
 import signal
 import subprocess
@@ -58,35 +57,15 @@ class RtspDevice:
     async def shutdown(self) -> None:
         if self.capture_process is not None:
             self.log.debug('[%s] Terminating gstreamer process', self.mac)
-            os.killpg(os.getpgid(self.capture_process.pid), signal.SIGTERM)
+            self.capture_process.terminate()
             try:
                 await asyncio.wait_for(self.capture_process.wait(), timeout=5)
             except asyncio.TimeoutError:
-                self.log.error('[%s] Timeout while waiting for gstreamer process to terminate', self.mac)
-                os.killpg(os.getpgid(self.capture_process.pid), signal.SIGKILL)
-                await asyncio.wait_for(self.capture_process.wait(), timeout=5)
-            if self.capture_process.returncode is None:
-                self.log.error('[%s] Failed to terminate gstreamer process', self.mac)
-                return
+                self.log.warning('[%s] Timeout while waiting for gstreamer process to terminate', self.mac)
             else:
-                self.log.debug('[%s] gstreamer process terminated with return code %s',
+                self.log.debug('[%s] Successfully shut down process (code %s)',
                                self.mac, self.capture_process.returncode)
                 self.capture_process = None
-        # capture task
-        if self.capture_task is not None and not self.capture_task.done():
-            self.log.debug('[%s] Cancelling gstreamer task', self.mac)
-            self.capture_task.cancel()
-            try:
-                await asyncio.wait_for(self.capture_task, timeout=5)
-            except asyncio.CancelledError:
-                self.log.debug('[%s] gstreamer task cancelled', self.mac)
-            except asyncio.TimeoutError:
-                self.log.error('[%s] Timeout while waiting for gstreamer task to cancel', self.mac)
-            if not self.capture_task.done():
-                self.log.error('[%s] Failed to cancel gstreamer task', self.mac)
-            else:
-                self.log.debug('[%s] gstreamer task cancelled', self.mac)
-                self.capture_task = None
 
     def _start_gstreamer_task(self) -> None:
         self.log.debug('[%s] Starting gstreamer task', self.mac)
@@ -112,7 +91,7 @@ class RtspDevice:
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
             command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.fps}/1" ! jpegenc ! fdsink'
             self.log.debug('[%s] Running command: %s', self.mac, command)
-            process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE, preexec_fn=os.setsid)
+            process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             assert process.stdout is not None
             assert process.stderr is not None
             self.capture_process = process
@@ -158,11 +137,24 @@ class RtspDevice:
                     if header is not None:
                         header -= img_range[1]
 
-            assert process.stderr is not None
-            error = await process.stderr.read()
-            self.log.info('process %s exited with %s and error %s', process.pid, process.returncode, error.decode())
-            if 'Unauthorized' in error.decode():
-                self._authorized = False
+            try:
+                await asyncio.wait_for(process.wait(), timeout=5)
+            except asyncio.TimeoutError:
+                self.log.warning(
+                    '[%s] Stream ended. Timeout while waiting for gstreamer process to terminate', self.mac)
+                return
+
+            return_code = process.returncode
+            if return_code == -1 * signal.SIGTERM:
+                self.log.debug('gstreamer process %s was terminated using SIGTERM', process.pid)
+            else:
+                error = await process.stderr.read()
+                error_message = error.decode()
+                self.log.error('gstreamer process %s exited with code %s.\nstderr: %s',
+                               process.pid, return_code, error_message)
+
+                if 'Unauthorized' in error_message:
+                    self._authorized = False
 
         async for image in stream(url):
             self._image_buffer = image
