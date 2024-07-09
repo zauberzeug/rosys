@@ -42,7 +42,6 @@ class RtspDevice:
             raise ValueError(f'could not determine RTSP URL for {mac}')
         self.url = url
         self.log.info('[%s] Starting VideoStream for %s', self.mac, self.url)
-        self.setup_signal_handling()
         self._start_gstreamer_task()
 
     @property
@@ -162,8 +161,3 @@ class RtspDevice:
         self.log.info('[%s] stream ended', self.mac)
 
         self.capture_task = None
-
-    def setup_signal_handling(self):
-        loop = asyncio.get_event_loop()
-        for sig in (signal.SIGINT, signal.SIGTERM):
-            loop.add_signal_handler(sig, lambda: asyncio.ensure_future(self.shutdown()))
