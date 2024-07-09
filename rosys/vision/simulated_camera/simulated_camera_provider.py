@@ -1,12 +1,12 @@
 import random
 from typing import Any, AsyncGenerator
 
-from ... import persistence, rosys
+from ... import rosys
 from ..camera_provider import CameraProvider
 from .simulated_camera import SimulatedCamera
 
 
-class SimulatedCameraProvider(CameraProvider[SimulatedCamera], persistence.PersistentModule):
+class SimulatedCameraProvider(CameraProvider[SimulatedCamera]):
     """This module collects and simulates cameras and generates synthetic images.
 
     In the current implementation the images only contain the camera ID and the current time.
@@ -22,12 +22,6 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera], persistence.Persi
 
         if auto_scan:
             rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
-
-    def backup(self) -> dict:
-        cameras = {}
-        for camera in self._cameras.values():
-            cameras[camera.id] = camera.to_dict()
-        return {}
 
     def restore(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():

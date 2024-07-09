@@ -3,14 +3,14 @@ from typing import Optional
 
 import httpx
 
-from ... import persistence, rosys
+from ... import rosys
 from ..camera_provider import CameraProvider
 from ..rtsp_camera.arp_scan import find_cameras
 from .mjpeg_camera import MjpegCamera
 from .vendors import VendorType, mac_to_vendor
 
 
-class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentModule):
+class MjpegCameraProvider(CameraProvider[MjpegCamera]):
     SCAN_INTERVAL = 10
 
     def __init__(self, *,
