@@ -5,11 +5,12 @@ from typing_extensions import Self
 
 from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
+from ..camera.transformable_camera import TransformableCamera
 from ..image import Image, ImageSize
 from .simulated_device import SimulatedDevice
 
 
-class SimulatedCamera(ConfigurableCamera):
+class SimulatedCamera(ConfigurableCamera, TransformableCamera):
 
     def __init__(self,
                  *,

@@ -51,7 +51,7 @@ class LizardFirmware:
         path = self.PATH / 'build' / 'lizard.bin'
         with path.open('rb') as f:
             head = f.read(150).decode('utf-8', 'backslashreplace')
-        self.local_version = head.split(' ')[3].replace('\x00', '').split('lizard')[0].removeprefix('v')
+        self.local_version = head.replace('\x00', '').split('lizard')[0].split('v')[-1]
 
     async def read_core_version(self) -> None:
         deadline = rosys.time() + 5.0
