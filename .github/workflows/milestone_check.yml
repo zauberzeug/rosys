@@ -1,4 +1,4 @@
-name: Check for Milestone
+name: Milestone Assigned
 
 on:
   pull_request:
