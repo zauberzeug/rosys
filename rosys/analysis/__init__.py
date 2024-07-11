@@ -10,7 +10,7 @@ from .logging_page import LoggingPage as logging_page
 from .memory import MemoryMiddleware
 from .profile_button_ import ProfileButton as profile_button
 from .timelapse_recorder import TimelapseRecorder
-from .track import track
+from .tracking import track
 from .videos_page_ import VideosPage as videos_page
 
 __all__ = [

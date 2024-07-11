@@ -70,6 +70,25 @@ requires = [
 build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
+python_version = "3.10"
+
+[[tool.mypy.overrides]]
+module = [
+    "coloredlogs",
+    "icecream",
+    "imgsize",
+    "networkx",
+    "objgraph",
+    "pylab",
+    "pyloot.*",
+    "pyquaternion",
+    "pyudev",
+    "scipy.*",
+    "serial.*",
+    "socketio.*",
+    "suntime",
+    "yappi",
+]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
