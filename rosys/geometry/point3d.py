@@ -29,7 +29,7 @@ class Point3d:
         return Point(x=self.x, y=self.y)
 
     def __str__(self) -> str:
-        return f'Point3d({round(self.x, 2)}, {round(self.y, 2)}, {round(self.z, 2)})'
+        return f'Point3d({self.x:.3f}, {self.y:.3f}, {self.z:.3f})'
 
     def __add__(self, other: Point3d) -> Point3d:
         return Point3d(x=self.x + other.x, y=self.y + other.y, z=self.z + other.z)
