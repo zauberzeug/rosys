@@ -81,16 +81,19 @@ class WheelsSimulation(Wheels, ModuleSimulation):
     A simulated pose is regularly updated with these velocities, while the velocities are emitted as an event.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, width: float = 0.5) -> None:
         super().__init__()
 
+        self.width: float = width
         self.pose: Pose = Pose()
+        """Provides the actual pose of the robot which can alter due to slippage."""
         self.linear_velocity: float = 0
         self.angular_velocity: float = 0
         self.inertia_factor: float = 0.0
         self.friction_factor: float = 0.0
         self.is_blocking: bool = False
-        self.is_slipping: bool = False
+        self.slip_factor_left: float = 0
+        self.slip_factor_right: float = 0
 
     async def drive(self, linear: float, angular: float) -> None:
         await super().drive(linear, angular)
@@ -101,7 +104,13 @@ class WheelsSimulation(Wheels, ModuleSimulation):
     async def step(self, dt: float) -> None:
         self.linear_velocity *= 1 - self.friction_factor
         self.angular_velocity *= 1 - self.friction_factor
-        if not self.is_slipping:
-            self.pose += PoseStep(linear=dt*self.linear_velocity, angular=dt*self.angular_velocity, time=rosys.time())
+        left_speed = self.linear_velocity - self.angular_velocity * self.width / 2
+        right_speed = self.linear_velocity + self.angular_velocity * self.width / 2
+        left_speed *= 1 - self.slip_factor_left
+        right_speed *= 1 - self.slip_factor_right
+        step = PoseStep(linear=dt*(left_speed + right_speed) / 2,
+                        angular=dt*(right_speed - left_speed) / self.width,
+                        time=rosys.time())
+        self.pose += step
         velocity = Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=rosys.time())
         self.VELOCITY_MEASURED.emit([velocity])
