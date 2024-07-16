@@ -19,6 +19,7 @@ modules: dict[str, PersistentModule] = {}
 
 
 def register(module: PersistentModule, key: str | None = None) -> None:
+    print(f'registering module {module} with key {key}')
     if not is_test():
         modules[key or module.__module__] = module
 
@@ -33,20 +34,27 @@ class Encoder(json.JSONEncoder):
 
 @awaitable
 def backup(force: bool = False) -> None:
+    # print('backing up...')
     for name, module in modules.items():
+        print(f'backing up {name} in module {module}')
         if not module.needs_backup and not force:
+            print('no need to back up')
             continue
         if not backup_path.exists():
             backup_path.mkdir(parents=True)
         filepath = backup_path / f'{name}.json'
         try:
+            print('backing up...')
             filepath.write_text(json.dumps(module.backup(), indent=4, cls=Encoder))
         except Exception:
             log.exception('failed to backup %s: %s', module, str(module.backup()))
+        print('done.')
         module.needs_backup = False
 
 
 def restore() -> None:
+    print(f"Restoring from {backup_path}")
+    print(f"Modules: {modules}")
     for name, module in modules.items():
         filepath = backup_path / f'{name}.json'
         if not filepath.exists():
@@ -56,6 +64,7 @@ def restore() -> None:
         # if not file_content:
         #     log.warning('Backup file "%s" is empty.', filepath)
         #     continue
+        print(f"Restoring {name} from {filepath}")
         try:
             module.restore(json.loads(file_content))
         except Exception:
@@ -63,5 +72,6 @@ def restore() -> None:
 
 
 def write_export(to_filepath: Path) -> None:
+    # print(f"Writing export to {to_filepath}")
     data = {name: module.backup() for name, module in modules.items()}
     to_filepath.write_text(json.dumps(data, indent=4))
