@@ -85,15 +85,31 @@ class WheelsSimulation(Wheels, ModuleSimulation):
         super().__init__()
 
         self.width: float = width
+        """The distance between the wheels -- used to calculate actual drift when slip_factor_* is used."""
+
         self.pose: Pose = Pose()
         """Provides the actual pose of the robot which can alter due to slippage."""
+
         self.linear_velocity: float = 0
+        """The current linear velocity of the robot."""
+
         self.angular_velocity: float = 0
+        """The current angular velocity of the robot."""
+
         self.inertia_factor: float = 0.0
+        """The factor of inertia for the wheels (0 = no inertia, 1 = full inertia)."""
+
         self.friction_factor: float = 0.0
+        """The factor of friction for the wheels (0 = no friction, 1 = full friction)."""
+
         self.is_blocking: bool = False
+        """If True, the wheels are blocking and the robot will not move."""
+
         self.slip_factor_left: float = 0
+        """The factor of slippage for the left wheel (0 = no slippage, 1 = full slippage)."""
+
         self.slip_factor_right: float = 0
+        """The factor of slippage for the right wheel (0 = no slippage, 1 = full slippage)."""
 
     async def drive(self, linear: float, angular: float) -> None:
         await super().drive(linear, angular)
