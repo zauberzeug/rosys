@@ -124,9 +124,8 @@ class WheelsSimulation(Wheels, ModuleSimulation):
         right_speed = self.linear_velocity + self.angular_velocity * self.width / 2
         left_speed *= 1 - self.slip_factor_left
         right_speed *= 1 - self.slip_factor_right
-        step = PoseStep(linear=dt*(left_speed + right_speed) / 2,
-                        angular=dt*(right_speed - left_speed) / self.width,
-                        time=rosys.time())
-        self.pose += step
+        self.pose += PoseStep(linear=dt * (left_speed + right_speed) / 2,
+                              angular=dt * (right_speed - left_speed) / self.width,
+                              time=rosys.time())
         velocity = Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=rosys.time())
         self.VELOCITY_MEASURED.emit([velocity])
