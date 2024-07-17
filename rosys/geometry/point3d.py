@@ -4,6 +4,8 @@ import math
 from dataclasses import dataclass
 from typing import Sequence
 
+import numpy as np
+
 from .point import Point
 
 
@@ -21,6 +23,10 @@ class Point3d:
     @property
     def tuple(self) -> tuple[float, float, float]:
         return (self.x, self.y, self.z)
+
+    @property
+    def array(self) -> np.ndarray:
+        return np.array(self.tuple).reshape(3, 1)
 
     def distance(self, other: Point3d) -> float:
         return math.sqrt((other.x - self.x)**2 + (other.y - self.y)**2 + (other.z - self.z)**2)
