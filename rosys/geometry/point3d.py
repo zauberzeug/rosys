@@ -10,7 +10,7 @@ from .point import Point
 
 
 @dataclass(slots=True, kw_only=True)
-class Point3d:
+class Point3d(Sequence[float]):
     x: float
     y: float
     z: float
@@ -42,3 +42,14 @@ class Point3d:
 
     def __sub__(self, other: Point3d) -> Point3d:
         return Point3d(x=self.x - other.x, y=self.y - other.y, z=self.z - other.z)
+
+    # sequence
+
+    def __len__(self) -> int:
+        return 3
+
+    def __getitem__(self, index: int | slice) -> float | tuple[float]:
+        return self.tuple[index]
+
+    def __iter__(self):
+        return iter(self.tuple)
