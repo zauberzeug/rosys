@@ -105,6 +105,105 @@ class Calibration:
     def center_point(self) -> Point3d:
         return Point3d(x=self.extrinsics.translation[0], y=self.extrinsics.translation[1], z=self.extrinsics.translation[2])
 
+    @staticmethod
+    def from_points(world_points: list[Point3d] | list[list[Point3d]],
+                    image_points: list[Point] | list[list[Point]],
+                    image_size: ImageSize,
+                    f0: float,
+                    rational_model: bool = False,
+                    camera_model: CameraModel = CameraModel.PINHOLE) -> Calibration:
+        """Estimate the camera calibration from corresponding world and image points.
+
+        :param world_points: The observed points in 3D world coordinates.
+        :param image_points: The observed points in 2D image coordinates.
+        :param image_size: The size of the image.
+        :param f0: An initial guess for the focal length.
+        :param rational_model: Whether to use the rational camera model (only applies to pinhole cameras).
+        :param camera_model: The camera model to use.
+
+        :return: The estimated camera calibration.
+        """
+        if rational_model and camera_model != CameraModel.PINHOLE:
+            raise ValueError('Rational model is only supported for pinhole cameras')
+
+        if isinstance(world_points[0], Point3d) or isinstance(image_points[0], Point):
+            assert len(world_points) == len(image_points), 'Image and world points are not formatted equally'
+            world_points = [world_points]  # type: ignore
+            image_points = [image_points]  # type: ignore
+
+        world_point_array = [np.array([p.tuple for p in view], dtype=np.float32).reshape((-1, 1, 3))  # type: ignore
+                             for view in world_points]
+        image_point_array = [np.array([p.tuple for p in view], dtype=np.float32).reshape((-1, 1, 2))  # type: ignore
+                             for view in image_points]
+        K0 = np.array([[f0, 0, image_size.width / 2], [0, f0, image_size.height / 2], [0, 0, 1]], dtype=np.float32)
+        D0 = np.array([0.1, 0.4, -0.5, 0.2], dtype=np.float32).reshape(1, 4)
+
+        xi: float = 0.0
+
+        optimization_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 200, 1e-6)
+
+        if camera_model == CameraModel.PINHOLE:
+            flags = cv2.CALIB_USE_INTRINSIC_GUESS
+            if rational_model:
+                flags |= cv2.CALIB_RATIONAL_MODEL
+            rms, K, D, rvecs, tvecs = cv2.calibrateCamera(
+                objectPoints=world_point_array,
+                imagePoints=image_point_array,
+                imageSize=image_size.tuple,
+                cameraMatrix=K0,
+                distCoeffs=None,
+                flags=flags,
+                criteria=optimization_criteria,
+            )
+        elif camera_model == CameraModel.FISHEYE:
+            flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
+            flags |= cv2.fisheye.CALIB_CHECK_COND
+            flags |= cv2.fisheye.CALIB_FIX_SKEW
+            flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
+            rms, K, D, rvecs, tvecs = cv2.fisheye.calibrate(
+                objectPoints=world_point_array,
+                imagePoints=image_point_array,
+                image_size=image_size.tuple,
+                K=K0,
+                D=D0,
+                flags=flags,
+                criteria=optimization_criteria,
+            )
+            if D.size != 4:
+                raise ValueError(f'Fisheye calibration failed (got invalid distortion coefficients D="{D}")')
+        elif camera_model == CameraModel.OMNIDIRECTIONAL:
+            flags = cv2.omnidir.CALIB_USE_GUESS
+            flags |= cv2.omnidir.CALIB_FIX_SKEW
+            rms, K, xi_arr, D, rvecs, tvecs, status = cv2.omnidir.calibrate(
+                objectPoints=world_point_array,
+                imagePoints=image_point_array,
+                size=image_size.tuple,
+                K=K0,
+                xi=np.array([xi], dtype=np.float32),
+                D=D0,
+                flags=flags,
+                criteria=optimization_criteria,
+            )
+            xi = xi_arr[0]
+            if D.size != 4:
+                raise ValueError(f'Omnidirectional calibration failed (got invalid distortion coefficients D="{D}")')
+        else:
+            raise ValueError(f'Unknown camera model "{camera_model}"')
+
+        rotation0 = Rotation(R=np.eye(3).tolist())
+        intrinsics = Intrinsics(matrix=K.tolist(),
+                                distortion=D.tolist()[0],
+                                rotation=rotation0,
+                                size=image_size,
+                                model=camera_model,
+                                xi=xi)
+
+        rotation = Rotation.from_rvec(rvecs[0]).T
+        translation = (-np.array(rotation.R).dot(tvecs[0])).flatten().tolist()
+        extrinsics = Extrinsics(rotation=rotation, translation=translation)
+
+        return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
+
     @overload
     def project_to_image(self, world_coordinates: Point3d) -> Optional[Point]: ...
 
@@ -208,10 +307,10 @@ class Calibration:
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
         D = np.array(self.intrinsics.distortion)
         if self.intrinsics.model == CameraModel.PINHOLE:
-            new_K = self.undistorted_camera_matrix(crop=crop)
+            new_K = self.get_undistorted_camera_matrix(crop=crop)
             return cv2.undistortPoints(image_points, K, D, P=new_K, R=np.eye(3))
         elif self.intrinsics.model == CameraModel.FISHEYE:
-            new_K = self.undistorted_camera_matrix(crop=crop)
+            new_K = self.get_undistorted_camera_matrix(crop=crop)
             return cv2.fisheye.undistortPoints(image_points, K, D, P=new_K)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             R = np.array(self.intrinsics.rotation.R, dtype=np.float32)
@@ -232,10 +331,10 @@ class Calibration:
         D = np.array(self.intrinsics.distortion)
 
         if self.intrinsics.model == CameraModel.PINHOLE:
-            new_K = self.undistorted_camera_matrix(crop=crop)
+            new_K = self.get_undistorted_camera_matrix(crop=crop)
             return cv2.undistortPoints(image_points, K, D, P=new_K, R=np.eye(3))
         elif self.intrinsics.model == CameraModel.FISHEYE:
-            new_K = self.undistorted_camera_matrix(crop=crop)
+            new_K = self.get_undistorted_camera_matrix(crop=crop)
             normalized_points = np.linalg.inv(new_K) @ cv2.convertPointsToHomogeneous(image_points).reshape(-1, 3).T
             normalized_points = cv2.convertPointsFromHomogeneous(normalized_points.T).reshape(-1, 1, 2)
             return cv2.fisheye.distortPoints(normalized_points, K, D)
@@ -244,106 +343,7 @@ class Calibration:
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
 
-    @staticmethod
-    def from_points(world_points: list[Point3d] | list[list[Point3d]],
-                    image_points: list[Point] | list[list[Point]],
-                    image_size: ImageSize,
-                    f0: float,
-                    rational_model: bool = False,
-                    camera_model: CameraModel = CameraModel.PINHOLE) -> Calibration:
-        """Estimate the camera calibration from corresponding world and image points.
-
-        :param world_points: The observed points in 3D world coordinates.
-        :param image_points: The observed points in 2D image coordinates.
-        :param image_size: The size of the image.
-        :param f0: An initial guess for the focal length.
-        :param rational_model: Whether to use the rational camera model (only applies to pinhole cameras).
-        :param camera_model: The camera model to use.
-
-        :return: The estimated camera calibration.
-        """
-        if rational_model and camera_model != CameraModel.PINHOLE:
-            raise ValueError('Rational model is only supported for pinhole cameras')
-
-        if isinstance(world_points[0], Point3d) or isinstance(image_points[0], Point):
-            assert len(world_points) == len(image_points), 'Image and world points are not formatted equally'
-            world_points = [world_points]  # type: ignore
-            image_points = [image_points]  # type: ignore
-
-        world_point_array = [np.array([p.tuple for p in view], dtype=np.float32).reshape((-1, 1, 3))  # type: ignore
-                             for view in world_points]
-        image_point_array = [np.array([p.tuple for p in view], dtype=np.float32).reshape((-1, 1, 2))  # type: ignore
-                             for view in image_points]
-        K0 = np.array([[f0, 0, image_size.width / 2], [0, f0, image_size.height / 2], [0, 0, 1]], dtype=np.float32)
-        D0 = np.array([0.1, 0.4, -0.5, 0.2], dtype=np.float32).reshape(1, 4)
-
-        xi: float = 0.0
-
-        optimization_criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 200, 1e-6)
-
-        if camera_model == CameraModel.PINHOLE:
-            flags = cv2.CALIB_USE_INTRINSIC_GUESS
-            if rational_model:
-                flags |= cv2.CALIB_RATIONAL_MODEL
-            rms, K, D, rvecs, tvecs = cv2.calibrateCamera(
-                objectPoints=world_point_array,
-                imagePoints=image_point_array,
-                imageSize=image_size.tuple,
-                cameraMatrix=K0,
-                distCoeffs=None,
-                flags=flags,
-                criteria=optimization_criteria,
-            )
-        elif camera_model == CameraModel.FISHEYE:
-            flags = cv2.fisheye.CALIB_RECOMPUTE_EXTRINSIC
-            flags |= cv2.fisheye.CALIB_CHECK_COND
-            flags |= cv2.fisheye.CALIB_FIX_SKEW
-            flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
-            rms, K, D, rvecs, tvecs = cv2.fisheye.calibrate(
-                objectPoints=world_point_array,
-                imagePoints=image_point_array,
-                image_size=image_size.tuple,
-                K=K0,
-                D=D0,
-                flags=flags,
-                criteria=optimization_criteria,
-            )
-            if D.size != 4:
-                raise ValueError(f'Fisheye calibration failed (got invalid distortion coefficients D="{D}")')
-        elif camera_model == CameraModel.OMNIDIRECTIONAL:
-            flags = cv2.omnidir.CALIB_USE_GUESS
-            flags |= cv2.omnidir.CALIB_FIX_SKEW
-            rms, K, xi_arr, D, rvecs, tvecs, status = cv2.omnidir.calibrate(
-                objectPoints=world_point_array,
-                imagePoints=image_point_array,
-                size=image_size.tuple,
-                K=K0,
-                xi=np.array([xi], dtype=np.float32),
-                D=D0,
-                flags=flags,
-                criteria=optimization_criteria,
-            )
-            xi = xi_arr[0]
-            if D.size != 4:
-                raise ValueError(f'Omnidirectional calibration failed (got invalid distortion coefficients D="{D}")')
-        else:
-            raise ValueError(f'Unknown camera model "{camera_model}"')
-
-        rotation0 = Rotation(R=np.eye(3).tolist())
-        intrinsics = Intrinsics(matrix=K.tolist(),
-                                distortion=D.tolist()[0],
-                                rotation=rotation0,
-                                size=image_size,
-                                model=camera_model,
-                                xi=xi)
-
-        rotation = Rotation.from_rvec(rvecs[0]).T
-        translation = (-np.array(rotation.R).dot(tvecs[0])).flatten().tolist()
-        extrinsics = Extrinsics(rotation=rotation, translation=translation)
-
-        return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
-
-    def undistorted_camera_matrix(self, crop: bool = False) -> np.ndarray:
+    def get_undistorted_camera_matrix(self, crop: bool = False) -> np.ndarray:
         """Compute the camera matrix for the undistorted image.
 
         :param crop: Whether cropping is applied to the image during undistortion.
@@ -404,7 +404,7 @@ class Calibration:
             dst = cv2.remap(image_array, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             flags = cv2.omnidir.RECTIFY_PERSPECTIVE
-            new_K = self.undistorted_camera_matrix(crop=crop)
+            new_K = self.get_undistorted_camera_matrix(crop=crop)
 
             R = np.array(self.intrinsics.rotation.R)
             xi = np.array(self.intrinsics.xi)
@@ -414,22 +414,6 @@ class Calibration:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
 
         return dst
-
-    def undistorted_size(self, size: ImageSize) -> ImageSize:
-        """Compute the size of the undistorted image after cropping.
-
-        :param size: The size of the distorted image.
-
-        :return: The size of the undistorted image.
-        """
-        if self.intrinsics.model == CameraModel.PINHOLE:
-            K = np.array(self.intrinsics.matrix)
-            D = np.array(self.intrinsics.distortion)
-            h, w = size.height, size.width
-            _, roi = cv2.getOptimalNewCameraMatrix(K, D, (w, h), 1, (w, h), centerPrincipalPoint=True)
-            return ImageSize(width=roi[2], height=roi[3])
-        else:
-            return size
 
     def undistort_image(self, image: Image) -> Image:
         """Undistort an image represented as an Image object.
@@ -448,3 +432,17 @@ class Calibration:
             is_broken=image.is_broken,
             tags=image.tags,
         )
+
+    def get_undistorted_size(self) -> ImageSize:
+        """Compute the size of the undistorted image after cropping.
+
+        :return: The size of the undistorted image.
+        """
+        if self.intrinsics.model == CameraModel.PINHOLE:
+            K = np.array(self.intrinsics.matrix)
+            D = np.array(self.intrinsics.distortion)
+            h, w = self.intrinsics.size.height, self.intrinsics.size.width
+            _, roi = cv2.getOptimalNewCameraMatrix(K, D, (w, h), 1, (w, h), centerPrincipalPoint=True)
+            return ImageSize(width=roi[2], height=roi[3])
+        else:
+            return self.intrinsics.size
