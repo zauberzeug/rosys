@@ -24,7 +24,8 @@ jobs:
         run: |
           poetry config virtualenvs.create false --local
           poetry install
-          sudo apt-get update && sudo apt-get install -y v4l-utils
+          poetry run install-deps
+          sudo apt-get update && sudo apt-get install -y v4l-utils psmisc libgl1-mesa-glx
       - name: test
         run: pytest
       - name: examples
