@@ -5,7 +5,7 @@ import numpy as np
 from rosys.geometry import Point3d
 from rosys.testing import approx
 from rosys.vision import CalibratableCamera, Calibration
-from rosys.vision.calibration import CameraModel
+from rosys.vision.calibration import CameraModel, OmnidirParameters
 
 
 def demo_data() -> tuple[CalibratableCamera, list[Point3d]]:
@@ -43,7 +43,7 @@ def demo_omnidirectional_data() -> tuple[CalibratableCamera, list[Point3d]]:
                                 roll=np.deg2rad(180+10), pitch=np.deg2rad(5), yaw=np.deg2rad(30))
     assert cam.calibration and cam.calibration.intrinsics
     cam.calibration.intrinsics.distortion = [-0.3, 0.06, -0.001, 0.0002]
-    cam.calibration.intrinsics.xi = 0.7
+    cam.calibration.intrinsics.omnidir_params = OmnidirParameters(xi=0.7)
     cam.calibration.intrinsics.model = CameraModel.OMNIDIRECTIONAL
 
     world_points = [Point3d(x=x, y=y, z=1)
@@ -63,7 +63,6 @@ def test_calibration_from_points():
     calibration = Calibration.from_points(world_points, image_points, image_size, focal_length)
 
     approx(calibration.intrinsics.matrix, cam.calibration.intrinsics.matrix)
-    approx(calibration.intrinsics.rotation.R, cam.calibration.intrinsics.rotation.R)
     approx(calibration.extrinsics.translation, cam.calibration.extrinsics.translation)
     approx(calibration.extrinsics.rotation.R, cam.calibration.extrinsics.rotation.R, abs=1e-6)
 
@@ -79,7 +78,6 @@ def test_fisheye_calibration_from_points():
                                           focal_length, camera_model=CameraModel.FISHEYE)
 
     approx(calibration.intrinsics.matrix, cam.calibration.intrinsics.matrix)
-    approx(calibration.intrinsics.rotation.R, cam.calibration.intrinsics.rotation.R)
     approx(calibration.extrinsics.translation, cam.calibration.extrinsics.translation)
     approx(calibration.extrinsics.rotation.R, cam.calibration.extrinsics.rotation.R, abs=1e-6)
 
@@ -91,7 +89,7 @@ def test_omnidirectional_calibration_from_points():
     def translated_calibrations(base_calibration: Calibration, n=6):
         for dz in np.linspace(0, 4, n):
             calibration = copy.deepcopy(base_calibration)
-            calibration.extrinsics.translation[2] += dz
+            calibration.extrinsics.translation.z += dz
             yield calibration
 
     n_views = 10
@@ -109,9 +107,10 @@ def test_omnidirectional_calibration_from_points():
     approx(rms, 0, abs=1e-1)
     approx(calibration.extrinsics.rotation.R, cam.calibration.extrinsics.rotation.R, abs=1e-3)
     approx(calibration.extrinsics.translation, cam.calibration.extrinsics.translation, abs=1e-3)
-    approx(calibration.intrinsics.rotation.R, cam.calibration.intrinsics.rotation.R, abs=1e-3)
+    approx(calibration.intrinsics.omnidir_params.rotation.R,
+           cam.calibration.intrinsics.omnidir_params.rotation.R, abs=1e-3)
     approx(calibration.intrinsics.matrix, cam.calibration.intrinsics.matrix, abs=1e-1)
-    approx(calibration.intrinsics.xi, cam.calibration.intrinsics.xi, abs=1e-1)
+    approx(calibration.intrinsics.omnidir_params.xi, cam.calibration.intrinsics.omnidir_params.xi, abs=1e-1)
 
 
 def test_projection():
@@ -202,7 +201,7 @@ def test_omnidirectional_project_from_behind():
     cam = CalibratableCamera(id='1')
     cam.set_perfect_calibration(z=1, roll=np.deg2rad(180 + 10))
     cam.calibration.intrinsics.distortion = [0.1, 0.2, 0.3, 0.4]
-    cam.calibration.intrinsics.xi = 0.8
+    cam.calibration.intrinsics.omnidir_params = OmnidirParameters(xi=0.8)
     cam.calibration.intrinsics.model = CameraModel.OMNIDIRECTIONAL
     assert cam.calibration.project_to_image(Point3d(x=0, y=1, z=1)) is not None
     assert cam.calibration.project_to_image(Point3d(x=0, y=-1, z=1)) is not None

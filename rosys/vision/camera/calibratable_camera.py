@@ -3,8 +3,8 @@ from typing import Optional
 import numpy as np
 from typing_extensions import Self
 
-from ...geometry import Rotation
-from ..calibration import Calibration, Extrinsics, Intrinsics
+from ...geometry import Point3d, Pose3d, Rotation
+from ..calibration import Calibration, Intrinsics
 from .camera import Camera
 
 
@@ -37,5 +37,6 @@ class CalibratableCamera(Camera):
                                 ) -> None:
         self.calibration = Calibration(
             intrinsics=Intrinsics.create_default(width, height, focal_length=focal_length),
-            extrinsics=Extrinsics(rotation=Rotation.from_euler(roll, pitch, yaw), translation=[x, y, z]),
+            extrinsics=Pose3d(rotation=Rotation.from_euler(roll, pitch, yaw),
+                              translation=Point3d.from_tuple([x, y, z])),
         )

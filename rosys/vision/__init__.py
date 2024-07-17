@@ -1,5 +1,5 @@
 from .calibratable_camera_provider import CalibratableCameraProvider
-from .calibration import Calibration, Extrinsics, Intrinsics
+from .calibration import Calibration, Intrinsics
 from .camera import CalibratableCamera, Camera, ConfigurableCamera, TransformableCamera
 from .camera_objects_ import CameraObjects as camera_objects
 from .camera_projector import CameraProjector
@@ -18,7 +18,6 @@ from .usb_camera import UsbCamera, UsbCameraProvider
 __all__ = [
     'CalibratableCameraProvider',
     'Calibration',
-    'Extrinsics',
     'Intrinsics',
     'CalibratableCamera',
     'Camera',
