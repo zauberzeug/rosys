@@ -34,6 +34,10 @@ class Rotation:
         return Rotation(R=np.dot(self.R, other.R).tolist())
 
     @property
+    def matrix(self) -> np.ndarray:
+        return np.array(self.R)
+
+    @property
     def T(self) -> Rotation:
         return Rotation(R=np.array(self.R).T.tolist())
 
