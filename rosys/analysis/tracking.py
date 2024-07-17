@@ -32,8 +32,8 @@ class Track:
 
     def ui(self) -> ui.markdown:
         markdown = ui.markdown()
-        ui.timer(0.1, lambda: markdown.set_content('\n'.join(' → '.join(stack.values()).replace('_', '\_')
-                                                             for stack in self.stacks.values())))
+        ui.timer(0.1, lambda: markdown.set_content('\n\n'.join(' → '.join(stack.values()).replace('_', r'\_')
+                                                               for stack in self.stacks.values())))
         return markdown
 
 
