@@ -2,7 +2,6 @@ import logging
 from typing import Callable, Coroutine, Optional, cast
 
 from .. import rosys
-from ..analysis import track
 from ..driving import Steerer
 from ..event import Event
 from .automation import Automation
@@ -124,7 +123,6 @@ class Automator:
             self.automation.stop()
             self.automation = None
             self.AUTOMATION_STOPPED.emit(because)
-            track.reset()
             rosys.notify(f'automation stopped because {because}')
 
     def enable(self) -> None:
