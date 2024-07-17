@@ -170,7 +170,6 @@ def test_fisheye_array_projection():
 
 def test_omnidirectional_array_projection():
     cam, world_points = demo_omnidirectional_data()
-    world_points = flatten(world_points)
     world_points = [p for p in world_points if abs(p.z) <= 1]
 
     world_point_array = np.array([p.tuple for p in world_points])
@@ -207,9 +206,3 @@ def test_omnidirectional_project_from_behind():
     cam.calibration.intrinsics.model = CameraModel.OMNIDIRECTIONAL
     assert cam.calibration.project_to_image(Point3d(x=0, y=1, z=1)) is not None
     assert cam.calibration.project_to_image(Point3d(x=0, y=-1, z=1)) is not None
-
-
-def flatten(points):
-    if isinstance(points[0], list):
-        return [p for view in points for p in view]
-    return points
