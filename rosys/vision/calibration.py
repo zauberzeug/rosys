@@ -85,15 +85,15 @@ class Calibration:
 
     @property
     def rotation(self) -> Rotation:
-        return self.extrinsics.rotation
+        return self.extrinsics.resolve().rotation
 
     @property
     def rotation_array(self) -> np.ndarray:
-        return self.extrinsics.rotation.matrix
+        return self.extrinsics.resolve().rotation.matrix
 
     @property
     def center_point(self) -> Point3d:
-        return self.extrinsics.translation
+        return self.extrinsics.resolve().translation
 
     @staticmethod
     def from_points(world_points: list[Point3d] | list[list[Point3d]],
