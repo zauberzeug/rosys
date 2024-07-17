@@ -9,7 +9,7 @@ import cv2
 from ... import run
 from .usb_camera_scanner import device_nodes_from_uid
 
-MJPG = cv2.VideoWriter_fourcc(*'MJPG')
+MJPG = cv2.VideoWriter.fourcc(*'MJPG')
 
 
 def find_video_id(camera_uid: str) -> Optional[int]:
