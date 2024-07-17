@@ -4,9 +4,11 @@ from .point import Point
 from .point3d import Point3d
 from .polygon import Polygon
 from .pose import Pose, PoseStep
+from .pose3d import Pose3d
 from .prism import Prism
 from .rectangle import Rectangle
 from .rotation import Rotation
+from .scene_object import scene_object
 from .spline import Spline
 from .velocity import Velocity
 
@@ -18,9 +20,11 @@ __all__ = [
     'Polygon',
     'Pose',
     'PoseStep',
+    'Pose3d',
     'Prism',
     'Rectangle',
     'Rotation',
     'Spline',
     'Velocity',
+    'scene_object',
 ]
