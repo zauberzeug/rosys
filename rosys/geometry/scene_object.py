@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-from nicegui import ui
-from nicegui.elements.scene_objects import Extrusion, Group, Stl
+from typing import Callable
 
-from ..geometry import Prism
+from nicegui import ui
+from nicegui.elements.scene_object3d import Object3D
+from nicegui.elements.scene_objects import Group, Stl
+
 from ..rosys import config
 from .pose3d import Pose3d
 
@@ -15,14 +17,12 @@ class scene_object(Group):
     The `debug` argument can be set to show a wireframe instead of a closed polygon.
     """
 
-    def __init__(self, shape: Prism, pose: Pose3d, *, debug: bool = False) -> None:
+    def __init__(self, object_constructor: Callable[[], Object3D], pose: Pose3d) -> None:
         super().__init__()
-        self.shape = shape
         self.pose = pose
-        self.robot_object: Extrusion | Stl
+        self.robot_object: Object3D | Stl
         with self:
-            outline = [list(point) for point in self.shape.outline]
-            self.robot_object = Extrusion(outline, self.shape.height, wireframe=debug)
+            self.robot_object = object_constructor()
             self.robot_object.material('#4488ff', 0.5)
         ui.timer(config.ui_update_interval, self.update)
 
