@@ -4,6 +4,7 @@ from .camera import CalibratableCamera, Camera, ConfigurableCamera, Transformabl
 from .camera_objects_ import CameraObjects as camera_objects
 from .camera_projector import CameraProjector
 from .camera_provider import CameraProvider
+from .camera_scene_object import CameraSceneObject
 from .detections import BoxDetection, Detection, Detections, PointDetection
 from .detector import Autoupload, Detector
 from .detector_hardware import DetectorHardware
@@ -46,4 +47,5 @@ __all__ = [
     'SimulatedCameraProvider',
     'UsbCamera',
     'UsbCameraProvider',
+    'CameraSceneObject',
 ]
