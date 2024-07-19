@@ -1,5 +1,4 @@
 import time
-from typing import Optional
 
 import numpy as np
 import scipy.interpolate
@@ -10,7 +9,7 @@ from .obstacle_map import ObstacleMap
 
 class DistanceMap:
 
-    def __init__(self, obstacle_map: ObstacleMap, target: Point, deadline: Optional[float] = None):
+    def __init__(self, obstacle_map: ObstacleMap, target: Point, deadline: float | None = None):
         self.grid = obstacle_map.grid
         scaled_obstacle_map = obstacle_map.map
 

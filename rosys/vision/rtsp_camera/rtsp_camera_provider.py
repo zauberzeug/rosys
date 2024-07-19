@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from ... import persistence, rosys
 from ..camera_provider import CameraProvider
@@ -14,7 +13,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
     def __init__(self, *,
                  frame_rate: int = 6,
                  jovision_profile: int = 0,
-                 network_interface: Optional[str] = None,
+                 network_interface: str | None = None,
                  auto_scan: bool = True) -> None:
         super().__init__()
 
@@ -42,7 +41,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
     @staticmethod
-    async def scan_for_cameras(network_interface: Optional[str] = None) -> list[tuple[str, str]]:
+    async def scan_for_cameras(network_interface: str | None = None) -> list[tuple[str, str]]:
         return await find_known_cameras(network_interface=network_interface)
 
     async def update_device_list(self) -> None:

@@ -7,7 +7,7 @@ import signal
 import threading
 import time as pytime
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Literal, Optional
+from typing import Any, Awaitable, Callable, ClassVar, Literal, Optional
 
 import numpy as np
 import psutil
@@ -129,7 +129,7 @@ def _run_handler(handler: Callable) -> None:
 
 
 class Repeater:
-    tasks: set[asyncio.Task] = set()
+    tasks: ClassVar[set[asyncio.Task]] = set()
 
     def __init__(self, handler: Callable, interval: float) -> None:
         self.handler = handler

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -16,12 +16,12 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
     def __init__(self,
                  *,
                  id: str,  # pylint: disable=redefined-builtin
-                 name: Optional[str] = None,
+                 name: str | None = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
                  fps: int = 5,
                  jovision_profile: int = 1,
-                 ip: Optional[str] = None,
+                 ip: str | None = None,
                  **kwargs,
                  ) -> None:
         super().__init__(id=id,
@@ -33,9 +33,9 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         self.log = logging.getLogger(f'rosys.vision.rtsp_camera.{self.id}')
 
-        self.device: Optional[RtspDevice] = None
+        self.device: RtspDevice | None = None
         self.jovision_profile: int = jovision_profile
-        self.ip: Optional[str] = ip
+        self.ip: str | None = ip
 
         self._register_parameter('fps', self.get_fps, self.set_fps,
                                  min_value=1, max_value=30, step=1, default_value=fps)
@@ -58,7 +58,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         return self.device is not None and self.device.capture_task is not None
 
     @property
-    def url(self) -> Optional[str]:
+    def url(self) -> str | None:
         if not self.is_connected:
             return None
         assert self.device is not None
@@ -113,7 +113,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.device.settings_interface.set_fps(stream_id=self.jovision_profile, fps=fps)
         self.polling_interval = 1.0 / fps
 
-    def get_fps(self) -> Optional[int]:
+    def get_fps(self) -> int | None:
         if self.device is None or self.device.settings_interface is None:
             return None
         fps = self.device.settings_interface.get_fps(stream_id=self.jovision_profile)
@@ -124,7 +124,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             return
         self.jovision_profile = profile
 
-    def get_jovision_profile(self) -> Optional[int]:
+    def get_jovision_profile(self) -> int | None:
         if self.device is None:
             return None
         return self.jovision_profile

@@ -5,7 +5,7 @@ import logging
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Protocol
+from typing import Protocol
 
 import humanize
 from PIL import Image, ImageDraw, ImageFont
@@ -24,7 +24,7 @@ SMALL_COVER_FONT = ImageFont.truetype(FONT, 30)
 class RosysImage(Protocol):
     camera_id: str
     time: float
-    data: Optional[bytes] = None
+    data: bytes | None = None
 
 
 class TimelapseRecorder:
@@ -43,7 +43,7 @@ class TimelapseRecorder:
         self.capture_rate = capture_rate
         self.last_capture_time = rosys.time()
         self._notifications: list[list[str]] = []
-        self.camera: Optional[Camera] = None
+        self.camera: Camera | None = None
         VIDEO_PATH.mkdir(parents=True, exist_ok=True)
         rosys.on_repeat(self._capture, 0.01)
 
@@ -102,7 +102,7 @@ class TimelapseRecorder:
         for jpg in STORAGE_PATH.glob('*.jpg'):
             jpg.unlink()
 
-    async def create_info(self, title: str, subtitle: str, frames: int = 20, time: Optional[float] = None) -> None:
+    async def create_info(self, title: str, subtitle: str, frames: int = 20, time: float | None = None) -> None:
         """Shows info on black screen with title and subtitle"""
         await rosys.run.cpu_bound(_save_info, title, subtitle, rosys.time() if time is None else time, frames)
 

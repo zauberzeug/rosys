@@ -1,5 +1,6 @@
 import random
-from typing import Any, AsyncGenerator
+from collections.abc import AsyncGenerator
+from typing import Any
 
 from ... import persistence, rosys
 from ..camera_provider import CameraProvider

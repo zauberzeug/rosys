@@ -1,7 +1,7 @@
 import logging
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import requests
 
@@ -24,13 +24,13 @@ class LizardFirmware:
 
         self.flash_params: list[str] = []
 
-        self.core_version: Optional[str] = None
-        self.p0_version: Optional[str] = None
-        self.local_version: Optional[str] = None
-        self.online_version: Optional[str] = None
+        self.core_version: str | None = None
+        self.p0_version: str | None = None
+        self.local_version: str | None = None
+        self.online_version: str | None = None
 
-        self.local_checksum: Optional[str] = None
-        self.core_checksum: Optional[str] = None
+        self.local_checksum: str | None = None
+        self.core_checksum: str | None = None
 
     async def read_all(self) -> None:
         await self.read_online_version()
@@ -97,7 +97,7 @@ class LizardFirmware:
         rosys.notify(f'Flashing Lizard firmware {self.local_version} to Core...')
         self.robot_brain.communication.disconnect()
         await rosys.sleep(0.3)
-        output = await rosys.run.sh(['sudo', './flash.py'] + self.flash_params, timeout=None, working_dir=self.PATH)
+        output = await rosys.run.sh(['sudo', './flash.py', *self.flash_params], timeout=None, working_dir=self.PATH)
         self.log.info('flashed Lizard:\n%s', output)
         self.robot_brain.communication.connect()
         await self.read_core_version()

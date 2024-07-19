@@ -3,7 +3,7 @@ from __future__ import annotations
 import enum
 import logging
 from dataclasses import dataclass, field
-from typing import Optional, overload
+from typing import overload
 
 import cv2
 import numpy as np
@@ -146,7 +146,7 @@ class Calibration:
             flags = cv2.CALIB_USE_INTRINSIC_GUESS
             if rational_model:
                 flags |= cv2.CALIB_RATIONAL_MODEL
-            rms, K, D, rvecs, tvecs = cv2.calibrateCamera(
+            _rms, K, D, rvecs, tvecs = cv2.calibrateCamera(
                 objectPoints=world_point_array,
                 imagePoints=image_point_array,
                 imageSize=image_size.tuple,
@@ -205,12 +205,12 @@ class Calibration:
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 
     @overload
-    def project_to_image(self, world_coordinates: Point3d) -> Optional[Point]: ...
+    def project_to_image(self, world_coordinates: Point3d) -> Point | None: ...
 
     @overload
     def project_to_image(self, world_coordinates: np.ndarray) -> np.ndarray: ...
 
-    def project_to_image(self, world_coordinates: Point3d | np.ndarray) -> Optional[Point] | np.ndarray:
+    def project_to_image(self, world_coordinates: Point3d | np.ndarray) -> Point | None | np.ndarray:
         """Project a point in world coordinates to the image plane.
 
         This takes into account the camera's intrinsic and extrinsic parameters.
@@ -246,12 +246,12 @@ class Calibration:
         return image_array.reshape(-1, 2)
 
     @overload
-    def project_from_image(self, image_coordinates: Point, target_height: float = 0) -> Optional[Point3d]: ...
+    def project_from_image(self, image_coordinates: Point, target_height: float = 0) -> Point3d | None: ...
 
     @overload
     def project_from_image(self, image_coordinates: np.ndarray, target_height: float = 0) -> np.ndarray: ...
 
-    def project_from_image(self, image_coordinates: Point | np.ndarray, target_height: float = 0) -> Optional[Point3d] | np.ndarray:
+    def project_from_image(self, image_coordinates: Point | np.ndarray, target_height: float = 0) -> Point3d | None | np.ndarray:
         """Project a point in image coordinates to a plane in world xy dimensions at a given height.
 
         :param image_coordinates: The image coordinates to project.

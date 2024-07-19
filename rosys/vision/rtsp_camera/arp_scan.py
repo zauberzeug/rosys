@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import AsyncIterator, Optional
+from collections.abc import AsyncIterator
 
 import ifaddr
 
@@ -19,7 +19,7 @@ def get_network_interface() -> str | None:
     return None
 
 
-async def run_arp_scan(interface: Optional[str] = None) -> str:
+async def run_arp_scan(interface: str | None = None) -> str:
     """Run an arp-scan on the given interface and return the output.
     :param interface: The network interface to use for the arp-scan.
     """
@@ -46,7 +46,7 @@ async def run_arp_scan(interface: Optional[str] = None) -> str:
     return output
 
 
-async def find_cameras(network_interface: Optional[str] = None) -> AsyncIterator[tuple[str, str]]:
+async def find_cameras(network_interface: str | None = None) -> AsyncIterator[tuple[str, str]]:
     """Find all cameras in the local network and return MAC and IP addresses.
     :param network_interface: The network interface to use for the arp-scan.
     """
@@ -64,14 +64,14 @@ async def find_cameras(network_interface: Optional[str] = None) -> AsyncIterator
         yield mac, ip
 
 
-async def find_known_cameras(network_interface: Optional[str] = None) -> list[tuple[str, str]]:
+async def find_known_cameras(network_interface: str | None = None) -> list[tuple[str, str]]:
     """Find all cameras of known vendors and return MAC addresses.
     :param network_interface: The network interface to use for the arp-scan.
     """
     return [(mac, ip) async for mac, ip in find_cameras(network_interface=network_interface) if mac_to_vendor(mac) != VendorType.OTHER]
 
 
-async def find_ip(mac: str, network_interface: Optional[str] = None) -> Optional[str]:
+async def find_ip(mac: str, network_interface: str | None = None) -> str | None:
     """Find the IP address of a camera with the given MAC address."""
     async for mac_, ip in find_cameras(network_interface=network_interface):
         if mac_ == mac:

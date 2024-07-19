@@ -1,6 +1,5 @@
 import io
 import logging
-from typing import Optional
 
 import cv2
 import imgsize
@@ -33,7 +32,7 @@ def encode_image_as_jpeg(image: np.ndarray) -> bytes:
     return cv2.imencode('.jpg', image)[1].tobytes()
 
 
-def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes | None:
+def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Rectangle | None = None) -> bytes | None:
     """Rotate and crop a JPEG image."""
     if crop is None and rotation == ImageRotation.NONE:
         return data
@@ -45,7 +44,7 @@ def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rect
     return process_ndarray_image(decoded, rotation, crop)
 
 
-def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
+def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Rectangle | None = None) -> bytes:
     """Rotate and crop a NumPy image and encode it as JPEG."""
     if crop is not None:
         image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]

@@ -113,7 +113,7 @@ class PointDetection(Detection):
     def cy(self) -> float:
         return self.y
 
-    def distance(self, other: 'PointDetection') -> float:
+    def distance(self, other: PointDetection) -> float:
         return np.sqrt((other.x - self.x)**2 + (other.y - self.y)**2)
 
     def __str__(self) -> str:

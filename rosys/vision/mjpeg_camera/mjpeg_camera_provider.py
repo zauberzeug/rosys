@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 import httpx
 
@@ -14,9 +13,9 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
     SCAN_INTERVAL = 10
 
     def __init__(self, *,
-                 username: Optional[str] = None,
-                 password: Optional[str] = None,
-                 network_interface: Optional[str] = None,
+                 username: str | None = None,
+                 password: str | None = None,
+                 network_interface: str | None = None,
                  auto_scan: bool = True) -> None:
         """CameraProvider for MJpegCamera
 

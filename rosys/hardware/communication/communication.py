@@ -1,6 +1,5 @@
 import abc
 import logging
-from typing import Optional
 
 
 class Communication(abc.ABC):
@@ -18,10 +17,10 @@ class Communication(abc.ABC):
     def is_possible(cls) -> bool:
         return False
 
-    def connect(self) -> None:
+    def connect(self) -> None:  # noqa: B027
         pass
 
-    def disconnect(self) -> None:
+    def disconnect(self) -> None:  # noqa: B027
         pass
 
     @abc.abstractmethod
@@ -29,8 +28,8 @@ class Communication(abc.ABC):
         pass
 
     @abc.abstractmethod
-    async def read(self) -> Optional[str]:
+    async def read(self) -> str | None:
         pass
 
-    def debug_ui(self) -> None:
+    def debug_ui(self) -> None:  # noqa: B027
         pass

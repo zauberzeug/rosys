@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 from .line import Line
 from .point import Point
@@ -20,7 +19,7 @@ class LineSegment:
     def line(self) -> Line:
         return Line.from_points(self.point1, self.point2)
 
-    def intersect(self, other: LineSegment, allow_outside=False) -> Optional[Point]:
+    def intersect(self, other: LineSegment, allow_outside=False) -> Point | None:
         # https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection#Given_two_points_on_each_line_segment
         p1 = self.point1
         p2 = self.point2

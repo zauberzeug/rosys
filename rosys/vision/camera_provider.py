@@ -1,5 +1,5 @@
 import abc
-from typing import Generic, Optional, TypeVar
+from typing import Generic, TypeVar
 
 from .. import rosys
 from ..event import Event
@@ -65,7 +65,7 @@ class CameraProvider(Generic[T], rosys.persistence.PersistentModule, metaclass=a
         for camera_id in list(self.cameras):
             self.remove_camera(camera_id)
 
-    def prune_images(self, max_age_seconds: Optional[float] = None):
+    def prune_images(self, max_age_seconds: float | None = None):
         for camera in self.cameras.values():
             if max_age_seconds is None:
                 camera.images.clear()

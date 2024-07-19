@@ -1,6 +1,6 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Optional, Protocol
+from typing import Protocol
 
 import numpy as np
 
@@ -19,7 +19,7 @@ class DriveParameters(ModificationContext):
     angular_speed_limit: float = 0.5
     minimum_turning_radius: float = 0.0
     can_drive_backwards: bool = True
-    max_detection_age_ramp: Optional[tuple[float, float]] = None
+    max_detection_age_ramp: tuple[float, float] | None = None
     hook_offset: float = 0.5
     carrot_offset: float = 0.6
     carrot_distance: float = 0.1
@@ -57,7 +57,7 @@ class Driver:
         self.wheels = wheels
         self.odometer = odometer
         self.parameters = DriveParameters()
-        self.state: Optional[DriveState] = None
+        self.state: DriveState | None = None
         self._abort = False
 
     @property

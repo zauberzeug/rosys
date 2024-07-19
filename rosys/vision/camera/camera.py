@@ -3,8 +3,8 @@ from __future__ import annotations
 import abc
 import asyncio
 from collections import deque
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
 
 from ... import rosys
 from ...event import Event
@@ -18,11 +18,11 @@ class Camera(abc.ABC):
     def __init__(self,
                  *,
                  id: str,  # pylint: disable=redefined-builtin
-                 name: Optional[str] = None,
+                 name: str | None = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
                  polling_interval: float = 0.1,
-                 base_path_overwrite: Optional[str] = None,
+                 base_path_overwrite: str | None = None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.id: str = id
@@ -102,10 +102,10 @@ class Camera(abc.ABC):
         finally:
             self.device_connection_lock.release()
 
-    async def connect(self) -> None:
+    async def connect(self) -> None:  # noqa: B027
         pass
 
-    async def disconnect(self) -> None:
+    async def disconnect(self) -> None:  # noqa: B027
         pass
 
     async def reconnect(self) -> None:
@@ -117,14 +117,14 @@ class Camera(abc.ABC):
         return [i for i in self.images if i.data]
 
     @property
-    def latest_captured_image(self) -> Optional[Image]:
+    def latest_captured_image(self) -> Image | None:
         return next((i for i in reversed(self.captured_images) if i.data), None)
 
     @property
-    def latest_detected_image(self) -> Optional[Image]:
+    def latest_detected_image(self) -> Image | None:
         return next((i for i in reversed(self.captured_images) if i.detections), None)
 
-    def get_recent_images(self, *, current_time: Optional[float] = None, timespan: float = 10.0) -> list[Image]:
+    def get_recent_images(self, *, current_time: float | None = None, timespan: float = 10.0) -> list[Image]:
         """Returns all images that were captured. Latest images are at the end of the list.
 
         :param current_time: the starting time for the search; defaults to the current time

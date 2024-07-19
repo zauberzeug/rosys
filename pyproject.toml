@@ -154,10 +154,13 @@ fixable = [
     "I",  # isort
 ]
 ignore = [
+    "B024", # abstract class without abstract method
     "E501", # line too long
+    "E741", # ambiguous variable name
     "PLR0911", # too many return statements
     "PLR0912", # too many branches
     "PLR0913", # too many arguments
     "PLR0915", # too many statements
     "PLR2004", # magic value comparison
+    "RUF006", # dangling asyncio tasks
 ]

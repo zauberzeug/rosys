@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 
 class VendorType(Enum):
@@ -16,7 +15,7 @@ def mac_to_vendor(mac: str) -> VendorType:
     return VendorType.OTHER
 
 
-def mac_to_url(mac: str, ip: str, *, index: Optional[int] = None) -> Optional[str]:
+def mac_to_url(mac: str, ip: str, *, index: int | None = None) -> str | None:
     vendor = mac_to_vendor(mac)
     if vendor == VendorType.AXIS:
         return f'http://{ip}/axis-cgi/mjpg/video.cgi?' + (f'camera={index}' if index is not None else '')
