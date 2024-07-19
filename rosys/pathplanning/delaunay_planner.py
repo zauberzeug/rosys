@@ -281,7 +281,7 @@ def _find_grid_passages(obstacle_map: ObstacleMap,
     group_distances = [g.point.distance(pose) for g in pose_groups]
     group_indices = np.argsort(group_distances)
     results: list[Passage] = []
-    for g, group in zip(group_indices, np.array(pose_groups)[group_indices][:max_num_groups], strict=True):
+    for g, group in zip(group_indices, np.array(pose_groups)[group_indices][:max_num_groups], strict=False):
         for p, group_pose in enumerate(group.poses):
             for backward in [False, True]:
                 poses = (pose, group_pose) if entering else (group_pose, pose)
