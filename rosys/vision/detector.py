@@ -1,7 +1,6 @@
 import abc
 import logging
 from enum import Enum
-from typing import Optional
 from uuid import uuid4
 
 from ..event import Event
@@ -29,7 +28,7 @@ class Detector(abc.ABC):
     It also holds an upload queue for sending images with uncertain results to an active learning infrastructure like the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
     """
 
-    def __init__(self, *, name: Optional[str] = None) -> None:
+    def __init__(self, *, name: str | None = None) -> None:
         self.name = name or str(uuid4())
         self.NEW_DETECTIONS = Event()
         """detection on an image is completed (argument: image)"""
@@ -40,13 +39,13 @@ class Detector(abc.ABC):
     async def detect(self,
                      image: Image,
                      autoupload: Autoupload = Autoupload.FILTERED,
-                     tags: list[str] = [],
+                     tags: list[str] | None = None,
                      ) -> Detections | None:
         """Runs detections on the image. Afterwards the `image.detections` property is filled."""
 
     @abc.abstractmethod
-    async def upload(self, image: Image, *, tags: list[str] = []) -> None:
-        """Uploads the image to the Learning Loop. 
+    async def upload(self, image: Image, *, tags: list[str] | None = None) -> None:
+        """Uploads the image to the Learning Loop.
 
         The `tags` are added to the image.
         If the image has detections, they are also uploaded.

@@ -3,6 +3,8 @@ import logging
 import logging.config
 import os.path
 import sys
+from collections.abc import Callable
+from typing import cast
 
 from nicegui import ui
 
@@ -19,12 +21,11 @@ class PackagePathFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         pathname = record.pathname
         record.relative_path = None
-        abs_sys_paths = map(os.path.abspath, sys.path)
+        abs_sys_paths = map(cast(Callable[[str], str], os.path.abspath), sys.path)
         for path in sorted(abs_sys_paths, key=len, reverse=True):  # longer paths first
-            if not path.endswith(os.sep):
-                path += os.sep
-            if pathname.startswith(path):
-                record.relative_path = os.path.relpath(pathname, path)
+            path_ = path if path.endswith(os.sep) else path + os.sep
+            if pathname.startswith(path_):
+                record.relative_path = os.path.relpath(pathname, path_)
                 break
         return True
 
