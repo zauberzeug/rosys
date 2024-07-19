@@ -1,3 +1,4 @@
+# pylint: disable=redefined-outer-name,unused-argument
 import asyncio
 import multiprocessing
 from collections.abc import AsyncGenerator
