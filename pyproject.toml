@@ -64,6 +64,7 @@ cryptography = "^42.0.4" # https://github.com/zauberzeug/rosys/security/dependab
 sh = "^1.14.2"
 mypy = "^1.10.1"
 pylint = "^3.2.5"
+pre-commit = "^3.7.1"
 
 [build-system]
 requires = [
@@ -97,7 +98,7 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 # NOTE: changing default location of pytest_cache because the uvicorn file watcher somehow triggered too many reloads
-cache_dir = "../.pytest_cache" 
+cache_dir = "../.pytest_cache"
 testpaths = [
     "tests"
 ]
@@ -131,5 +132,32 @@ disable = [
 ]
 extension-pkg-allow-list = "cv2,scipy.spatial"
 
-[tool.pylint.TYPECHECKING]
+[tool.pylint.TYPECHECK]
 generated-members = "cv2.*,scipy.spatial.*,sh.*"
+
+[tool.ruff]
+indent-width = 4
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "I",  # isort
+    "E",  # pycodestyle
+    "W",  # pycodestyle
+    "B",  # bugbear
+    "F",  # pyflakes
+    "UP", # pyupgrade
+    "RUF", # ruff
+    "PL", # pylint
+]
+fixable = [
+    "I",  # isort
+]
+ignore = [
+    "E501", # line too long
+    "PLR0911", # too many return statements
+    "PLR0912", # too many branches
+    "PLR0913", # too many arguments
+    "PLR0915", # too many statements
+    "PLR2004", # magic value comparison
+]
