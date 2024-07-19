@@ -14,7 +14,8 @@ import numpy as np
 import psutil
 from nicegui import Client, app, background_tasks, ui
 
-from . import event, persistence, run
+from . import event, run
+from .persistence.registry import backup, restore
 from .config import Config
 from .helpers import invoke, is_stopping
 from .helpers import is_test as is_test_
@@ -217,7 +218,7 @@ async def startup() -> None:
         raise RuntimeError(
             'multiprocessing start method must be "spawn"; see https://pythonspeed.com/articles/python-multiprocessing/')
 
-    persistence.restore()
+    restore()
 
     _state.startup_finished = True
 
@@ -252,7 +253,7 @@ async def shutdown() -> None:
         log.debug('invoking shutdown handler "%s"', handler.__qualname__)
         await invoke(handler)
     log.debug('creating data backup')
-    await persistence.backup(force=True)
+    await backup(force=True)
     log.debug('tear down "run" tasks')
     run.tear_down()
     log.debug('stopping all repeaters')
@@ -292,7 +293,7 @@ def reset_after_test() -> None:
 def register_base_startup_handlers() -> None:
     on_repeat(_garbage_collection, 60)
     on_repeat(_watch_emitted_events, 0.1)
-    on_repeat(persistence.backup, 10)
+    on_repeat(backup, 10)
 
 
 gc.disable()  # NOTE disable automatic garbage collection to optimize performance
