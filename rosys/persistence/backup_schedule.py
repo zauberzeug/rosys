@@ -2,8 +2,7 @@ import datetime
 import logging
 from pathlib import Path
 
-import rosys
-
+from .. import rosys
 from . import registry
 
 
