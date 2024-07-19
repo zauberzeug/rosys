@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 # imports for type annotations only
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 
@@ -25,7 +25,6 @@ class Pose3d:
     translation: Point3d
     rotation: Rotation
     parent_frame_id: str | None = None
-    frame_id: str | None = None
 
     @classmethod
     def zero(cls) -> Pose3d:
@@ -49,7 +48,7 @@ class Pose3d:
 
     @parent_frame.setter
     def parent_frame(self, value: CoordinateFrame | None):
-        self.parent_frame_id = value.uuid if value else None
+        self.parent_frame_id = value.id if value else None
 
     def rotate(self, rotation: Rotation):
         self.rotation *= rotation
@@ -59,11 +58,26 @@ class Pose3d:
         self.translation += translation
         return self
 
-    def resolve(self, relative_to: CoordinateFrame | None = None) -> Pose3d:
+    def resolve(self, up_to: Optional[CoordinateFrame] = None) -> Pose3d:
+        '''Recursively resolves the pose to the given parent frame.
+
+        :param up_to: The parent frame to resolve the pose to. (default: None = world frame)
+        '''
         parent_frame = self.parent_frame
-        if parent_frame is not None:
-            return parent_frame.resolve(self, relative_to)
-        return self
+        if parent_frame is None or parent_frame == up_to:
+            return self
+
+        final_pose: Pose3d = Pose3d(translation=self.translation, rotation=self.rotation)
+        current_frame: Optional[Pose3d] = parent_frame
+        while current_frame != up_to:
+            if current_frame is None:
+                raise ValueError(f'Could not resolve pose to {up_to} (end of chain)')
+
+            final_pose = current_frame * final_pose
+            current_frame = current_frame.parent_frame
+
+        final_pose.parent_frame = up_to
+        return final_pose
 
     # def transform_point(self, point: Point3d) -> Point3d:
     #     return Point3d.from_tuple(self.rotation.matrix @ point.array + self.translation.array)

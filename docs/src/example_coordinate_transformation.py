@@ -19,19 +19,17 @@ joystick(steerer, size=50, color='blue')
 
 
 robot_shape = Prism.default_robot_shape()
-robot_pose = Pose3d.zero()
-robot_coordinate_frame = CoordinateFrame(pose=robot_pose, id='robot')
+robot_pose = CoordinateFrame.from_pose(pose=Pose3d.zero(), id='robot')
 
 hat_shape = Prism.default_robot_shape()
-hat_pose = Pose3d(translation=Point3d(x=-0.5, y=0, z=1),
-                  rotation=Rotation.from_euler(0, -1.5, 0))
-hat_pose.parent_frame = robot_coordinate_frame
-hat_coordinate_frame = CoordinateFrame.from_pose(pose=hat_pose)
+hat_pose = CoordinateFrame(translation=Point3d(x=-0.5, y=0, z=1),
+                           rotation=Rotation.from_euler(0, -1.5, 0))
+hat_pose.parent_frame = robot_pose
 
 hat2_shape = Prism.default_robot_shape()
 hat2_pose = Pose3d(translation=Point3d(x=0.5, y=0, z=1),
                    rotation=Rotation.from_euler(0, 1.5, 0))
-hat2_pose.parent_frame = robot_coordinate_frame
+hat2_pose.parent_frame = robot_pose
 
 
 class CalibratableCameraSimulated(SimulatedCamera, CalibratableCamera):
@@ -40,7 +38,9 @@ class CalibratableCameraSimulated(SimulatedCamera, CalibratableCamera):
 
 camera = CalibratableCameraSimulated.create_calibrated(id='test', name='From Dict', x=0.75, y=0, z=0.5)
 assert camera.calibration is not None
-camera.calibration.extrinsics.parent_frame = hat_coordinate_frame
+camera.calibration.extrinsics.parent_frame = hat_pose
+
+camera = CalibratableCameraSimulated.from_dict(camera.to_dict())
 
 
 def update_pose():
