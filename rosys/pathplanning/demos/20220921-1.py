@@ -1,6 +1,5 @@
 from rosys.geometry import Point, Pose
 from rosys.pathplanning.area import Area
-from rosys.pathplanning.obstacle import Obstacle
 from rosys.pathplanning.planner_process import PlannerSearchCommand
 
 robot_outline = [(-0.22, -0.36), (1.07, -0.36), (1.17, 0), (1.07, 0.36), (-0.22, 0.36)]

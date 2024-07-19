@@ -6,8 +6,9 @@ import os
 import signal
 import threading
 import time as pytime
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, ClassVar, Literal, Optional
+from typing import Any, ClassVar, Literal
 
 import numpy as np
 import psutil
@@ -21,7 +22,7 @@ from .helpers import is_test as is_test_
 log = logging.getLogger('rosys.core')
 
 config = Config()
-translator: Optional[Any] = None
+translator: Any | None = None
 
 is_test = is_test_()
 
@@ -44,11 +45,11 @@ class _state:
     start_time: float = 0.0 if is_test else pytime.time()
     time = start_time
     last_time_request: float = start_time
-    exception: Optional[BaseException] = None  # NOTE: used for tests
+    exception: BaseException | None = None  # NOTE: used for tests
     startup_finished: bool = False
 
 
-def get_last_exception() -> Optional[BaseException]:
+def get_last_exception() -> BaseException | None:
     return _state.exception
 
 
@@ -59,13 +60,13 @@ tasks: list[asyncio.Task] = []
 
 
 def notify(message: str,
-           type: Optional[Literal[  # pylint: disable=redefined-builtin
+           type: Literal[  # pylint: disable=redefined-builtin
                'positive',
                'negative',
                'warning',
                'info',
                'ongoing',
-           ]] = None) -> None:
+           ] | None = None) -> None:
     log.info(message)
     notifications.append(Notification(time=time(), message=message))
     NEW_NOTIFICATION.emit(message)
