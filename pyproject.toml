@@ -138,6 +138,7 @@ generated-members = "cv2.*,scipy.spatial.*,sh.*"
 [tool.ruff]
 indent-width = 4
 line-length = 120
+target-version = "py310"
 
 [tool.ruff.lint]
 select = [
