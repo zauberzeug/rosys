@@ -9,7 +9,6 @@ import cv2
 import numpy as np
 
 from ..geometry import Point, Point3d, Pose3d, Rotation
-from ..persistence import to_dict
 from .image import Image, ImageSize
 
 
@@ -83,19 +82,6 @@ class Calibration:
     """Represents the full calibration of a camera."""
     intrinsics: Intrinsics
     extrinsics: Pose3d = field(default_factory=Pose3d.zero)
-
-    def to_dict(self) -> dict:
-        return {
-            'intrinsics': to_dict(self.intrinsics),
-            'extrinsics': to_dict(self.extrinsics),
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> Calibration:
-        return cls(
-            intrinsics=Intrinsics.from_dict(data['intrinsics']),
-            extrinsics=Pose3d.from_dict(data['extrinsics']),
-        )
 
     @property
     def rotation(self) -> Rotation:
