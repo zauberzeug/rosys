@@ -1,18 +1,28 @@
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 from typing_extensions import Self
 
 from ...geometry import Point3d, Pose3d, Rotation
+from ...persistence.converters import from_dict
 from ..calibration import Calibration, Intrinsics
 from .camera import Camera
 
 
 class CalibratableCamera(Camera):
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, calibration: Optional[Calibration] = None, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.calibration: Optional[Calibration] = None
+        self.calibration = calibration
+
+    def to_dict(self) -> dict:
+        return super().to_dict() | {'calibration': self.calibration.to_dict() if self.calibration else None}
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Self:
+        calibration_data = data.pop('calibration', None)
+        calibration = from_dict(Calibration, calibration_data) if calibration_data else None
+        return cls(calibration=calibration, **data)
 
     @property
     def is_calibrated(self) -> bool:

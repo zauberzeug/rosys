@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 
+from ..persistence.converters import to_dict
 from .point3d import Point3d
 from .rotation import Rotation
 
@@ -18,6 +19,16 @@ class Pose3d:
     translation: Point3d
     rotation: Rotation
     parent_frame_pose: Optional['Pose3d'] = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            'translation': to_dict(self.translation),
+            'rotation': to_dict(self.rotation),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Pose3d:
+        return cls(translation=Point3d(**data['translation']), rotation=Rotation(**data['rotation']))
 
     @classmethod
     def zero(cls) -> 'Pose3d':

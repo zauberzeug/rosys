@@ -38,8 +38,7 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
                                  min_value=1, max_value=30, step=1, default_value=fps)
 
     def to_dict(self) -> dict:
-        return {
-            'id': self.id,
+        return super().to_dict() | {
             'width': self.resolution.width,
             'height': self.resolution.height,
         } | {
