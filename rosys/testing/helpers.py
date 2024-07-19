@@ -82,7 +82,7 @@ def assert_pose(x: float, y: float, *, deg: float | None = None, position_tolera
 
 
 def assert_point(actual: Point | Point3d, expected: Point | Point3d, tolerance=0.1) -> None:
-    assert type(actual) is type(expected)  # pylint: disable=unidiomatic-typecheck
+    assert type(actual) is type(expected)
     assert actual.x == pytest.approx(expected.x, abs=tolerance)
     assert actual.y == pytest.approx(expected.y, abs=tolerance)
     if isinstance(actual, Point3d) and isinstance(expected, Point3d):

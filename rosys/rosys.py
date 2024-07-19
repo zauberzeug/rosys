@@ -15,10 +15,10 @@ import psutil
 from nicegui import Client, app, background_tasks, ui
 
 from . import event, run
-from .persistence.registry import backup, restore
 from .config import Config
 from .helpers import invoke, is_stopping
 from .helpers import is_test as is_test_
+from .persistence.registry import backup, restore
 
 log = logging.getLogger('rosys.core')
 

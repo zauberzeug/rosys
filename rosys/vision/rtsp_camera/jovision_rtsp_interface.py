@@ -123,38 +123,40 @@ class JovisionInterface:
 
     def get_parameter_ranges(self):
         raise NotImplementedError
-        # cmd = {
-        #     'method': 'stream_get_all_ability',
-        #     'user': {
-        #         'name': 'admin',
-        #         'digest': '8d5985ea2b9994aacb6cb3e3f826aae5'
-        #     },
-        #     'param': {
-        #         'channelid': 0,
-        #     }
-        # }
-        # params = {
-        #     'cmd': json.dumps(cmd),
-        #     '_': time.time() * 1000,
-        # }
-        # response = requests.get(self.settings_url, params=params, headers=self.headers, timeout=1)
+        # pylint: disable=unreachable
+        # ruff: noqa: F841
+        cmd = {
+            'method': 'stream_get_all_ability',
+            'user': {
+                'name': 'admin',
+                'digest': '8d5985ea2b9994aacb6cb3e3f826aae5'
+            },
+            'param': {
+                'channelid': 0,
+            }
+        }
+        params = {
+            'cmd': json.dumps(cmd),
+            '_': time.time() * 1000,
+        }
+        response = requests.get(self.settings_url, params=params, headers=self.headers, timeout=1)
 
-        # for stream_id, stream in enumerate(response.json()['result']['all']):
-        #     print(f'stream {stream_id}')
-        #     resolutions = stream['resolutions']
-        #     for resolution in resolutions:
-        #         width = resolution['width']
-        #         height = resolution['height']
-        #         b_default = resolution['bDefault']
-        #         max_kbps = resolution['maxKbps']
-        #         min_kbps = resolution['minKbps']
-        #         def_kbps = resolution['defKbps']
-        #         max_fr = resolution['maxFr']
-        #         min_fr = resolution['minFr']
-        #         def_fr = resolution['defFr']
-        #     max_quality = stream['maxQuality']
-        #     min_quality = stream['minQuality']
-        #     max_ngop = stream['maxNGOP']
-        #     min_ngop = stream['minNGOP']
-        #     b_support_h265 = stream['bSupportH265']
-        #     b_support_smart_enc = stream['bSupportSmartEnc']
+        for stream_id, stream in enumerate(response.json()['result']['all']):
+            print(f'stream {stream_id}')
+            resolutions = stream['resolutions']
+            for resolution in resolutions:
+                width = resolution['width']
+                height = resolution['height']
+                b_default = resolution['bDefault']
+                max_kbps = resolution['maxKbps']
+                min_kbps = resolution['minKbps']
+                def_kbps = resolution['defKbps']
+                max_fr = resolution['maxFr']
+                min_fr = resolution['minFr']
+                def_fr = resolution['defFr']
+            max_quality = stream['maxQuality']
+            min_quality = stream['minQuality']
+            max_ngop = stream['maxNGOP']
+            min_ngop = stream['minNGOP']
+            b_support_h265 = stream['bSupportH265']
+            b_support_smart_enc = stream['bSupportSmartEnc']
