@@ -116,8 +116,7 @@ class TimelapseRecorder:
 
 def _save_image(image: RosysImage, path: Path, size: tuple[int, int], notifications: list[str]) -> None:
     assert image.data is not None
-    img = Image.open(io.BytesIO(image.data))
-    img = img.resize(size)
+    img = Image.open(io.BytesIO(image.data)).resize(size)
     draw = ImageDraw.Draw(img)
     x = y = 20
     _write(f'{datetime.fromtimestamp(image.time):%Y-%m-%d %H:%M:%S}, cam {image.camera_id}', draw, x, y)
