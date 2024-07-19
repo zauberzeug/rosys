@@ -69,13 +69,13 @@ class DistanceMap:
         self.map[self.map >= self.INF] = np.inf
 
     def interpolate(self, x, y):
-        result = self._interp(x, y)
+        result = self._interp(x, y)  # pylint: disable=not-callable
         result[result >= self.INF / self.F] = np.inf
         return result
 
     def gradient(self, x, y):
-        result_x = self._grad_x(x, y)
-        result_y = self._grad_y(x, y)
+        result_x = self._grad_x(x, y)  # pylint: disable=not-callable
+        result_y = self._grad_y(x, y)  # pylint: disable=not-callable
         result_x[result_x <= -self.INF / self.F] = -np.inf
         result_y[result_y <= -self.INF / self.F] = -np.inf
         result_x[result_x >= self.INF / self.F] = np.inf

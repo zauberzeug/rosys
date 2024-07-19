@@ -55,4 +55,4 @@ def generate_experiment(id_) -> tuple[RobotRenderer, tuple[float, float, float],
 
     backward_to_goal = sign == -1
 
-    return robot_renderer, pose, goal, obstacle_map, backward_to_goal
+    return robot_renderer, pose, goal, obstacle_map, backward_to_goal  # pylint: disable=possibly-used-before-assignment
