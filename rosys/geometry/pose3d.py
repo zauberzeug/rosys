@@ -142,3 +142,8 @@ class Pose3d:
 
     def __str__(self) -> str:
         return f'R = {self.rotation}\nT = {self.translation}'
+
+    def __eq__(self, value: object) -> bool:
+        if not isinstance(value, Pose3d):
+            return False
+        return self.translation == value.translation and self.rotation == value.rotation and self.parent_frame_id == value.parent_frame_id
