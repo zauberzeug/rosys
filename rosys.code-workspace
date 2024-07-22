@@ -12,7 +12,9 @@
       "path": "/usr/local/lib/python3.11/site-packages/nicegui"
     }
   ],
-  "settings": {},
+  "settings": {
+    "ruff.enable": true
+  },
   "extensions": {
     "recommendations": [
       "esbenp.prettier-vscode",

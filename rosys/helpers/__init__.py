@@ -132,9 +132,6 @@ def find_relative_path(pathname: str) -> str | None:
 class PackagePathFilter(logging.Filter):
     ABS_SYS_PATHS = sorted((os.path.abspath(p) + os.sep for p in sys.path), key=len, reverse=True)
 
-    def find_relative_path(self, pathname: str) -> str | None:
-        return find_relative_path(pathname)
-
     def filter(self, record: logging.LogRecord) -> bool:
-        record.relative_path = self.find_relative_path(record.pathname)
+        record.relative_path = find_relative_path(record.pathname)
         return True

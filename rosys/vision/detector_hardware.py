@@ -84,8 +84,7 @@ class DetectorHardware(Detector):
             self.uploads.priority_queue.clear()
 
     async def upload(self, image: Image, *, tags: list[str] | None = None) -> None:
-        if tags is None:
-            tags = []
+        tags = tags or []
         try:
             self.log.info('Upload detections to port %s', self.port)
             data_dict: dict[str, Any] = {'image': image.data, 'mac': image.camera_id}

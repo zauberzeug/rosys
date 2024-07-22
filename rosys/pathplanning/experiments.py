@@ -26,7 +26,7 @@ def generate_experiment(id_) -> tuple[RobotRenderer, tuple[float, float, float],
         goal = (3.0, 3.5, 0.0) if variant == 0 else (0.75, 4.0, -np.pi / 2)
         obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_renderer)
 
-    if group == 2:
+    elif group == 2:
         obstacles = [
             [0.0, 2.0, 3.0, 0.2],
             [4.3, 2.0, 4.0, 0.2],
@@ -35,7 +35,7 @@ def generate_experiment(id_) -> tuple[RobotRenderer, tuple[float, float, float],
         goal = (3.6, 3.5, np.pi / 2)
         obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_renderer)
 
-    if group == 4:
+    elif group == 4:
         obstacles = [
             [5.0, 2.31, 3.0, 0.2],
             [5.0, 3.70, 3.0, 0.2],
@@ -44,7 +44,7 @@ def generate_experiment(id_) -> tuple[RobotRenderer, tuple[float, float, float],
         goal = (7.0, 3.1, np.pi)
         obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_renderer)
 
-    if group == 5:
+    elif group == 5:
         obstacles = [
             [4.0, 2.0, 2.0, 1.0],
             [4.0, 4.0, 2.0, 1.0],
@@ -53,6 +53,9 @@ def generate_experiment(id_) -> tuple[RobotRenderer, tuple[float, float, float],
         goal = (6.0, 3.5, 0.0 if variant == 0 else np.pi)
         obstacle_map = ObstacleMap.from_list(grid, obstacles, robot_renderer)
 
+    else:
+        raise ValueError(f'Unknown experiment group {group}')
+
     backward_to_goal = sign == -1
 
-    return robot_renderer, pose, goal, obstacle_map, backward_to_goal  # pylint: disable=possibly-used-before-assignment
+    return robot_renderer, pose, goal, obstacle_map, backward_to_goal

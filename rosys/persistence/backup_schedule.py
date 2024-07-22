@@ -14,7 +14,9 @@ class BackupSchedule:
                  path: Path = Path('~/.rosys_backup'),
                  backup_count: int = 100) -> None:
         """
-        :param time The time of day when the backup should be performed (default: 3:00).
+        :param time: The time of day when the backup should be performed (default: 3:00).
+        :param path: The directory where the backups should be stored (default: ~/.rosys_backup).
+        :param backup_count: The number of backups to keep (default: 100).
         """
         self.path = path.expanduser()
         self.path.mkdir(parents=True, exist_ok=True)

@@ -23,14 +23,12 @@ jobs:
         with:
           python-version: "3.11"
           cache: "poetry"
-      - name: Update version.py
-        run: |
-          echo "__version__ = '${GITHUB_REF#refs/tags/v}'" > rosys/version.py
       - name: get version
-        id: get_version
-        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
+        run: echo "VERSION=$(echo ${GITHUB_REF/refs\/tags\//})" >> $GITHUB_ENV
       - name: set version
-        run: poetry version ${{ steps.get_version.outputs.VERSION }}
+        run: |
+          VERSION=${{ env.VERSION }}
+          poetry version ${VERSION#v}
       - name: publish
         env:
           POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
@@ -41,13 +39,13 @@ jobs:
         with:
           draft: false
           prerelease: false
-          name: ${{ steps.get_version.outputs.VERSION }}
-          tag_name: ${{ steps.get_version.outputs.VERSION }}
+          name: ${{ env.VERSION }}
+          tag_name: ${{ env.VERSION }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - name: verify
         shell: bash
-        run: for i in {1..100}; do python -m pip install 'rosys==${{ steps.get_version.outputs.VERSION }}' && break || sleep 2; done
+        run: for i in {1..100}; do python -m pip install 'rosys==${{ env.VERSION }}' && break || sleep 2; done
 
   docker:
     needs: pypi
