@@ -146,12 +146,12 @@ class Calibration:
             flags = cv2.CALIB_USE_INTRINSIC_GUESS
             if rational_model:
                 flags |= cv2.CALIB_RATIONAL_MODEL
-            _rms, K, D, rvecs, tvecs = cv2.calibrateCamera(  # type: ignore
+            _rms, K, D, rvecs, tvecs = cv2.calibrateCamera(
                 objectPoints=world_point_array,
                 imagePoints=image_point_array,
                 imageSize=image_size.tuple,
                 cameraMatrix=K0,
-                distCoeffs=None,
+                distCoeffs=np.zeros((1, 5), dtype=np.float32),
                 flags=flags,
                 criteria=optimization_criteria,
             )
@@ -160,8 +160,7 @@ class Calibration:
             flags |= cv2.fisheye.CALIB_CHECK_COND
             flags |= cv2.fisheye.CALIB_FIX_SKEW
             flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
-            # pylint: disable=unpacking-non-sequence
-            _rms, K, D, rvecs, tvecs = cv2.fisheye.calibrate(
+            _rms, K, D, rvecs, tvecs = cv2.fisheye.calibrate(  # pylint: disable=unpacking-non-sequence
                 objectPoints=world_point_array,
                 imagePoints=image_point_array,
                 image_size=image_size.tuple,
@@ -170,14 +169,12 @@ class Calibration:
                 flags=flags,
                 criteria=optimization_criteria,
             )
-            # pylint: enable=unpacking-non-sequence
             if D.size != 4:
                 raise ValueError(f'Fisheye calibration failed (got invalid distortion coefficients D="{D}")')
         elif camera_model == CameraModel.OMNIDIRECTIONAL:
             flags = cv2.omnidir.CALIB_USE_GUESS
             flags |= cv2.omnidir.CALIB_FIX_SKEW
-            # pylint: disable=unpacking-non-sequence
-            _rms, K, xi_arr, D, rvecs, tvecs, _status = cv2.omnidir.calibrate(
+            _rms, K, xi_arr, D, rvecs, tvecs, _status = cv2.omnidir.calibrate(  # pylint: disable=unpacking-non-sequence
                 objectPoints=world_point_array,
                 imagePoints=image_point_array,
                 size=image_size.tuple,
@@ -187,12 +184,9 @@ class Calibration:
                 flags=flags,
                 criteria=optimization_criteria,
             )
-            # pylint: enable=unpacking-non-sequence
             xi = xi_arr[0]
             if D.size != 4:
                 raise ValueError(f'Omnidirectional calibration failed (got invalid distortion coefficients D="{D}")')
-        else:
-            raise ValueError(f'Unknown camera model "{camera_model}"')
 
         rotation0 = Rotation(R=np.eye(3).tolist())
         intrinsics = Intrinsics(matrix=K.tolist(),
@@ -406,9 +400,8 @@ class Calibration:
             balance = 0.0 if crop else 1.0
             new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(K, D, (w, h), np.eye(3), balance=balance)
 
-            # pylint: disable=unpacking-non-sequence
-            map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), new_K, (w, h), cv2.CV_16SC2)
-            # pylint: enable=unpacking-non-sequence
+            map1, map2 = cv2.fisheye.initUndistortRectifyMap(  # pylint: disable=unpacking-non-sequence
+                K, D, np.eye(3), new_K, (w, h), cv2.CV_16SC2)
             dst = cv2.remap(image_array, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             flags = cv2.omnidir.RECTIFY_PERSPECTIVE
