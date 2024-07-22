@@ -210,9 +210,10 @@ class Calibration:
                 return None
             return Point(x=image_array[0, 0], y=image_array[0, 1])  # pylint: disable=unsubscriptable-object
 
-        R = self.rotation_array
+        world_extrinsics = self.extrinsics.resolve()
+        R = world_extrinsics.rotation.matrix
         Rod = cv2.Rodrigues(R.T)[0]
-        t = -R.T @ self.extrinsics.translation
+        t = -R.T @ world_extrinsics.translation
         K = np.array(self.intrinsics.matrix)
         D = np.array(self.intrinsics.distortion, dtype=float)
 
@@ -228,7 +229,7 @@ class Calibration:
 
         if self.intrinsics.model != CameraModel.OMNIDIRECTIONAL:
             world_coordinates = world_coordinates.reshape(-1, 3)
-            local_coordinates = (world_coordinates - np.array(self.extrinsics.translation)) @ R
+            local_coordinates = (world_coordinates - np.array(world_extrinsics.translation)) @ R
             image_array[local_coordinates[:, 2] < 0, :] = np.nan
 
         return image_array.reshape(-1, 2)
@@ -254,10 +255,11 @@ class Calibration:
                 return None
             return Point3d(x=world_points[0, 0], y=world_points[0, 1], z=world_points[0, 2])  # pylint: disable=unsubscriptable-object
 
+        world_extrinsics = self.extrinsics.resolve()
         image_rays = self.points_to_rays(image_coordinates.astype(np.float32).reshape(-1, 1, 2))
-        objPoints = image_rays @ self.rotation_array.T
+        objPoints = image_rays @ world_extrinsics.rotation.matrix.T
         Z = self.extrinsics.translation[-1]
-        t = np.array(self.extrinsics.translation)
+        t = np.array(world_extrinsics.translation)
         world_points = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
 
         reprojection = self.project_to_image(world_points)
