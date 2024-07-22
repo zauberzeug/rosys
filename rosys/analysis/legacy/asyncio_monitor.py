@@ -4,7 +4,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
 
-from ... import rosys
+from ...rosys import on_repeat
 
 
 @dataclass(slots=True, kw_only=True)
@@ -30,7 +30,7 @@ class AsyncioMonitor:
         self.timings: dict[str, list[Measurement]] = defaultdict(list)
         self.log_position: int | None = None
 
-        rosys.on_repeat(self.step, 10)
+        on_repeat(self.step, 10)
 
     async def step(self) -> None:
         if not self.log_filepath.is_file():
