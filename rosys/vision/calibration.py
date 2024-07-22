@@ -8,7 +8,7 @@ from typing import Optional, overload
 import cv2
 import numpy as np
 
-from ..geometry import Point, Point3d, Pose3d, Rotation
+from ..geometry import CoordinateFrame, Point, Point3d, Pose3d, Rotation
 from .image import Image, ImageSize
 
 
@@ -101,7 +101,8 @@ class Calibration:
                     image_size: ImageSize,
                     f0: float,
                     rational_model: bool = False,
-                    camera_model: CameraModel = CameraModel.PINHOLE) -> Calibration:
+                    camera_model: CameraModel = CameraModel.PINHOLE,
+                    world_point_frame: CoordinateFrame | None = None) -> Calibration:
         """Estimate the camera calibration from corresponding world and image points.
 
         :param world_points: The observed points in 3D world coordinates.
@@ -110,6 +111,7 @@ class Calibration:
         :param f0: An initial guess for the focal length.
         :param rational_model: Whether to use the rational camera model (only applies to pinhole cameras).
         :param camera_model: The camera model to use.
+        :param world_point_frame: The coordinate frame in which the world points are given. This will be the parent frame of the resulting extrinsic camera pose.
 
         :return: The estimated camera calibration.
         """
@@ -189,28 +191,32 @@ class Calibration:
         rotation = Rotation.from_rvec(rvecs[0]).T
         translation = (-np.array(rotation.R).dot(tvecs[0])).flatten().tolist()
         extrinsics = Pose3d(translation=Point3d.from_tuple(translation), rotation=rotation)
+        extrinsics.parent_frame = world_point_frame
 
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 
     @overload
-    def project_to_image(self, world_coordinates: Point3d) -> Optional[Point]: ...
+    def project_to_image(self, world_coordinates: Point3d, coordinate_frame: CoordinateFrame |
+                         None = None) -> Optional[Point]: ...
 
     @overload
-    def project_to_image(self, world_coordinates: np.ndarray) -> np.ndarray: ...
+    def project_to_image(self, world_coordinates: np.ndarray, coordinate_frame: CoordinateFrame |
+                         None = None) -> np.ndarray: ...
 
-    def project_to_image(self, world_coordinates: Point3d | np.ndarray) -> Optional[Point] | np.ndarray:
+    def project_to_image(self, world_coordinates: Point3d | np.ndarray, coordinate_frame: CoordinateFrame |
+                         None = None) -> Optional[Point] | np.ndarray:
         """Project a point in world coordinates to the image plane.
 
         This takes into account the camera's intrinsic and extrinsic parameters.
         """
         if isinstance(world_coordinates, Point3d):
             world_array = np.array([world_coordinates.tuple], dtype=np.float32)
-            image_array = self.project_to_image(world_array)
+            image_array = self.project_to_image(world_array, coordinate_frame=coordinate_frame)
             if np.isnan(image_array).any():
                 return None
             return Point(x=image_array[0, 0], y=image_array[0, 1])  # pylint: disable=unsubscriptable-object
 
-        world_extrinsics = self.extrinsics.resolve()
+        world_extrinsics = self.extrinsics.resolve(up_to=coordinate_frame)
         R = world_extrinsics.rotation.matrix
         Rod = cv2.Rodrigues(R.T)[0]
         t = -R.T @ world_extrinsics.translation
