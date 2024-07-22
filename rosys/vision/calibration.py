@@ -187,6 +187,8 @@ class Calibration:
             xi = xi_arr[0]
             if D.size != 4:
                 raise ValueError(f'Omnidirectional calibration failed (got invalid distortion coefficients D="{D}")')
+        else:
+            raise ValueError(f'Unknown camera model "{camera_model}"')
 
         rotation0 = Rotation(R=np.eye(3).tolist())
         intrinsics = Intrinsics(matrix=K.tolist(),
