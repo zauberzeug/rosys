@@ -1,3 +1,4 @@
+from .coordinate_frame import CoordinateFrame
 from .line import Line
 from .line_segment import LineSegment
 from .point import Point
@@ -21,6 +22,7 @@ __all__ = [
     'Pose',
     'PoseStep',
     'Pose3d',
+    'CoordinateFrame',
     'Prism',
     'Rectangle',
     'Rotation',
