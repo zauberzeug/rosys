@@ -89,7 +89,7 @@ class Pose3d:
             relative_pose = self.resolve(up_to=source_frame)
         else:
             relative_pose = self.relative_to(source_frame, common_frame=source_frame)
-        return Point3d.from_tuple(relative_pose.rotation.T @ (point.array - relative_pose.translation.array))
+        return Point3d.from_tuple((relative_pose.rotation.matrix.T @ (point - relative_pose.translation)).tolist())
 
     def relative_to(self, other: Pose3d, common_frame: CoordinateFrame | None = None) -> Pose3d:
         '''Calculates the relative pose of this pose to another pose.
