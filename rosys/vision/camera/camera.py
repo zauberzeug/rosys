@@ -4,7 +4,9 @@ import abc
 import asyncio
 from collections import deque
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Optional, Self
+from typing import Any, AsyncGenerator, Optional
+
+from typing_extensions import Self
 
 from ... import rosys
 from ...event import Event
