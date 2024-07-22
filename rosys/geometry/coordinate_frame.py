@@ -36,3 +36,14 @@ class CoordinateFrame(Pose3d):
         for frame in coordinate_frame_registry.values():
             if frame.parent_frame_id == self.id:
                 logger.warning('Parent frame %s of %s was deleted', self.id, frame.id)
+
+    @staticmethod
+    def common_frame(pose1: Pose3d | CoordinateFrame | None, pose2: Pose3d | CoordinateFrame | None) -> CoordinateFrame | None:
+        """Returns the common frame of a pair of poses or frames.
+
+        :param pose1: The first pose or frame.
+        :param pose2: The second pose or frame.
+        """
+        frame1 = pose1 if isinstance(pose1, CoordinateFrame) else pose1.parent_frame if pose1 else None
+        frame2 = pose2 if isinstance(pose2, CoordinateFrame) else pose2.parent_frame if pose2 else None
+        return CoordinateFrame._find_common_frame(frame1, frame2)

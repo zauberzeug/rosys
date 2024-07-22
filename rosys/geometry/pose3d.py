@@ -109,9 +109,15 @@ class Pose3d:
         :param pose1: The first pose.
         :param pose2: The second pose.
         '''
-        # find the first common parent frame
-        frame1 = pose1 if isinstance(pose1, CoordinateFrame) else pose1.parent_frame
-        frame2 = pose2 if isinstance(pose2, CoordinateFrame) else pose2.parent_frame
+        return Pose3d._find_common_frame(pose1.parent_frame, pose2.parent_frame)
+
+    @staticmethod
+    def _find_common_frame(frame1: CoordinateFrame | None, frame2: CoordinateFrame | None) -> CoordinateFrame | None:
+        '''Finds the first common parent frame of two frames.
+
+        :param frame1: The first frame.
+        :param frame2: The second frame.
+        '''
         chain2 = []
         while frame2 is not None:
             chain2.append(frame2)
