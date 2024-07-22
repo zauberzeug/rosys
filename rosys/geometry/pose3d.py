@@ -73,7 +73,7 @@ class Pose3d:
             if current_frame is None:
                 raise ValueError(f'Could not resolve pose to {up_to} (end of chain)')
 
-            final_pose = current_frame * final_pose
+            final_pose = current_frame @ final_pose
             current_frame = current_frame.parent_frame
 
         final_pose.parent_frame = up_to
@@ -100,7 +100,7 @@ class Pose3d:
         resolved_self = self.resolve(up_to=common_frame)
         resolved_other = other.resolve(up_to=common_frame)
 
-        return resolved_self * resolved_other.inverse()
+        return resolved_self @ resolved_other.inverse()
 
     @staticmethod
     def common_frame(pose1: Pose3d, pose2: Pose3d) -> CoordinateFrame | None:
@@ -132,8 +132,13 @@ class Pose3d:
     def inverse(self) -> Pose3d:
         return Pose3d(translation=Point3d.from_tuple((-self.rotation.T.matrix @ self.translation.array).tolist()), rotation=self.rotation.T)
 
-    def __mul__(self, other: 'Pose3d') -> Pose3d:
-        return Pose3d.from_matrix(self.matrix @ other.matrix)
+    def __matmul__(self, other: Pose3d) -> Pose3d:
+        # if not self.parent_frame_id == other.parent_frame_id:
+        #     raise ValueError(
+        #         'Cannot multiply poses in different parent frames. Use relative_to() or resolve() to bring them into a common frame.')
+        new_pose = Pose3d.from_matrix(self.matrix @ other.matrix)
+        # new_pose.parent_frame_id = self.parent_frame_id
+        return new_pose
 
     def __str__(self) -> str:
         return f'R = {self.rotation}\nT = {self.translation}'
