@@ -30,28 +30,6 @@ This will install the `rosys` package and all its dependencies in a poetry devel
 
 ### Formatting
 
-We use [pre-commit](https://github.com/pre-commit/pre-commit) to make sure the coding style is enforced.
-It will be installed with the setup step above, but you then need to install the corresponding git commit hooks by running the following command:
-
-```bash
-pre-commit install
-```
-
-After that you can make sure your code satisfies the coding style by running the following command:
-
-```bash
-pre-commit run --all-files
-```
-
-These checks will also run automatically before every commit.
-The command may fail with
-
-> RuntimeError: failed to find interpreter for Builtin discover of python_spec='python3.10'
-
-You will need to install Python 3.10 and make sure it is available in your `PATH`.
-
-### Formatting
-
 We use [autopep8](https://github.com/hhatto/autopep8) with a 120 character line length to format our code.
 Before submitting a pull request, please run
 
@@ -68,25 +46,46 @@ There are cases where one or the other arrangement of, e.g., function arguments 
 Then we like the flexibility to either put all arguments on separate lines or only put the lengthy event handler
 on a second line and leave the other arguments as they are.
 
-### Imports
+### Linting
 
-We use [ruff](https://docs.astral.sh/ruff/) to automatically sort imports:
+We use [pre-commit](https://github.com/pre-commit/pre-commit) to make sure the coding style is enforced.
+You first need to install pre-commit and the corresponding git commit hooks by running the following commands:
 
 ```bash
-ruff check . --fix
+python3 -m pip install pre-commit
+pre-commit install
 ```
 
-### Single vs Double Quotes
+After that you can make sure your code satisfies the coding style by running the following command:
 
-Regarding single or double quotes: [PEP 8](https://peps.python.org/pep-0008/) doesn't give any recommendation, so we simply chose single quotes and sticked with it.
-On qwerty keyboards it's a bit easier to type, is visually less cluttered, and it works well for strings containing double quotes from the English language.
-Pre-commit makes sure, that you don't commit unnecessary double quotes.
+```bash
+pre-commit run --all-files
+```
 
-### F-Strings
+> [!TIP]
+> The command may fail with
+>
+> > RuntimeError: failed to find interpreter for Builtin discover of python_spec='python3.10'
+>
+> You will need to install Python 3.10 and make sure it is available in your `PATH`.
 
-We use f-strings where ever possible because they are generally more readable - once you get used to them.
-There are only a few places in the code base where performance really matters and f-strings might not be the best choice.
-These places should be marked with a `# NOTE: ...` comment when diverging from f-string usage.
+These checks will also run automatically before every commit:
+
+- Run `ruff check . --fix` to check the code and sort imports.
+- Remove trailing whitespace.
+- Fix end of files.
+- Enforce single quotes.
+
+> [!NOTE]
+>
+> **Regarding single or double quotes:** > [PEP 8](https://peps.python.org/pep-0008/) doesn't give any recommendation, so we simply chose single quotes and sticked with it.
+> On qwerty keyboards it's a bit easier to type, is visually less cluttered, and it works well for strings containing double quotes from the English language.
+
+> [!NOTE]
+>
+> **We use f-strings** where ever possible because they are generally more readable - once you get used to them.
+> There are only a few places in the code base where performance really matters and f-strings might not be the best choice.
+> These places should be marked with a `# NOTE: ...` comment when diverging from f-string usage.
 
 ## Running tests
 
@@ -124,5 +123,5 @@ If you're adding a new feature, please include tests that cover the new function
 
 ## Thank you!
 
-Thank you for your interest in contributing to NiceGUI!
+Thank you for your interest in contributing to RoSys!
 We're looking forward to working with you!
