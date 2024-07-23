@@ -51,7 +51,7 @@ class Intrinsics:
     model: CameraModel = CameraModel.PINHOLE
     matrix: list[list[float]]
     distortion: list[float]
-    omnidir_params: Optional[OmnidirParameters] = None
+    omnidir_params: OmnidirParameters | None = None
     size: ImageSize
 
     @staticmethod
