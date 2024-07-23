@@ -3,7 +3,7 @@ from typing import Optional
 import numpy as np
 from nicegui.elements.scene_objects import Cylinder, Group, Line, Text
 
-from . import CalibratableCamera
+from .camera import CalibratableCamera
 
 
 class CameraSceneObject(Group):
@@ -26,11 +26,12 @@ class CameraSceneObject(Group):
 
                 if debug:
                     Text(uid)
-            pyramid.scale(
-                camera.calibration.intrinsics.size.width / px_per_m,
-                camera.calibration.intrinsics.size.height / px_per_m,
-                camera.calibration.intrinsics.matrix[0][0] / px_per_m,
-            )
+            if camera.calibration is not None:
+                pyramid.scale(
+                    camera.calibration.intrinsics.size.width / px_per_m,
+                    camera.calibration.intrinsics.size.height / px_per_m,
+                    camera.calibration.intrinsics.matrix[0][0] / px_per_m,
+                )
             with pyramid:
                 Line([0, 0, 0], [0.5, 0, 0]).material('#ff0000')
                 Line([0, 0, 0], [0, 0.5, 0]).material('#00ff00')

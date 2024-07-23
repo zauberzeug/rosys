@@ -229,6 +229,7 @@ class Calibration:
         elif self.intrinsics.model == CameraModel.FISHEYE:
             image_array, _ = cv2.fisheye.projectPoints(world_coordinates.reshape(-1, 1, 3), Rod, t, K, D)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
+            assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
             xi = self.intrinsics.omnidir_params.xi
             image_array, _ = cv2.omnidir.projectPoints(world_coordinates.reshape(-1, 1, 3), Rod, t, K, xi, D)
         else:

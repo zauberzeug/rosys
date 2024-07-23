@@ -7,13 +7,12 @@ from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 
+from .coordinate_frame_registry import coordinate_frame_registry
 from .point3d import Point3d
 from .rotation import Rotation
 
 if TYPE_CHECKING:
     from .coordinate_frame import CoordinateFrame
-
-from .coordinate_frame_registry import coordinate_frame_registry
 
 
 @dataclass(slots=True, kw_only=True)
