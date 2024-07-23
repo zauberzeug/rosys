@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Literal, overload
+from typing import overload
 
 import cv2
 import numpy as np
@@ -12,13 +12,10 @@ from ..geometry import Point, Point3d, Rotation
 from .image import Image, ImageSize
 
 
-class CameraModel(Enum):
+class CameraModel(str, Enum):
     PINHOLE = "pinhole"
     FISHEYE = "fisheye"
     OMNIDIRECTIONAL = "omnidirectional"
-
-
-CameraModelLiteral = Literal[CameraModel.PINHOLE, CameraModel.FISHEYE, CameraModel.OMNIDIRECTIONAL]
 
 
 @dataclass(slots=True, kw_only=True)
@@ -32,15 +29,12 @@ class Intrinsics:
     :param rotation: An inner rotation matrix, useful for visual-inertial calibration or omnidirectional projection.
     :param size: The size of the image.
     """
-    model: str = CameraModel.PINHOLE.value
+    model: CameraModel = CameraModel.PINHOLE
     matrix: list[list[float]]
     distortion: list[float]
     xi: float = 0.0
     rotation: Rotation = field(default_factory=Rotation.zero)
     size: ImageSize
-
-    def __post_init__(self):
-        CameraModel(self.model)  # validated model string
 
     @staticmethod
     def create_default(width: int = 800, height: int = 600, *, focal_length: float = 570) -> Intrinsics:
@@ -109,7 +103,7 @@ class Calibration:
                     image_size: ImageSize,
                     f0: float,
                     rational_model: bool = False,
-                    camera_model: CameraModel | CameraModelLiteral = CameraModel.PINHOLE) -> Calibration:
+                    camera_model: CameraModel = CameraModel.PINHOLE) -> Calibration:
         """Estimate the camera calibration from corresponding world and image points.
 
         :param world_points: The observed points in 3D world coordinates.
