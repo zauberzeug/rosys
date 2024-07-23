@@ -1,6 +1,6 @@
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional
 
 from nicegui import app, events, ui
 from starlette.responses import FileResponse
@@ -17,7 +17,7 @@ def export_button(title: str = 'Export', route: str = '/export', tmp_filepath: P
     return ui.button(title, on_click=lambda: ui.download(route[1:]))
 
 
-def import_button(title: str = 'Import', after_import: Optional[Callable] = None) -> ui.button:
+def import_button(title: str = 'Import', after_import: Callable | None = None) -> ui.button:
     async def restore_from_file(e: events.UploadEventArguments) -> None:
         all_data = json.load(e.content)
         assert isinstance(all_data, dict)

@@ -10,7 +10,7 @@ def test_parse_task_warning():
 
 
 def test_parse_timer_warning():
-    msg = "2022-02-10 06:16:37.192 [WARNING] asyncio/base_events.py:1885: Executing <TimerHandle when=12768.78187203222 _set_result_unless_cancelled(<Future finis...events.py:424>, None) at /opt/homebrew/Cellar/python@3.9/3.9.7_1/Frameworks/Python.framework/Versions/3.9/lib/python3.9/asyncio/futures.py:308 created at /opt/homebrew/Cellar/python@3.9/3.9.7_1/Frameworks/Python.framework/Versions/3.9/lib/python3.9/asyncio/tasks.py:651> took 0.075 seconds"
+    msg = '2022-02-10 06:16:37.192 [WARNING] asyncio/base_events.py:1885: Executing <TimerHandle when=12768.78187203222 _set_result_unless_cancelled(<Future finis...events.py:424>, None) at /opt/homebrew/Cellar/python@3.9/3.9.7_1/Frameworks/Python.framework/Versions/3.9/lib/python3.9/asyncio/futures.py:308 created at /opt/homebrew/Cellar/python@3.9/3.9.7_1/Frameworks/Python.framework/Versions/3.9/lib/python3.9/asyncio/tasks.py:651> took 0.075 seconds'
     result = AsyncioMonitor().parse_async_warning(msg)
     assert result.duration == 0.075
     assert result.name == 'TimerHandle'

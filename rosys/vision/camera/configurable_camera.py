@@ -1,5 +1,6 @@
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Optional, overload
+from typing import Any, overload
 
 from .camera import Camera
 
@@ -7,9 +8,9 @@ from .camera import Camera
 @dataclass(slots=True, kw_only=True)
 class ParameterInfo:
     name: str
-    min: Optional[Any] = None
-    max: Optional[Any] = None
-    step: Optional[Any] = None
+    min: Any | None = None
+    max: Any | None = None
+    step: Any | None = None
 
 
 @dataclass(slots=True, kw_only=True)

@@ -1,7 +1,7 @@
 import abc
-from typing import Generic, Optional, TypeVar
+from typing import Generic, TypeVar
 
-from .. import rosys
+from .. import persistence, rosys
 from ..event import Event
 from .camera.camera import Camera
 from .image import Image
@@ -9,7 +9,7 @@ from .image import Image
 T = TypeVar('T', bound=Camera)
 
 
-class CameraProvider(Generic[T], rosys.persistence.PersistentModule, metaclass=abc.ABCMeta):
+class CameraProvider(Generic[T], persistence.PersistentModule, metaclass=abc.ABCMeta):
     """A camera provider holds a dictionary of cameras and manages additions and removals.
 
     The camera dictionary should not be modified directly but by using the camera provider's methods.
@@ -38,7 +38,7 @@ class CameraProvider(Generic[T], rosys.persistence.PersistentModule, metaclass=a
         }
 
     def restore(self, data: dict[str, dict]) -> None:
-        rosys.persistence.replace_dict(self._cameras, Camera, data.get('cameras', {}))
+        persistence.replace_dict(self._cameras, Camera, data.get('cameras', {}))
         for camera in self._cameras.values():
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
 
@@ -65,7 +65,7 @@ class CameraProvider(Generic[T], rosys.persistence.PersistentModule, metaclass=a
         for camera_id in list(self.cameras):
             self.remove_camera(camera_id)
 
-    def prune_images(self, max_age_seconds: Optional[float] = None):
+    def prune_images(self, max_age_seconds: float | None = None):
         for camera in self.cameras.values():
             if max_age_seconds is None:
                 camera.images.clear()

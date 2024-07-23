@@ -1,5 +1,6 @@
 import asyncio
-from typing import Any, Coroutine, TypeVar
+from collections.abc import Coroutine
+from typing import Any, TypeVar
 
 _T = TypeVar('_T')
 

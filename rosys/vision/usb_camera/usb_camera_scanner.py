@@ -1,9 +1,7 @@
-from typing import Optional
-
 import pyudev
 
 
-def uid_from_device(device: pyudev.Device) -> Optional[str]:
+def uid_from_device(device: pyudev.Device) -> str | None:
     parts = [
         device.get('ID_VENDOR_ID'),
         device.get('ID_MODEL_ID'),

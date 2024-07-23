@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -35,13 +35,13 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
         self.ip = ip
 
-        self.index: Optional[int] = None
+        self.index: int | None = None
         parts = self.id.split('-')
         if len(parts) == 2 and parts[1].isdigit():
             self.index = int(parts[1])
 
         self.mac = parts[0]
-        self.device: Optional[MjpegDevice] = None
+        self.device: MjpegDevice | None = None
 
         self._register_parameter('fps', self._get_fps, self._set_fps, default_value=10)
         self._register_parameter('resolution', self._get_resolution, self._set_resolution, default_value=(640, 480))

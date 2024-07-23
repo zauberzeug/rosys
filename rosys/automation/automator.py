@@ -1,5 +1,6 @@
 import logging
-from typing import Callable, Coroutine, Optional, cast
+from collections.abc import Callable, Coroutine
+from typing import cast
 
 from .. import rosys
 from ..driving import Steerer
@@ -15,16 +16,16 @@ class Automator:
     _steerer_: If provided, manually steering the robot will pause a currently running automation.
 
     _default_automation_: If provided, it allows the automator to start a new automation without passing an automation
-    (e.g. via an "Play"-button like offered by the [automation controls](https://rosys.io/reference/rosys/automation/#rosys.automation.automation_controls)). 
+    (e.g. via an "Play"-button like offered by the [automation controls](https://rosys.io/reference/rosys/automation/#rosys.automation.automation_controls)).
     The passed function should return a new coroutine on every call (see [Play-pause-stop](https://rosys.io/examples/play-pause-stop/) example).
 
     _on_interrupt_: Optional callback that will be called when an automation pauses or stops (the cause is provided as string parameter).
     """
 
     def __init__(self,
-                 steerer: Optional[Steerer], *,
-                 default_automation: Optional[Callable] = None,
-                 on_interrupt: Optional[Callable] = None) -> None:
+                 steerer: Steerer | None, *,
+                 default_automation: Callable | None = None,
+                 on_interrupt: Callable | None = None) -> None:
         self.AUTOMATION_STARTED = Event()
         """an automation has been started"""
 
@@ -48,7 +49,7 @@ class Automator:
         self.default_automation = default_automation
 
         self.enabled: bool = True
-        self.automation: Optional[Automation] = None
+        self.automation: Automation | None = None
 
         if steerer:
             steerer.STEERING_STARTED.register(lambda: self.pause(because='steering started'))
@@ -71,7 +72,7 @@ class Automator:
     def is_paused(self) -> bool:
         return self.automation is not None and self.automation.is_paused
 
-    def start(self, coro: Optional[Coroutine] = None, *, paused: bool = False) -> None:
+    def start(self, coro: Coroutine | None = None, *, paused: bool = False) -> None:
         """Starts a new automation.
 
         You can pass any coroutine.

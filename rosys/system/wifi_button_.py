@@ -25,7 +25,7 @@ def has_internet() -> bool:
             socket.setdefaulttimeout(3)
             socket.socket(socket.AF_INET, socket.SOCK_STREAM).connect((host, PORT))
             return True
-        except socket.error:
+        except OSError:
             pass
     log.warning('No internet connection')
     return False

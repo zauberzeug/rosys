@@ -7,11 +7,11 @@ import pylab as pl
 from nicegui import app, ui
 
 # pylint: disable=unused-import
-from rosys.geometry import Point, Pose
+from rosys.geometry import Point, Pose  # noqa: F401
 from rosys.pathplanning import plot_tools as pt
-from rosys.pathplanning.area import Area
+from rosys.pathplanning.area import Area  # noqa: F401
 from rosys.pathplanning.delaunay_planner import DelaunayPlanner
-from rosys.pathplanning.obstacle import Obstacle
+from rosys.pathplanning.obstacle import Obstacle  # noqa: F401
 from rosys.pathplanning.planner_process import PlannerSearchCommand
 from rosys.pathplanning.robot_renderer import RobotRenderer
 

@@ -1,5 +1,4 @@
 from functools import wraps
-from typing import Optional
 
 from line_profiler import LineProfiler as PyUtilsLineProfiler
 
@@ -8,7 +7,7 @@ class LineProfiler:
 
     def __init__(self) -> None:
         self.functions: list[list] = []
-        self.line_profiler: Optional[PyUtilsLineProfiler] = None
+        self.line_profiler: PyUtilsLineProfiler | None = None
 
     def __call__(self, func):
         index = len(self.functions)

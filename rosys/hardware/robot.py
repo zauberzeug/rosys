@@ -1,6 +1,6 @@
 import abc
 import logging
-from typing import Optional, cast
+from typing import cast
 
 from .. import rosys
 from ..helpers import remove_indentation
@@ -78,7 +78,7 @@ class RobotSimulation(Robot):
 
     def __init__(self, modules: list[Module]) -> None:
         super().__init__(modules)
-        self._last_step: Optional[float] = None
+        self._last_step: float | None = None
         rosys.on_repeat(self.step, 0.01)
 
     async def step(self) -> None:

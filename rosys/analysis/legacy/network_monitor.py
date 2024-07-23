@@ -48,12 +48,11 @@ class NetworkMonitor:
             )
             if name not in self.interfaces:
                 self.interfaces[name] = stats
-            else:
-                if stats > self.interfaces[name]:
-                    msg = name + ' has ' + stats.msg()
-                    self.log.warning(msg)
-                    rosys.notify(msg, 'warning')
-                    self.interfaces[name] = stats
+            elif stats > self.interfaces[name]:
+                msg = name + ' has ' + stats.msg()
+                self.log.warning(msg)
+                rosys.notify(msg, 'warning')
+                self.interfaces[name] = stats
 
     @staticmethod
     def split_interfaces(output: str) -> list[str]:

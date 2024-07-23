@@ -36,7 +36,8 @@ with ui.pyplot():
     cols = np.arange(0, grid.size[1] - 1, 0.2)
     xx, yy = grid.from_grid(rows, cols)  # pylint: disable=unpacking-non-sequence
     interp = distance_map.interpolate(xx, yy).reshape(len(rows), len(cols))
-    pl.imshow(interp, cmap=pl.cm.gray, interpolation='nearest', extent=extent, clim=[0, 30])
+    pl.imshow(interp, cmap=pl.cm.gray, interpolation='nearest',  # pylint: disable=no-member
+              extent=extent, clim=[0, 30])
     pt.show_obstacle_map(obstacle_map)
     pl.autoscale(False)
     for y in np.linspace(8.0, 11.0, 4):
@@ -47,7 +48,7 @@ with ui.pyplot():
 
 with ui.pyplot():
     Gx = distance_map.gradient(xx, yy)[0].reshape(len(yy), len(xx))
-    pl.imshow(Gx, cmap=pl.cm.gray, interpolation='nearest', extent=extent, clim=[-1, 1])
+    pl.imshow(Gx, cmap=pl.cm.gray, interpolation='nearest', extent=extent, clim=[-1, 1])  # pylint: disable=no-member
     pt.show_obstacle_map(obstacle_map)
 
 ui.run()

@@ -1,5 +1,4 @@
 import abc
-from typing import Optional
 
 from ..event import Event
 from .estop import EStop
@@ -11,7 +10,7 @@ from .robot_brain import RobotBrain
 class Bumper(Module, abc.ABC):
     """A module that detects when a bumper is triggered."""
 
-    def __init__(self, estop: Optional[EStop], **kwargs) -> None:
+    def __init__(self, estop: EStop | None, **kwargs) -> None:
         self.estop = estop
         super().__init__(**kwargs)
 
@@ -29,10 +28,10 @@ class BumperHardware(Bumper, ModuleHardware):
     """
 
     def __init__(self, robot_brain: RobotBrain, *,
-                 expander: Optional[ExpanderHardware] = None,
+                 expander: ExpanderHardware | None = None,
                  name: str = 'bumper',
                  pins: dict[str, int],
-                 estop: Optional[EStop] = None) -> None:
+                 estop: EStop | None = None) -> None:
         self.name = name
         self.pins = pins
         lizard_code = '\n'.join(f'{name}_{pin} = {expander.name + "." if expander else ""}Input({number})'

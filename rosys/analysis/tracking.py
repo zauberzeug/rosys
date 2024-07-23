@@ -1,8 +1,9 @@
 import asyncio
 import uuid
 from collections import defaultdict
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar
 
 from nicegui import ui
 

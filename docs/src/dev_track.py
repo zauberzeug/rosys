@@ -2,6 +2,7 @@
 import asyncio
 
 from nicegui import ui
+
 from rosys.analysis import track
 
 

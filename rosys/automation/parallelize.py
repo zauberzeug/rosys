@@ -1,4 +1,4 @@
-from typing import Coroutine
+from collections.abc import Coroutine
 
 
 class parallelize:

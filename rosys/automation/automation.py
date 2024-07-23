@@ -1,6 +1,7 @@
 import asyncio
 import logging
-from typing import Any, Callable, Coroutine, Generator, Optional
+from collections.abc import Callable, Coroutine, Generator
+from typing import Any
 
 
 class Automation:
@@ -12,8 +13,8 @@ class Automation:
 
     def __init__(self,
                  coro: Coroutine,
-                 exception_handler: Optional[Callable] = None,
-                 on_complete: Optional[Callable] = None) -> None:
+                 exception_handler: Callable | None = None,
+                 on_complete: Callable | None = None) -> None:
         self.log = logging.getLogger('rosys.automation')
         self.coro = coro
         self.exception_handler = exception_handler

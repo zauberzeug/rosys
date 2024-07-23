@@ -37,7 +37,7 @@ def show_obstacle_map(obstacle_map):
 
 def show_distance_map(distance_map):
     extent = bbox_to_extent(distance_map.grid.bbox)
-    pl.imshow(distance_map.map, cmap=pl.cm.gray, interpolation='nearest', extent=extent)
+    pl.imshow(distance_map.map, cmap=pl.cm.gray, interpolation='nearest', extent=extent)  # pylint: disable=no-member
     plot_bbox(distance_map.grid.bbox, 'C0--', lw=0.2, dashes=[20, 20])
 
 

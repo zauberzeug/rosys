@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from ..geometry import Point
+from .point import Point
 
 
 @dataclass(slots=True, kw_only=True)

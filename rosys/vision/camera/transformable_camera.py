@@ -1,5 +1,3 @@
-from typing import Optional
-
 from ...geometry import Rectangle
 from ..image import ImageSize
 from ..image_rotation import ImageRotation
@@ -10,12 +8,12 @@ class TransformableCamera(Camera):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.crop: Optional[Rectangle] = None
+        self.crop: Rectangle | None = None
         """region to crop on the original resolution before rotation"""
         self.rotation: ImageRotation = ImageRotation.NONE
         """rotation which should be applied after grabbing and cropping"""
 
-        self._resolution: Optional[ImageSize] = None
+        self._resolution: ImageSize | None = None
 
     def _resolution_after_transform(self, original_resolution: ImageSize) -> ImageSize:
         width = int(self.crop.width) if self.crop else original_resolution.width
