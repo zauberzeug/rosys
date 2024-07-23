@@ -13,9 +13,9 @@ from .image import Image, ImageSize
 
 
 class CameraModel(str, Enum):
-    PINHOLE = "pinhole"
-    FISHEYE = "fisheye"
-    OMNIDIRECTIONAL = "omnidirectional"
+    PINHOLE = 'pinhole'
+    FISHEYE = 'fisheye'
+    OMNIDIRECTIONAL = 'omnidirectional'
 
 
 @dataclass(slots=True, kw_only=True)
