@@ -46,17 +46,6 @@ class Intrinsics:
         rotation = Rotation.zero()
         return Intrinsics(matrix=K, distortion=D, rotation=rotation, size=size)
 
-    @classmethod
-    def from_dict(cls, data: dict) -> Intrinsics:
-        return cls(
-            model=data.get('model', CameraModel.PINHOLE),
-            matrix=data['matrix'],
-            distortion=data['distortion'],
-            xi=data.get('xi', 0.0),
-            rotation=Rotation(R=data['rotation']) if 'rotation' in data else Rotation.zero(),
-            size=ImageSize(**data['size']),
-        )
-
 
 log = logging.getLogger('rosys.world.calibration')
 
@@ -70,13 +59,6 @@ class Extrinsics:
     """
     rotation: Rotation = field(default_factory=lambda: Rotation.from_euler(np.pi, 0, 0))
     translation: list[float] = field(default_factory=lambda: [0.0, 0.0, 1.0])
-
-    @classmethod
-    def from_dict(cls, data: dict) -> Extrinsics:
-        return cls(
-            rotation=Rotation(R=data['rotation']) if 'rotation' in data else Rotation.from_euler(np.pi, 0, 0),
-            translation=data['translation'] if 'translation' in data else [0.0, 0.0, 1.0],
-        )
 
 
 @dataclass(slots=True, kw_only=True)
