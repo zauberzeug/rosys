@@ -1,6 +1,5 @@
 import logging
 from collections import deque
-from typing import Optional
 
 from nicegui import ui
 
@@ -33,15 +32,15 @@ class RobotBrain:
         self.lizard_code = ''
         self.lizard_firmware = LizardFirmware(self)
 
-        self.waiting_list: dict[str, Optional[str]] = {}
-        self._clock_offset: Optional[float] = None
+        self.waiting_list: dict[str, str | None] = {}
+        self._clock_offset: float | None = None
         self._clock_offsets: deque[float] = deque(maxlen=CLOCK_OFFSET_HISTORY_LENGTH)
-        self.hardware_time: Optional[float] = None
+        self.hardware_time: float | None = None
 
         rosys.on_startup(self.enable_esp)
 
     @property
-    def clock_offset(self) -> Optional[float]:
+    def clock_offset(self) -> float | None:
         return self._clock_offset
 
     def developer_ui(self) -> None:
@@ -154,7 +153,7 @@ class RobotBrain:
     async def send(self, msg: str) -> None:
         await self.communication.send(augment(msg))
 
-    async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf')) -> Optional[str]:
+    async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf')) -> str | None:
         self.waiting_list[ack] = None
         await self.send(msg)
         t0 = rosys.time()
@@ -164,7 +163,7 @@ class RobotBrain:
 
     async def enable_esp(self) -> None:
         rosys.notify('Enabling ESP...')
-        command = ['sudo', './flash.py'] + self.lizard_firmware.flash_params + ['enable']
+        command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'enable']
         output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
         self.log.debug(output)
         rosys.notify('Enabling ESP: done', 'positive')
@@ -183,7 +182,7 @@ def augment(line: str) -> str:
     return f'{line}@{checksum:02x}'
 
 
-def check(line: Optional[str]) -> str:
+def check(line: str | None) -> str:
     if line is None:
         return ''
     if line[-3:-2] != '@':

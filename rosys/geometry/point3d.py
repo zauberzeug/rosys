@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import math
 from builtins import tuple as builtin_tuple
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence, overload
+from typing import overload
 
 import numpy as np
 

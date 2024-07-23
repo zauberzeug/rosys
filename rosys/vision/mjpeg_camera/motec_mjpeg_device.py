@@ -1,5 +1,3 @@
-from typing import Optional
-
 from .mjpeg_device import MjpegDevice
 from .motec_settings_interface import MotecSettingsInterface
 from .vendors import VendorType, mac_to_vendor
@@ -7,9 +5,9 @@ from .vendors import VendorType, mac_to_vendor
 
 class MotecMjpegDevice(MjpegDevice):
     def __init__(self, mac: str, ip: str, *,
-                 username: Optional[str] = '',
-                 password: Optional[str] = '',
-                 control_port: Optional[int] = 8885) -> None:
+                 username: str | None = '',
+                 password: str | None = '',
+                 control_port: int | None = 8885) -> None:
 
         super().__init__(mac, ip,
                          username=username, password=password)

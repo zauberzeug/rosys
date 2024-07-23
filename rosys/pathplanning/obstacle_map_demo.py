@@ -37,6 +37,6 @@ with ui.pyplot():
     pt.plot_spline(spline, 'C3' if obstacle_map.test_spline(spline) else 'C2')
 
 with ui.pyplot():
-    pl.imshow(obstacle_map.dist_stack[:, :, 9], cmap=pl.cm.gray)
+    pl.imshow(obstacle_map.dist_stack[:, :, 9], cmap=pl.cm.gray)  # pylint: disable=no-member
 
 ui.run()

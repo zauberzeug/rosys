@@ -2,7 +2,6 @@ import asyncio
 import gc
 from collections import Counter
 from pathlib import Path
-from typing import Optional
 
 import objgraph
 from nicegui import ui
@@ -60,7 +59,7 @@ def create_graph(search_term: str) -> str:
     return content
 
 
-def get_objgraph_stats() -> tuple[str, str, str, Optional[Counter[str]]]:
+def get_objgraph_stats() -> tuple[str, str, str, Counter[str] | None]:
     gc.collect()
     growth_objs = objgraph.growth(4)
     growth = 'object growth every 10 sec: '

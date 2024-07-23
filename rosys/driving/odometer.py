@@ -1,6 +1,6 @@
 import logging
 from copy import deepcopy
-from typing import Optional, Protocol
+from typing import Protocol
 
 from .. import rosys
 from ..event import Event
@@ -28,8 +28,8 @@ class Odometer:
 
         wheels.VELOCITY_MEASURED.register(self.handle_velocities)
         self.prediction: Pose = Pose()
-        self.detection: Optional[Pose] = None
-        self.current_velocity: Optional[Velocity] = None
+        self.detection: Pose | None = None
+        self.current_velocity: Velocity | None = None
         self.last_movement: float = 0
         self.history: list[Pose] = []
         self.odometry_frame: Pose = Pose()

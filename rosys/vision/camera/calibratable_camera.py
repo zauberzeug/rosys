@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from typing_extensions import Self
 
@@ -11,7 +9,7 @@ from .camera import Camera
 
 class CalibratableCamera(Camera):
 
-    def __init__(self, calibration: Optional[Calibration] = None, **kwargs) -> None:
+    def __init__(self, calibration: Calibration | None = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.calibration = calibration
 

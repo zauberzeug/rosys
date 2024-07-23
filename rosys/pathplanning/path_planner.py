@@ -11,8 +11,15 @@ from ..event import Event
 from ..geometry import Point, Pose, Prism, Spline
 from .area import Area
 from .obstacle import Obstacle
-from .planner_process import (PlannerCommand, PlannerGrowMapCommand, PlannerObstacleDistanceCommand, PlannerProcess,
-                              PlannerResponse, PlannerSearchCommand, PlannerTestCommand)
+from .planner_process import (
+    PlannerCommand,
+    PlannerGrowMapCommand,
+    PlannerObstacleDistanceCommand,
+    PlannerProcess,
+    PlannerResponse,
+    PlannerSearchCommand,
+    PlannerTestCommand,
+)
 
 
 class PathPlanner(persistence.PersistentModule):
@@ -66,9 +73,8 @@ class PathPlanner(persistence.PersistentModule):
         self.process.join(5)
         if self.process.is_alive():
             self.process.terminate()
-        else:
-            if self.process.exitcode:
-                self.log.info('bad exitcode for process: %s', self.process.exitcode)
+        elif self.process.exitcode:
+            self.log.info('bad exitcode for process: %s', self.process.exitcode)
         self.log.info('teardown of %s completed', self.process)
 
     async def step(self) -> None:

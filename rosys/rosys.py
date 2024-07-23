@@ -6,22 +6,24 @@ import os
 import signal
 import threading
 import time as pytime
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Literal, Optional
+from typing import Any, ClassVar, Literal
 
 import numpy as np
 import psutil
 from nicegui import Client, app, background_tasks, ui
 
-from . import event, persistence, run
+from . import event, run
 from .config import Config
 from .helpers import invoke, is_stopping
 from .helpers import is_test as is_test_
+from .persistence.registry import backup, restore
 
 log = logging.getLogger('rosys.core')
 
 config = Config()
-translator: Optional[Any] = None
+translator: Any | None = None
 
 is_test = is_test_()
 
@@ -44,11 +46,11 @@ class _state:
     start_time: float = 0.0 if is_test else pytime.time()
     time = start_time
     last_time_request: float = start_time
-    exception: Optional[BaseException] = None  # NOTE: used for tests
+    exception: BaseException | None = None  # NOTE: used for tests
     startup_finished: bool = False
 
 
-def get_last_exception() -> Optional[BaseException]:
+def get_last_exception() -> BaseException | None:
     return _state.exception
 
 
@@ -59,13 +61,13 @@ tasks: list[asyncio.Task] = []
 
 
 def notify(message: str,
-           type: Optional[Literal[  # pylint: disable=redefined-builtin
+           type: Literal[  # pylint: disable=redefined-builtin
                'positive',
                'negative',
                'warning',
                'info',
                'ongoing',
-           ]] = None) -> None:
+           ] | None = None) -> None:
     log.info(message)
     notifications.append(Notification(time=time(), message=message))
     NEW_NOTIFICATION.emit(message)
@@ -129,7 +131,7 @@ def _run_handler(handler: Callable) -> None:
 
 
 class Repeater:
-    tasks: set[asyncio.Task] = set()
+    tasks: ClassVar[set[asyncio.Task]] = set()
 
     def __init__(self, handler: Callable, interval: float) -> None:
         self.handler = handler
@@ -216,7 +218,7 @@ async def startup() -> None:
         raise RuntimeError(
             'multiprocessing start method must be "spawn"; see https://pythonspeed.com/articles/python-multiprocessing/')
 
-    persistence.restore()
+    restore()
 
     _state.startup_finished = True
 
@@ -251,7 +253,7 @@ async def shutdown() -> None:
         log.debug('invoking shutdown handler "%s"', handler.__qualname__)
         await invoke(handler)
     log.debug('creating data backup')
-    await persistence.backup(force=True)
+    await backup(force=True)
     log.debug('tear down "run" tasks')
     run.tear_down()
     log.debug('stopping all repeaters')
@@ -291,7 +293,7 @@ def reset_after_test() -> None:
 def register_base_startup_handlers() -> None:
     on_repeat(_garbage_collection, 60)
     on_repeat(_watch_emitted_events, 0.1)
-    on_repeat(persistence.backup, 10)
+    on_repeat(backup, 10)
 
 
 gc.disable()  # NOTE disable automatic garbage collection to optimize performance

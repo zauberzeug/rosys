@@ -1,7 +1,8 @@
 import asyncio
 import logging
+from collections.abc import Callable
 from dataclasses import fields, is_dataclass
-from typing import Any, Callable, Optional
+from typing import Any
 
 import numpy as np
 import pytest
@@ -13,16 +14,16 @@ from ..geometry import Point, Point3d
 
 log = logging.getLogger(__name__)
 
-automator: Optional[Automator] = None
-driver: Optional[Driver] = None
-odometer: Optional[Odometer] = None
+automator: Automator | None = None
+driver: Driver | None = None
+odometer: Odometer | None = None
 
 
-async def forward(seconds: Optional[float] = None,
+async def forward(seconds: float | None = None,
                   *,
-                  until: Optional[int | float | Callable] = None,
-                  x: Optional[float] = None,
-                  y: Optional[float] = None,
+                  until: int | None | float | Callable = None,
+                  x: float | None = None,
+                  y: float | None = None,
                   tolerance: float = 0.1,
                   dt: float = 0.01,
                   timeout: float = 100):
@@ -32,7 +33,7 @@ async def forward(seconds: Optional[float] = None,
             return rosys.time() >= start_time + seconds
         msg = f'forwarding {seconds=}'
         timeout = max(timeout, seconds)
-    elif isinstance(until, (int, float)):
+    elif isinstance(until, int | float):
         def condition():
             return rosys.time() >= until
         msg = f'forwarding {until=}'
@@ -72,7 +73,7 @@ async def forward(seconds: Optional[float] = None,
             raise RuntimeError(f'error while forwarding time {dt} s') from exception
 
 
-def assert_pose(x: float, y: float, *, deg: Optional[float] = None, position_tolerance: float = 0.1, deg_tolerance: float = 1.0) -> None:
+def assert_pose(x: float, y: float, *, deg: float | None = None, position_tolerance: float = 0.1, deg_tolerance: float = 1.0) -> None:
     assert odometer is not None
     assert odometer.prediction.x == pytest.approx(x, abs=position_tolerance)
     assert odometer.prediction.y == pytest.approx(y, abs=position_tolerance)
@@ -81,7 +82,7 @@ def assert_pose(x: float, y: float, *, deg: Optional[float] = None, position_tol
 
 
 def assert_point(actual: Point | Point3d, expected: Point | Point3d, tolerance=0.1) -> None:
-    assert type(actual) == type(expected)  # pylint: disable=unidiomatic-typecheck
+    assert type(actual) is type(expected)
     assert actual.x == pytest.approx(expected.x, abs=tolerance)
     assert actual.y == pytest.approx(expected.y, abs=tolerance)
     if isinstance(actual, Point3d) and isinstance(expected, Point3d):
@@ -95,8 +96,8 @@ async def automate_drive_to(x: float, y: float) -> None:
 
 
 def approx(o1: Any, o2: Any, *,
-           rel: Optional[float] = None,
-           abs: Optional[float] = None,  # pylint: disable=redefined-builtin
+           rel: float | None = None,
+           abs: float | None = None,  # pylint: disable=redefined-builtin
            nan_ok: bool = False) -> None:
     if hasattr(o1, '__dict__'):
         assert sorted(o1.__dict__) == sorted(o2.__dict__)

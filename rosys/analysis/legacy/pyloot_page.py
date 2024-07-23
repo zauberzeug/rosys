@@ -5,7 +5,7 @@ from starlette.middleware.wsgi import WSGIMiddleware
 from starlette.routing import Mount
 
 
-class PylootPage():
+class PylootPage:
 
     def __init__(self) -> None:
         self.pyloot = PyLoot(server=PyLootServer(disable_response_gzip=True))  # gzip is done by starlette

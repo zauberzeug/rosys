@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from itertools import groupby
-from typing import Sequence
 
 import humanize
 from matplotlib import colormaps
@@ -23,7 +23,7 @@ class kpi_page(ABC):
                 humanize.deactivate()
             with ui.row().style('margin:1em'):
                 ui.markdown(f'### {self.title}').style('margin:1.5em;margin-top:-1.2em;')
-                toggle = ui.toggle(self.timespans, value=list(self.timespans)[0], on_change=lambda e: show(e.value))
+                toggle = ui.toggle(self.timespans, value=next(iter(self.timespans)), on_change=lambda e: show(e.value))
             with ui.row().classes('w-full'):
                 ui_charts = []
                 for chart in self.charts:
@@ -53,7 +53,7 @@ class kpi_page(ABC):
                 else:
                     raise ValueError(f'Unsupported number of days: {num_days}')
 
-                for chart, ui_chart in zip(self.charts, ui_charts):
+                for chart, ui_chart in zip(self.charts, ui_charts, strict=True):
                     keys = set(key for day in time_buckets for key in day.incidents if key in chart.indicators)
                     data = {chart.indicators[key]: [day.incidents.get(key, 0) for day in time_buckets] for key in keys}
                     styling = {'type': 'bar', 'stack': 'total', 'emphasis': {'focus': 'series'}}

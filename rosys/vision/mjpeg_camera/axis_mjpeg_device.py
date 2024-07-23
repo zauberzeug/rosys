@@ -1,6 +1,5 @@
 import re
 from dataclasses import dataclass
-from typing import Optional
 
 from .mjpeg_device import MjpegDevice
 from .vendors import VendorType, mac_to_vendor
@@ -23,9 +22,9 @@ class AxisSettings:
 
 class AxisMjpegDevice(MjpegDevice):
     def __init__(self, mac: str, ip: str, *,
-                 index: Optional[int] = None,
-                 username: Optional[str] = None,
-                 password: Optional[str] = None) -> None:
+                 index: int | None = None,
+                 username: str | None = None,
+                 password: str | None = None) -> None:
         super().__init__(mac, ip,
                          index=index,
                          username=username, password=password)

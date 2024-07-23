@@ -132,7 +132,7 @@ def test_omnidirectional_calibration_from_points():
                                           focal_length, camera_model=CameraModel.OMNIDIRECTIONAL)
 
     new_image_points = [calibration.project_to_image(p) for p in world_points[0]]
-    rms = np.mean([np.linalg.norm((p - p_).tuple) for p, p_ in zip(image_points[0], new_image_points)])
+    rms = np.mean([np.linalg.norm((p - p_).tuple) for p, p_ in zip(image_points[0], new_image_points, strict=True)])
     approx(rms, 0, abs=1e-1)
     approx(calibration.extrinsics.rotation.R, cam.calibration.extrinsics.rotation.R, abs=1e-3)
     approx(calibration.extrinsics.translation, cam.calibration.extrinsics.translation, abs=1e-3)

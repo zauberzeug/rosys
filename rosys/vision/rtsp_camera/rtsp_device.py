@@ -4,8 +4,8 @@ import shlex
 import signal
 import subprocess
 from asyncio.subprocess import Process
+from collections.abc import AsyncGenerator
 from io import BytesIO
-from typing import AsyncGenerator, Optional
 
 from nicegui import background_tasks
 
@@ -21,14 +21,14 @@ class RtspDevice:
 
         self.mac = mac
 
-        self.capture_task: Optional[asyncio.Task] = None
-        self.capture_process: Optional[Process] = None
-        self._image_buffer: Optional[bytes] = None
+        self.capture_task: asyncio.Task | None = None
+        self.capture_process: Process | None = None
+        self._image_buffer: bytes | None = None
         self._authorized: bool = True
 
         vendor_type = mac_to_vendor(mac)
 
-        self.settings_interface: Optional[JovisionInterface] = None
+        self.settings_interface: JovisionInterface | None = None
         if vendor_type == VendorType.JOVISION:
             self.settings_interface = JovisionInterface(ip)
             self.fps = self.settings_interface.get_fps(stream_id=jovision_profile)
@@ -48,7 +48,7 @@ class RtspDevice:
     def authorized(self) -> bool:
         return self._authorized
 
-    def capture(self) -> Optional[bytes]:
+    def capture(self) -> bytes | None:
         image = self._image_buffer
         self._image_buffer = None
         return image

@@ -31,10 +31,10 @@ def test_projection():
 
 def test_allclose():
     assert CameraProjector.allclose([[[-1, 1], [1, 1]], [[-1, -1], [1, -1]]],
-                                    [[[-1, 1], [1, 1]], [[-1, -1], [1, -1]]]) == True
+                                    [[[-1, 1], [1, 1]], [[-1, -1], [1, -1]]]) is True
     assert CameraProjector.allclose([[[-1, 1], [1, 1]], [[-1, -1], [1, -0]]],
-                                    [[[-1, 1], [1, 1]], [[-1, -1], [1, -1]]]) == False
+                                    [[[-1, 1], [1, 1]], [[-1, -1], [1, -1]]]) is False
     assert CameraProjector.allclose([[[-1, 1], [1, 1]], [[-1, -1], None]],
-                                    [[[-1, 1], [1, 1]], [[-1, -1], [1, -1]]]) == False
+                                    [[[-1, 1], [1, 1]], [[-1, -1], [1, -1]]]) is False
     assert CameraProjector.allclose([[[-1, 1], [1, 1]], [[-1, -1], None]],
-                                    [[[-1, 1], [1, 1]], [[-1, -1], None]]) == True
+                                    [[[-1, 1], [1, 1]], [[-1, -1], None]]) is True

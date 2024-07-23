@@ -1,6 +1,5 @@
 import uuid
 from enum import Enum
-from typing import Optional
 
 import numpy as np
 from nicegui import binding, ui
@@ -36,7 +35,7 @@ class AreaManipulation:
 
     def __init__(self, path_planner: PathPlanner) -> None:
         self.path_planner = path_planner
-        self.active_area: Optional[Area] = None
+        self.active_area: Area | None = None
         self.mode = AreaManipulationMode.IDLE
         self.area_type = None
         self.area_color = 'green'
@@ -175,6 +174,6 @@ class AreaManipulation:
                 area.outline.insert(new_index, new_point)
         self._emit_change_event(None)  # TODO: pass area when https://github.com/zauberzeug/nicegui/issues/1505 is fixed
 
-    def _emit_change_event(self, area: Optional[Area] = None) -> None:
+    def _emit_change_event(self, area: Area | None = None) -> None:
         self.path_planner.AREAS_CHANGED.emit([area] if area else None)
         self.path_planner.request_backup()

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Optional, overload
+from typing import ClassVar, overload
 
 import cv2
 import numpy as np
@@ -49,7 +49,7 @@ class ObstacleMap:
                    areas: list[Area],
                    obstacles: list[Obstacle],
                    grid: Grid,
-                   deadline: Optional[float] = None) -> ObstacleMap:
+                   deadline: float | None = None) -> ObstacleMap:
         robot_renderer = RobotRenderer(robot_outline)
         has_areas = any(len(a.outline) > 2 for a in areas)
         binary_renderer = BinaryRenderer(grid.size[:2], fill_value=has_areas)
@@ -67,7 +67,7 @@ class ObstacleMap:
         row, col, layer = self.grid.to_3d_grid(x, y, yaw)
         return ndimage.map_coordinates(self.stack, [[row], [col], [layer]], order=0)
 
-    t_lookup = [np.linspace(0, 1, i) for i in range(360)]
+    t_lookup: ClassVar[list[np.ndarray]] = [np.linspace(0, 1, i) for i in range(360)]
 
     def _create_poses(self, spline, backward) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         @overload

@@ -1,6 +1,6 @@
 import abc
 import logging
-from typing import Callable
+from collections.abc import Callable
 
 from .robot_brain import RobotBrain
 
@@ -14,12 +14,12 @@ class Module(abc.ABC):
 
 class ModuleHardware(Module):
 
-    def __init__(self, robot_brain: RobotBrain, lizard_code: str, core_message_fields: list[str] = [],
+    def __init__(self, robot_brain: RobotBrain, lizard_code: str, core_message_fields: list[str] | None = None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.robot_brain = robot_brain
         self.lizard_code = lizard_code
-        self.core_message_fields: list[str] = core_message_fields
+        self.core_message_fields: list[str] = core_message_fields or []
         self.message_hooks: dict[str, Callable] = {}
 
     def handle_core_output(self, time: float, words: list[str]) -> None:  # pylint: disable=unused-argument
