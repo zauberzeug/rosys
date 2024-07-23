@@ -3,9 +3,8 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
 
-from ... import rosys
+from ...rosys import on_repeat
 
 
 @dataclass(slots=True, kw_only=True)
@@ -17,21 +16,21 @@ class Measurement:
 
 
 color_pattern = re.compile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
-warning_pattern = re.compile(r"(.*) \[WARNING\].*Executing(.*)took (.*) seconds")
+warning_pattern = re.compile(r'(.*) \[WARNING\].*Executing(.*)took (.*) seconds')
 task_pattern = re.compile(r".*name=['\"](.*)['\"] coro=<(.*)> .*")
-coro_pattern = re.compile(r"(.*) (running at .*)")
+coro_pattern = re.compile(r'(.*) (running at .*)')
 
 
 class AsyncioMonitor:
 
-    def __init__(self, log_filepath: Path = Path('~/.rosys/debug.log').expanduser()) -> None:
+    def __init__(self, log_filepath: Path = Path('~/.rosys/debug.log')) -> None:
         self.log = logging.getLogger('rosys.asyncio_monitor')
 
-        self.log_filepath = log_filepath
+        self.log_filepath = log_filepath.expanduser()
         self.timings: dict[str, list[Measurement]] = defaultdict(list)
-        self.log_position: Optional[int] = None
+        self.log_position: int | None = None
 
-        rosys.on_repeat(self.step, 10)
+        on_repeat(self.step, 10)
 
     async def step(self) -> None:
         if not self.log_filepath.is_file():
@@ -45,18 +44,18 @@ class AsyncioMonitor:
         with self.log_filepath.open() as f:
             f.seek(self.log_position)
             for line in f:
-                line = color_pattern.sub('', line)
-                if 'start garbage collection' in line:
+                colored_line = color_pattern.sub('', line)
+                if 'start garbage collection' in colored_line:
                     ignore_warnings = True
-                if 'finished garbage collection' in line:
+                if 'finished garbage collection' in colored_line:
                     ignore_warnings = False
                 if not ignore_warnings:
-                    message = self.parse_async_warning(line)
+                    message = self.parse_async_warning(colored_line)
                     if message:
                         self.timings[message.name].append(message)
             self.log_position = f.tell()
 
-    def parse_async_warning(self, msg: str) -> Optional[Measurement]:
+    def parse_async_warning(self, msg: str) -> Measurement | None:
         if 'rosys/actors/asyncio_monitor.py' in msg:
             return None  # NOTE we ignore our own messages
         match_warning = warning_pattern.match(msg)

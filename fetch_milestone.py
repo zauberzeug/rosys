@@ -20,7 +20,7 @@ if not matching_milestones:
 milestone_number = matching_milestones[0]['number']
 
 issues = requests.get(f'{BASE_URL}/issues?milestone={milestone_number}&state=all', timeout=5).json()
-notes = {
+sections: dict[str, list[str]] = {
     'New features and enhancements': [],
     'Bugfixes': [],
     'Documentation': [],
@@ -29,22 +29,22 @@ notes = {
 for issue in issues:
     title: str = issue['title']
     user: str = issue['user']['login']
-    body: str = issue['body']
+    body: str = issue['body'] or ''
     labels: list[str] = [label['name'] for label in issue['labels']]
     number_patterns = [r'#(\d+)', r'https://github.com/zauberzeug/rosys/(?:issues|discussions|pulls)/(\d+)']
     numbers = [issue['number']] + [int(match) for pattern in number_patterns for match in re.findall(pattern, body)]
     numbers_str = ', '.join(f'#{number}' for number in sorted(numbers))
     note = f'{title.strip()} ({numbers_str} by @{user})'
     if 'bug' in labels:
-        notes['Bugfixes'].append(note)
+        sections['Bugfixes'].append(note)
     elif 'enhancement' in labels:
-        notes['New features and enhancements'].append(note)
+        sections['New features and enhancements'].append(note)
     elif 'documentation' in labels:
-        notes['Documentation'].append(note)
+        sections['Documentation'].append(note)
     else:
-        notes['Others'].append(note)
+        sections['Others'].append(note)
 
-for title, notes in notes.items():
+for title, notes in sections.items():
     if not notes:
         continue
     print(f'### {title}')

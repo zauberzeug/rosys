@@ -145,7 +145,7 @@ The UI element `track.ui()` will show the stack of functions that are currently 
 ## Continuous Build
 
 We run our continuous integration with GitHub Actions.
-For each commit the pytests are executed.
+For each commit mypy and pylint scan the codebase and the pytests are executed.
 
 ## Releases
 

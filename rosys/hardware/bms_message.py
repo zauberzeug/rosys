@@ -76,12 +76,12 @@ class BmsMessage:
             d['BMS major version'] = version >> 4
             d['BMS minor version'] = version & 0xf
             d['capacity percent'] = self.get1()
-            d['fet'] = ["off", "charging", "discharging", "both"][self.get1()]
+            d['fet'] = ['off', 'charging', 'discharging', 'both'][self.get1()]
             d['number of blocks'] = self.get1()
             num_ntc = self.get1()
             d['temperatures'] = [self.get2() / 10 - 273.15 for _ in range(num_ntc)]
         elif self.address == 0x04:
             d['voltages'] = [self.get2() / 1000 for _ in range(self.length // 2)]
         elif self.address == 0x05:
-            d['hardware version'] = "".join(map(chr, self.content))
+            d['hardware version'] = ''.join(map(chr, self.content))
         return d

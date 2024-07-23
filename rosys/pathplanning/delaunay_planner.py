@@ -2,7 +2,6 @@ import itertools
 import logging
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Optional
 
 import networkx as nx
 import numpy as np
@@ -37,11 +36,11 @@ class DelaunayPlanner:
         self.robot_outline = robot_outline
         self.areas: list[Area] = []
         self.obstacles: list[Obstacle] = []
-        self.obstacle_map: Optional[ObstacleMap] = None
-        self.tri_points: Optional[np.ndarray] = None
-        self.tri_mesh: Optional[spatial.Delaunay] = None
-        self.pose_groups: Optional[list[DelaunayPoseGroup]] = None
-        self.graph: Optional[nx.DiGraph] = None
+        self.obstacle_map: ObstacleMap | None = None
+        self.tri_points: np.ndarray | None = None
+        self.tri_mesh: spatial.Delaunay | None = None
+        self.pose_groups: list[DelaunayPoseGroup] | None = None
+        self.graph: nx.DiGraph | None = None
         self.log = logging.getLogger('rosys.delaunay_planner')
 
     def update_map(self, areas: list[Area], obstacles: list[Obstacle], additional_points: list[Point],
@@ -96,7 +95,7 @@ class DelaunayPlanner:
         Y[close] += dD_dY[close] / dD[close] * (MIN_MARGIN - D[close])
 
         keep = np.reshape([not all(self.obstacle_map.stack[int(np.round(row)), int(np.round(col)), :])
-                           for row, col in zip(rows, cols)], X.shape)
+                           for row, col in zip(rows, cols, strict=True)], X.shape)
         keep[1::2, :] = np.logical_and(keep[1::2, :], D[1::2, :] < 2)
         keep[::4, 1::2] = np.logical_and(keep[::4, 1::2], D[::4, 1::2] < 2)
         keep[2::4, ::2] = np.logical_and(keep[2::4, ::2], D[2::4, ::2] < 2)
@@ -122,7 +121,7 @@ class DelaunayPlanner:
             for p in range(len(group.poses)):
                 self.graph.add_node((g, p))
         for g, group in enumerate(self.pose_groups):
-            for p, (pose, g_) in enumerate(zip(group.poses, group.neighbor_indices)):
+            for p, (pose, g_) in enumerate(zip(group.poses, group.neighbor_indices, strict=True)):
                 for p_, pose_ in enumerate(self.pose_groups[g_].poses):
                     if abs(angle(pose.yaw, pose_.yaw + np.pi)) < 0.01:
                         continue  # NOTE: avoid 180-degree turns
@@ -282,7 +281,7 @@ def _find_grid_passages(obstacle_map: ObstacleMap,
     group_distances = [g.point.distance(pose) for g in pose_groups]
     group_indices = np.argsort(group_distances)
     results: list[Passage] = []
-    for g, group in zip(group_indices, np.array(pose_groups)[group_indices][:max_num_groups]):
+    for g, group in zip(group_indices, np.array(pose_groups)[group_indices][:max_num_groups], strict=False):
         for p, group_pose in enumerate(group.poses):
             for backward in [False, True]:
                 poses = (pose, group_pose) if entering else (group_pose, pose)

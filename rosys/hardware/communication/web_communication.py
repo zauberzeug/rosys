@@ -1,5 +1,4 @@
 from collections import deque
-from typing import Optional
 
 import socketio
 
@@ -39,7 +38,7 @@ class WebCommunication(Communication):
         except Exception:
             return False
 
-    async def read(self) -> Optional[str]:
+    async def read(self) -> str | None:
         if not self.sio.connected:
             await self.sio.connect(self.host)
         if self.buffer:

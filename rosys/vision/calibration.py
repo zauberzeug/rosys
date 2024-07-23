@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Literal, Optional, overload
+from typing import Literal, overload
 
 import cv2
 import numpy as np
@@ -144,12 +144,12 @@ class Calibration:
             flags = cv2.CALIB_USE_INTRINSIC_GUESS
             if rational_model:
                 flags |= cv2.CALIB_RATIONAL_MODEL
-            rms, K, D, rvecs, tvecs = cv2.calibrateCamera(
+            _rms, K, D, rvecs, tvecs = cv2.calibrateCamera(
                 objectPoints=world_point_array,
                 imagePoints=image_point_array,
                 imageSize=image_size.tuple,
                 cameraMatrix=K0,
-                distCoeffs=None,
+                distCoeffs=np.zeros((1, 5), dtype=np.float32),
                 flags=flags,
                 criteria=optimization_criteria,
             )
@@ -158,7 +158,7 @@ class Calibration:
             flags |= cv2.fisheye.CALIB_CHECK_COND
             flags |= cv2.fisheye.CALIB_FIX_SKEW
             flags |= cv2.fisheye.CALIB_USE_INTRINSIC_GUESS
-            rms, K, D, rvecs, tvecs = cv2.fisheye.calibrate(
+            _rms, K, D, rvecs, tvecs = cv2.fisheye.calibrate(  # pylint: disable=unpacking-non-sequence
                 objectPoints=world_point_array,
                 imagePoints=image_point_array,
                 image_size=image_size.tuple,
@@ -172,7 +172,7 @@ class Calibration:
         elif camera_model == CameraModel.OMNIDIRECTIONAL:
             flags = cv2.omnidir.CALIB_USE_GUESS
             flags |= cv2.omnidir.CALIB_FIX_SKEW
-            rms, K, xi_arr, D, rvecs, tvecs, status = cv2.omnidir.calibrate(
+            _rms, K, xi_arr, D, rvecs, tvecs, _status = cv2.omnidir.calibrate(  # pylint: disable=unpacking-non-sequence
                 objectPoints=world_point_array,
                 imagePoints=image_point_array,
                 size=image_size.tuple,
@@ -203,12 +203,12 @@ class Calibration:
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 
     @overload
-    def project_to_image(self, world_coordinates: Point3d) -> Optional[Point]: ...
+    def project_to_image(self, world_coordinates: Point3d) -> Point | None: ...
 
     @overload
     def project_to_image(self, world_coordinates: np.ndarray) -> np.ndarray: ...
 
-    def project_to_image(self, world_coordinates: Point3d | np.ndarray) -> Optional[Point] | np.ndarray:
+    def project_to_image(self, world_coordinates: Point3d | np.ndarray) -> Point | None | np.ndarray:
         """Project a point in world coordinates to the image plane.
 
         This takes into account the camera's intrinsic and extrinsic parameters.
@@ -226,6 +226,7 @@ class Calibration:
         K = np.array(self.intrinsics.matrix)
         D = np.array(self.intrinsics.distortion, dtype=float)
 
+        # pylint: disable=unpacking-non-sequence
         if self.intrinsics.model == CameraModel.PINHOLE:
             image_array, _ = cv2.projectPoints(world_coordinates, Rod, t, K, D)
         elif self.intrinsics.model == CameraModel.FISHEYE:
@@ -235,6 +236,7 @@ class Calibration:
             image_array, _ = cv2.omnidir.projectPoints(world_coordinates.reshape(-1, 1, 3), Rod, t, K, xi, D)
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
+        # pylint: enable=unpacking-non-sequence
 
         if self.intrinsics.model != CameraModel.OMNIDIRECTIONAL:
             world_coordinates = world_coordinates.reshape(-1, 3)
@@ -244,12 +246,12 @@ class Calibration:
         return image_array.reshape(-1, 2)
 
     @overload
-    def project_from_image(self, image_coordinates: Point, target_height: float = 0) -> Optional[Point3d]: ...
+    def project_from_image(self, image_coordinates: Point, target_height: float = 0) -> Point3d | None: ...
 
     @overload
     def project_from_image(self, image_coordinates: np.ndarray, target_height: float = 0) -> np.ndarray: ...
 
-    def project_from_image(self, image_coordinates: Point | np.ndarray, target_height: float = 0) -> Optional[Point3d] | np.ndarray:
+    def project_from_image(self, image_coordinates: Point | np.ndarray, target_height: float = 0) -> Point3d | None | np.ndarray:
         """Project a point in image coordinates to a plane in world xy dimensions at a given height.
 
         :param image_coordinates: The image coordinates to project.
@@ -398,7 +400,8 @@ class Calibration:
             balance = 0.0 if crop else 1.0
             new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(K, D, (w, h), np.eye(3), balance=balance)
 
-            map1, map2 = cv2.fisheye.initUndistortRectifyMap(K, D, np.eye(3), new_K, (w, h), cv2.CV_16SC2)
+            map1, map2 = cv2.fisheye.initUndistortRectifyMap(  # pylint: disable=unpacking-non-sequence
+                K, D, np.eye(3), new_K, (w, h), cv2.CV_16SC2)
             dst = cv2.remap(image_array, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             flags = cv2.omnidir.RECTIFY_PERSPECTIVE

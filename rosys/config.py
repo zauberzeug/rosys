@@ -1,9 +1,9 @@
 from typing import Any
 
-from . import persistence
+from .persistence.persistent_module import PersistentModule
 
 
-class Config(persistence.PersistentModule):
+class Config(PersistentModule):
 
     def __init__(self) -> None:
         super().__init__()

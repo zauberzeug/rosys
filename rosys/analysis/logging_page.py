@@ -20,7 +20,8 @@ class LoggingPage:
     It is mounted at /logging.
     """
 
-    def __init__(self, group_names: list[str] = []) -> None:
+    def __init__(self, group_names: list[str] | None = None) -> None:
+        group_names = group_names or []
 
         @ui.page('/logging')
         def page():

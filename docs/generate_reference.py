@@ -12,7 +12,7 @@ nav = mkdocs_gen_files.Nav()
 
 
 def extract_events(filepath: str) -> dict[str, str]:
-    with open(filepath, 'r') as f:
+    with open(filepath) as f:
         lines = f.read().splitlines()
     events_: dict[str, str] = {}
     for l, line in enumerate(lines):

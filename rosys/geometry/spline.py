@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, overload
+from typing import overload
 
 import numpy as np
 
@@ -58,7 +58,7 @@ class Spline:
         ]) + ')'
 
     @staticmethod
-    def from_poses(start: Pose, end: Pose, *, control_dist: Optional[float] = None, backward: bool = False) -> Spline:
+    def from_poses(start: Pose, end: Pose, *, control_dist: float | None = None, backward: bool = False) -> Spline:
         """Generate a spline from two poses.
 
         :param start: the start pose (including yaw facing in the driving direction)

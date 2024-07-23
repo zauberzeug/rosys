@@ -1,9 +1,9 @@
 import logging
 from enum import Enum
 
-import rosys
 from rosys.event import Event
 
+from .. import rosys
 from .drivable import Drivable
 
 

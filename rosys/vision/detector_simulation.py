@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional
 from uuid import uuid4
 
 import numpy as np
@@ -16,7 +15,7 @@ from .image import Image
 class SimulatedObject:
     category_name: str
     position: Point3d
-    size: Optional[tuple[float, float, float]] = None
+    size: tuple[float, float, float] | None = None
     uuid: str = field(init=False)
     confidence: float = 1.0
 
@@ -38,7 +37,7 @@ class DetectorSimulation(Detector):
                  camera_provider: CalibratableCameraProvider, *,
                  noise: float = 1.0,
                  detection_delay: float = 0.4,
-                 name: Optional[str] = None,
+                 name: str | None = None,
                  ) -> None:
         super().__init__(name=name)
 
@@ -58,7 +57,7 @@ class DetectorSimulation(Detector):
     async def detect(self,
                      image: Image,
                      autoupload: Autoupload = Autoupload.FILTERED,
-                     tags: list[str] = [],
+                     tags: list[str] | None = None,
                      ) -> Detections | None:
         is_blocked = image.camera_id in self.blocked_cameras
         await rosys.sleep(self.detection_delay)
@@ -69,7 +68,7 @@ class DetectorSimulation(Detector):
         self.NEW_DETECTIONS.emit(image)
         return image.get_detections(self.name)
 
-    async def upload(self, image: Image, *, tags: list[str] = []) -> None:
+    async def upload(self, image: Image, *, tags: list[str] | None = None) -> None:
         self.log.info('Uploading %s', image.id)
 
     def update_simulated_objects(self, image: Image) -> None:

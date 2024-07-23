@@ -1,5 +1,5 @@
 import abc
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import numpy as np
 
@@ -47,7 +47,7 @@ class BmsHardware(Bms, ModuleHardware):
     UPDATE_INTERVAL = 5.0
 
     def __init__(self, robot_brain: RobotBrain, *,
-                 expander: Optional[ExpanderHardware] = None,
+                 expander: ExpanderHardware | None = None,
                  name: str = 'bms',
                  rx_pin: int = 26,
                  tx_pin: int = 27,
@@ -99,7 +99,7 @@ class BmsSimulation(Bms, ModuleSimulation):
     TEMPERATURE_AMPLITUDE = 1.0
     TEMPERATURE_FREQUENCY = 0.01
 
-    def __init__(self, is_charging: Optional[Callable[[], bool]] = None, fixed_voltage: Optional[float] = None) -> None:
+    def __init__(self, is_charging: Callable[[], bool] | None = None, fixed_voltage: float | None = None) -> None:
         super().__init__()
         self.is_charging = is_charging
         self.fixed_voltage = fixed_voltage

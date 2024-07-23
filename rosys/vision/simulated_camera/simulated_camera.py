@@ -1,5 +1,4 @@
 import random
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -15,12 +14,12 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
     def __init__(self,
                  *,
                  id: str,  # pylint: disable=redefined-builtin
-                 name: Optional[str] = None,
+                 name: str | None = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
                  width: int = 800,
                  height: int = 600,
-                 color: Optional[str] = None,
+                 color: str | None = None,
                  fps: int = 5,
                  **kwargs,
                  ) -> None:
@@ -30,7 +29,7 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
                          streaming=streaming,
                          polling_interval=1.0 / fps,
                          **kwargs)
-        self.device: Optional[SimulatedDevice] = None
+        self.device: SimulatedDevice | None = None
         self.resolution = ImageSize(width=width, height=height)
         self._register_parameter('color', self._get_color, self._set_color,
                                  color or f'#{random.randint(0, 0xffffff):06x}')
@@ -77,7 +76,7 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         self.device.color = value
 
-    def _get_color(self) -> Optional[str]:
+    def _get_color(self) -> str | None:
         assert self.device is not None
         return self.device.color
 
