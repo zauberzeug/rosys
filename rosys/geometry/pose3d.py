@@ -100,7 +100,7 @@ class Pose3d:
         resolved_self = self.resolve(up_to=common_frame)
         resolved_other = other.resolve(up_to=common_frame)
 
-        return resolved_self @ resolved_other.inverse()
+        return resolved_other.inverse() @ resolved_self
 
     @staticmethod
     def common_frame(pose1: Pose3d, pose2: Pose3d) -> CoordinateFrame | None:
@@ -130,7 +130,7 @@ class Pose3d:
         return None
 
     def inverse(self) -> Pose3d:
-        return Pose3d(translation=Point3d.from_tuple((-self.rotation.T.matrix @ self.translation.array).tolist()), rotation=self.rotation.T)
+        return Pose3d(translation=Point3d.from_tuple((-self.rotation.T.matrix @ self.translation).tolist()), rotation=self.rotation.T)
 
     def __matmul__(self, other: Pose3d) -> Pose3d:
         # if not self.parent_frame_id == other.parent_frame_id:
