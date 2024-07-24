@@ -22,7 +22,7 @@ class CoordinateFrame(Pose3d):
 
     @property
     def parent_frame_id(self) -> str | None:
-        return super().parent_frame_id
+        return self._parent_frame_id
 
     @parent_frame_id.setter
     def parent_frame_id(self, value: str | None):
