@@ -33,7 +33,7 @@ def reset_parent():
 
 
 with ui.row():
-    ui.button('Set parent', on_click=set_parent)
-    ui.button('Reset parent', on_click=reset_parent)
+    ui.button('Parent Frame', on_click=set_parent)
+    ui.button('Parent World', on_click=reset_parent)
 
 ui.run(title='RoSys')
