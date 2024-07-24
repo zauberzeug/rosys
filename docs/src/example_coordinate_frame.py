@@ -7,14 +7,14 @@ from nicegui.elements.scene_objects import Box
 import rosys
 from rosys.geometry import CoordinateFrame, Point3d, Pose3d, Rotation, scene_object
 
-frame = CoordinateFrame.from_pose(Pose3d.zero())
-pose = Pose3d.zero()
+frame = CoordinateFrame(translation=Point3d(x=0, y=0, z=0), rotation=Rotation.from_euler(0, 1.5, 0))
+pose = Pose3d(translation=Point3d(x=0, y=0, z=0.75), rotation=Rotation.from_euler(0, 0, 0))
 pose.parent_frame = frame
 
 
 def step():
-    frame.rotation = Rotation.from_euler(0, 0, rosys.time() / 2.0)
-    pose.translation = Point3d(x=math.sin(rosys.time()), y=0, z=0.75)
+    frame.rotate(Rotation.from_euler(0, 0, 0.005))
+    pose.translate(Point3d(x=0.005 * math.cos(1.5*rosys.time()), y=0, z=0))
 
 
 rosys.on_repeat(step, interval=0.01)
