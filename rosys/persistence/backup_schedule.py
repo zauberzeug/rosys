@@ -10,7 +10,7 @@ class BackupSchedule:
     """The BackupSchedule module is responsible for backing up the persistence files every day at the specified time."""
 
     def __init__(self,
-                 time: datetime.time | None,
+                 time: datetime.time | None = None,
                  path: Path = Path('~/.rosys_backup'),
                  backup_count: int = 100) -> None:
         """
