@@ -9,6 +9,7 @@ from rosys.geometry import CoordinateFrame, Point3d, Pose3d, Rotation, scene_obj
 
 frame = CoordinateFrame.from_pose(Pose3d.zero())
 pose = Pose3d.zero()
+pose.parent_frame = frame
 
 
 def step():
