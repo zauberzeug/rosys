@@ -1,15 +1,11 @@
 import math
 from copy import deepcopy
 
-import numpy as np
 import pytest
 
 from rosys.geometry import CoordinateFrame, Point3d, Pose3d, Rotation
 from rosys.geometry.coordinate_frame_registry import coordinate_frame_registry
-
-
-def poses_equal(pose1: Pose3d, pose2: Pose3d) -> bool:
-    return np.allclose(pose1.translation, pose2.translation, atol=1e-6) and np.allclose(pose1.rotation.matrix, pose2.rotation.matrix, atol=1e-6)
+from rosys.testing import poses_equal
 
 
 @pytest.fixture
@@ -58,11 +54,6 @@ def test_resolution(frame1, frame2, pose):
     rel_frame_1.parent_frame = None
 
     assert frame2.resolve() == rel_frame_1 @ rel_frame_2
-
-
-def test_pose_inverse(pose):
-    assert poses_equal(pose.inverse().inverse(), pose)
-    assert poses_equal(pose @ pose.inverse(), Pose3d.zero())
 
 
 def test_relative_poses(frame1, frame2, pose):
