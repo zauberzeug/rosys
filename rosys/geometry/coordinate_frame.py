@@ -37,9 +37,9 @@ class CoordinateFrame(Pose3d):
         frame: CoordinateFrame | None = self
         visited = set()
         while frame:
-            if frame in visited:
+            if frame.id in visited:
                 return True
-            visited.add(frame)
+            visited.add(frame.id)
             frame = frame.parent_frame
 
         return False
