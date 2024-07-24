@@ -23,7 +23,7 @@ class Pose3d:
     """
     translation: Point3d
     rotation: Rotation
-    parent_frame_id: str | None = None
+    _parent_frame_id: str | None = None
 
     @classmethod
     def zero(cls) -> Pose3d:
@@ -40,6 +40,14 @@ class Pose3d:
     @property
     def inverse_matrix(self) -> np.ndarray:
         return np.block([[self.rotation.T, -self.rotation.matrix.T @ self.translation.array], [0, 0, 0, 1]])
+
+    @property
+    def parent_frame_id(self) -> str | None:
+        return self._parent_frame_id
+
+    @parent_frame_id.setter
+    def parent_frame_id(self, value: str | None):
+        self._parent_frame_id = value
 
     @property
     def parent_frame(self) -> CoordinateFrame | None:

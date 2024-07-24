@@ -20,6 +20,30 @@ class CoordinateFrame(Pose3d):
     def __post_init__(self):
         coordinate_frame_registry[self.id] = self
 
+    @property
+    def parent_frame_id(self) -> str | None:
+        return super().parent_frame_id
+
+    @parent_frame_id.setter
+    def parent_frame_id(self, value: str | None):
+        previous_parent_id = self._parent_frame_id
+        self._parent_frame_id = value
+        if self._check_for_cycles():
+            self._parent_frame_id = previous_parent_id
+            raise ValueError('Setting parent frame would create a cycle in the frame hierarchy')
+
+    def _check_for_cycles(self) -> bool:
+        """Checks for cycles in the parent_frame hierarchy."""
+        frame: CoordinateFrame | None = self
+        visited = set()
+        while frame:
+            if frame in visited:
+                return True
+            visited.add(frame)
+            frame = frame.parent_frame
+
+        return False
+
     @classmethod
     def from_pose(cls, pose: Pose3d, id: str | None = None) -> CoordinateFrame:  # pylint: disable=redefined-builtin
         """Creates a new frame from a given pose.
@@ -27,8 +51,9 @@ class CoordinateFrame(Pose3d):
         :param pose: The pose of the new frame.
         """
         id = id or str(uuid4())
-        return cls(translation=pose.translation, rotation=pose.rotation, id=id,
-                   parent_frame_id=pose.parent_frame_id)
+        instance = cls(translation=pose.translation, rotation=pose.rotation, id=id)
+        instance.parent_frame = pose.parent_frame
+        return instance
 
     def delete(self) -> None:
         del coordinate_frame_registry[self.id]
