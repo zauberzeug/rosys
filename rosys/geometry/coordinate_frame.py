@@ -25,7 +25,7 @@ class CoordinateFrame(Pose3d):
         return self._parent_frame_id
 
     @parent_frame_id.setter
-    def parent_frame_id(self, value: str | None):
+    def parent_frame_id(self, value: str | None) -> None:
         previous_parent_id = self._parent_frame_id
         self._parent_frame_id = value
         if self._check_for_cycles():

@@ -46,7 +46,7 @@ class Pose3d:
         return self._parent_frame_id
 
     @parent_frame_id.setter
-    def parent_frame_id(self, value: str | None):
+    def parent_frame_id(self, value: str | None) -> None:
         self._parent_frame_id = value
 
     @property
@@ -54,14 +54,14 @@ class Pose3d:
         return coordinate_frame_registry[self.parent_frame_id] if self.parent_frame_id else None
 
     @parent_frame.setter
-    def parent_frame(self, value: CoordinateFrame | None):
+    def parent_frame(self, value: CoordinateFrame | None) -> None:
         self.parent_frame_id = value.id if value else None
 
-    def rotate(self, rotation: Rotation):
+    def rotate(self, rotation: Rotation) -> Pose3d:
         self.rotation *= rotation
         return self
 
-    def translate(self, translation: Point3d):
+    def translate(self, translation: Point3d) -> Pose3d:
         self.translation += translation
         return self
 
