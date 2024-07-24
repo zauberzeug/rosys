@@ -20,10 +20,9 @@ class scene_object(Group):
     def __init__(self, object_constructor: Callable[[], Object3D], pose: Pose3d) -> None:
         super().__init__()
         self.pose = pose
-        self.robot_object: Object3D | Stl
+        self.object: Object3D | Stl
         with self:
-            self.robot_object = object_constructor()
-            self.robot_object.material('#4488ff', 0.5)
+            self.object = object_constructor()
         ui.timer(config.ui_update_interval, self.update)
 
     def with_stl(self, url: str, *,
@@ -35,9 +34,9 @@ class scene_object(Group):
 
         The file can be served from a local directory with [app.add_static_files(url, path)](https://nicegui.io/reference#static_files).
         """
-        self.robot_object.delete()
+        self.object.delete()
         with self:
-            self.robot_object = Stl(url).move(x, y, z).rotate(omega, phi, kappa).scale(scale).material(color, opacity)
+            self.object = Stl(url).move(x, y, z).rotate(omega, phi, kappa).scale(scale).material(color, opacity)
         return self
 
     def update(self) -> None:
