@@ -77,3 +77,15 @@ def test_relative_poses(frame1, frame2, pose):
                        rotation=Rotation.from_euler(roll=-math.pi / 4, pitch=math.pi / 2, yaw=math.pi / 4)))
     assert poses_equal(pose.relative_to(frame2, common_frame=frame1), pose_to_frame2)
     assert poses_equal(frame1 @ frame2 @ pose_to_frame2, pose.resolve())
+
+
+def test_cycle_detection(frame1, frame2):
+    with pytest.raises(ValueError):
+        frame1.parent_frame = frame2
+
+    assert frame1.parent_frame is None
+
+    with pytest.raises(ValueError):
+        frame1.parent_frame_id = frame2.id
+
+    assert frame1.parent_frame is None
