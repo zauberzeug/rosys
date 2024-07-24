@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import enum
 import logging
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import overload
 
 import cv2
@@ -12,18 +12,10 @@ from ..geometry import Point, Point3d, Rotation
 from .image import Image, ImageSize
 
 
-class CameraModel(enum.Enum):
-    PINHOLE = enum.auto()
-    FISHEYE = enum.auto()
-    OMNIDIRECTIONAL = enum.auto()
-
-    @classmethod
-    def from_str(cls, string: str) -> CameraModel:
-        """Convert a string to the corresponding CameraModel."""
-        try:
-            return cls[string.upper()]
-        except KeyError as e:
-            raise ValueError(f'Unknown camera model "{string}"') from e
+class CameraModel(str, Enum):
+    PINHOLE = 'pinhole'
+    FISHEYE = 'fisheye'
+    OMNIDIRECTIONAL = 'omnidirectional'
 
 
 @dataclass(slots=True, kw_only=True)
@@ -54,17 +46,6 @@ class Intrinsics:
         rotation = Rotation.zero()
         return Intrinsics(matrix=K, distortion=D, rotation=rotation, size=size)
 
-    @classmethod
-    def from_dict(cls, data: dict) -> Intrinsics:
-        return cls(
-            model=CameraModel.from_str(data['model']) if 'model' in data else CameraModel.PINHOLE,
-            matrix=data['matrix'],
-            distortion=data['distortion'],
-            xi=data.get('xi', 0.0),
-            rotation=Rotation(R=data['rotation']) if 'rotation' in data else Rotation.zero(),
-            size=ImageSize(**data['size']),
-        )
-
 
 log = logging.getLogger('rosys.world.calibration')
 
@@ -78,13 +59,6 @@ class Extrinsics:
     """
     rotation: Rotation = field(default_factory=lambda: Rotation.from_euler(np.pi, 0, 0))
     translation: list[float] = field(default_factory=lambda: [0.0, 0.0, 1.0])
-
-    @classmethod
-    def from_dict(cls, data: dict) -> Extrinsics:
-        return cls(
-            rotation=Rotation(R=data['rotation']) if 'rotation' in data else Rotation.from_euler(np.pi, 0, 0),
-            translation=data['translation'] if 'translation' in data else [0.0, 0.0, 1.0],
-        )
 
 
 @dataclass(slots=True, kw_only=True)
