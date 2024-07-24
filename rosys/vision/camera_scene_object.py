@@ -1,5 +1,3 @@
-from typing import Optional
-
 import numpy as np
 from nicegui.elements.scene_objects import Cylinder, Group, Line, Text
 
@@ -8,7 +6,7 @@ from .camera import CalibratableCamera
 
 class CameraSceneObject(Group):
 
-    def __init__(self, camera: CalibratableCamera, color: Optional[str] = None) -> None:
+    def __init__(self, camera: CalibratableCamera, color: str | None = None) -> None:
         super().__init__()
 
         color = color or '#0088ff'

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 # imports for type annotations only
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -57,7 +57,7 @@ class Pose3d:
         self.translation += translation
         return self
 
-    def resolve(self, up_to: Optional[CoordinateFrame] = None) -> Pose3d:
+    def resolve(self, up_to: CoordinateFrame | None = None) -> Pose3d:
         '''Recursively resolves the pose to the given parent frame.
 
         :param up_to: The parent frame to resolve the pose to. (default: None = world frame)
@@ -67,7 +67,7 @@ class Pose3d:
             return self
 
         final_pose: Pose3d = Pose3d(translation=self.translation, rotation=self.rotation)
-        current_frame: Optional[Pose3d] = parent_frame
+        current_frame: Pose3d | None = parent_frame
         while current_frame != up_to:
             if current_frame is None:
                 raise ValueError(f'Could not resolve pose to {up_to} (end of chain)')
