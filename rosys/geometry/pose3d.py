@@ -98,6 +98,18 @@ class Pose3d:
             relative_pose = self.relative_to(source_frame, common_frame=source_frame)
         return Point3d.from_tuple((relative_pose.rotation.matrix.T @ (point - relative_pose.translation)).tolist())
 
+    def transform_point_to(self, point: Point3d, target_frame: CoordinateFrame | None = None) -> Point3d:
+        '''Transforms the coordinates of a point from the current frame to the target frame.
+
+        :param point: The point to transform.
+        :param target_frame: The frame to transform the point to. (default: None = world frame)
+        '''
+        if target_frame is None:
+            relative_pose = self.resolve(up_to=target_frame)
+        else:
+            relative_pose = self.relative_to(target_frame, common_frame=target_frame)
+        return Point3d.from_tuple((relative_pose.rotation.matrix @ point + relative_pose.translation).tolist())
+
     def relative_to(self, other: Pose3d, common_frame: CoordinateFrame | None = None) -> Pose3d:
         '''Calculates the relative pose of this pose to another pose.
 
