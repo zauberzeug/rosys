@@ -18,6 +18,11 @@ class Point3d:
         """Create a Point3d from the three first elements of a sequence."""
         return Point3d(x=t[0], y=t[1], z=t[2])
 
+    @staticmethod
+    def from_point(p: Point, z: float = 0) -> Point3d:
+        """Create a Point3d from a Point."""
+        return Point3d(x=p.x, y=p.y, z=z)
+
     @property
     def tuple(self) -> tuple[float, float, float]:
         return (self.x, self.y, self.z)
