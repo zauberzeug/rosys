@@ -26,6 +26,7 @@ class RobotBrain:
         self.LINE_RECEIVED = Event()
         """a line has been received from the microcontroller (argument: line as string)"""
         self.FLASH_P0_COMPLETE = Event()
+        """flashing p0 was successful and 'Replica complete' was received"""
 
         self.log = logging.getLogger('rosys.robot_rain')
 
