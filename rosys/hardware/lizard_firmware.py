@@ -105,13 +105,20 @@ class LizardFirmware:
 
     async def flash_p0(self) -> None:
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
+        flash_p0_complete = False
+
+        def flash_callback():
+            nonlocal flash_p0_complete
+            flash_p0_complete = True
+        self.robot_brain.FLASH_P0_COMPLETE.register(flash_callback)
         await self.robot_brain.send('p0.flash()')
-        start = rosys.time()
-        while (self.robot_brain.hardware_time or 0) < start + 3.0:
-            if rosys.time() > start + 60.0:
+        timeout = rosys.time() + 120
+        while not flash_p0_complete:
+            if rosys.time() > timeout:
                 rosys.notify('Failed.', 'negative')
                 return
             await rosys.sleep(0.1)
+        self.robot_brain.FLASH_P0_COMPLETE.unregister(flash_callback)
         await self.robot_brain.restart()
         await rosys.sleep(3.0)
         await self.read_p0_version()
