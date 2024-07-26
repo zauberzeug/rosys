@@ -179,7 +179,6 @@ class RtspDevice:
                     self._authorized = False
 
         async for image in stream(self.url):
-            print(rosys.time())
             self._image_buffer = image
 
         self.log.info('[%s] stream ended', self.mac)
