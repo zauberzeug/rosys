@@ -108,29 +108,30 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self._add_image(image)
 
     def set_fps(self, fps: int) -> None:
-        if self.device is None or self.device.settings_interface is None:
+        if self.device is None:
             return
-        self.device.settings_interface.set_fps(stream_id=self.jovision_profile, fps=fps)
+
+        self.device.set_fps(fps)
         self.polling_interval = 1.0 / fps
 
     def get_fps(self) -> int | None:
-        if self.device is None or self.device.settings_interface is None:
+        if self.device is None:
             return None
-        fps = self.device.settings_interface.get_fps(stream_id=self.jovision_profile)
-        return fps
+        return self.device.get_fps()
 
     def set_jovision_profile(self, profile: int) -> None:
         if self.device is None:
             return
-        self.jovision_profile = profile
+
+        self.device.set_jovision_profile(profile)
 
     def get_jovision_profile(self) -> int | None:
         if self.device is None:
             return None
-        return self.jovision_profile
+        return self.device.get_jovision_profile()
 
     async def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
         await super()._apply_parameters(new_values, force_set)
         if self.is_connected:
             assert self.device is not None
-            await self.device.update_settings(jovision_profile=self.jovision_profile, fps=self._parameters['fps'].value)
+            await self.device.restart_gstreamer()

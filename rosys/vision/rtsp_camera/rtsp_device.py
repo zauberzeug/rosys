@@ -34,10 +34,12 @@ class RtspDevice:
         if vendor_type == VendorType.JOVISION:
             self.settings_interface = JovisionInterface(ip)
             self.fps = self.settings_interface.get_fps(stream_id=jovision_profile) or 10
+            self.jovision_profile = jovision_profile
         else:
             self.log.warning('[%s] No settings interface for vendor type %s', self.mac, vendor_type)
             self.log.warning('[%s] Using default fps of 10', self.mac)
             self.fps = 10
+            self.jovision_profile = None
 
         url = mac_to_url(mac, ip, jovision_profile)
         if url is None:
@@ -87,14 +89,6 @@ class RtspDevice:
             self.log.warning('[%s] capture task already running', self.mac)
             return
         self.capture_task = background_tasks.create(self._run_gstreamer(), name=f'capture {self.mac}')
-
-    async def update_settings(self, *, jovision_profile: int, fps: int) -> None:
-        self.fps = fps
-        url = mac_to_url(self.mac, self.ip, jovision_profile)
-        if url is None:
-            raise ValueError(f'Unexpected Error: could not determine RTSP URL for {self.mac}')
-        self.url = url
-        await self.restart_gstreamer()
 
     async def restart_gstreamer(self) -> None:
         await self.shutdown()
@@ -184,3 +178,20 @@ class RtspDevice:
         self.log.info('[%s] stream ended', self.mac)
 
         self.capture_task = None
+
+    def set_fps(self, fps: int) -> None:
+        self.fps = fps
+
+        if self.settings_interface is not None:
+            self.settings_interface.set_fps(stream_id=self.jovision_profile, fps=self.fps)
+
+    def get_fps(self) -> int | None:
+        if self.settings_interface is not None:
+            return self.settings_interface.get_fps(stream_id=self.jovision_profile)
+        return self.fps
+
+    def set_jovision_profile(self, profile: int) -> None:
+        self.jovision_profile = profile
+
+    def get_jovision_profile(self) -> int | None:
+        return self.jovision_profile
