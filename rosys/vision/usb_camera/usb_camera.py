@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import cv2
 import numpy as np
@@ -19,7 +19,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
     def __init__(self,
                  *,
                  id: str,  # pylint: disable=redefined-builtin
-                 name: Optional[str] = None,
+                 name: str | None = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
                  auto_exposure: bool = True,
@@ -35,9 +35,9 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                          polling_interval=1.0 / fps,
                          **kwargs)
         self._pending_operations = 0
-        self.device: Optional[UsbDevice] = None
+        self.device: UsbDevice | None = None
         self.detect: bool = False
-        self.color: Optional[str] = None
+        self.color: str | None = None
 
         self._register_parameter('auto_exposure', self.get_exposure, self.set_exposure, auto_exposure)
         self._register_parameter('exposure', self.get_exposure, self.set_exposure, exposure)
@@ -70,7 +70,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self.device = device
         logging.info('Connecting camera %s: succeeded', self.id)
 
-        self._apply_all_parameters()
+        await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
         if not self.is_connected:
@@ -144,12 +144,12 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                 if value != exposure:
                     device.capture.set(cv2.CAP_PROP_EXPOSURE, int(value * device.exposure_max))
 
-    def get_auto_exposure(self) -> Optional[bool]:
+    def get_auto_exposure(self) -> bool | None:
         assert self.device is not None
         device = self.device
         return device.capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
 
-    def get_exposure(self) -> Optional[float]:
+    def get_exposure(self) -> float | None:
         assert self.device is not None
 
         device = self.device

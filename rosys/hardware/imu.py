@@ -1,5 +1,3 @@
-from typing import Optional
-
 from ..event import Event
 from ..geometry import Rotation
 from .module import Module, ModuleHardware, ModuleSimulation
@@ -11,26 +9,26 @@ class Imu(Module):
     def __init__(self, offset_rotation: Rotation, **kwargs) -> None:
         super().__init__(**kwargs)
         self.offset_rotation = offset_rotation
-        self.rotation: Optional[Rotation] = None
+        self.rotation: Rotation | None = None
         self.gyro_calibration: float = 0.0
 
         self.NEW_MEASUREMENT = Event()
         """a new measurement has been received (argument: Tuple[Roll, Pitch, Yaw])"""
 
     @property
-    def roll(self) -> Optional[float]:
+    def roll(self) -> float | None:
         return self.rotation.roll if self.rotation else None
 
     @property
-    def pitch(self) -> Optional[float]:
+    def pitch(self) -> float | None:
         return self.rotation.pitch if self.rotation else None
 
     @property
-    def yaw(self) -> Optional[float]:
+    def yaw(self) -> float | None:
         return self.rotation.yaw if self.rotation else None
 
     @property
-    def euler(self) -> Optional[tuple[float, float, float]]:
+    def euler(self) -> tuple[float, float, float] | None:
         return self.rotation.euler if self.rotation else None
 
     def emit_measurement(self) -> None:

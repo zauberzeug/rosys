@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import numpy as np
 
 from ..geometry import Pose, Spline
@@ -18,7 +16,7 @@ class Path(list):
             steps += [Step(pose, steps[-1])]
         return Path(steps)
 
-    def smooth(self, obstacle_map: ObstacleMap, control_dist: Optional[float] = None) -> None:
+    def smooth(self, obstacle_map: ObstacleMap, control_dist: float | None = None) -> None:
         while True:
             for s in range(1, len(self) - 1):
                 if self[s].backward != self[s+1].backward:
@@ -46,8 +44,8 @@ class Step:
 
     def __init__(self,
                  target: tuple[float, float, float],
-                 previous_step: Optional[Step] = None,
-                 control_dist: Optional[float] = None,
+                 previous_step: Step | None = None,
+                 control_dist: float | None = None,
                  backward: bool = False) -> None:
         self.previous_step = previous_step
         self.target = target

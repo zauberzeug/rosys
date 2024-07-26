@@ -34,7 +34,6 @@ def test_conversion_to_and_from_dict() -> None:
         'x': 42,
         'y': 3.14,
         'a': {'s': 'foo', 'b': True},
-        'l': [1, 2, 3],
         'l': [{'s': 'foo', 'b': True}, {'s': 'bar', 'b': True}],
         'd': {'a': {'s': 'foo', 'b': True}, 'b': {'s': 'bar', 'b': True}},
     }

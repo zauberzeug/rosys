@@ -1,7 +1,7 @@
 import json
 import time
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
@@ -82,7 +82,7 @@ class JovisionInterface:
                 break
         self._send_settings(current_settings)
 
-    def get_fps(self, stream_id) -> Optional[int]:
+    def get_fps(self, stream_id) -> int | None:
         current_settings = self.get_current_settings()
         for settings in current_settings:
             if settings.stream_id == stream_id:
@@ -124,6 +124,7 @@ class JovisionInterface:
     def get_parameter_ranges(self):
         raise NotImplementedError
         # pylint: disable=unreachable
+        # ruff: noqa: F841
         cmd = {
             'method': 'stream_get_all_ability',
             'user': {

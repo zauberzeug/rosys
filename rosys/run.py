@@ -5,12 +5,13 @@ import shlex
 import signal
 import subprocess
 import uuid
+from collections.abc import Callable, Generator
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from concurrent.futures.process import BrokenProcessPool
 from contextlib import contextmanager
 from functools import partial, wraps
 from pathlib import Path
-from typing import Any, Callable, Generator, Optional
+from typing import Any
 
 from .helpers import is_stopping, is_test
 
@@ -69,9 +70,9 @@ def cpu() -> Generator[None, None, None]:
 
 
 async def sh(command: list[str] | str, *,
-             timeout: Optional[float] = 1,
+             timeout: float | None = 1,
              shell: bool = False,
-             working_dir: Optional[Path] = None) -> str:
+             working_dir: Path | None = None) -> str:
     """executes a shell command
 
     Args:
@@ -84,7 +85,7 @@ async def sh(command: list[str] | str, *,
     def popen() -> str:
         cmd_list = command if isinstance(command, list) else shlex.split(command)
         if timeout is not None:
-            cmd_list = ['timeout', '--signal=SIGTERM', str(timeout)] + cmd_list
+            cmd_list = ['timeout', '--signal=SIGTERM', str(timeout), *cmd_list]
         cmd = ' '.join(cmd_list) if shell else cmd_list
         try:
             with subprocess.Popen(

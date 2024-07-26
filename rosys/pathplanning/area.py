@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from itertools import combinations, pairwise
-from typing import Optional
 
 from typing_extensions import Self
 
@@ -10,7 +9,7 @@ from ..geometry import LineSegment, Point, Polygon
 @dataclass(slots=True, kw_only=True)
 class Area(Polygon):
     id: str
-    type: Optional[str] = None
+    type: str | None = None
     color: str = 'green'
     closed: bool = True
 
@@ -18,7 +17,7 @@ class Area(Polygon):
         self.closed = True
         return self
 
-    def would_cause_self_intersection(self, point: Point, new_index: Optional[int] = None) -> bool:
+    def would_cause_self_intersection(self, point: Point, new_index: int | None = None) -> bool:
         new_outline = self.outline[:]
         if new_index is None:
             new_outline.append(point)

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from .expander import ExpanderHardware
 from .module import ModuleHardware
 from .robot_brain import RobotBrain
@@ -8,7 +6,7 @@ from .robot_brain import RobotBrain
 class CanHardware(ModuleHardware):
 
     def __init__(self, robot_brain: RobotBrain, *,
-                 expander: Optional[ExpanderHardware] = None,
+                 expander: ExpanderHardware | None = None,
                  name: str = 'can',
                  rx_pin: int = 32,
                  tx_pin: int = 33,

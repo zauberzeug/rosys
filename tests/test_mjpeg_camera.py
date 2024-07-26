@@ -7,8 +7,7 @@ from rosys.vision import MjpegCamera, MjpegCameraProvider
 from rosys.vision.mjpeg_camera.vendors import VendorType, mac_to_vendor
 
 
-@pytest.mark.usefixtures('integration')
-async def test_mjpeg_camera():
+async def test_mjpeg_camera(integration):
     try:
         connected_uids = await MjpegCameraProvider().scan_for_cameras()
     except Exception as e:
@@ -26,8 +25,8 @@ async def test_mjpeg_camera():
     assert len(camera.images) == 1
 
 
-@pytest_asyncio.fixture(scope='session')
-async def motec_settings_interface():
+@pytest_asyncio.fixture()
+async def motec_settings_interface(integration):
     try:
         connected_uids = await MjpegCameraProvider().scan_for_cameras()
     except Exception as e:
@@ -46,7 +45,7 @@ async def motec_settings_interface():
         pytest.skip('No MOTEC camera detected. This test requires a physical MOTEC camera on the local network.')
 
     assert camera.device is not None and camera.device.settings_interface is not None
-    return camera.device.settings_interface
+    yield camera.device.settings_interface
 
 
 async def test_fps(motec_settings_interface):

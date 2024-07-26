@@ -95,4 +95,3 @@ case $cmd in
         echo "Unsupported command \"$cmd\""
         exit 1
 esac
-

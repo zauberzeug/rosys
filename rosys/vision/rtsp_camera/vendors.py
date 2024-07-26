@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Optional
 
 
 class VendorType(Enum):
@@ -17,7 +16,7 @@ def mac_to_vendor(mac: str) -> VendorType:
     return VendorType.OTHER
 
 
-def mac_to_url(mac: str, ip: str, jovision_profile: int = 0) -> Optional[str]:
+def mac_to_url(mac: str, ip: str, jovision_profile: int = 0) -> str | None:
     vendor = mac_to_vendor(mac)
     if vendor == VendorType.JOVISION:
         return f'rtsp://admin:admin@{ip}/profile{jovision_profile}'

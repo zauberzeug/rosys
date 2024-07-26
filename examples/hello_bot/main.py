@@ -8,8 +8,15 @@ import rosys
 from rosys.automation import Automator, automation_controls
 from rosys.driving import Driver, Odometer, Steerer, joystick, keyboard_control, robot_object
 from rosys.geometry import Prism
-from rosys.hardware import (CanHardware, RobotBrain, RobotHardware, RobotSimulation, SerialCommunication,
-                            WheelsHardware, WheelsSimulation)
+from rosys.hardware import (
+    CanHardware,
+    RobotBrain,
+    RobotHardware,
+    RobotSimulation,
+    SerialCommunication,
+    WheelsHardware,
+    WheelsSimulation,
+)
 
 log_configuration.setup()
 

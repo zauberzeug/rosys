@@ -1,6 +1,5 @@
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 
@@ -9,7 +8,7 @@ from .calibratable_camera_provider import CalibratableCameraProvider
 from .calibration import Calibration
 from .camera import CalibratableCamera
 
-ProjectionCoordinates = list[list[Optional[list[float]]]]
+ProjectionCoordinates = list[list[list[float] | None]]
 
 
 @dataclass(slots=True, kw_only=True)

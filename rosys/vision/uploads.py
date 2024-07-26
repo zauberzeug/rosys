@@ -9,7 +9,7 @@ from .image import Image
 @dataclass(slots=True, kw_only=True)
 class Uploads:
     minimal_minutes_between_uploads: float = 1.0
-    last_upload: datetime = datetime.fromtimestamp(0)
+    last_upload: datetime = field(default_factory=lambda: datetime.fromtimestamp(0))
     queue: dict[str, Image] = field(default_factory=dict, metadata=persistence.exclude)
     priority_queue: dict[str, Image] = field(default_factory=dict, metadata=persistence.exclude)
 

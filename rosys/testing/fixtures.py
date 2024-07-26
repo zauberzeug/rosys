@@ -1,6 +1,7 @@
+# pylint: disable=redefined-outer-name,unused-argument
 import asyncio
 import multiprocessing
-from typing import Generator
+from collections.abc import AsyncGenerator
 
 import pytest
 from nicegui import core
@@ -14,11 +15,10 @@ from rosys.hardware import Robot, RobotSimulation, Wheels, WheelsSimulation
 from rosys.pathplanning import PathPlanner
 from rosys.testing import helpers, log_configuration
 
-log_configuration.setup()
-
 
 @pytest.fixture
-async def integration() -> Generator:
+async def integration() -> AsyncGenerator:
+    log_configuration.setup()
     core.loop = asyncio.get_event_loop()
     rosys.reset_before_test()
     await rosys.startup()

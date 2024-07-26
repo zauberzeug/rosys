@@ -1,6 +1,6 @@
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional
 
 from nicegui import app, events, ui
 from starlette.responses import FileResponse
@@ -12,13 +12,12 @@ from . import registry
 def export_button(title: str = 'Export', route: str = '/export', tmp_filepath: Path = Path('/tmp/export.json')) -> ui.button:
     @app.get(route)
     def get_export() -> FileResponse:
-        data = {name: module.backup() for name, module in registry.modules.items()}
-        tmp_filepath.write_text(json.dumps(data, indent=4))
+        registry.write_export(tmp_filepath)
         return FileResponse(tmp_filepath, filename='export.json')
     return ui.button(title, on_click=lambda: ui.download(route[1:]))
 
 
-def import_button(title: str = 'Import', after_import: Optional[Callable] = None) -> ui.button:
+def import_button(title: str = 'Import', after_import: Callable | None = None) -> ui.button:
     async def restore_from_file(e: events.UploadEventArguments) -> None:
         all_data = json.load(e.content)
         assert isinstance(all_data, dict)

@@ -1,14 +1,13 @@
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass(slots=True, kw_only=True)
 class BmsState:
-    percentage: Optional[float] = None
-    voltage: Optional[float] = None
-    current: Optional[float] = None
-    temperature: Optional[float] = None
-    is_charging: Optional[bool] = None
+    percentage: float | None = None
+    voltage: float | None = None
+    current: float | None = None
+    temperature: float | None = None
+    is_charging: bool | None = None
     last_update: float = 0
 
     @property

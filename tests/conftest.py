@@ -1,1 +1,1 @@
-from rosys.testing.fixtures import *  # pylint: disable=wildcard-import,unused-wildcard-import
+from rosys.testing.fixtures import *  # pylint: disable=wildcard-import,unused-wildcard-import # noqa: F403

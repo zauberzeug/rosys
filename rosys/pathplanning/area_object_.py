@@ -1,5 +1,3 @@
-from typing import Optional
-
 from nicegui.elements.scene_objects import Group, Object3D
 
 from .area import Area
@@ -12,7 +10,7 @@ DIAMETER = 0.2
 
 class AreaObject(Group):
 
-    def __init__(self, path_planner: PathPlanner, area_manipulation: Optional[AreaManipulation] = None) -> None:
+    def __init__(self, path_planner: PathPlanner, area_manipulation: AreaManipulation | None = None) -> None:
         super().__init__()
 
         self.path_planner = path_planner
@@ -24,7 +22,7 @@ class AreaObject(Group):
 
         self.update()
 
-    def update(self, areas: Optional[list[Area]] = None) -> None:
+    def update(self, areas: list[Area] | None = None) -> None:
         area_ids = [area.id for area in areas] if areas else []
 
         def should_remove(obj: Object3D) -> bool:

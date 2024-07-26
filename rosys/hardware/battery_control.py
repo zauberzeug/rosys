@@ -1,5 +1,3 @@
-from typing import Optional
-
 from .. import rosys
 from .expander import ExpanderHardware
 from .module import ModuleHardware
@@ -9,7 +7,7 @@ from .robot_brain import RobotBrain
 class BatteryControlHardware(ModuleHardware):
 
     def __init__(self, robot_brain: RobotBrain, *,
-                 expander: Optional[ExpanderHardware] = None,
+                 expander: ExpanderHardware | None = None,
                  name: str = 'battery',
                  reset_pin: int = 15,
                  status_pin: int = 13,

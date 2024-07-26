@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-from typing import Any, Optional
+from typing import Any
 
 import socketio
 import socketio.exceptions
@@ -18,7 +18,7 @@ class DetectorHardware(Detector):
     It automatically connects and reconnects, submits and receives detections and sends images that should be uploaded to the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
     """
 
-    def __init__(self, *, port: int = 8004, name: Optional[str] = None) -> None:
+    def __init__(self, *, port: int = 8004, name: str | None = None) -> None:
         super().__init__(name=name)
 
         self.sio = socketio.AsyncClient()
@@ -44,7 +44,7 @@ class DetectorHardware(Detector):
         if not self.is_connected:
             self.log.info('trying reconnect %s', self.name)
             if not await self.connect():
-                self.log.exception('connection to %s at port %s failed; trying again', self.name, self.port)
+                self.log.error('connection to %s at port %s failed; trying again', self.name, self.port)
                 await rosys.sleep(3.0)
                 return
 
@@ -83,7 +83,8 @@ class DetectorHardware(Detector):
             rosys.background_tasks.create(upload_priority_images(), name='upload_priority_images')
             self.uploads.priority_queue.clear()
 
-    async def upload(self, image: Image, *, tags: list[str] = []) -> None:
+    async def upload(self, image: Image, *, tags: list[str] | None = None) -> None:
+        tags = tags or []
         try:
             self.log.info('Upload detections to port %s', self.port)
             data_dict: dict[str, Any] = {'image': image.data, 'mac': image.camera_id}
@@ -103,8 +104,9 @@ class DetectorHardware(Detector):
     async def detect(self,
                      image: Image,
                      autoupload: Autoupload = Autoupload.FILTERED,
-                     tags: list[str] = [],
+                     tags: list[str] | None = None,
                      ) -> Detections | None:
+        tags = tags or []
         return await self.lazy_worker.run(self._detect(image, autoupload, tags))
 
     async def _detect(self, image: Image, autoupload: Autoupload, tags: list[str]) -> Detections | None:

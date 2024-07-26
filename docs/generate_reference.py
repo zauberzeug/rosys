@@ -12,26 +12,26 @@ nav = mkdocs_gen_files.Nav()
 
 
 def extract_events(filepath: str) -> dict[str, str]:
-    with open(filepath, 'r') as f:
+    with open(filepath) as f:
         lines = f.read().splitlines()
-    events = {}
+    events_: dict[str, str] = {}
     for l, line in enumerate(lines):
         if line.endswith('= Event()'):
-            event_name = line.strip().split()[0].removeprefix('self.')
-            event_doc = lines[l+1].split('"""')[1]
-            events[event_name] = event_doc
-    return events
+            event_name_ = line.strip().split()[0].removeprefix('self.')
+            event_doc_ = lines[l+1].split('"""')[1]
+            events_[event_name_] = event_doc_
+    return events_
 
 
 for path in sorted(Path('.').rglob('__init__.py')):
     identifier = str(path.parent).replace('/', '.')
-    if identifier in ['rosys', 'rosys.test', 'rosys.hardware.communication', 'rosys.persistence']:
+    if identifier in ['rosys', 'rosys.testing', 'rosys.hardware.communication', 'rosys.persistence']:
         continue
 
     try:
         module = importlib.import_module(identifier)
     except Exception:
-        logging.exception(f'Failed to import {identifier}')
+        logging.exception('Failed to import %s', identifier)
         sys.exit(1)
 
     doc_path = path.parent.with_suffix('.md')

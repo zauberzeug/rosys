@@ -1,7 +1,7 @@
 import logging
 import os
 from collections import deque
-from typing import Optional
+from typing import ClassVar
 
 import serial
 from nicegui import ui
@@ -18,7 +18,7 @@ class SerialCommunication(Communication):
     It contains a list of search paths for finding the serial device.
     """
 
-    search_paths: list[str] = [
+    search_paths: ClassVar[list[str]] = [
         '/dev/tty.SLAB_USBtoUART',
         '/dev/ttyTHS1',
         '/dev/ttyUSB0',
@@ -47,7 +47,7 @@ class SerialCommunication(Communication):
             return False
 
     @staticmethod
-    def get_device_path() -> Optional[str]:
+    def get_device_path() -> str | None:
         for device_path in SerialCommunication.search_paths:
             if os.path.exists(device_path) and os.stat(device_path).st_gid > 0:
                 return device_path
@@ -63,19 +63,14 @@ class SerialCommunication(Communication):
             self.serial.close()
             self.log.debug('disconnected serial on %s', self.device_path)
 
-    async def read(self) -> Optional[str]:
+    async def read(self) -> str | None:
         if not self.serial.isOpen():
             return None
-        s = self.serial.read_all()
-        try:
-            s = s.decode()
-            self.buffer += s
-            if '\n' in self.buffer:
-                line, self.buffer = self.buffer.split('\r\n', 1)
-                self.log.debug('read: %s', line)
-                return line
-        except Exception:
-            self.log.exception('Could not decode serial data: %s', s)
+        self.buffer += self.serial.read_all().decode(errors='replace')
+        if '\n' in self.buffer:
+            line, self.buffer = self.buffer.split('\r\n', 1)
+            self.log.debug('read: %s', line)
+            return line
         return None
 
     async def send(self, msg: str) -> None:

@@ -3,8 +3,8 @@ from __future__ import annotations
 import abc
 import asyncio
 from collections import deque
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Optional
 
 from ... import rosys
 from ...event import Event
@@ -18,11 +18,11 @@ class Camera(abc.ABC):
     def __init__(self,
                  *,
                  id: str,  # pylint: disable=redefined-builtin
-                 name: Optional[str] = None,
+                 name: str | None = None,
                  connect_after_init: bool = True,
-                 streaming: bool = False,
+                 streaming: bool = True,
                  polling_interval: float = 0.1,
-                 base_path_overwrite: Optional[str] = None,
+                 base_path_overwrite: str | None = None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.id: str = id
@@ -30,6 +30,8 @@ class Camera(abc.ABC):
         self.connect_after_init = connect_after_init
         self.images: deque[Image] = deque(maxlen=self.MAX_IMAGES)
         self.base_path: str = f'images/{base_path_overwrite or id}'
+
+        self.should_stream: bool = streaming
 
         self.NEW_IMAGE: Event = Event()
 
@@ -57,6 +59,7 @@ class Camera(abc.ABC):
 
     @streaming.setter
     def streaming(self, value: bool) -> None:
+        self.should_stream = value
         if value:
             self.image_loop.start()
         else:
@@ -77,7 +80,7 @@ class Camera(abc.ABC):
 
     def get_latest_image_url(self) -> str:
         image = self.latest_captured_image
-        if image is None:
+        if image is None or not self.is_connected:
             return f'{self.base_path}/placeholder'
         return self.get_image_url(image)
 
@@ -86,7 +89,7 @@ class Camera(abc.ABC):
             'id': self.id,
             'name': self.name,
             'connect_after_init': self.connect_after_init,
-            'streaming': self.should_stream
+            'streaming': self.should_stream,
         }
 
     @property
@@ -102,10 +105,10 @@ class Camera(abc.ABC):
         finally:
             self.device_connection_lock.release()
 
-    async def connect(self) -> None:
+    async def connect(self) -> None:  # noqa: B027
         pass
 
-    async def disconnect(self) -> None:
+    async def disconnect(self) -> None:  # noqa: B027
         pass
 
     async def reconnect(self) -> None:
@@ -117,14 +120,14 @@ class Camera(abc.ABC):
         return [i for i in self.images if i.data]
 
     @property
-    def latest_captured_image(self) -> Optional[Image]:
+    def latest_captured_image(self) -> Image | None:
         return next((i for i in reversed(self.captured_images) if i.data), None)
 
     @property
-    def latest_detected_image(self) -> Optional[Image]:
+    def latest_detected_image(self) -> Image | None:
         return next((i for i in reversed(self.captured_images) if i.detections), None)
 
-    def get_recent_images(self, *, current_time: Optional[float] = None, timespan: float = 10.0) -> list[Image]:
+    def get_recent_images(self, *, current_time: float | None = None, timespan: float = 10.0) -> list[Image]:
         """Returns all images that were captured. Latest images are at the end of the list.
 
         :param current_time: the starting time for the search; defaults to the current time

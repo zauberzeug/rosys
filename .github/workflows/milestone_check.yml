@@ -1,0 +1,17 @@
+name: Milestone Assigned
+
+on:
+  pull_request:
+    types: [milestoned, demilestoned, opened]
+
+jobs:
+  check-milestone:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check for milestone
+        run: |
+          if [ -z "${{ github.event.pull_request.milestone }}" ]; then
+            echo "No milestone assigned to the pull request."
+            exit 1
+          fi

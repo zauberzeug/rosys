@@ -1,10 +1,7 @@
 import logging
 from enum import Enum
 
-import numpy as np
-
 from rosys.event import Event
-from rosys.helpers import ramp
 
 from .. import rosys
 from .drivable import Drivable
@@ -21,15 +18,6 @@ class Steerer:
 
     The wheels module can be any drivable hardware representation.
     Changing the steering state emits events that can be used to react to manual user interaction.
-
-    The conversion from x-y joystick coordinates to linear and angular velocities is implemented as follows:
-    The coordinates are translated into an angle (forward: 0 degrees, backward: 180 degrees).
-    If the angle is below 110 degrees, y is used as linear velocity and x is used as angular velocity:
-    Pulling the joystick to the front-right corner leads to a clockwise rotation while driving forwards.
-    Above 110 degrees the angular velocity is flipped:
-    Pulling the joystick to the rear-right corner leads to a counter-clockwise rotation while driving backwards.
-    From 100 degrees to 110 degrees both velocities are throttled with a linear ramp from factor 1.0 down to 0.0.
-    From 110 degrees to 120 degrees the throttle factor is linearly ramped from 0.0 back to 1.0.
     """
 
     def __init__(self, wheels: Drivable, speed_scaling: float = 1.0) -> None:
@@ -56,11 +44,8 @@ class Steerer:
 
     def update(self, x: float, y: float) -> None:
         if self.state == State.STEERING:
-            degrees = np.abs(np.rad2deg(np.arctan2(x, y)))
-            throttle = ramp(abs(degrees - 110), 0, 10, 0, 1, clip=True)
-            flip = degrees > 110
-            self.linear_speed = y * self.speed_scaling * throttle
-            self.angular_speed = -x * self.speed_scaling * throttle * (-1 if flip else 1)
+            self.linear_speed = y * self.speed_scaling
+            self.angular_speed = -x * self.speed_scaling
 
     def stop(self) -> None:
         if self.state != State.STEERING:

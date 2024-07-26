@@ -25,7 +25,7 @@ renderer.polygon(polygon_outline)
 ui.label(f'polygon: {(time.time() - t) * 1000:.3f} ms')
 
 with ui.pyplot():
-    pl.imshow(renderer.map, cmap=pl.cm.gray, interpolation='nearest')
+    pl.imshow(renderer.map, cmap=pl.cm.gray, interpolation='nearest')  # pylint: disable=no-member
     pl.xlim(0, renderer.map.shape[1] - 1)
     pl.ylim(renderer.map.shape[0] - 1, 0)
     pl.gca().add_patch(pl.matplotlib.patches.Circle((x, y), r, color='none', ec='C0', lw=2))

@@ -1,6 +1,5 @@
 import io
 import logging
-from typing import Optional
 
 import cv2
 import imgsize
@@ -33,7 +32,7 @@ def encode_image_as_jpeg(image: np.ndarray) -> bytes:
     return cv2.imencode('.jpg', image)[1].tobytes()
 
 
-def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes | None:
+def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Rectangle | None = None) -> bytes | None:
     """Rotate and crop a JPEG image."""
     if crop is None and rotation == ImageRotation.NONE:
         return data
@@ -45,7 +44,7 @@ def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Optional[Rect
     return process_ndarray_image(decoded, rotation, crop)
 
 
-def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Optional[Rectangle] = None) -> bytes:
+def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Rectangle | None = None) -> bytes:
     """Rotate and crop a NumPy image and encode it as JPEG."""
     if crop is not None:
         image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]
@@ -58,19 +57,18 @@ def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Opti
     return encode_image_as_jpeg(image)
 
 
-def remove_exif(image_data: bytes) -> bytes:  # written by ChatGPT
+def remove_exif(image_data: bytes | bytearray) -> bytes:
+    EXIF_MARKER = b'\xFF\xE1'
+
     pos = 2  # Skip SOI marker
+    image_data = bytearray(image_data)
     while pos < len(image_data):
-        if image_data[pos] == 0xFF:
-            if image_data[pos + 1] == 0xE1:  # APP1 marker (EXIF)
-                length = image_data[pos + 2] << 8 | image_data[pos + 3]
-                image_data = image_data[:pos] + image_data[pos + length + 2:]
-                continue  # Check for multiple EXIF segments
-            elif image_data[pos + 1] == 0xD9:  # EOI marker
-                break  # End of image
-            else:
-                length = image_data[pos + 2] << 8 | image_data[pos + 3]
-                pos += length + 2  # Skip to next marker
-        else:
-            pos += 1  # Increment position if not a marker
-    return image_data
+        match_start = image_data.find(EXIF_MARKER, pos)
+        if match_start == -1:
+            break
+        match_end = match_start + 2
+        length = int.from_bytes(image_data[match_end:match_end+2], byteorder='big')
+        del image_data[match_start:match_end+length]  # Remove EXIF segment
+        pos = match_end
+
+    return bytes(image_data)

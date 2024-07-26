@@ -2,7 +2,6 @@ import gc
 import logging
 import os
 import tracemalloc
-from typing import Optional
 
 import psutil
 from fastapi import Request
@@ -19,7 +18,7 @@ class MemoryMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app: ASGIApp) -> None:
         super().__init__(app)
-        self.last_mem: Optional[int] = None
+        self.last_mem: int | None = None
 
     async def dispatch(self, request: Request, call_next):
         mem = get_process_memory()
@@ -52,7 +51,7 @@ def compare_tracemalloc_snapshots(snapshot, prev_snapshot):
 def observe_memory_growth(with_tracemalloc: bool = False) -> None:
     log.info('Observing memory growth')
     prev_memory: int = 0
-    prev_snapshot: Optional[tracemalloc.Snapshot] = None
+    prev_snapshot: tracemalloc.Snapshot | None = None
     if with_tracemalloc:
         tracemalloc.start(10)
 

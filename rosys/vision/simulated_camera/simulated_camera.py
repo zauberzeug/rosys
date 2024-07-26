@@ -1,25 +1,25 @@
 import random
-from typing import Optional
 
 from typing_extensions import Self
 
 from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
+from ..camera.transformable_camera import TransformableCamera
 from ..image import Image, ImageSize
 from .simulated_device import SimulatedDevice
 
 
-class SimulatedCamera(ConfigurableCamera):
+class SimulatedCamera(ConfigurableCamera, TransformableCamera):
 
     def __init__(self,
                  *,
                  id: str,  # pylint: disable=redefined-builtin
-                 name: Optional[str] = None,
+                 name: str | None = None,
                  connect_after_init: bool = True,
                  streaming: bool = True,
                  width: int = 800,
                  height: int = 600,
-                 color: Optional[str] = None,
+                 color: str | None = None,
                  fps: int = 5,
                  **kwargs,
                  ) -> None:
@@ -29,7 +29,7 @@ class SimulatedCamera(ConfigurableCamera):
                          streaming=streaming,
                          polling_interval=1.0 / fps,
                          **kwargs)
-        self.device: Optional[SimulatedDevice] = None
+        self.device: SimulatedDevice | None = None
         self.resolution = ImageSize(width=width, height=height)
         self._register_parameter('color', self._get_color, self._set_color,
                                  color or f'#{random.randint(0, 0xffffff):06x}')
@@ -56,7 +56,7 @@ class SimulatedCamera(ConfigurableCamera):
     async def connect(self) -> None:
         if not self.is_connected:
             self.device = SimulatedDevice(id=self.id, size=self.resolution)
-            self._apply_all_parameters()
+            await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
         self.device = None
@@ -76,7 +76,7 @@ class SimulatedCamera(ConfigurableCamera):
         assert self.device is not None
         self.device.color = value
 
-    def _get_color(self) -> Optional[str]:
+    def _get_color(self) -> str | None:
         assert self.device is not None
         return self.device.color
 

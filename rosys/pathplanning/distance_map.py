@@ -1,5 +1,4 @@
 import time
-from typing import Optional
 
 import numpy as np
 import scipy.interpolate
@@ -10,7 +9,7 @@ from .obstacle_map import ObstacleMap
 
 class DistanceMap:
 
-    def __init__(self, obstacle_map: ObstacleMap, target: Point, deadline: Optional[float] = None):
+    def __init__(self, obstacle_map: ObstacleMap, target: Point, deadline: float | None = None):
         self.grid = obstacle_map.grid
         scaled_obstacle_map = obstacle_map.map
 
@@ -70,13 +69,13 @@ class DistanceMap:
         self.map[self.map >= self.INF] = np.inf
 
     def interpolate(self, x, y):
-        result = self._interp(x, y)
+        result = self._interp(x, y)  # pylint: disable=not-callable
         result[result >= self.INF / self.F] = np.inf
         return result
 
     def gradient(self, x, y):
-        result_x = self._grad_x(x, y)
-        result_y = self._grad_y(x, y)
+        result_x = self._grad_x(x, y)  # pylint: disable=not-callable
+        result_y = self._grad_y(x, y)  # pylint: disable=not-callable
         result_x[result_x <= -self.INF / self.F] = -np.inf
         result_y[result_y <= -self.INF / self.F] = -np.inf
         result_x[result_x >= self.INF / self.F] = np.inf

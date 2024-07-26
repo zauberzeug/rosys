@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from typing_extensions import Self
 
@@ -9,6 +9,7 @@ from ..image import Image
 from ..image_processing import get_image_size_from_bytes, process_jpeg_image
 from ..image_rotation import ImageRotation
 from .mjpeg_device import MjpegDevice
+from .mjpeg_device_factory import MjpegDeviceFactory
 
 
 class MjpegCamera(TransformableCamera, ConfigurableCamera):
@@ -34,13 +35,17 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
         self.ip = ip
 
-        self.index: Optional[int] = None
+        self.index: int | None = None
         parts = self.id.split('-')
         if len(parts) == 2 and parts[1].isdigit():
             self.index = int(parts[1])
 
         self.mac = parts[0]
-        self.device: Optional[MjpegDevice] = None
+        self.device: MjpegDevice | None = None
+
+        self._register_parameter('fps', self._get_fps, self._set_fps, default_value=10)
+        self._register_parameter('resolution', self._get_resolution, self._set_resolution, default_value=(640, 480))
+        self._register_parameter('mirrored', self._get_mirrored, self._set_mirrored, default_value=False)
 
         self._register_parameter('fps', self._get_fps, self._set_fps, default_value=10)
         self._register_parameter('resolution', self._get_resolution, self._set_resolution, default_value=(640, 480))
@@ -58,7 +63,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
     @property
     def is_connected(self) -> bool:
-        return self.device is not None and self.device.capture_task is not None
+        return (self.device is not None) and (self.device.capture_task is not None) and (not self.device.capture_task.done())
 
     async def connect(self) -> None:
         if self.is_connected:
@@ -68,7 +73,12 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             self.log.error('No IP address provided')
             return
 
-        self.device = MjpegDevice(self.mac, self.ip, index=self.index, username=self.username, password=self.password)
+        try:
+            self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
+                                                    password=self.password)
+        except ValueError as error:
+            self.log.error('Could not connect to device: %s', error)
+            return
 
     async def disconnect(self) -> None:
         if self.device is None:
@@ -101,27 +111,36 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
     async def _set_fps(self, fps: int) -> None:
         if self.device is None:
             raise ValueError('Device is not connected')
-        assert self.device.settings_interface is not None
 
-        await self.device.settings_interface.set_fps(fps)
+        await self.device.set_fps(fps)
+        self.polling_interval = 1.0 / fps
 
     async def _get_fps(self) -> int:
         if self.device is None:
             raise ValueError('Device is not connected')
-        assert self.device.settings_interface is not None
 
-        return await self.device.settings_interface.get_fps()
+        return await self.device.get_fps()
 
     async def _set_resolution(self, resolution: tuple[int, int]) -> None:
         if self.device is None:
             raise ValueError('Device is not connected')
-        assert self.device.settings_interface is not None
 
-        await self.device.settings_interface.set_stream_resolution(*resolution)
+        await self.device.set_resolution(*resolution)
 
     async def _get_resolution(self) -> tuple[int, int]:
         if self.device is None:
             raise ValueError('Device is not connected')
-        assert self.device.settings_interface is not None
 
-        return await self.device.settings_interface.get_stream_resolution()
+        return await self.device.get_resolution()
+
+    async def _set_mirrored(self, mirrored: bool) -> None:
+        if self.device is None:
+            raise ValueError('Device is not connected')
+
+        await self.device.set_mirrored(mirrored)
+
+    async def _get_mirrored(self) -> bool:
+        if self.device is None:
+            raise ValueError('Device is not connected')
+
+        return await self.device.get_mirrored()

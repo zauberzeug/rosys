@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 import cv2
 import numpy as np
@@ -27,23 +27,23 @@ class Image:
     camera_id: str
     size: ImageSize
     time: float  # time of recording
-    data: Optional[bytes] = None
+    data: bytes | None = None
     _detections: dict[str, Detections] = field(default_factory=dict)
-    is_broken: Optional[bool] = None
+    is_broken: bool | None = None
     tags: set[str] = field(default_factory=set)
 
     DEFAULT_PLACEHOLDER_SIZE: ClassVar[tuple[int, int]] = (320, 240)
 
     @property
-    def detections(self) -> Optional[Detections]:
+    def detections(self) -> Detections | None:
         if not self._detections:
             return None
         if len(self._detections) > 1:
             raise RuntimeError(
                 f'Image has multiple detection types ({", ".join(self._detections.keys())}). Use `get_detections(type)` instead.')
-        return list(self._detections.values())[0]
+        return next(iter(self._detections.values()))
 
-    def get_detections(self, detector_id: str) -> Optional[Detections]:
+    def get_detections(self, detector_id: str) -> Detections | None:
         return self._detections.get(detector_id)
 
     def set_detections(self, detector_id: str, detections: Detections) -> None:
@@ -54,7 +54,7 @@ class Image:
         return f'{self.camera_id}/{self.time}'
 
     @classmethod
-    def create_placeholder(cls, text: str, time: Optional[float] = None, camera_id: Optional[str] = None, shrink: int = 1) -> Self:
+    def create_placeholder(cls, text: str, time: float | None = None, camera_id: str | None = None, shrink: int = 1) -> Self:
         h, w = cls.DEFAULT_PLACEHOLDER_SIZE
         img = PIL.Image.new('RGB', (h // shrink, w // shrink), color=(73, 109, 137))
         d = PIL.ImageDraw.Draw(img)
@@ -66,3 +66,9 @@ class Image:
             size=ImageSize(width=img.width, height=img.height),
             data=encoded_image.tobytes(),
         )
+
+    def to_array(self) -> np.ndarray:
+        if self.data is None:
+            raise ValueError('Image data is None')
+
+        return cv2.imdecode(np.frombuffer(self.data, dtype=np.uint8), cv2.IMREAD_COLOR)

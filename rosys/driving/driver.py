@@ -1,10 +1,11 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Optional, Protocol
+from typing import Protocol
 
 import numpy as np
 
-from .. import analysis, rosys
+from .. import rosys
+from ..analysis import track
 from ..geometry import Point, Pose, Spline
 from ..helpers import ModificationContext, eliminate_2pi, eliminate_pi, ramp
 from .drivable import Drivable
@@ -18,7 +19,7 @@ class DriveParameters(ModificationContext):
     angular_speed_limit: float = 0.5
     minimum_turning_radius: float = 0.0
     can_drive_backwards: bool = True
-    max_detection_age_ramp: Optional[tuple[float, float]] = None
+    max_detection_age_ramp: tuple[float, float] | None = None
     hook_offset: float = 0.5
     carrot_offset: float = 0.6
     carrot_distance: float = 0.1
@@ -56,7 +57,7 @@ class Driver:
         self.wheels = wheels
         self.odometer = odometer
         self.parameters = DriveParameters()
-        self.state: Optional[DriveState] = None
+        self.state: DriveState | None = None
         self._abort = False
 
     @property
@@ -68,13 +69,13 @@ class Driver:
         """Abort the current drive routine."""
         self._abort = True
 
-    @analysis.track
+    @track
     async def drive_square(self) -> None:
         start_pose = deepcopy(self.prediction)
         for x, y in [(1, 0), (1, 1), (0, 1), (0, 0)]:
             await self.drive_to(start_pose.transform(Point(x=x, y=y)))
 
-    @analysis.track
+    @track
     async def drive_arc(self) -> None:
         while self.prediction.x < 2:
             if self._abort:
@@ -84,12 +85,12 @@ class Driver:
             await rosys.sleep(0.1)
         await self.wheels.stop()
 
-    @analysis.track
+    @track
     async def drive_path(self, path: list[PathSegment]) -> None:
         for segment in path:
             await self.drive_spline(segment.spline, throttle_at_end=segment == path[-1], flip_hook=segment.backward)
 
-    @analysis.track
+    @track
     async def drive_to(self, target: Point, backward: bool = False) -> None:
         if self.parameters.minimum_turning_radius:
             await self.drive_circle(target, backward)
@@ -103,7 +104,7 @@ class Driver:
         )
         await self.drive_spline(approach_spline, flip_hook=backward)
 
-    @analysis.track
+    @track
     async def drive_circle(self, target: Point, backward: bool = False) -> None:
         while True:
             if self._abort:
@@ -123,7 +124,7 @@ class Driver:
             await self.wheels.drive(*self._throttle(linear, angular))
             await rosys.sleep(0.1)
 
-    @analysis.track
+    @track
     async def drive_spline(self, spline: Spline, *, flip_hook: bool = False, throttle_at_end: bool = True) -> None:
         if spline.start.distance(spline.end) < 0.01:
             return  # NOTE: skip tiny splines

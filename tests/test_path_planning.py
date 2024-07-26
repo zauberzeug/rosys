@@ -61,11 +61,11 @@ async def test_test_spline(path_planner: PathPlanner) -> None:
     await forward(1.0)
 
     spline = Spline.from_poses(Pose(x=0, y=0), Pose(x=2, y=1))
-    assert await path_planner.test_spline(spline) == False
+    assert await path_planner.test_spline(spline) is False
 
     obstacle = create_obstacle(x=2, y=1)
     path_planner.obstacles[obstacle.id] = obstacle
-    assert await path_planner.test_spline(spline) == True
+    assert await path_planner.test_spline(spline) is True
 
 
 def test_grow_map(shape: Prism) -> None:

@@ -9,8 +9,15 @@ import rosys
 from rosys.automation import Automator, automation_controls
 from rosys.driving import Driver, Odometer, PathSegment, Steerer, keyboard_control, robot_object
 from rosys.geometry import Point, Pose, Prism, Spline
-from rosys.hardware import (CanHardware, RobotBrain, RobotHardware, RobotSimulation, SerialCommunication,
-                            WheelsHardware, WheelsSimulation)
+from rosys.hardware import (
+    CanHardware,
+    RobotBrain,
+    RobotHardware,
+    RobotSimulation,
+    SerialCommunication,
+    WheelsHardware,
+    WheelsSimulation,
+)
 from rosys.pathplanning import Obstacle, PathPlanner, obstacle_object, path_object
 
 # setup

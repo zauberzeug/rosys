@@ -3,8 +3,8 @@ from __future__ import annotations
 import asyncio
 import inspect
 import logging
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Awaitable, Callable
 
 from nicegui import background_tasks, context, core
 
@@ -43,7 +43,7 @@ class Event:
 
     def register_ui(self, callback: Callable) -> Event:
         self.register(callback)
-        client = context.get_client()
+        client = context.client
         if not client.shared:
             async def register_disconnect():
                 try:

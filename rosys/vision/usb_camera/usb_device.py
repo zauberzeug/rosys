@@ -2,17 +2,16 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Optional
 
 import cv2
 
 from ... import run
 from .usb_camera_scanner import device_nodes_from_uid
 
-MJPG = cv2.VideoWriter_fourcc(*'MJPG')
+MJPG = cv2.VideoWriter.fourcc(*'MJPG')
 
 
-def find_video_id(camera_uid: str) -> Optional[int]:
+def find_video_id(camera_uid: str) -> int | None:
     device_nodes = device_nodes_from_uid(camera_uid)
     video_ids = [
         int(node.strip().removeprefix('/dev/video'))
@@ -37,7 +36,7 @@ class UsbDevice:
         self.set_video_format()
 
     @staticmethod
-    def from_uid(camera_id: str) -> Optional[UsbDevice]:
+    def from_uid(camera_id: str) -> UsbDevice | None:
         video_id = find_video_id(camera_id)
         if video_id is None:
             logging.error('Could not find video device for camera %s', camera_id)
@@ -51,7 +50,7 @@ class UsbDevice:
         return UsbDevice(video_id=video_id, capture=capture)
 
     @staticmethod
-    def create_capture(index: int) -> Optional[cv2.VideoCapture]:
+    def create_capture(index: int) -> cv2.VideoCapture | None:
         capture = cv2.VideoCapture(index)
         if capture is None:
             return None

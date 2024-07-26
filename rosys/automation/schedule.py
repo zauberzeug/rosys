@@ -1,7 +1,8 @@
 import functools
 import logging
+from collections.abc import Callable
 from datetime import datetime, timedelta
-from typing import Any, Callable, Optional, cast
+from typing import Any, cast
 
 import suntime
 from nicegui import ui
@@ -29,11 +30,11 @@ class Translator:
 class Schedule(persistence.PersistentModule):
 
     def __init__(self, *,
-                 automator: Optional[Automator] = None,
-                 on_activate: Optional[Callable] = None,
-                 on_deactivate: Optional[Callable] = None,
-                 location: Optional[tuple[float, float]] = None,
-                 locations: Optional[dict[tuple[float, float], str]] = None,
+                 automator: Automator | None = None,
+                 on_activate: Callable | None = None,
+                 on_deactivate: Callable | None = None,
+                 location: tuple[float, float] | None = None,
+                 locations: dict[tuple[float, float], str] | None = None,
                  sunrise_offset: float = 0.0,
                  sunset_offset: float = 0.0,
                  is_enabled: bool = False,
@@ -106,7 +107,7 @@ class Schedule(persistence.PersistentModule):
         sun_stop_hour = _get_sun_stop_hour(self.location, self.sunset_offset)
         return not sun_start_hour < hour + minute / 60 < sun_stop_hour
 
-    def is_planned(self, weekday: int, hour: int, minute: Optional[int] = None) -> bool:
+    def is_planned(self, weekday: int, hour: int, minute: int | None = None) -> bool:
         if minute is None:
             return self.half_hours[self.time_to_index(weekday, hour, 0)] \
                 or self.half_hours[self.time_to_index(weekday, hour, 30)]
@@ -197,7 +198,7 @@ class Schedule(persistence.PersistentModule):
         self.location = location
         self.invalidate()
 
-    def _toggle(self, weekday: int, hour: int, minute: Optional[int] = None) -> None:
+    def _toggle(self, weekday: int, hour: int, minute: int | None = None) -> None:
         new_value = not self.is_planned(weekday, hour, minute)
         if minute is None:
             self.half_hours[self.time_to_index(weekday, hour, 0)] = new_value

@@ -40,9 +40,13 @@ def backup(force: bool = False) -> None:
             backup_path.mkdir(parents=True)
         filepath = backup_path / f'{name}.json'
         try:
-            filepath.write_text(json.dumps(module.backup(), indent=4, cls=Encoder))
+            temp_filepath = filepath.with_suffix('.tmp')
+            temp_filepath.write_text(json.dumps(module.backup(), indent=4, cls=Encoder))
+            temp_filepath.rename(filepath)
         except Exception:
             log.exception('failed to backup %s: %s', module, str(module.backup()))
+            if temp_filepath.exists():
+                temp_filepath.unlink()
         module.needs_backup = False
 
 
@@ -56,3 +60,8 @@ def restore() -> None:
             module.restore(json.loads(filepath.read_text()))
         except Exception:
             log.exception('failed to restore %s', module)
+
+
+def write_export(to_filepath: Path) -> None:
+    data = {name: module.backup() for name, module in modules.items()}
+    to_filepath.write_text(json.dumps(data, indent=4))
