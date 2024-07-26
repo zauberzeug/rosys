@@ -23,6 +23,9 @@ class RtspDevice:
         self.mac = mac
         self.ip = ip
 
+        self.fps: int
+        self.jovision_profile: int = jovision_profile
+
         self.capture_task: asyncio.Task | None = None
         self.capture_process: Process | None = None
         self._image_buffer: bytes | None = None
@@ -34,12 +37,10 @@ class RtspDevice:
         if vendor_type == VendorType.JOVISION:
             self.settings_interface = JovisionInterface(ip)
             self.fps = self.settings_interface.get_fps(stream_id=jovision_profile) or 10
-            self.jovision_profile = jovision_profile
         else:
             self.log.warning('[%s] No settings interface for vendor type %s', self.mac, vendor_type)
             self.log.warning('[%s] Using default fps of 10', self.mac)
             self.fps = 10
-            self.jovision_profile = None
 
         url = mac_to_url(mac, ip, jovision_profile)
         if url is None:
@@ -193,5 +194,5 @@ class RtspDevice:
     def set_jovision_profile(self, profile: int) -> None:
         self.jovision_profile = profile
 
-    def get_jovision_profile(self) -> int | None:
+    def get_jovision_profile(self) -> int:
         return self.jovision_profile
