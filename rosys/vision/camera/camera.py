@@ -46,7 +46,6 @@ class Camera(abc.ABC):
                 rosys.on_startup(self.connect)
 
         self.image_loop = rosys.Repeater(self.capture_image, interval=polling_interval)
-        self.should_stream = streaming
         if streaming:
             self.image_loop.start()
 
@@ -64,8 +63,6 @@ class Camera(abc.ABC):
             self.image_loop.start()
         else:
             self.image_loop.stop()
-
-        self.should_stream = value
 
     @property
     def polling_interval(self) -> float:
