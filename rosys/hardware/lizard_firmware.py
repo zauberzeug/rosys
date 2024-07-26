@@ -106,7 +106,7 @@ class LizardFirmware:
         await self.read_core_version()
         rosys.notify('Finished.', 'positive')
 
-    async def flash_p0(self, timeout=120) -> None:
+    async def flash_p0(self, timeout: float = 120) -> None:
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
         await self.robot_brain.send('p0.flash()')
         start = rosys.time()
