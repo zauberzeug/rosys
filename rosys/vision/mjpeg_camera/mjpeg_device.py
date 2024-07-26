@@ -7,8 +7,7 @@ import httpx
 
 from ...rosys import on_startup
 from ..image_processing import remove_exif
-from .motec_settings_interface import MotecSettingsInterface
-from .vendors import VendorType, mac_to_url, mac_to_vendor
+from .vendors import mac_to_url
 
 
 class MjpegDevice:

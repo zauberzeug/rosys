@@ -47,9 +47,6 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         self._register_parameter('resolution', self._get_resolution, self._set_resolution, default_value=(640, 480))
         self._register_parameter('mirrored', self._get_mirrored, self._set_mirrored, default_value=False)
 
-        self._register_parameter('fps', self._get_fps, self._set_fps, default_value=10)
-        self._register_parameter('resolution', self._get_resolution, self._set_resolution, default_value=(640, 480))
-
     def to_dict(self) -> dict:
         return super().to_dict() | {
             'username': self.username,
