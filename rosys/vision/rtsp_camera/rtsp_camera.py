@@ -108,25 +108,21 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self._add_image(image)
 
     def set_fps(self, fps: int) -> None:
-        if self.device is None or self.device.settings_interface is None:
-            raise ValueError('Camera is not connected')
+        assert self.device is not None
         self.device.settings_interface.set_fps(stream_id=self.jovision_profile, fps=fps)
         self.polling_interval = 1.0 / fps
 
     def get_fps(self) -> int | None:
-        if self.device is None or self.device.settings_interface is None:
-            raise ValueError('Camera is not connected')
+        assert self.device is not None
         fps = self.device.settings_interface.get_fps(stream_id=self.jovision_profile)
         return fps
 
     def set_jovision_profile(self, profile: int) -> None:
-        if self.device is None:
-            raise ValueError('Camera is not connected')
+        assert self.device is not None
         self.jovision_profile = profile
 
     def get_jovision_profile(self) -> int | None:
-        if self.device is None:
-            raise ValueError('Camera is not connected')
+        assert self.device is not None
         return self.jovision_profile
 
     async def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
