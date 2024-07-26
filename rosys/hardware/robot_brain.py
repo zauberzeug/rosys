@@ -137,7 +137,7 @@ class RobotBrain:
                 if self.clock_offset is None:
                     continue
                 self.hardware_time = millis / 1000 + self.clock_offset
-            if 'Replica completed' in line:
+            if 'Replica complete' in line:
                 self.FLASH_P0_COMPLETE.emit()
             self.LINE_RECEIVED.emit(line)
             if self.hardware_time is None:
