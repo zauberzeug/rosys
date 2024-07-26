@@ -49,6 +49,7 @@ class ConfigurableCamera(Camera):
 
     async def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
         if not self.is_connected:
+            self._write_values_to_cache(new_values)
             return
         for name, value in new_values.items():
             if name not in self._parameters:
@@ -64,10 +65,16 @@ class ConfigurableCamera(Camera):
                     await result
             except Exception as e:
                 if not self.is_connected:
+                    self._write_values_to_cache(new_values)
                     return
                 raise e
 
         await self._update_parameter_cache()
+
+    def _write_values_to_cache(self, new_values: dict[str, Any]) -> None:
+        for name, value in new_values.items():
+            if name in self._parameters:
+                self._parameters[name].value = value
 
     async def _apply_all_parameters(self) -> None:
         await self._apply_parameters(self.parameters, force_set=True)
