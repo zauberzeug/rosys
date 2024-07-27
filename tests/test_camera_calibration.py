@@ -65,7 +65,7 @@ def test_calibration_from_points():
     assert not any(p is None for p in image_points)
     focal_length = cam.calibration.intrinsics.matrix[0][0]
 
-    calibration = Calibration.from_points(world_points, image_points, image_size, focal_length)
+    calibration = Calibration.from_points(world_points, image_points, image_size=image_size, f0=focal_length)
 
     approx(calibration.intrinsics.matrix, cam.calibration.intrinsics.matrix)
     approx(calibration.extrinsics.translation, cam.calibration.extrinsics.translation)
@@ -85,7 +85,7 @@ def test_calibration_with_custom_coordinate_frame():
     assert not any(p is None for p in image_points)
     focal_length = cam.calibration.intrinsics.matrix[0][0]
 
-    calibration = Calibration.from_points(world_points, image_points, image_size, focal_length)
+    calibration = Calibration.from_points(world_points, image_points, image_size=image_size, f0=focal_length)
 
     cam_to_world_refernce = cam.calibration.extrinsics.resolve()
 
@@ -102,8 +102,8 @@ def test_fisheye_calibration_from_points():
     image_points = [cam.calibration.project_to_image(p) for p in world_points]
     assert not any(p is None for p in image_points)
     focal_length = cam.calibration.intrinsics.matrix[0][0]
-    calibration = Calibration.from_points(world_points, image_points, image_size,
-                                          focal_length, camera_model=CameraModel.FISHEYE)
+    calibration = Calibration.from_points(world_points, image_points, image_size=image_size, f0=focal_length,
+                                          camera_model=CameraModel.FISHEYE)
 
     approx(calibration.intrinsics.matrix, cam.calibration.intrinsics.matrix)
     approx(calibration.extrinsics.translation, cam.calibration.extrinsics.translation)
@@ -128,8 +128,8 @@ def test_omnidirectional_calibration_from_points():
     world_points = [world_points for _ in range(n_views)]
     assert not any(p is None for view in image_points for p in view)
     focal_length = cam.calibration.intrinsics.matrix[0][0]
-    calibration = Calibration.from_points(world_points, image_points, image_size,
-                                          focal_length, camera_model=CameraModel.OMNIDIRECTIONAL)
+    calibration = Calibration.from_points(world_points, image_points, image_size=image_size, f0=focal_length,
+                                          camera_model=CameraModel.OMNIDIRECTIONAL)
 
     new_image_points = [calibration.project_to_image(p) for p in world_points[0]]
     rms = np.mean([np.linalg.norm((p - p_).tuple) for p, p_ in zip(image_points[0], new_image_points, strict=True)])

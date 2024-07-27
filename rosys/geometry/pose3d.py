@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 @dataclass(slots=True, kw_only=True)
 class Pose3d:
     """A 3D pose consisting of a translation and a rotation.
+
     The pose is stored as the transformation to the parent frame (not the objects in it).
     The transformation first applies the rotation and then the translation.
     """
@@ -65,7 +66,7 @@ class Pose3d:
         self.translation += translation
         return self
 
-    def resolve(self, up_to: CoordinateFrame | None = None) -> Self:
+    def resolve(self, up_to: CoordinateFrame | None = None) -> Pose3d:
         """Recursively resolves the pose to the given parent frame.
 
         :param up_to: The parent frame to resolve the pose to (default: ``None`` for the world frame)
@@ -96,7 +97,8 @@ class Pose3d:
             relative_pose = self.resolve(up_to=source_frame)
         else:
             relative_pose = self.relative_to(source_frame, common_frame=source_frame)
-        return Point3d.from_tuple((relative_pose.rotation.matrix.T @ (point - relative_pose.translation)).tolist())
+        array = relative_pose.rotation.matrix.T @ (point.array - relative_pose.translation.array)
+        return Point3d.from_tuple(array.tolist())
 
     def transform_point_to(self, point: Point3d, target_frame: CoordinateFrame | None = None) -> Point3d:
         """Transforms the coordinates of a point from the current frame to the target frame.
@@ -108,7 +110,8 @@ class Pose3d:
             relative_pose = self.resolve(up_to=target_frame)
         else:
             relative_pose = self.relative_to(target_frame, common_frame=target_frame)
-        return Point3d.from_tuple(relative_pose.rotation.matrix @ point.tuple + relative_pose.translation.tuple)
+        matrix = relative_pose.rotation.matrix @ point.tuple + relative_pose.translation.tuple
+        return Point3d.from_tuple(matrix.tolist())
 
     def relative_to(self, other: Pose3d, common_frame: CoordinateFrame | None = None) -> Pose3d:
         """Calculates the relative pose of this pose to another pose.
