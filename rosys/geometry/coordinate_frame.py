@@ -19,7 +19,7 @@ class CoordinateFrame(Pose3d):
     """
     id: str = field(default_factory=lambda: str(uuid4()))
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         coordinate_frame_registry[self.id] = self
 
     @property
@@ -58,13 +58,14 @@ class CoordinateFrame(Pose3d):
         return instance
 
     def delete(self) -> None:
+        """Remove the frame from the registry."""
         del coordinate_frame_registry[self.id]
         for frame in coordinate_frame_registry.values():
             if frame.parent_frame_id == self.id:
                 logger.warning('Parent frame %s of %s was deleted', self.id, frame.id)
 
     @staticmethod
-    def common_frame(pose1: Pose3d | CoordinateFrame | None, pose2: Pose3d | CoordinateFrame | None) -> CoordinateFrame | None:
+    def common_frame(pose1: Pose3d | None, pose2: Pose3d | None) -> CoordinateFrame | None:
         """Returns the common frame of a pair of poses or frames.
 
         :param pose1: The first pose or frame.

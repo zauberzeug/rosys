@@ -65,26 +65,15 @@ class Calibration:
     intrinsics: Intrinsics
     extrinsics: Pose3d = field(default_factory=Pose3d.zero)
 
-    @property
-    def rotation(self) -> Rotation:
-        return self.extrinsics.resolve().rotation
-
-    @property
-    def rotation_array(self) -> np.ndarray:
-        return self.extrinsics.resolve().rotation.matrix
-
-    @property
-    def center_point(self) -> Point3d:
-        return self.extrinsics.resolve().translation
-
     @staticmethod
     def from_points(world_points: list[Point3d] | list[list[Point3d]],
                     image_points: list[Point] | list[list[Point]],
+                    *,
                     image_size: ImageSize,
                     f0: float,
                     rational_model: bool = False,
                     camera_model: CameraModel = CameraModel.PINHOLE,
-                    world_point_frame: CoordinateFrame | None = None) -> Calibration:
+                    coordinate_frame: CoordinateFrame | None = None) -> Calibration:
         """Estimate the camera calibration from corresponding world and image points.
 
         :param world_points: The observed points in 3D world coordinates.
@@ -93,7 +82,7 @@ class Calibration:
         :param f0: An initial guess for the focal length.
         :param rational_model: Whether to use the rational camera model (only applies to pinhole cameras).
         :param camera_model: The camera model to use.
-        :param world_point_frame: The coordinate frame in which the world points are given. This will be the parent frame of the resulting extrinsic camera pose.
+        :param coordinate_frame: The coordinate frame of the world points and the extrinsic camera pose.
 
         :return: The estimated camera calibration.
         """
@@ -173,7 +162,7 @@ class Calibration:
         rotation = Rotation.from_rvec(rvecs[0]).T
         translation = (-np.array(rotation.R).dot(tvecs[0])).flatten().tolist()
         extrinsics = Pose3d(translation=Point3d.from_tuple(translation), rotation=rotation)
-        extrinsics.parent_frame = world_point_frame
+        extrinsics.parent_frame = coordinate_frame
 
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 

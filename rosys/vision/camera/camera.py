@@ -93,7 +93,7 @@ class Camera(abc.ABC):
         }
 
     @classmethod
-    def args_from_dict(cls, data: dict) -> dict:
+    def args_from_dict(cls, data: dict[str, Any]) -> dict:
         return data
 
     @classmethod

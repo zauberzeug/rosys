@@ -78,7 +78,7 @@ class CameraObjects(Group):
 
     @staticmethod
     def get_rotation(calibration: Calibration) -> list[list[float]]:
-        return calibration.rotation.R  # computing euler rotation is cpu expensive
+        return calibration.extrinsics.resolve().rotation.R  # computing euler rotation is cpu expensive
 
     async def update_images(self) -> None:
         newest_images = [camera.latest_captured_image

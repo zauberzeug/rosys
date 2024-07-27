@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
+from typing_extensions import Self
 
 from .coordinate_frame_registry import coordinate_frame_registry
 from .point3d import Point3d
@@ -29,7 +30,8 @@ class Pose3d:
 
     @classmethod
     def from_matrix(cls, M: np.ndarray) -> Pose3d:
-        return cls(translation=Point3d(x=M[0, 3], y=M[1, 3], z=M[2, 3]), rotation=Rotation(R=M[:3, :3].tolist()))
+        return cls(translation=Point3d(x=M[0, 3] / M[3, 3], y=M[1, 3] / M[3, 3], z=M[2, 3] / M[3, 3]),
+                   rotation=Rotation(R=(M[:3, :3] / M[3, 3]).tolist()))
 
     @property
     def matrix(self) -> np.ndarray:
@@ -55,21 +57,21 @@ class Pose3d:
     def parent_frame(self, value: CoordinateFrame | None) -> None:
         self.parent_frame_id = value.id if value else None
 
-    def rotate(self, rotation: Rotation) -> Pose3d:
+    def rotate(self, rotation: Rotation) -> Self:
         self.rotation *= rotation
         return self
 
-    def translate(self, translation: Point3d) -> Pose3d:
+    def translate(self, translation: Point3d) -> Self:
         self.translation += translation
         return self
 
-    def resolve(self, up_to: CoordinateFrame | None = None) -> Pose3d:
+    def resolve(self, up_to: CoordinateFrame | None = None) -> Self:
         """Recursively resolves the pose to the given parent frame.
 
-        :param up_to: The parent frame to resolve the pose to. (default: None = world frame)
+        :param up_to: The parent frame to resolve the pose to (default: ``None`` for the world frame)
         """
         parent_frame = self.parent_frame
-        if parent_frame is None or parent_frame == up_to:
+        if parent_frame is None or parent_frame is up_to:
             return self
 
         final_pose: Pose3d = Pose3d(translation=self.translation, rotation=self.rotation)

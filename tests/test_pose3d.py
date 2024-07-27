@@ -16,7 +16,7 @@ def test_rotate():
     pose2 = copy.deepcopy(pose)
     pose2.rotate(Rotation.from_euler(roll=0, pitch=0, yaw=math.pi / 2))
     approx(pose.translation, pose2.translation)
-    reference_point = Point3d(x=0, y=1, z=0)
 
+    reference_point = Point3d(x=0, y=1, z=0)
     approx(pose2.transform_point_to(reference_point, target_frame=pose).x,
            -pose.transform_point_to(reference_point, target_frame=pose).y)
