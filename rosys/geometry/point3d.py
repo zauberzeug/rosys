@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -15,8 +16,8 @@ class Point3d:
     z: float
 
     @staticmethod
-    def from_tuple(t: tuple[float, float, float]) -> Point3d:
-        """Create a Point3d from the three elements of a tuple."""
+    def from_tuple(t: Sequence[float]) -> Point3d:
+        """Create a Point3d from the three first elements of a sequence."""
         return Point3d(x=t[0], y=t[1], z=t[2])
 
     @staticmethod
