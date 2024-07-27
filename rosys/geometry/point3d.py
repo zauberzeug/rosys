@@ -1,10 +1,7 @@
 from __future__ import annotations
 
 import math
-from builtins import tuple as builtin_tuple
-from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
-from typing import overload
 
 import numpy as np
 
@@ -12,14 +9,14 @@ from .point import Point
 
 
 @dataclass(slots=True, kw_only=True)
-class Point3d(Sequence[float]):
+class Point3d:
     x: float
     y: float
     z: float
 
     @staticmethod
-    def from_tuple(t: Sequence[float]) -> Point3d:
-        """Create a Point3d from the three first elements of a sequence."""
+    def from_tuple(t: tuple[float, float, float]) -> Point3d:
+        """Create a Point3d from the three elements of a tuple."""
         return Point3d(x=t[0], y=t[1], z=t[2])
 
     @staticmethod
@@ -49,22 +46,3 @@ class Point3d(Sequence[float]):
 
     def __sub__(self, other: Point3d) -> Point3d:
         return Point3d(x=self.x - other.x, y=self.y - other.y, z=self.z - other.z)
-
-    # sequence
-
-    def __len__(self) -> int:
-        return 3
-
-    @overload
-    def __getitem__(self, index: int) -> float:
-        ...
-
-    @overload
-    def __getitem__(self, index: slice) -> builtin_tuple[float, ...]:
-        ...
-
-    def __getitem__(self, index: int | slice) -> float | builtin_tuple[float, ...]:
-        return self.tuple[index]
-
-    def __iter__(self) -> Iterator[float]:
-        return iter(self.tuple)

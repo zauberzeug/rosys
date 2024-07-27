@@ -73,7 +73,7 @@ class CameraObjects(Group):
                             camera.calibration.intrinsics.size.height / self.px_per_m,
                             camera.calibration.intrinsics.matrix[0][0] / self.px_per_m,
                         )
-            camera_groups[uid].move(*camera.calibration.extrinsics.translation)
+            camera_groups[uid].move(*camera.calibration.extrinsics.translation.tuple)
             camera_groups[uid].rotate_R(await run.cpu_bound(self.get_rotation, camera.calibration))
 
     @staticmethod

@@ -37,7 +37,7 @@ class Pose3d:
 
     @property
     def inverse_matrix(self) -> np.ndarray:
-        return np.block([[self.rotation.T, -self.rotation.matrix.T @ self.translation.array], [0, 0, 0, 1]])
+        return np.block([[self.rotation.T.matrix, -self.rotation.matrix.T @ self.translation.array], [0, 0, 0, 1]])
 
     @property
     def parent_frame_id(self) -> str | None:
@@ -106,7 +106,7 @@ class Pose3d:
             relative_pose = self.resolve(up_to=target_frame)
         else:
             relative_pose = self.relative_to(target_frame, common_frame=target_frame)
-        return Point3d.from_tuple((relative_pose.rotation.matrix @ point + relative_pose.translation).tolist())
+        return Point3d.from_tuple(relative_pose.rotation.matrix @ point.tuple + relative_pose.translation.tuple)
 
     def relative_to(self, other: Pose3d, common_frame: CoordinateFrame | None = None) -> Pose3d:
         """Calculates the relative pose of this pose to another pose.
@@ -147,7 +147,7 @@ class Pose3d:
         return None
 
     def inverse(self) -> Pose3d:
-        return Pose3d(translation=Point3d.from_tuple((-self.rotation.T.matrix @ self.translation).tolist()), rotation=self.rotation.T)
+        return Pose3d.from_matrix(self.inverse_matrix)
 
     def __matmul__(self, other: Pose3d) -> Pose3d:
         # if not self.parent_frame_id == other.parent_frame_id:
