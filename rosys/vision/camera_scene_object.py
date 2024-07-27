@@ -10,7 +10,7 @@ class CameraSceneObject(ui.scene.group):
                  camera: CalibratableCamera, *,
                  color: str = '#ffffff',
                  px_per_m: float = 1000,
-                 debug: bool = True,
+                 draw_name: bool = True,
                  ) -> None:
         super().__init__()
         with self:
@@ -22,8 +22,8 @@ class CameraSceneObject(ui.scene.group):
                 ui.scene.line([0, 0, 0], [0.5, 0, 0]).material('#ff0000')
                 ui.scene.line([0, 0, 0], [0, 0.5, 0]).material('#00ff00')
                 ui.scene.line([0, 0, 0], [0, 0, 0.5]).material('#0000ff')
-                if debug:
-                    ui.scene.text(camera.id)
+                if draw_name:
+                    ui.scene.text(camera.name)
             if camera.calibration is not None:
                 pyramid.scale(
                     camera.calibration.intrinsics.size.width / px_per_m,
