@@ -9,7 +9,6 @@ from .pose3d import Pose3d
 from .prism import Prism
 from .rectangle import Rectangle
 from .rotation import Rotation
-from .scene_object import scene_object
 from .spline import Spline
 from .velocity import Velocity
 
@@ -28,5 +27,4 @@ __all__ = [
     'Rotation',
     'Spline',
     'Velocity',
-    'scene_object',
 ]

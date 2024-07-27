@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 from builtins import tuple as builtin_tuple
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from typing import overload
 
@@ -66,5 +66,5 @@ class Point3d(Sequence[float]):
     def __getitem__(self, index: int | slice) -> float | builtin_tuple[float, ...]:
         return self.tuple[index]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[float]:
         return iter(self.tuple)

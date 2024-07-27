@@ -13,8 +13,10 @@ logger = logging.getLogger('rosys.geometry.coordinate_frame')
 @dataclass(slots=True, kw_only=True)
 class CoordinateFrame(Pose3d):
     """A 3D coordinate frame based on a 3D pose.
-    This is a simple wrapper around a Pose3d with an additional id.
-    It guarantees that the frame is registered in the coordinate_frame_registry."""
+
+    This is a simple wrapper around a Pose3d with an additional ID.
+    It guarantees that the frame is registered in the coordinate_frame_registry.
+    """
     id: str = field(default_factory=lambda: str(uuid4()))
 
     def __post_init__(self):
