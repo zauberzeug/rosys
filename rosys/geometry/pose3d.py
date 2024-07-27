@@ -11,7 +11,7 @@ from .point3d import Point3d
 from .rotation import Rotation
 
 if TYPE_CHECKING:
-    from .coordinate_frame import Frame3d
+    from .frame3d import Frame3d
 
 
 @dataclass(slots=True, kw_only=True)

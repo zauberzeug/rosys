@@ -1,4 +1,4 @@
-from .coordinate_frame import Frame3d
+from .frame3d import Frame3d
 from .line import Line
 from .line_segment import LineSegment
 from .point import Point
