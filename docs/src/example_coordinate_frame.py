@@ -5,14 +5,23 @@ from nicegui import ui
 
 import rosys
 from rosys.geometry import Frame3d, Point3d, Rotation
+from rosys.vision import CalibratableCamera, CameraSceneObject, SimulatedCamera
+
+
+class SimulatedCalibratableCamera(SimulatedCamera, CalibratableCamera):
+    pass
+
 
 blue_frame = Frame3d(translation=Point3d(x=0, y=0, z=0.5), rotation=Rotation.zero())
 pink_frame = Frame3d(translation=Point3d(x=0, y=0, z=0.75), rotation=Rotation.zero())
 pink_frame.parent_frame = blue_frame
+camera = SimulatedCalibratableCamera.create_calibrated(id='Camera')
+camera.calibration.extrinsics.parent_frame = pink_frame
 
 with ui.scene() as scene:
     blue_box = scene.box(width=1, height=1, depth=1).material(color='SteelBlue')
     pink_box = scene.box(width=0.5, height=0.5, depth=0.5).material(color='HotPink')
+    camera_object = CameraSceneObject(camera)
 
 
 def update():
@@ -27,6 +36,10 @@ def update():
     pink_pose = pink_frame.resolve()
     pink_box.rotate(*pink_pose.rotation.euler)
     pink_box.move(*pink_pose.translation.tuple)
+
+    camera_pose = camera.calibration.extrinsics.resolve()
+    camera_object.rotate_R(camera_pose.rotation.R)
+    camera_object.move(*camera_pose.translation.tuple)
 
 
 rosys.on_repeat(update, interval=0.01)
