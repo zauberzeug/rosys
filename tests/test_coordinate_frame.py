@@ -3,21 +3,21 @@ from copy import deepcopy
 
 import pytest
 
-from rosys.geometry import CoordinateFrame, Point3d, Pose3d, Rotation
+from rosys.geometry import Frame3d, Point3d, Pose3d, Rotation
 from rosys.geometry.coordinate_frame_registry import coordinate_frame_registry
 from rosys.testing import poses_equal
 
 
 @pytest.fixture
-def frame1() -> CoordinateFrame:
-    return CoordinateFrame(translation=Point3d(x=1, y=2, z=3),
-                           rotation=Rotation.from_euler(roll=0., pitch=0., yaw=0.))
+def frame1() -> Frame3d:
+    return Frame3d(translation=Point3d(x=1, y=2, z=3),
+                   rotation=Rotation.from_euler(roll=0., pitch=0., yaw=0.))
 
 
 @pytest.fixture
-def frame2(frame1) -> CoordinateFrame:
-    frame2 = CoordinateFrame(translation=Point3d(x=3, y=3, z=3),
-                             rotation=Rotation.from_euler(roll=math.pi / 2, pitch=0., yaw=0.))
+def frame2(frame1) -> Frame3d:
+    frame2 = Frame3d(translation=Point3d(x=3, y=3, z=3),
+                     rotation=Rotation.from_euler(roll=math.pi / 2, pitch=0., yaw=0.))
     frame2.parent_frame = frame1
     return frame2
 
@@ -30,18 +30,18 @@ def pose(frame1) -> Pose3d:
     return pose
 
 
-def test_coordinate_frame_id_generation(frame1: CoordinateFrame, frame2: CoordinateFrame):
+def test_coordinate_frame_id_generation(frame1: Frame3d, frame2: Frame3d):
     assert frame1.id is not None
     assert frame2.id is not None
     assert frame1.id != frame2.id
 
 
-def test_coordinate_frame_deletion(frame2: CoordinateFrame):
+def test_coordinate_frame_deletion(frame2: Frame3d):
     frame2.delete()
     assert frame2.id not in coordinate_frame_registry
 
 
-def test_resolution(frame1: CoordinateFrame, frame2: CoordinateFrame, pose: Pose3d):
+def test_resolution(frame1: Frame3d, frame2: Frame3d, pose: Pose3d):
     assert frame1.resolve() == frame1
     assert pose.resolve(frame1) == pose
 
@@ -56,9 +56,9 @@ def test_resolution(frame1: CoordinateFrame, frame2: CoordinateFrame, pose: Pose
     assert frame2.resolve() == rel_frame_1 @ rel_frame_2
 
 
-def test_relative_poses(frame1: CoordinateFrame, frame2: CoordinateFrame, pose: Pose3d):
-    assert CoordinateFrame.common_frame(pose, frame1) == frame1
-    assert CoordinateFrame.common_frame(pose, frame2) == frame1
+def test_relative_poses(frame1: Frame3d, frame2: Frame3d, pose: Pose3d):
+    assert Frame3d.common_frame(pose, frame1) == frame1
+    assert Frame3d.common_frame(pose, frame2) == frame1
     pose_to_frame1 = pose.relative_to(frame1)
     assert poses_equal(pose_to_frame1, pose)
 
@@ -70,7 +70,7 @@ def test_relative_poses(frame1: CoordinateFrame, frame2: CoordinateFrame, pose: 
     assert poses_equal(frame1 @ frame2 @ pose_to_frame2, pose.resolve())
 
 
-def test_cycle_detection(frame1: CoordinateFrame, frame2: CoordinateFrame):
+def test_cycle_detection(frame1: Frame3d, frame2: Frame3d):
     with pytest.raises(ValueError):
         frame1.parent_frame = frame2
 

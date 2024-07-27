@@ -8,7 +8,7 @@ from typing import overload
 import cv2
 import numpy as np
 
-from ..geometry import CoordinateFrame, Point, Point3d, Pose3d, Rotation
+from ..geometry import Frame3d, Point, Point3d, Pose3d, Rotation
 from .image import Image, ImageSize
 
 
@@ -73,7 +73,7 @@ class Calibration:
                     f0: float,
                     rational_model: bool = False,
                     camera_model: CameraModel = CameraModel.PINHOLE,
-                    coordinate_frame: CoordinateFrame | None = None) -> Calibration:
+                    coordinate_frame: Frame3d | None = None) -> Calibration:
         """Estimate the camera calibration from corresponding world and image points.
 
         :param world_points: The observed points in 3D world coordinates.
@@ -167,14 +167,14 @@ class Calibration:
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 
     @overload
-    def project_to_image(self, world_coordinates: Point3d, coordinate_frame: CoordinateFrame |
+    def project_to_image(self, world_coordinates: Point3d, coordinate_frame: Frame3d |
                          None = None) -> Point | None: ...
 
     @overload
-    def project_to_image(self, world_coordinates: np.ndarray, coordinate_frame: CoordinateFrame |
+    def project_to_image(self, world_coordinates: np.ndarray, coordinate_frame: Frame3d |
                          None = None) -> np.ndarray: ...
 
-    def project_to_image(self, world_coordinates: Point3d | np.ndarray, coordinate_frame: CoordinateFrame |
+    def project_to_image(self, world_coordinates: Point3d | np.ndarray, coordinate_frame: Frame3d |
                          None = None) -> Point | np.ndarray | None:
         """Project a point in world coordinates to the image plane.
 

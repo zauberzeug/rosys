@@ -4,10 +4,10 @@ import math
 from nicegui import ui
 
 import rosys
-from rosys.geometry import CoordinateFrame, Point3d, Rotation
+from rosys.geometry import Frame3d, Point3d, Rotation
 
-blue_frame = CoordinateFrame(translation=Point3d(x=0, y=0, z=0.5), rotation=Rotation.zero())
-pink_frame = CoordinateFrame(translation=Point3d(x=0, y=0, z=0.75), rotation=Rotation.zero())
+blue_frame = Frame3d(translation=Point3d(x=0, y=0, z=0.5), rotation=Rotation.zero())
+pink_frame = Frame3d(translation=Point3d(x=0, y=0, z=0.75), rotation=Rotation.zero())
 pink_frame.parent_frame = blue_frame
 
 with ui.scene() as scene:
@@ -32,7 +32,7 @@ def update():
 rosys.on_repeat(update, interval=0.01)
 
 
-def set_parent(frame: CoordinateFrame | None) -> None:
+def set_parent(frame: Frame3d | None) -> None:
     pink_frame.parent_frame = frame
 
 

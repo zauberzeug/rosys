@@ -2,7 +2,7 @@ import copy
 
 import numpy as np
 
-from rosys.geometry import CoordinateFrame, Point3d, Rotation
+from rosys.geometry import Frame3d, Point3d, Rotation
 from rosys.testing import approx
 from rosys.vision import CalibratableCamera, Calibration
 from rosys.vision.calibration import CameraModel, OmnidirParameters
@@ -77,7 +77,7 @@ def test_calibration_with_custom_coordinate_frame():
     assert cam.calibration is not None
     image_size = cam.calibration.intrinsics.size
 
-    in_between_frame = CoordinateFrame(
+    in_between_frame = Frame3d(
         translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero())
     cam.calibration.extrinsics.parent_frame = in_between_frame
 
@@ -159,7 +159,7 @@ def test_projection_with_custom_coordinate_frame():
     cam, world_points = demo_data()
     assert cam.calibration is not None
 
-    in_between_frame = CoordinateFrame(
+    in_between_frame = Frame3d(
         translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero())
     cam.calibration.extrinsics.parent_frame = in_between_frame
 
@@ -174,7 +174,7 @@ def test_projection_from_one_frame_into_world_frame():
     cam, world_points = demo_data()
     assert cam.calibration is not None
 
-    in_between_frame = CoordinateFrame(
+    in_between_frame = Frame3d(
         translation=Point3d(x=1.0, y=-0.5, z=0.0), rotation=Rotation.zero())
     cam.calibration.extrinsics.parent_frame = in_between_frame
 
@@ -238,7 +238,7 @@ def test_array_projection_with_custom_coordinate_frame():
     cam, world_points = demo_data()
     assert cam.calibration is not None
 
-    in_between_frame = CoordinateFrame(
+    in_between_frame = Frame3d(
         translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero())
     cam.calibration.extrinsics.parent_frame = in_between_frame
 

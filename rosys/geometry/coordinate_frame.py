@@ -11,7 +11,7 @@ logger = logging.getLogger('rosys.geometry.coordinate_frame')
 
 
 @dataclass(slots=True, kw_only=True)
-class CoordinateFrame(Pose3d):
+class Frame3d(Pose3d):
     """A 3D coordinate frame based on a 3D pose.
 
     This is a simple wrapper around a Pose3d with an additional ID.
@@ -36,7 +36,7 @@ class CoordinateFrame(Pose3d):
 
     def _check_for_cycles(self) -> bool:
         """Checks for cycles in the parent_frame hierarchy."""
-        frame: CoordinateFrame | None = self
+        frame: Frame3d | None = self
         visited = set()
         while frame:
             if frame.id in visited:
@@ -47,7 +47,7 @@ class CoordinateFrame(Pose3d):
         return False
 
     @classmethod
-    def from_pose(cls, pose: Pose3d, id: str | None = None) -> CoordinateFrame:  # pylint: disable=redefined-builtin
+    def from_pose(cls, pose: Pose3d, id: str | None = None) -> Frame3d:  # pylint: disable=redefined-builtin
         """Creates a new frame from a given pose.
 
         :param pose: The pose of the new frame.
@@ -65,12 +65,12 @@ class CoordinateFrame(Pose3d):
                 logger.warning('Parent frame %s of %s was deleted', self.id, frame.id)
 
     @staticmethod
-    def common_frame(pose1: Pose3d | None, pose2: Pose3d | None) -> CoordinateFrame | None:
+    def common_frame(pose1: Pose3d | None, pose2: Pose3d | None) -> Frame3d | None:
         """Returns the common frame of a pair of poses or frames.
 
         :param pose1: The first pose or frame.
         :param pose2: The second pose or frame.
         """
-        frame1 = pose1 if isinstance(pose1, CoordinateFrame) else pose1.parent_frame if pose1 else None
-        frame2 = pose2 if isinstance(pose2, CoordinateFrame) else pose2.parent_frame if pose2 else None
-        return CoordinateFrame._find_common_frame(frame1, frame2)
+        frame1 = pose1 if isinstance(pose1, Frame3d) else pose1.parent_frame if pose1 else None
+        frame2 = pose2 if isinstance(pose2, Frame3d) else pose2.parent_frame if pose2 else None
+        return Frame3d._find_common_frame(frame1, frame2)

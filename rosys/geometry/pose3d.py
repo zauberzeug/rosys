@@ -11,7 +11,7 @@ from .point3d import Point3d
 from .rotation import Rotation
 
 if TYPE_CHECKING:
-    from .coordinate_frame import CoordinateFrame
+    from .coordinate_frame import Frame3d
 
 
 @dataclass(slots=True, kw_only=True)
@@ -51,11 +51,11 @@ class Pose3d:
         self._parent_frame_id = value
 
     @property
-    def parent_frame(self) -> CoordinateFrame | None:
+    def parent_frame(self) -> Frame3d | None:
         return coordinate_frame_registry[self.parent_frame_id] if self.parent_frame_id else None
 
     @parent_frame.setter
-    def parent_frame(self, value: CoordinateFrame | None) -> None:
+    def parent_frame(self, value: Frame3d | None) -> None:
         self.parent_frame_id = value.id if value else None
 
     def rotate(self, rotation: Rotation) -> Self:
@@ -66,7 +66,7 @@ class Pose3d:
         self.translation += translation
         return self
 
-    def resolve(self, up_to: CoordinateFrame | None = None) -> Pose3d:
+    def resolve(self, up_to: Frame3d | None = None) -> Pose3d:
         """Recursively resolves the pose to the given parent frame.
 
         :param up_to: The parent frame to resolve the pose to (default: ``None`` for the world frame)
@@ -87,7 +87,7 @@ class Pose3d:
         final_pose.parent_frame = up_to
         return final_pose
 
-    def transform_point(self, point: Point3d, source_frame: CoordinateFrame | None = None) -> Point3d:
+    def transform_point(self, point: Point3d, source_frame: Frame3d | None = None) -> Point3d:
         """Transforms the coordinates of a point from the source frame to the current frame.
 
         :param point: The point to transform.
@@ -100,7 +100,7 @@ class Pose3d:
         array = relative_pose.rotation.matrix.T @ (point.array - relative_pose.translation.array)
         return Point3d.from_tuple(array.tolist())
 
-    def transform_point_to(self, point: Point3d, target_frame: CoordinateFrame | None = None) -> Point3d:
+    def transform_point_to(self, point: Point3d, target_frame: Frame3d | None = None) -> Point3d:
         """Transforms the coordinates of a point from the current frame to the target frame.
 
         :param point: The point to transform.
@@ -113,7 +113,7 @@ class Pose3d:
         matrix = relative_pose.rotation.matrix @ point.tuple + relative_pose.translation.tuple
         return Point3d.from_tuple(matrix.tolist())
 
-    def relative_to(self, other: Pose3d, common_frame: CoordinateFrame | None = None) -> Pose3d:
+    def relative_to(self, other: Pose3d, common_frame: Frame3d | None = None) -> Pose3d:
         """Calculates the relative pose of this pose to another pose.
 
         :param other: The other pose.
@@ -125,7 +125,7 @@ class Pose3d:
         return resolved_other.inverse() @ resolved_self
 
     @staticmethod
-    def common_frame(pose1: Pose3d, pose2: Pose3d) -> CoordinateFrame | None:
+    def common_frame(pose1: Pose3d, pose2: Pose3d) -> Frame3d | None:
         """Finds the first common parent frame of two poses.
 
         :param pose1: The first pose.
@@ -134,7 +134,7 @@ class Pose3d:
         return Pose3d._find_common_frame(pose1.parent_frame, pose2.parent_frame)
 
     @staticmethod
-    def _find_common_frame(frame1: CoordinateFrame | None, frame2: CoordinateFrame | None) -> CoordinateFrame | None:
+    def _find_common_frame(frame1: Frame3d | None, frame2: Frame3d | None) -> Frame3d | None:
         """Finds the first common parent frame of two frames.
 
         :param frame1: The first frame.
