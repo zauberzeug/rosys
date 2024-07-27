@@ -30,11 +30,11 @@ def update():
     pink_frame.rotate(Rotation.from_euler(0, 0, 0.002))
 
     blue_pose = blue_frame.resolve()
-    blue_box.rotate(*blue_pose.rotation.euler)
+    blue_box.rotate_R(blue_pose.rotation.R)
     blue_box.move(*blue_pose.translation.tuple)
 
     pink_pose = pink_frame.resolve()
-    pink_box.rotate(*pink_pose.rotation.euler)
+    pink_box.rotate_R(pink_pose.rotation.R)
     pink_box.move(*pink_pose.translation.tuple)
 
     camera_pose = camera.calibration.extrinsics.resolve()
