@@ -1,5 +1,4 @@
 import copy
-import math
 
 from rosys.geometry import Point3d, Pose3d, Rotation
 from rosys.testing import approx, poses_equal
@@ -13,10 +12,12 @@ def test_inverse():
 
 
 def test_rotate():
+    rotation = Rotation.from_euler(roll=0.4, pitch=0.5, yaw=0.6)
     pose2 = copy.deepcopy(pose)
-    pose2.rotate(Rotation.from_euler(roll=0, pitch=0, yaw=math.pi / 2))
+    pose2.rotate(rotation)
     approx(pose.translation, pose2.translation)
 
     reference_point = Point3d(x=0, y=1, z=0)
-    approx(pose2.transform_point_to(reference_point, target_frame=pose).x,
-           -pose.transform_point_to(reference_point, target_frame=pose).y)
+
+    rotated_point = Point3d.from_tuple(rotation.matrix @ reference_point.array)
+    approx(pose2.transform_point_to(reference_point, target_frame=pose), rotated_point)
