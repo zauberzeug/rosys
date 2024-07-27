@@ -8,7 +8,7 @@ class CameraSceneObject(ui.scene.group):
 
     def __init__(self,
                  camera: CalibratableCamera, *,
-                 color: str = '#ffffff',
+                 color: str = '#333333',
                  px_per_m: float = 1000,
                  draw_name: bool = True,
                  ) -> None:
