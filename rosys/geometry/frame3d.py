@@ -66,7 +66,7 @@ class Frame3d(Pose3d):
 
     @staticmethod
     def common_frame(pose1: Pose3d | None, pose2: Pose3d | None) -> Frame3d | None:
-        """Returns the common frame of a pair of poses or frames.
+        """Returns the first common frame of a pair of poses or frames.
 
         :param pose1: The first pose or frame.
         :param pose2: The second pose or frame.
