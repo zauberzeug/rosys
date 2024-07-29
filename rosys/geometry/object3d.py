@@ -22,7 +22,7 @@ class Object3d(abc.ABC):
         elif target_frame:
             return self.transform_with(target_frame.world_pose.inverse())
         elif self.frame:
-            return self.transform_with(self.frame.pose)
+            return self.transform_with(self.frame.world_pose)
         else:
             return self
 
