@@ -6,14 +6,21 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from .frame3d import Frame3d
+from .object3d import Object3d
 from .point import Point
+from .pose3d import Pose3d
 
 
 @dataclass(slots=True, kw_only=True)
-class Point3d:
+class Point3d(Object3d):
     x: float
     y: float
     z: float
+
+    @classmethod
+    def zero(cls, *, frame: Frame3d | None = None) -> Point3d:
+        return cls(x=0, y=0, z=0, frame=frame)
 
     @staticmethod
     def from_tuple(t: Sequence[float]) -> Point3d:
@@ -47,3 +54,7 @@ class Point3d:
 
     def __sub__(self, other: Point3d) -> Point3d:
         return Point3d(x=self.x - other.x, y=self.y - other.y, z=self.z - other.z)
+
+    def transform_with(self, pose: Pose3d) -> Point3d:
+        """Transform this pose with another pose."""
+        return Point3d.from_tuple(np.dot(pose.rotation.R, self.array) + pose.translation.array)
