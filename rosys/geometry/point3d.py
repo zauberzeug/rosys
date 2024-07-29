@@ -3,13 +3,16 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from .frame3d import Frame3d
 from .object3d import Object3d
 from .point import Point
-from .pose3d import Pose3d
+
+if TYPE_CHECKING:
+    from .frame3d import Frame3d
+    from .pose3d import Pose3d
 
 
 @dataclass(slots=True, kw_only=True)

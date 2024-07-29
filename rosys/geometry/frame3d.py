@@ -16,7 +16,6 @@ class Frame3d:
     It guarantees that the frame is registered in the coordinate_frame_registry.
     """
     id: str
-    _pose: Pose3d
     _parent: Frame3d | None = None
 
     def __init__(self,
