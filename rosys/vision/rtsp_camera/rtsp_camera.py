@@ -37,10 +37,10 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.jovision_profile: int = jovision_profile
         self.ip: str | None = ip
 
-        self._register_parameter('fps', self.get_fps, self.set_fps,
-                                 min_value=1, max_value=30, step=1, default_value=fps)
         self._register_parameter('jovision_profile', self.get_jovision_profile, self.set_jovision_profile,
                                  min_value=1, max_value=2, step=1, default_value=jovision_profile)
+        self._register_parameter('fps', self.get_fps, self.set_fps,
+                                 min_value=1, max_value=30, step=1, default_value=fps)
 
     def to_dict(self) -> dict[str, Any]:
         return super().to_dict() | {
