@@ -66,7 +66,7 @@ class RtspDevice:
                 self.log.warning('[%s] Timeout while waiting for gstreamer process to terminate', self.mac)
             else:
                 self.log.debug('[%s] Successfully shut down process (code %s)',
-                               self.mac, self.capture_process.returncode)
+                               self.mac, self.capture_process.returncode if self.capture_process.returncode is not None else 'None')
                 self.capture_process = None
         if self.capture_task is not None and not self.capture_task.done():
             self.log.debug('[%s] Cancelling gstreamer task', self.mac)
