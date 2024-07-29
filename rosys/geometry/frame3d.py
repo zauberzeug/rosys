@@ -57,4 +57,4 @@ class Frame3d:
     @property
     def world_pose(self) -> Pose3d:
         """The pose of this frame relative to the world frame."""
-        return Pose3d.zero() if self.parent is None else self.parent.world_pose @ self.pose
+        return self.pose if self.parent is None else self.parent.world_pose @ self.pose
