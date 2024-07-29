@@ -13,10 +13,8 @@ class SimulatedCalibratableCamera(SimulatedCamera, CalibratableCamera):
 
 
 blue_frame = Frame3d(translation=Point3d(x=0, y=0, z=0.5), rotation=Rotation.zero())
-pink_frame = Frame3d(translation=Point3d(x=0, y=0, z=0.75), rotation=Rotation.zero())
-pink_frame.parent_frame = blue_frame
-camera = SimulatedCalibratableCamera.create_calibrated(id='Camera', z=0.5, roll=math.pi / 2)
-camera.calibration.extrinsics.parent_frame = pink_frame
+pink_frame = Frame3d(translation=Point3d(x=0, y=0, z=0.75), rotation=Rotation.zero(), parent_frame=blue_frame)
+camera = SimulatedCalibratableCamera.create_calibrated(id='Camera', z=0.5, roll=math.pi / 2, parent_frame=pink_frame)
 
 with ui.scene() as scene:
     blue_box = scene.box(width=1, height=1, depth=1).material(color='SteelBlue')

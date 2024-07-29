@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from .frame3d import Frame3d
 
 
-@dataclass(slots=True, kw_only=True)
+@dataclass(slots=True, init=False)
 class Pose3d:
     """A 3D pose consisting of a translation and a rotation.
 
@@ -24,6 +24,11 @@ class Pose3d:
     translation: Point3d
     rotation: Rotation
     _parent_frame_id: str | None = None
+
+    def __init__(self, translation: Point3d, rotation: Rotation, parent_frame: Frame3d | None = None) -> None:
+        self.translation = translation
+        self.rotation = rotation
+        self._parent_frame_id = parent_frame.id if parent_frame else None
 
     @classmethod
     def zero(cls) -> Pose3d:
@@ -66,106 +71,23 @@ class Pose3d:
         self.translation += translation
         return self
 
-    def resolve(self, up_to: Frame3d | None = None) -> Pose3d:
-        """Recursively resolves the pose to the given parent frame.
+    def relative_to(self, target_frame: Frame3d | None) -> Pose3d:
+        """Compute the pose relative to the given ancestor frame.
 
-        :param up_to: The parent frame to resolve the pose to (default: ``None`` for the world frame)
+        :param target_frame: The ancestor frame to resolve the pose to (default: ``None`` for the world frame)
         """
-        parent_frame = self.parent_frame
-        if parent_frame is None or parent_frame is up_to:
-            return self
+        world_self = self.parent_frame.world_pose @ self if self.parent_frame else self
+        world_target = target_frame.world_pose if target_frame else Pose3d.zero()
+        return world_target.inverse() @ world_self
 
-        final_pose: Pose3d = Pose3d(translation=self.translation, rotation=self.rotation)
-        current_frame: Pose3d | None = parent_frame
-        while current_frame != up_to:
-            if current_frame is None:
-                raise ValueError(f'Could not resolve pose to {up_to} (end of chain)')
-
-            final_pose = current_frame @ final_pose
-            current_frame = current_frame.parent_frame
-
-        final_pose.parent_frame = up_to
-        return final_pose
-
-    def transform_point(self, point: Point3d, source_frame: Frame3d | None = None) -> Point3d:
-        """Transforms the coordinates of a point from the source frame to the current frame.
-
-        :param point: The point to transform.
-        :param source_frame: The frame the point is currently in. (default: None = world frame)
-        """
-        if source_frame is None:
-            relative_pose = self.resolve(up_to=source_frame)
-        else:
-            relative_pose = self.relative_to(source_frame, common_frame=source_frame)
-        array = relative_pose.rotation.matrix.T @ (point.array - relative_pose.translation.array)
-        return Point3d.from_tuple(array.tolist())
-
-    def transform_point_to(self, point: Point3d, target_frame: Frame3d | None = None) -> Point3d:
-        """Transforms the coordinates of a point from the current frame to the target frame.
-
-        :param point: The point to transform.
-        :param target_frame: The frame to transform the point to. (default: None = world frame)
-        """
-        if target_frame is None:
-            relative_pose = self.resolve(up_to=target_frame)
-        else:
-            relative_pose = self.relative_to(target_frame, common_frame=target_frame)
-        matrix = relative_pose.rotation.matrix @ point.tuple + relative_pose.translation.tuple
-        return Point3d.from_tuple(matrix.tolist())
-
-    def relative_to(self, other: Pose3d, common_frame: Frame3d | None = None) -> Pose3d:
-        """Calculates the relative pose of this pose to another pose.
-
-        :param other: The other pose.
-        :param common_frame: The common parent frame to resolve the poses to. (default: None = world frame)
-        """
-        resolved_self = self.resolve(up_to=common_frame)
-        resolved_other = other.resolve(up_to=common_frame)
-
-        return resolved_other.inverse() @ resolved_self
-
-    @staticmethod
-    def common_frame(pose1: Pose3d, pose2: Pose3d) -> Frame3d | None:
-        """Finds the first common parent frame of two poses.
-
-        :param pose1: The first pose.
-        :param pose2: The second pose.
-        """
-        return Pose3d._find_common_frame(pose1.parent_frame, pose2.parent_frame)
-
-    @staticmethod
-    def _find_common_frame(frame1: Frame3d | None, frame2: Frame3d | None) -> Frame3d | None:
-        """Finds the first common parent frame of two frames.
-
-        :param frame1: The first frame.
-        :param frame2: The second frame.
-        """
-        chain2 = []
-        while frame2 is not None:
-            chain2.append(frame2)
-            frame2 = frame2.parent_frame
-        while frame1 is not None:
-            if frame1 in chain2:
-                return frame1
-            frame1 = frame1.parent_frame
-
-        return None
+    def resolve(self) -> Pose3d:
+        return self.relative_to(None)
 
     def inverse(self) -> Pose3d:
         return Pose3d.from_matrix(self.inverse_matrix)
 
     def __matmul__(self, other: Pose3d) -> Pose3d:
-        # if not self.parent_frame_id == other.parent_frame_id:
-        #     raise ValueError(
-        #         'Cannot multiply poses in different parent frames. Use relative_to() or resolve() to bring them into a common frame.')
-        new_pose = Pose3d.from_matrix(self.matrix @ other.matrix)
-        # new_pose.parent_frame_id = self.parent_frame_id
-        return new_pose
+        return Pose3d.from_matrix(self.matrix @ other.matrix)
 
     def __str__(self) -> str:
         return f'R = {self.rotation}\nT = {self.translation}'
-
-    def __eq__(self, value: object) -> bool:
-        if not isinstance(value, Pose3d):
-            return False
-        return self.translation == value.translation and self.rotation == value.rotation and self.parent_frame_id == value.parent_frame_id
