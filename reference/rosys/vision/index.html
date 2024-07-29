@@ -1279,7 +1279,7 @@ With <code>debug=True</code> camera IDs are shown (default: <code>False</code>).
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="typing.Generic">Generic</span>[<span title="rosys.vision.camera_provider.T">T</span>]</code>, <code><span title="rosys.rosys.persistence.PersistentModule">PersistentModule</span></code></p>
+              Bases: <code><span title="typing.Generic">Generic</span>[<span title="rosys.vision.camera_provider.T">T</span>]</code>, <code><span title="rosys.persistence.PersistentModule">PersistentModule</span></code></p>
 
 
       <p>A camera provider holds a dictionary of cameras and manages additions and removals.</p>
@@ -1466,7 +1466,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
 
 <a href="#rosys.vision.Detector" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">Detector</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">Detector</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -1506,7 +1506,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">detect</span><span class="p">(</span>
     <span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="p">,</span>
     <span class="n">autoupload</span><span class="p">:</span> <span class="n">Autoupload</span> <span class="o">=</span> <span class="n">Autoupload</span><span class="o">.</span><span class="n">FILTERED</span><span class="p">,</span>
-    <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[],</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Detections</span> <span class="o">|</span> <span class="kc">None</span>
 </code></pre></div>
 
@@ -1531,12 +1531,14 @@ This way respective events are emitted and consistency can be taken care of.</p>
   </span>
 
 <a href="#rosys.vision.Detector.upload" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">upload</span><span class="p">(</span><span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">[])</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">upload</span><span class="p">(</span>
+    <span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-      <p>Uploads the image to the Learning Loop. </p>
+      <p>Uploads the image to the Learning Loop.</p>
 <p>The <code>tags</code> are added to the image.
 If the image has detections, they are also uploaded.</p>
 
@@ -1577,7 +1579,7 @@ If the image has detections, they are also uploaded.</p>
 
 <a href="#rosys.vision.DetectorHardware" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">DetectorHardware</span><span class="p">(</span>
-    <span class="o">*</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8004</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="o">*</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8004</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -1624,7 +1626,7 @@ If the image has detections, they are also uploaded.</p>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">noise</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
     <span class="n">detection_delay</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">,</span>
-    <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -1715,7 +1717,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
     <span class="o">*</span><span class="p">,</span>
     <span class="n">frame_rate</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
     <span class="n">jovision_profile</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="n">network_interface</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">network_interface</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">auto_scan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span>
 </code></pre></div>

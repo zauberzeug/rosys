@@ -1431,10 +1431,10 @@ It displays buttons to control a given automator.</p>
 
 <a href="#rosys.automation.Automator" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">Automator</span><span class="p">(</span>
-    <span class="n">steerer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Steerer</span><span class="p">],</span>
+    <span class="n">steerer</span><span class="p">:</span> <span class="n">Steerer</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">default_automation</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">on_interrupt</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">default_automation</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">on_interrupt</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -1445,7 +1445,7 @@ It displays buttons to control a given automator.</p>
 <p>See <a href="https://rosys.io/examples/click-and-drive/">Click-and-drive</a> for a simple example of an automation.</p>
 <p><em>steerer</em>: If provided, manually steering the robot will pause a currently running automation.</p>
 <p><em>default_automation</em>: If provided, it allows the automator to start a new automation without passing an automation
-(e.g. via an "Play"-button like offered by the <a href="https://rosys.io/reference/rosys/automation/#rosys.automation.automation_controls">automation controls</a>). 
+(e.g. via an "Play"-button like offered by the <a href="https://rosys.io/reference/rosys/automation/#rosys.automation.automation_controls">automation controls</a>).
 The passed function should return a new coroutine on every call (see <a href="https://rosys.io/examples/play-pause-stop/">Play-pause-stop</a> example).</p>
 <p><em>on_interrupt</em>: Optional callback that will be called when an automation pauses or stops (the cause is provided as string parameter).</p>
 
@@ -1575,9 +1575,7 @@ It can be disabled by calling <code>disable()</code>.</p>
 
 <a href="#rosys.automation.Automator.start" class="headerlink" title="Permanent link">&para;</a></h3>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">start</span><span class="p">(</span>
-    <span class="n">coro</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Coroutine</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="o">*</span><span class="p">,</span>
-    <span class="n">paused</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">coro</span><span class="p">:</span> <span class="n">Coroutine</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">paused</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 

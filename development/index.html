@@ -1304,43 +1304,42 @@ To keep the log lines from getting too long, you can create a log filter which c
     <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">record</span><span class="p">:</span> <span class="n">logging</span><span class="o">.</span><span class="n">LogRecord</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="n">pathname</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">pathname</span>
 <span class="hll">        <span class="n">record</span><span class="o">.</span><span class="n">relative_path</span> <span class="o">=</span> <span class="kc">None</span>
-</span>        <span class="n">abs_sys_paths</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">,</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
+</span>        <span class="n">abs_sys_paths</span> <span class="o">=</span> <span class="nb">map</span><span class="p">(</span><span class="n">cast</span><span class="p">(</span><span class="n">Callable</span><span class="p">[[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">),</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">abs_sys_paths</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span><span class="p">,</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>  <span class="c1"># longer paths first</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">):</span>
-                <span class="n">path</span> <span class="o">+=</span> <span class="n">os</span><span class="o">.</span><span class="n">sep</span>
-            <span class="k">if</span> <span class="n">pathname</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
-<span class="hll">                <span class="n">record</span><span class="o">.</span><span class="n">relative_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">pathname</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span>
-</span>                <span class="k">break</span>
-        <span class="k">return</span> <span class="kc">True</span>
+            <span class="n">path_</span> <span class="o">=</span> <span class="n">path</span> <span class="k">if</span> <span class="n">path</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">sep</span><span class="p">)</span> <span class="k">else</span> <span class="n">path</span> <span class="o">+</span> <span class="n">os</span><span class="o">.</span><span class="n">sep</span>
+            <span class="k">if</span> <span class="n">pathname</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">path_</span><span class="p">):</span>
+                <span class="n">record</span><span class="o">.</span><span class="n">relative_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">relpath</span><span class="p">(</span><span class="n">pathname</span><span class="p">,</span> <span class="n">path_</span><span class="p">)</span>
+<span class="hll">                <span class="k">break</span>
+</span>        <span class="k">return</span> <span class="kc">True</span>
 </code></pre></div>
 <p>You need to register the filter and apply it in the handler.
 Then you can change the format for the formatter:</p>
-<div class="highlight"><pre><span></span><code>    <span class="s1">&#39;filters&#39;</span><span class="p">:</span> <span class="p">{</span>
-<span class="hll">        <span class="s1">&#39;package_path_filter&#39;</span><span class="p">:</span> <span class="p">{</span>
+<div class="highlight"><pre><span></span><code>    <span class="p">},</span>
+<span class="hll">    <span class="s1">&#39;filters&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span><span class="hll">        <span class="s1">&#39;package_path_filter&#39;</span><span class="p">:</span> <span class="p">{</span>
 </span><span class="hll">            <span class="s1">&#39;()&#39;</span><span class="p">:</span> <span class="n">PackagePathFilter</span><span class="p">,</span>
-</span><span class="hll">        <span class="p">},</span>
-</span>    <span class="p">},</span>
+</span>        <span class="p">},</span>
+    <span class="p">},</span>
     <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">{</span>
         <span class="s1">&#39;console&#39;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="s1">&#39;logging.StreamHandler&#39;</span><span class="p">,</span>
-<span class="hll">            <span class="s1">&#39;filters&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;package_path_filter&#39;</span><span class="p">],</span>
-</span>            <span class="s1">&#39;formatter&#39;</span><span class="p">:</span> <span class="s1">&#39;default&#39;</span><span class="p">,</span>
+<span class="hll">            <span class="s1">&#39;class&#39;</span><span class="p">:</span> <span class="s1">&#39;logging.StreamHandler&#39;</span><span class="p">,</span>
+</span>            <span class="s1">&#39;filters&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;package_path_filter&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;formatter&#39;</span><span class="p">:</span> <span class="s1">&#39;default&#39;</span><span class="p">,</span>
             <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;DEBUG&#39;</span><span class="p">,</span>
             <span class="s1">&#39;stream&#39;</span><span class="p">:</span> <span class="s1">&#39;ext://sys.stdout&#39;</span>
         <span class="p">},</span>
     <span class="p">},</span>
     <span class="s1">&#39;loggers&#39;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="s1">&#39;&#39;</span><span class="p">:</span> <span class="p">{</span>  <span class="c1"># this root logger is used for everything without a specific logger</span>
-<span class="hll">            <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;console&#39;</span><span class="p">],</span>
-</span>            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;WARN&#39;</span><span class="p">,</span>
+<span class="hll">        <span class="s1">&#39;&#39;</span><span class="p">:</span> <span class="p">{</span>  <span class="c1"># this root logger is used for everything without a specific logger</span>
+</span>            <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;console&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;WARN&#39;</span><span class="p">,</span>
             <span class="s1">&#39;propagate&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
         <span class="p">},</span>
-        <span class="s1">&#39;rosys&#39;</span><span class="p">:</span> <span class="p">{</span>
-<span class="hll">            <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;console&#39;</span><span class="p">],</span>
-</span>            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;INFO&#39;</span><span class="p">,</span>
+<span class="hll">        <span class="s1">&#39;rosys&#39;</span><span class="p">:</span> <span class="p">{</span>
+</span>            <span class="s1">&#39;handlers&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;console&#39;</span><span class="p">],</span>
+            <span class="s1">&#39;level&#39;</span><span class="p">:</span> <span class="s1">&#39;INFO&#39;</span><span class="p">,</span>
             <span class="s1">&#39;propagate&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
         <span class="p">},</span>
-    <span class="p">},</span>
 </code></pre></div>
 <p>Log output then looks like this:</p>
 <div class="highlight"><pre><span></span><code>2022-01-11 06:51:00.319 [DEBUG] rosys/runtime.py:78: startup completed
@@ -1356,22 +1355,23 @@ To install them, run</p>
 </div>
 <p>You can add a <code>profile</code> decorator to expensive functions and add a profiler button to your UI:</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
-<span class="kn">import</span> <span class="nn">rosys</span>
 <span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
+
+<span class="kn">import</span> <span class="nn">rosys</span>
 <span class="kn">from</span> <span class="nn">rosys.analysis</span> <span class="kn">import</span> <span class="n">profile_button</span><span class="p">,</span> <span class="n">profiling</span>
 
-
-<span class="hll"><span class="nd">@profiling</span><span class="o">.</span><span class="n">profile</span>
-</span><span class="k">def</span> <span class="nf">compute</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="hll">
+</span><span class="nd">@profiling</span><span class="o">.</span><span class="n">profile</span>
+<span class="k">def</span> <span class="nf">compute</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="n">s</span> <span class="o">=</span> <span class="mi">0</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1_000_000</span><span class="p">):</span>
         <span class="n">s</span> <span class="o">+=</span> <span class="n">i</span><span class="o">**</span><span class="mi">2</span>
     <span class="n">ui</span><span class="o">.</span><span class="n">notify</span><span class="p">(</span><span class="n">s</span><span class="p">)</span>
 
 
-<span class="n">rosys</span><span class="o">.</span><span class="n">on_repeat</span><span class="p">(</span><span class="n">compute</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
-<span class="hll"><span class="n">profile_button</span><span class="p">()</span>
-</span>
+<span class="hll"><span class="n">rosys</span><span class="o">.</span><span class="n">on_repeat</span><span class="p">(</span><span class="n">compute</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+</span><span class="n">profile_button</span><span class="p">()</span>
+
 <span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </code></pre></div>
 <p>When the button is pressed, the profiler <a href="https://github.com/sumerc/yappi">yappi</a> will start recording data.
@@ -1392,35 +1392,36 @@ The UI element <code>track.ui()</code> will show the stack of functions that are
 <span class="kn">import</span> <span class="nn">asyncio</span>
 
 <span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
+
 <span class="kn">from</span> <span class="nn">rosys.analysis</span> <span class="kn">import</span> <span class="n">track</span>
 
-
-<span class="hll"><span class="nd">@track</span>
-</span><span class="k">async</span> <span class="k">def</span> <span class="nf">do_A</span><span class="p">():</span>
+<span class="hll">
+</span><span class="nd">@track</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">do_A</span><span class="p">():</span>
     <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-
-<span class="hll"><span class="nd">@track</span>
-</span><span class="k">async</span> <span class="k">def</span> <span class="nf">do_B</span><span class="p">():</span>
+<span class="hll">
+</span><span class="nd">@track</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">do_B</span><span class="p">():</span>
     <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 
-
-<span class="hll"><span class="nd">@track</span>
-</span><span class="k">async</span> <span class="k">def</span> <span class="nf">do_something</span><span class="p">():</span>
+<span class="hll">
+</span><span class="nd">@track</span>
+<span class="k">async</span> <span class="k">def</span> <span class="nf">do_something</span><span class="p">():</span>
     <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">):</span>
         <span class="k">await</span> <span class="n">do_A</span><span class="p">()</span>
         <span class="k">await</span> <span class="n">do_B</span><span class="p">()</span>
 
 <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;Do something&#39;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">do_something</span><span class="p">)</span>
+<span class="hll">
+</span><span class="n">track</span><span class="o">.</span><span class="n">ui</span><span class="p">()</span>
 
-<span class="hll"><span class="n">track</span><span class="o">.</span><span class="n">ui</span><span class="p">()</span>
-</span>
 <span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
 </code></pre></div>
 <h2 id="continuous-build">Continuous Build<a class="headerlink" href="#continuous-build" title="Permanent link">&para;</a></h2>
 <p>We run our continuous integration with GitHub Actions.
-For each commit the pytests are executed.</p>
+For each commit mypy and pylint scan the codebase and the pytests are executed.</p>
 <h2 id="releases">Releases<a class="headerlink" href="#releases" title="Permanent link">&para;</a></h2>
 <p>We publish releases using tags and milestones on GitHub. In the Release notes we describe our changes.
 To create a new release perform the following steps:</p>

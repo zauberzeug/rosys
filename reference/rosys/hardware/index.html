@@ -2009,7 +2009,7 @@
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">BmsHardware</span><span class="p">(</span>
     <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">expander</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ExpanderHardware</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">expander</span><span class="p">:</span> <span class="n">ExpanderHardware</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bms&quot;</span><span class="p">,</span>
     <span class="n">rx_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">26</span><span class="p">,</span>
     <span class="n">tx_pin</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">27</span><span class="p">,</span>
@@ -2057,8 +2057,8 @@
 
 <a href="#rosys.hardware.BmsSimulation" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">BmsSimulation</span><span class="p">(</span>
-    <span class="n">is_charging</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[],</span> <span class="nb">bool</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">fixed_voltage</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">is_charging</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[],</span> <span class="nb">bool</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">fixed_voltage</span><span class="p">:</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -2099,7 +2099,7 @@
 
 
 <a href="#rosys.hardware.Bumper" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">Bumper</span><span class="p">(</span><span class="n">estop</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EStop</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">Bumper</span><span class="p">(</span><span class="n">estop</span><span class="p">:</span> <span class="n">EStop</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -2157,10 +2157,10 @@
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">BumperHardware</span><span class="p">(</span>
     <span class="n">robot_brain</span><span class="p">:</span> <span class="n">RobotBrain</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">expander</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ExpanderHardware</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">expander</span><span class="p">:</span> <span class="n">ExpanderHardware</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;bumper&quot;</span><span class="p">,</span>
     <span class="n">pins</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
-    <span class="n">estop</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EStop</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">estop</span><span class="p">:</span> <span class="n">EStop</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -2218,7 +2218,7 @@ If an e-stop is provided, the module will not trigger bumpers if the e-stop is a
 
 
 <a href="#rosys.hardware.BumperSimulation" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">BumperSimulation</span><span class="p">(</span><span class="n">estop</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">EStop</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">BumperSimulation</span><span class="p">(</span><span class="n">estop</span><span class="p">:</span> <span class="n">EStop</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
