@@ -10,8 +10,8 @@ class CameraSceneObject(ui.scene.group):
                  camera: CalibratableCamera, *,
                  color: str = '#333333',
                  px_per_m: float = 1000,
-                 draw_name: bool = True,
-                 draw_axes: bool = True,
+                 show_name: bool = True,
+                 show_axes: bool = True,
                  ) -> None:
         super().__init__()
         with self:
@@ -20,11 +20,11 @@ class CameraSceneObject(ui.scene.group):
                     .rotate(-np.pi / 2, 0, np.pi / 4) \
                     .move(z=0.5) \
                     .material(color)
-                if draw_axes:
+                if show_axes:
                     ui.scene.line([0, 0, 0], [0.5, 0, 0]).material('#ff0000')
                     ui.scene.line([0, 0, 0], [0, 0.5, 0]).material('#00ff00')
                     ui.scene.line([0, 0, 0], [0, 0, 0.5]).material('#0000ff')
-                if draw_name:
+                if show_name:
                     ui.scene.text(camera.name)
             if camera.calibration is not None:
                 pyramid.scale(

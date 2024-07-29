@@ -15,7 +15,7 @@ class SimulatedCalibratableCamera(SimulatedCamera, CalibratableCamera):
 blue_frame = Frame3d(translation=Point3d(x=0, y=0, z=0.5), rotation=Rotation.zero())
 pink_frame = Frame3d(translation=Point3d(x=0, y=0, z=0.75), rotation=Rotation.zero())
 pink_frame.parent_frame = blue_frame
-camera = SimulatedCalibratableCamera.create_calibrated(id='Camera')
+camera = SimulatedCalibratableCamera.create_calibrated(id='Camera', z=0.5, roll=math.pi / 2)
 camera.calibration.extrinsics.parent_frame = pink_frame
 
 with ui.scene() as scene:
@@ -27,7 +27,7 @@ with ui.scene() as scene:
 def update():
     blue_frame.translation.x = math.cos(0.5 * rosys.time())
     blue_frame.translation.y = math.sin(0.5 * rosys.time())
-    pink_frame.rotate(Rotation.from_euler(0, 0, 0.002))
+    pink_frame.rotate(Rotation.from_euler(0, 0, 0.005))
 
     blue_pose = blue_frame.resolve()
     blue_box.rotate_R(blue_pose.rotation.R)
