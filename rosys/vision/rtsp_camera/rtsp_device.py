@@ -17,7 +17,6 @@ class RtspDevice:
 
     def __init__(self, mac: str, ip: str, jovision_profile: int) -> None:
         self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device')
-        self.log.setLevel(logging.DEBUG)
 
         self.mac = mac
         self.ip = ip
