@@ -18,7 +18,7 @@ class Object3d(abc.ABC):
     def relative_to(self, target_frame: Frame3d | None) -> Self:
         """Compute the object location relative to the given frame"""
         if target_frame and self.frame:
-            return self.transform_with(target_frame.world_pose.inverse() @ self.frame.pose)
+            return self.transform_with(target_frame.world_pose.inverse() @ self.frame.world_pose)
         elif target_frame:
             return self.transform_with(target_frame.world_pose.inverse())
         elif self.frame:

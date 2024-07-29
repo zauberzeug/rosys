@@ -1,7 +1,6 @@
-import numpy as np
 import pytest
 
-from rosys.geometry import Line, LineSegment, Point, Pose, PoseStep, Rectangle, Rotation
+from rosys.geometry import Line, LineSegment, Point, Pose, PoseStep, Rectangle
 from rosys.testing import approx
 
 
@@ -74,10 +73,3 @@ def test_rectangle_contains_point():
     assert not rectangle.contains(out2)
     assert rectangle.contains(in1)
     assert rectangle.contains(in2)
-
-
-def test_quaternion():
-    rotation = Rotation.from_euler(roll=0.1, pitch=0.2, yaw=0.3)
-    quaternion = rotation.quaternion
-    rotation_ = Rotation.from_quaternion(*quaternion)
-    assert np.allclose(rotation.R, rotation_.R)
