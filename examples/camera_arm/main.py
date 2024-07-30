@@ -20,8 +20,9 @@ class Link(persistence.PersistentModule):
 
     def __init__(self, name: str, parent_frame: Frame3d, *, length: float) -> None:
         super().__init__(persistence_key=name)
-        self.base = Frame3d(Pose3d.zero(), parent=parent_frame)
-        self.end = Frame3d(Pose3d(translation=Point3d(x=0, y=0, z=length), rotation=Rotation.zero()), parent=self.base)
+        self.base = Frame3d(Pose3d.zero(), parent=parent_frame, id=f'{name}_base')
+        self.end = Frame3d(Pose3d(translation=Point3d(x=0, y=0, z=length), rotation=Rotation.zero()),
+                           parent=self.base, id=f'{name}_end')
         self.length = length
 
     def pitch(self, angle: float) -> None:
@@ -53,8 +54,8 @@ class Cam(persistence.PersistentModule):
         self.pose = persistence.from_dict(Pose3d, data['pose'])
 
 
-Link.USE_PERSISTENCE = False
-Cam.USE_PERSISTENCE = False
+# Link.USE_PERSISTENCE = False
+# Cam.USE_PERSISTENCE = False
 
 robot_frame = Frame3d(pose=Pose3d.zero())
 anchor_frame = Frame3d(pose=Pose3d(translation=Point3d(x=0, y=0, z=0.3), rotation=Rotation.zero()), parent=robot_frame)

@@ -1,11 +1,9 @@
-from .frame3d import Frame3d
 from .line import Line
 from .line_segment import LineSegment
+from .object3d import Frame3d, Point3d, Pose3d
 from .point import Point
-from .point3d import Point3d
 from .polygon import Polygon
 from .pose import Pose, PoseStep
-from .pose3d import Pose3d
 from .prism import Prism
 from .rectangle import Rectangle
 from .rotation import Rotation
