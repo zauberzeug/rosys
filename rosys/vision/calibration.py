@@ -166,14 +166,14 @@ class Calibration:
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 
     @overload
-    def project_to_image(self, world_coordinates: Point3d, target_frame: Frame3d |
+    def project_to_image(self, world_coordinates: Point3d, frame: Frame3d |
                          None = None) -> Point | None: ...
 
     @overload
-    def project_to_image(self, world_coordinates: np.ndarray, target_frame: Frame3d |
+    def project_to_image(self, world_coordinates: np.ndarray, frame: Frame3d |
                          None = None) -> np.ndarray: ...
 
-    def project_to_image(self, world_coordinates: Point3d | np.ndarray, target_frame: Frame3d |
+    def project_to_image(self, world_coordinates: Point3d | np.ndarray, frame: Frame3d |
                          None = None) -> Point | np.ndarray | None:
         """Project a point in world coordinates to the image plane.
 
@@ -181,12 +181,12 @@ class Calibration:
         """
         if isinstance(world_coordinates, Point3d):
             world_array = np.array([world_coordinates.tuple], dtype=np.float32)
-            image_array = self.project_to_image(world_array, target_frame=target_frame)
+            image_array = self.project_to_image(world_array, frame=frame)
             if np.isnan(image_array).any():
                 return None
             return Point(x=image_array[0, 0], y=image_array[0, 1])  # pylint: disable=unsubscriptable-object
 
-        world_extrinsics = self.extrinsics.relative_to(target_frame)
+        world_extrinsics = self.extrinsics.relative_to(frame)
         R = world_extrinsics.rotation.matrix
         Rod = cv2.Rodrigues(R.T)[0]
         t = -R.T @ world_extrinsics.translation.tuple
