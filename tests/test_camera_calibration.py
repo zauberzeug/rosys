@@ -176,10 +176,10 @@ def test_projection_from_one_frame_into_world_frame():
     cam.calibration.extrinsics.frame = in_between_frame
 
     # transform world points into in-between frame
-    world_points_in_frame = [p.transform_with(in_between_frame.pose) for p in world_points]
+    world_points_in_frame = [p.relative_to(in_between_frame) for p in world_points]
 
     for world_point, frame_point in zip(world_points, world_points_in_frame, strict=True):
-        image_point_from_frame = cam.calibration.project_to_image(frame_point, target_frame=in_between_frame)
+        image_point_from_frame = cam.calibration.project_to_image(frame_point, frame=in_between_frame)
         assert image_point_from_frame is not None
         image_point_from_world = cam.calibration.project_to_image(world_point)
         assert image_point_from_world is not None
