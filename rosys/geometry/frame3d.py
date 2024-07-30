@@ -19,17 +19,18 @@ class Frame3d:
     _parent: Frame3d | None = None
 
     def __init__(self,
-                 pose: Pose3d,
+                 pose: Pose3d | None = None,
                  parent: Frame3d | None = None,
                  id: str | None = None,  # pylint: disable=redefined-builtin
                  ) -> None:
         self.id = id or str(uuid4())
-        self.pose = pose
+        if pose is not None:
+            self.pose = pose
         self.parent = parent
 
     @property
     def pose(self) -> Pose3d:
-        return registry[self.id]
+        return registry.get(self.id) or Pose3d.zero()
 
     @pose.setter
     def pose(self, value: Pose3d) -> None:
