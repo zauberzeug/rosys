@@ -4,13 +4,12 @@ import abc
 import math
 from collections import defaultdict
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from uuid import uuid4
 
 import numpy as np
 from typing_extensions import Self
 
-from .. import persistence
 from .point import Point
 from .rotation import Rotation
 
@@ -23,17 +22,14 @@ class Frame3d:
     It guarantees that the frame is registered in the coordinate_frame_registry.
     """
     id: str
-    _parent: Frame3d | None = field(default=None, metadata=persistence.exclude, init=False)
 
     def __init__(self,
                  pose: Pose3d | None = None,
-                 parent: Frame3d | None = None,
                  id: str | None = None,  # pylint: disable=redefined-builtin
                  ) -> None:
         self.id = id or str(uuid4())
         if pose is not None:
             self.pose = pose
-        self.parent = parent
 
     @property
     def pose(self) -> Pose3d:
@@ -43,29 +39,20 @@ class Frame3d:
     def pose(self, value: Pose3d) -> None:
         registry[self.id] = value
 
-    @property
-    def parent(self) -> Frame3d | None:
-        return self._parent
-
-    @parent.setter
-    def parent(self, value: Frame3d | None) -> None:
-        self._parent = value
-        self._check_for_cycles()
-
-    def _check_for_cycles(self) -> None:
-        """Checks for cycles in the frame hierarchy."""
-        frame: Frame3d = self
-        visited = {self.id}
-        while frame.parent:
-            frame = frame.parent
-            if frame.id in visited:
-                raise ValueError('Setting parent frame would create a cycle in the frame hierarchy')
-            visited.add(frame.id)
+    # def _check_for_cycles(self) -> None:
+    #     """Checks for cycles in the frame hierarchy."""
+    #     frame: Frame3d = self
+    #     visited = {self.id}
+    #     while frame.parent:
+    #         frame = frame.parent
+    #         if frame.id in visited:
+    #             raise ValueError('Setting parent frame would create a cycle in the frame hierarchy')
+    #         visited.add(frame.id)
 
     @property
     def world_pose(self) -> Pose3d:
         """The pose of this frame relative to the world frame."""
-        return self.pose if self.parent is None else self.parent.world_pose @ self.pose
+        return self.pose.resolve()
 
 
 @dataclass(slots=True, kw_only=True)
