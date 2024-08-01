@@ -16,6 +16,7 @@ from nicegui import Client, app, background_tasks, ui
 
 from . import event, run
 from .config import Config
+from .geometry.object3d import pose_registry
 from .helpers import invoke, is_stopping
 from .helpers import is_test as is_test_
 from .persistence.registry import backup, restore
@@ -286,6 +287,7 @@ def reset_after_test() -> None:
     _state.startup_finished = False
     shutdown_handlers.clear()
     event.reset()
+    pose_registry.clear()
 
     register_base_startup_handlers()
 

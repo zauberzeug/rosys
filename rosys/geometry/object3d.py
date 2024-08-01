@@ -2,10 +2,8 @@ from __future__ import annotations
 
 import abc
 import math
-from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
-from uuid import uuid4
 
 import numpy as np
 from typing_extensions import Self
@@ -13,62 +11,33 @@ from typing_extensions import Self
 from .point import Point
 from .rotation import Rotation
 
-
-@dataclass(slots=True, init=False)
-class Frame3d:
-    """A 3D coordinate frame based on a 3D pose.
-
-    This is a simple wrapper around a Pose3d with an additional ID.
-    It guarantees that the frame is registered in the coordinate_frame_registry.
-    """
-    id: str
-
-    def __init__(self,
-                 pose: Pose3d | None = None,
-                 id: str | None = None,  # pylint: disable=redefined-builtin
-                 ) -> None:
-        self.id = id or str(uuid4())
-        if pose is not None:
-            self.pose = pose
-
-    @property
-    def pose(self) -> Pose3d:
-        return registry[self.id]
-
-    @pose.setter
-    def pose(self, value: Pose3d) -> None:
-        registry[self.id] = value
-
-    # def _check_for_cycles(self) -> None:
-    #     """Checks for cycles in the frame hierarchy."""
-    #     frame: Frame3d = self
-    #     visited = {self.id}
-    #     while frame.parent:
-    #         frame = frame.parent
-    #         if frame.id in visited:
-    #             raise ValueError('Setting parent frame would create a cycle in the frame hierarchy')
-    #         visited.add(frame.id)
-
-    @property
-    def world_pose(self) -> Pose3d:
-        """The pose of this frame relative to the world frame."""
-        return self.pose.resolve()
+pose_registry: dict[str, Pose3d] = {}
 
 
 @dataclass(slots=True, kw_only=True)
 class Object3d(abc.ABC):
-    frame: Frame3d | None = None
+    frame_id: str | None = None
 
-    def relative_to(self, target_frame: Frame3d | None) -> Self:
-        """Compute the object location relative to the given frame"""
-        if target_frame and self.frame:
-            return self.transform_with(target_frame.world_pose.inverse() @ self.frame.world_pose)
-        elif target_frame:
-            return self.transform_with(target_frame.world_pose.inverse())
-        elif self.frame:
-            return self.transform_with(self.frame.world_pose)
-        else:
+    def in_frame(self, value: Pose3d | str | None) -> Self:
+        if isinstance(value, str) or value is None:
+            self.frame_id = value
             return self
+        for frame_id, pose in pose_registry.items():
+            if pose == value:
+                self.frame_id = frame_id
+                return self
+        raise ValueError(f'Frame "{value}" not found')
+
+    def relative_to(self, target_frame: Pose3d | str | None) -> Self:
+        """Compute the object location relative to the given frame"""
+        if not self.frame_id and not target_frame:
+            return self
+        if isinstance(target_frame, str):
+            target_frame = pose_registry[target_frame]
+        else:
+            target_frame = target_frame or Pose3d.zero()
+        source_frame = pose_registry[self.frame_id] if self.frame_id is not None else Pose3d.zero()
+        return self.transform_with(target_frame.resolve().inverse() @ source_frame.resolve())
 
     def resolve(self) -> Self:
         """Compute the object location relative to the world frame."""
@@ -88,16 +57,26 @@ class Pose3d(Object3d):
     """
     translation: Point3d
     rotation: Rotation
+    id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.id is not None:
+            self.as_frame(self.id)
+
+    def as_frame(self, frame_id: str) -> Pose3d:
+        """Register this pose as a frame."""
+        self.id = frame_id
+        pose_registry[frame_id] = self
+        return self
 
     @classmethod
-    def zero(cls, *, frame: Frame3d | None = None) -> Pose3d:
-        return cls(translation=Point3d(x=0, y=0, z=0), rotation=Rotation.zero(), frame=frame)
+    def zero(cls) -> Pose3d:
+        return cls(translation=Point3d(x=0, y=0, z=0), rotation=Rotation.zero())
 
     @classmethod
-    def from_matrix(cls, M: np.ndarray, *, frame: Frame3d | None = None) -> Pose3d:
+    def from_matrix(cls, M: np.ndarray) -> Pose3d:
         return cls(translation=Point3d(x=M[0, 3] / M[3, 3], y=M[1, 3] / M[3, 3], z=M[2, 3] / M[3, 3]),
-                   rotation=Rotation(R=(M[:3, :3] / M[3, 3]).tolist()),
-                   frame=frame)
+                   rotation=Rotation(R=(M[:3, :3] / M[3, 3]).tolist()))
 
     @property
     def matrix(self) -> np.ndarray:
@@ -128,8 +107,8 @@ class Point3d(Object3d):
     z: float
 
     @classmethod
-    def zero(cls, *, frame: Frame3d | None = None) -> Point3d:
-        return cls(x=0, y=0, z=0, frame=frame)
+    def zero(cls) -> Point3d:
+        return cls(x=0, y=0, z=0)
 
     @staticmethod
     def from_tuple(t: Sequence[float]) -> Point3d:
@@ -167,6 +146,3 @@ class Point3d(Object3d):
     def transform_with(self, pose: Pose3d) -> Point3d:
         """Transform this pose with another pose."""
         return Point3d.from_tuple(np.dot(pose.rotation.R, self.array) + pose.translation.array)
-
-
-registry: defaultdict[str, Pose3d] = defaultdict(Pose3d.zero)

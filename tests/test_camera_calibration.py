@@ -2,7 +2,8 @@ import copy
 
 import numpy as np
 
-from rosys.geometry import Frame3d, Point3d, Pose3d, Rotation
+from rosys.geometry import Point3d, Pose3d, Rotation
+from rosys.geometry.object3d import pose_registry
 from rosys.testing import approx
 from rosys.vision import CalibratableCamera, Calibration
 from rosys.vision.calibration import CameraModel, OmnidirParameters
@@ -77,8 +78,9 @@ def test_calibration_with_custom_coordinate_frame():
     assert cam.calibration is not None
     image_size = cam.calibration.intrinsics.size
 
-    in_between_frame = Frame3d(pose=Pose3d(translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero()))
-    cam.calibration.extrinsics.frame = in_between_frame
+    pose_registry.clear()
+    cam_frame = Pose3d(translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero()).as_frame('cam')
+    cam.calibration.extrinsics.in_frame(cam_frame)
 
     image_points = [cam.calibration.project_to_image(p) for p in world_points]
     assert not any(p is None for p in image_points)
@@ -158,8 +160,9 @@ def test_projection_with_custom_coordinate_frame():
     cam, world_points = demo_data()
     assert cam.calibration is not None
 
-    in_between_frame = Frame3d(pose=Pose3d(translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero()))
-    cam.calibration.extrinsics.frame = in_between_frame
+    pose_registry.clear()
+    cam_frame = Pose3d(translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero()).as_frame('cam')
+    cam.calibration.extrinsics.in_frame(cam_frame)
 
     for world_point in world_points:
         image_point = cam.calibration.project_to_image(world_point)
@@ -172,14 +175,15 @@ def test_projection_from_one_frame_into_world_frame():
     cam, world_points = demo_data()
     assert cam.calibration is not None
 
-    in_between_frame = Frame3d(pose=Pose3d(translation=Point3d(x=1.0, y=-0.5, z=0.0), rotation=Rotation.zero()))
-    cam.calibration.extrinsics.frame = in_between_frame
+    pose_registry.clear()
+    cam_frame = Pose3d(translation=Point3d(x=1.0, y=-0.5, z=0.0), rotation=Rotation.zero()).as_frame('cam')
+    cam.calibration.extrinsics.in_frame(cam_frame)
 
-    # transform world points into in-between frame
-    world_points_in_frame = [p.relative_to(in_between_frame) for p in world_points]
+    # transform world points into cam frame
+    world_points_in_frame = [p.relative_to(cam_frame) for p in world_points]
 
     for world_point, frame_point in zip(world_points, world_points_in_frame, strict=True):
-        image_point_from_frame = cam.calibration.project_to_image(frame_point, frame=in_between_frame)
+        image_point_from_frame = cam.calibration.project_to_image(frame_point, frame_id='cam')
         assert image_point_from_frame is not None
         image_point_from_world = cam.calibration.project_to_image(world_point)
         assert image_point_from_world is not None
@@ -235,8 +239,9 @@ def test_array_projection_with_custom_coordinate_frame():
     cam, world_points = demo_data()
     assert cam.calibration is not None
 
-    in_between_frame = Frame3d(pose=Pose3d(translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero()))
-    cam.calibration.extrinsics.frame = in_between_frame
+    pose_registry.clear()
+    cam_frame = Pose3d(translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero()).as_frame('cam')
+    cam.calibration.extrinsics.in_frame(cam_frame)
 
     world_points = [p for p in world_points if p.z == 1]
     world_point_array = np.array([p.tuple for p in world_points])

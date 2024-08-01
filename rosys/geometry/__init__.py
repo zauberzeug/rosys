@@ -1,6 +1,6 @@
 from .line import Line
 from .line_segment import LineSegment
-from .object3d import Frame3d, Point3d, Pose3d
+from .object3d import Point3d, Pose3d
 from .point import Point
 from .polygon import Polygon
 from .pose import Pose, PoseStep
@@ -19,7 +19,6 @@ __all__ = [
     'Pose',
     'PoseStep',
     'Pose3d',
-    'Frame3d',
     'Prism',
     'Rectangle',
     'Rotation',

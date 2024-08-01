@@ -6,7 +6,7 @@ from nicegui import ui
 
 from rosys import config, persistence
 from rosys.driving import Driver, Odometer, Steerer, joystick, keyboard_control
-from rosys.geometry import Frame3d, Point3d, Pose3d, Rotation
+from rosys.geometry import Point3d, Pose3d, Rotation
 from rosys.hardware import RobotSimulation, WheelsSimulation
 
 wheels = WheelsSimulation()
@@ -18,29 +18,33 @@ driver = Driver(wheels, odometer)
 
 class Link(persistence.PersistentModule):
 
-    def __init__(self, name: str, parent_frame: Frame3d, *, length: float) -> None:
+    def __init__(self, name: str, parent_frame: Pose3d, *, length: float) -> None:
         super().__init__(persistence_key=name)
-        self.base = Frame3d(Pose3d.zero(frame=parent_frame), id=f'{name}_base')
-        self.end = Frame3d(Pose3d(translation=Point3d(x=0, y=0, z=length), rotation=Rotation.zero(), frame=self.base),
-                           id=f'{name}_end')
+        self.base = Pose3d.zero().in_frame(parent_frame).as_frame(f'{name}_base')
+        self.end = Pose3d(translation=Point3d(x=0, y=0, z=length),
+                          rotation=Rotation.zero()).as_frame(f'{name}_end').in_frame(self.base)
         self.length = length
 
     def pitch(self, angle: float) -> None:
-        self.base.pose.rotation = Rotation.from_euler(0, angle, 0)
+        self.base.rotation = Rotation.from_euler(0, angle, 0)
         self.request_backup()
 
     def backup(self) -> dict[str, Any]:
-        return {'pose': persistence.to_dict(self.base.pose)}
+        return {
+            'base': persistence.to_dict(self.base),
+            'end': persistence.to_dict(self.end),
+        }
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.base.pose = persistence.from_dict(Pose3d, data['pose'])
+        self.base = persistence.from_dict(Pose3d, data['base'])
+        self.end = persistence.from_dict(Pose3d, data['end'])
 
 
 class Cam(persistence.PersistentModule):
 
-    def __init__(self, parent_frame: Frame3d) -> None:
+    def __init__(self, parent_frame: Pose3d) -> None:
         super().__init__(persistence_key='cam')
-        self.pose = Pose3d(translation=Point3d(x=0, y=0, z=0.1), rotation=Rotation.zero(), frame=parent_frame)
+        self.pose = Pose3d(translation=Point3d(x=0, y=0, z=0.1), rotation=Rotation.zero()).in_frame(parent_frame)
 
     def pitch(self, angle: float) -> None:
         self.pose.rotation = Rotation.from_euler(0, angle, 0)
@@ -53,18 +57,18 @@ class Cam(persistence.PersistentModule):
         self.pose = persistence.from_dict(Pose3d, data['pose'])
 
 
-robot_frame = Frame3d(pose=Pose3d.zero())
-anchor_frame = Frame3d(pose=Pose3d(translation=Point3d(x=0, y=0, z=0.3),
-                       rotation=Rotation.zero(), frame=robot_frame), id='anchor')
+robot_frame = Pose3d.zero().as_frame('robot')
+anchor_frame = Pose3d(translation=Point3d(x=0, y=0, z=0.3), rotation=Rotation.zero()).as_frame('anchor') \
+    .in_frame(robot_frame)
 arm1 = Link('arm1', anchor_frame, length=0.3)
 arm2 = Link('arm2', arm1.end, length=0.3)
 cam = Cam(arm2.end)
 
 
 def handle_robot_move():
-    robot_frame.pose.translation.x = odometer.prediction.x
-    robot_frame.pose.translation.y = odometer.prediction.y
-    robot_frame.pose.rotation = Rotation.from_euler(0, 0, odometer.prediction.yaw)
+    robot_frame.translation.x = odometer.prediction.x
+    robot_frame.translation.y = odometer.prediction.y
+    robot_frame.rotation = Rotation.from_euler(0, 0, odometer.prediction.yaw)
 
 
 odometer.ROBOT_MOVED.register(handle_robot_move)
@@ -73,12 +77,12 @@ odometer.ROBOT_MOVED.register(handle_robot_move)
 @ui.page('/')
 def page():
     def update_scene():
-        chassis.move(*robot_frame.world_pose.translation.tuple)
-        chassis.rotate_R(robot_frame.world_pose.rotation.R)
-        segment1.move(*arm1.base.world_pose.translation.tuple)
-        segment1.rotate_R(arm1.base.world_pose.rotation.R)
-        segment2.move(*arm2.base.world_pose.translation.tuple)
-        segment2.rotate_R(arm2.base.world_pose.rotation.R)
+        chassis.move(*robot_frame.resolve().translation.tuple)
+        chassis.rotate_R(robot_frame.resolve().rotation.R)
+        segment1.move(*arm1.base.resolve().translation.tuple)
+        segment1.rotate_R(arm1.base.resolve().rotation.R)
+        segment2.move(*arm2.base.resolve().translation.tuple)
+        segment2.rotate_R(arm2.base.resolve().rotation.R)
         camera_box.move(*cam.pose.resolve().translation.tuple)
         camera_box.rotate_R(cam.pose.resolve().rotation.R)
     ui.timer(config.ui_update_interval, update_scene)
