@@ -12,10 +12,8 @@ class SimulatedCalibratableCamera(SimulatedCamera, CalibratableCamera):
     pass
 
 
-blue_frame_pose = Pose3d(translation=Point3d(x=0, y=0, z=0.5), rotation=Rotation.zero())
-pink_frame_pose = Pose3d(translation=Point3d(x=0, y=0, z=0.75), rotation=Rotation.zero())
-blue_frame = Frame3d(pose=blue_frame_pose)
-pink_frame = Frame3d(pose=pink_frame_pose, parent=blue_frame)
+blue_frame = Frame3d(pose=Pose3d(translation=Point3d(x=0, y=0, z=0.5), rotation=Rotation.zero()))
+pink_frame = Frame3d(pose=Pose3d(translation=Point3d(x=0, y=0, z=0.75), rotation=Rotation.zero(), frame=blue_frame))
 camera = SimulatedCalibratableCamera.create_calibrated(id='Camera', z=0.5, roll=math.pi / 2, frame=pink_frame)
 
 blue_object_pose = Pose3d.zero(frame=blue_frame)
@@ -28,9 +26,9 @@ with ui.scene() as scene:
 
 
 def update():
-    blue_frame_pose.translation.x = math.cos(0.5 * rosys.time())
-    blue_frame_pose.translation.y = math.sin(0.5 * rosys.time())
-    pink_frame_pose.rotation *= Rotation.from_euler(0, 0, 0.005)
+    blue_frame.pose.translation.x = math.cos(0.5 * rosys.time())
+    blue_frame.pose.translation.y = math.sin(0.5 * rosys.time())
+    pink_frame.pose.rotation *= Rotation.from_euler(0, 0, 0.005)
 
     blue_world_pose = blue_object_pose.resolve()
     blue_box.rotate_R(blue_world_pose.rotation.R)
@@ -49,9 +47,9 @@ rosys.on_repeat(update, interval=0.01)
 
 
 def set_parent(frame: Frame3d | None) -> None:
-    pink_frame.parent = frame
+    pink_frame.pose.frame = frame
 
 
-ui.button('Toggle frame', on_click=lambda: set_parent(None if pink_frame.parent == blue_frame else blue_frame))
+ui.button('Toggle frame', on_click=lambda: set_parent(None if pink_frame.pose.frame == blue_frame else blue_frame))
 
 ui.run(title='RoSys')
