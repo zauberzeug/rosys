@@ -16,27 +16,24 @@ pose_registry: dict[str, Pose3d] = {}
 
 @dataclass(slots=True, kw_only=True)
 class Object3d(abc.ABC):
-    frame_id: str | None = None
+    _frame_id: str | None = None
 
-    def in_frame(self, value: Pose3d | str | None) -> Self:
-        if isinstance(value, str) or value is None:
-            self.frame_id = value
+    def in_frame(self, value: Frame3d | None) -> Self:
+        if value is None:
+            self._frame_id = None
             return self
         for frame_id, pose in pose_registry.items():
             if pose == value:
-                self.frame_id = frame_id
+                self._frame_id = frame_id
                 return self
         raise ValueError(f'Frame "{value}" not found')
 
-    def relative_to(self, target_frame: Pose3d | str | None) -> Self:
+    def relative_to(self, target_frame: Pose3d | None) -> Self:
         """Compute the object location relative to the given frame"""
-        if not self.frame_id and not target_frame:
+        if not self._frame_id and not target_frame:
             return self
-        if isinstance(target_frame, str):
-            target_frame = pose_registry[target_frame]
-        else:
-            target_frame = target_frame or Pose3d.zero()
-        source_frame = pose_registry[self.frame_id] if self.frame_id is not None else Pose3d.zero()
+        target_frame = target_frame or Pose3d.zero()
+        source_frame = pose_registry[self._frame_id] if self._frame_id is not None else Pose3d.zero()
         return self.transform_with(target_frame.resolve().inverse() @ source_frame.resolve())
 
     def resolve(self) -> Self:
@@ -57,17 +54,10 @@ class Pose3d(Object3d):
     """
     translation: Point3d
     rotation: Rotation
-    id: str | None = None
 
-    def __post_init__(self) -> None:
-        if self.id is not None:
-            self.as_frame(self.id)
-
-    def as_frame(self, frame_id: str) -> Pose3d:
+    def as_frame(self, frame_id: str) -> Frame3d:
         """Register this pose as a frame."""
-        self.id = frame_id
-        pose_registry[frame_id] = self
-        return self
+        return Frame3d.from_pose(self, frame_id)
 
     @classmethod
     def zero(cls) -> Pose3d:
@@ -98,6 +88,19 @@ class Pose3d(Object3d):
     def transform_with(self, pose: Pose3d) -> Pose3d:
         """Transform this pose with another pose."""
         return pose @ self
+
+
+@dataclass(slots=True, kw_only=True)
+class Frame3d(Pose3d):
+    id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.id is not None:
+            pose_registry[self.id] = self
+
+    @staticmethod
+    def from_pose(pose: Pose3d, frame_id: str) -> Frame3d:
+        return Frame3d(translation=pose.translation, rotation=pose.rotation, id=frame_id)
 
 
 @dataclass(slots=True, kw_only=True)
