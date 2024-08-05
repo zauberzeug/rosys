@@ -2,7 +2,6 @@ import logging
 import logging.config
 
 import coloredlogs
-import icecream
 
 import rosys
 from rosys.helpers import PackagePathFilter
@@ -22,8 +21,6 @@ class RosysFilter(logging.Filter):
 
 
 def setup() -> None:
-    icecream.install()
-
     config = {
         'version': 1,
         'disable_existing_loggers': True,

@@ -45,7 +45,6 @@ pyquaternion = "^0.9.9"
 pillow = ">=10.3.0" # https://github.com/zauberzeug/rosys/security/dependabot/44
 idna = ">=3.7" # https://github.com/zauberzeug/rosys/security/dependabot/45
 uvicorn = "!=0.29.0" # test_examples.py fails with 0.29.0 due to persistency not correctly writting during teardown
-icecream = "^2.1.0"
 
 [tool.poetry.group.dev]
 optional = true
@@ -79,7 +78,6 @@ install_types = true
 [[tool.mypy.overrides]]
 module = [
     "coloredlogs",
-    "icecream",
     "imgsize",
     "networkx",
     "objgraph",

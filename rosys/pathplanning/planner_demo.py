@@ -6,7 +6,6 @@ import logging
 import sys
 import time
 
-import icecream
 import numpy as np
 import pylab as pl
 from nicegui import ui
@@ -18,8 +17,6 @@ from rosys.pathplanning.delaunay_planner import DelaunayPlanner
 from rosys.pathplanning.obstacle import Obstacle
 from rosys.pathplanning.planner_process import PlannerSearchCommand
 from rosys.pathplanning.robot_renderer import RobotRenderer
-
-icecream.install()
 
 seed = np.random.randint(0, 1000)
 seed = 0
