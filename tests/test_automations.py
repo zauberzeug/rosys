@@ -118,7 +118,7 @@ async def test_parallelize(automator: Automator):
 
     events.clear()
     automator.start(rosys.automation.parallelize(slow(), fast(), return_when_first_completed=True))
-    await forward(seconds=15)
+    await forward(seconds=10)
     assert events == [
         'slow 0',
         'fast 0',
