@@ -95,3 +95,59 @@ async def test_finally_block(automator: Automator):
     automator.stop(because='test')
     await forward(seconds=1)
     assert events == ['tick', 'tick', 'tick', 'tick', 'tock']
+
+
+async def test_parallelize(automator: Automator):
+    events: list[str] = []
+
+    async def slow():
+        try:
+            for i in range(5):
+                events.append(f'slow {i}')
+                await rosys.sleep(0.5)
+        finally:
+            events.append('slow done')
+
+    async def fast():
+        try:
+            for i in range(5):
+                events.append(f'fast {i}')
+                await rosys.sleep(0.2)
+        finally:
+            events.append('fast done')
+
+    events.clear()
+    automator.start(rosys.automation.parallelize(slow(), fast(), return_when_first_completed=True))
+    await forward(seconds=10)
+    assert events == [
+        'slow 0',
+        'fast 0',
+        'fast 1',
+        'fast 2',
+        'slow 1',
+        'fast 3',
+        'fast 4',
+        'slow 2',
+        'fast done',
+        'slow done',
+    ]
+    assert automator.is_stopped
+
+    events.clear()
+    automator.start(rosys.automation.parallelize(slow(), fast(), return_when_first_completed=False))
+    await forward(seconds=10)
+    assert events == [
+        'slow 0',
+        'fast 0',
+        'fast 1',
+        'fast 2',
+        'slow 1',
+        'fast 3',
+        'fast 4',
+        'slow 2',
+        'fast done',
+        'slow 3',
+        'slow 4',
+        'slow done',
+    ]
+    assert automator.is_stopped

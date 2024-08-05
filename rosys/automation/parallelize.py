@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Coroutine
 
 
@@ -20,22 +21,56 @@ class parallelize:
         sends = iter_sends[:]
         messages = [None for _ in sends]
         completed = [False for _ in sends]
-        while not all(completed):
-            for i, send in enumerate(sends):
-                if completed[i]:
-                    continue
-                try:
-                    signal = send(messages[i])
-                except StopIteration:
-                    if self.return_when_first_completed:
-                        return
-                    completed[i] = True
-                    continue
-                else:
-                    sends[i] = iter_sends[i]
-                try:
-                    messages[i] = yield signal
-                except GeneratorExit:
-                    raise
-                except BaseException as e:
-                    sends[i], messages[i] = iter_throws[i], e
+        waiting = [False for _ in sends]
+        futures = [None for _ in sends]
+
+        try:
+            while not all(completed):
+                active_coros = [i for i, is_completed in enumerate(completed) if not is_completed]
+
+                for i in active_coros:
+                    if waiting[i]:
+                        if futures[i].done():
+                            waiting[i] = False
+                            futures[i] = None
+                        else:
+                            continue
+
+                    try:
+                        signal = sends[i](messages[i])
+                    except StopIteration:
+                        completed[i] = True
+                        if self.return_when_first_completed:
+                            return
+                        continue
+                    else:
+                        sends[i] = iter_sends[i]
+
+                    if isinstance(signal, asyncio.Future | asyncio.Task):
+                        waiting[i] = True
+                        futures[i] = signal
+                    else:
+                        try:
+                            messages[i] = yield signal
+                        except GeneratorExit:
+                            raise
+                        except BaseException as e:
+                            sends[i], messages[i] = iter_throws[i], e
+
+                if all(waiting[i] or completed[i] for i in active_coros):
+                    yield  # Allow event loop to process other tasks
+        finally:
+            # Ensure all coroutines are properly closed
+            close_exceptions = []
+            for i, is_completed in enumerate(completed):
+                if not is_completed:
+                    try:
+                        coro_iters[i].close()
+                    except Exception as e:
+                        close_exceptions.append((i, e))
+
+            # If any exceptions occurred during closing, raise a RuntimeError with details
+            if close_exceptions:
+                error_msg = 'Exceptions occurred while closing coroutines:\n'
+                error_msg += '\n'.join(f'Coroutine {i}: {e}' for i, e in close_exceptions)
+                raise RuntimeError(error_msg)
