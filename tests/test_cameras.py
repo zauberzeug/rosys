@@ -6,7 +6,7 @@ import pytest
 from rosys.vision import RtspCamera, RtspCameraProvider, SimulatedCamera, UsbCamera, UsbCameraProvider
 
 
-async def test_simulated_camera(integration):
+async def test_simulated_camera(rosys_integration):
     camera = SimulatedCamera(id='test_cam', width=800, height=600, streaming=False)
     await camera.connect()
     assert camera.is_connected
@@ -16,7 +16,7 @@ async def test_simulated_camera(integration):
     assert camera.images[0].size.height == 600
 
 
-async def test_usb_camera(integration):
+async def test_usb_camera(rosys_integration):
     if platform.system() != 'Linux':
         pytest.skip('UsbCamera is only supported on Linux.')
     connected_uids = list(await UsbCameraProvider.scan_for_cameras())
@@ -29,7 +29,7 @@ async def test_usb_camera(integration):
     assert len(camera.images) == 1
 
 
-async def test_rtsp_camera(integration):
+async def test_rtsp_camera(rosys_integration):
     try:
         connected_uids = await RtspCameraProvider.scan_for_cameras()
     except Exception as e:
