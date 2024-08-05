@@ -101,18 +101,24 @@ async def test_parallelize(automator: Automator):
     events: list[str] = []
 
     async def slow():
-        for i in range(5):
-            events.append(f'slow {i}')
-            await rosys.sleep(0.5)
+        try:
+            for i in range(5):
+                events.append(f'slow {i}')
+                await rosys.sleep(0.5)
+        finally:
+            events.append('slow done')
 
     async def fast():
-        for i in range(5):
-            events.append(f'fast {i}')
-            await rosys.sleep(0.2)
+        try:
+            for i in range(5):
+                events.append(f'fast {i}')
+                await rosys.sleep(0.2)
+        finally:
+            events.append('fast done')
 
     events.clear()
     automator.start(rosys.automation.parallelize(slow(), fast(), return_when_first_completed=True))
-    await forward(seconds=10)
+    await forward(seconds=15)
     assert events == [
         'slow 0',
         'fast 0',
@@ -122,6 +128,8 @@ async def test_parallelize(automator: Automator):
         'fast 3',
         'fast 4',
         'slow 2',
+        'fast done',
+        'slow done',
     ]
     assert automator.is_stopped
 
@@ -137,7 +145,9 @@ async def test_parallelize(automator: Automator):
         'fast 3',
         'fast 4',
         'slow 2',
+        'fast done',
         'slow 3',
         'slow 4',
+        'slow done',
     ]
     assert automator.is_stopped
