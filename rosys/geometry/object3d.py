@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 import math
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -22,8 +22,8 @@ class Object3d(abc.ABC):
     def frame_id(self) -> str | None:
         return self._frame_id
 
-    def in_frame(self, value: Frame3d | None) -> Self:
-        self._frame_id = None if value is None else value.id
+    def in_frame(self, frame: Frame3d | None) -> Self:
+        self._frame_id = None if frame is None else frame.id
         return self
 
     def relative_to(self, target_frame: Pose3d | None) -> Self:
@@ -95,6 +95,18 @@ class Frame3d(Pose3d):
     def __post_init__(self) -> None:
         if self.id is not None:
             frame_registry[self.id] = self
+
+    def in_frame(self, frame: Frame3d | None) -> Self:
+        if frame is not None and self in frame.ancestors:
+            raise ValueError('Cannot set frame to a child frame')
+        self._frame_id = frame.id if frame is not None else None
+        return self
+
+    @property
+    def ancestors(self) -> Iterator[Frame3d]:
+        yield self
+        if self.frame_id:
+            yield from frame_registry[self.frame_id].ancestors
 
 
 @dataclass(slots=True, kw_only=True)
