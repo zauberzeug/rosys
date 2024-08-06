@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 
 from rosys.geometry import Point3d, Pose3d, Rotation
 from rosys.testing import poses_equal
@@ -32,6 +33,13 @@ def test_resolve_frames():
 
     P_in_A = P.relative_to(A)
     assert poses_equal(P_in_A, Pose3d(translation=Point3d(x=3, y=-1, z=0), rotation=turn_180))
+
+
+def test_check_for_frame_cycles():
+    A = Pose3d.zero().as_frame('A')
+    B = Pose3d.zero().as_frame('B').in_frame(A)
+    with pytest.raises(ValueError, match='Cannot place frame "A" in frame "B" because it creates a cycle'):
+        A.in_frame(B)
 
 
 def test_inverse_pose():

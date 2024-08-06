@@ -98,7 +98,7 @@ class Frame3d(Pose3d):
 
     def in_frame(self, frame: Frame3d | None) -> Self:
         if frame is not None and self in frame.ancestors:
-            raise ValueError('Cannot set frame to a child frame')
+            raise ValueError(f'Cannot place frame "{self.id}" in frame "{frame.id}" because it creates a cycle')
         self._frame_id = frame.id if frame is not None else None
         return self
 
