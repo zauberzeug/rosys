@@ -246,7 +246,7 @@ class Calibration:
         world_extrinsics = self.extrinsics.resolve()
         image_rays = self.points_to_rays(image_coordinates.astype(np.float32).reshape(-1, 1, 2))
         objPoints = image_rays @ world_extrinsics.rotation.matrix.T
-        Z = self.extrinsics.z
+        Z = world_extrinsics.z
         t = world_extrinsics.translation_vector
         world_points = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
 
