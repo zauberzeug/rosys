@@ -16,13 +16,9 @@ if TYPE_CHECKING:
 
 @dataclass(slots=True, kw_only=True)
 class Point3d(Object3d):
-    x: float
-    y: float
-    z: float
-
-    @classmethod
-    def zero(cls) -> Point3d:
-        return cls(x=0, y=0, z=0)
+    x: float = 0
+    y: float = 0
+    z: float = 0
 
     @staticmethod
     def from_tuple(t: Sequence[float]) -> Point3d:
