@@ -6,7 +6,7 @@ from nicegui import ui
 
 from rosys import config, persistence
 from rosys.driving import Driver, Odometer, Steerer, joystick, keyboard_control
-from rosys.geometry import Point3d, Pose3d, Rotation
+from rosys.geometry import Frame3d, Point3d, Pose3d, Rotation
 from rosys.hardware import RobotSimulation, WheelsSimulation
 
 wheels = WheelsSimulation()
@@ -18,7 +18,7 @@ driver = Driver(wheels, odometer)
 
 class Link(persistence.PersistentModule):
 
-    def __init__(self, name: str, parent_frame: Pose3d, *, length: float) -> None:
+    def __init__(self, name: str, parent_frame: Frame3d, *, length: float) -> None:
         super().__init__(persistence_key=name)
         self.base = Pose3d.zero().in_frame(parent_frame).as_frame(f'{name}_base')
         self.end = Pose3d(translation=Point3d(x=0, y=0, z=length),
@@ -36,13 +36,13 @@ class Link(persistence.PersistentModule):
         }
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.base = persistence.from_dict(Pose3d, data['base'])
-        self.end = persistence.from_dict(Pose3d, data['end'])
+        self.base = persistence.from_dict(Frame3d, data['base'])
+        self.end = persistence.from_dict(Frame3d, data['end'])
 
 
 class Cam(persistence.PersistentModule):
 
-    def __init__(self, parent_frame: Pose3d) -> None:
+    def __init__(self, parent_frame: Frame3d) -> None:
         super().__init__(persistence_key='cam')
         self.pose = Pose3d(translation=Point3d(x=0, y=0, z=0.1), rotation=Rotation.zero()).in_frame(parent_frame)
 
@@ -54,7 +54,7 @@ class Cam(persistence.PersistentModule):
         return {'pose': persistence.to_dict(self.pose)}
 
     def restore(self, data: dict[str, Any]) -> None:
-        self.pose = persistence.from_dict(Pose3d, data['pose'])
+        self.pose = persistence.from_dict(Frame3d, data['pose'])
 
 
 robot_frame = Pose3d.zero().as_frame('robot')

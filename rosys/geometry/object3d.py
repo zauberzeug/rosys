@@ -11,29 +11,27 @@ from typing_extensions import Self
 from .point import Point
 from .rotation import Rotation
 
-pose_registry: dict[str, Pose3d] = {}
+frame_registry: dict[str, Frame3d] = {}
 
 
 @dataclass(slots=True, kw_only=True)
 class Object3d(abc.ABC):
     _frame_id: str | None = None
 
+    @property
+    def frame_id(self) -> str | None:
+        return self._frame_id
+
     def in_frame(self, value: Frame3d | None) -> Self:
-        if value is None:
-            self._frame_id = None
-            return self
-        for frame_id, pose in pose_registry.items():
-            if pose == value:
-                self._frame_id = frame_id
-                return self
-        raise ValueError(f'Frame "{value}" not found')
+        self._frame_id = None if value is None else value.id
+        return self
 
     def relative_to(self, target_frame: Pose3d | None) -> Self:
         """Compute the object location relative to the given frame"""
         if not self._frame_id and not target_frame:
             return self
         target_frame = target_frame or Pose3d.zero()
-        source_frame = pose_registry[self._frame_id] if self._frame_id is not None else Pose3d.zero()
+        source_frame = frame_registry[self._frame_id] if self._frame_id is not None else Pose3d.zero()
         return self.transform_with(target_frame.resolve().inverse() @ source_frame.resolve())
 
     def resolve(self) -> Self:
@@ -57,7 +55,7 @@ class Pose3d(Object3d):
 
     def as_frame(self, frame_id: str) -> Frame3d:
         """Register this pose as a frame."""
-        return Frame3d.from_pose(self, frame_id)
+        return Frame3d(_frame_id=self._frame_id, translation=self.translation, rotation=self.rotation, id=frame_id)
 
     @classmethod
     def zero(cls) -> Pose3d:
@@ -96,11 +94,7 @@ class Frame3d(Pose3d):
 
     def __post_init__(self) -> None:
         if self.id is not None:
-            pose_registry[self.id] = self
-
-    @staticmethod
-    def from_pose(pose: Pose3d, frame_id: str) -> Frame3d:
-        return Frame3d(translation=pose.translation, rotation=pose.rotation, id=frame_id)
+            frame_registry[self.id] = self
 
 
 @dataclass(slots=True, kw_only=True)

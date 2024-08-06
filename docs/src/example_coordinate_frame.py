@@ -39,6 +39,6 @@ def update():
 
 rosys.on_repeat(update, interval=0.01)
 
-ui.button('Toggle frame', on_click=lambda: pink.in_frame(None if pink._frame_id == 'blue' else blue))
+ui.button('Toggle frame', on_click=lambda: pink.in_frame(None if pink.frame_id == 'blue' else blue))
 
 ui.run(title='RoSys')

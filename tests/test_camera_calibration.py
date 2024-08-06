@@ -3,7 +3,7 @@ import copy
 import numpy as np
 
 from rosys.geometry import Point3d, Pose3d, Rotation
-from rosys.geometry.object3d import pose_registry
+from rosys.geometry.object3d import frame_registry
 from rosys.testing import approx
 from rosys.vision import CalibratableCamera, Calibration
 from rosys.vision.calibration import CameraModel, OmnidirParameters
@@ -78,7 +78,7 @@ def test_calibration_with_custom_coordinate_frame():
     assert cam.calibration is not None
     image_size = cam.calibration.intrinsics.size
 
-    pose_registry.clear()
+    frame_registry.clear()
     cam_frame = Pose3d(translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero()).as_frame('cam')
     cam.calibration.extrinsics.in_frame(cam_frame)
 
@@ -160,7 +160,7 @@ def test_projection_with_custom_coordinate_frame():
     cam, world_points = demo_data()
     assert cam.calibration is not None
 
-    pose_registry.clear()
+    frame_registry.clear()
     cam_frame = Pose3d(translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero()).as_frame('cam')
     cam.calibration.extrinsics.in_frame(cam_frame)
 
@@ -175,7 +175,7 @@ def test_projection_from_one_frame_into_world_frame():
     cam, world_points = demo_data()
     assert cam.calibration is not None
 
-    pose_registry.clear()
+    frame_registry.clear()
     cam_frame = Pose3d(translation=Point3d(x=1.0, y=-0.5, z=0.0), rotation=Rotation.zero()).as_frame('cam')
     cam.calibration.extrinsics.in_frame(cam_frame)
 
@@ -239,7 +239,7 @@ def test_array_projection_with_custom_coordinate_frame():
     cam, world_points = demo_data()
     assert cam.calibration is not None
 
-    pose_registry.clear()
+    frame_registry.clear()
     cam_frame = Pose3d(translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero()).as_frame('cam')
     cam.calibration.extrinsics.in_frame(cam_frame)
 
