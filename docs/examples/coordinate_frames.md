@@ -18,4 +18,4 @@ This `id` makes it possible to fully persist `Pose3d`, `Frame3d` and their relat
 This can be useful for situation where exact relationships are calibrated at runtime (e.g. multi-camera calibration) or when a robot's axes are expected to be persistent across reboots.
 
 For the second case, make sure that you know when the persistence overwrite happens (in the rosys startup handler) so that everything is loaded correctly.
-See `examples/camera_arm` for an example on that.
+See [examples/camera_arm](https://github.com/zauberzeug/rosys/tree/main/examples/camera_arm) for an example on that.
