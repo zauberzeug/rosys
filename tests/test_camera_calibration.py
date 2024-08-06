@@ -2,7 +2,7 @@ import copy
 
 import numpy as np
 
-from rosys.geometry import Point3d, Pose3d, Rotation
+from rosys.geometry import Point3d, Pose3d
 from rosys.geometry.object3d import frame_registry
 from rosys.testing import approx
 from rosys.vision import CalibratableCamera, Calibration
