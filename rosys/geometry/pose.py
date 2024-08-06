@@ -6,8 +6,8 @@ from typing import overload
 import numpy as np
 
 from .line import Line
-from .object3d import Point3d
 from .point import Point
+from .point3d import Point3d
 
 
 @dataclass(slots=True, kw_only=True)

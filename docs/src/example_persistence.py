@@ -3,7 +3,6 @@ from typing import Any
 
 from nicegui import app, ui
 
-import rosys
 from rosys import persistence
 
 

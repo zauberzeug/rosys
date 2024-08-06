@@ -16,7 +16,7 @@ from nicegui import Client, app, background_tasks, ui
 
 from . import event, run
 from .config import Config
-from .geometry.object3d import frame_registry
+from .geometry.frame3d_registry import frame_registry
 from .helpers import invoke, is_stopping
 from .helpers import is_test as is_test_
 from .persistence.registry import backup, restore
