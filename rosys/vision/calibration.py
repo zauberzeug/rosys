@@ -63,7 +63,7 @@ log = logging.getLogger('rosys.world.calibration')
 class Calibration:
     """Represents the full calibration of a camera."""
     intrinsics: Intrinsics
-    extrinsics: Pose3d = field(default_factory=Pose3d.zero)
+    extrinsics: Pose3d = field(default_factory=Pose3d)
 
     @staticmethod
     def from_points(world_points: list[Point3d] | list[list[Point3d]],
@@ -160,8 +160,11 @@ class Calibration:
                                 omnidir_params=OmnidirParameters(xi=xi))
 
         rotation = Rotation.from_rvec(rvecs[0]).T
-        translation = (-np.array(rotation.R).dot(tvecs[0])).flatten().tolist()
-        extrinsics = Pose3d(translation=Point3d.from_tuple(translation), rotation=rotation).in_frame(frame)
+        translation = -np.array(rotation.R).dot(tvecs[0])
+        extrinsics = Pose3d(x=translation[0, 0],
+                            y=translation[1, 0],
+                            z=translation[2, 0],
+                            rotation=rotation).in_frame(frame)
 
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 
@@ -195,7 +198,7 @@ class Calibration:
         world_extrinsics = self.extrinsics.relative_to(frame)
         R = world_extrinsics.rotation.matrix
         Rod = cv2.Rodrigues(R.T)[0]
-        t = -R.T @ world_extrinsics.translation.tuple
+        t = -R.T @ world_extrinsics.translation
         K = np.array(self.intrinsics.matrix)
         D = np.array(self.intrinsics.distortion, dtype=float)
 
@@ -214,7 +217,7 @@ class Calibration:
 
         if self.intrinsics.model != CameraModel.OMNIDIRECTIONAL:
             world_coordinates = world_coordinates.reshape(-1, 3)
-            local_coordinates = (world_coordinates - world_extrinsics.translation.tuple) @ R
+            local_coordinates = (world_coordinates - world_extrinsics.translation) @ R
             image_array[local_coordinates[:, 2] < 0, :] = np.nan
 
         return image_array.reshape(-1, 2)
@@ -243,8 +246,8 @@ class Calibration:
         world_extrinsics = self.extrinsics.resolve()
         image_rays = self.points_to_rays(image_coordinates.astype(np.float32).reshape(-1, 1, 2))
         objPoints = image_rays @ world_extrinsics.rotation.matrix.T
-        Z = self.extrinsics.translation.z
-        t = world_extrinsics.translation.array
+        Z = self.extrinsics.z
+        t = world_extrinsics.translation_vector
         world_points = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
 
         reprojection = self.project_to_image(world_points)

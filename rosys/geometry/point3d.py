@@ -59,4 +59,4 @@ class Point3d(Object3d):
 
     def transform_with(self, pose: Pose3d) -> Point3d:
         """Transform this pose with another pose."""
-        return Point3d.from_tuple(np.dot(pose.rotation.R, self.array) + pose.translation.array)
+        return Point3d.from_tuple(np.dot(pose.rotation.R, self.array) + pose.translation_vector)

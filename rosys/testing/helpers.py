@@ -90,7 +90,7 @@ def assert_point(actual: Point | Point3d, expected: Point | Point3d, tolerance=0
 
 
 def poses_equal(pose1: Pose3d, pose2: Pose3d) -> bool:
-    return np.allclose(pose1.translation.tuple, pose2.translation.tuple, atol=1e-6) and \
+    return np.allclose(pose1.translation, pose2.translation, atol=1e-6) and \
         np.allclose(pose1.rotation.matrix, pose2.rotation.matrix, atol=1e-6)
 
 

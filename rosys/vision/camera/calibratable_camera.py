@@ -1,7 +1,7 @@
 import numpy as np
 from typing_extensions import Self
 
-from ...geometry import Frame3d, Point3d, Pose3d, Rotation
+from ...geometry import Frame3d, Pose3d, Rotation
 from ...persistence.converters import from_dict, to_dict
 from ..calibration import Calibration, Intrinsics
 from .camera import Camera
@@ -48,6 +48,5 @@ class CalibratableCamera(Camera):
                                 ) -> None:
         self.calibration = Calibration(
             intrinsics=Intrinsics.create_default(width, height, focal_length=focal_length),
-            extrinsics=Pose3d(rotation=Rotation.from_euler(roll, pitch, yaw),
-                              translation=Point3d.from_tuple([x, y, z])).in_frame(frame),
+            extrinsics=Pose3d(x=x, y=y, z=z, rotation=Rotation.from_euler(roll, pitch, yaw)).in_frame(frame),
         )

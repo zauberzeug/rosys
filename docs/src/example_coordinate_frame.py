@@ -4,7 +4,7 @@ import math
 from nicegui import ui
 
 import rosys
-from rosys.geometry import Point3d, Pose3d, Rotation
+from rosys.geometry import Pose3d, Rotation
 from rosys.vision import CalibratableCamera, CameraSceneObject, SimulatedCamera
 
 
@@ -12,8 +12,8 @@ class SimulatedCalibratableCamera(SimulatedCamera, CalibratableCamera):
     pass
 
 
-blue = Pose3d(translation=Point3d(x=0, y=0, z=0.5), rotation=Rotation.zero()).as_frame('blue')
-pink = Pose3d(translation=Point3d(x=0, y=0, z=0.75), rotation=Rotation.zero()).as_frame('pink').in_frame(blue)
+blue = Pose3d(z=0.5).as_frame('blue')
+pink = Pose3d(z=0.75).as_frame('pink').in_frame(blue)
 camera = SimulatedCalibratableCamera.create_calibrated(id='Camera', z=0.5, roll=math.pi / 2, frame=pink)
 
 with ui.scene() as scene:
@@ -23,18 +23,18 @@ with ui.scene() as scene:
 
 
 def update():
-    blue.translation.x = math.cos(0.5 * rosys.time())
-    blue.translation.y = math.sin(0.5 * rosys.time())
+    blue.x = math.cos(0.5 * rosys.time())
+    blue.y = math.sin(0.5 * rosys.time())
     pink.rotation *= Rotation.from_euler(0, 0, 0.005)
 
     blue_box.rotate_R(blue.resolve().rotation.R)
-    blue_box.move(*blue.resolve().translation.tuple)
+    blue_box.move(*blue.resolve().translation)
 
     pink_box.rotate_R(pink.resolve().rotation.R)
-    pink_box.move(*pink.resolve().translation.tuple)
+    pink_box.move(*pink.resolve().translation)
 
     camera_object.rotate_R(camera.calibration.extrinsics.resolve().rotation.R)
-    camera_object.move(*camera.calibration.extrinsics.resolve().translation.tuple)
+    camera_object.move(*camera.calibration.extrinsics.resolve().translation)
 
 
 rosys.on_repeat(update, interval=0.01)

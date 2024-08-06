@@ -79,7 +79,7 @@ def test_calibration_with_custom_coordinate_frame():
     image_size = cam.calibration.intrinsics.size
 
     frame_registry.clear()
-    cam_frame = Pose3d(translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero()).as_frame('cam')
+    cam_frame = Pose3d(x=0.03, y=-0.02, z=0.0).as_frame('cam')
     cam.calibration.extrinsics.in_frame(cam_frame)
 
     image_points = [cam.calibration.project_to_image(p) for p in world_points]
@@ -119,7 +119,7 @@ def test_omnidirectional_calibration_from_points():
     def translated_calibrations(base_calibration: Calibration, n=6):
         for dz in np.linspace(0, 4, n):
             calibration = copy.deepcopy(base_calibration)
-            calibration.extrinsics.translation.z += dz
+            calibration.extrinsics.z += dz
             yield calibration
 
     n_views = 10
@@ -161,7 +161,7 @@ def test_projection_with_custom_coordinate_frame():
     assert cam.calibration is not None
 
     frame_registry.clear()
-    cam_frame = Pose3d(translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero()).as_frame('cam')
+    cam_frame = Pose3d(x=0.03, y=-0.02, z=0.0).as_frame('cam')
     cam.calibration.extrinsics.in_frame(cam_frame)
 
     for world_point in world_points:
@@ -176,7 +176,7 @@ def test_projection_from_one_frame_into_world_frame():
     assert cam.calibration is not None
 
     frame_registry.clear()
-    cam_frame = Pose3d(translation=Point3d(x=1.0, y=-0.5, z=0.0), rotation=Rotation.zero()).as_frame('cam')
+    cam_frame = Pose3d(x=1.0, y=-0.5, z=0.0).as_frame('cam')
     cam.calibration.extrinsics.in_frame(cam_frame)
 
     # transform world points into cam frame
@@ -240,7 +240,7 @@ def test_array_projection_with_custom_coordinate_frame():
     assert cam.calibration is not None
 
     frame_registry.clear()
-    cam_frame = Pose3d(translation=Point3d(x=0.03, y=-0.02, z=0.0), rotation=Rotation.zero()).as_frame('cam')
+    cam_frame = Pose3d(x=0.03, y=-0.02, z=0.0).as_frame('cam')
     cam.calibration.extrinsics.in_frame(cam_frame)
 
     world_points = [p for p in world_points if p.z == 1]
