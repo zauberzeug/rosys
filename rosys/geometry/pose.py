@@ -5,10 +5,10 @@ from typing import overload
 
 import numpy as np
 
+from .. import helpers
 from .line import Line
 from .point import Point
 from .point3d import Point3d
-from ..helpers import angle as helpers_angle
 
 
 @dataclass(slots=True, kw_only=True)
@@ -87,7 +87,7 @@ class Pose:
     def relative_direction(self, other: Pose) -> float: ...
 
     def relative_direction(self, other: Point | Pose) -> float:
-        return helpers_angle(self.yaw, self.direction(other))
+        return helpers.angle(self.yaw, self.direction(other))
 
     def __iadd__(self, step: PoseStep) -> Pose:
         self.x += step.linear * np.cos(self.yaw)
