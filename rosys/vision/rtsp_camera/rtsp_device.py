@@ -17,9 +17,12 @@ class RtspDevice:
 
     def __init__(self, mac: str, ip: str, jovision_profile: int) -> None:
         self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device')
-        self.log.setLevel(logging.DEBUG)
 
         self.mac = mac
+        self.ip = ip
+
+        self.fps: int
+        self.jovision_profile: int = jovision_profile
 
         self.capture_task: asyncio.Task | None = None
         self.capture_process: Process | None = None
@@ -31,7 +34,7 @@ class RtspDevice:
         self.settings_interface: JovisionInterface | None = None
         if vendor_type == VendorType.JOVISION:
             self.settings_interface = JovisionInterface(ip)
-            self.fps = self.settings_interface.get_fps(stream_id=jovision_profile)
+            self.fps = self.settings_interface.get_fps(stream_id=jovision_profile) or 10
         else:
             self.log.warning('[%s] No settings interface for vendor type %s', self.mac, vendor_type)
             self.log.warning('[%s] Using default fps of 10', self.mac)
@@ -63,7 +66,7 @@ class RtspDevice:
                 self.log.warning('[%s] Timeout while waiting for gstreamer process to terminate', self.mac)
             else:
                 self.log.debug('[%s] Successfully shut down process (code %s)',
-                               self.mac, self.capture_process.returncode)
+                               self.mac, self.capture_process.returncode if self.capture_process.returncode is not None else 'None')
                 self.capture_process = None
         if self.capture_task is not None and not self.capture_task.done():
             self.log.debug('[%s] Cancelling gstreamer task', self.mac)
@@ -84,13 +87,13 @@ class RtspDevice:
         if self.capture_task is not None and not self.capture_task.done():
             self.log.warning('[%s] capture task already running', self.mac)
             return
-        self.capture_task = background_tasks.create(self._run_gstreamer(self.url), name=f'capture {self.mac}')
+        self.capture_task = background_tasks.create(self._run_gstreamer(), name=f'capture {self.mac}')
 
     async def restart_gstreamer(self) -> None:
         await self.shutdown()
         self._start_gstreamer_task()
 
-    async def _run_gstreamer(self, url: str) -> None:
+    async def _run_gstreamer(self) -> None:
         if self.capture_process is not None and self.capture_process.returncode is None:
             self.log.warning('[%s] capture process already running', self.mac)
             return
@@ -168,9 +171,26 @@ class RtspDevice:
                 if 'Unauthorized' in error_message:
                     self._authorized = False
 
-        async for image in stream(url):
+        async for image in stream(self.url):
             self._image_buffer = image
 
         self.log.info('[%s] stream ended', self.mac)
 
         self.capture_task = None
+
+    def set_fps(self, fps: int) -> None:
+        self.fps = fps
+
+        if self.settings_interface is not None:
+            self.settings_interface.set_fps(stream_id=self.jovision_profile, fps=self.fps)
+
+    def get_fps(self) -> int | None:
+        if self.settings_interface is not None:
+            return self.settings_interface.get_fps(stream_id=self.jovision_profile)
+        return self.fps
+
+    def set_jovision_profile(self, profile: int) -> None:
+        self.jovision_profile = profile
+
+    def get_jovision_profile(self) -> int:
+        return self.jovision_profile

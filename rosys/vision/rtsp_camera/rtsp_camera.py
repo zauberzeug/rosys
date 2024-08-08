@@ -37,10 +37,10 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.jovision_profile: int = jovision_profile
         self.ip: str | None = ip
 
-        self._register_parameter('fps', self.get_fps, self.set_fps,
-                                 min_value=1, max_value=30, step=1, default_value=fps)
         self._register_parameter('jovision_profile', self.get_jovision_profile, self.set_jovision_profile,
                                  min_value=1, max_value=2, step=1, default_value=jovision_profile)
+        self._register_parameter('fps', self.get_fps, self.set_fps,
+                                 min_value=1, max_value=30, step=1, default_value=fps)
 
     def to_dict(self) -> dict[str, Any]:
         return super().to_dict() | {
@@ -108,26 +108,27 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self._add_image(image)
 
     def set_fps(self, fps: int) -> None:
-        if self.device is None or self.device.settings_interface is None:
+        if self.device is None:
             return
-        self.device.settings_interface.set_fps(stream_id=self.jovision_profile, fps=fps)
+
+        self.device.set_fps(fps)
         self.polling_interval = 1.0 / fps
 
     def get_fps(self) -> int | None:
-        if self.device is None or self.device.settings_interface is None:
+        if self.device is None:
             return None
-        fps = self.device.settings_interface.get_fps(stream_id=self.jovision_profile)
-        return fps
+        return self.device.get_fps()
 
     def set_jovision_profile(self, profile: int) -> None:
         if self.device is None:
             return
-        self.jovision_profile = profile
+
+        self.device.set_jovision_profile(profile)
 
     def get_jovision_profile(self) -> int | None:
         if self.device is None:
             return None
-        return self.jovision_profile
+        return self.device.get_jovision_profile()
 
     async def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
         await super()._apply_parameters(new_values, force_set)
