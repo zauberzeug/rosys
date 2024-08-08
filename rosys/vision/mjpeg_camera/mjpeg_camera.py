@@ -25,6 +25,9 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
                  username: str | None = None,
                  password: str | None = None,
                  ip: str | None = None,
+                 fps: int = 10,
+                 resolution: tuple[int, int] = (640, 480),
+                 mirrored: bool = False,
                  **kwargs: Any,
                  ) -> None:
         super().__init__(id=id, name=name, connect_after_init=connect_after_init, streaming=streaming,
@@ -43,12 +46,14 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         self.mac = parts[0]
         self.device: MjpegDevice | None = None
 
-        self._register_parameter('fps', self._get_fps, self._set_fps, default_value=10)
-        self._register_parameter('resolution', self._get_resolution, self._set_resolution, default_value=(640, 480))
-        self._register_parameter('mirrored', self._get_mirrored, self._set_mirrored, default_value=False)
+        self._register_parameter('fps', self._get_fps, self._set_fps, default_value=fps)
+        self._register_parameter('resolution', self._get_resolution, self._set_resolution, default_value=resolution)
+        self._register_parameter('mirrored', self._get_mirrored, self._set_mirrored, default_value=mirrored)
 
     def to_dict(self) -> dict:
         return super().to_dict() | {
+            name: param.value for name, param in self._parameters.items()
+        } | {
             'username': self.username,
             'password': self.password,
             'ip': self.ip,
