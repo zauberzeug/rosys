@@ -32,6 +32,9 @@ class LizardFirmware:
         self.local_checksum: str | None = None
         self.core_checksum: str | None = None
 
+        self._p0_flash_last_complete: float = 0.0
+        self.robot_brain.FLASH_P0_COMPLETE.register(lambda: setattr(self, '_p0_flash_last_complete', rosys.time()))
+
     async def read_all(self) -> None:
         await self.read_online_version()
         self.read_local_version()
@@ -103,12 +106,13 @@ class LizardFirmware:
         await self.read_core_version()
         rosys.notify('Finished.', 'positive')
 
-    async def flash_p0(self) -> None:
+    async def flash_p0(self, timeout: float = 120) -> None:
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
         await self.robot_brain.send('p0.flash()')
         start = rosys.time()
-        while (self.robot_brain.hardware_time or 0) < start + 3.0:
-            if rosys.time() > start + 60.0:
+        deadline = start + timeout
+        while self._p0_flash_last_complete < start:
+            if rosys.time() > deadline:
                 rosys.notify('Failed.', 'negative')
                 return
             await rosys.sleep(0.1)
