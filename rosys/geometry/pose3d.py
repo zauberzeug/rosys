@@ -23,6 +23,10 @@ class Pose3d(Object3d):
     z: float = 0
     rotation: Rotation = field(default_factory=Rotation.zero)
 
+    @classmethod
+    def zero(cls) -> Pose3d:
+        return Pose3d(x=0, y=0, z=0, rotation=Rotation.zero())
+
     def as_frame(self, frame_id: str) -> Frame3d:
         """Register this pose as a frame."""
         return Frame3d(_frame_id=self._frame_id,

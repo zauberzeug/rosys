@@ -20,6 +20,10 @@ class Point3d(Object3d):
     y: float = 0
     z: float = 0
 
+    @classmethod
+    def zero(cls) -> Point3d:
+        return Point3d(x=0, y=0, z=0)
+
     @staticmethod
     def from_tuple(t: Sequence[float]) -> Point3d:
         """Create a Point3d from the three first elements of a sequence."""
