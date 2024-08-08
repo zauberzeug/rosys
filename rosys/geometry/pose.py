@@ -5,6 +5,7 @@ from typing import overload
 
 import numpy as np
 
+from .. import helpers
 from .line import Line
 from .point import Point
 from .point3d import Point3d
@@ -78,6 +79,15 @@ class Pose:
 
     def direction(self, other: Point | Pose) -> float:
         return float(np.arctan2(other.y - self.y, other.x - self.x))
+
+    @overload
+    def relative_direction(self, other: Point) -> float: ...
+
+    @overload
+    def relative_direction(self, other: Pose) -> float: ...
+
+    def relative_direction(self, other: Point | Pose) -> float:
+        return helpers.angle(self.yaw, self.direction(other))
 
     def __iadd__(self, step: PoseStep) -> Pose:
         self.x += step.linear * np.cos(self.yaw)
