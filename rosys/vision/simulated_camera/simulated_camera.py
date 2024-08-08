@@ -81,7 +81,9 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
         return self.device.color
 
     def _set_fps(self, value: int) -> None:
+        assert self.device is not None
         self.polling_interval = 1.0 / value
 
     def _get_fps(self) -> int:
+        assert self.device is not None
         return int(1.0 / self.polling_interval)

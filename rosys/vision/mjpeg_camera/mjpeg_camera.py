@@ -106,38 +106,32 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         self._add_image(Image(camera_id=self.id, data=image, time=rosys.time(), size=final_image_resolution))
 
     async def _set_fps(self, fps: int) -> None:
-        if self.device is None:
-            raise ValueError('Device is not connected')
+        assert self.device is not None
 
         await self.device.set_fps(fps)
         self.polling_interval = 1.0 / fps
 
     async def _get_fps(self) -> int:
-        if self.device is None:
-            raise ValueError('Device is not connected')
+        assert self.device is not None
 
         return await self.device.get_fps()
 
     async def _set_resolution(self, resolution: tuple[int, int]) -> None:
-        if self.device is None:
-            raise ValueError('Device is not connected')
+        assert self.device is not None
 
         await self.device.set_resolution(*resolution)
 
     async def _get_resolution(self) -> tuple[int, int]:
-        if self.device is None:
-            raise ValueError('Device is not connected')
+        assert self.device is not None
 
         return await self.device.get_resolution()
 
     async def _set_mirrored(self, mirrored: bool) -> None:
-        if self.device is None:
-            raise ValueError('Device is not connected')
+        assert self.device is not None
 
         await self.device.set_mirrored(mirrored)
 
     async def _get_mirrored(self) -> bool:
-        if self.device is None:
-            raise ValueError('Device is not connected')
+        assert self.device is not None
 
         return await self.device.get_mirrored()
