@@ -10,7 +10,7 @@ import pytest
 from .. import rosys, run
 from ..automation import Automator
 from ..driving import Driver, Odometer
-from ..geometry import Point, Point3d
+from ..geometry import Point, Point3d, Pose3d
 
 log = logging.getLogger(__name__)
 
@@ -87,6 +87,11 @@ def assert_point(actual: Point | Point3d, expected: Point | Point3d, tolerance=0
     assert actual.y == pytest.approx(expected.y, abs=tolerance)
     if isinstance(actual, Point3d) and isinstance(expected, Point3d):
         assert actual.z == pytest.approx(expected.z, abs=tolerance)
+
+
+def poses_equal(pose1: Pose3d, pose2: Pose3d) -> bool:
+    return np.allclose(pose1.translation, pose2.translation, atol=1e-6) and \
+        np.allclose(pose1.rotation.matrix, pose2.rotation.matrix, atol=1e-6)
 
 
 async def automate_drive_to(x: float, y: float) -> None:

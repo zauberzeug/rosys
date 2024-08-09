@@ -5,6 +5,9 @@ import asyncio
 from collections import deque
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
+
+from typing_extensions import Self
 
 from ... import rosys
 from ...event import Event
@@ -88,6 +91,14 @@ class Camera(abc.ABC):
             'connect_after_init': self.connect_after_init,
             'streaming': self.should_stream,
         }
+
+    @classmethod
+    def args_from_dict(cls, data: dict[str, Any]) -> dict:
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Self:
+        return cls(**cls.args_from_dict(data))
 
     @property
     def is_connected(self) -> bool:

@@ -13,6 +13,7 @@ nav:
       - examples/hardware.md
       - examples/simulation_speed.md
       - examples/cameras.md
+      - examples/coordinate_frames.md
       - examples/schedule.md
       - examples/persistence.md
   - Module Reference: reference/

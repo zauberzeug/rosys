@@ -30,12 +30,16 @@ class Rotation:
     def from_rvec(rvec) -> Rotation:
         return Rotation(R=cv2.Rodrigues(rvec)[0].tolist())
 
-    def __mul__(self, other) -> Rotation:
+    def __mul__(self, other: Rotation) -> Rotation:
         return Rotation(R=np.dot(self.R, other.R).tolist())
 
     @property
+    def matrix(self) -> np.ndarray:
+        return np.array(self.R)
+
+    @property
     def T(self) -> Rotation:
-        return Rotation(R=np.array(self.R).T.tolist())
+        return Rotation(R=np.transpose(self.R).tolist())
 
     @property
     def roll(self) -> float:

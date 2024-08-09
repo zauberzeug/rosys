@@ -1,7 +1,5 @@
 import random
 
-from typing_extensions import Self
-
 from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
@@ -37,17 +35,12 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
                                  min_value=1, max_value=30, step=1, default_value=fps)
 
     def to_dict(self) -> dict:
-        return {
-            'id': self.id,
+        return super().to_dict() | {
             'width': self.resolution.width,
             'height': self.resolution.height,
         } | {
             name: param.value for name, param in self._parameters.items()
         }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> Self:
-        return cls(**data)
 
     @property
     def is_connected(self) -> bool:

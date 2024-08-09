@@ -29,8 +29,8 @@ class Pose:
     def point(self) -> Point:
         return Point(x=self.x, y=self.y)
 
-    def point_3d(self) -> Point3d:
-        return Point3d(x=self.x, y=self.y, z=0)
+    def point_3d(self, z: float = 0) -> Point3d:
+        return Point3d(x=self.x, y=self.y, z=z)
 
     @property
     def matrix(self) -> np.ndarray:
