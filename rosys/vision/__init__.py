@@ -13,7 +13,7 @@ from .image import Image, ImageSize
 from .mjpeg_camera import MjpegCamera, MjpegCameraProvider
 from .multi_camera_provider import MultiCameraProvider
 from .rtsp_camera import RtspCamera, RtspCameraProvider
-from .simulated_camera import SimulatedCamera, SimulatedCameraProvider
+from .simulated_camera import SimulatedCalibratableCamera, SimulatedCamera, SimulatedCameraProvider
 from .usb_camera import UsbCamera, UsbCameraProvider
 
 __all__ = [
@@ -44,6 +44,7 @@ __all__ = [
     'RtspCamera',
     'RtspCameraProvider',
     'SimulatedCamera',
+    'SimulatedCalibratableCamera',
     'SimulatedCameraProvider',
     'UsbCamera',
     'UsbCameraProvider',

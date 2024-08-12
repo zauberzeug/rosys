@@ -5,12 +5,7 @@ from nicegui import ui
 
 import rosys
 from rosys.geometry import Pose3d, Rotation
-from rosys.vision import CalibratableCamera, CameraSceneObject, SimulatedCamera
-
-
-class SimulatedCalibratableCamera(SimulatedCamera, CalibratableCamera):
-    pass
-
+from rosys.vision import CameraSceneObject, SimulatedCalibratableCamera
 
 blue = Pose3d(z=0.5).as_frame('blue')
 pink = Pose3d(z=0.75).as_frame('pink').in_frame(blue)
