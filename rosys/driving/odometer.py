@@ -4,7 +4,7 @@ from typing import Protocol
 
 from .. import rosys
 from ..event import Event
-from ..geometry import Pose, PoseStep, Velocity
+from ..geometry import Pose, Pose3d, PoseStep, Rotation, Velocity
 
 
 class VelocityProvider(Protocol):
@@ -28,6 +28,7 @@ class Odometer:
 
         wheels.VELOCITY_MEASURED.register(self.handle_velocities)
         self.prediction: Pose = Pose()
+        self.prediction_frame = Pose3d().as_frame('rosys.odometer.prediction')
         self.detection: Pose | None = None
         self.current_velocity: Velocity | None = None
         self.last_movement: float = 0
@@ -56,7 +57,7 @@ class Odometer:
             self.current_velocity = velocities[-1]
         if robot_moved:
             self.last_movement = step.time
-            self.ROBOT_MOVED.emit()
+            self._handle_movement()
 
     def handle_detection(self, detection: Pose) -> None:
         self.detection = detection
@@ -66,6 +67,13 @@ class Odometer:
             self.prediction = self.odometry_frame.transform_pose(self.history[-1])
         else:
             self.prediction = deepcopy(detection)
+        self._handle_movement()
+
+    def _handle_movement(self) -> None:
+        self.prediction_frame.x = self.prediction.x
+        self.prediction_frame.y = self.prediction.y
+        self.prediction_frame.rotation = Rotation.from_euler(0, 0, self.prediction.yaw)
+        self.ROBOT_MOVED.emit()
 
     def prune_history(self, max_age: float = 10.0) -> None:
         cut_off_time = rosys.time() - max_age
