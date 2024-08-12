@@ -5,7 +5,6 @@ from nicegui.elements.scene_objects import Cylinder, Group, Text, Texture
 
 from .. import run
 from .calibratable_camera_provider import CalibratableCameraProvider
-from .calibration import Calibration
 from .camera import CalibratableCamera
 from .camera_projector import CameraProjector
 
@@ -74,11 +73,7 @@ class CameraObjects(Group):
                             camera.calibration.intrinsics.matrix[0][0] / self.px_per_m,
                         )
             camera_groups[uid].move(*camera.calibration.extrinsics.translation)
-            camera_groups[uid].rotate_R(await run.cpu_bound(self.get_rotation, camera.calibration))
-
-    @staticmethod
-    def get_rotation(calibration: Calibration) -> list[list[float]]:
-        return calibration.extrinsics.resolve().rotation.R  # computing euler rotation is cpu expensive
+            camera_groups[uid].rotate_R(camera.calibration.extrinsics.resolve().rotation.R)
 
     async def update_images(self) -> None:
         newest_images = [camera.latest_captured_image
