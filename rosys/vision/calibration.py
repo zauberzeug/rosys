@@ -187,8 +187,9 @@ class Calibration:
         """Project a point to the image plane.
 
         This takes into account the camera's intrinsic and extrinsic parameters.
-        param point: The point to project.
-        param frame: The target frame to project the point to. If None, the result is in world coordinates.
+
+        :param point: The point to project.
+        :param frame: The target frame to project the point to. If None, the result is in world coordinates.
         """
         if isinstance(point, Point3d):
             world_array = np.array([point.tuple], dtype=np.float32)
