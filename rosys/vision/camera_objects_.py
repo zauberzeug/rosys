@@ -5,7 +5,6 @@ from nicegui.elements.scene_objects import Cylinder, Group, Text, Texture
 
 from .. import run
 from .calibratable_camera_provider import CalibratableCameraProvider
-from .calibration import Calibration
 from .camera import CalibratableCamera
 from .camera_projector import CameraProjector
 
