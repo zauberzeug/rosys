@@ -6,8 +6,8 @@ from nicegui import ui
 
 import rosys
 from rosys.automation import Automator, automation_controls
-from rosys.driving import Driver, Odometer, Steerer, joystick, keyboard_control, robot_object
-from rosys.geometry import Prism
+from rosys.driving import Driver, Odometer, Steerer, joystick, keyboard_control, robot_object, PathSegment
+from rosys.geometry import Prism, Spline, Point
 from rosys.hardware import (
     CanHardware,
     RobotBrain,
@@ -17,6 +17,16 @@ from rosys.hardware import (
     WheelsHardware,
     WheelsSimulation,
 )
+
+
+async def drive_square():
+    path: list[PathSegment] = [
+        PathSegment(spline=Spline.from_points(start=Point(x=0.0, y=0.0), end=Point(x=4.0, y=0.0))),
+        PathSegment(spline=Spline.from_points(start=Point(x=4.0, y=0.0), end=Point(x=4.0, y=4.0))),
+        PathSegment(spline=Spline.from_points(start=Point(x=4.0, y=4.0), end=Point(x=0.0, y=4.0))),
+        PathSegment(spline=Spline.from_points(start=Point(x=0.0, y=4.0), end=Point(x=0.0, y=0.0))),
+    ]
+    await driver.drive_path(path, stop_at_end=True)
 
 log_configuration.setup()
 
@@ -34,7 +44,7 @@ else:
 steerer = Steerer(wheels)
 odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator(steerer, default_automation=driver.drive_square, on_interrupt=wheels.stop)
+automator = Automator(steerer, default_automation=drive_square, on_interrupt=wheels.stop)
 
 # ui
 with ui.card():
