@@ -20,11 +20,15 @@ from rosys.hardware import (
 
 
 async def drive_square():
+    corner_0: Point = Point(x=0.0, y=0.0)
+    corner_1: Point = Point(x=4.0, y=0.0)
+    corner_2: Point = Point(x=4.0, y=4.0)
+    corner_3: Point = Point(x=0.0, y=4.0)
     path: list[PathSegment] = [
-        PathSegment(spline=Spline.from_points(start=Point(x=0.0, y=0.0), end=Point(x=4.0, y=0.0))),
-        PathSegment(spline=Spline.from_points(start=Point(x=4.0, y=0.0), end=Point(x=4.0, y=4.0))),
-        PathSegment(spline=Spline.from_points(start=Point(x=4.0, y=4.0), end=Point(x=0.0, y=4.0))),
-        PathSegment(spline=Spline.from_points(start=Point(x=0.0, y=4.0), end=Point(x=0.0, y=0.0))),
+        PathSegment(spline=Spline.from_points(start=corner_0, end=corner_1)),
+        PathSegment(spline=Spline.from_points(start=corner_1, end=corner_2)),
+        PathSegment(spline=Spline.from_points(start=corner_2, end=corner_3)),
+        PathSegment(spline=Spline.from_points(start=corner_3, end=corner_0)),
     ]
     await driver.drive_path(path, stop_at_end=True)
 
