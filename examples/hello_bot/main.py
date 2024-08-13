@@ -20,11 +20,11 @@ from rosys.hardware import (
 
 
 async def drive_square():
-    corner_0: Point = Point(x=0.0, y=0.0)
-    corner_1: Point = Point(x=4.0, y=0.0)
-    corner_2: Point = Point(x=4.0, y=4.0)
-    corner_3: Point = Point(x=0.0, y=4.0)
-    path: list[PathSegment] = [
+    corner_0 = Point(x=0.0, y=0.0)
+    corner_1 = Point(x=4.0, y=0.0)
+    corner_2 = Point(x=4.0, y=4.0)
+    corner_3 = Point(x=0.0, y=4.0)
+    path = [
         PathSegment(spline=Spline.from_points(start=corner_0, end=corner_1)),
         PathSegment(spline=Spline.from_points(start=corner_1, end=corner_2)),
         PathSegment(spline=Spline.from_points(start=corner_2, end=corner_3)),
