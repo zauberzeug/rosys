@@ -6,6 +6,7 @@ import numpy as np
 from .. import rosys
 from ..geometry import Point3d
 from .calibratable_camera_provider import CalibratableCameraProvider
+from .camera import CalibratableCamera
 from .detections import BoxDetection, Detections, PointDetection
 from .detector import Autoupload, Detector
 from .image import Image
@@ -78,12 +79,14 @@ class DetectorSimulation(Detector):
         if image.camera_id not in self.camera_provider.cameras:
             return
         camera = self.camera_provider.cameras[image.camera_id]
+        assert isinstance(camera, CalibratableCamera)
         assert camera.calibration is not None
         detections = image.get_detections(self.name)
         assert detections is not None
+        world_extrinsics = camera.calibration.extrinsics.resolve()
         for obj in self.simulated_objects:
-            viewing_direction = np.array(camera.calibration.extrinsics.rotation.R)[:, 2]
-            object_direction = np.array(obj.position.tuple) - camera.calibration.extrinsics.translation
+            viewing_direction = np.array(world_extrinsics.rotation.R)[:, 2]
+            object_direction = np.array(obj.position.tuple) - world_extrinsics.translation
             if np.dot(viewing_direction, object_direction) < 0:
                 continue
             image_point = camera.calibration.project_to_image(obj.position)
