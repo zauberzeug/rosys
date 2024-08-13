@@ -83,9 +83,9 @@ class Driver:
         """Drives the robot to the specified target point.
 
         :param target: The target point to drive to.
-        :param backward: If True, drives the robot in the opposite direction. Defaults to False.
-        :param throttle_at_end: Whether to throttle down when approaching the target. Defaults to True.
-        :param stop_at_end: Whether to stop at the end of the drive. Defaults to True.
+        :param backward: If True, drives the robot in the opposite direction.
+        :param throttle_at_end: Whether to throttle down when approaching the target.
+        :param stop_at_end: Whether to stop at the end of the drive.
         """
         if self.parameters.minimum_turning_radius:
             await self.drive_circle(target, backward)
@@ -104,7 +104,7 @@ class Driver:
         """Drives the robot in a circular path until the angle between the robot's current direction and the target direction is less than 5 degrees.
 
         :param target: The target point to drive towards.
-        :param backward: If True, drives the robot in the opposite direction. Defaults to False.
+        :param backward: If True, drives the robot in the opposite direction.
         :param stop_at_end: If True, stops the robot at the end of the circular path. Important: in contrast to the other functions, this defaults to False.
         :raises: DrivingAbortedException: If the driving process is aborted.
         """
@@ -133,9 +133,9 @@ class Driver:
         """Drives the robot along a given spline.
 
         :param spline: The spline to drive along.
-        :param flip_hook: Whether to flip the hook offset. Defaults to False.
-        :param throttle_at_end: Whether to throttle down when approaching the target. Defaults to True.
-        :param stop_at_end: Whether to stop at the end of the drive. Defaults to True.
+        :param flip_hook: Whether to flip the hook offset.
+        :param throttle_at_end: Whether to throttle down when approaching the target.
+        :param stop_at_end: Whether to stop at the end of the drive.
         :raises DrivingAbortedException: If the driving process is aborted.
         """
         if spline.start.distance(spline.end) < 0.01:
