@@ -70,26 +70,22 @@ class Driver:
 
     @track
     async def drive_path(self, path: list[PathSegment], stop_at_end: bool = False) -> None:
-        """
-        Drives along the given path composed of PathSegments.
-        Args:
-            path (list[PathSegment]): The path to drive along, composed of PathSegments.
-            stop_at_end (bool, optional): Whether to stop after each segment. Defaults to False, but does stop at the end of the path.
-        Returns:
-            None
+        """Drives along the given path composed of PathSegments.
+
+        :param path: The path to drive along, composed of PathSegments.
+        :param stop_at_end: Whether to stop after each segment. Defaults to False, but does stop at the end of the path.
         """
         for segment in path:
             await self.drive_spline(segment.spline, throttle_at_end=segment == path[-1], flip_hook=segment.backward, stop_at_end=stop_at_end or segment == path[-1])
 
     @track
     async def drive_to(self, target: Point, backward: bool = False, throttle_at_end: bool = True, stop_at_end: bool = True) -> None:
-        """
-        Drives the robot to the specified target point.
-        Args:
-            target (Point): The target point to drive to.
-            backward (bool, optional): If True, drives the robot in the opposite direction. Defaults to False.
-            throttle_at_end (bool, optional): Whether to throttle down when approaching the target. Defaults to True.
-            stop_at_end (bool, optional): Whether to stop at the end of the drive. Defaults to True.
+        """Drives the robot to the specified target point.
+
+        :param target: The target point to drive to.
+        :param backward: If True, drives the robot in the opposite direction. Defaults to False.
+        :param throttle_at_end: Whether to throttle down when approaching the target. Defaults to True.
+        :param stop_at_end: Whether to stop at the end of the drive. Defaults to True.
         """
         if self.parameters.minimum_turning_radius:
             await self.drive_circle(target, backward)
@@ -105,17 +101,12 @@ class Driver:
 
     @track
     async def drive_circle(self, target: Point, backward: bool = False, stop_at_end: bool = False) -> None:
-        """
-        Drives the robot in a circular path until the angle between the robot's current direction and the target direction
-        is less than 5 degrees.
-        Args:
-            target (Point): The target point to drive towards.
-            backward (bool, optional): If True, drives the robot in the opposite direction. Defaults to False.
-            stop_at_end (bool, optional): If True, stops the robot at the end of the circular path. Important: in contrast to the other functions, this defaults to False.
-        Raises:
-            DrivingAbortedException: If the driving process is aborted.
-        Returns:
-            None
+        """Drives the robot in a circular path until the angle between the robot's current direction and the target direction is less than 5 degrees.
+
+        :param target: The target point to drive towards.
+        :param backward: If True, drives the robot in the opposite direction. Defaults to False.
+        :param stop_at_end: If True, stops the robot at the end of the circular path. Important: in contrast to the other functions, this defaults to False.
+        :raises: DrivingAbortedException: If the driving process is aborted.
         """
         while True:
             if self._abort:
@@ -139,17 +130,13 @@ class Driver:
 
     @track
     async def drive_spline(self, spline: Spline, *, flip_hook: bool = False, throttle_at_end: bool = True, stop_at_end: bool = True) -> None:
-        """
-        Drives the robot along a given spline.
-        Args:
-            spline (Spline): The spline to drive along.
-            flip_hook (bool, optional): Whether to flip the hook offset. Defaults to False.
-            throttle_at_end (bool, optional): Whether to throttle down when approaching the target. Defaults to True.
-            stop_at_end (bool, optional): Whether to stop at the end of the drive. Defaults to True.
-        Raises:
-            DrivingAbortedException: If the driving process is aborted.
-        Returns:
-            None
+        """Drives the robot along a given spline.
+
+        :param spline: The spline to drive along.
+        :param flip_hook: Whether to flip the hook offset. Defaults to False.
+        :param throttle_at_end: Whether to throttle down when approaching the target. Defaults to True.
+        :param stop_at_end: Whether to stop at the end of the drive. Defaults to True.
+        :raises DrivingAbortedException: If the driving process is aborted.
         """
         if spline.start.distance(spline.end) < 0.01:
             return  # NOTE: skip tiny splines
