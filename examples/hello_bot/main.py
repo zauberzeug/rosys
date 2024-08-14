@@ -6,8 +6,8 @@ from nicegui import ui
 
 import rosys
 from rosys.automation import Automator, automation_controls
-from rosys.driving import Driver, Odometer, Steerer, joystick, keyboard_control, robot_object, PathSegment
-from rosys.geometry import Prism, Spline, Point
+from rosys.driving import Driver, Odometer, PathSegment, Steerer, joystick, keyboard_control, robot_object
+from rosys.geometry import Point, Prism, Spline
 from rosys.hardware import (
     CanHardware,
     RobotBrain,
@@ -19,18 +19,13 @@ from rosys.hardware import (
 )
 
 
-async def drive_square():
-    corner_0 = Point(x=0.0, y=0.0)
-    corner_1 = Point(x=4.0, y=0.0)
-    corner_2 = Point(x=4.0, y=4.0)
-    corner_3 = Point(x=0.0, y=4.0)
-    path = [
-        PathSegment(spline=Spline.from_points(start=corner_0, end=corner_1)),
-        PathSegment(spline=Spline.from_points(start=corner_1, end=corner_2)),
-        PathSegment(spline=Spline.from_points(start=corner_2, end=corner_3)),
-        PathSegment(spline=Spline.from_points(start=corner_3, end=corner_0)),
-    ]
-    await driver.drive_path(path, stop_at_end=True)
+async def drive_square() -> None:
+    await driver.drive_path([
+        PathSegment(spline=Spline.from_points(Point(x=0, y=0), Point(x=4, y=0))),
+        PathSegment(spline=Spline.from_points(Point(x=4, y=0), Point(x=4, y=4))),
+        PathSegment(spline=Spline.from_points(Point(x=4, y=4), Point(x=0, y=4))),
+        PathSegment(spline=Spline.from_points(Point(x=0, y=4), Point(x=0, y=0))),
+    ], stop_at_end=True)
 
 log_configuration.setup()
 
