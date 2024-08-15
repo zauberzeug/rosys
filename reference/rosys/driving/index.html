@@ -471,6 +471,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../examples/coordinate_frames/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Coordinate Frames
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../examples/schedule/" class="md-nav__link">
         
   
@@ -663,6 +684,42 @@
   <a href="#rosys.driving.Driver.abort" class="md-nav__link">
     <span class="md-ellipsis">
       abort
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.driving.Driver.drive_circle" class="md-nav__link">
+    <span class="md-ellipsis">
+      drive_circle
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.driving.Driver.drive_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      drive_path
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.driving.Driver.drive_spline" class="md-nav__link">
+    <span class="md-ellipsis">
+      drive_spline
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.driving.Driver.drive_to" class="md-nav__link">
+    <span class="md-ellipsis">
+      drive_to
     </span>
   </a>
   
@@ -1129,6 +1186,42 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#rosys.driving.Driver.drive_circle" class="md-nav__link">
+    <span class="md-ellipsis">
+      drive_circle
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.driving.Driver.drive_path" class="md-nav__link">
+    <span class="md-ellipsis">
+      drive_path
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.driving.Driver.drive_spline" class="md-nav__link">
+    <span class="md-ellipsis">
+      drive_spline
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.driving.Driver.drive_to" class="md-nav__link">
+    <span class="md-ellipsis">
+      drive_to
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1350,6 +1443,142 @@ Its <code>parameters</code> allow controlling the specific drive behavior.</p>
     <div class="doc doc-contents ">
 
       <p>Abort the current drive routine.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.driving.Driver.drive_circle" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">drive_circle</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.driving.Driver.drive_circle" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">drive_circle</span><span class="p">(</span>
+    <span class="n">target</span><span class="p">:</span> <span class="n">Point</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">angle_threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">deg2rad</span><span class="p">(</span><span class="mi">5</span><span class="p">),</span>
+    <span class="n">backward</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">stop_at_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+      <p>Drive in a circular path.</p>
+<p>When the angle between the robot's current direction and the target direction is less than <code>angle_threshold</code>,
+the robot stops driving.</p>
+<p>:param target: The target point to drive towards.
+:param angle_threshold: The angle threshold to stop driving (radians, default: 5°).
+:param backward: Whether to drive backwards (default: <code>False</code>).
+:param stop_at_end: Whether to stop the robot at the end of the circular path (default: <code>False</code>).
+:raises: DrivingAbortedException: If the driving process is aborted.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.driving.Driver.drive_path" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">drive_path</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.driving.Driver.drive_path" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">drive_path</span><span class="p">(</span>
+    <span class="n">path</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">PathSegment</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">throttle_at_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">stop_at_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+      <p>Drive along a given path.</p>
+<p>:param path: The path to drive along, composed of PathSegments.
+:param throttle_at_end: Whether to throttle down when approaching the end of the path (default: <code>True</code>).
+:param stop_at_end: Whether to stop at the end of the path (default: <code>True</code>).
+:raises: DrivingAbortedException: If the driving process is aborted.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.driving.Driver.drive_spline" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">drive_spline</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.driving.Driver.drive_spline" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">drive_spline</span><span class="p">(</span>
+    <span class="n">spline</span><span class="p">:</span> <span class="n">Spline</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">flip_hook</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">throttle_at_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">stop_at_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+      <p>Drive along a given spline.</p>
+<p>:param spline: The spline to drive along.
+:param flip_hook: Whether to flip the hook offset (default: <code>False</code>).
+:param throttle_at_end: Whether to throttle down when approaching the end of the spline (default: <code>True</code>).
+:param stop_at_end: Whether to stop at the end of the spline (default: <code>True</code>).
+:raises DrivingAbortedException: If the driving process is aborted.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.driving.Driver.drive_to" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">drive_to</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.driving.Driver.drive_to" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">drive_to</span><span class="p">(</span>
+    <span class="n">target</span><span class="p">:</span> <span class="n">Point</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">backward</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">throttle_at_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">stop_at_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+      <p>Drive to a given target point.</p>
+<p>:param target: The target point to drive to.
+:param backward: Whether to drive backwards (default: <code>False</code>).
+:param throttle_at_end: Whether to throttle down when approaching the target point (default: <code>True</code>).
+:param stop_at_end: Whether to stop at the target point (default: <code>True</code>).
+:raises: DrivingAbortedException: If the driving process is aborted.</p>
 
     </div>
 
