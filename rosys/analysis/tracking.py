@@ -1,7 +1,7 @@
 import asyncio
 import uuid
 from collections import defaultdict
-from collections.abc import Callable
+from collections.abc import Callable, Coroutine
 from functools import wraps
 from typing import ParamSpec, TypeVar
 
@@ -16,7 +16,7 @@ class Track:
     def __init__(self) -> None:
         self.stacks: defaultdict[int, dict[int, str]] = defaultdict(dict)
 
-    def __call__(self, f: Callable[_P, _T]) -> Callable[_P, _T]:
+    def __call__(self, f: Callable[_P, Coroutine[None, None, _T]]) -> Callable[_P, Coroutine[None, None, _T]]:
         @wraps(f)
         async def wrap(*args, **kwargs):
             task_id = id(asyncio.current_task())

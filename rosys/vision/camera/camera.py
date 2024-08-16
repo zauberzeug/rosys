@@ -42,9 +42,13 @@ class Camera(abc.ABC):
 
         create_image_route(self)
 
+        self._connect_tasks = set()
+
         if connect_after_init:
             if asyncio.get_event_loop().is_running():
-                asyncio.create_task(self.connect())
+                task = asyncio.create_task(self.connect())
+                self._connect_tasks.add(task)
+                task.add_done_callback(self._connect_tasks.discard)
             else:
                 rosys.on_startup(self.connect)
 

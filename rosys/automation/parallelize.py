@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Coroutine
+from typing import Any
 
 
 class parallelize:
@@ -19,10 +20,10 @@ class parallelize:
         iter_sends = [coro_iter.send for coro_iter in coro_iters]
         iter_throws = [coro_iter.throw for coro_iter in coro_iters]
         sends = iter_sends[:]
-        messages = [None for _ in sends]
+        messages: list[Any | None] = [None for _ in sends]
         completed = [False for _ in sends]
         waiting = [False for _ in sends]
-        futures = [None for _ in sends]
+        futures: list[asyncio.Future | asyncio.Task | None] = [None for _ in sends]
 
         try:
             while not all(completed):
@@ -30,7 +31,8 @@ class parallelize:
 
                 for i in active_coros:
                     if waiting[i]:
-                        if futures[i].done():
+                        future = futures[i]
+                        if isinstance(future, asyncio.Future | asyncio.Task) and future.done():
                             waiting[i] = False
                             futures[i] = None
                         else:
