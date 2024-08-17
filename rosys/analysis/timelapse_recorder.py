@@ -46,7 +46,7 @@ class TimelapseRecorder:
         self.camera: Camera | None = None
         VIDEO_PATH.mkdir(parents=True, exist_ok=True)
         rosys.on_repeat(self._capture, 0.01)
-        self.frame_info_builder: Callable[str | None] = lambda image: None
+        self.frame_info_builder: Callable[[RosysImage], str | None] = lambda image: None
 
     async def _capture(self) -> None:
         if self.camera is None:
