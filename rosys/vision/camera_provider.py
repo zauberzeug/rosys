@@ -73,6 +73,10 @@ class CameraProvider(Generic[T], persistence.PersistentModule, metaclass=abc.ABC
                 while camera.images and camera.images[0].time < rosys.time() - max_age_seconds:
                     del camera.images[0]
 
+    @property
+    def first_connected_camera(self) -> T | None:
+        return next((camera for camera in self.cameras.values() if camera.is_connected), None)
+
     @abc.abstractmethod
     async def update_device_list(self) -> None:
         pass
