@@ -60,7 +60,10 @@ class RobotBrain:
             await self.lizard_firmware.flash_p0()
 
         with ui.row().classes('items-center'):
-            ui.label().bind_text_from(self.lizard_firmware, 'online_version', backward=lambda x: f'Online: {x or "?"}')
+            ui.select(self.lizard_firmware.online_versions.keys()).bind_value(
+                self.lizard_firmware, 'selected_online_version')
+            ui.button(on_click=online_update).props('icon=refresh flat round dense') \
+                .tooltip('Download and flash online version to Core and P0 microcontrollers')
             online_update_button = ui.button(on_click=online_update).props('icon=file_download flat round dense') \
                 .tooltip('Download and flash online version to Core and P0 microcontrollers')
         with ui.row().classes('items-center'):
