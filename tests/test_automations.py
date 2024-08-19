@@ -82,8 +82,11 @@ async def test_parallelize(automator: Automator):
         finally:
             events.append('fast done')
 
+    async def run(*, return_when_first_completed: bool):
+        await rosys.automation.parallelize(slow(), fast(), return_when_first_completed=return_when_first_completed)
+
     events.clear()
-    automator.start(rosys.automation.parallelize(slow(), fast(), return_when_first_completed=True))
+    automator.start(run(return_when_first_completed=True))
     await forward(seconds=10)
     assert events == [
         'slow 0',
@@ -100,7 +103,7 @@ async def test_parallelize(automator: Automator):
     assert automator.is_stopped
 
     events.clear()
-    automator.start(rosys.automation.parallelize(slow(), fast(), return_when_first_completed=False))
+    automator.start(run(return_when_first_completed=False))
     await forward(seconds=10)
     assert events == [
         'slow 0',
@@ -117,3 +120,27 @@ async def test_parallelize(automator: Automator):
         'slow done',
     ]
     assert automator.is_stopped
+
+
+async def test_parallelize_exception(automator: Automator):
+    failures: list[str] = []
+    automator.AUTOMATION_FAILED.register(failures.append)
+
+    async def slow():
+        for i in range(5):
+            print(f'slow {i}')
+            if i == 3:
+                raise ValueError('i is 3')
+            await rosys.sleep(0.5)
+
+    async def fast():
+        for i in range(5):
+            print(f'fast {i}')
+            await rosys.sleep(0.2)
+
+    async def run():
+        await rosys.automation.parallelize(slow(), fast())
+
+    automator.start(run())
+    await forward(seconds=10)
+    assert failures == ['i is 3']

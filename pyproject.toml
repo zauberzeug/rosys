@@ -74,6 +74,7 @@ build-backend = "poetry.core.masonry.api"
 [tool.mypy]
 python_version = "3.10"
 install_types = true
+check_untyped_defs = true
 
 [[tool.mypy.overrides]]
 module = [
@@ -161,5 +162,4 @@ ignore = [
     "PLR0913", # too many arguments
     "PLR0915", # too many statements
     "PLR2004", # magic value comparison
-    "RUF006", # dangling asyncio tasks
 ]
