@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class LizardFirmware:
-    GITHUB_URL = 'https://api.github.com/repos/zauberzeug/lizard/releases/latest'
+    GITHUB_URL = 'https://api.github.com/repos/zauberzeug/lizard/releases'
     PATH = Path('~/.lizard').expanduser()
     PATH.mkdir(exist_ok=True)
 
@@ -27,7 +27,8 @@ class LizardFirmware:
         self.core_version: str | None = None
         self.p0_version: str | None = None
         self.local_version: str | None = None
-        self.online_version: str | None = None
+        self.online_versions: dict[str, str] = {}
+        self.selected_online_version: str | None = None
 
         self.local_checksum: str | None = None
         self.core_checksum: str | None = None
@@ -45,10 +46,18 @@ class LizardFirmware:
 
     async def read_online_version(self) -> None:
         response: dict[str, str] = (await rosys.run.io_bound(requests.get, self.GITHUB_URL)).json()
-        try:
-            self.online_version = response['tag_name'].removeprefix('v')
-        except KeyError:
-            rosys.notify(response.get('message', 'Could not access online version'), 'warning')
+        for i, item in enumerate(response):
+            try:
+                version_name = item['tag_name'].removeprefix('v')
+                if i == 0:
+                    self.selected_online_version = version_name
+                browser_download_url = item['assets'][0]['browser_download_url']
+                if not browser_download_url.endswith('.zip'):
+                    continue
+                self.online_versions[version_name] = browser_download_url
+            except KeyError:
+                rosys.notify(response.get('message', 'Could not access online version'), 'warning')
+                break
 
     def read_local_version(self) -> None:
         path = self.PATH / 'build' / 'lizard.bin'
@@ -88,7 +97,7 @@ class LizardFirmware:
 
     @awaitable
     def download(self) -> None:
-        url = requests.get(self.GITHUB_URL, timeout=5.0).json()['assets'][0]['browser_download_url']
+        url = self.online_versions[self.selected_online_version]
         zip_path = self.PATH / 'lizard.zip'
         zip_path.write_bytes(requests.get(url, timeout=5.0).content)
         subprocess.run(['unzip', '-o', zip_path], cwd=self.PATH, check=True)
