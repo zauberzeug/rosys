@@ -3,9 +3,10 @@ from __future__ import annotations
 import io
 import logging
 import os
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
-from typing import Callable, Protocol
+from typing import Protocol
 
 import humanize
 from PIL import Image, ImageDraw, ImageFont
