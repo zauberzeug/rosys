@@ -6,17 +6,15 @@ import signal
 import subprocess
 import uuid
 from collections.abc import Callable, Generator
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
-from concurrent.futures.process import BrokenProcessPool
 from contextlib import contextmanager
-from functools import partial, wraps
+from functools import wraps
 from pathlib import Path
 from typing import Any
 
-from .helpers import is_stopping, is_test
+from nicegui import run
 
-process_pool = ProcessPoolExecutor()
-thread_pool = ThreadPoolExecutor(thread_name_prefix='run.py thread_pool')
+from .helpers import is_stopping
+
 running_cpu_bound_processes: list[str] = []  # NOTE is used in tests to advance time slower until computation is done
 running_sh_processes: list[subprocess.Popen] = []
 log = logging.getLogger('rosys.run')
@@ -25,9 +23,8 @@ log = logging.getLogger('rosys.run')
 async def io_bound(callback: Callable, *args: Any, **kwargs: Any):
     if is_stopping():
         return
-    loop = asyncio.get_running_loop()
     try:
-        return await loop.run_in_executor(thread_pool, partial(callback, *args, **kwargs))
+        return await run.io_bound(callback, *args, **kwargs)
     except RuntimeError as e:
         if 'cannot schedule new futures after shutdown' not in str(e):
             raise
@@ -48,10 +45,7 @@ async def cpu_bound(callback: Callable, *args: Any):
         return
     with cpu():
         try:
-            loop = asyncio.get_running_loop()
-            return await loop.run_in_executor(process_pool, callback, *args)
-        except BrokenProcessPool:
-            pass
+            return await run.cpu_bound(callback, *args)
         except RuntimeError as e:
             if 'cannot schedule new futures after shutdown' not in str(e):
                 raise
@@ -137,15 +131,8 @@ def _kill(proc: subprocess.Popen) -> None:
 
 
 def tear_down() -> None:
-    # stopping process as described in https://www.cloudcity.io/blog/2019/02/27/things-i-wish-they-told-me-about-multiprocessing-in-python/
-    log.info('teardown thread_pool...')
-    thread_pool.shutdown(wait=False, cancel_futures=True)
+    log.info('teardown shell processes...')
     for process in running_sh_processes:
         _kill(process)
     running_sh_processes.clear()
-    if not is_test():
-        log.info('teardown process_pool...')
-        for process_ in process_pool._processes.values():  # pylint: disable=protected-access
-            process_.kill()
-        process_pool.shutdown(wait=True, cancel_futures=True)
     log.info('teardown complete.')
