@@ -19,11 +19,7 @@ def export_button(title: str = 'Export', route: str = '/export', tmp_filepath: P
 
 def import_button(title: str = 'Import', after_import: Callable | None = None) -> ui.button:
     async def restore_from_file(e: events.UploadEventArguments) -> None:
-        all_data = json.load(e.content)
-        assert isinstance(all_data, dict)
-        for name, data in all_data.items():
-            registry.modules[name].restore(data)
-        await registry.backup(force=True)
+        await registry.restore_from_export(json.load(e.content))
         dialog.close()
         if after_import is not None:
             await invoke(after_import)
