@@ -27,7 +27,7 @@ jobs:
   pytest:
     strategy:
       matrix:
-        python: ["3.10", "3.11"]
+        python: ["3.10", "3.11", "3.12"]
       fail-fast: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
