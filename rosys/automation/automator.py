@@ -87,7 +87,7 @@ class Automator:
             return
         self.stop(because='new automation starts')
         self.automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
-        rosys.background_tasks.create(self.automation.__await__(), name='automation')  # type: ignore
+        rosys.background_tasks.create(self.automation.run(), name='automation')  # type: ignore
         self.AUTOMATION_STARTED.emit()
         rosys.notify('automation started')
         if paused:
