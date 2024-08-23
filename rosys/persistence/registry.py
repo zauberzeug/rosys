@@ -63,7 +63,6 @@ def restore() -> None:
 
 
 async def restore_from_export(export_data: dict) -> None:
-    assert isinstance(export_data, dict)
     for name, data in export_data.items():
         modules[name].restore(data)
     await backup(force=True)
