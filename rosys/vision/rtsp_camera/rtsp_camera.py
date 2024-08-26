@@ -108,26 +108,24 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self._add_image(image)
 
     def set_fps(self, fps: int) -> None:
-        if self.device is None:
-            return
+        assert self.device is not None
 
         self.device.set_fps(fps)
         self.polling_interval = 1.0 / fps
 
     def get_fps(self) -> int | None:
-        if self.device is None:
-            return None
+        assert self.device is not None
+
         return self.device.get_fps()
 
     def set_jovision_profile(self, profile: int) -> None:
-        if self.device is None:
-            return
+        assert self.device is not None
 
         self.device.set_jovision_profile(profile)
 
     def get_jovision_profile(self) -> int | None:
-        if self.device is None:
-            return None
+        assert self.device is not None\
+
         return self.device.get_jovision_profile()
 
     async def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:

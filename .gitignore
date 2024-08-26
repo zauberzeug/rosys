@@ -7,3 +7,4 @@ detector/
 *.swp
 site/
 .nicegui/
+test.py

@@ -25,6 +25,8 @@ class RobotBrain:
     def __init__(self, communication: Communication) -> None:
         self.LINE_RECEIVED = Event()
         """a line has been received from the microcontroller (argument: line as string)"""
+        self.FLASH_P0_COMPLETE = Event()
+        """flashing p0 was successful and 'Replica complete' was received"""
 
         self.log = logging.getLogger('rosys.robot_rain')
 
@@ -135,6 +137,8 @@ class RobotBrain:
                 if self.clock_offset is None:
                     continue
                 self.hardware_time = millis / 1000 + self.clock_offset
+            if 'Replica complete' in line:
+                self.FLASH_P0_COMPLETE.emit()
             self.LINE_RECEIVED.emit(line)
             if self.hardware_time is None:
                 continue

@@ -1,11 +1,7 @@
 import logging.config
 
-import icecream
-
 
 def setup():
-    icecream.install()
-
     config = {
         'version': 1,
         'disable_existing_loggers': True,

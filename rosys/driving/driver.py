@@ -1,4 +1,3 @@
-from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Protocol
 
@@ -70,30 +69,39 @@ class Driver:
         self._abort = True
 
     @track
-    async def drive_square(self) -> None:
-        start_pose = deepcopy(self.prediction)
-        for x, y in [(1, 0), (1, 1), (0, 1), (0, 0)]:
-            await self.drive_to(start_pose.transform(Point(x=x, y=y)))
+    async def drive_path(self,
+                         path: list[PathSegment], *,
+                         throttle_at_end: bool = True,
+                         stop_at_end: bool = True) -> None:
+        """Drive along a given path.
 
-    @track
-    async def drive_arc(self) -> None:
-        while self.prediction.x < 2:
-            if self._abort:
-                self._abort = False
-                raise DrivingAbortedException()
-            await self.wheels.drive(1, np.deg2rad(25))
-            await rosys.sleep(0.1)
-        await self.wheels.stop()
-
-    @track
-    async def drive_path(self, path: list[PathSegment]) -> None:
+        :param path: The path to drive along, composed of PathSegments.
+        :param throttle_at_end: Whether to throttle down when approaching the end of the path (default: ``True``).
+        :param stop_at_end: Whether to stop at the end of the path (default: ``True``).
+        :raises: DrivingAbortedException: If the driving process is aborted.
+        """
         for segment in path:
-            await self.drive_spline(segment.spline, throttle_at_end=segment == path[-1], flip_hook=segment.backward)
+            await self.drive_spline(segment.spline,
+                                    flip_hook=segment.backward,
+                                    throttle_at_end=throttle_at_end and segment == path[-1],
+                                    stop_at_end=stop_at_end and segment == path[-1])
 
     @track
-    async def drive_to(self, target: Point, backward: bool = False) -> None:
+    async def drive_to(self,
+                       target: Point, *,
+                       backward: bool = False,
+                       throttle_at_end: bool = True,
+                       stop_at_end: bool = True) -> None:
+        """Drive to a given target point.
+
+        :param target: The target point to drive to.
+        :param backward: Whether to drive backwards (default: ``False``).
+        :param throttle_at_end: Whether to throttle down when approaching the target point (default: ``True``).
+        :param stop_at_end: Whether to stop at the target point (default: ``True``).
+        :raises: DrivingAbortedException: If the driving process is aborted.
+        """
         if self.parameters.minimum_turning_radius:
-            await self.drive_circle(target, backward)
+            await self.drive_circle(target, backward=backward, stop_at_end=False)
 
         robot_position = self.prediction.point
         approach_spline = Spline(
@@ -102,10 +110,25 @@ class Driver:
             control2=robot_position.interpolate(target, 2/3),
             end=target,
         )
-        await self.drive_spline(approach_spline, flip_hook=backward)
+        await self.drive_spline(approach_spline, flip_hook=backward, throttle_at_end=throttle_at_end, stop_at_end=stop_at_end)
 
     @track
-    async def drive_circle(self, target: Point, backward: bool = False) -> None:
+    async def drive_circle(self,
+                           target: Point, *,
+                           angle_threshold: float = np.deg2rad(5),
+                           backward: bool = False,
+                           stop_at_end: bool = True) -> None:
+        """Drive in a circular path.
+
+        When the angle between the robot's current direction and the target direction is less than ``angle_threshold``,
+        the robot stops driving.
+
+        :param target: The target point to drive towards.
+        :param angle_threshold: The angle threshold to stop driving (radians, default: 5°).
+        :param backward: Whether to drive backwards (default: ``False``).
+        :param stop_at_end: Whether to stop the robot at the end of the circular path (default: ``False``).
+        :raises: DrivingAbortedException: If the driving process is aborted.
+        """
         while True:
             if self._abort:
                 self._abort = False
@@ -114,7 +137,7 @@ class Driver:
             if backward:
                 target_yaw += np.pi
             angle = eliminate_2pi(target_yaw - self.prediction.yaw)
-            if abs(angle) < np.deg2rad(5):
+            if abs(angle) < angle_threshold:
                 break
             linear = 0.5 if not backward else -0.5
             sign = 1 if angle > 0 else -1
@@ -123,9 +146,23 @@ class Driver:
             angular = linear / self.parameters.minimum_turning_radius * sign
             await self.wheels.drive(*self._throttle(linear, angular))
             await rosys.sleep(0.1)
+        if stop_at_end:
+            await self.wheels.stop()
 
     @track
-    async def drive_spline(self, spline: Spline, *, flip_hook: bool = False, throttle_at_end: bool = True) -> None:
+    async def drive_spline(self,
+                           spline: Spline, *,
+                           flip_hook: bool = False,
+                           throttle_at_end: bool = True,
+                           stop_at_end: bool = True) -> None:
+        """Drive along a given spline.
+
+        :param spline: The spline to drive along.
+        :param flip_hook: Whether to flip the hook offset (default: ``False``).
+        :param throttle_at_end: Whether to throttle down when approaching the end of the spline (default: ``True``).
+        :param stop_at_end: Whether to stop at the end of the spline (default: ``True``).
+        :raises DrivingAbortedException: If the driving process is aborted.
+        """
         if spline.start.distance(spline.end) < 0.01:
             return  # NOTE: skip tiny splines
 
@@ -174,7 +211,8 @@ class Driver:
             await rosys.sleep(0.1)
 
         self.state = None
-        await self.wheels.stop()
+        if stop_at_end:
+            await self.wheels.stop()
 
     def _throttle(self, linear: float, angular: float) -> tuple[float, float]:
         factor = self.throttle_factor()

@@ -7,7 +7,7 @@ from rosys.vision import MjpegCamera, MjpegCameraProvider
 from rosys.vision.mjpeg_camera.vendors import VendorType, mac_to_vendor
 
 
-async def test_mjpeg_camera(integration):
+async def test_mjpeg_camera(rosys_integration):
     try:
         connected_uids = await MjpegCameraProvider().scan_for_cameras()
     except Exception as e:
@@ -26,7 +26,7 @@ async def test_mjpeg_camera(integration):
 
 
 @pytest_asyncio.fixture()
-async def motec_settings_interface(integration):
+async def motec_settings_interface(rosys_integration):
     try:
         connected_uids = await MjpegCameraProvider().scan_for_cameras()
     except Exception as e:

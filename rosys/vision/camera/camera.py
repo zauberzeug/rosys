@@ -5,6 +5,9 @@ import asyncio
 from collections import deque
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from typing import Any
+
+from typing_extensions import Self
 
 from ... import rosys
 from ...event import Event
@@ -39,9 +42,13 @@ class Camera(abc.ABC):
 
         create_image_route(self)
 
+        self._connect_tasks = set()
+
         if connect_after_init:
             if asyncio.get_event_loop().is_running():
-                asyncio.create_task(self.connect())
+                task = asyncio.create_task(self.connect())
+                self._connect_tasks.add(task)
+                task.add_done_callback(self._connect_tasks.discard)
             else:
                 rosys.on_startup(self.connect)
 
@@ -88,6 +95,14 @@ class Camera(abc.ABC):
             'connect_after_init': self.connect_after_init,
             'streaming': self.should_stream,
         }
+
+    @classmethod
+    def args_from_dict(cls, data: dict[str, Any]) -> dict:
+        return data
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Self:
+        return cls(**cls.args_from_dict(data))
 
     @property
     def is_connected(self) -> bool:

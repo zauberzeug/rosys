@@ -8,7 +8,7 @@ from typing import overload
 import cv2
 import numpy as np
 
-from ..geometry import Point, Point3d, Rotation
+from ..geometry import Frame3d, Point, Point3d, Pose3d, Rotation
 from .image import Image, ImageSize
 
 
@@ -16,6 +16,17 @@ class CameraModel(str, Enum):
     PINHOLE = 'pinhole'
     FISHEYE = 'fisheye'
     OMNIDIRECTIONAL = 'omnidirectional'
+
+
+@dataclass(slots=True, kw_only=True)
+class OmnidirParameters:
+    """The parameters for an omnidirectional camera.
+
+    :param xi: The omnidirectional camera parameter xi.
+    :param rotation: Rotation used to determine crop when undistorting to pinhole image.
+    """
+    xi: float = 0.0
+    rotation: Rotation = field(default_factory=Rotation.zero)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -32,8 +43,7 @@ class Intrinsics:
     model: CameraModel = CameraModel.PINHOLE
     matrix: list[list[float]]
     distortion: list[float]
-    xi: float = 0.0
-    rotation: Rotation = field(default_factory=Rotation.zero)
+    omnidir_params: OmnidirParameters | None = None
     size: ImageSize
 
     @staticmethod
@@ -43,49 +53,27 @@ class Intrinsics:
                                 [0, focal_length, size.height / 2],
                                 [0, 0, 1]]
         D: list[float] = [0] * 5
-        rotation = Rotation.zero()
-        return Intrinsics(matrix=K, distortion=D, rotation=rotation, size=size)
+        return Intrinsics(matrix=K, distortion=D, size=size)
 
 
 log = logging.getLogger('rosys.world.calibration')
 
 
 @dataclass(slots=True, kw_only=True)
-class Extrinsics:
-    """The extrinsic parameters of a camera.
-
-    :param rotation: The rotation matrix R.
-    :param translation: The translation vector t.
-    """
-    rotation: Rotation = field(default_factory=lambda: Rotation.from_euler(np.pi, 0, 0))
-    translation: list[float] = field(default_factory=lambda: [0.0, 0.0, 1.0])
-
-
-@dataclass(slots=True, kw_only=True)
 class Calibration:
     """Represents the full calibration of a camera."""
     intrinsics: Intrinsics
-    extrinsics: Extrinsics = field(default_factory=Extrinsics)
-
-    @property
-    def rotation(self) -> Rotation:
-        return self.extrinsics.rotation * self.intrinsics.rotation
-
-    @property
-    def rotation_array(self) -> np.ndarray:
-        return np.dot(self.extrinsics.rotation.R, self.intrinsics.rotation.R)
-
-    @property
-    def center_point(self) -> Point3d:
-        return Point3d(x=self.extrinsics.translation[0], y=self.extrinsics.translation[1], z=self.extrinsics.translation[2])
+    extrinsics: Pose3d = field(default_factory=Pose3d)
 
     @staticmethod
     def from_points(world_points: list[Point3d] | list[list[Point3d]],
                     image_points: list[Point] | list[list[Point]],
+                    *,
                     image_size: ImageSize,
                     f0: float,
                     rational_model: bool = False,
-                    camera_model: CameraModel = CameraModel.PINHOLE) -> Calibration:
+                    camera_model: CameraModel = CameraModel.PINHOLE,
+                    frame: Frame3d | None = None) -> Calibration:
         """Estimate the camera calibration from corresponding world and image points.
 
         :param world_points: The observed points in 3D world coordinates.
@@ -94,6 +82,7 @@ class Calibration:
         :param f0: An initial guess for the focal length.
         :param rational_model: Whether to use the rational camera model (only applies to pinhole cameras).
         :param camera_model: The camera model to use.
+        :param frame: The coordinate frame of the world points and the extrinsic camera pose.
 
         :return: The estimated camera calibration.
         """
@@ -164,41 +153,52 @@ class Calibration:
         else:
             raise ValueError(f'Unknown camera model "{camera_model}"')
 
-        rotation0 = Rotation(R=np.eye(3).tolist())
         intrinsics = Intrinsics(matrix=K.tolist(),
                                 distortion=D.tolist()[0],
-                                rotation=rotation0,
                                 size=image_size,
                                 model=camera_model,
-                                xi=xi)
+                                omnidir_params=OmnidirParameters(xi=xi))
 
         rotation = Rotation.from_rvec(rvecs[0]).T
-        translation = (-np.array(rotation.R).dot(tvecs[0])).flatten().tolist()
-        extrinsics = Extrinsics(rotation=rotation, translation=translation)
+        translation = -np.array(rotation.R).dot(tvecs[0])
+        extrinsics = Pose3d(x=translation[0, 0],
+                            y=translation[1, 0],
+                            z=translation[2, 0],
+                            rotation=rotation).in_frame(frame)
 
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 
     @overload
-    def project_to_image(self, world_coordinates: Point3d) -> Point | None: ...
+    def project_to_image(self,
+                         world_coordinates: Point3d,
+                         frame: Frame3d | None = None,
+                         ) -> Point | None: ...
 
     @overload
-    def project_to_image(self, world_coordinates: np.ndarray) -> np.ndarray: ...
+    def project_to_image(self,
+                         world_coordinates: np.ndarray,
+                         frame: Frame3d | None = None,
+                         ) -> np.ndarray: ...
 
-    def project_to_image(self, world_coordinates: Point3d | np.ndarray) -> Point | None | np.ndarray:
+    def project_to_image(self,
+                         world_coordinates: Point3d | np.ndarray,
+                         frame: Frame3d | None = None,
+                         ) -> Point | np.ndarray | None:
         """Project a point in world coordinates to the image plane.
 
         This takes into account the camera's intrinsic and extrinsic parameters.
         """
         if isinstance(world_coordinates, Point3d):
             world_array = np.array([world_coordinates.tuple], dtype=np.float32)
-            image_array = self.project_to_image(world_array)
+            image_array = self.project_to_image(world_array, frame=frame)
             if np.isnan(image_array).any():
                 return None
             return Point(x=image_array[0, 0], y=image_array[0, 1])  # pylint: disable=unsubscriptable-object
 
-        R = self.rotation_array
+        world_extrinsics = self.extrinsics.relative_to(frame)
+        R = world_extrinsics.rotation.matrix
         Rod = cv2.Rodrigues(R.T)[0]
-        t = -R.T @ self.extrinsics.translation
+        t = -R.T @ world_extrinsics.translation
         K = np.array(self.intrinsics.matrix)
         D = np.array(self.intrinsics.distortion, dtype=float)
 
@@ -208,7 +208,8 @@ class Calibration:
         elif self.intrinsics.model == CameraModel.FISHEYE:
             image_array, _ = cv2.fisheye.projectPoints(world_coordinates.reshape(-1, 1, 3), Rod, t, K, D)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
-            xi = self.intrinsics.xi
+            assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
+            xi = self.intrinsics.omnidir_params.xi
             image_array, _ = cv2.omnidir.projectPoints(world_coordinates.reshape(-1, 1, 3), Rod, t, K, xi, D)
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
@@ -216,7 +217,7 @@ class Calibration:
 
         if self.intrinsics.model != CameraModel.OMNIDIRECTIONAL:
             world_coordinates = world_coordinates.reshape(-1, 3)
-            local_coordinates = (world_coordinates - np.array(self.extrinsics.translation)) @ R
+            local_coordinates = (world_coordinates - world_extrinsics.translation) @ R
             image_array[local_coordinates[:, 2] < 0, :] = np.nan
 
         return image_array.reshape(-1, 2)
@@ -242,10 +243,11 @@ class Calibration:
                 return None
             return Point3d(x=world_points[0, 0], y=world_points[0, 1], z=world_points[0, 2])  # pylint: disable=unsubscriptable-object
 
+        world_extrinsics = self.extrinsics.resolve()
         image_rays = self.points_to_rays(image_coordinates.astype(np.float32).reshape(-1, 1, 2))
-        objPoints = image_rays @ self.rotation_array.T
-        Z = self.extrinsics.translation[-1]
-        t = np.array(self.extrinsics.translation)
+        objPoints = image_rays @ world_extrinsics.rotation.matrix.T
+        Z = world_extrinsics.z
+        t = world_extrinsics.translation_vector
         world_points = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
 
         reprojection = self.project_to_image(world_points)
@@ -264,8 +266,9 @@ class Calibration:
         elif self.intrinsics.model == CameraModel.FISHEYE:
             undistorted = cv2.fisheye.undistortPoints(image_points, K, D)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
-            R = np.array(self.intrinsics.rotation.R, dtype=np.float32)
-            xi = np.array(self.intrinsics.xi, dtype=np.float32)
+            assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
+            R = self.intrinsics.omnidir_params.rotation.matrix.astype(np.float32)
+            xi = np.array(self.intrinsics.omnidir_params.xi, dtype=np.float32)
             undistorted = cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R)
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
@@ -289,8 +292,9 @@ class Calibration:
             new_K = self.get_undistorted_camera_matrix(crop=crop)
             return cv2.fisheye.undistortPoints(image_points, K, D, P=new_K)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
-            R = np.array(self.intrinsics.rotation.R, dtype=np.float32)
-            xi = np.array(self.intrinsics.xi, dtype=np.float32)
+            assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
+            R = np.array(self.intrinsics.omnidir_params.rotation, dtype=np.float32)
+            xi = np.array(self.intrinsics.omnidir_params.xi, dtype=np.float32)
             return cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R)
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
@@ -383,8 +387,9 @@ class Calibration:
             flags = cv2.omnidir.RECTIFY_PERSPECTIVE
             new_K = self.get_undistorted_camera_matrix(crop=crop)
 
-            R = np.array(self.intrinsics.rotation.R)
-            xi = np.array(self.intrinsics.xi)
+            assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
+            R = np.array(self.intrinsics.omnidir_params.rotation.R)
+            xi = np.array(self.intrinsics.omnidir_params.xi)
             dst = cv2.omnidir.undistortImage(image_array, K=K, D=D, xi=xi, Knew=new_K,
                                              flags=flags, new_size=(w, h), R=R)
         else:

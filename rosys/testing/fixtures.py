@@ -17,7 +17,7 @@ from rosys.testing import helpers, log_configuration
 
 
 @pytest.fixture
-async def integration() -> AsyncGenerator:
+async def rosys_integration() -> AsyncGenerator:
     log_configuration.setup()
     core.loop = asyncio.get_event_loop()
     rosys.reset_before_test()
@@ -28,29 +28,29 @@ async def integration() -> AsyncGenerator:
 
 
 @pytest.fixture
-async def odometer(wheels: Wheels, integration: None) -> Odometer:
+async def odometer(wheels: Wheels, rosys_integration: None) -> Odometer:
     helpers.odometer = Odometer(wheels)
     return helpers.odometer
 
 
 @pytest.fixture
-async def wheels(integration: None) -> Wheels:
+async def wheels(rosys_integration: None) -> Wheels:
     return WheelsSimulation()
 
 
 @pytest.fixture
-async def robot(wheels: Wheels, integration: None) -> Robot:
+async def robot(wheels: Wheels, rosys_integration: None) -> Robot:
     return RobotSimulation([wheels])
 
 
 @pytest.fixture
-async def driver(wheels: Wheels, odometer: Odometer, integration: None) -> Driver:
+async def driver(wheels: Wheels, odometer: Odometer, rosys_integration: None) -> Driver:
     helpers.driver = Driver(wheels, odometer)
     return helpers.driver
 
 
 @pytest.fixture
-async def automator(wheels: Wheels, integration: None) -> Automator:
+async def automator(wheels: Wheels, rosys_integration: None) -> Automator:
     helpers.automator = Automator(None, on_interrupt=wheels.stop)
     return helpers.automator
 
@@ -61,12 +61,12 @@ def shape() -> Prism:
 
 
 @pytest.fixture
-async def path_planner(shape: Prism, integration: None) -> PathPlanner:
+async def path_planner(shape: Prism, rosys_integration: None) -> PathPlanner:
     return PathPlanner(shape)
 
 
 @pytest.fixture
-async def kpi_logger(integration: None) -> KpiLogger:
+async def kpi_logger(rosys_integration: None) -> KpiLogger:
     return KpiLogger()
 
 
