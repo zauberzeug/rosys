@@ -57,7 +57,8 @@ class Odometer:
             self.current_velocity = velocities[-1]
         if robot_moved:
             self.last_movement = step.time
-            self._handle_movement()
+            self._update_prediction_frame()
+            self.ROBOT_MOVED.emit()
 
     def handle_detection(self, detection: Pose) -> None:
         self.detection = detection
@@ -67,13 +68,12 @@ class Odometer:
             self.prediction = self.odometry_frame.transform_pose(self.history[-1])
         else:
             self.prediction = deepcopy(detection)
-        self._handle_movement()
+        self._update_prediction_frame()
 
-    def _handle_movement(self) -> None:
+    def _update_prediction_frame(self) -> None:
         self.prediction_frame.x = self.prediction.x
         self.prediction_frame.y = self.prediction.y
         self.prediction_frame.rotation = Rotation.from_euler(0, 0, self.prediction.yaw)
-        self.ROBOT_MOVED.emit()
 
     def prune_history(self, max_age: float = 10.0) -> None:
         cut_off_time = rosys.time() - max_age
