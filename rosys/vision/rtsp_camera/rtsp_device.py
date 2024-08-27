@@ -43,8 +43,7 @@ class RtspDevice:
         url = mac_to_url(mac, ip, jovision_profile)
         if url is None:
             raise ValueError(f'could not determine RTSP URL for {mac}')
-        self.url = url
-        self.log.info('[%s] Starting VideoStream for %s', self.mac, self.url)
+        self.log.info('[%s] Starting VideoStream for %s', self.mac, url)
         self._start_gstreamer_task()
 
     @property
@@ -98,7 +97,8 @@ class RtspDevice:
             self.log.warning('[%s] capture process already running', self.mac)
             return
 
-        async def stream(url: str) -> AsyncGenerator[bytes, None]:
+        async def stream() -> AsyncGenerator[bytes, None]:
+            url = mac_to_url(self.mac, self.ip, self.jovision_profile)
             if 'subtype=0' in url:
                 url = url.replace('subtype=0', 'subtype=1')
 
@@ -171,7 +171,7 @@ class RtspDevice:
                 if 'Unauthorized' in error_message:
                     self._authorized = False
 
-        async for image in stream(self.url):
+        async for image in stream():
             self._image_buffer = image
 
         self.log.info('[%s] stream ended', self.mac)
