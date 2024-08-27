@@ -24,12 +24,12 @@ class CameraProjector:
     It is mainly used for visualization purposes.
     """
 
-    def __init__(self, camera_provider: CalibratableCameraProvider) -> None:
+    def __init__(self, camera_provider: CalibratableCameraProvider, interval: float = 1.0) -> None:
         self.camera_provider = camera_provider
 
         self.projections: dict[str, Projection] = {}
 
-        rosys.on_repeat(self.step, 1.0)
+        rosys.on_repeat(self.step, interval)
 
     async def step(self) -> None:
         for id_ in list(self.projections):
@@ -38,8 +38,6 @@ class CameraProjector:
 
         for id_, camera in self.camera_provider.cameras.items():
             if not camera.calibration:
-                continue
-            if id_ in self.projections and self.projections[id_].camera_calibration == camera.calibration:
                 continue
             self.projections[id_] = Projection(
                 camera_id=id_,
