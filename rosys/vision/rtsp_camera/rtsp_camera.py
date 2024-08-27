@@ -124,7 +124,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.device.set_jovision_profile(profile)
 
     def get_jovision_profile(self) -> int | None:
-        assert self.device is not None\
+        assert self.device is not None
 
         return self.device.get_jovision_profile()
 
