@@ -169,35 +169,31 @@ class Calibration:
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 
     @overload
-    def project_to_image(self,
-                         point: Point3d,
-                         ) -> Point | None: ...
+    def project_to_image(self, point: Point3d) -> Point | None:
+        """Project a 3D point to the image plane.
+
+        :param point: The point to project.
+        """
 
     @overload
-    def project_to_image(self,
-                         coordinates: np.ndarray,
-                         frame: Frame3d | None = None,
-                         ) -> np.ndarray: ...
+    def project_to_image(self, coordinates: np.ndarray, *, frame: Frame3d | None = None) -> np.ndarray:
+        """Project a 3D coordinate array to the image plane.
 
-    def project_to_image(self,
-                         point: Point3d | None,
-                         coordinates: np.ndarray,
-                         frame: Frame3d,
-                         ) -> Point | np.ndarray | None:
-        """Project a point to the image plane.
-
-        This takes into account the camera's intrinsic and extrinsic parameters.
-        param point: The point to project.
-        param coordinates: The coordinates to project.
-        param frame: The target frame to project the point to (required if numpy coordinates are provided).
+        :param coordinates: The 3D coordinates of the points to project.
+        :param frame: The coordinate frame of the coordinates.
         """
-        if point is not None:
-            world_array = np.array([point.tuple], dtype=np.float32)
-            image_array = self.project_to_image(world_array, frame=frame)
+
+    def project_to_image(self, *args, **kwargs) -> Point | np.ndarray | None:
+        if isinstance(args[0], Point3d):
+            point: Point3d = args[0]
+            world_array = np.array([point.resolve().tuple], dtype=np.float32)
+            image_array = self.project_to_image(world_array)
             if np.isnan(image_array).any():
                 return None
             return Point(x=image_array[0, 0], y=image_array[0, 1])  # pylint: disable=unsubscriptable-object
 
+        coordinates: np.ndarray = args[0]
+        frame: Frame3d | None = kwargs.get('frame')
         world_extrinsics = self.extrinsics.relative_to(frame)
         R = world_extrinsics.rotation.matrix
         Rod = cv2.Rodrigues(R.T)[0]
