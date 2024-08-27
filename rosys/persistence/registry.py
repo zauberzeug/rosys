@@ -62,6 +62,16 @@ def restore() -> None:
             log.exception('failed to restore %s', module)
 
 
+async def restore_from_export(export_data: dict) -> None:
+    for name, data in export_data.items():
+        modules[name].restore(data)
+    await backup(force=True)
+
+
+def get_export() -> dict:
+    return {name: module.backup() for name, module in modules.items()}
+
+
 def write_export(to_filepath: Path) -> None:
-    data = {name: module.backup() for name, module in modules.items()}
+    data = get_export()
     to_filepath.write_text(json.dumps(data, indent=4))

@@ -36,6 +36,9 @@ class Automation:
     def is_stopped(self) -> bool:
         return not self._is_waited
 
+    async def run(self) -> Any | None:
+        return await self
+
     def __await__(self) -> Generator[Any, None, Any | None]:
         try:
             self._is_waited = True

@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import logging
 import os
+from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
 from typing import Protocol
@@ -46,6 +47,7 @@ class TimelapseRecorder:
         self.camera: Camera | None = None
         VIDEO_PATH.mkdir(parents=True, exist_ok=True)
         rosys.on_repeat(self._capture, 0.01)
+        self.frame_info_builder: Callable[[RosysImage], str | None] = lambda image: None
 
     async def _capture(self) -> None:
         if self.camera is None:
@@ -65,7 +67,8 @@ class TimelapseRecorder:
                                   image,
                                   STORAGE_PATH,
                                   (self.width, self.height),
-                                  self._notifications.pop(0) if self._notifications else [])
+                                  self._notifications.pop(0) if self._notifications else [],
+                                  self.frame_info_builder(image))
 
     async def compress_video(self) -> None:
         """Creates a video from the captured images"""
@@ -114,12 +117,13 @@ class TimelapseRecorder:
             self._notifications[i].append(message)
 
 
-def _save_image(image: RosysImage, path: Path, size: tuple[int, int], notifications: list[str]) -> None:
+def _save_image(image: RosysImage, path: Path, size: tuple[int, int], notifications: list[str], frame_info: str | None = None) -> None:
     assert image.data is not None
     img = Image.open(io.BytesIO(image.data)).resize(size)
     draw = ImageDraw.Draw(img)
     x = y = 20
-    _write(f'{datetime.fromtimestamp(image.time):%Y-%m-%d %H:%M:%S}, cam {image.camera_id}', draw, x, y)
+    frame_info = ', ' + frame_info if frame_info else ''
+    _write(f'{datetime.fromtimestamp(image.time):%Y-%m-%d %H:%M:%S}' + frame_info, draw, x, y)
     for message in notifications:
         y += 30
         _write(message, draw, x, y)
