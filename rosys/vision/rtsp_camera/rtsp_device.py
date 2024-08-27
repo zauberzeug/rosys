@@ -50,6 +50,12 @@ class RtspDevice:
     def authorized(self) -> bool:
         return self._authorized
 
+    @property
+    def url(self) -> str:
+        url = mac_to_url(self.mac, self.ip, self.jovision_profile)
+        if url is None:
+            raise ValueError(f'could not determine RTSP URL for {self.mac}')
+
     def capture(self) -> bytes | None:
         image = self._image_buffer
         self._image_buffer = None
@@ -98,8 +104,7 @@ class RtspDevice:
             return
 
         async def stream() -> AsyncGenerator[bytes, None]:
-            url = mac_to_url(self.mac, self.ip, self.jovision_profile)
-            assert url is not None, f'could not determine RTSP URL for {self.mac}'
+            url = self.url
             if 'subtype=0' in url:
                 url = url.replace('subtype=0', 'subtype=1')
 
