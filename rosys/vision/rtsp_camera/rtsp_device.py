@@ -55,6 +55,7 @@ class RtspDevice:
         url = mac_to_url(self.mac, self.ip, self.jovision_profile)
         if url is None:
             raise ValueError(f'could not determine RTSP URL for {self.mac}')
+        return url
 
     def capture(self) -> bytes | None:
         image = self._image_buffer
