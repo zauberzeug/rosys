@@ -25,20 +25,20 @@ class Object3d(abc.ABC):
         return self
 
     def relative_to(self, target_frame: Pose3d | None) -> Self:
-        """Compute the object location relative to the given frame.
+        """Compute the object location relative to the given frame pose.
 
-        The resulting object will be in the target frame.
+        The ``frame_id`` of the resulting object will be None.
         """
         if self._frame_id is None:
             if target_frame is None:
                 return self
             else:
-                return self.transform_with(target_frame.resolve().inverse()).in_frame(target_frame)
+                return self.transform_with(target_frame.resolve().inverse())
         else:  # noqa: PLR5501
             if target_frame is None:
-                return self.transform_with(frame_registry[self._frame_id].resolve()).in_frame(target_frame)
+                return self.transform_with(frame_registry[self._frame_id].resolve())
             else:
-                return self.transform_with(target_frame.resolve().inverse() @ frame_registry[self._frame_id].resolve()).in_frame(target_frame)
+                return self.transform_with(target_frame.resolve().inverse() @ frame_registry[self._frame_id].resolve())
 
     def resolve(self) -> Self:
         """Compute the object location relative to the world frame."""

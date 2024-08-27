@@ -180,7 +180,7 @@ def test_projection_from_one_frame_into_world_frame():
     cam.calibration.extrinsics.in_frame(cam_frame)
 
     # transform world points into cam frame
-    world_points_in_frame = [p.relative_to(cam_frame) for p in world_points]
+    world_points_in_frame = [p.relative_to(cam_frame).in_frame(cam_frame) for p in world_points]
 
     for world_point, frame_point in zip(world_points, world_points_in_frame, strict=True):
         image_point_from_frame = cam.calibration.project_to_image(frame_point)
