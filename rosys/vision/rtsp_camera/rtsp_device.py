@@ -22,7 +22,7 @@ class RtspDevice:
         self.ip = ip
 
         self.fps: int
-        self.jovision_profile: int = jovision_profile
+        self.jovision_profile = jovision_profile
 
         self.capture_task: asyncio.Task | None = None
         self.capture_process: Process | None = None
