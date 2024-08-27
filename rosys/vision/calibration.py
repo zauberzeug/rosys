@@ -171,27 +171,27 @@ class Calibration:
     @overload
     def project_to_image(self,
                          point: Point3d,
-                         frame: Frame3d | None = None,
                          ) -> Point | None: ...
 
     @overload
     def project_to_image(self,
-                         point: np.ndarray,
+                         coordinates: np.ndarray,
                          frame: Frame3d | None = None,
                          ) -> np.ndarray: ...
 
     def project_to_image(self,
-                         point: Point3d | np.ndarray,
-                         frame: Frame3d | None = None,
+                         point: Point3d | None,
+                         coordinates: np.ndarray,
+                         frame: Frame3d,
                          ) -> Point | np.ndarray | None:
         """Project a point to the image plane.
 
         This takes into account the camera's intrinsic and extrinsic parameters.
-
-        :param point: The point to project.
-        :param frame: The target frame to project the point to. If None, the result is in world coordinates.
+        param point: The point to project.
+        param coordinates: The coordinates to project.
+        param frame: The target frame to project the point to (required if numpy coordinates are provided).
         """
-        if isinstance(point, Point3d):
+        if point is not None:
             world_array = np.array([point.tuple], dtype=np.float32)
             image_array = self.project_to_image(world_array, frame=frame)
             if np.isnan(image_array).any():
@@ -207,20 +207,20 @@ class Calibration:
 
         # pylint: disable=unpacking-non-sequence
         if self.intrinsics.model == CameraModel.PINHOLE:
-            image_array, _ = cv2.projectPoints(point, Rod, t, K, D)
+            image_array, _ = cv2.projectPoints(coordinates, Rod, t, K, D)
         elif self.intrinsics.model == CameraModel.FISHEYE:
-            image_array, _ = cv2.fisheye.projectPoints(point.reshape(-1, 1, 3), Rod, t, K, D)
+            image_array, _ = cv2.fisheye.projectPoints(coordinates.reshape(-1, 1, 3), Rod, t, K, D)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
             xi = self.intrinsics.omnidir_params.xi
-            image_array, _ = cv2.omnidir.projectPoints(point.reshape(-1, 1, 3), Rod, t, K, xi, D)
+            image_array, _ = cv2.omnidir.projectPoints(coordinates.reshape(-1, 1, 3), Rod, t, K, xi, D)
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
         # pylint: enable=unpacking-non-sequence
 
         if self.intrinsics.model != CameraModel.OMNIDIRECTIONAL:
-            point = point.reshape(-1, 3)
-            local_coordinates = (point - world_extrinsics.translation) @ R
+            coordinates = coordinates.reshape(-1, 3)
+            local_coordinates = (coordinates - world_extrinsics.translation) @ R
             image_array[local_coordinates[:, 2] < 0, :] = np.nan
 
         return image_array.reshape(-1, 2)
