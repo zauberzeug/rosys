@@ -32,6 +32,7 @@ def test_resolve_frames():
     assert Q.resolve() == Point3d(x=4, y=2, z=0)
 
     P_in_A = P.relative_to(A)
+    assert P_in_A.frame_id == A.id
     assert poses_equal(P_in_A, Pose3d(x=3, y=-1, z=0, rotation=turn_180))
 
 
