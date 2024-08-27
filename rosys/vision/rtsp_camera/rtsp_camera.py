@@ -34,7 +34,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.log = logging.getLogger(f'rosys.vision.rtsp_camera.{self.id}')
 
         self.device: RtspDevice | None = None
-        self.jovision_profile: int = jovision_profile
         self.ip: str | None = ip
 
         self._register_parameter('jovision_profile', self.get_jovision_profile, self.set_jovision_profile,
@@ -73,7 +72,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             self.log.error('no IP address provided for camera %s', self.id)
             return
 
-        self.device = RtspDevice(mac=self.id, ip=self.ip, jovision_profile=self.jovision_profile)
+        self.device = RtspDevice(mac=self.id, ip=self.ip, jovision_profile=self.parameters['jovision_profile'])
 
         await self._apply_all_parameters()
 
