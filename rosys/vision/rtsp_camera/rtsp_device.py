@@ -99,6 +99,7 @@ class RtspDevice:
 
         async def stream() -> AsyncGenerator[bytes, None]:
             url = mac_to_url(self.mac, self.ip, self.jovision_profile)
+            assert url is not None, f'could not determine RTSP URL for {self.mac}'
             if 'subtype=0' in url:
                 url = url.replace('subtype=0', 'subtype=1')
 
