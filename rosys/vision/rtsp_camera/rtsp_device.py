@@ -201,3 +201,12 @@ class RtspDevice:
 
     def get_jovision_profile(self) -> int:
         return self.jovision_profile
+
+    def set_bitrate(self, bitrate: int) -> None:
+        if self.settings_interface is not None:
+            self.settings_interface.set_bitrate(stream_id=self.jovision_profile, bitrate=bitrate)
+
+    def get_bitrate(self) -> int | None:
+        if self.settings_interface is not None:
+            return self.settings_interface.get_bitrate(stream_id=self.jovision_profile)
+        return None
