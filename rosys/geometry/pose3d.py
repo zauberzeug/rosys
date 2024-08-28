@@ -8,6 +8,7 @@ from typing_extensions import Self
 
 from .frame3d_registry import frame_registry
 from .object3d import Object3d
+from .point3d import Point3d
 from .rotation import Rotation
 
 
@@ -40,6 +41,10 @@ class Pose3d(Object3d):
     def from_matrix(cls, M: np.ndarray) -> Pose3d:
         return cls(x=M[0, 3] / M[3, 3], y=M[1, 3] / M[3, 3], z=M[2, 3] / M[3, 3],
                    rotation=Rotation(R=(M[:3, :3] / M[3, 3]).tolist()))
+
+    @property
+    def point_3d(self) -> Point3d:
+        return Point3d(x=self.x, y=self.y, z=self.z)
 
     @property
     def translation(self) -> tuple[float, float, float]:
