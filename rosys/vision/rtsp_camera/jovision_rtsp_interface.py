@@ -150,7 +150,7 @@ class JovisionInterface:
             'cmd': json.dumps(cmd),
             '_': time.time() * 1000,
         }
-        response = requests.get(self.settings_url, params=params, headers=self.headers, timeout=1)
+        response = requests.get(self.settings_url, params=params, timeout=1)
 
         for stream_id, stream in enumerate(response.json()['result']['all']):
             print(f'stream {stream_id}')
