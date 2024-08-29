@@ -52,7 +52,7 @@ class TimelapseRecorder:
         self._notifications: list[list[str]] = []
         self.camera: Camera | None = None
         """The camera to capture images from; does not capture if None."""
-        self.ongoing_computations: list[str] = []
+        self.ongoing_compressions: list[str] = []
         """List of video files that are currently being compressed."""
 
         VIDEO_PATH.mkdir(parents=True, exist_ok=True)
@@ -116,9 +116,9 @@ class TimelapseRecorder:
             f'rm -r {target_dir};'
         )
         self.log.info('starting video compression for %s:\n%s', target_filename, cmd)
-        self.ongoing_computations.append(target_filename)
+        self.ongoing_compressions.append(target_filename)
         await rosys.run.sh(cmd, timeout=None, shell=True)
-        self.ongoing_computations.remove(target_filename)
+        self.ongoing_compressions.remove(target_filename)
         self.log.info('finished video compression for %s', target_filename)
 
     def discard_video(self) -> None:
