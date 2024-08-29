@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import logging
 import os
+from asyncio import Task
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -45,6 +46,7 @@ class TimelapseRecorder:
         self.last_capture_time = rosys.time()
         self._notifications: list[list[str]] = []
         self.camera: Camera | None = None
+        self.ongoing_computations: list[str] = []
         VIDEO_PATH.mkdir(parents=True, exist_ok=True)
         rosys.on_repeat(self._capture, 0.01)
         self.frame_info_builder: Callable[[RosysImage], str | None] = lambda image: None
@@ -70,8 +72,12 @@ class TimelapseRecorder:
                                   self._notifications.pop(0) if self._notifications else [],
                                   self.frame_info_builder(image))
 
-    async def compress_video(self) -> None:
-        """Creates a video from the captured images"""
+    def compress_video(self) -> Task:
+        """Creates a video from the captured images
+        Note: this method starts a background task and returns immediately."""
+        return rosys.background_tasks.create(self._run_ffmpeg(), name='timelapse ffmpeg')
+
+    async def _run_ffmpeg(self) -> None:
         jpgs = sorted(STORAGE_PATH.glob('*.jpg'))
         if len(jpgs) < 20:
             self.log.info('very few images (%s); not creating video', len(jpgs))
@@ -85,6 +91,7 @@ class TimelapseRecorder:
         id_ = start.strftime(r'%Y%m%d_%H-%M-%S_' + duration.replace(' ', '_'))
         target_dir = STORAGE_PATH / id_
         target_dir.mkdir(parents=True, exist_ok=True)
+        target_filename = f'{id_}.mp4'
         await rosys.run.sh(f'mv {STORAGE_PATH}/*.jpg {target_dir}', shell=True)
         source_file = target_dir / 'source.txt'
         with source_file.open('w') as f:
@@ -93,12 +100,15 @@ class TimelapseRecorder:
         absolute_niceness = 10 - os.nice(0)
         cmd = (
             f'nice -n {absolute_niceness} ffmpeg -hide_banner -threads 1 -f concat -safe 0 -i "{source_file}" '
-            f'-s {self.width}x{self.height} -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{id_}.mp4;'
+            f'-s {self.width}x{self.height} -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{target_filename};'
             f'mv {target_dir}/*mp4 {STORAGE_PATH}/videos;'
             f'rm -r {target_dir};'
         )
-        self.log.info('starting %s', cmd)
-        rosys.background_tasks.create(rosys.run.sh(cmd, timeout=None, shell=True), name='timelapse ffmpeg')
+        self.log.info('starting video compression for %s:\n%s', target_filename, cmd)
+        self.ongoing_computations.append(target_filename)
+        await rosys.run.sh(cmd, timeout=None, shell=True)
+        self.ongoing_computations.remove(target_filename)
+        self.log.info('finished video compression for %s', target_filename)
 
     def discard_video(self) -> None:
         """Drop the currently recorded video data."""
