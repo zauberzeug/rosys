@@ -42,7 +42,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self._register_parameter('fps', self.get_fps, self.set_fps,
                                  min_value=1, max_value=30, step=1, default_value=fps)
         self._register_parameter('bitrate', self.get_bitrate, self.set_bitrate,
-                                 min_value=256, max_value=8192, step=1, default_value=bitrate)
+                                 min_value=32, max_value=8192, step=1, default_value=bitrate)
 
     def to_dict(self) -> dict[str, Any]:
         return super().to_dict() | {
