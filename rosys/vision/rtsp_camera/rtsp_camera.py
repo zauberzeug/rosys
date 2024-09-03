@@ -123,9 +123,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
     def set_jovision_profile(self, profile: int) -> None:
         assert self.device is not None
 
-        profile = max(self._parameters['jovision_profile'].info.min,
-                      min(profile, self._parameters['jovision_profile'].max_value))
-
         self.device.set_jovision_profile(profile)
 
     def get_jovision_profile(self) -> int | None:
