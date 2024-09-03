@@ -38,7 +38,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.ip: str | None = ip
 
         self._register_parameter('jovision_profile', self.get_jovision_profile, self.set_jovision_profile,
-                                 min_value=1, max_value=2, step=1, default_value=jovision_profile)
+                                 min_value=0, max_value=1, step=1, default_value=jovision_profile)
         self._register_parameter('fps', self.get_fps, self.set_fps,
                                  min_value=1, max_value=30, step=1, default_value=fps)
         self._register_parameter('bitrate', self.get_bitrate, self.set_bitrate,
@@ -122,6 +122,9 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     def set_jovision_profile(self, profile: int) -> None:
         assert self.device is not None
+
+        profile = max(self._parameters['jovision_profile'].info.min,
+                      min(profile, self._parameters['jovision_profile'].max_value))
 
         self.device.set_jovision_profile(profile)
 
