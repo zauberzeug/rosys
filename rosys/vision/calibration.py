@@ -186,7 +186,7 @@ class Calibration:
     def project_to_image(self, *args, **kwargs) -> Point | np.ndarray | None:
         if isinstance(args[0], Point3d):
             point: Point3d = args[0]
-            world_array = np.array([point.resolve().tuple], dtype=np.float32)
+            world_array = np.array([point.resolve().tuple], dtype=np.float64)
             image_array = self.project_to_image(world_array)
             if np.isnan(image_array).any():
                 return None
@@ -195,7 +195,7 @@ class Calibration:
         coordinates: np.ndarray = args[0]
         frame: Frame3d | None = kwargs.get('frame')
         world_extrinsics = self.extrinsics.relative_to(frame)
-        R = world_extrinsics.rotation.matrix.astype(np.float32)
+        R = world_extrinsics.rotation.matrix.astype(np.float64)
         Rod = cv2.Rodrigues(R.T)[0]
         t = -R.T @ world_extrinsics.translation
         K = np.array(self.intrinsics.matrix)
