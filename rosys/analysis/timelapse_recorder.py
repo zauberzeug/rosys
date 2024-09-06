@@ -34,14 +34,13 @@ class TimelapseRecorder:
     def __init__(self, *, width: int = 800, height: int = 600, capture_rate: float = 1) -> None:
         """Creates a time lapse recorder to capture images from a camera and creates a video of the sequence afterwards.
 
-        Start he capturing by setting the camera property to a Camera instance.
-        Setting to None stops capturing.
-        After capturing, call compress_video to create a video from the captured images.
+        Start the capturing by setting the ``camera`` property to a ``Camera`` instance.
+        Setting to ``None`` stops capturing.
+        After capturing, call ``compress_video`` to create a video from the captured images.
 
         :param width: width of the images to capture (default: 800)
         :param height: height of the images to capture (default: 600)
-        :param capture_rate: images per second to capture (default: 1)
-
+        :param capture_rate: images per second to capture (default: 1.0)
         """
         self.log = logging.getLogger('rosys.timelapse_recorder')
         self.width = width
@@ -50,8 +49,10 @@ class TimelapseRecorder:
         self.capture_rate = capture_rate
         self.last_capture_time = rosys.time()
         self._notifications: list[list[str]] = []
+
         self.camera: Camera | None = None
-        """The camera to capture images from; does not capture if None."""
+        """The camera to capture images from; does not capture if set to ``None``."""
+
         self.ongoing_compressions: list[str] = []
         """List of video files that are currently being compressed."""
 
@@ -81,10 +82,11 @@ class TimelapseRecorder:
                                   self.frame_info_builder(image))
 
     def compress_video(self) -> Task:
-        """Creates a video from the captured images
-        Note: this method starts a background task and returns immediately.
+        """Create a video from the captured images.
 
-        You can use the returned Task or the ongoing_computations property to check if the video is still being compressed.
+        Note: This method starts a background task and returns immediately.
+
+        You can use the returned task or the ``ongoing_computations`` property to check if the video is still being compressed.
         """
         return rosys.background_tasks.create(self._run_ffmpeg(), name='timelapse ffmpeg')
 
@@ -115,11 +117,11 @@ class TimelapseRecorder:
             f'mv {target_dir}/*mp4 {STORAGE_PATH}/videos;'
             f'rm -r {target_dir};'
         )
-        self.log.info('starting video compression for %s:\n%s', target_filename, cmd)
+        self.log.info('video compression for %s starting:\n%s', target_filename, cmd)
         self.ongoing_compressions.append(target_filename)
         await rosys.run.sh(cmd, timeout=None, shell=True)
         self.ongoing_compressions.remove(target_filename)
-        self.log.info('finished video compression for %s', target_filename)
+        self.log.info('video compression for %s finished', target_filename)
 
     def discard_video(self) -> None:
         """Drop the currently recorded video data."""
