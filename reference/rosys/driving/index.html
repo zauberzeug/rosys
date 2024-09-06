@@ -1388,7 +1388,7 @@
     <div class="doc doc-contents first">
 
 
-      <p>The driver module allows following a given path.</p>
+        <p>The driver module allows following a given path.</p>
 <p>It requires a wheels module (or any drivable hardware representation) to execute individual drive commands.
 It also requires an odometer to get a current prediction of the robot's pose.
 Its <code>parameters</code> allow controlling the specific drive behavior.</p>
@@ -1422,7 +1422,7 @@ Its <code>parameters</code> allow controlling the specific drive behavior.</p>
 
     <div class="doc doc-contents ">
 
-      <p>The current prediction of the robot's pose based on the odometer.</p>
+        <p>The current prediction of the robot's pose based on the odometer.</p>
     </div>
 
 </div>
@@ -1442,7 +1442,7 @@ Its <code>parameters</code> allow controlling the specific drive behavior.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Abort the current drive routine.</p>
+        <p>Abort the current drive routine.</p>
 
     </div>
 
@@ -1471,7 +1471,7 @@ Its <code>parameters</code> allow controlling the specific drive behavior.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Drive in a circular path.</p>
+        <p>Drive in a circular path.</p>
 <p>When the angle between the robot's current direction and the target direction is less than <code>angle_threshold</code>,
 the robot stops driving.</p>
 <p>:param target: The target point to drive towards.
@@ -1506,7 +1506,7 @@ the robot stops driving.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Drive along a given path.</p>
+        <p>Drive along a given path.</p>
 <p>:param path: The path to drive along, composed of PathSegments.
 :param throttle_at_end: Whether to throttle down when approaching the end of the path (default: <code>True</code>).
 :param stop_at_end: Whether to stop at the end of the path (default: <code>True</code>).
@@ -1539,7 +1539,7 @@ the robot stops driving.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Drive along a given spline.</p>
+        <p>Drive along a given spline.</p>
 <p>:param spline: The spline to drive along.
 :param flip_hook: Whether to flip the hook offset (default: <code>False</code>).
 :param throttle_at_end: Whether to throttle down when approaching the end of the spline (default: <code>True</code>).
@@ -1573,7 +1573,7 @@ the robot stops driving.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Drive to a given target point.</p>
+        <p>Drive to a given target point.</p>
 <p>:param target: The target point to drive to.
 :param backward: Whether to drive backwards (default: <code>False</code>).
 :param throttle_at_end: Whether to throttle down when approaching the target point (default: <code>True</code>).
@@ -1632,7 +1632,7 @@ the robot stops driving.</p>
               Bases: <code><span title="nicegui.elements.scene_objects.Group">Group</span></code></p>
 
 
-      <p>The DriverObject UI element displays the path following process in a 3D scene.</p>
+        <p>The DriverObject UI element displays the path following process in a 3D scene.</p>
 <p>The current pose is taken from a given odometer.
 An optional driver module shows debugging information about a current path-following process.
 The <code>debug</code> argument can be set to show a wireframe instead of a closed polygon.</p>
@@ -1684,7 +1684,7 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
               Bases: <code><span title="nicegui.ui.joystick">joystick</span></code></p>
 
 
-      <p>The Joystick UI element allows controlling a given steerer via touch events.</p>
+        <p>The Joystick UI element allows controlling a given steerer via touch events.</p>
 
 
 
@@ -1728,7 +1728,7 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
     <div class="doc doc-contents first">
 
 
-      <p>The KeyboardControl UI element allows controlling a given steerer via keyboard events.</p>
+        <p>The KeyboardControl UI element allows controlling a given steerer via keyboard events.</p>
 <p>Hold shift while pressing an arrow key to steer the robot.
 You can change the speed with the number keys 1 to 9 and the initial speed via the <code>default_speed</code> argument.</p>
 
@@ -1783,7 +1783,7 @@ You can change the speed with the number keys 1 to 9 and the initial speed via t
     <div class="doc doc-contents first">
 
 
-      <p>An odometer collects velocity information from a given wheels module (or any velocity-providing hardware representation).</p>
+        <p>An odometer collects velocity information from a given wheels module (or any velocity-providing hardware representation).</p>
 <p>It can also handle "detections", i.e. absolute pose information with timestamps.
 Given the history of previously received velocities, it can update its prediction of the current pose.</p>
 <p>The <code>get_pose</code> method provides robot poses from the within the last 10 seconds.</p>
@@ -1847,7 +1847,7 @@ Given the history of previously received velocities, it can update its predictio
               Bases: <code><span title="nicegui.elements.scene_objects.Group">Group</span></code></p>
 
 
-      <p>The RobotObject UI element displays the robot with its given shape in a 3D scene.</p>
+        <p>The RobotObject UI element displays the robot with its given shape in a 3D scene.</p>
 <p>The current pose is taken from a given odometer.
 The <code>debug</code> argument can be set to show a wireframe instead of a closed polygon.</p>
 
@@ -1889,7 +1889,7 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
 
     <div class="doc doc-contents ">
 
-      <p>Sets an STL to be displayed as the robot.</p>
+        <p>Sets an STL to be displayed as the robot.</p>
 <p>The file can be served from a local directory with <a href="https://nicegui.io/reference#static_files">app.add_static_files(url, path)</a>.</p>
 
     </div>
@@ -1919,7 +1919,7 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
     <div class="doc doc-contents first">
 
 
-      <p>The steerer module translates x-y information (e.g. from a joystick) to linear/angular velocities sent to the robot.</p>
+        <p>The steerer module translates x-y information (e.g. from a joystick) to linear/angular velocities sent to the robot.</p>
 <p>The wheels module can be any drivable hardware representation.
 Changing the steering state emits events that can be used to react to manual user interaction.</p>
 

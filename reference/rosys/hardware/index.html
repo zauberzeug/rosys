@@ -1918,7 +1918,7 @@
               Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
-      <p>The BMS module communicates with a simple battery management system over a serial connection.</p>
+        <p>The BMS module communicates with a simple battery management system over a serial connection.</p>
 <p>The BMS module provides measured voltages as an event.</p>
 
 
@@ -1947,7 +1947,7 @@
 
     <div class="doc doc-contents ">
 
-      <p>Returns whether the battery is charged above the given percentage.</p>
+        <p>Returns whether the battery is charged above the given percentage.</p>
 
     </div>
 
@@ -1966,7 +1966,7 @@
 
     <div class="doc doc-contents ">
 
-      <p>Returns whether the battery voltage is above the given value.</p>
+        <p>Returns whether the battery voltage is above the given value.</p>
 
     </div>
 
@@ -1985,7 +1985,7 @@
 
     <div class="doc doc-contents ">
 
-      <p>Returns whether the battery is charged below the given percentage.</p>
+        <p>Returns whether the battery is charged below the given percentage.</p>
 
     </div>
 
@@ -2004,7 +2004,7 @@
 
     <div class="doc doc-contents ">
 
-      <p>Returns whether the battery voltage is below the given value.</p>
+        <p>Returns whether the battery voltage is below the given value.</p>
 
     </div>
 
@@ -2045,7 +2045,7 @@
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bms.Bms" href="#rosys.hardware.Bms">Bms</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
 
-      <p>This module implements the hardware interface for the BMS module.</p>
+        <p>This module implements the hardware interface for the BMS module.</p>
 
 
 
@@ -2088,7 +2088,7 @@
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bms.Bms" href="#rosys.hardware.Bms">Bms</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
 
 
-      <p>This module simulates a BMS module.</p>
+        <p>This module simulates a BMS module.</p>
 
 
 
@@ -2128,7 +2128,7 @@
               Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
-      <p>A module that detects when a bumper is triggered.</p>
+        <p>A module that detects when a bumper is triggered.</p>
 
 
 
@@ -2190,7 +2190,7 @@
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bumper.Bumper" href="#rosys.hardware.Bumper">Bumper</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
 
-      <p>Hardware implementation of the bumper module.</p>
+        <p>Hardware implementation of the bumper module.</p>
 <p>The module expects a dictionary of pin names and pin numbers.
 If an e-stop is provided, the module will not trigger bumpers if the e-stop is active.</p>
 
@@ -2247,7 +2247,7 @@ If an e-stop is provided, the module will not trigger bumpers if the e-stop is a
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bumper.Bumper" href="#rosys.hardware.Bumper">Bumper</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
 
 
-      <p>Simulation of the bumper module.</p>
+        <p>Simulation of the bumper module.</p>
 
 
 
@@ -2302,7 +2302,7 @@ If an e-stop is provided, the module will not trigger bumpers if the e-stop is a
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
-      <p>This abstract module defines an interface for communicating with a microcontroller.</p>
+        <p>This abstract module defines an interface for communicating with a microcontroller.</p>
 <p>Besides sending and receiving messages a communication module provides a property whether communication is possible.
 It can also provide a piece of debug UI.</p>
 
@@ -2344,7 +2344,7 @@ It can also provide a piece of debug UI.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.communication.communication.Communication" href="#rosys.hardware.Communication">Communication</a></code></p>
 
 
-      <p>This module implements a communication via a serial device with a given baud rate.</p>
+        <p>This module implements a communication via a serial device with a given baud rate.</p>
 <p>It contains a list of search paths for finding the serial device.</p>
 
 
@@ -2385,7 +2385,7 @@ It can also provide a piece of debug UI.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.communication.communication.Communication" href="#rosys.hardware.Communication">Communication</a></code></p>
 
 
-      <p>Remote connection to the Robot Brain's ESP.</p>
+        <p>Remote connection to the Robot Brain's ESP.</p>
 <p>This makes it possible to keep developing on your fast computer
 while communicating with the hardware components connected to a physical Robot Brain.</p>
 
@@ -2427,7 +2427,7 @@ while communicating with the hardware components connected to a physical Robot B
               Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
-      <p>A module that detects when the e-stop is triggered.</p>
+        <p>A module that detects when the e-stop is triggered.</p>
 <p>The module has a boolean field <code>active</code> that is true when the e-stop is triggered.</p>
 <p>There is also a boolean field <code>is_soft_estop_active</code> that is true when the soft e-stop is active.
 It can be set to true or false by calling <code>set_soft_estop(active: bool)</code>.</p>
@@ -2490,7 +2490,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.estop.EStop" href="#rosys.hardware.EStop">EStop</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
 
-      <p>Hardware implementation of the e-stop module.</p>
+        <p>Hardware implementation of the e-stop module.</p>
 <p>The module expects a dictionary of pin names and pin numbers.</p>
 
 
@@ -2546,7 +2546,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.estop.EStop" href="#rosys.hardware.EStop">EStop</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
 
 
-      <p>Simulation of the e-stop module.</p>
+        <p>Simulation of the e-stop module.</p>
 
 
 
@@ -2608,7 +2608,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
               Bases: <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
 
-      <p>The expander module represents a second ESP microcontroller connected to the core ESP via serial.</p>
+        <p>The expander module represents a second ESP microcontroller connected to the core ESP via serial.</p>
 
 
 
@@ -2648,7 +2648,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
-      <p>A robot that consists of a number of modules.</p>
+        <p>A robot that consists of a number of modules.</p>
 <p>It can be either a hardware robot or a simulation.</p>
 
 
@@ -2691,7 +2691,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.robot.Robot" href="#rosys.hardware.Robot">Robot</a></code></p>
 
 
-      <p>A robot that consists of hardware modules.</p>
+        <p>A robot that consists of hardware modules.</p>
 <p>It generates Lizard code, forwards output to the hardware modules and sends commands to the robot brain.</p>
 
 
@@ -2732,7 +2732,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.robot.Robot" href="#rosys.hardware.Robot">Robot</a></code></p>
 
 
-      <p>A robot that consists of simulated modules.</p>
+        <p>A robot that consists of simulated modules.</p>
 <p>It regularly calls the step method of all modules to allow them to update their internal state.</p>
 
 
@@ -2765,13 +2765,17 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
 
 <a href="#rosys.hardware.RobotBrain" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">RobotBrain</span><span class="p">(</span><span class="n">communication</span><span class="p">:</span> <span class="n">Communication</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">RobotBrain</span><span class="p">(</span>
+    <span class="n">communication</span><span class="p">:</span> <span class="n">Communication</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">enable_esp_on_startup</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
 
 
-      <p>This module manages the communication with a <a href="https://zauberzeug.com/products/robot-brain">Zauberzeug Robot Brain</a>.</p>
+        <p>This module manages the communication with a <a href="https://zauberzeug.com/products/robot-brain">Zauberzeug Robot Brain</a>.</p>
 <p>It expects a communication object, which is used for the actual read and write operations.
 Besides providing some basic methods like configuring or restarting the microcontroller, it augments and verifies checksums for each message.</p>
 <p>It also keeps track of the clock offset between the microcontroller and the host system, which is used to synchronize the hardware time with the system time.
@@ -2843,7 +2847,7 @@ If the offset changes significantly, a notification is sent and the offset histo
               Bases: <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
 
-      <p>The serial module represents a serial connection with another device.</p>
+        <p>The serial module represents a serial connection with another device.</p>
 
 
 
@@ -2883,7 +2887,7 @@ If the offset changes significantly, a notification is sent and the offset histo
               Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
-      <p>This module represents wheels for a two-wheel differential drive.</p>
+        <p>This module represents wheels for a two-wheel differential drive.</p>
 <p>Wheels can be moved using the <code>drive</code> methods and provide measured velocities as an event.</p>
 
 
@@ -2950,7 +2954,7 @@ If the offset changes significantly, a notification is sent and the offset histo
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.wheels.Wheels" href="#rosys.hardware.Wheels">Wheels</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
 
-      <p>This module implements wheels hardware.</p>
+        <p>This module implements wheels hardware.</p>
 <p>Drive and stop commands are forwarded to a given Robot Brain.
 Velocities are read and emitted regularly.</p>
 
@@ -3007,7 +3011,7 @@ Velocities are read and emitted regularly.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.wheels.Wheels" href="#rosys.hardware.Wheels">Wheels</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
 
 
-      <p>This module simulates two wheels.</p>
+        <p>This module simulates two wheels.</p>
 <p>Drive and stop commands impact internal velocities (linear and angular).
 A simulated pose is regularly updated with these velocities, while the velocities are emitted as an event.</p>
 
@@ -3040,7 +3044,7 @@ A simulated pose is regularly updated with these velocities, while the velocitie
 
     <div class="doc doc-contents ">
 
-      <p>The current angular velocity of the robot.</p>
+        <p>The current angular velocity of the robot.</p>
     </div>
 
 </div>
@@ -3063,7 +3067,7 @@ A simulated pose is regularly updated with these velocities, while the velocitie
 
     <div class="doc doc-contents ">
 
-      <p>The factor of friction for the wheels (0 = no friction, 1 = full friction).</p>
+        <p>The factor of friction for the wheels (0 = no friction, 1 = full friction).</p>
     </div>
 
 </div>
@@ -3086,7 +3090,7 @@ A simulated pose is regularly updated with these velocities, while the velocitie
 
     <div class="doc doc-contents ">
 
-      <p>The factor of inertia for the wheels (0 = no inertia, 1 = full inertia).</p>
+        <p>The factor of inertia for the wheels (0 = no inertia, 1 = full inertia).</p>
     </div>
 
 </div>
@@ -3109,7 +3113,7 @@ A simulated pose is regularly updated with these velocities, while the velocitie
 
     <div class="doc doc-contents ">
 
-      <p>If True, the wheels are blocking and the robot will not move.</p>
+        <p>If True, the wheels are blocking and the robot will not move.</p>
     </div>
 
 </div>
@@ -3132,7 +3136,7 @@ A simulated pose is regularly updated with these velocities, while the velocitie
 
     <div class="doc doc-contents ">
 
-      <p>The current linear velocity of the robot.</p>
+        <p>The current linear velocity of the robot.</p>
     </div>
 
 </div>
@@ -3155,7 +3159,7 @@ A simulated pose is regularly updated with these velocities, while the velocitie
 
     <div class="doc doc-contents ">
 
-      <p>Provides the actual pose of the robot which can alter due to slippage.</p>
+        <p>Provides the actual pose of the robot which can alter due to slippage.</p>
     </div>
 
 </div>
@@ -3178,7 +3182,7 @@ A simulated pose is regularly updated with these velocities, while the velocitie
 
     <div class="doc doc-contents ">
 
-      <p>The factor of slippage for the left wheel (0 = no slippage, 1 = full slippage).</p>
+        <p>The factor of slippage for the left wheel (0 = no slippage, 1 = full slippage).</p>
     </div>
 
 </div>
@@ -3201,7 +3205,7 @@ A simulated pose is regularly updated with these velocities, while the velocitie
 
     <div class="doc doc-contents ">
 
-      <p>The factor of slippage for the right wheel (0 = no slippage, 1 = full slippage).</p>
+        <p>The factor of slippage for the right wheel (0 = no slippage, 1 = full slippage).</p>
     </div>
 
 </div>
@@ -3224,7 +3228,7 @@ A simulated pose is regularly updated with these velocities, while the velocitie
 
     <div class="doc doc-contents ">
 
-      <p>The distance between the wheels -- used to calculate actual drift when slip_factor_* is used.</p>
+        <p>The distance between the wheels -- used to calculate actual drift when slip_factor_* is used.</p>
     </div>
 
 </div>

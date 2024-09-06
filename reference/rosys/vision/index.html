@@ -1173,7 +1173,7 @@
               Bases: <code><span title="rosys.vision.camera.camera.Camera">Camera</span></code></p>
 
 
-      <p>A generalized interface for adjusting camera parameters like exposure, brightness or fps.</p>
+        <p>A generalized interface for adjusting camera parameters like exposure, brightness or fps.</p>
 
 
 
@@ -1220,7 +1220,7 @@
               Bases: <code><span title="nicegui.elements.scene_objects.Group">Group</span></code></p>
 
 
-      <p>This module provides a UI element for displaying cameras in a 3D scene.</p>
+        <p>This module provides a UI element for displaying cameras in a 3D scene.</p>
 <p>It requires a camera provider as a source of cameras as well as a camera projector to show the current images projected on the ground plane.
 The <code>px_per_m</code> argument can be used to scale the camera frustums.
 With <code>debug=True</code> camera IDs are shown (default: <code>False</code>).</p>
@@ -1265,7 +1265,7 @@ With <code>debug=True</code> camera IDs are shown (default: <code>False</code>).
     <div class="doc doc-contents first">
 
 
-      <p>The camera projector computes a grid of projected image points on the ground plane.</p>
+        <p>The camera projector computes a grid of projected image points on the ground plane.</p>
 <p>It is mainly used for visualization purposes.</p>
 
 
@@ -1306,7 +1306,7 @@ With <code>debug=True</code> camera IDs are shown (default: <code>False</code>).
               Bases: <code><span title="typing.Generic">Generic</span>[<span title="rosys.vision.camera_provider.T">T</span>]</code>, <code><span title="rosys.persistence.PersistentModule">PersistentModule</span></code></p>
 
 
-      <p>A camera provider holds a dictionary of cameras and manages additions and removals.</p>
+        <p>A camera provider holds a dictionary of cameras and manages additions and removals.</p>
 <p>The camera dictionary should not be modified directly but by using the camera provider's methods.
 This way respective events are emitted and consistency can be taken care of.</p>
 <p>The camera provider also creates an HTTP route to access camera images.</p>
@@ -1371,7 +1371,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
               Bases: <code><span title="enum.Enum">Enum</span></code></p>
 
 
-      <p>Configures the auto-submitting of images to the Learning Loop</p>
+        <p>Configures the auto-submitting of images to the Learning Loop</p>
 
 
 
@@ -1403,7 +1403,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
     <div class="doc doc-contents ">
 
-      <p>submit all images which are run through the detector</p>
+        <p>submit all images which are run through the detector</p>
     </div>
 
 </div>
@@ -1427,7 +1427,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
     <div class="doc doc-contents ">
 
-      <p>no auto-submitting</p>
+        <p>no auto-submitting</p>
     </div>
 
 </div>
@@ -1451,7 +1451,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
     <div class="doc doc-contents ">
 
-      <p>only submit images with novel detections and in an uncertainty range (this is the default)</p>
+        <p>only submit images with novel detections and in an uncertainty range (this is the default)</p>
     </div>
 
 </div>
@@ -1498,7 +1498,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
               Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
-      <p>A detector allows detecting objects in images.</p>
+        <p>A detector allows detecting objects in images.</p>
 <p>It also holds an upload queue for sending images with uncertain results to an active learning infrastructure like the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Learning Loop</a>.</p>
 
 
@@ -1536,7 +1536,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Runs detections on the image. Afterwards the <code>image.detections</code> property is filled.</p>
+        <p>Runs detections on the image. Afterwards the <code>image.detections</code> property is filled.</p>
 
     </div>
 
@@ -1562,7 +1562,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Uploads the image to the Learning Loop.</p>
+        <p>Uploads the image to the Learning Loop.</p>
 <p>The <code>tags</code> are added to the image.
 If the image has detections, they are also uploaded.</p>
 
@@ -1612,7 +1612,7 @@ If the image has detections, they are also uploaded.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.detector.Detector" href="#rosys.vision.Detector">Detector</a></code></p>
 
 
-      <p>This detector communicates with a <a href="https://hub.docker.com/r/zauberzeug/yolov5-detector">YOLO detector</a> via Socket.IO.</p>
+        <p>This detector communicates with a <a href="https://hub.docker.com/r/zauberzeug/yolov5-detector">YOLO detector</a> via Socket.IO.</p>
 <p>It automatically connects and reconnects, submits and receives detections and sends images that should be uploaded to the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Learning Loop</a>.</p>
 <p>Note: Images must be smaller than <code>MAX_IMAGE_SIZE</code> bytes (default: 10 MB).</p>
 
@@ -1660,7 +1660,7 @@ If the image has detections, they are also uploaded.</p>
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.detector.Detector" href="#rosys.vision.Detector">Detector</a></code></p>
 
 
-      <p>This detector simulates object detection.</p>
+        <p>This detector simulates object detection.</p>
 <p>It requires a camera provider in order to check visibility using the cameras' calibrations.
 Individual camera IDs can be added to a set of <code>blocked_cameras</code> to simulate occlusions during pytests.
 A list of <code>simulated_objects</code> can be filled to define what can be detected.
@@ -1705,7 +1705,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a></code></p>
 
 
-      <p>A multi-camera provider combines multiple camera providers into one.</p>
+        <p>A multi-camera provider combines multiple camera providers into one.</p>
 <p>This is useful if another module requires a single camera provider but the robot has multiple camera sources like USB and WiFi cameras.</p>
 
 
@@ -1752,7 +1752,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.rtsp_camera.rtsp_camera.RtspCamera">RtspCamera</span>]</code>, <code><span title="rosys.persistence.PersistentModule">PersistentModule</span></code></p>
 
 
-      <p>This module collects and provides real RTSP streaming cameras.</p>
+        <p>This module collects and provides real RTSP streaming cameras.</p>
 
 
 
@@ -1796,7 +1796,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.simulated_camera.simulated_camera.SimulatedCamera">SimulatedCamera</span>]</code>, <code><span title="rosys.persistence.PersistentModule">PersistentModule</span></code></p>
 
 
-      <p>This module collects and simulates cameras and generates synthetic images.</p>
+        <p>This module collects and simulates cameras and generates synthetic images.</p>
 <p>In the current implementation the images only contain the camera ID and the current time.</p>
 
 
@@ -1829,7 +1829,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
     <div class="doc doc-contents ">
 
-      <p>Simulated device discovery by returning all camera's IDs.</p>
+        <p>Simulated device discovery by returning all camera's IDs.</p>
 <p>If simulate_device_failure is set, disconnected cameras are returned with a fixed probability.</p>
 
     </div>
@@ -1861,7 +1861,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
               Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.usb_camera.usb_camera.UsbCamera">UsbCamera</span>]</code>, <code><span title="rosys.persistence.PersistentModule">PersistentModule</span></code></p>
 
 
-      <p>This module collects and provides real USB cameras.</p>
+        <p>This module collects and provides real USB cameras.</p>
 <p>Camera devices are discovered through video4linux (v4l) and accessed with openCV.
 Therefore the program v4l2ctl and openCV (including python bindings) must be available.</p>
 
