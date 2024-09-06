@@ -22,7 +22,7 @@ class RobotBrain:
     If the offset changes significantly, a notification is sent and the offset history is cleared.
     """
 
-    def __init__(self, communication: Communication) -> None:
+    def __init__(self, communication: Communication, *, enable_esp_on_startup: bool = True) -> None:
         self.LINE_RECEIVED = Event()
         """a line has been received from the microcontroller (argument: line as string)"""
         self.FLASH_P0_COMPLETE = Event()
@@ -38,8 +38,8 @@ class RobotBrain:
         self._clock_offset: float | None = None
         self._clock_offsets: deque[float] = deque(maxlen=CLOCK_OFFSET_HISTORY_LENGTH)
         self.hardware_time: float | None = None
-
-        rosys.on_startup(self.enable_esp)
+        if enable_esp_on_startup:
+            rosys.on_startup(self.enable_esp)
 
     @property
     def clock_offset(self) -> float | None:
