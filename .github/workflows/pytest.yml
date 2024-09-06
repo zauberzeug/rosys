@@ -21,6 +21,7 @@ jobs:
           poetry run install-deps
       - name: mypy and pylint
         run: |
+          poetry run pre-commit run --all-files
           poetry run mypy ./rosys --non-interactive
           poetry run pylint ./rosys
 
