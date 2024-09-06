@@ -1,6 +1,5 @@
 import logging
 from collections import deque
-from typing import Optional
 
 from nicegui import ui
 
