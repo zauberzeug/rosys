@@ -12,7 +12,7 @@ keywords = ["robot", "framework", "automation", "control", "steer"]
 python = ">=3.10, <3.13"
 nicegui = ">=1.4.31"
 pyserial = "^3.5"
-numpy = "^1.20.1"
+numpy = ">=1.20.1"
 scipy = "^1.7.2"
 opencv-python = "^4.5.5"
 psutil = "^5.9.0"
@@ -141,6 +141,7 @@ select = [
     "UP", # pyupgrade
     "RUF", # ruff
     "PL", # pylint
+    "NPY201", # NumPy 2.0
 ]
 fixable = [
     "I",  # isort
