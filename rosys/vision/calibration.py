@@ -55,6 +55,11 @@ class Intrinsics:
         D: list[float] = [0] * 5
         return Intrinsics(matrix=K, distortion=D, size=size)
 
+    @property
+    def focal_length(self) -> float:
+        """The calculated focal length of the camera."""
+        return (self.matrix[0][0] + self.matrix[1][1]) / 2.0
+
 
 log = logging.getLogger('rosys.world.calibration')
 
