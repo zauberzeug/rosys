@@ -3,7 +3,7 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
-import requests
+import httpx
 
 
 @dataclass
@@ -43,7 +43,7 @@ class JovisionInterface:
     def settings_url(self) -> str:
         return f'http://{self.ip}/cgi-bin/jvsweb.cgi'
 
-    def _send_settings(self, settings: list[JovisionCameraSettings]) -> None:
+    async def _send_settings(self, settings: list[JovisionCameraSettings]) -> None:
         """
         Set the settings for all streams
         """
@@ -67,7 +67,8 @@ class JovisionInterface:
             'cmd': json.dumps(cmd),
             '_': int(time.time() * 1000),  # current time as a timestamp
         }
-        requests.get(self.settings_url, params=params, timeout=1)  # type: ignore
+        async with httpx.AsyncClient() as client:
+            await client.get(self.settings_url, params=params)
 
     def set_fps(self, stream_id: int, fps: int) -> None:
         current_settings = self.get_current_settings()
@@ -101,7 +102,7 @@ class JovisionInterface:
                 break
         self._send_settings(current_settings)
 
-    def get_current_settings(self) -> list[JovisionCameraSettings]:
+    async def get_current_settings(self) -> list[JovisionCameraSettings]:
         cmd = {
             'method': 'stream_get_params',
             'user': {
@@ -116,7 +117,8 @@ class JovisionInterface:
             'cmd': json.dumps(cmd),
             '_': int(time.time() * 1000),
         }
-        response = requests.get(self.settings_url, params=params, timeout=1)  # type: ignore
+        async with httpx.AsyncClient() as client:
+            response = await client.get(self.settings_url, params=params)
 
         return [
             JovisionCameraSettings(

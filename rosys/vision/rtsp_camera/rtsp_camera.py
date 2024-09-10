@@ -109,16 +109,16 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         image = Image(time=rosys.time(), camera_id=self.id, size=final_image_resolution, data=transformed_image_bytes)
         self._add_image(image)
 
-    def set_fps(self, fps: int) -> None:
+    async def set_fps(self, fps: int) -> None:
         assert self.device is not None
 
-        self.device.set_fps(fps)
+        await self.device.set_fps(fps)
         self.polling_interval = 1.0 / fps
 
-    def get_fps(self) -> int | None:
+    async def get_fps(self) -> int | None:
         assert self.device is not None
 
-        return self.device.get_fps()
+        return await self.device.get_fps()
 
     def set_jovision_profile(self, profile: int) -> None:
         assert self.device is not None
@@ -130,15 +130,15 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         return self.device.get_jovision_profile()
 
-    def set_bitrate(self, bitrate: int) -> None:
+    async def set_bitrate(self, bitrate: int) -> None:
         assert self.device is not None
 
-        self.device.set_bitrate(bitrate)
+        await self.device.set_bitrate(bitrate)
 
-    def get_bitrate(self) -> int | None:
+    async def get_bitrate(self) -> int | None:
         assert self.device is not None
 
-        return self.device.get_bitrate()
+        return await self.device.get_bitrate()
 
     async def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
         await super()._apply_parameters(new_values, force_set)
