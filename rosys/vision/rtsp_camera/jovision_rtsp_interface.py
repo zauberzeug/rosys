@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any
 
 import httpx
+from httpx import QueryParams
 
 
 @dataclass
@@ -63,44 +64,44 @@ class JovisionInterface:
                 'streams': streams,
             },
         }
-        params = {
-            'cmd': json.dumps(cmd),
-            '_': int(time.time() * 1000),  # current time as a timestamp
-        }
+        params = QueryParams(
+            cmd=json.dumps(cmd),
+            _=int(time.time() * 1000),  # current time as a timestamp
+        )
         async with httpx.AsyncClient() as client:
             await client.get(self.settings_url, params=params)
 
-    def set_fps(self, stream_id: int, fps: int) -> None:
-        current_settings = self.get_current_settings()
+    async def set_fps(self, stream_id: int, fps: int) -> None:
+        current_settings = await self.get_current_settings()
         for settings in current_settings:
             if settings.stream_id == stream_id:
                 settings.fps = int(fps)
                 break
-        self._send_settings(current_settings)
+        await self._send_settings(current_settings)
 
-    def get_fps(self, stream_id: int) -> int | None:
-        current_settings = self.get_current_settings()
+    async def get_fps(self, stream_id: int) -> int | None:
+        current_settings = await self.get_current_settings()
         for settings in current_settings:
             if settings.stream_id == stream_id:
                 return settings.fps
 
         return None
 
-    def get_bitrate(self, stream_id: int) -> int | None:
-        current_settings = self.get_current_settings()
+    async def get_bitrate(self, stream_id: int) -> int | None:
+        current_settings = await self.get_current_settings()
         for settings in current_settings:
             if settings.stream_id == stream_id:
                 return settings.bitrate
 
         return None
 
-    def set_bitrate(self, stream_id: int, bitrate: int) -> None:
-        current_settings = self.get_current_settings()
+    async def set_bitrate(self, stream_id: int, bitrate: int) -> None:
+        current_settings = await self.get_current_settings()
         for settings in current_settings:
             if settings.stream_id == stream_id:
                 settings.bitrate = int(bitrate)
                 break
-        self._send_settings(current_settings)
+        await self._send_settings(current_settings)
 
     async def get_current_settings(self) -> list[JovisionCameraSettings]:
         cmd = {
@@ -113,10 +114,10 @@ class JovisionInterface:
                 'channelid': 0,
             },
         }
-        params = {
-            'cmd': json.dumps(cmd),
-            '_': int(time.time() * 1000),
-        }
+        params = QueryParams(
+            cmd=json.dumps(cmd),
+            _=int(time.time() * 1000),
+        )
         async with httpx.AsyncClient() as client:
             response = await client.get(self.settings_url, params=params)
 
@@ -134,7 +135,7 @@ class JovisionInterface:
             for stream in response.json()['result']['streams']
         ]
 
-    def get_parameter_ranges(self):
+    async def get_parameter_ranges(self):
         raise NotImplementedError
         # pylint: disable=unreachable
         # ruff: noqa: F841
@@ -152,7 +153,8 @@ class JovisionInterface:
             'cmd': json.dumps(cmd),
             '_': time.time() * 1000,
         }
-        response = requests.get(self.settings_url, params=params, timeout=1)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(self.settings_url, params=params)
 
         for stream_id, stream in enumerate(response.json()['result']['all']):
             print(f'stream {stream_id}')

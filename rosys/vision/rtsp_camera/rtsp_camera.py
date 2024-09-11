@@ -75,7 +75,8 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             self.log.error('no IP address provided for camera %s', self.id)
             return
 
-        self.device = RtspDevice(mac=self.id, ip=self.ip, jovision_profile=self.parameters['jovision_profile'])
+        self.device = RtspDevice(mac=self.id, ip=self.ip,
+                                 jovision_profile=self.parameters['jovision_profile'], fps=self.parameters['fps'])
 
         await self._apply_all_parameters()
 
