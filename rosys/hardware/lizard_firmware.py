@@ -45,7 +45,7 @@ class LizardFirmware:
         await self.read_core_checksum()
 
     async def read_online_version(self) -> None:
-        response: dict[str, str] = (await rosys.run.io_bound(requests.get, self.GITHUB_URL)).json()
+        response = (await rosys.run.io_bound(requests.get, self.GITHUB_URL)).json()
         for i, item in enumerate(response):
             try:
                 assert 'tag_name' in item
