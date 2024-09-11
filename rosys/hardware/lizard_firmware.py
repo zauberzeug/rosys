@@ -48,10 +48,10 @@ class LizardFirmware:
         response: dict[str, str] = (await rosys.run.io_bound(requests.get, self.GITHUB_URL)).json()
         for i, item in enumerate(response):
             try:
-                assert 'tag_name' in item  # type: ignore
+                assert 'tag_name' in item
                 version_name = item['tag_name'].removeprefix('v')
                 if i == 0:
-                    self.selected_online_version = version_name  # type: ignore
+                    self.selected_online_version = version_name
                 assert 'assets' in item
                 browser_download_url = item['assets'][0]['browser_download_url']
                 if not browser_download_url.endswith('.zip'):
