@@ -48,9 +48,11 @@ class LizardFirmware:
         response: dict[str, str] = (await rosys.run.io_bound(requests.get, self.GITHUB_URL)).json()
         for i, item in enumerate(response):
             try:
+                assert 'tag_name' in item
                 version_name = item['tag_name'].removeprefix('v')
                 if i == 0:
                     self.selected_online_version = version_name
+                assert 'assets' in item
                 browser_download_url = item['assets'][0]['browser_download_url']
                 if not browser_download_url.endswith('.zip'):
                     continue
@@ -97,6 +99,11 @@ class LizardFirmware:
 
     @awaitable
     def download(self) -> None:
+        if not self.selected_online_version:
+            rosys.notify('No version selected.', 'warning')
+            return
+        assert self.selected_online_version is not None
+        assert self.selected_online_version in self.online_versions
         url = self.online_versions[self.selected_online_version]
         zip_path = self.PATH / 'lizard.zip'
         zip_path.write_bytes(requests.get(url, timeout=5.0).content)
