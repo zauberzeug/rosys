@@ -57,9 +57,11 @@ class LizardFirmware:
                 if not browser_download_url.endswith('.zip'):
                     continue
                 self.online_versions[version_name] = browser_download_url
-            except KeyError:
+            except (KeyError, IndexError):
                 rosys.notify(response.get('message', 'Could not access online version'), 'warning')
                 break
+        if not self.online_versions:
+            rosys.notify('Could not access any valid online versions', 'warning')
 
     def read_local_version(self) -> None:
         path = self.PATH / 'build' / 'lizard.bin'
