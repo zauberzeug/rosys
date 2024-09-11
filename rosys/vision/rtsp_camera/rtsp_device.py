@@ -6,6 +6,7 @@ import subprocess
 from asyncio.subprocess import Process
 from collections.abc import AsyncGenerator
 from io import BytesIO
+from typing import Callable
 
 from nicegui import background_tasks
 
@@ -15,7 +16,7 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 
 class RtspDevice:
 
-    def __init__(self, mac: str, ip: str, jovision_profile: int) -> None:
+    def __init__(self, mac: str, ip: str, jovision_profile: int, on_new_image: Callable) -> None:
         self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device')
 
         self.mac = mac
@@ -23,10 +24,10 @@ class RtspDevice:
 
         self.fps: int
         self.jovision_profile = jovision_profile
+        self.new_image_callback = on_new_image
 
         self.capture_task: asyncio.Task | None = None
         self.capture_process: Process | None = None
-        self._image_buffer: bytes | None = None
         self._authorized: bool = True
 
         vendor_type = mac_to_vendor(mac)
@@ -56,11 +57,6 @@ class RtspDevice:
         if url is None:
             raise ValueError(f'could not determine RTSP URL for {self.mac}')
         return url
-
-    def capture(self) -> bytes | None:
-        image = self._image_buffer
-        self._image_buffer = None
-        return image
 
     async def shutdown(self) -> None:
         if self.capture_process is not None:
@@ -121,13 +117,23 @@ class RtspDevice:
             buffer = BytesIO()
             pos = 0
             header = None
+            chunk_size = 4096
+
+            await asyncio.sleep(5)
 
             while process.returncode is None:
                 assert process.stdout is not None
-                new = await process.stdout.read(4096)
-                if not new:
+
+                eof = False
+                while True:
+                    new = await process.stdout.read(chunk_size)
+                    eof = not new
+                    buffer.write(new)
+                    if len(new) < chunk_size:
+                        break
+
+                if eof:
                     break
-                buffer.write(new)
 
                 img_range = None
                 while True:
@@ -179,7 +185,7 @@ class RtspDevice:
                     self._authorized = False
 
         async for image in stream():
-            self._image_buffer = image
+            await self.new_image_callback(image)
 
         self.log.info('[%s] stream ended', self.mac)
 
