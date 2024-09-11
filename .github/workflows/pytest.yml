@@ -19,15 +19,16 @@ jobs:
         run: |
           poetry install --with dev
           poetry run install-deps
-      - name: mypy and pylint
+      - name: pre-commit, mypy and pylint
         run: |
+          poetry run pre-commit run --all-files
           poetry run mypy ./rosys --non-interactive
           poetry run pylint ./rosys
 
   pytest:
     strategy:
       matrix:
-        python: ["3.10", "3.11"]
+        python: ["3.10", "3.11", "3.12"]
       fail-fast: false
     runs-on: ubuntu-latest
     timeout-minutes: 10

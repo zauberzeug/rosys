@@ -1,4 +1,4 @@
-FROM python:3.11-buster
+FROM python:3.12-bookworm
 
 RUN apt update && apt install -y \
     sudo vim less ack-grep rsync wget curl cmake arp-scan iproute2 iw python3-pip python3-autopep8 libgeos-dev graphviz graphviz-dev v4l-utils psmisc sysstat \
@@ -22,7 +22,7 @@ COPY pyproject.toml ./
 
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=true
-RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install -vvv --no-root ; else poetry install -vvv --no-root --no-dev ; fi"
+RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install -vvv --no-root --with dev ; else poetry install -vvv --no-root ; fi"
 
 # Fetch Lizard firmware + scripts for hardware control
 WORKDIR /root/.lizard
@@ -39,6 +39,7 @@ RUN pip install --no-cache prompt-toolkit
 WORKDIR /rosys
 COPY LICENSE README.md rosys.code-workspace ./
 ADD ./rosys /rosys/rosys
+RUN poetry install -vvv
 
 ENV PYTHONPATH "/rosys"
 

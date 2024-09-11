@@ -21,8 +21,11 @@ class Odometer:
     """
 
     def __init__(self, wheels: VelocityProvider) -> None:
-        self.ROBOT_MOVED = Event()
-        """a robot movement is detected"""
+        self.WHEELS_TURNED = Event()
+        """the wheels have turned with non-zero velocity"""
+
+        self.PREDICTION_UPDATED = Event()
+        """the pose prediction has been updated"""
 
         self.log = logging.getLogger('rosys.odometer')
 
@@ -58,6 +61,7 @@ class Odometer:
         if robot_moved:
             self.last_movement = step.time
             self._handle_movement()
+            self.WHEELS_TURNED.emit()
 
     def handle_detection(self, detection: Pose) -> None:
         self.detection = detection
@@ -73,7 +77,7 @@ class Odometer:
         self.prediction_frame.x = self.prediction.x
         self.prediction_frame.y = self.prediction.y
         self.prediction_frame.rotation = Rotation.from_euler(0, 0, self.prediction.yaw)
-        self.ROBOT_MOVED.emit()
+        self.PREDICTION_UPDATED.emit()
 
     def prune_history(self, max_age: float = 10.0) -> None:
         cut_off_time = rosys.time() - max_age

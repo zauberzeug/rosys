@@ -169,34 +169,33 @@ class Calibration:
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 
     @overload
-    def project_to_image(self,
-                         world_coordinates: Point3d,
-                         frame: Frame3d | None = None,
-                         ) -> Point | None: ...
+    def project_to_image(self, point: Point3d) -> Point | None:
+        """Project a 3D point to the image plane.
+
+        :param point: The point to project.
+        """
 
     @overload
-    def project_to_image(self,
-                         world_coordinates: np.ndarray,
-                         frame: Frame3d | None = None,
-                         ) -> np.ndarray: ...
+    def project_to_image(self, coordinates: np.ndarray, *, frame: Frame3d | None = None) -> np.ndarray:
+        """Project a 3D coordinate array to the image plane.
 
-    def project_to_image(self,
-                         world_coordinates: Point3d | np.ndarray,
-                         frame: Frame3d | None = None,
-                         ) -> Point | np.ndarray | None:
-        """Project a point in world coordinates to the image plane.
-
-        This takes into account the camera's intrinsic and extrinsic parameters.
+        :param coordinates: The 3D coordinates of the points to project.
+        :param frame: The coordinate frame of the coordinates.
         """
-        if isinstance(world_coordinates, Point3d):
-            world_array = np.array([world_coordinates.tuple], dtype=np.float32)
-            image_array = self.project_to_image(world_array, frame=frame)
+
+    def project_to_image(self, *args, **kwargs) -> Point | np.ndarray | None:
+        if isinstance(args[0], Point3d):
+            point: Point3d = args[0]
+            world_array = np.array([point.resolve().tuple], dtype=np.float64)
+            image_array = self.project_to_image(world_array)
             if np.isnan(image_array).any():
                 return None
             return Point(x=image_array[0, 0], y=image_array[0, 1])  # pylint: disable=unsubscriptable-object
 
+        coordinates: np.ndarray = args[0]
+        frame: Frame3d | None = kwargs.get('frame')
         world_extrinsics = self.extrinsics.relative_to(frame)
-        R = world_extrinsics.rotation.matrix
+        R = world_extrinsics.rotation.matrix.astype(np.float64)
         Rod = cv2.Rodrigues(R.T)[0]
         t = -R.T @ world_extrinsics.translation
         K = np.array(self.intrinsics.matrix)
@@ -204,20 +203,20 @@ class Calibration:
 
         # pylint: disable=unpacking-non-sequence
         if self.intrinsics.model == CameraModel.PINHOLE:
-            image_array, _ = cv2.projectPoints(world_coordinates, Rod, t, K, D)
+            image_array, _ = cv2.projectPoints(coordinates, Rod, t, K, D)
         elif self.intrinsics.model == CameraModel.FISHEYE:
-            image_array, _ = cv2.fisheye.projectPoints(world_coordinates.reshape(-1, 1, 3), Rod, t, K, D)
+            image_array, _ = cv2.fisheye.projectPoints(coordinates.reshape(-1, 1, 3), Rod, t, K, D)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
             xi = self.intrinsics.omnidir_params.xi
-            image_array, _ = cv2.omnidir.projectPoints(world_coordinates.reshape(-1, 1, 3), Rod, t, K, xi, D)
+            image_array, _ = cv2.omnidir.projectPoints(coordinates.reshape(-1, 1, 3), Rod, t, K, xi, D)
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
         # pylint: enable=unpacking-non-sequence
 
         if self.intrinsics.model != CameraModel.OMNIDIRECTIONAL:
-            world_coordinates = world_coordinates.reshape(-1, 3)
-            local_coordinates = (world_coordinates - world_extrinsics.translation) @ R
+            coordinates = coordinates.reshape(-1, 3)
+            local_coordinates = (coordinates - world_extrinsics.translation) @ R
             image_array[local_coordinates[:, 2] < 0, :] = np.nan
 
         return image_array.reshape(-1, 2)

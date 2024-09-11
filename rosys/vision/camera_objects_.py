@@ -23,6 +23,7 @@ class CameraObjects(Group):
                  *,
                  px_per_m: float = 10000,
                  debug: bool = False,
+                 interval: float = 1.0
                  ) -> None:
         super().__init__()
 
@@ -33,7 +34,7 @@ class CameraObjects(Group):
         self.textures: dict[str, Texture] = {}
         self.image_shrink_factor = 2
 
-        ui.timer(1.0, self.update)
+        ui.timer(interval, self.update)
 
     @property
     def calibrated_cameras(self) -> dict[str, CalibratableCamera]:
@@ -72,8 +73,9 @@ class CameraObjects(Group):
                             camera.calibration.intrinsics.size.height / self.px_per_m,
                             camera.calibration.intrinsics.matrix[0][0] / self.px_per_m,
                         )
-            camera_groups[uid].move(*camera.calibration.extrinsics.translation)
-            camera_groups[uid].rotate_R(camera.calibration.extrinsics.resolve().rotation.R)
+            world_extrinsics = camera.calibration.extrinsics.resolve()
+            camera_groups[uid].move(*world_extrinsics.translation)
+            camera_groups[uid].rotate_R(world_extrinsics.rotation.R)
 
     async def update_images(self) -> None:
         newest_images = [camera.latest_captured_image

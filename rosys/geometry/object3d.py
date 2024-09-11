@@ -25,7 +25,10 @@ class Object3d(abc.ABC):
         return self
 
     def relative_to(self, target_frame: Pose3d | None) -> Self:
-        """Compute the object location relative to the given frame"""
+        """Compute the object location relative to the given frame pose.
+
+        The ``frame_id`` of the resulting object will be None.
+        """
         if self._frame_id is None:
             if target_frame is None:
                 return self

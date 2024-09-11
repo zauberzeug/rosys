@@ -3,6 +3,7 @@ from __future__ import annotations
 import io
 import logging
 import os
+from asyncio import Task
 from collections.abc import Callable
 from datetime import datetime
 from pathlib import Path
@@ -33,9 +34,13 @@ class TimelapseRecorder:
     def __init__(self, *, width: int = 800, height: int = 600, capture_rate: float = 1) -> None:
         """Creates a time lapse recorder to capture images from a camera and creates a video of the sequence afterwards.
 
-        param: width: width of the images to capture (default: 800)
-        param: height: height of the images to capture (default: 600)
-        param: capture_rate: images per second to capture (default: 1)
+        Start the capturing by setting the ``camera`` property to a ``Camera`` instance.
+        Setting to ``None`` stops capturing.
+        After capturing, call ``compress_video`` to create a video from the captured images.
+
+        :param width: width of the images to capture (default: 800)
+        :param height: height of the images to capture (default: 600)
+        :param capture_rate: images per second to capture (default: 1.0)
         """
         self.log = logging.getLogger('rosys.timelapse_recorder')
         self.width = width
@@ -44,7 +49,13 @@ class TimelapseRecorder:
         self.capture_rate = capture_rate
         self.last_capture_time = rosys.time()
         self._notifications: list[list[str]] = []
+
         self.camera: Camera | None = None
+        """The camera to capture images from; does not capture if set to ``None``."""
+
+        self.ongoing_compressions: list[str] = []
+        """List of video files that are currently being compressed."""
+
         VIDEO_PATH.mkdir(parents=True, exist_ok=True)
         rosys.on_repeat(self._capture, 0.01)
         self.frame_info_builder: Callable[[RosysImage], str | None] = lambda image: None
@@ -70,8 +81,16 @@ class TimelapseRecorder:
                                   self._notifications.pop(0) if self._notifications else [],
                                   self.frame_info_builder(image))
 
-    async def compress_video(self) -> None:
-        """Creates a video from the captured images"""
+    def compress_video(self) -> Task:
+        """Create a video from the captured images.
+
+        Note: This method starts a background task and returns immediately.
+
+        You can use the returned task or the ``ongoing_computations`` property to check if the video is still being compressed.
+        """
+        return rosys.background_tasks.create(self._run_ffmpeg(), name='timelapse ffmpeg')
+
+    async def _run_ffmpeg(self) -> None:
         jpgs = sorted(STORAGE_PATH.glob('*.jpg'))
         if len(jpgs) < 20:
             self.log.info('very few images (%s); not creating video', len(jpgs))
@@ -85,6 +104,7 @@ class TimelapseRecorder:
         id_ = start.strftime(r'%Y%m%d_%H-%M-%S_' + duration.replace(' ', '_'))
         target_dir = STORAGE_PATH / id_
         target_dir.mkdir(parents=True, exist_ok=True)
+        target_filename = f'{id_}.mp4'
         await rosys.run.sh(f'mv {STORAGE_PATH}/*.jpg {target_dir}', shell=True)
         source_file = target_dir / 'source.txt'
         with source_file.open('w') as f:
@@ -93,12 +113,15 @@ class TimelapseRecorder:
         absolute_niceness = 10 - os.nice(0)
         cmd = (
             f'nice -n {absolute_niceness} ffmpeg -hide_banner -threads 1 -f concat -safe 0 -i "{source_file}" '
-            f'-s {self.width}x{self.height} -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{id_}.mp4;'
+            f'-s {self.width}x{self.height} -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{target_filename};'
             f'mv {target_dir}/*mp4 {STORAGE_PATH}/videos;'
             f'rm -r {target_dir};'
         )
-        self.log.info('starting %s', cmd)
-        rosys.background_tasks.create(rosys.run.sh(cmd, timeout=None, shell=True), name='timelapse ffmpeg')
+        self.log.info('video compression for %s starting:\n%s', target_filename, cmd)
+        self.ongoing_compressions.append(target_filename)
+        await rosys.run.sh(cmd, timeout=None, shell=True)
+        self.ongoing_compressions.remove(target_filename)
+        self.log.info('video compression for %s finished', target_filename)
 
     def discard_video(self) -> None:
         """Drop the currently recorded video data."""

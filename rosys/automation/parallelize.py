@@ -21,18 +21,17 @@ class parallelize:
         sends = iter_sends[:]
         messages = [None for _ in sends]
         completed = [False for _ in sends]
-        waiting = [False for _ in sends]
-        futures = [None for _ in sends]
+        waiting: list[asyncio.Future | asyncio.Task | None] = [None for _ in sends]
 
         try:
             while not all(completed):
                 active_coros = [i for i, is_completed in enumerate(completed) if not is_completed]
 
                 for i in active_coros:
-                    if waiting[i]:
-                        if futures[i].done():
-                            waiting[i] = False
-                            futures[i] = None
+                    task = waiting[i]
+                    if task is not None:
+                        if task.done():
+                            waiting[i] = None
                         else:
                             continue
 
@@ -47,17 +46,21 @@ class parallelize:
                         sends[i] = iter_sends[i]
 
                     if isinstance(signal, asyncio.Future | asyncio.Task):
-                        waiting[i] = True
-                        futures[i] = signal
+                        waiting[i] = signal
                     else:
                         try:
                             messages[i] = yield signal
                         except GeneratorExit:
                             raise
                         except BaseException as e:
-                            sends[i], messages[i] = iter_throws[i], e
+                            try:
+                                sends[i] = iter_throws[i](type(e), e, e.__traceback__)
+                            except StopIteration:
+                                completed[i] = True
+                            else:
+                                sends[i] = iter_sends[i]  # Reset to send method if throw doesn't raise StopIteration
 
-                if all(waiting[i] or completed[i] for i in active_coros):
+                if all(waiting[i] is not None or completed[i] for i in active_coros):
                     yield  # Allow event loop to process other tasks
         finally:
             # Ensure all coroutines are properly closed

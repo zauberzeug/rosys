@@ -43,10 +43,6 @@ class JovisionInterface:
     def settings_url(self) -> str:
         return f'http://{self.ip}/cgi-bin/jvsweb.cgi'
 
-    @property
-    def headers(self) -> dict[str, str]:
-        return {'Cookie': 'passwdRule=1; username=admin; password=admin;'}
-
     def _send_settings(self, settings: list[JovisionCameraSettings]) -> None:
         """
         Set the settings for all streams
@@ -64,7 +60,6 @@ class JovisionInterface:
                 'digest': '479ead4555b49227dc8812d06970c652',
             },
             'param': {
-                'channelid': 0,
                 'streams': streams,
             },
         }
@@ -72,23 +67,39 @@ class JovisionInterface:
             'cmd': json.dumps(cmd),
             '_': int(time.time() * 1000),  # current time as a timestamp
         }
-        requests.get(self.settings_url, params=params, headers=self.headers, timeout=1)  # type: ignore
+        requests.get(self.settings_url, params=params, timeout=1)  # type: ignore
 
-    def set_fps(self, stream_id, fps) -> None:
+    def set_fps(self, stream_id: int, fps: int) -> None:
         current_settings = self.get_current_settings()
         for settings in current_settings:
             if settings.stream_id == stream_id:
-                settings.fps = fps
+                settings.fps = int(fps)
                 break
         self._send_settings(current_settings)
 
-    def get_fps(self, stream_id) -> int | None:
+    def get_fps(self, stream_id: int) -> int | None:
         current_settings = self.get_current_settings()
         for settings in current_settings:
             if settings.stream_id == stream_id:
                 return settings.fps
 
         return None
+
+    def get_bitrate(self, stream_id: int) -> int | None:
+        current_settings = self.get_current_settings()
+        for settings in current_settings:
+            if settings.stream_id == stream_id:
+                return settings.bitrate
+
+        return None
+
+    def set_bitrate(self, stream_id: int, bitrate: int) -> None:
+        current_settings = self.get_current_settings()
+        for settings in current_settings:
+            if settings.stream_id == stream_id:
+                settings.bitrate = int(bitrate)
+                break
+        self._send_settings(current_settings)
 
     def get_current_settings(self) -> list[JovisionCameraSettings]:
         cmd = {
@@ -105,7 +116,7 @@ class JovisionInterface:
             'cmd': json.dumps(cmd),
             '_': int(time.time() * 1000),
         }
-        response = requests.get(self.settings_url, params=params, headers=self.headers, timeout=1)  # type: ignore
+        response = requests.get(self.settings_url, params=params, timeout=1)  # type: ignore
 
         return [
             JovisionCameraSettings(
@@ -139,7 +150,7 @@ class JovisionInterface:
             'cmd': json.dumps(cmd),
             '_': time.time() * 1000,
         }
-        response = requests.get(self.settings_url, params=params, headers=self.headers, timeout=1)
+        response = requests.get(self.settings_url, params=params, timeout=1)
 
         for stream_id, stream in enumerate(response.json()['result']['all']):
             print(f'stream {stream_id}')

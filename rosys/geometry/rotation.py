@@ -13,7 +13,7 @@ class Rotation:
 
     @staticmethod
     def zero() -> Rotation:
-        return Rotation(R=[[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+        return Rotation(R=[[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
 
     @staticmethod
     def from_euler(roll: float, pitch: float, yaw: float) -> Rotation:
