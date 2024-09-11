@@ -109,17 +109,13 @@ class RtspDevice:
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
             command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! jpegenc ! fdsink'
             self.log.debug('[%s] Running command: %s', self.mac, command)
-            process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = await asyncio.create_subprocess_exec(*shlex.split(command), limit=1024*1024*1024*1024, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             assert process.stdout is not None
             assert process.stderr is not None
             self.capture_process = process
 
             buffer = BytesIO()
-            pos = 0
-            header = None
-            chunk_size = 4096
-
-            await asyncio.sleep(5)
+            chunk_size = 1024*1024
 
             while process.returncode is None:
                 assert process.stdout is not None
@@ -135,35 +131,22 @@ class RtspDevice:
                 if eof:
                     break
 
-                img_range = None
-                while True:
-                    if header is None:
-                        h = buffer.getvalue().find(b'\xff\xd8', pos)
-                        if h == -1:
-                            pos = buffer.tell() - 1
-                            break
-                        pos = h + 2
-                        header = h
-                    else:
-                        f = buffer.getvalue().find(b'\xff\xd9', pos)
-                        if f == -1:
-                            pos = buffer.tell() - 1
-                            break
-                        img_range = (header, f + 2)
-                        pos = f + 2
-                        header = None
+                data = buffer.getvalue()
+                end = data.rfind(b'\xff\xd9')
+                if end == -1:
+                    continue
 
-                if img_range:
-                    yield buffer.getvalue()[img_range[0]:img_range[1]]
+                start = data.rfind(b'\xff\xd8', 0, end)
+                if start == -1:
+                    continue
 
-                    rest = buffer.getvalue()[img_range[1]:]
-                    buffer.seek(0)
-                    buffer.truncate()
-                    buffer.write(rest)
+                end += 2
 
-                    pos = 0
-                    if header is not None:
-                        header -= img_range[1]
+                yield data[start:end]
+                rest = data[end:]
+                buffer.seek(0)
+                buffer.truncate()
+                buffer.write(rest)
 
             try:
                 await asyncio.wait_for(process.wait(), timeout=5)
