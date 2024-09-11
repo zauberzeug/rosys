@@ -111,7 +111,7 @@ class SerialCommunication(Communication):
         ui.switch('Serial Communication', value=self.serial.isOpen(), on_change=toggle)
         ui.switch('Serial Logging', value=self.log.getEffectiveLevel() <= logging.DEBUG,
                   on_change=lambda e: self.log.setLevel(logging.DEBUG if e.value else logging.INFO))
-        command = ui.input('Serial Command')
+        command = ui.input('Serial Command').props('dark')
         command.on('keydown.enter', input_enter)
         command.on('keydown.up', input_up)
         command.on('keydown.down', input_down)
