@@ -18,7 +18,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                  id: str,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
-                 streaming: bool = True,
                  fps: int = 5,
                  jovision_profile: int = 1,
                  bitrate: int = 4096,
@@ -28,7 +27,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         super().__init__(id=id,
                          name=name,
                          connect_after_init=connect_after_init,
-                         polling_interval=1.0 / fps,
                          streaming=False,
                          **kwargs)
 
@@ -108,7 +106,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
 
         self.device.set_fps(fps)
-        self.polling_interval = 1.0 / fps
 
     def get_fps(self) -> int | None:
         assert self.device is not None
