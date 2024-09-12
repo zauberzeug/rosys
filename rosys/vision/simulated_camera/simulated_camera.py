@@ -14,7 +14,6 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
                  id: str,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
-                 streaming: bool = True,
                  width: int = 800,
                  height: int = 600,
                  color: str | None = None,
@@ -24,8 +23,7 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
         super().__init__(id=id,
                          name=name,
                          connect_after_init=connect_after_init,
-                         streaming=streaming,
-                         polling_interval=1.0 / fps,
+                         streaming=False,
                          **kwargs)
         self.device: SimulatedDevice | None = None
         self.resolution = ImageSize(width=width, height=height)
@@ -48,21 +46,16 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
 
     async def connect(self) -> None:
         if not self.is_connected:
-            self.device = SimulatedDevice(id=self.id, size=self.resolution)
+            self.device = SimulatedDevice(id=self.id, size=self.resolution,
+                                          image_data_callback=self._image_data_callback)
             await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
         self.device = None
 
-    async def capture_image(self) -> None:
-        if not self.is_connected:
-            return None
-        image = Image(time=rosys.time(), camera_id=self.id, size=self.resolution)
-        if rosys.is_test:
-            image.data = b'test data'
-        else:
-            assert self.device is not None
-            image.data = await rosys.run.cpu_bound(self.device.create_image_data)
+    async def _image_data_callback(self, image_data: bytes) -> None:
+        image = Image(time=rosys.time(), camera_id=self.id, size=self.resolution, data=image_data)
+        print(f'{rosys.time()}: adding image')
         self._add_image(image)
 
     def _set_color(self, value: str) -> None:
@@ -75,8 +68,8 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
 
     def _set_fps(self, value: int) -> None:
         assert self.device is not None
-        self.polling_interval = 1.0 / value
+        self.device.set_fps(value)
 
     def _get_fps(self) -> int:
         assert self.device is not None
-        return int(1.0 / self.polling_interval)
+        return int(self.device.get_fps())
