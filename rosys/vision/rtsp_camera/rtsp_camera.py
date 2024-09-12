@@ -57,7 +57,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     @property
     def is_connected(self) -> bool:
-        return self.device is not None and self.device.capture_task is not None
+        return self.device is not None and self.device.gstreamer_proc is not None
 
     @property
     def url(self) -> str | None:
@@ -78,7 +78,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.device = RtspDevice(mac=self.id, ip=self.ip,
                                  jovision_profile=self.parameters['jovision_profile'], fps=self.parameters['fps'])
 
-        await self._apply_all_parameters()
+        # await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
         if not self.is_connected:
@@ -93,7 +93,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         if not self.is_connected:
             return
         assert self.device is not None
-
         image_bytes = self.device.capture()
 
         if not image_bytes:
