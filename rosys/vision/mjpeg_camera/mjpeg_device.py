@@ -2,11 +2,11 @@ import asyncio
 import logging
 from asyncio import Task
 from collections.abc import AsyncGenerator
+from typing import Callable
 
 import httpx
 
 from ...rosys import on_startup
-from ..image_processing import remove_exif
 from .vendors import mac_to_url
 
 
@@ -15,12 +15,13 @@ class MjpegDevice:
     def __init__(self, mac: str, ip: str, *,
                  index: int | None = None,
                  username: str | None = None,
-                 password: str | None = None) -> None:
+                 password: str | None = None,
+                 on_new_image: Callable[[bytes], None]) -> None:
         self.mac = mac
         self.ip = ip
         self.index = index
+        self.on_new_image = on_new_image
         self.capture_task: Task | None = None
-        self._image_buffer: bytearray | None = None
         self.authentication = None if username is None or password is None else httpx.DigestAuth(username, password)
         self.log = logging.getLogger('rosys.mjpeg_device ' + self.mac)
         url = mac_to_url(mac, ip, index=index)
@@ -100,14 +101,9 @@ class MjpegDevice:
                     raise e
 
         async for image in stream():
-            self._image_buffer = image
+            self.on_new_image(image)
         self.log.warning('Capture task stopped')
         self.capture_task = None
-
-    def capture(self) -> bytes | None:
-        image = self._image_buffer
-        self._image_buffer = None
-        return remove_exif(image) if image is not None else None
 
     def shutdown(self) -> None:
         if self.capture_task is not None:

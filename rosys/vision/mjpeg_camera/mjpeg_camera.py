@@ -19,8 +19,6 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
                  id: str,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
-                 streaming: bool = True,
-                 polling_interval: float = 0.1,
                  base_path_overwrite: str | None = None,
                  username: str | None = None,
                  password: str | None = None,
@@ -30,8 +28,8 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
                  mirrored: bool = False,
                  **kwargs: Any,
                  ) -> None:
-        super().__init__(id=id, name=name, connect_after_init=connect_after_init, streaming=streaming,
-                         polling_interval=polling_interval, base_path_overwrite=base_path_overwrite, **kwargs)
+        super().__init__(id=id, name=name, connect_after_init=connect_after_init, streaming=False,
+                         base_path_overwrite=base_path_overwrite, **kwargs)
         self.log = logging.getLogger(f'rosys.vision.mjpeg_camera.{self.id}')
         self.username = username
         self.password = password
@@ -77,7 +75,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
         try:
             self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
-                                                    password=self.password)
+                                                    password=self.password, on_new_image=self._image_data_callback)
         except ValueError as error:
             self.log.error('Could not connect to device: %s', error)
             return
@@ -89,18 +87,14 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         self.device.shutdown()
         self.device = None
 
-    async def capture_image(self) -> None:
+    async def _image_data_callback(self, image_bytes: bytes) -> None:
         if not self.is_connected:
             return
 
         assert self.device is not None
 
-        image = self.device.capture()
-        if image is None:
-            return
-
         if self.crop or self.rotation != ImageRotation.NONE:
-            image = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
+            image = await rosys.run.cpu_bound(process_jpeg_image, image_bytes, self.rotation, self.crop)
         if image is None:
             return
         try:

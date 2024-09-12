@@ -1,4 +1,5 @@
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from .mjpeg_device import MjpegDevice
@@ -24,10 +25,11 @@ class AxisMjpegDevice(MjpegDevice):
     def __init__(self, mac: str, ip: str, *,
                  index: int | None = None,
                  username: str | None = None,
-                 password: str | None = None) -> None:
+                 password: str | None = None,
+                 on_new_image: Callable[[bytes], None]) -> None:
         super().__init__(mac, ip,
                          index=index,
-                         username=username, password=password)
+                         username=username, password=password, on_new_image=on_new_image)
 
         self.axis_settings = AxisSettings(fps=6, resolution=(640, 480), mirrored=False)
 

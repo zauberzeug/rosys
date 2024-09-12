@@ -17,11 +17,10 @@ async def test_mjpeg_camera(rosys_integration):
     if len(connected_uids) == 0:
         pytest.skip('No MJPEG camera detected. This test requires a physical MJPEG camera on the local network.')
     uid, ip = connected_uids[0]
-    camera = MjpegCamera(id=uid, ip=ip, connect_after_init=False, streaming=False)
+    camera = MjpegCamera(id=uid, ip=ip, connect_after_init=False)
     await camera.connect()
     await asyncio.sleep(0.5)
     assert camera.is_connected
-    await camera.capture_image()
     assert len(camera.images) == 1
 
 
