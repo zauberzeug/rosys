@@ -16,8 +16,6 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 gi.require_version('Gst', '1.0')  # noqa
 from gi.repository import GLib, Gst  # noqa
 
-Gst.init(None)
-
 
 class RtspDevice:
 
@@ -32,6 +30,7 @@ class RtspDevice:
 
         self.capture_task: asyncio.Task | None = None
         self.capture_process: multiprocessing.Process | None = None
+        self.ipc_queue = multiprocessing.Queue(maxsize=1)
         self._image_buffer: bytes | None = None
         self._authorized: bool = True
 
@@ -44,7 +43,8 @@ class RtspDevice:
             self.log.warning('[%s] No settings interface for vendor type %s', self.mac, vendor_type)
             self.log.warning('[%s] Using default fps of 10', self.mac)
 
-        url = mac_to_url(mac, ip, jovision_profile)
+        # url = mac_to_url(mac, ip, jovision_profile)
+        url = "test"
         if url is None:
             raise ValueError(f'could not determine RTSP URL for {mac}')
         self.log.info('[%s] Starting VideoStream for %s', self.mac, url)
@@ -64,24 +64,10 @@ class RtspDevice:
         return url
 
     def capture(self) -> bytes | None:
-        if self.parent_conn.poll():
+        if not self.ipc_queue.empty():
             print(f'[{self.mac}] RECV: {datetime.datetime.now().strftime("%H:%M:%S.%f")}', flush=True)
-            data = self.parent_conn.recv()
-            # create jpeg image bytes and return
-
-            # Convert the received data to a numpy array
-            nparr = np.frombuffer(data, np.uint8)
-
-            # Decode the numpy array as an image
-            img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
-
-            # Encode the image as JPEG
-            _, jpeg_data = cv2.imencode('.jpg', img)
-
-            # Convert the JPEG data to bytes
-            jpeg_bytes = jpeg_data.tobytes()
-
-            return jpeg_bytes
+            data = self.ipc_queue.get()
+            return data
 
         return None
 
@@ -99,12 +85,15 @@ class RtspDevice:
         print(f'[{self.mac}] Gstreamer process started', flush=True)
 
     def _run_gstreamer(self):
+        Gst.init(None)
         print(f"Stream {self.mac} - GStreamer process started")
         pipeline_str = str(
             # f'rtspsrc location="{self.url}" latency=0 protocols=tcp ! rtph264depay ! h264parse ! '
             # f'avdec_h264 ! videorate ! video/x-raw,framerate={self.fps}/1 ! videoconvert ! video/x-raw,format=BGR ! '
             # f'appsink name=appsink emit-signals=true drop=false max-buffers=1 sync=false'
-            f'videotestsrc ! videoconvert ! video/x-raw,format=BGR ! appsink name=appsink emit-signals=true drop=false max-buffers=1 sync=false'
+            'videotestsrc ! video/x-raw,format=BGR,width=640,height=480,framerate=20/1 !'
+            ' timeoverlay !'
+            ' jpegenc ! appsink name=appsink emit-signals=true drop=true max-buffers=1 sync=true'
         )
 
         print(f"Stream {self.mac} - Pipeline: {pipeline_str}")
@@ -140,7 +129,10 @@ class RtspDevice:
                 print(f"Stream {self.mac} - Caps: {structure.to_string()}")
 
             buffer_data = buffer.extract_dup(0, buffer.get_size())
-            self.child_conn.send(buffer_data)
+            try:
+                self.ipc_queue.put_nowait(buffer_data)
+            except multiprocessing.queues.Full:
+                print(f"Stream {self.mac} - Queue is full, dropping frame")
 
             print(
                 f"Stream {self.mac} - SEND: {datetime.datetime.now().strftime('%H:%M:%S.%f')}: {len(buffer_data)} bytes", flush=True)
