@@ -30,7 +30,6 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         super().__init__(id=id,
                          name=name,
                          connect_after_init=connect_after_init,
-                         streaming=False,
                          **kwargs)
         self._pending_operations = 0
         self.device: UsbDevice | None = None

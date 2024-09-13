@@ -28,7 +28,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
                  mirrored: bool = False,
                  **kwargs: Any,
                  ) -> None:
-        super().__init__(id=id, name=name, connect_after_init=connect_after_init, streaming=False,
+        super().__init__(id=id, name=name, connect_after_init=connect_after_init,
                          base_path_overwrite=base_path_overwrite, **kwargs)
         self.log = logging.getLogger(f'rosys.vision.mjpeg_camera.{self.id}')
         self.username = username
@@ -88,13 +88,10 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         self.device = None
 
     async def _image_data_callback(self, image_bytes: bytes) -> None:
-        if not self.is_connected:
-            return
-
-        assert self.device is not None
+        image = image_bytes
 
         if self.crop or self.rotation != ImageRotation.NONE:
-            image = await rosys.run.cpu_bound(process_jpeg_image, image_bytes, self.rotation, self.crop)
+            image = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
         if image is None:
             return
         try:

@@ -27,7 +27,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         super().__init__(id=id,
                          name=name,
                          connect_after_init=connect_after_init,
-                         streaming=False,
                          **kwargs)
 
         self.log = logging.getLogger(f'rosys.vision.rtsp_camera.{self.id}')
