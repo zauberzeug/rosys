@@ -24,9 +24,9 @@ class SerialCommunication(Communication):
         '/dev/ttyUSB0',
     ]
 
-    def __init__(self, baud_rate: int = 115200) -> None:
+    def __init__(self, device_path: str | None = None, baud_rate: int = 115200) -> None:
         super().__init__()
-        self.device_path = self.get_device_path()
+        self.device_path = self.get_device_path() if device_path is None else device_path
         if self.device_path is None:
             raise FileNotFoundError('No serial port found')
         self.log.debug('connecting serial on %s with baud rate %s', self.device_path, baud_rate)
