@@ -1,5 +1,5 @@
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Awaitable
 from dataclasses import dataclass
 
 from .mjpeg_device import MjpegDevice
@@ -26,7 +26,7 @@ class AxisMjpegDevice(MjpegDevice):
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image: Callable[[bytes], None]) -> None:
+                 on_new_image: Callable[[bytes], Awaitable | None]) -> None:
         super().__init__(mac, ip,
                          index=index,
                          username=username, password=password, on_new_image=on_new_image)

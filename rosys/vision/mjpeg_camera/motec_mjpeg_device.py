@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Awaitable
 
 from .mjpeg_device import MjpegDevice
 from .motec_settings_interface import MotecSettingsInterface
@@ -10,7 +10,7 @@ class MotecMjpegDevice(MjpegDevice):
                  username: str | None = '',
                  password: str | None = '',
                  control_port: int | None = 8885,
-                 on_new_image: Callable[[bytes], None]) -> None:
+                 on_new_image: Callable[[bytes], Awaitable | None]) -> None:
 
         super().__init__(mac, ip,
                          username=username, password=password, on_new_image=on_new_image)

@@ -1,4 +1,4 @@
-from collections.abc import Callable
+from collections.abc import Callable, Awaitable
 
 from .axis_mjpeg_device import AxisMjpegDevice
 from .mjpeg_device import MjpegDevice
@@ -13,7 +13,7 @@ class MjpegDeviceFactory:
                username: str | None = None,
                password: str | None = None,
                control_port: int | None = None,
-               on_new_image: Callable[[bytes], None]) -> MjpegDevice:
+               on_new_image: Callable[[bytes], Awaitable | None]) -> MjpegDevice:
 
         if mac_to_vendor(mac) == VendorType.AXIS:
             return AxisMjpegDevice(mac, ip, index=index, username=username, password=password, on_new_image=on_new_image)

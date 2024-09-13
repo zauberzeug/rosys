@@ -1,8 +1,7 @@
 import asyncio
 import logging
 from asyncio import Task
-from collections.abc import AsyncGenerator
-from typing import Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable
 
 import httpx
 
@@ -16,7 +15,7 @@ class MjpegDevice:
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image: Callable[[bytes], None]) -> None:
+                 on_new_image: Callable[[bytes], Awaitable | None]) -> None:
         self.mac = mac
         self.ip = ip
         self.index = index
@@ -101,7 +100,15 @@ class MjpegDevice:
                     raise e
 
         async for image in stream():
-            self.on_new_image(image)
+            if not image:
+                continue
+            try:
+                result = self.on_new_image(remove_exif(image))
+                if isinstance(result, Awaitable):
+                    await result
+            except Exception as e:
+                self.log.error('Error processing image: %s', e)
+
         self.log.warning('Capture task stopped')
         self.capture_task = None
 
