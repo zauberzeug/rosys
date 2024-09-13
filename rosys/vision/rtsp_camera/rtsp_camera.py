@@ -57,7 +57,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     @property
     def is_connected(self) -> bool:
-        return self.device is not None and self.device.gstreamer_proc is not None
+        return self.device is not None and self.device.gstreamer_proc is not None and self.device.gstreamer_proc.is_alive()
 
     @property
     def url(self) -> str | None:
