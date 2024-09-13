@@ -43,13 +43,14 @@ class RtspDevice:
             self.log.warning('[%s] No settings interface for vendor type %s', self.mac, vendor_type)
             self.log.warning('[%s] Using default fps of 10', self.mac)
 
-        # url = mac_to_url(mac, ip, jovision_profile)
-        url = "test"
+        url = mac_to_url(mac, ip, jovision_profile)
+        # url = "test"
         if url is None:
             raise ValueError(f'could not determine RTSP URL for {mac}')
         self.log.info('[%s] Starting VideoStream for %s', self.mac, url)
         self.parent_conn, self.child_conn = multiprocessing.Pipe()
-        self.gstreamer_proc = None
+        self.gstreamer_proc: multiprocessing.Process | None = None
+        self.main_loop = None
         self._start_gstreamer_process()
 
     @property
@@ -74,45 +75,75 @@ class RtspDevice:
     async def shutdown(self) -> None:
         if self.gstreamer_proc is not None:
             self.log.debug('[%s] Terminating gstreamer process', self.mac)
+            print(f'[{self.mac}] Terminating gstreamer process', flush=True)
             self.gstreamer_proc.terminate()
             self.gstreamer_proc.join()
             self.gstreamer_proc = None
 
     def _start_gstreamer_process(self) -> None:
-        print(f'[{self.mac}] Starting gstreamer process', flush=True)
         self.gstreamer_proc = multiprocessing.Process(target=self._run_gstreamer)
         self.gstreamer_proc.start()
-        print(f'[{self.mac}] Gstreamer process started', flush=True)
 
     def _run_gstreamer(self):
         Gst.init(None)
-        print(f"Stream {self.mac} - GStreamer process started")
         pipeline_str = str(
-            # f'rtspsrc location="{self.url}" latency=0 protocols=tcp ! rtph264depay ! h264parse ! '
-            # f'avdec_h264 ! videorate ! video/x-raw,framerate={self.fps}/1 ! videoconvert ! video/x-raw,format=BGR ! '
-            # f'appsink name=appsink emit-signals=true drop=false max-buffers=1 sync=false'
-            'videotestsrc ! video/x-raw,format=BGR,width=640,height=480,framerate=20/1 !'
-            ' timeoverlay !'
-            ' jpegenc ! appsink name=appsink emit-signals=true drop=true max-buffers=1 sync=true'
+            f'rtspsrc location="{self.url}" latency=200 protocols=tcp ! rtph264depay ! h264parse ! '
+            f'decodebin ! jpegenc ! appsink name=appsink emit-signals=true'
+
+            # f'rtspsrc location="{self.url}" ! appsink name=appsink emit-signals=true '
+
+            # f'videotestsrc ! video/x-raw,format=BGR,width=640,height=480,framerate={self.fps}/1 !'
+            # ' timeoverlay !'
+            # ' jpegenc ! appsink name=appsink emit-signals=true drop=true max-buffers=1 sync=true'
+
+            # 'v4l2src ! videoconvert ! video/x-raw,format=BGR ! jpegenc ! appsink name=appsink emit-signals=true'
         )
 
-        print(f"Stream {self.mac} - Pipeline: {pipeline_str}")
+        # self.log.debug(f'[{self.mac}] Started Gstreamer pipeline: {pipeline_str}')
+        print(f'[{self.mac}] Started Gstreamer pipeline: {pipeline_str}', flush=True)
         pipeline = Gst.parse_launch(pipeline_str)
 
         appsink = pipeline.get_by_name("appsink")
         appsink.connect("new-sample", self._on_new_sample)
+        bus = pipeline.get_bus()
+        bus.add_signal_watch()
+        bus.connect("message", self._on_bus_message)
 
-        print(f"Stream {self.mac} - Pipeline state set to PLAYING")
         pipeline.set_state(Gst.State.PLAYING)
 
-        print(f"Stream {self.mac} - Starting Main Loop")
-        loop = GLib.MainLoop()
+        self.main_loop = GLib.MainLoop()
+        print(f"Stream {self.mac} - Main loop created", flush=True)
         try:
-            loop.run()
+            self.main_loop.run()
+            print(f"Stream {self.mac} - Main loop exited", flush=True)
         except KeyboardInterrupt:
             pass
         finally:
             pipeline.set_state(Gst.State.NULL)
+            print(f"Stream {self.mac} - GStreamer pipeline set to NULL", flush=True)
+
+    def _on_bus_message(self, bus, message: Gst.Message):
+        msg_type = message.type
+        print(f"Stream {self.mac} - Bus message type: {msg_type}, source: {message.src.get_name()}", flush=True)
+        if msg_type == Gst.MessageType.ERROR:
+            err, debug = message.parse_error()
+            # self.log.error(f'[{self.mac}] GStreamer Error: {err}, {debug}')
+            print(f'[{self.mac}] GStreamer Error: {err}, {debug}', flush=True)
+            # Encerrar o loop principal
+            GLib.idle_add(lambda: self._quit_main_loop())
+        elif msg_type == Gst.MessageType.EOS:
+            # self.log.info(f'[{self.mac}] GStreamer End-Of-Stream reached')
+            print(f'[{self.mac}] GStreamer End-Of-Stream reached', flush=True)
+            # Encerrar o loop principal
+            GLib.idle_add(lambda: self._quit_main_loop())
+
+    def _quit_main_loop(self):
+        try:
+            assert self.main_loop is not None
+            self.main_loop.quit()
+        except Exception as e:
+            # self.log.error(f'[{self.mac}] Error quitting main loop: {e}')
+            print(f'[{self.mac}] Error quitting main loop: {e}', flush=True)
 
     def _on_new_sample(self, sink):
         print(f"Stream {self.mac} - on_new_sample called at {datetime.datetime.now().strftime('%H:%M:%S.%f')}")
@@ -122,20 +153,16 @@ class RtspDevice:
             buffer = sample.get_buffer()
             caps = sample.get_caps()
 
-            print(f"Stream {self.mac} - Buffer pts: {buffer.pts}, dts: {buffer.dts}, duration: {buffer.duration}")
-
-            if caps:
-                structure = caps.get_structure(0)
-                print(f"Stream {self.mac} - Caps: {structure.to_string()}")
+            print(f"Stream {self.mac} - Buffer pts: {buffer.pts}, dts: {buffer.dts}, size: {buffer.get_size()}")
 
             buffer_data = buffer.extract_dup(0, buffer.get_size())
             try:
                 self.ipc_queue.put_nowait(buffer_data)
             except multiprocessing.queues.Full:
-                print(f"Stream {self.mac} - Queue is full, dropping frame")
+                # print(f"Stream {self.mac} - Queue is full, dropping frame")
+                pass
 
-            print(
-                f"Stream {self.mac} - SEND: {datetime.datetime.now().strftime('%H:%M:%S.%f')}: {len(buffer_data)} bytes", flush=True)
+            # print(f"Stream {self.mac} - SEND: {datetime.datetime.now().strftime('%H:%M:%S.%f')}: {len(buffer_data)} bytes", flush=True)
             return Gst.FlowReturn.OK
         else:
             print(f"Stream {self.mac} - No sample received")
