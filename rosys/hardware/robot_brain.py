@@ -66,7 +66,7 @@ class RobotBrain:
             await self.lizard_firmware.flash_p0()
 
         with ui.row().classes('items-center'):
-            version_select = ui.select([], label='Lizard Version').style('min-width: 140px;').props('dark').bind_value(
+            version_select = ui.select([], label='Lizard Version').style('min-width: 140px;').bind_value(
                 self.lizard_firmware, 'selected_online_version')
             ui.button(on_click=read_online_versions).props(
                 'icon=refresh flat round dense').tooltip('Read all available versions from GitHub')
