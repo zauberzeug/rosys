@@ -12,6 +12,7 @@ from .robot import Robot, RobotHardware, RobotSimulation
 from .robot_brain import RobotBrain
 from .serial import SerialHardware
 from .wheels import Wheels, WheelsHardware, WheelsSimulation
+from .esp_pins import ESPPins
 
 __all__ = [
     'BatteryControlHardware',
@@ -26,6 +27,7 @@ __all__ = [
     'Communication',
     'SerialCommunication',
     'WebCommunication',
+    'ESPPins',
     'EStop',
     'EStopHardware',
     'EStopSimulation',
