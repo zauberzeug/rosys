@@ -6,6 +6,7 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 import httpx
 
 from ...rosys import on_startup
+from ..image_processing import remove_exif
 from .vendors import mac_to_url
 
 
@@ -37,11 +38,12 @@ class MjpegDevice:
         on_startup(create_capture_task)
 
     def restart_capture(self) -> None:
+        self.log.debug('Restarting capture task')
         self.shutdown()
         self.start_capture_task()
 
     async def run_capture_task(self) -> None:
-        self.log.info('Capturing images from %s', self.url)
+        self.log.debug('Starting capture task for %s', self.url)
 
         async def stream() -> AsyncGenerator[bytearray, None]:
             async with httpx.AsyncClient() as client:
@@ -93,6 +95,7 @@ class MjpegDevice:
                                         header = None
                                         buffer_end -= footer_pos + 2
                                         byte_search_pos = 0
+                            self.log.debug('Stream ended')
                         except httpx.ReadTimeout:
                             self.log.warning('Connection to %s timed out', self.url)
                 except Exception as e:
@@ -113,6 +116,7 @@ class MjpegDevice:
         self.capture_task = None
 
     def shutdown(self) -> None:
+        self.log.debug('Shutting down capture task')
         if self.capture_task is not None:
             self.capture_task.cancel()
             self.capture_task = None
