@@ -1,12 +1,10 @@
 import logging
+from dataclasses import dataclass
+
 from nicegui import ui
+from nicegui.elements.mixins.value_element import ValueElement
 from ..hardware import RobotBrain
 from .. import rosys
-import functools
-
-
-from nicegui.elements.mixins.value_element import ValueElement
-from dataclasses import dataclass
 
 
 class StatusBulb(ValueElement):
