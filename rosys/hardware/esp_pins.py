@@ -55,10 +55,10 @@ class ESPPins:
         self.log.info("received: %s", line)
 
     def developer_ui(self):
-        with ui.card().style('min-width: 200px; background-color: #3E63A6'):
+        with ui.card().style('min-width: 200px; background-color: #3E63A6; color: white;'):
             ui.markdown(f'**ESP: {self.name}**').classes('w-full text-center')
-            ui.separator()
-            with ui.column():
+            ui.separator().style('background-color: white;')
+            with ui.grid(columns=4):
                 for gpio_state in self.gpio_states.values():
                     with ui.row():
                         ui.label(f'GPIO{gpio_state.gpio}')
