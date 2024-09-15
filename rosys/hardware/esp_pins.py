@@ -53,7 +53,7 @@ class ESPPins:
 
     def parse(self, line: str) -> None:
         # TODO
-        if not 'pin_state' in line:
+        if 'pin_state' not in line:
             return
         self.log.info('received: %s', line)
 
