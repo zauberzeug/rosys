@@ -8,6 +8,7 @@ from .. import rosys
 
 
 class StatusBulb(ValueElement):
+    # TODO: colors
     def __init__(self, value: bool = False) -> None:
         super().__init__(value=value, on_value_change=self.on_change, tag='span')
         self.style('height: 15px; width: 15px; margin: auto; border-radius: 50%')
@@ -74,14 +75,14 @@ class ESPPins:
         await self.update()
 
     def developer_ui(self):
-        with ui.card().style('min-width: 200px; background-color: #3E63A6; color: white;'):
+        with ui.column():
             with ui.row().classes('w-full'):
                 ui.markdown(f'**ESP: {self.name}**')
                 ui.space()
                 ui.button(icon='refresh', on_click=self.update).props(
-                    'flat round dense color=white').tooltip('Update once')
+                    'flat round dense').tooltip('Update once')
                 ui.switch().bind_value(self, 'auto_update').tooltip('Activate auto update')
-            ui.separator().style('background-color: white;')
+            ui.separator()
             with ui.grid(columns=5):
                 for gpio_state in self.gpio_states.values():
                     with ui.row():
@@ -92,7 +93,6 @@ class ESPPins:
                                     with ui.row().classes('w-full'):
                                         ui.label(f'GPIO {gpio_state.gpio}')
                                         ui.space()
-                                        # TODO: keep popup open on button click
                                         ui.button(icon='refresh', on_click=lambda pin_number=gpio_state.gpio: self.update_pin(pin_number)).props(
                                             'size=sm flat dense').tooltip('Update gpio state')
                                         set_high_button = ui.button(icon='check_circle', on_click=lambda pin_number=gpio_state.gpio: self.update_pin(pin_number)).props(
