@@ -71,17 +71,16 @@ class MjpegDevice:
                                 buffer_view[buffer_end:buffer_end + chunk_len] = chunk
                                 buffer_end += chunk_len
 
-                                data = buffer_view[:buffer_end]
-                                end = data.rfind(b'\xff\xd9')
+                                end = buffer.rfind(b'\xff\xd9', 0, buffer_end)
                                 if end == -1:
                                     continue
 
-                                start = data.rfind(b'\xff\xd8', 0, end)
+                                start = buffer.rfind(b'\xff\xd8', 0, end)
                                 if start == -1:
                                     continue
 
                                 end += 2
-                                yield data[start:end]
+                                yield buffer_view[start:end]
                                 buffer_view[:buffer_end - end] = buffer_view[end:buffer_end]
                                 buffer_end -= end
 
