@@ -45,7 +45,7 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
 
     async def connect(self) -> None:
         if not self.is_connected:
-            self.device = SimulatedDevice(id=self.id, size=self.resolution,
+            self.device = SimulatedDevice(id=self.id, size=self.resolution, fps=self.parameters['fps'],
                                           image_data_callback=self._image_data_callback)
             await self._apply_all_parameters()
 

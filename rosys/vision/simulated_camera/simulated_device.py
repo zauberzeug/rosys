@@ -16,14 +16,15 @@ class SimulatedDevice:
                  id: str,  # pylint: disable=redefined-builtin
                  size: ImageSize,
                  image_data_callback: Callable[[bytes], Awaitable | None],
-                 color: str = '#ffffff') -> None:
+                 color: str = '#ffffff',
+                 fps: float = 30.0) -> None:
         self.id = id
         self.size = size
         self.color = color
         self.image_data_callback = image_data_callback
         self.creation_time: float = rosys.time()
 
-        self.repeater = rosys.on_repeat(self.capture_image, interval=1.0 / 30)
+        self.repeater = rosys.on_repeat(self.capture_image, interval=1.0 / fps)
 
     @staticmethod
     def create_image_data(id: str, size: ImageSize, color: str) -> bytes:
