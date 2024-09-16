@@ -23,7 +23,6 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
         super().__init__(id=id,
                          name=name,
                          connect_after_init=connect_after_init,
-                         streaming=False,
                          **kwargs)
         self.device: SimulatedDevice | None = None
         self.resolution = ImageSize(width=width, height=height)
