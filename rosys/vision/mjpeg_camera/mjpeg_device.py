@@ -45,7 +45,7 @@ class MjpegDevice:
     async def run_capture_task(self) -> None:
         self.log.debug('Starting capture task for %s', self.url)
 
-        async def stream() -> AsyncGenerator[bytearray, None]:
+        async def stream() -> AsyncGenerator[bytes, None]:
             async with httpx.AsyncClient() as client:
                 assert self.url is not None
                 try:
@@ -59,9 +59,6 @@ class MjpegDevice:
                         buffer = bytearray(buffer_size)
                         buffer_view = memoryview(buffer)
                         buffer_end = 0
-                        header = None
-
-                        byte_search_pos = 0
 
                         try:
                             async for chunk in response.aiter_bytes():
@@ -70,31 +67,24 @@ class MjpegDevice:
                                 if buffer_end + chunk_len > buffer_size:
                                     self.log.warning('Buffer overflow, resetting buffer')
                                     buffer_end = 0
-                                    header = None
-                                    continue
+
                                 buffer_view[buffer_end:buffer_end + chunk_len] = chunk
                                 buffer_end += chunk_len
 
-                                while True:
-                                    if header is None:
-                                        header_pos = buffer.find(b'\xff\xd8', byte_search_pos, buffer_end)
-                                        if header_pos == -1:
-                                            break
-                                        byte_search_pos = header_pos + 2
-                                        header = header_pos
-                                    else:
-                                        footer_pos = buffer.find(b'\xff\xd9', byte_search_pos, buffer_end)
-                                        if footer_pos == -1:
-                                            break
+                                data = buffer_view[:buffer_end]
+                                end = data.rfind(b'\xff\xd9')
+                                if end == -1:
+                                    continue
 
-                                        image_end = footer_pos + 2
-                                        image_data = buffer[header:image_end]
-                                        yield image_data
+                                start = data.rfind(b'\xff\xd8', 0, end)
+                                if start == -1:
+                                    continue
 
-                                        buffer_view[:buffer_end - image_end] = buffer_view[image_end:buffer_end]
-                                        header = None
-                                        buffer_end -= footer_pos + 2
-                                        byte_search_pos = 0
+                                end += 2
+                                yield data[start:end]
+                                buffer_view[:buffer_end - end] = buffer_view[end:buffer_end]
+                                buffer_end -= end
+
                             self.log.debug('Stream ended')
                         except httpx.ReadTimeout:
                             self.log.warning('Connection to %s timed out', self.url)
