@@ -7,11 +7,11 @@ from rosys.vision import RtspCamera, RtspCameraProvider, SimulatedCamera, UsbCam
 
 
 async def test_simulated_camera(rosys_integration):
-    camera = SimulatedCamera(id='test_cam', width=800, height=600, streaming=False)
+    camera = SimulatedCamera(id='test_cam', width=800, height=600)
     await camera.connect()
     assert camera.is_connected
     await camera.capture_image()
-    assert len(camera.images) == 1
+    assert len(camera.images) >= 1
     assert camera.images[0].size.width == 800
     assert camera.images[0].size.height == 600
 
@@ -22,11 +22,11 @@ async def test_usb_camera(rosys_integration):
     connected_uids = list(await UsbCameraProvider.scan_for_cameras())
     if len(connected_uids) == 0:
         pytest.skip('No USB camera detected. This test requires a physical USB camera to be connected.')
-    camera = UsbCamera(id=connected_uids[0], streaming=False)
+    camera = UsbCamera(id=connected_uids[0])
     await camera.connect()
     assert camera.is_connected
     await camera.capture_image()
-    assert len(camera.images) == 1
+    assert len(camera.images) >= 1
 
 
 async def test_rtsp_camera(rosys_integration):
@@ -39,9 +39,9 @@ async def test_rtsp_camera(rosys_integration):
     if len(connected_uids) == 0:
         pytest.skip('No RTSP camera detected. This test requires a physical RTSP camera on the local network.')
     mac, ip = connected_uids[0]
-    camera = RtspCamera(id=mac, ip=ip, streaming=False)
+    camera = RtspCamera(id=mac, ip=ip)
     await camera.connect()
     assert camera.is_connected
     await asyncio.sleep(1)
     await camera.capture_image()
-    assert len(camera.images) == 1
+    assert len(camera.images) >= 1
