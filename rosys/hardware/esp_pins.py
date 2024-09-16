@@ -1,11 +1,14 @@
 import logging
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from nicegui import ui
 from nicegui.elements.mixins.value_element import ValueElement
 
 from .. import rosys
-from ..hardware import RobotBrain
+
+if TYPE_CHECKING:
+    from rosys.hardware.robot_brain import RobotBrain
 
 
 class StatusBulb(ValueElement):
@@ -41,7 +44,7 @@ class ESPPins:
     TODO
     """
 
-    def __init__(self, name: str, robot_brain: RobotBrain, update_time: float = 1.0) -> None:
+    def __init__(self, name: str, robot_brain: 'RobotBrain', update_time: float = 1.0) -> None:
         self.log = logging.getLogger('rosys.esp_pins')
         self.name = name
         self.robot_brain = robot_brain
