@@ -16,7 +16,7 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 
 class RtspDevice:
 
-    def __init__(self, mac: str, ip: str, jovision_profile: int, fps: int = 10, on_new_image: Callable) -> None:
+    def __init__(self, mac: str, ip: str, jovision_profile: int, fps: int, on_new_image: Callable) -> None:
         self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device')
 
         self.mac = mac
