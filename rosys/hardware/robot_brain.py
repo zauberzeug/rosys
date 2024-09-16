@@ -172,7 +172,6 @@ class RobotBrain:
         t0 = rosys.time()
         while self.waiting_list.get(ack) is None and rosys.time() < t0 + timeout:
             await rosys.sleep(0.1)
-            self.log.warning(self.waiting_list[ack])
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
     async def enable_esp(self) -> None:
