@@ -1,6 +1,7 @@
-from rosys.hardware import RobotBrain, ESPPins
-from rosys.hardware.communication import SerialCommunication
 from nicegui import ui
+
+from rosys.hardware import ESPPins, RobotBrain
+from rosys.hardware.communication import SerialCommunication
 
 esp_pins: ESPPins
 
