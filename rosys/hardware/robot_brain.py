@@ -66,45 +66,51 @@ class RobotBrain:
             await self.lizard_firmware.flash_p0()
 
         with ui.row().classes('items-center'):
-            version_select = ui.select([], label='Lizard Version').style('min-width: 140px;').bind_value(
-                self.lizard_firmware, 'selected_online_version')
-            ui.button(on_click=read_online_versions).props(
-                'icon=refresh flat round dense').tooltip('Read all available versions from GitHub')
-            online_update_button = ui.button(on_click=online_update).props('icon=file_download flat round dense').tooltip(
-                'Download and flash online version to Core and P0 microcontrollers')
+            version_select = ui.select([], label='Lizard Version').style('min-width: 140px;') \
+                .bind_value(self.lizard_firmware, 'selected_online_version')
+            ui.button(on_click=read_online_versions).props('icon=refresh flat round dense') \
+                .tooltip('Read all available versions from GitHub')
+            online_update_button = ui.button(on_click=online_update).props('icon=file_download flat round dense') \
+                .tooltip('Download and flash online version to Core and P0 microcontrollers')
         with ui.row().classes('items-center'):
             ui.label().bind_text_from(self.lizard_firmware, 'local_version', backward=lambda x: f'Local: {x or "?"}')
-            local_update_button = ui.button(on_click=local_update).props(
-                'icon=file_download flat round dense').tooltip('Flash local version to Core and P0 microcontrollers')
+            local_update_button = ui.button(on_click=local_update).props('icon=file_download flat round dense') \
+                .tooltip('Flash local version to Core and P0 microcontrollers')
         with ui.row().classes('items-center'):
             ui.label().bind_text_from(self.lizard_firmware, 'core_version', backward=lambda x: f'Core: {x or "?"}')
-            configure_button = ui.button(on_click=self.configure).props(
-                'icon=build flat round dense').tooltip('Configure microcontrollers')
+            configure_button = ui.button(on_click=self.configure).props('icon=build flat round dense') \
+                .tooltip('Configure microcontrollers')
         with ui.row().classes('items-center'):
             ui.label().bind_text_from(self.lizard_firmware, 'p0_version', backward=lambda x: f'P0: {x or "?"}')
 
         def update_visibility() -> None:
-            online_update_button.visible = self.lizard_firmware.selected_online_version != self.lizard_firmware.core_version or self.lizard_firmware.selected_online_version != self.lizard_firmware.p0_version
-            local_update_button.visible = self.lizard_firmware.local_version != self.lizard_firmware.core_version or self.lizard_firmware.local_version != self.lizard_firmware.p0_version
-            configure_button.visible = self.lizard_firmware.local_checksum != self.lizard_firmware.core_checksum
+            online_update_button.visible = \
+                self.lizard_firmware.selected_online_version != self.lizard_firmware.core_version or \
+                self.lizard_firmware.selected_online_version != self.lizard_firmware.p0_version
+            local_update_button.visible = \
+                self.lizard_firmware.local_version != self.lizard_firmware.core_version or \
+                self.lizard_firmware.local_version != self.lizard_firmware.p0_version
+            configure_button.visible = \
+                self.lizard_firmware.local_checksum != self.lizard_firmware.core_checksum
         ui.timer(1.0, update_visibility)
 
         with ui.row().classes('items-center'):
-            ui.button('Refresh', on_click=self.lizard_firmware.read_all).props(
-                'outline').tooltip('Read installed and available versions')
+            ui.button('Refresh', on_click=self.lizard_firmware.read_all).props('outline') \
+                .tooltip('Read installed and available versions')
             with ui.row():
                 with ui.menu() as menu:
-                    ui.menu_item('Download', on_click=self.lizard_firmware.download).tooltip(
-                        'Download the latest Lizard firmware from GitHub')
-                    ui.menu_item('Flash Core', on_click=self.lizard_firmware.flash_core).tooltip(
-                        'Flash the downloaded Lizard firmware to the Core microcontroller')
-                    ui.menu_item('Flash P0', on_click=self.lizard_firmware.flash_p0).tooltip(
-                        'Flash the downloaded Lizard firmware to the P0 microcontroller')
-                    ui.menu_item('Enable', on_click=self.enable_esp).tooltip(
-                        'Enable the microcontroller module (will later be done automatically)')
-                    ui.menu_item('Configure', on_click=self.configure).tooltip(
-                        'Configure the microcontroller with the Lizard startup file')
-                    ui.menu_item('Restart', on_click=self.restart).tooltip('Restart the microcontroller')
+                    ui.menu_item('Download', on_click=self.lizard_firmware.download) \
+                        .tooltip('Download the latest Lizard firmware from GitHub')
+                    ui.menu_item('Flash Core', on_click=self.lizard_firmware.flash_core) \
+                        .tooltip('Flash the downloaded Lizard firmware to the Core microcontroller')
+                    ui.menu_item('Flash P0', on_click=self.lizard_firmware.flash_p0) \
+                        .tooltip('Flash the downloaded Lizard firmware to the P0 microcontroller')
+                    ui.menu_item('Enable', on_click=self.enable_esp) \
+                        .tooltip('Enable the microcontroller module (will later be done automatically)')
+                    ui.menu_item('Configure', on_click=self.configure) \
+                        .tooltip('Configure the microcontroller with the Lizard startup file')
+                    ui.menu_item('Restart', on_click=self.restart) \
+                        .tooltip('Restart the microcontroller')
                 ui.button(on_click=menu.open).props('icon=more_vert flat round')
 
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
@@ -166,6 +172,7 @@ class RobotBrain:
         t0 = rosys.time()
         while self.waiting_list.get(ack) is None and rosys.time() < t0 + timeout:
             await rosys.sleep(0.1)
+            self.log.warning(self.waiting_list[ack])
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
     async def enable_esp(self) -> None:
