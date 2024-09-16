@@ -39,7 +39,6 @@ class JovisionInterface:
 
     def __init__(self, ip: str) -> None:
         self.ip = ip
-        self.async_client = httpx.AsyncClient()
 
     @property
     def settings_url(self) -> str:
@@ -69,7 +68,7 @@ class JovisionInterface:
             cmd=json.dumps(cmd),
             _=int(time.time() * 1000),  # current time as a timestamp
         )
-        async with self.async_client as client:
+        async with httpx.AsyncClient() as client:
             await client.get(self.settings_url, params=params)
 
     async def set_fps(self, stream_id: int, fps: int) -> None:
