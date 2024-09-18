@@ -46,6 +46,12 @@ class RobotBrain:
         return self._clock_offset
 
     def developer_ui(self) -> None:
+        version_select: ui.select
+
+        async def read_online_versions() -> None:
+            await self.lizard_firmware.read_online_version()
+            version_select.set_options(list(self.lizard_firmware.online_versions.keys()))
+
         async def online_update() -> None:
             await self.lizard_firmware.download()
             await self.lizard_firmware.flash_core()
@@ -60,7 +66,10 @@ class RobotBrain:
             await self.lizard_firmware.flash_p0()
 
         with ui.row().classes('items-center'):
-            ui.label().bind_text_from(self.lizard_firmware, 'online_version', backward=lambda x: f'Online: {x or "?"}')
+            version_select = ui.select([], label='Lizard Version').style('min-width: 140px;') \
+                .bind_value(self.lizard_firmware, 'selected_online_version')
+            ui.button(on_click=read_online_versions).props('icon=refresh flat round dense') \
+                .tooltip('Read all available versions from GitHub')
             online_update_button = ui.button(on_click=online_update).props('icon=file_download flat round dense') \
                 .tooltip('Download and flash online version to Core and P0 microcontrollers')
         with ui.row().classes('items-center'):
@@ -76,8 +85,8 @@ class RobotBrain:
 
         def update_visibility() -> None:
             online_update_button.visible = \
-                self.lizard_firmware.online_version != self.lizard_firmware.core_version or \
-                self.lizard_firmware.online_version != self.lizard_firmware.p0_version
+                self.lizard_firmware.selected_online_version != self.lizard_firmware.core_version or \
+                self.lizard_firmware.selected_online_version != self.lizard_firmware.p0_version
             local_update_button.visible = \
                 self.lizard_firmware.local_version != self.lizard_firmware.core_version or \
                 self.lizard_firmware.local_version != self.lizard_firmware.p0_version
