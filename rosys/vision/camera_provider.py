@@ -1,4 +1,5 @@
 import abc
+import warnings
 from typing import Generic, TypeVar
 
 from .. import persistence, rosys
@@ -57,7 +58,7 @@ class CameraProvider(Generic[T], persistence.PersistentModule, metaclass=abc.ABC
         self.request_backup()
 
     def remove_camera(self, camera_id: str) -> None:
-        del self.cameras[camera_id]
+        del self._cameras[camera_id]
         self.CAMERA_REMOVED.emit(camera_id)
         self.request_backup()
 
@@ -66,6 +67,8 @@ class CameraProvider(Generic[T], persistence.PersistentModule, metaclass=abc.ABC
             self.remove_camera(camera_id)
 
     def prune_images(self, max_age_seconds: float | None = None):
+        warnings.warn('Pruning images is not required anymore because images is now a deque',
+                      DeprecationWarning, stacklevel=2)
         for camera in self.cameras.values():
             if max_age_seconds is None:
                 camera.images.clear()

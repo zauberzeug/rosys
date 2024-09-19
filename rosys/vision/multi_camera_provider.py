@@ -33,3 +33,11 @@ class MultiCameraProvider(CameraProvider):
     @property
     def cameras(self) -> dict[str, Camera]:
         return {id: camera for provider in self.providers for id, camera in provider.cameras.items()}
+
+    def remove_camera(self, camera_id: str) -> None:
+        for provider in self.providers:
+            if camera_id in provider.cameras:
+                provider.remove_camera(camera_id)
+
+    def add_camera(self, camera) -> None:
+        raise NotImplementedError('Adding cameras to a MultiCameraProvider is not supported')
