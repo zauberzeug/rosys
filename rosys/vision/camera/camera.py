@@ -16,7 +16,7 @@ from ..image_route import create_image_route
 
 
 class Camera(abc.ABC):
-    MAX_IMAGES = 256
+    MAX_IMAGES = 4
 
     def __init__(self,
                  *,
