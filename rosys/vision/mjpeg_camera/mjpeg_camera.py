@@ -80,6 +80,8 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             self.log.error('Could not connect to device: %s', error)
             return
 
+        await self._apply_all_parameters()
+
     async def disconnect(self) -> None:
         if self.device is None:
             return
