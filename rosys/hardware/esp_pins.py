@@ -57,20 +57,32 @@ class ESPPins:
         rosys.on_repeat(self.run_auto_update, update_time)
 
     def parse(self, line: str) -> None:
-        # TODO
-        if 'pin_state' not in line:
+        if 'GPIO_Status' not in line:
             return
-        self.log.info('received: %s', line)
+          # Split the string by the '|' character and remove any leading/trailing spaces
+        parts = [part.strip() for part in line.split('|')]
+        status_dict = {}
+
+        for part in parts[1:]:
+            key, value = part.split(': ')
+            status_dict[key.strip()] = int(value.strip())
+
+        gpio_str = parts[0].split('[')[1].split(']')[0]
+        pin = int(gpio_str)
+
+        self.gpio_states[pin].is_input = bool(status_dict.get('InputEn', 0))
+        self.gpio_states[pin].is_output = bool(status_dict.get('OutputEn', 0))
+        self.gpio_states[pin].level = bool(status_dict.get('Level'))
+        self.gpio_states[pin].is_pullup = bool(status_dict.get('Pullup', 0))
+        self.gpio_states[pin].is_pulldown = bool(status_dict.get('Pulldown', 0))
+        self.gpio_states[pin].is_interrupt = bool(status_dict.get('is_interrupt', 0))
 
     async def update(self) -> None:
         for pin_number in self.pin_numbers:
             await self.update_pin(pin_number)
 
     async def update_pin(self, pin_number: int) -> None:
-        # TODO
-        # await self.robot_brain.send(f'{self.name}.pinstate({pin_number})')
-        self.gpio_states[pin_number].level = not self.gpio_states[pin_number].level
-        self.gpio_states[pin_number].is_pullup = not self.gpio_states[pin_number].is_pullup
+        await self.robot_brain.send(f'{self.name}.gpio_status({pin_number})')
         await rosys.sleep(0.1)
 
     async def run_auto_update(self) -> None:
