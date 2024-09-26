@@ -31,8 +31,7 @@ class Camera(abc.ABC):
         self.id: str = id
         self.name = name or self.id
         self.connect_after_init = connect_after_init
-        self.image_history_length = image_history_length
-        self.images: deque[Image] = deque(maxlen=self.image_history_length)
+        self.images: deque[Image] = deque(maxlen=image_history_length)
         self.base_path: str = f'images/{base_path_overwrite or id}'
 
         self.should_stream: bool = streaming
@@ -95,7 +94,7 @@ class Camera(abc.ABC):
             'name': self.name,
             'connect_after_init': self.connect_after_init,
             'streaming': self.should_stream,
-            'image_history_length': self.image_history_length,
+            'image_history_length': self.images.maxlen,
         }
 
     @classmethod
