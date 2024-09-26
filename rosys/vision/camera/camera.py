@@ -95,7 +95,7 @@ class Camera(abc.ABC):
             'name': self.name,
             'connect_after_init': self.connect_after_init,
             'streaming': self.should_stream,
-            'image_history_length': self.image_history_length
+            'image_history_length': self.image_history_length,
         }
 
     @classmethod
