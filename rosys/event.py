@@ -5,6 +5,7 @@ import inspect
 import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from typing import Any
 
 from nicegui import background_tasks, context, core
 
@@ -87,3 +88,30 @@ def reset() -> None:
     for task in tasks:
         task.cancel()
     tasks.clear()
+
+
+async def wait_for(event: Event, timeout: float | None = None) -> tuple[Any, ...] | None:
+    trigger = asyncio.Event()
+    result: tuple[Any, ...] | None = None
+
+    def callback(*args):
+        nonlocal trigger
+        nonlocal result
+        trigger.set()
+        event.unregister(callback)
+        if args:
+            result = args
+
+    try:
+        event.register(callback)
+        try:
+            trigger_future: asyncio.Future[bool] = trigger.wait()
+            if timeout is None:
+                await trigger_future
+            else:
+                await asyncio.wait_for(trigger_future, timeout=timeout)
+        finally:
+            event.unregister(callback)
+    except asyncio.TimeoutError as e:
+        raise TimeoutError(f"Timed out waiting for robot pose update after {timeout} seconds") from e
+    return result
