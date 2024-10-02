@@ -19,7 +19,6 @@ logger = logging.getLogger('rosys.vision.camera')
 
 
 class Camera(abc.ABC):
-    MAX_IMAGES = 256
 
     def __init__(self,
                  *,
@@ -29,12 +28,13 @@ class Camera(abc.ABC):
                  streaming: bool | None = None,
                  polling_interval: float | None = None,
                  base_path_overwrite: str | None = None,
+                 image_history_length: int = 256,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.id: str = id
         self.name = name or self.id
         self.connect_after_init = connect_after_init
-        self.images: deque[Image] = deque(maxlen=self.MAX_IMAGES)
+        self.images: deque[Image] = deque(maxlen=image_history_length)
         self.base_path: str = f'images/{base_path_overwrite or id}'
 
         if streaming is not None:
@@ -90,6 +90,7 @@ class Camera(abc.ABC):
             'id': self.id,
             'name': self.name,
             'connect_after_init': self.connect_after_init,
+            'image_history_length': self.images.maxlen,
         }
 
     @classmethod
