@@ -4,9 +4,8 @@ import shlex
 import signal
 import subprocess
 from asyncio.subprocess import Process
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Callable
 from io import BytesIO
-from typing import Callable
 
 from nicegui import background_tasks
 
