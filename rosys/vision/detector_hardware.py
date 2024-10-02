@@ -89,7 +89,7 @@ class DetectorHardware(Detector):
             rosys.background_tasks.create(upload_priority_images(), name='upload_priority_images')
             self.uploads.priority_queue.clear()
 
-    async def upload(self, image: Image, *, tags: list[str] | None = None) -> None:
+    async def upload(self, image: Image, *, tags: list[str] | None = None, source: str | None = None) -> None:
         assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
         tags = tags or []
         try:
@@ -103,6 +103,8 @@ class DetectorHardware(Detector):
                 detections_dict['segmentation_detections'] = detections_dict.pop('segmentations')
                 data_dict['detections'] = detections_dict
             data_dict['tags'] = list(image.tags.union(tags))
+            data_dict['source'] = source
+
             await self.sio.emit('upload', data_dict)
 
         except Exception:
@@ -112,12 +114,18 @@ class DetectorHardware(Detector):
                      image: Image,
                      autoupload: Autoupload = Autoupload.FILTERED,
                      tags: list[str] | None = None,
+                     source: str | None = None
                      ) -> Detections | None:
         assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
         tags = tags or []
-        return await self.lazy_worker.run(self._detect(image, autoupload, tags))
+        return await self.lazy_worker.run(self._detect(image, autoupload, tags, source))
 
-    async def _detect(self, image: Image, autoupload: Autoupload, tags: list[str]) -> Detections | None:
+    async def _detect(self,
+                      image: Image,
+                      autoupload: Autoupload,
+                      tags: list[str],
+                      source: str | None = None
+                      ) -> Detections | None:
         if image.is_broken:
             return None
         try:
@@ -126,6 +134,7 @@ class DetectorHardware(Detector):
                 'mac': image.camera_id,
                 'autoupload': autoupload.value,
                 'tags': tags,
+                'source': source,
             }, timeout=3)
             if image.is_broken:  # NOTE: image can be marked broken while detection is underway
                 return None
