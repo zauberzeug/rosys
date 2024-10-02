@@ -3,14 +3,17 @@ import platform
 
 import pytest
 
+import rosys
 from rosys.vision import RtspCamera, RtspCameraProvider, SimulatedCamera, UsbCamera, UsbCameraProvider
 
 
 async def test_simulated_camera(rosys_integration):
-    camera = SimulatedCamera(id='test_cam', width=800, height=600)
+    camera = SimulatedCamera(id='test_cam', width=800, height=600, fps=1)
     await camera.connect()
     assert camera.is_connected
-    await asyncio.sleep(0.5)
+    await asyncio.sleep(0.)
+    rosys.set_time(1.1)
+    await asyncio.sleep(0.5)  # wait for SimulatedDevice to generate images
     assert len(camera.images) >= 1
     assert camera.images[0].size.width == 800
     assert camera.images[0].size.height == 600
