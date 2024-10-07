@@ -1,4 +1,4 @@
-from collections.abc import Callable, Awaitable
+from collections.abc import Awaitable, Callable
 
 from .mjpeg_device import MjpegDevice
 from .motec_settings_interface import MotecSettingsInterface

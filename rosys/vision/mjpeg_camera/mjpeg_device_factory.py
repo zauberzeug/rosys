@@ -1,4 +1,4 @@
-from collections.abc import Callable, Awaitable
+from collections.abc import Awaitable, Callable
 
 from .axis_mjpeg_device import AxisMjpegDevice
 from .mjpeg_device import MjpegDevice
