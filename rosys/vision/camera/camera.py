@@ -64,7 +64,7 @@ class Camera(abc.ABC):
         return True
 
     @streaming.setter
-    def streaming(self, value: bool) -> None:
+    def streaming(self, value: bool) -> None:  # pylint: disable=unused-argument
         logger.warning('The `streaming` parameter is deprecated. All cameras now stream images by default.')
 
     @property
@@ -73,7 +73,7 @@ class Camera(abc.ABC):
         return 0.0
 
     @polling_interval.setter
-    def polling_interval(self, value: float) -> None:
+    def polling_interval(self, value: float) -> None:  # pylint: disable=unused-argument
         logger.warning('The `polling_interval` parameter is deprecated. All cameras should now use callbacks')
 
     def get_image_url(self, image: Image) -> str:
