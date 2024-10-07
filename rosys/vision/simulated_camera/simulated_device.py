@@ -27,7 +27,7 @@ class SimulatedDevice:
         self.repeater = rosys.on_repeat(self.capture_image, interval=1.0 / fps)
 
     @staticmethod
-    def create_image_data(id: str, size: ImageSize, color: str) -> bytes:
+    def create_image_data(id: str, size: ImageSize, color: str) -> bytes:  # pylint: disable=redefined-builtin
         img = PIL.Image.new('RGB', size=(size.width, size.height), color=color)
         d = PIL.ImageDraw.Draw(img)
         text = f'{id}: {time.time():.2f}'
