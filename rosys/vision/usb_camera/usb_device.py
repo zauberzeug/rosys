@@ -7,9 +7,7 @@ from collections.abc import Awaitable, Callable
 import cv2
 import numpy as np
 
-import rosys
-
-from ... import run
+from ... import rosys
 from .usb_camera_scanner import device_nodes_from_uid
 
 MJPG = cv2.VideoWriter.fourcc(*'MJPG')
@@ -102,7 +100,7 @@ class UsbDevice:
     async def run_v4l(self, *args) -> str:
         cmd = ['v4l2-ctl', '-d', str(self.video_id)]
         cmd.extend(args)
-        return await run.sh(cmd)
+        return await rosys.run.sh(cmd)
 
     def set_video_format(self) -> None:
         if 'MJPG' in self.video_formats:
