@@ -82,8 +82,9 @@ class RobotSimulation(Robot):
         rosys.on_repeat(self.step, 0.01)
 
     async def step(self) -> None:
+        now = rosys.time()
         if self._last_step is not None:
-            dt = rosys.time() - self._last_step
+            dt = now - self._last_step
             for module in self.modules:
                 await cast(ModuleSimulation, module).step(dt)
-        self._last_step = rosys.time()
+        self._last_step = now
