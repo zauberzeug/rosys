@@ -10,7 +10,7 @@ keywords = ["robot", "framework", "automation", "control", "steer"]
 
 [tool.poetry.dependencies]
 python = ">=3.10, <3.13"
-nicegui = ">=1.4.31"
+nicegui = ">=2.3.0"
 pyserial = "^3.5"
 numpy = ">=1.20.1"
 scipy = "^1.7.2"
