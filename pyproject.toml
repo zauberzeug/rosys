@@ -113,6 +113,7 @@ disable = [
     "R0913", # Too many arguments
     "R0914", # Too many local variables
     "R0915", # Too many statements
+    "R0917", # Too many positional arguments
     "R1702", # Too many nested blocks
     "R1705", # Unnecessary "else" after "return"
     "R1724", # Unnecessary "else" after "continue"
@@ -154,6 +155,5 @@ ignore = [
     "PLR0912", # too many branches
     "PLR0913", # too many arguments
     "PLR0915", # too many statements
-    "PLR0917", # too many positional arguments
     "PLR2004", # magic value comparison
 ]
