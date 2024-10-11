@@ -54,7 +54,6 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
 
     async def _image_data_callback(self, image_data: bytes) -> None:
         image = Image(time=rosys.time(), camera_id=self.id, size=self.resolution, data=image_data)
-        print(f'{rosys.time()}: adding image')
         self._add_image(image)
 
     def _set_color(self, value: str) -> None:
