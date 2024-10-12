@@ -108,7 +108,14 @@ class TimelapseRecorder:
         await rosys.run.sh(f'mv {STORAGE_PATH}/*.jpg {target_dir}', shell=True)
         source_file = target_dir / 'source.txt'
         with source_file.open('w') as f:
-            for jpg in sorted(target_dir.glob('*.jpg')):
+            jpegs = sorted(target_dir.glob('*.jpg'))
+            for i, jpg in enumerate(jpegs):
+                cam = jpg.stem.split('_')[-1]
+                before = jpegs[i - 1].stem.split('_')[-1] if i > 0 else None
+                after = jpegs[i + 1].stem.split('_')[-1] if i < len(jpegs) - 1 else None
+                if before and after and cam != before and cam != after:
+                    # NOTE: within sequences, we skip isolated frames from a different camera to reduce flickering
+                    continue
                 f.write(f"file '{jpg}'\n")
         absolute_niceness = 10 - os.nice(0)
         cmd = (
@@ -150,7 +157,7 @@ def _save_image(image: RosysImage, path: Path, size: tuple[int, int], notificati
     for message in notifications:
         y += 30
         _write(message, draw, x, y)
-    img.save(path / f'{image.time:.3f}.jpg', 'JPEG')
+    img.save(path / f'{image.time:.3f}_{image.camera_id[-5:].upper()}.jpg', 'JPEG')
 
 
 def _write(text: str, draw: ImageDraw.ImageDraw, x: int, y: int) -> None:
