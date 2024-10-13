@@ -90,28 +90,17 @@ def reset() -> None:
     tasks.clear()
 
 
-async def wait_for(event: Event, timeout: float | None = None) -> tuple[Any, ...] | None:
-    trigger = asyncio.Event()
-    result: tuple[Any, ...] | None = None
+async def wait_for(event: Event, timeout: float | None = None) -> Any:
+    future = asyncio.Future()
 
     def callback(*args):
-        nonlocal trigger
-        nonlocal result
-        trigger.set()
-        event.unregister(callback)
-        if args:
-            result = args
+        if not future.done():
+            future.set_result(args[0] if len(args) == 1 else args if args else None)
 
+    event.register(callback)
     try:
-        event.register(callback)
-        try:
-            trigger_future: asyncio.Future[bool] = trigger.wait()
-            if timeout is None:
-                await trigger_future
-            else:
-                await asyncio.wait_for(trigger_future, timeout=timeout)
-        finally:
-            event.unregister(callback)
-    except asyncio.TimeoutError as e:
-        raise TimeoutError(f"Timed out waiting for robot pose update after {timeout} seconds") from e
-    return result
+        return await asyncio.wait_for(future, timeout)
+    except asyncio.TimeoutError as error:
+        raise TimeoutError(f"Timed out waiting for event after {timeout} seconds") from error
+    finally:
+        event.unregister(callback)
