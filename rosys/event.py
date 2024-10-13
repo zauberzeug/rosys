@@ -92,7 +92,7 @@ def reset() -> None:
 
 async def wait_for(event: Event, timeout: float | None = None) -> Any:
     """Waits for an event to be emitted and returns its arguments."""
-    future = asyncio.Future()
+    future: asyncio.Future[Any] = asyncio.Future()
 
     def callback(*args):
         if not future.done():
