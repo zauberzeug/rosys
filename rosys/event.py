@@ -91,6 +91,7 @@ def reset() -> None:
 
 
 async def wait_for(event: Event, timeout: float | None = None) -> Any:
+    """Waits for an event to be emitted and returns its arguments."""
     future = asyncio.Future()
 
     def callback(*args):
@@ -101,6 +102,6 @@ async def wait_for(event: Event, timeout: float | None = None) -> Any:
     try:
         return await asyncio.wait_for(future, timeout)
     except asyncio.TimeoutError as error:
-        raise TimeoutError(f"Timed out waiting for event after {timeout} seconds") from error
+        raise TimeoutError(f'Timed out waiting for event after {timeout} seconds') from error
     finally:
         event.unregister(callback)
