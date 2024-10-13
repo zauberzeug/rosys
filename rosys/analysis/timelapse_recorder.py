@@ -96,8 +96,8 @@ class TimelapseRecorder:
             self.log.info('very few images (%s); not creating video', len(jpgs))
             self.discard_video()
             return
-        start = datetime.fromtimestamp(float(jpgs[0].stem))
-        end = datetime.fromtimestamp(float(jpgs[-1].stem))
+        start = datetime.fromtimestamp(float(jpgs[0].stem.split('_')[0]))
+        end = datetime.fromtimestamp(float(jpgs[-1].stem.split('_')[0]))
         self.log.info('creating video from %s to %s', start, end)
         duration = humanize.naturaldelta(end - start)
         await self.create_info(start.strftime(r'%d.%m.%Y %H:%M:%S'), duration, time=start.timestamp() - 1)
