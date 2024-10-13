@@ -157,7 +157,7 @@ def _save_image(image: RosysImage, path: Path, size: tuple[int, int], notificati
     for message in notifications:
         y += 30
         _write(message, draw, x, y)
-    img.save(path / f'{image.time:.3f}_{image.camera_id[-5:].upper()}.jpg', 'JPEG')
+    img.save(path / f'{image.time:.3f}_{image.camera_id.replace(":", "-").upper()}.jpg', 'JPEG')
 
 
 def _write(text: str, draw: ImageDraw.ImageDraw, x: int, y: int) -> None:
