@@ -10,15 +10,16 @@ from pathlib import Path
 from typing import Protocol
 
 import humanize
+from cairosvg import svg2png
 from PIL import Image, ImageDraw, ImageFont
 
 from .. import rosys
-from ..vision import Camera
+from ..vision import Camera, ImageSize
 
 STORAGE_PATH = Path('~/.rosys/timelapse').expanduser()
 VIDEO_PATH = STORAGE_PATH / 'videos'
 FONT = str(Path(__file__).parent / 'assets' / 'RobotoMono-Medium.ttf')
-IMAGE_FONT = ImageFont.truetype(FONT, 16)
+IMAGE_FONT = ImageFont.truetype(FONT, 22)
 BIG_COVER_FONT = ImageFont.truetype(FONT, 50)
 SMALL_COVER_FONT = ImageFont.truetype(FONT, 30)
 
@@ -26,7 +27,9 @@ SMALL_COVER_FONT = ImageFont.truetype(FONT, 30)
 class RosysImage(Protocol):
     camera_id: str
     time: float
-    data: bytes | None = None
+    data: bytes | None
+    overlays: list[str]
+    size: ImageSize
 
 
 class TimelapseRecorder:
@@ -56,7 +59,6 @@ class TimelapseRecorder:
         self.ongoing_compressions: list[str] = []
         """List of video files that are currently being compressed."""
 
-        VIDEO_PATH.mkdir(parents=True, exist_ok=True)
         rosys.on_repeat(self._capture, 0.01)
         self.frame_info_builder: Callable[[RosysImage], str | None] = lambda image: None
 
@@ -102,6 +104,7 @@ class TimelapseRecorder:
         duration = humanize.naturaldelta(end - start)
         await self.create_info(start.strftime(r'%d.%m.%Y %H:%M:%S'), duration, time=start.timestamp() - 1)
         id_ = start.strftime(r'%Y%m%d_%H-%M-%S_' + duration.replace(' ', '_'))
+        VIDEO_PATH.mkdir(parents=True, exist_ok=True)
         target_dir = STORAGE_PATH / id_
         target_dir.mkdir(parents=True, exist_ok=True)
         target_filename = f'{id_}.mp4'
@@ -114,7 +117,7 @@ class TimelapseRecorder:
         cmd = (
             f'nice -n {absolute_niceness} ffmpeg -hide_banner -threads 1 -f concat -safe 0 -i "{source_file}" '
             f'-s {self.width}x{self.height} -vcodec libx264 -crf 18 -preset slow -pix_fmt yuv420p -y {target_dir}/{target_filename};'
-            f'mv {target_dir}/*mp4 {STORAGE_PATH}/videos;'
+            f'mv {target_dir}/*mp4 {VIDEO_PATH};'
             f'rm -r {target_dir};'
         )
         self.log.info('video compression for %s starting:\n%s', target_filename, cmd)
@@ -142,7 +145,7 @@ class TimelapseRecorder:
 
 def _save_image(image: RosysImage, path: Path, size: tuple[int, int], notifications: list[str], frame_info: str | None = None) -> None:
     assert image.data is not None
-    img = Image.open(io.BytesIO(image.data)).resize(size)
+    img = Image.open(io.BytesIO(image.data))
     draw = ImageDraw.Draw(img)
     x = y = 20
     frame_info = ', ' + frame_info if frame_info else ''
@@ -150,7 +153,11 @@ def _save_image(image: RosysImage, path: Path, size: tuple[int, int], notificati
     for message in notifications:
         y += 30
         _write(message, draw, x, y)
-    img.save(path / f'{image.time:.3f}.jpg', 'JPEG')
+    for overlay in image.overlays:
+        svg_image = svg2png(bytestring=overlay)
+        overlay_img = Image.open(io.BytesIO(svg_image))
+        img.paste(overlay_img, (0, 0), overlay_img)
+    img.resize(size).save(path / f'{image.time:.3f}.jpg', 'JPEG')
 
 
 def _write(text: str, draw: ImageDraw.ImageDraw, x: int, y: int) -> None:

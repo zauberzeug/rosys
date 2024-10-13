@@ -31,6 +31,7 @@ class Image:
     _detections: dict[str, Detections] = field(default_factory=dict)
     is_broken: bool | None = None
     tags: set[str] = field(default_factory=set)
+    overlays: list[str] = field(default_factory=list)
 
     DEFAULT_PLACEHOLDER_SIZE: ClassVar[tuple[int, int]] = (320, 240)
 
