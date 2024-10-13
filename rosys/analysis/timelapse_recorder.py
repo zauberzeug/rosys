@@ -153,8 +153,10 @@ def _save_image(image: RosysImage, path: Path, size: tuple[int, int], notificati
     for message in notifications:
         y += 30
         _write(message, draw, x, y)
-    for overlay in image.overlays:
-        svg_image = svg2png(bytestring=overlay)
+    for overlay in image.svg_overlays:
+        style = 'position:absolute;top:0;left:0;pointer-events:none'
+        viewbox = f'0 0 {image.size.width} {image.size.height}'
+        svg_image = svg2png(bytestring=f'''<svg style="{style}" viewBox="{viewbox}">{overlay}</svg>''')
         overlay_img = Image.open(io.BytesIO(svg_image))
         img.paste(overlay_img, (0, 0), overlay_img)
     img.resize(size).save(path / f'{image.time:.3f}.jpg', 'JPEG')
