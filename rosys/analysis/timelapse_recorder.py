@@ -28,7 +28,6 @@ class RosysImage(Protocol):
     camera_id: str
     time: float
     data: bytes | None
-    svg_overlays: list[str]
     size: ImageSize
 
 
