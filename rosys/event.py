@@ -5,6 +5,7 @@ import inspect
 import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from typing import Any
 
 from nicegui import background_tasks, context, core
 
@@ -79,6 +80,25 @@ class Event:
                         startup_coroutines.append(result)
             except Exception:
                 log.exception('could not emit listener=%s', listener)
+
+    async def emitted(self, timeout: float | None = None) -> Any:
+        """Waits for an event to be emitted and returns its arguments."""
+        future: asyncio.Future[Any] = asyncio.Future()
+
+        def callback(*args):
+            if not future.done():
+                future.set_result(args[0] if len(args) == 1 else args if args else None)
+
+        self.register(callback)
+        try:
+            return await asyncio.wait_for(future, timeout)
+        except asyncio.TimeoutError as error:
+            raise TimeoutError(f'Timed out waiting for event after {timeout} seconds') from error
+        finally:
+            self.unregister(callback)
+
+    def __await__(self):
+        return self.emitted().__await__()
 
 
 def reset() -> None:
