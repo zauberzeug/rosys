@@ -74,14 +74,15 @@ class TimelapseRecorder:
             self.last_capture_time = rosys.time()
             await self.save(images[-1])
 
-    async def save(self, image: RosysImage) -> None:
+    async def save(self, image: RosysImage, overlay: str | None = None) -> None:
         """Captures an image to be used in video."""
         await rosys.run.cpu_bound(_save_image,
                                   image,
                                   STORAGE_PATH,
                                   (self.width, self.height),
                                   self._notifications.pop(0) if self._notifications else [],
-                                  self.frame_info_builder(image))
+                                  self.frame_info_builder(image),
+                                  overlay)
 
     def compress_video(self) -> Task:
         """Create a video from the captured images.
@@ -150,7 +151,12 @@ class TimelapseRecorder:
             self._notifications[i].append(message)
 
 
-def _save_image(image: RosysImage, path: Path, size: tuple[int, int], notifications: list[str], frame_info: str | None = None) -> None:
+def _save_image(image: RosysImage,
+                path: Path,
+                size: tuple[int, int],
+                notifications: list[str],
+                frame_info: str | None = None,
+                overlay: str | None = None) -> None:
     assert image.data is not None
     img = Image.open(io.BytesIO(image.data))
     draw = ImageDraw.Draw(img)
@@ -160,7 +166,7 @@ def _save_image(image: RosysImage, path: Path, size: tuple[int, int], notificati
     for message in notifications:
         y += 30
         _write(message, draw, x, y)
-    for overlay in image.svg_overlays:
+    if overlay:
         style = 'position:absolute;top:0;left:0;pointer-events:none'
         viewbox = f'0 0 {image.size.width} {image.size.height}'
         svg_image = svg2png(bytestring=f'''<svg style="{style}" viewBox="{viewbox}">{overlay}</svg>''')
