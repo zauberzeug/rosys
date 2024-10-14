@@ -98,8 +98,8 @@ class TimelapseRecorder:
             self.log.info('very few images (%s); not creating video', len(jpgs))
             self.discard_video()
             return
-        start = datetime.fromtimestamp(float(jpgs[0].stem))
-        end = datetime.fromtimestamp(float(jpgs[-1].stem))
+        start = datetime.fromtimestamp(float(jpgs[0].stem.split('_')[0]))
+        end = datetime.fromtimestamp(float(jpgs[-1].stem.split('_')[0]))
         self.log.info('creating video from %s to %s', start, end)
         duration = humanize.naturaldelta(end - start)
         await self.create_info(start.strftime(r'%d.%m.%Y %H:%M:%S'), duration, time=start.timestamp() - 1)
@@ -111,7 +111,14 @@ class TimelapseRecorder:
         await rosys.run.sh(f'mv {STORAGE_PATH}/*.jpg {target_dir}', shell=True)
         source_file = target_dir / 'source.txt'
         with source_file.open('w') as f:
-            for jpg in sorted(target_dir.glob('*.jpg')):
+            jpegs = sorted(target_dir.glob('*.jpg'))
+            for i, jpg in enumerate(jpegs):
+                cam = jpg.stem.split('_')[-1]
+                before = jpegs[i - 1].stem.split('_')[-1] if i > 0 else None
+                after = jpegs[i + 1].stem.split('_')[-1] if i < len(jpegs) - 1 else None
+                if before and after and cam != before and cam != after:
+                    # NOTE: within sequences, we skip isolated frames from a different camera to reduce flickering
+                    continue
                 f.write(f"file '{jpg}'\n")
         absolute_niceness = 10 - os.nice(0)
         cmd = (
@@ -159,7 +166,7 @@ def _save_image(image: RosysImage, path: Path, size: tuple[int, int], notificati
         svg_image = svg2png(bytestring=f'''<svg style="{style}" viewBox="{viewbox}">{overlay}</svg>''')
         overlay_img = Image.open(io.BytesIO(svg_image))
         img.paste(overlay_img, (0, 0), overlay_img)
-    img.resize(size).save(path / f'{image.time:.3f}.jpg', 'JPEG')
+    img.resize(size).save(path / f'{image.time:.3f}_{image.camera_id.replace(":", "-").upper()}.jpg', 'JPEG')
 
 
 def _write(text: str, draw: ImageDraw.ImageDraw, x: int, y: int) -> None:
