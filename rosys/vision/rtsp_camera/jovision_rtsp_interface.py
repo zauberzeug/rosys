@@ -3,7 +3,8 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
-import requests
+import httpx
+from httpx import QueryParams
 
 
 @dataclass
@@ -43,7 +44,7 @@ class JovisionInterface:
     def settings_url(self) -> str:
         return f'http://{self.ip}/cgi-bin/jvsweb.cgi'
 
-    def _send_settings(self, settings: list[JovisionCameraSettings]) -> None:
+    async def _send_settings(self, settings: list[JovisionCameraSettings]) -> None:
         """
         Set the settings for all streams
         """
@@ -63,45 +64,46 @@ class JovisionInterface:
                 'streams': streams,
             },
         }
-        params = {
-            'cmd': json.dumps(cmd),
-            '_': int(time.time() * 1000),  # current time as a timestamp
-        }
-        requests.get(self.settings_url, params=params, timeout=1)  # type: ignore
+        params = QueryParams(
+            cmd=json.dumps(cmd),
+            _=int(time.time() * 1000),  # current time as a timestamp
+        )
+        async with httpx.AsyncClient() as client:
+            await client.get(self.settings_url, params=params)
 
-    def set_fps(self, stream_id: int, fps: int) -> None:
-        current_settings = self.get_current_settings()
+    async def set_fps(self, stream_id: int, fps: int) -> None:
+        current_settings = await self.get_current_settings()
         for settings in current_settings:
             if settings.stream_id == stream_id:
                 settings.fps = int(fps)
                 break
-        self._send_settings(current_settings)
+        await self._send_settings(current_settings)
 
-    def get_fps(self, stream_id: int) -> int | None:
-        current_settings = self.get_current_settings()
+    async def get_fps(self, stream_id: int) -> int | None:
+        current_settings = await self.get_current_settings()
         for settings in current_settings:
             if settings.stream_id == stream_id:
                 return settings.fps
 
         return None
 
-    def get_bitrate(self, stream_id: int) -> int | None:
-        current_settings = self.get_current_settings()
+    async def get_bitrate(self, stream_id: int) -> int | None:
+        current_settings = await self.get_current_settings()
         for settings in current_settings:
             if settings.stream_id == stream_id:
                 return settings.bitrate
 
         return None
 
-    def set_bitrate(self, stream_id: int, bitrate: int) -> None:
-        current_settings = self.get_current_settings()
+    async def set_bitrate(self, stream_id: int, bitrate: int) -> None:
+        current_settings = await self.get_current_settings()
         for settings in current_settings:
             if settings.stream_id == stream_id:
                 settings.bitrate = int(bitrate)
                 break
-        self._send_settings(current_settings)
+        await self._send_settings(current_settings)
 
-    def get_current_settings(self) -> list[JovisionCameraSettings]:
+    async def get_current_settings(self) -> list[JovisionCameraSettings]:
         cmd = {
             'method': 'stream_get_params',
             'user': {
@@ -112,11 +114,12 @@ class JovisionInterface:
                 'channelid': 0,
             },
         }
-        params = {
-            'cmd': json.dumps(cmd),
-            '_': int(time.time() * 1000),
-        }
-        response = requests.get(self.settings_url, params=params, timeout=1)  # type: ignore
+        params = QueryParams(
+            cmd=json.dumps(cmd),
+            _=int(time.time() * 1000),
+        )
+        async with httpx.AsyncClient() as client:
+            response = await client.get(self.settings_url, params=params)
 
         return [
             JovisionCameraSettings(
@@ -132,42 +135,42 @@ class JovisionInterface:
             for stream in response.json()['result']['streams']
         ]
 
-    def get_parameter_ranges(self):
+    async def get_parameter_ranges(self):
         raise NotImplementedError
-        # pylint: disable=unreachable
-        # ruff: noqa: F841
-        cmd = {
-            'method': 'stream_get_all_ability',
-            'user': {
-                'name': 'admin',
-                'digest': '8d5985ea2b9994aacb6cb3e3f826aae5'
-            },
-            'param': {
-                'channelid': 0,
-            }
-        }
-        params = {
-            'cmd': json.dumps(cmd),
-            '_': time.time() * 1000,
-        }
-        response = requests.get(self.settings_url, params=params, timeout=1)
 
-        for stream_id, stream in enumerate(response.json()['result']['all']):
-            print(f'stream {stream_id}')
-            resolutions = stream['resolutions']
-            for resolution in resolutions:
-                width = resolution['width']
-                height = resolution['height']
-                b_default = resolution['bDefault']
-                max_kbps = resolution['maxKbps']
-                min_kbps = resolution['minKbps']
-                def_kbps = resolution['defKbps']
-                max_fr = resolution['maxFr']
-                min_fr = resolution['minFr']
-                def_fr = resolution['defFr']
-            max_quality = stream['maxQuality']
-            min_quality = stream['minQuality']
-            max_ngop = stream['maxNGOP']
-            min_ngop = stream['minNGOP']
-            b_support_h265 = stream['bSupportH265']
-            b_support_smart_enc = stream['bSupportSmartEnc']
+        # cmd = {
+        #     'method': 'stream_get_all_ability',
+        #     'user': {
+        #         'name': 'admin',
+        #         'digest': '8d5985ea2b9994aacb6cb3e3f826aae5'
+        #     },
+        #     'param': {
+        #         'channelid': 0,
+        #     }
+        # }
+        # params = {
+        #     'cmd': json.dumps(cmd),
+        #     '_': time.time() * 1000,
+        # }
+        # async with httpx.AsyncClient() as client:
+        #     response = await client.get(self.settings_url, params=params)
+
+        # for stream_id, stream in enumerate(response.json()['result']['all']):
+        #     print(f'stream {stream_id}')
+        #     resolutions = stream['resolutions']
+        #     for resolution in resolutions:
+        #         width = resolution['width']
+        #         height = resolution['height']
+        #         b_default = resolution['bDefault']
+        #         max_kbps = resolution['maxKbps']
+        #         min_kbps = resolution['minKbps']
+        #         def_kbps = resolution['defKbps']
+        #         max_fr = resolution['maxFr']
+        #         min_fr = resolution['minFr']
+        #         def_fr = resolution['defFr']
+        #     max_quality = stream['maxQuality']
+        #     min_quality = stream['minQuality']
+        #     max_ngop = stream['maxNGOP']
+        #     min_ngop = stream['minNGOP']
+        #     b_support_h265 = stream['bSupportH265']
+        #     b_support_smart_enc = stream['bSupportSmartEnc']

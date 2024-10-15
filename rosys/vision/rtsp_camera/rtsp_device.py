@@ -15,13 +15,13 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 
 class RtspDevice:
 
-    def __init__(self, mac: str, ip: str, jovision_profile: int) -> None:
+    def __init__(self, mac: str, ip: str, jovision_profile: int, fps: int = 10) -> None:
         self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device')
 
         self.mac = mac
         self.ip = ip
 
-        self.fps: int
+        self.fps = fps
         self.jovision_profile = jovision_profile
 
         self.capture_task: asyncio.Task | None = None
@@ -34,11 +34,9 @@ class RtspDevice:
         self.settings_interface: JovisionInterface | None = None
         if vendor_type == VendorType.JOVISION:
             self.settings_interface = JovisionInterface(ip)
-            self.fps = self.settings_interface.get_fps(stream_id=jovision_profile) or 10
         else:
             self.log.warning('[%s] No settings interface for vendor type %s', self.mac, vendor_type)
             self.log.warning('[%s] Using default fps of 10', self.mac)
-            self.fps = 10
 
         url = mac_to_url(mac, ip, jovision_profile)
         if url is None:
@@ -113,7 +111,12 @@ class RtspDevice:
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
             command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.fps}/1" ! jpegenc ! fdsink'
             self.log.debug('[%s] Running command: %s', self.mac, command)
-            process = await asyncio.create_subprocess_exec(*shlex.split(command), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            process = await asyncio.create_subprocess_exec(
+                *shlex.split(command),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                limit=8192
+            )
             assert process.stdout is not None
             assert process.stderr is not None
             self.capture_process = process
@@ -185,15 +188,15 @@ class RtspDevice:
 
         self.capture_task = None
 
-    def set_fps(self, fps: int) -> None:
+    async def set_fps(self, fps: int) -> None:
         self.fps = fps
 
         if self.settings_interface is not None:
-            self.settings_interface.set_fps(stream_id=self.jovision_profile, fps=self.fps)
+            await self.settings_interface.set_fps(stream_id=self.jovision_profile, fps=self.fps)
 
-    def get_fps(self) -> int | None:
+    async def get_fps(self) -> int | None:
         if self.settings_interface is not None:
-            return self.settings_interface.get_fps(stream_id=self.jovision_profile)
+            return await self.settings_interface.get_fps(stream_id=self.jovision_profile)
         return self.fps
 
     def set_jovision_profile(self, profile: int) -> None:
@@ -202,11 +205,11 @@ class RtspDevice:
     def get_jovision_profile(self) -> int:
         return self.jovision_profile
 
-    def set_bitrate(self, bitrate: int) -> None:
+    async def set_bitrate(self, bitrate: int) -> None:
         if self.settings_interface is not None:
-            self.settings_interface.set_bitrate(stream_id=self.jovision_profile, bitrate=bitrate)
+            await self.settings_interface.set_bitrate(stream_id=self.jovision_profile, bitrate=bitrate)
 
-    def get_bitrate(self) -> int | None:
+    async def get_bitrate(self) -> int | None:
         if self.settings_interface is not None:
-            return self.settings_interface.get_bitrate(stream_id=self.jovision_profile)
+            return await self.settings_interface.get_bitrate(stream_id=self.jovision_profile)
         return None

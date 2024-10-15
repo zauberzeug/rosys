@@ -39,6 +39,7 @@ class AxisMjpegDevice(MjpegDevice):
         return self.axis_settings.fps
 
     async def set_fps(self, fps: int) -> None:
+        self.axis_settings.fps = fps
         self.url = re.sub(r'fps=\d+', f'fps={fps}', self.url)
         if 'fps=' not in self.url:
             self.url += f'&fps={fps}'
@@ -48,6 +49,7 @@ class AxisMjpegDevice(MjpegDevice):
         return self.axis_settings.resolution
 
     async def set_resolution(self, width: int, height: int) -> None:
+        self.axis_settings.resolution = (width, height)
         self.url = re.sub(r'resolution=\d+x\d+', f'resolution={width}x{height}', self.url)
         if 'resolution=' not in self.url:
             self.url += f'&resolution={width}x{height}'
@@ -57,6 +59,7 @@ class AxisMjpegDevice(MjpegDevice):
         return self.axis_settings.mirrored
 
     async def set_mirrored(self, mirrored: bool) -> None:
+        self.axis_settings.mirrored = mirrored
         value = 1 if mirrored else 0
         self.url = re.sub(r'mirror=\d', f'mirror={value}', self.url)
         if 'mirror=' not in self.url:

@@ -10,7 +10,7 @@ keywords = ["robot", "framework", "automation", "control", "steer"]
 
 [tool.poetry.dependencies]
 python = ">=3.10, <3.13"
-nicegui = ">=1.4.31"
+nicegui = ">=2.3.0"
 pyserial = "^3.5"
 numpy = ">=1.20.1"
 scipy = "^1.7.2"
@@ -113,6 +113,7 @@ disable = [
     "R0913", # Too many arguments
     "R0914", # Too many local variables
     "R0915", # Too many statements
+    "R0917", # Too many positional arguments
     "R1702", # Too many nested blocks
     "R1705", # Unnecessary "else" after "return"
     "R1724", # Unnecessary "else" after "continue"
