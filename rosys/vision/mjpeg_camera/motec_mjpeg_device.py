@@ -1,3 +1,5 @@
+from collections.abc import Awaitable, Callable
+
 from .mjpeg_device import MjpegDevice
 from .motec_settings_interface import MotecSettingsInterface
 from .vendors import VendorType, mac_to_vendor
@@ -7,10 +9,10 @@ class MotecMjpegDevice(MjpegDevice):
     def __init__(self, mac: str, ip: str, *,
                  username: str | None = '',
                  password: str | None = '',
-                 control_port: int | None = 8885) -> None:
+                 control_port: int | None = 8885,
+                 on_new_image_data: Callable[[bytes], Awaitable | None]) -> None:
 
-        super().__init__(mac, ip,
-                         username=username, password=password)
+        super().__init__(mac, ip, username=username, password=password, on_new_image_data=on_new_image_data)
 
         vendor = mac_to_vendor(mac)
         if vendor != VendorType.MOTEC:

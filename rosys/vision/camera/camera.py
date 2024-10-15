@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import asyncio
+import logging
 from collections import deque
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -14,6 +15,8 @@ from ...event import Event
 from ..image import Image
 from ..image_route import create_image_route
 
+logger = logging.getLogger('rosys.vision.camera')
+
 
 class Camera(abc.ABC):
 
@@ -22,8 +25,6 @@ class Camera(abc.ABC):
                  id: str,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
-                 streaming: bool = True,
-                 polling_interval: float = 0.1,
                  base_path_overwrite: str | None = None,
                  image_history_length: int = 256,
                  **kwargs) -> None:
@@ -34,7 +35,10 @@ class Camera(abc.ABC):
         self.images: deque[Image] = deque(maxlen=image_history_length)
         self.base_path: str = f'images/{base_path_overwrite or id}'
 
-        self.should_stream: bool = streaming
+        if 'streaming' in kwargs:
+            logger.warning('The `streaming` parameter has been removed. All cameras now stream images by default.')
+        if 'polling_interval' in kwargs:
+            logger.warning('The `polling_interval` parameter has been removed. All cameras should now use callbacks.')
 
         self.NEW_IMAGE: Event = Event()
 
@@ -52,32 +56,23 @@ class Camera(abc.ABC):
             else:
                 rosys.on_startup(self.connect)
 
-        self.image_loop = rosys.Repeater(self.capture_image, interval=polling_interval)
-        if streaming:
-            self.image_loop.start()
-
-    def __del__(self) -> None:
-        self.image_loop.stop()
-
     @property
     def streaming(self) -> bool:
-        return self.image_loop.running
+        logger.warning('The `streaming` parameter has been removed. All cameras now stream images by default.')
+        return True
 
     @streaming.setter
-    def streaming(self, value: bool) -> None:
-        self.should_stream = value
-        if value:
-            self.image_loop.start()
-        else:
-            self.image_loop.stop()
+    def streaming(self, value: bool) -> None:  # pylint: disable=unused-argument
+        logger.warning('The `streaming` parameter has been removed. All cameras now stream images by default.')
 
     @property
     def polling_interval(self) -> float:
-        return self.image_loop.interval
+        logger.warning('The `polling_interval` parameter has been removed. All cameras should now use callbacks.')
+        return 0.0
 
     @polling_interval.setter
-    def polling_interval(self, value: float) -> None:
-        self.image_loop.interval = value
+    def polling_interval(self, value: float) -> None:  # pylint: disable=unused-argument
+        logger.warning('The `polling_interval` parameter has been removed. All cameras should now use callbacks.')
 
     def get_image_url(self, image: Image) -> str:
         return f'{self.base_path}/{image.time}'
@@ -93,7 +88,6 @@ class Camera(abc.ABC):
             'id': self.id,
             'name': self.name,
             'connect_after_init': self.connect_after_init,
-            'streaming': self.should_stream,
             'image_history_length': self.images.maxlen,
         }
 
@@ -155,4 +149,4 @@ class Camera(abc.ABC):
         self.NEW_IMAGE.emit(image)
 
     async def capture_image(self) -> None:
-        raise NotImplementedError('Implement capture_image() in your camera class!')
+        raise DeprecationWarning('The `capture_image()` method has been removed. All cameras should now use callbacks.')

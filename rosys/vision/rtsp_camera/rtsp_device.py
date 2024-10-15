@@ -4,7 +4,7 @@ import shlex
 import signal
 import subprocess
 from asyncio.subprocess import Process
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from io import BytesIO
 
 from nicegui import background_tasks
@@ -15,7 +15,8 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 
 class RtspDevice:
 
-    def __init__(self, mac: str, ip: str, jovision_profile: int, fps: int = 10) -> None:
+    def __init__(self, mac: str, ip: str, *,
+                 jovision_profile: int, fps: int, on_new_image_data: Callable[[bytes], Awaitable | None]) -> None:
         self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device')
 
         self.mac = mac
@@ -23,10 +24,10 @@ class RtspDevice:
 
         self.fps = fps
         self.jovision_profile = jovision_profile
+        self.on_new_image_data = on_new_image_data
 
         self.capture_task: asyncio.Task | None = None
         self.capture_process: Process | None = None
-        self._image_buffer: bytes | None = None
         self._authorized: bool = True
 
         vendor_type = mac_to_vendor(mac)
@@ -54,11 +55,6 @@ class RtspDevice:
         if url is None:
             raise ValueError(f'could not determine RTSP URL for {self.mac}')
         return url
-
-    def capture(self) -> bytes | None:
-        image = self._image_buffer
-        self._image_buffer = None
-        return image
 
     async def shutdown(self) -> None:
         if self.capture_process is not None:
@@ -109,58 +105,51 @@ class RtspDevice:
 
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self.mac, url)
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
-            command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! videorate ! "video/x-raw,framerate={self.fps}/1" ! jpegenc ! fdsink'
+            command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! jpegenc ! fdsink'
             self.log.debug('[%s] Running command: %s', self.mac, command)
             process = await asyncio.create_subprocess_exec(
                 *shlex.split(command),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                limit=8192
+                limit=1024*1024*1024,
             )
             assert process.stdout is not None
             assert process.stderr is not None
             self.capture_process = process
 
             buffer = BytesIO()
-            pos = 0
-            header = None
+            chunk_size = 1024*1024
 
             while process.returncode is None:
                 assert process.stdout is not None
-                new = await process.stdout.read(4096)
-                if not new:
-                    break
-                buffer.write(new)
 
-                img_range = None
+                eof = False
                 while True:
-                    if header is None:
-                        h = buffer.getvalue().find(b'\xff\xd8', pos)
-                        if h == -1:
-                            pos = buffer.tell() - 1
-                            break
-                        pos = h + 2
-                        header = h
-                    else:
-                        f = buffer.getvalue().find(b'\xff\xd9', pos)
-                        if f == -1:
-                            pos = buffer.tell() - 1
-                            break
-                        img_range = (header, f + 2)
-                        pos = f + 2
-                        header = None
+                    new = await process.stdout.read(chunk_size)
+                    eof = not new
+                    buffer.write(new)
+                    if len(new) < chunk_size:
+                        break
 
-                if img_range:
-                    yield buffer.getvalue()[img_range[0]:img_range[1]]
+                if eof:
+                    break
 
-                    rest = buffer.getvalue()[img_range[1]:]
-                    buffer.seek(0)
-                    buffer.truncate()
-                    buffer.write(rest)
+                data = buffer.getvalue()
+                end = data.rfind(b'\xff\xd9')
+                if end == -1:
+                    continue
 
-                    pos = 0
-                    if header is not None:
-                        header -= img_range[1]
+                start = data.rfind(b'\xff\xd8', 0, end)
+                if start == -1:
+                    continue
+
+                end += 2
+
+                yield data[start:end]
+                rest = data[end:]
+                buffer.seek(0)
+                buffer.truncate()
+                buffer.write(rest)
 
             try:
                 await asyncio.wait_for(process.wait(), timeout=5)
@@ -182,7 +171,9 @@ class RtspDevice:
                     self._authorized = False
 
         async for image in stream():
-            self._image_buffer = image
+            result = self.on_new_image_data(image)
+            if isinstance(result, Awaitable):
+                await result
 
         self.log.info('[%s] stream ended', self.mac)
 

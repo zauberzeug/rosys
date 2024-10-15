@@ -18,7 +18,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                  id: str,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
-                 streaming: bool = True,
                  fps: int = 5,
                  jovision_profile: int = 1,
                  bitrate: int = 4096,
@@ -28,8 +27,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         super().__init__(id=id,
                          name=name,
                          connect_after_init=connect_after_init,
-                         polling_interval=1.0 / fps,
-                         streaming=streaming,
                          **kwargs)
 
         self.log = logging.getLogger(f'rosys.vision.rtsp_camera.{self.id}')
@@ -76,7 +73,9 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             return
 
         self.device = RtspDevice(mac=self.id, ip=self.ip,
-                                 jovision_profile=self.parameters['jovision_profile'], fps=self.parameters['fps'])
+                                 jovision_profile=self.parameters['jovision_profile'],
+                                 fps=self.parameters['fps'],
+                                 on_new_image_data=self._handle_new_image_data)
 
         await self._apply_all_parameters()
 
@@ -89,13 +88,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         await self.device.shutdown()
         self.device = None
 
-    async def capture_image(self) -> None:
-        if not self.is_connected:
-            return
-        assert self.device is not None
-
-        image_bytes = self.device.capture()
-
+    async def _handle_new_image_data(self, image_bytes: bytes) -> None:
         if not image_bytes:
             return
         transformed_image_bytes = await rosys.run.cpu_bound(process_jpeg_image, image_bytes, self.rotation, self.crop)
@@ -114,7 +107,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
 
         await self.device.set_fps(fps)
-        self.polling_interval = 1.0 / fps
 
     async def get_fps(self) -> int | None:
         assert self.device is not None

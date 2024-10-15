@@ -21,7 +21,6 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                  id: str,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
-                 streaming: bool = True,
                  auto_exposure: bool = True,
                  exposure: bool = False,
                  width: int = 800,
@@ -31,8 +30,6 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         super().__init__(id=id,
                          name=name,
                          connect_after_init=connect_after_init,
-                         streaming=streaming,
-                         polling_interval=1.0 / fps,
                          **kwargs)
         self._pending_operations = 0
         self.device: UsbDevice | None = None
@@ -62,7 +59,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         if self.is_connected:
             return
 
-        device = UsbDevice.from_uid(self.id)
+        device = UsbDevice.from_uid(self.id, self._handle_new_image_data)
         if device is None:
             logging.warning('Connecting camera %s: failed', self.id)
             return
@@ -81,37 +78,27 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self.device = None
         logging.info('camera %s: disconnected', self.id)
 
-    async def capture_image(self) -> None:
+    async def _handle_new_image_data(self, image_array: np.ndarray) -> None:
         if not self.is_connected:
             return None
 
         assert self.device is not None
-        result = await rosys.run.io_bound(self.device.capture.read)
-        if result is None:  # NOTE this can happen when shutting down and the thread is aborted before opencv has returned
-            return
-        capture_success, captured_image = result
+
         image_is_MJPG = 'MJPG' in self.device.video_formats
-
-        if not capture_success:
-            await self.disconnect()
-            return
-
-        if captured_image is None:
-            return
 
         def to_bytes(image: list[np.ndarray]) -> bytes:
             return image[0].tobytes()
 
         if image_is_MJPG:
-            bytes_ = await rosys.run.io_bound(to_bytes, captured_image)
+            bytes_ = await rosys.run.io_bound(to_bytes, image_array)
             if self.crop or self.rotation != ImageRotation.NONE:
                 bytes_ = await rosys.run.cpu_bound(process_jpeg_image, bytes_, self.rotation, self.crop)
         else:
-            bytes_ = await rosys.run.cpu_bound(process_ndarray_image, captured_image, self.rotation, self.crop)
+            bytes_ = await rosys.run.cpu_bound(process_ndarray_image, image_array, self.rotation, self.crop)
         if bytes_ is None:
             return
 
-        image_size = ImageSize(width=captured_image.shape[1], height=captured_image.shape[0])
+        image_size = ImageSize(width=image_array.shape[1], height=image_array.shape[0])
         final_image_resolution = self._resolution_after_transform(image_size)
 
         image = Image(time=rosys.time(), camera_id=self.id, size=final_image_resolution, data=bytes_)
