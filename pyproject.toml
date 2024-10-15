@@ -71,6 +71,7 @@ check_untyped_defs = true
 
 [[tool.mypy.overrides]]
 module = [
+    "cairosvg",
     "coloredlogs",
     "imgsize",
     "networkx",
