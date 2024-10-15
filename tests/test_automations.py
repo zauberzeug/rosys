@@ -143,5 +143,4 @@ async def test_parallelize_exception(automator: Automator):
 
     automator.start(run())
     await forward(seconds=10)
-    assert len(failures) == 1
-    assert 'i is 3' in failures[0]
+    assert failures == ['automation aborted because of i is 3']
