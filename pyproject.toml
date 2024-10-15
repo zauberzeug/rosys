@@ -34,6 +34,7 @@ matplotlib = "^3.7.2"
 pyudev = ">=0.21.0"
 esptool = "^4.3"
 pyquaternion = "^0.9.9"
+cairosvg = "^2.7.0"
 pillow = ">=10.3.0" # https://github.com/zauberzeug/rosys/security/dependabot/44
 idna = ">=3.7" # https://github.com/zauberzeug/rosys/security/dependabot/45
 uvicorn = "!=0.29.0" # test_examples.py fails with 0.29.0 due to persistency not correctly writting during teardown
@@ -70,6 +71,7 @@ check_untyped_defs = true
 
 [[tool.mypy.overrides]]
 module = [
+    "cairosvg",
     "coloredlogs",
     "imgsize",
     "networkx",

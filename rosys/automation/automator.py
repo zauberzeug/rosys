@@ -153,7 +153,7 @@ class Automator:
 
     def _handle_exception(self, e: Exception) -> None:
         self.stop(because='an exception occurred in an automation')
-        self.AUTOMATION_FAILED.emit(str(e))
+        self.AUTOMATION_FAILED.emit(f'automation aborted because of {e}')
         rosys.notify('automation failed', 'negative')
         if rosys.is_test:
             self.log.exception('automation failed')
