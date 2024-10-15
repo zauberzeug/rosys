@@ -4,7 +4,7 @@ import shlex
 import signal
 import subprocess
 from asyncio.subprocess import Process
-from collections.abc import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator, Awaitable, Callable
 from io import BytesIO
 
 from nicegui import background_tasks
@@ -15,7 +15,8 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 
 class RtspDevice:
 
-    def __init__(self, mac: str, ip: str, jovision_profile: int, fps: int, on_new_image: Callable) -> None:
+    def __init__(self, mac: str, ip: str, *,
+                 jovision_profile: int, fps: int, on_new_image_data: Callable[[bytes], Awaitable | None]) -> None:
         self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device')
 
         self.mac = mac
@@ -23,7 +24,7 @@ class RtspDevice:
 
         self.fps = fps
         self.jovision_profile = jovision_profile
-        self.new_image_callback = on_new_image
+        self.on_new_image_data = on_new_image_data
 
         self.capture_task: asyncio.Task | None = None
         self.capture_process: Process | None = None
@@ -110,7 +111,7 @@ class RtspDevice:
                 *shlex.split(command),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                limit=1024*1024*1024*1024,
+                limit=1024*1024*1024,
             )
             assert process.stdout is not None
             assert process.stderr is not None
@@ -170,7 +171,9 @@ class RtspDevice:
                     self._authorized = False
 
         async for image in stream():
-            await self.new_image_callback(image)
+            result = self.on_new_image_data(image)
+            if isinstance(result, Awaitable):
+                await result
 
         self.log.info('[%s] stream ended', self.mac)
 

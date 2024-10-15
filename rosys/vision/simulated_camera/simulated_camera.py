@@ -46,13 +46,13 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
     async def connect(self) -> None:
         if not self.is_connected:
             self.device = SimulatedDevice(id=self.id, size=self.resolution, fps=self.parameters['fps'],
-                                          image_data_callback=self._image_data_callback)
+                                          on_new_image_data=self._handle_new_image_data)
             await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
         self.device = None
 
-    async def _image_data_callback(self, image_data: bytes) -> None:
+    def _handle_new_image_data(self, image_data: bytes) -> None:
         image = Image(time=rosys.time(), camera_id=self.id, size=self.resolution, data=image_data)
         self._add_image(image)
 

@@ -25,10 +25,11 @@ def find_video_id(camera_uid: str) -> int | None:
 
 class UsbDevice:
 
-    def __init__(self, video_id: int, capture: cv2.VideoCapture, image_data_callback: Callable[[np.ndarray], Awaitable | None]) -> None:
+    def __init__(self, video_id: int, capture: cv2.VideoCapture, *,
+                 on_new_image_data: Callable[[np.ndarray], Awaitable | None]) -> None:
         self.video_id: int = video_id
         self.capture: cv2.VideoCapture = capture
-        self.image_data_callback: Callable[[np.ndarray], Awaitable | None] = image_data_callback
+        self.on_new_image_data: Callable[[np.ndarray], Awaitable | None] = on_new_image_data
         self.exposure_min: int = 0
         self.exposure_max: int = 0
         self.exposure_default: int = 0
@@ -37,14 +38,14 @@ class UsbDevice:
 
         self.set_video_format()
 
-        self.capture_task = rosys.on_repeat(self.capture_image, interval=0.01)
+        self.capture_task = rosys.on_repeat(self._capture_image, interval=0.01)
 
     def __del__(self) -> None:
         self.capture.release()
         self.capture_task.stop()
 
     @staticmethod
-    def from_uid(camera_id: str, image_data_callback: Callable[[np.ndarray], Awaitable | None]) -> UsbDevice | None:
+    def from_uid(camera_id: str, on_new_image_data: Callable[[np.ndarray], Awaitable | None]) -> UsbDevice | None:
         video_id = find_video_id(camera_id)
         if video_id is None:
             logging.error('Could not find video device for camera %s', camera_id)
@@ -55,7 +56,7 @@ class UsbDevice:
             logging.error('Could not open video device %s', video_id)
             return None
 
-        return UsbDevice(video_id=video_id, capture=capture, image_data_callback=image_data_callback)
+        return UsbDevice(video_id=video_id, capture=capture, on_new_image_data=on_new_image_data)
 
     @staticmethod
     def create_capture(index: int) -> cv2.VideoCapture | None:
@@ -68,7 +69,7 @@ class UsbDevice:
             return None
         return capture
 
-    async def capture_image(self) -> None:
+    async def _capture_image(self) -> None:
         if not self.capture.isOpened():
             return
         result = await rosys.run.io_bound(self.capture.read)
@@ -76,7 +77,7 @@ class UsbDevice:
             return
         capture_success, frame = result
         if capture_success:
-            result = self.image_data_callback(frame)
+            result = self.on_new_image_data(frame)
             if isinstance(result, Awaitable):
                 await result
 

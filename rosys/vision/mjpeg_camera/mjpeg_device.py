@@ -16,11 +16,11 @@ class MjpegDevice:
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image: Callable[[bytes], Awaitable | None]) -> None:
+                 on_new_image_data: Callable[[bytes], Awaitable | None]) -> None:
         self.mac = mac
         self.ip = ip
         self.index = index
-        self.on_new_image = on_new_image
+        self.on_new_image_data = on_new_image_data
         self.capture_task: Task | None = None
         self.authentication = None if username is None or password is None else httpx.DigestAuth(username, password)
         self.log = logging.getLogger('rosys.mjpeg_device ' + self.mac)
@@ -95,7 +95,7 @@ class MjpegDevice:
             if not image:
                 continue
             try:
-                result = self.on_new_image(remove_exif(image))
+                result = self.on_new_image_data(remove_exif(image))
                 if isinstance(result, Awaitable):
                     await result
             except Exception as e:

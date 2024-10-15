@@ -25,8 +25,6 @@ class Camera(abc.ABC):
                  id: str,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
-                 streaming: bool | None = None,
-                 polling_interval: float | None = None,
                  base_path_overwrite: str | None = None,
                  image_history_length: int = 256,
                  **kwargs) -> None:
@@ -37,10 +35,10 @@ class Camera(abc.ABC):
         self.images: deque[Image] = deque(maxlen=image_history_length)
         self.base_path: str = f'images/{base_path_overwrite or id}'
 
-        if streaming is not None:
-            logger.warning('The `streaming` parameter is deprecated. All cameras now stream images by default.')
-        if polling_interval is not None:
-            logger.warning('The `polling_interval` parameter is deprecated. All cameras should now use callbacks')
+        if 'streaming' in kwargs:
+            logger.warning('The `streaming` parameter has been removed. All cameras now stream images by default.')
+        if 'polling_interval' in kwargs:
+            logger.warning('The `polling_interval` parameter has been removed. All cameras should now use callbacks.')
 
         self.NEW_IMAGE: Event = Event()
 
@@ -60,21 +58,21 @@ class Camera(abc.ABC):
 
     @property
     def streaming(self) -> bool:
-        logger.warning('The `streaming` parameter is deprecated. All cameras now stream images by default.')
+        logger.warning('The `streaming` parameter has been removed. All cameras now stream images by default.')
         return True
 
     @streaming.setter
     def streaming(self, value: bool) -> None:  # pylint: disable=unused-argument
-        logger.warning('The `streaming` parameter is deprecated. All cameras now stream images by default.')
+        logger.warning('The `streaming` parameter has been removed. All cameras now stream images by default.')
 
     @property
     def polling_interval(self) -> float:
-        logger.warning('The `polling_interval` parameter is deprecated. All cameras should now use callbacks')
+        logger.warning('The `polling_interval` parameter has been removed. All cameras should now use callbacks.')
         return 0.0
 
     @polling_interval.setter
     def polling_interval(self, value: float) -> None:  # pylint: disable=unused-argument
-        logger.warning('The `polling_interval` parameter is deprecated. All cameras should now use callbacks')
+        logger.warning('The `polling_interval` parameter has been removed. All cameras should now use callbacks.')
 
     def get_image_url(self, image: Image) -> str:
         return f'{self.base_path}/{image.time}'
@@ -151,4 +149,4 @@ class Camera(abc.ABC):
         self.NEW_IMAGE.emit(image)
 
     async def capture_image(self) -> None:
-        raise DeprecationWarning('The `capture_image()` method is deprecated. All cameras should now use callbacks')
+        raise DeprecationWarning('The `capture_image()` method has been removed. All cameras should now use callbacks.')

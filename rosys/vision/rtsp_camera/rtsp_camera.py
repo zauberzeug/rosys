@@ -72,9 +72,10 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             self.log.error('no IP address provided for camera %s', self.id)
             return
 
-        self.device = RtspDevice(
-            mac=self.id, ip=self.ip,
-            jovision_profile=self.parameters['jovision_profile'], fps=self.parameters['fps'], on_new_image=self._image_data_callback)
+        self.device = RtspDevice(mac=self.id, ip=self.ip,
+                                 jovision_profile=self.parameters['jovision_profile'],
+                                 fps=self.parameters['fps'],
+                                 on_new_image_data=self._handle_new_image_data)
 
         await self._apply_all_parameters()
 
@@ -87,7 +88,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         await self.device.shutdown()
         self.device = None
 
-    async def _image_data_callback(self, image_bytes: bytes) -> None:
+    async def _handle_new_image_data(self, image_bytes: bytes) -> None:
         if not image_bytes:
             return
         transformed_image_bytes = await rosys.run.cpu_bound(process_jpeg_image, image_bytes, self.rotation, self.crop)

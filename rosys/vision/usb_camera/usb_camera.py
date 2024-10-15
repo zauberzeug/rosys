@@ -59,7 +59,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         if self.is_connected:
             return
 
-        device = UsbDevice.from_uid(self.id, self._image_data_callback)
+        device = UsbDevice.from_uid(self.id, self._handle_new_image_data)
         if device is None:
             logging.warning('Connecting camera %s: failed', self.id)
             return
@@ -78,7 +78,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self.device = None
         logging.info('camera %s: disconnected', self.id)
 
-    async def _image_data_callback(self, image_array: np.ndarray) -> None:
+    async def _handle_new_image_data(self, image_array: np.ndarray) -> None:
         if not self.is_connected:
             return None
 

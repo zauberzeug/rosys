@@ -75,7 +75,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
         try:
             self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
-                                                    password=self.password, on_new_image=self._image_data_callback)
+                                                    password=self.password, on_new_image_data=self._handle_new_image_data)
         except ValueError as error:
             self.log.error('Could not connect to device: %s', error)
             return
@@ -89,9 +89,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         self.device.shutdown()
         self.device = None
 
-    async def _image_data_callback(self, image_bytes: bytes) -> None:
-        image = image_bytes
-
+    async def _handle_new_image_data(self, image: bytes) -> None:
         if self.crop or self.rotation != ImageRotation.NONE:
             image = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
         if image is None:
