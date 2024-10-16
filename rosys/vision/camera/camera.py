@@ -28,7 +28,7 @@ class Camera(abc.ABC):
                  base_path_overwrite: str | None = None,
                  image_history_length: int = 256,
                  **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__()
         self.id: str = id
         self.name = name or self.id
         self.connect_after_init = connect_after_init
