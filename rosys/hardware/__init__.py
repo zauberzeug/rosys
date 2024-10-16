@@ -4,6 +4,7 @@ from .bms import Bms, BmsHardware, BmsSimulation
 from .bumper import Bumper, BumperHardware, BumperSimulation
 from .can import CanHardware
 from .communication import Communication, SerialCommunication, WebCommunication
+from .esp_pins import EspPins
 from .estop import EStop, EStopHardware, EStopSimulation
 from .expander import ExpanderHardware
 from .imu import Imu, ImuHardware, ImuSimulation
@@ -26,6 +27,7 @@ __all__ = [
     'Communication',
     'SerialCommunication',
     'WebCommunication',
+    'EspPins',
     'EStop',
     'EStopHardware',
     'EStopSimulation',
