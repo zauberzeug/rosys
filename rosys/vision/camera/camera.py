@@ -25,6 +25,8 @@ class Camera(abc.ABC):
                  id: str,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
+                 streaming: bool | None = None,
+                 polling_interval: float | None = None,
                  base_path_overwrite: str | None = None,
                  image_history_length: int = 256,
                  **kwargs) -> None:
@@ -35,9 +37,9 @@ class Camera(abc.ABC):
         self.images: deque[Image] = deque(maxlen=image_history_length)
         self.base_path: str = f'images/{base_path_overwrite or id}'
 
-        if 'streaming' in kwargs:
+        if streaming is not None:
             logger.warning('The `streaming` parameter has been removed. All cameras now stream images by default.')
-        if 'polling_interval' in kwargs:
+        if polling_interval is not None:
             logger.warning('The `polling_interval` parameter has been removed. All cameras should now use callbacks.')
 
         self.NEW_IMAGE: Event = Event()
