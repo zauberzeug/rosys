@@ -1011,12 +1011,17 @@
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="../#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.usb_camera.usb_camera.UsbCamera">UsbCamera</span>]</code>, <code><span title="rosys.persistence.PersistentModule">PersistentModule</span></code></p>
+              Bases: <code>CameraProvider[UsbCamera]</code>, <code>PersistentModule</code></p>
 
 
         <p>This module collects and provides real USB cameras.</p>
 <p>Camera devices are discovered through video4linux (v4l) and accessed with openCV.
 Therefore the program v4l2ctl and openCV (including python bindings) must be available.</p>
+
+
+
+
+
 
 
 

@@ -1396,6 +1396,11 @@ Its <code>parameters</code> allow controlling the specific drive behavior.</p>
 
 
 
+
+
+
+
+
   <div class="doc doc-children">
 
 
@@ -1606,6 +1611,11 @@ the robot stops driving.</p>
 
 
 
+
+
+
+
+
   <div class="doc doc-children">
 
 
@@ -1629,13 +1639,18 @@ the robot stops driving.</p>
 
     <div class="doc doc-contents ">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="nicegui.elements.scene_objects.Group">Group</span></code></p>
+              Bases: <code>Group</code></p>
 
 
         <p>The DriverObject UI element displays the path following process in a 3D scene.</p>
 <p>The current pose is taken from a given odometer.
 An optional driver module shows debugging information about a current path-following process.
 The <code>debug</code> argument can be set to show a wireframe instead of a closed polygon.</p>
+
+
+
+
+
 
 
 
@@ -1681,10 +1696,15 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="nicegui.ui.joystick">joystick</span></code></p>
+              Bases: <code>joystick</code></p>
 
 
         <p>The Joystick UI element allows controlling a given steerer via touch events.</p>
+
+
+
+
+
 
 
 
@@ -1731,6 +1751,11 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
         <p>The KeyboardControl UI element allows controlling a given steerer via keyboard events.</p>
 <p>Hold shift while pressing an arrow key to steer the robot.
 You can change the speed with the number keys 1 to 9 and the initial speed via the <code>default_speed</code> argument.</p>
+
+
+
+
+
 
 
 
@@ -1791,6 +1816,11 @@ Given the history of previously received velocities, it can update its predictio
 
 
 
+
+
+
+
+
   <div class="doc doc-children">
 
 
@@ -1844,12 +1874,17 @@ Given the history of previously received velocities, it can update its predictio
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="nicegui.elements.scene_objects.Group">Group</span></code></p>
+              Bases: <code>Group</code></p>
 
 
         <p>The RobotObject UI element displays the robot with its given shape in a 3D scene.</p>
 <p>The current pose is taken from a given odometer.
 The <code>debug</code> argument can be set to show a wireframe instead of a closed polygon.</p>
+
+
+
+
+
 
 
 
@@ -1922,6 +1957,11 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
         <p>The steerer module translates x-y information (e.g. from a joystick) to linear/angular velocities sent to the robot.</p>
 <p>The wheels module can be any drivable hardware representation.
 Changing the steering state emits events that can be used to react to manual user interaction.</p>
+
+
+
+
+
 
 
 
