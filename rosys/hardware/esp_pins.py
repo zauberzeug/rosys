@@ -6,8 +6,6 @@ from typing import TYPE_CHECKING
 from nicegui import ui
 from nicegui.elements.mixins.value_element import ValueElement
 
-from .. import rosys
-
 if TYPE_CHECKING:
     from .robot_brain import RobotBrain
 
@@ -39,7 +37,7 @@ class GpioPin:
 class EspPins:
     """Monitor and control ESP32 GPIO pins."""
 
-    def __init__(self, name: str, robot_brain: RobotBrain, *, refresh_interval: float = 2.0) -> None:
+    def __init__(self, name: str, robot_brain: RobotBrain) -> None:
         self.name = name
         self.robot_brain = robot_brain
         _pin_numbers: list[int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
@@ -47,8 +45,6 @@ class EspPins:
                                    21, 22, 23, 25, 26, 27,
                                    32, 33, 34, 35, 36, 37, 38, 39]
         self._pins: dict[int, GpioPin] = {pin: GpioPin(gpio=pin) for pin in _pin_numbers}
-        self._auto_update: bool = False
-        self._repeater = rosys.on_repeat(self.update_all, refresh_interval)
 
     async def update_pin(self, pin: GpioPin) -> None:
         ack = f'GPIO_Status[{pin.gpio}]|' if self.name == 'core' else f'{self.name}:'
@@ -85,8 +81,6 @@ class EspPins:
                 ui.markdown(f'**ESP: {self.name}**')
                 ui.space()
                 ui.button(icon='refresh', on_click=self.update_all).props('flat round dense').tooltip('Update once')
-                ui.switch(on_change=lambda e: (self._repeater.start() if e else self._repeater.stop())) \
-                    .tooltip('Activate auto update')
             ui.separator()
             with ui.grid(columns=5):
                 for pin in self._pins.values():
