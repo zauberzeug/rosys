@@ -168,7 +168,6 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         device = self.device
         device.capture.set(cv2.CAP_PROP_FPS, fps)
-        self.polling_interval = 1.0 / fps
 
     def get_fps(self) -> int:
         assert self.device is not None

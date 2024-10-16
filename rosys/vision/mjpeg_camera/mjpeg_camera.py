@@ -103,9 +103,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
     async def _set_fps(self, fps: int) -> None:
         assert self.device is not None
-
         await self.device.set_fps(fps)
-        self.polling_interval = 1.0 / fps
 
     async def _get_fps(self) -> int:
         assert self.device is not None
