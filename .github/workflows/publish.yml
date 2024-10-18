@@ -24,7 +24,7 @@ jobs:
           python-version: "3.12"
           cache: "poetry"
       - name: get version
-        run: echo "VERSION=$(echo ${GITHUB_REF/refs\/tags\//})" >> $GITHUB_ENV
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
       - name: set version
         run: |
           VERSION=${{ env.VERSION }}
@@ -45,7 +45,21 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
       - name: verify
         shell: bash
-        run: for i in {1..100}; do python -m pip install 'rosys==${{ env.VERSION }}' && break || sleep 2; done
+        run: |
+          for i in {1..100}; do
+            if python -m pip install "rosys==${{ env.VERSION }}"; then
+              echo "Successfully installed rosys version ${{ env.VERSION }}"
+              break
+            else
+              echo "Attempt $i failed. Retrying in 2 seconds..."
+              sleep 2
+            fi
+          done
+
+          if [ $i -eq 100 ]; then
+            echo "Failed to install rosys after 100 attempts"
+            exit 1
+          fi
 
   docker:
     needs: pypi
