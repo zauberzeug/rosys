@@ -28,7 +28,8 @@ class SimulatedDevice:
         self.repeater = rosys.on_repeat(self._create_image, interval=1.0 / fps)
 
     async def _create_image(self) -> None:
-        image_data = await rosys.run.cpu_bound(_create_image_data, self.id, self.size, self.color)
+        # image_data = await rosys.run.cpu_bound(_create_image_data, self.id, self.size, self.color)
+        image_data = self._create_image_data(self.id, self.size, self.color)
         if not image_data:
             return
         result = self.on_new_image_data(image_data)
