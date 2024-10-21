@@ -1933,7 +1933,7 @@
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Module</code>, <code>ABC</code></p>
+              Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
         <p>The BMS module communicates with a simple battery management system over a serial connection.</p>
@@ -2065,7 +2065,7 @@
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Bms</code>, <code>ModuleHardware</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bms.Bms" href="#rosys.hardware.Bms">Bms</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
 
         <p>This module implements the hardware interface for the BMS module.</p>
@@ -2113,7 +2113,7 @@
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Bms</code>, <code>ModuleSimulation</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bms.Bms" href="#rosys.hardware.Bms">Bms</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
 
 
         <p>This module simulates a BMS module.</p>
@@ -2158,7 +2158,7 @@
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Module</code>, <code>ABC</code></p>
+              Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
         <p>A module that detects when a bumper is triggered.</p>
@@ -2225,7 +2225,7 @@
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Bumper</code>, <code>ModuleHardware</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bumper.Bumper" href="#rosys.hardware.Bumper">Bumper</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
 
         <p>Hardware implementation of the bumper module.</p>
@@ -2287,7 +2287,7 @@ If an e-stop is provided, the module will not trigger bumpers if the e-stop is a
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Bumper</code>, <code>ModuleSimulation</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.bumper.Bumper" href="#rosys.hardware.Bumper">Bumper</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
 
 
         <p>Simulation of the bumper module.</p>
@@ -2347,7 +2347,7 @@ If an e-stop is provided, the module will not trigger bumpers if the e-stop is a
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>ABC</code></p>
+              Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
         <p>This abstract module defines an interface for communicating with a microcontroller.</p>
@@ -2398,7 +2398,7 @@ It can also provide a piece of debug UI.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Communication</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.communication.communication.Communication" href="#rosys.hardware.Communication">Communication</a></code></p>
 
 
         <p>This module implements a communication via a serial device with a given baud rate.</p>
@@ -2444,7 +2444,7 @@ It can also provide a piece of debug UI.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Communication</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.communication.communication.Communication" href="#rosys.hardware.Communication">Communication</a></code></p>
 
 
         <p>Remote connection to the Robot Brain's ESP.</p>
@@ -2534,7 +2534,7 @@ while communicating with the hardware components connected to a physical Robot B
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Module</code>, <code>ABC</code></p>
+              Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
         <p>A module that detects when the e-stop is triggered.</p>
@@ -2602,7 +2602,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>EStop</code>, <code>ModuleHardware</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.estop.EStop" href="#rosys.hardware.EStop">EStop</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
 
         <p>Hardware implementation of the e-stop module.</p>
@@ -2663,7 +2663,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>EStop</code>, <code>ModuleSimulation</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.estop.EStop" href="#rosys.hardware.EStop">EStop</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
 
 
         <p>Simulation of the e-stop module.</p>
@@ -2730,7 +2730,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>ModuleHardware</code></p>
+              Bases: <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
 
         <p>The expander module represents a second ESP microcontroller connected to the core ESP via serial.</p>
@@ -2775,7 +2775,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>ABC</code></p>
+              Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
         <p>A robot that consists of a number of modules.</p>
@@ -2823,7 +2823,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Robot</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.robot.Robot" href="#rosys.hardware.Robot">Robot</a></code></p>
 
 
         <p>A robot that consists of hardware modules.</p>
@@ -2869,7 +2869,7 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Robot</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.robot.Robot" href="#rosys.hardware.Robot">Robot</a></code></p>
 
 
         <p>A robot that consists of simulated modules.</p>
@@ -2994,7 +2994,7 @@ If the offset changes significantly, a notification is sent and the offset histo
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>ModuleHardware</code></p>
+              Bases: <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
 
         <p>The serial module represents a serial connection with another device.</p>
@@ -3039,7 +3039,7 @@ If the offset changes significantly, a notification is sent and the offset histo
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Module</code>, <code>ABC</code></p>
+              Bases: <code><span title="rosys.hardware.module.Module">Module</span></code>, <code><span title="abc.ABC">ABC</span></code></p>
 
 
         <p>This module represents wheels for a two-wheel differential drive.</p>
@@ -3111,7 +3111,7 @@ If the offset changes significantly, a notification is sent and the offset histo
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Wheels</code>, <code>ModuleHardware</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.wheels.Wheels" href="#rosys.hardware.Wheels">Wheels</a></code>, <code><span title="rosys.hardware.module.ModuleHardware">ModuleHardware</span></code></p>
 
 
         <p>This module implements wheels hardware.</p>
@@ -3173,7 +3173,7 @@ Velocities are read and emitted regularly.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Wheels</code>, <code>ModuleSimulation</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.hardware.wheels.Wheels" href="#rosys.hardware.Wheels">Wheels</a></code>, <code><span title="rosys.hardware.module.ModuleSimulation">ModuleSimulation</span></code></p>
 
 
         <p>This module simulates two wheels.</p>

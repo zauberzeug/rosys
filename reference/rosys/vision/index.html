@@ -1170,7 +1170,7 @@
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Camera</code></p>
+              Bases: <code><span title="rosys.vision.camera.camera.Camera">Camera</span></code></p>
 
 
         <p>A generalized interface for adjusting camera parameters like exposure, brightness or fps.</p>
@@ -1222,7 +1222,7 @@
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Group</code></p>
+              Bases: <code><span title="nicegui.elements.scene_objects.Group">Group</span></code></p>
 
 
         <p>This module provides a UI element for displaying cameras in a 3D scene.</p>
@@ -1318,7 +1318,7 @@ With <code>debug=True</code> camera IDs are shown (default: <code>False</code>).
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Generic[T]</code>, <code>PersistentModule</code></p>
+              Bases: <code><span title="typing.Generic">Generic</span>[<span title="rosys.vision.camera_provider.T">T</span>]</code>, <code><span title="rosys.persistence.PersistentModule">PersistentModule</span></code></p>
 
 
         <p>A camera provider holds a dictionary of cameras and manages additions and removals.</p>
@@ -1388,7 +1388,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Enum</code></p>
+              Bases: <code><span title="enum.Enum">Enum</span></code></p>
 
 
         <p>Configures the auto-submitting of images to the Learning Loop</p>
@@ -1520,7 +1520,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>ABC</code></p>
+              Bases: <code><span title="abc.ABC">ABC</span></code></p>
 
 
         <p>A detector allows detecting objects in images.</p>
@@ -1639,7 +1639,7 @@ If the image has detections, they are also uploaded.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Detector</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.detector.Detector" href="#rosys.vision.Detector">Detector</a></code></p>
 
 
         <p>This detector communicates with a <a href="https://hub.docker.com/r/zauberzeug/yolov5-detector">YOLO detector</a> via Socket.IO.</p>
@@ -1692,7 +1692,7 @@ If the image has detections, they are also uploaded.</p>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>Detector</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.detector.Detector" href="#rosys.vision.Detector">Detector</a></code></p>
 
 
         <p>This detector simulates object detection.</p>
@@ -1742,7 +1742,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>CameraProvider</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a></code></p>
 
 
         <p>A multi-camera provider combines multiple camera providers into one.</p>
@@ -1794,7 +1794,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>CameraProvider[RtspCamera]</code>, <code>PersistentModule</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.rtsp_camera.rtsp_camera.RtspCamera">RtspCamera</span>]</code>, <code><span title="rosys.persistence.PersistentModule">PersistentModule</span></code></p>
 
 
         <p>This module collects and provides real RTSP streaming cameras.</p>
@@ -1843,7 +1843,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>CameraProvider[SimulatedCamera]</code>, <code>PersistentModule</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.simulated_camera.simulated_camera.SimulatedCamera">SimulatedCamera</span>]</code>, <code><span title="rosys.persistence.PersistentModule">PersistentModule</span></code></p>
 
 
         <p>This module collects and simulates cameras and generates synthetic images.</p>
@@ -1913,7 +1913,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code>CameraProvider[UsbCamera]</code>, <code>PersistentModule</code></p>
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.usb_camera.usb_camera.UsbCamera">UsbCamera</span>]</code>, <code><span title="rosys.persistence.PersistentModule">PersistentModule</span></code></p>
 
 
         <p>This module collects and provides real USB cameras.</p>
