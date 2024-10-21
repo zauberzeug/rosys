@@ -2,6 +2,10 @@ name: Run Tests
 
 on: workflow_call
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.sha }}
+  cancel-in-progress: true
+
 jobs:
   checker:
     runs-on: ubuntu-latest
