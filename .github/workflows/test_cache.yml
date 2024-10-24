@@ -1,0 +1,21 @@
+name: Test Docker Cache
+
+on: push
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          build-args: INSTALL_DEV=true
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
