@@ -41,7 +41,7 @@ COPY LICENSE README.md rosys.code-workspace ./
 ADD ./rosys /rosys/rosys
 RUN poetry install -vvv
 
-ENV PYTHONPATH "/rosys"
+ENV PYTHONPATH="/rosys"
 
 EXPOSE 8080
 
@@ -49,4 +49,4 @@ WORKDIR /app/
 COPY ./start.sh /
 COPY ./main.py /app/
 
-CMD /start.sh
+CMD ["/start.sh"]
