@@ -7,6 +7,8 @@ import rosys
 shape = rosys.geometry.Prism.default_robot_shape()
 rosys.hardware.SerialCommunication.search_paths = ['/dev/ttyUSB0']
 is_real = rosys.hardware.SerialCommunication.is_possible()
+wheels: rosys.hardware.Wheels
+robot: rosys.hardware.Robot
 if is_real:
     communication = rosys.hardware.SerialCommunication()
     robot_brain = rosys.hardware.RobotBrain(communication)
@@ -31,7 +33,7 @@ with ui.scene():
     rosys.driving.robot_object(shape, odometer)
 ui.label('hold SHIFT to steer with the keyboard arrow keys')
 if is_real:
-    ui.button('configure microcontroller', on_click=robot.configure).props('outline')
+    ui.button('configure microcontroller', on_click=robot_brain.configure).props('outline')
 
 # start
 ui.run(title='RoSys')
