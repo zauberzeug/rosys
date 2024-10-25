@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from ..helpers import is_test
-from ..run import awaitable
+from ..run import io_bound
 
 if TYPE_CHECKING:
     from .persistent_module import PersistentModule
@@ -31,8 +31,11 @@ class Encoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, o)
 
 
-@awaitable
-def backup(force: bool = False) -> None:
+async def backup(force: bool = False) -> None:
+    return await io_bound(sync_backup, force)
+
+
+def sync_backup(force: bool = False) -> None:
     for name, module in modules.items():
         if not module.needs_backup and not force:
             continue
