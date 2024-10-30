@@ -1,3 +1,4 @@
+from ... import persistence
 from ...geometry import Rectangle
 from ..image import ImageSize
 from ..image_rotation import ImageRotation
@@ -6,14 +7,22 @@ from .camera import Camera
 
 class TransformableCamera(Camera):
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, crop: Rectangle | dict | None = None, rotation: ImageRotation | int = ImageRotation.NONE, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.crop: Rectangle | None = None
+        self.crop: Rectangle | None = crop if isinstance(
+            crop, Rectangle) else persistence.from_dict(Rectangle, crop) if crop else None
         """region to crop on the original resolution before rotation"""
-        self.rotation: ImageRotation = ImageRotation.NONE
+        self.rotation: ImageRotation = rotation if isinstance(
+            rotation, ImageRotation) else ImageRotation.from_degrees(rotation)
         """rotation which should be applied after grabbing and cropping"""
 
         self._resolution: ImageSize | None = None
+
+    def to_dict(self) -> dict:
+        return super().to_dict() | {
+            'crop': persistence.to_dict(self.crop),
+            'rotation': self.rotation.value,
+        }
 
     def _resolution_after_transform(self, original_resolution: ImageSize) -> ImageSize:
         width = int(self.crop.width) if self.crop else original_resolution.width
