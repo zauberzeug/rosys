@@ -16,7 +16,7 @@ class SimulatedDevice:
                  id: str,  # pylint: disable=redefined-builtin
                  *,
                  size: ImageSize,
-                 on_new_image_data: Callable[[bytes], Awaitable | None],
+                 on_new_image_data: Callable[[bytes, float], Awaitable | None],
                  color: str = '#ffffff',
                  fps: float = 30.0) -> None:
         self.id = id
@@ -28,13 +28,14 @@ class SimulatedDevice:
         self.repeater = rosys.on_repeat(self._create_image, interval=1.0 / fps)
 
     async def _create_image(self) -> None:
+        timestamp = rosys.time()
         if rosys.is_test:
             image_data = b'test data'
         else:
             image_data = await rosys.run.cpu_bound(_create_image_data, self.id, self.size, self.color)
         if not image_data:
             return
-        result = self.on_new_image_data(image_data)
+        result = self.on_new_image_data(image_data, timestamp)
         if isinstance(result, Awaitable):
             await result
 

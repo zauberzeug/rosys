@@ -78,7 +78,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self.device = None
         logging.info('camera %s: disconnected', self.id)
 
-    async def _handle_new_image_data(self, image_array: np.ndarray) -> None:
+    async def _handle_new_image_data(self, image_array: np.ndarray, timestamp: float) -> None:
         if not self.is_connected:
             return None
 
@@ -101,7 +101,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         image_size = ImageSize(width=image_array.shape[1], height=image_array.shape[0])
         final_image_resolution = self._resolution_after_transform(image_size)
 
-        image = Image(time=rosys.time(), camera_id=self.id, size=final_image_resolution, data=bytes_)
+        image = Image(time=timestamp, camera_id=self.id, size=final_image_resolution, data=bytes_)
         self._add_image(image)
 
     def set_auto_exposure(self, auto: bool) -> None:

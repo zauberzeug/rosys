@@ -8,6 +8,7 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 from io import BytesIO
 
 from nicegui import background_tasks
+import rosys
 
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
@@ -16,7 +17,7 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 class RtspDevice:
 
     def __init__(self, mac: str, ip: str, *,
-                 jovision_profile: int, fps: int, on_new_image_data: Callable[[bytes], Awaitable | None]) -> None:
+                 jovision_profile: int, fps: int, on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
         self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device')
 
         self.mac = mac
@@ -171,7 +172,8 @@ class RtspDevice:
                     self._authorized = False
 
         async for image in stream():
-            result = self.on_new_image_data(image)
+            timestamp = rosys.time()
+            result = self.on_new_image_data(image, timestamp)
             if isinstance(result, Awaitable):
                 await result
 

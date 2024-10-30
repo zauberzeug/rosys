@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 
 import httpx
 
+from ... import rosys
 from ...rosys import on_startup
 from ..image_processing import remove_exif
 from .vendors import mac_to_url
@@ -16,7 +17,7 @@ class MjpegDevice:
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes], Awaitable | None]) -> None:
+                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
         self.mac = mac
         self.ip = ip
         self.index = index
@@ -95,7 +96,8 @@ class MjpegDevice:
             if not image:
                 continue
             try:
-                result = self.on_new_image_data(remove_exif(image))
+                timestamp = rosys.time()
+                result = self.on_new_image_data(remove_exif(image), timestamp)
                 if isinstance(result, Awaitable):
                     await result
             except Exception as e:

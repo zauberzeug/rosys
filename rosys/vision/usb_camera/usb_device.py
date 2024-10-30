@@ -26,10 +26,10 @@ def find_video_id(camera_uid: str) -> int | None:
 class UsbDevice:
 
     def __init__(self, video_id: int, capture: cv2.VideoCapture, *,
-                 on_new_image_data: Callable[[np.ndarray], Awaitable | None]) -> None:
+                 on_new_image_data: Callable[[np.ndarray, float], Awaitable | None]) -> None:
         self.video_id: int = video_id
         self.capture: cv2.VideoCapture = capture
-        self.on_new_image_data: Callable[[np.ndarray], Awaitable | None] = on_new_image_data
+        self.on_new_image_data = on_new_image_data
         self.exposure_min: int = 0
         self.exposure_max: int = 0
         self.exposure_default: int = 0
@@ -45,7 +45,7 @@ class UsbDevice:
         self.capture_task.stop()
 
     @staticmethod
-    def from_uid(camera_id: str, on_new_image_data: Callable[[np.ndarray], Awaitable | None]) -> UsbDevice | None:
+    def from_uid(camera_id: str, on_new_image_data: Callable[[np.ndarray, float], Awaitable | None]) -> UsbDevice | None:
         video_id = find_video_id(camera_id)
         if video_id is None:
             logging.error('Could not find video device for camera %s', camera_id)
@@ -77,7 +77,8 @@ class UsbDevice:
             return
         capture_success, frame = result
         if capture_success:
-            result = self.on_new_image_data(frame)
+            timestamp = rosys.time()
+            result = self.on_new_image_data(frame, timestamp)
             if isinstance(result, Awaitable):
                 await result
 
