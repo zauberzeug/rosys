@@ -1,6 +1,5 @@
 import random
 
-from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image, ImageSize

@@ -8,8 +8,8 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 from io import BytesIO
 
 from nicegui import background_tasks
-import rosys
 
+from ... import rosys
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
 
