@@ -74,7 +74,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
             return
 
         assert self.device is not None
-        await rosys.run.io_bound(self.device.capture.release)
+        await self.device.release_capture()
         self.device = None
         logging.info('camera %s: disconnected', self.id)
 

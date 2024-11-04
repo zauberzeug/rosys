@@ -28,7 +28,7 @@ class UsbDevice:
     def __init__(self, video_id: int, capture: cv2.VideoCapture, *,
                  on_new_image_data: Callable[[np.ndarray, float], Awaitable | None]) -> None:
         self._video_id: int = video_id
-        self.capture: cv2.VideoCapture = capture
+        self._capture: cv2.VideoCapture = capture
         self._on_new_image_data = on_new_image_data
         self._exposure_min: int = 0
         self._exposure_max: int = 0
@@ -41,7 +41,7 @@ class UsbDevice:
         self._capture_task = rosys.on_repeat(self._capture_image, interval=0.01)
 
     def __del__(self) -> None:
-        self.capture.release()
+        self._capture.release()
         self._capture_task.stop()
 
     @property
@@ -74,9 +74,9 @@ class UsbDevice:
         return capture
 
     async def _capture_image(self) -> None:
-        if not self.capture.isOpened():
+        if not self._capture.isOpened():
             return
-        result = await rosys.run.io_bound(self.capture.read)
+        result = await rosys.run.io_bound(self._capture.read)
         if result is None:
             return
         capture_success, frame = result
@@ -85,6 +85,9 @@ class UsbDevice:
             result = self._on_new_image_data(frame, timestamp)
             if isinstance(result, Awaitable):
                 await result
+
+    async def release_capture(self) -> None:
+        await rosys.run.io_bound(self._capture.release)
 
     async def load_value_ranges(self) -> None:
         output = await self.run_v4l('--all')
@@ -111,55 +114,55 @@ class UsbDevice:
     def set_video_format(self) -> None:
         if 'MJPG' in self._video_formats:
             # NOTE enforcing motion jpeg for now
-            if self.capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
-                self.capture.set(cv2.CAP_PROP_FOURCC, MJPG)
+            if self._capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
+                self._capture.set(cv2.CAP_PROP_FOURCC, MJPG)
             # NOTE disable video decoding (see https://stackoverflow.com/questions/62664621/read-jpeg-frame-from-mjpeg-self-without-decoding-in-python-opencv/70869738?noredirect=1#comment110818859_62664621)
-            if self.capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
-                self.capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
+            if self._capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
+                self._capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
             # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
-            if self.capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
-                self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            if self._capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
+                self._capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
     def set_auto_exposure(self, auto: bool, fallback_exposure: float) -> None:
         if self._has_manual_exposure:
             is_auto_exposure = self.get_auto_exposure()
             if auto and not is_auto_exposure:
                 # self.log.info(f'activating auto-exposure for {self.id}')
-                self.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
+                self._capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
             else:
-                self.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)
+                self._capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)
                 self.set_exposure(fallback_exposure)
 
     def set_exposure(self, value: float) -> None:
         if self._has_manual_exposure:
             is_auto_exposure = self.get_auto_exposure()
             if not is_auto_exposure:
-                exposure = self.capture.get(cv2.CAP_PROP_EXPOSURE) / self._exposure_max
+                exposure = self._capture.get(cv2.CAP_PROP_EXPOSURE) / self._exposure_max
                 if value != exposure:
-                    self.capture.set(cv2.CAP_PROP_EXPOSURE, int(value * self._exposure_max))
+                    self._capture.set(cv2.CAP_PROP_EXPOSURE, int(value * self._exposure_max))
 
     def get_auto_exposure(self) -> bool | None:
-        return self.capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
+        return self._capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
 
     def get_exposure(self) -> float | None:
         if not self._has_manual_exposure:
             return None
-        return self.capture.get(cv2.CAP_PROP_EXPOSURE) / self._exposure_max
+        return self._capture.get(cv2.CAP_PROP_EXPOSURE) / self._exposure_max
 
     def set_width(self, width: int) -> None:
-        self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        self._capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
 
     def get_width(self) -> int:
-        return int(self.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        return int(self._capture.get(cv2.CAP_PROP_FRAME_WIDTH))
 
     def set_height(self, height: int) -> None:
-        self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        self._capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
     def get_height(self) -> int:
-        return int(self.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        return int(self._capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     def set_fps(self, fps: int) -> None:
-        self.capture.set(cv2.CAP_PROP_FPS, fps)
+        self._capture.set(cv2.CAP_PROP_FPS, fps)
 
     def get_fps(self) -> int:
-        return int(self.capture.get(cv2.CAP_PROP_FPS))
+        return int(self._capture.get(cv2.CAP_PROP_FPS))
