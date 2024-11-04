@@ -67,7 +67,7 @@ class RobotBrain:
 
         with ui.row().classes('items-center'):
             version_select = ui.select([], label='Lizard Version').style('min-width: 140px;') \
-                .bind_value(self.lizard_firmware, 'selected_online_version')
+                .bind_value_to(self.lizard_firmware, 'selected_online_version')
             ui.button(on_click=read_online_versions).props('icon=refresh flat round dense') \
                 .tooltip('Read all available versions from GitHub')
             online_update_button = ui.button(on_click=online_update).props('icon=file_download flat round dense') \
