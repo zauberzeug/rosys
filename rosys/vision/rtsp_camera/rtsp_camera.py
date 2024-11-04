@@ -54,7 +54,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     @property
     def is_connected(self) -> bool:
-        return self.device is not None and self.device.capture_task is not None
+        return self.device is not None and self.device.is_connected
 
     @property
     def url(self) -> str | None:
