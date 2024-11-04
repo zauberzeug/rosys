@@ -19,31 +19,35 @@ class SimulatedDevice:
                  on_new_image_data: Callable[[bytes, float], Awaitable | None],
                  color: str = '#ffffff',
                  fps: float = 30.0) -> None:
-        self.id = id
-        self.size = size
+        self._id = id
+        self._size = size
         self.color = color
-        self.on_new_image_data = on_new_image_data
-        self.creation_time: float = rosys.time()
+        self._on_new_image_data = on_new_image_data
+        self._creation_time: float = rosys.time()
 
-        self.repeater = rosys.on_repeat(self._create_image, interval=1.0 / fps)
+        self._repeater = rosys.on_repeat(self._create_image, interval=1.0 / fps)
+
+    @property
+    def creation_time(self) -> float:
+        return self._creation_time
 
     async def _create_image(self) -> None:
         timestamp = rosys.time()
         if rosys.is_test:
             image_data = b'test data'
         else:
-            image_data = await rosys.run.cpu_bound(_create_image_data, self.id, self.size, self.color)
+            image_data = await rosys.run.cpu_bound(_create_image_data, self._id, self._size, self.color)
         if not image_data:
             return
-        result = self.on_new_image_data(image_data, timestamp)
+        result = self._on_new_image_data(image_data, timestamp)
         if isinstance(result, Awaitable):
             await result
 
     def set_fps(self, fps: float) -> None:
-        self.repeater.interval = 1.0 / fps
+        self._repeater.interval = 1.0 / fps
 
     def get_fps(self) -> float:
-        return 1.0 / self.repeater.interval
+        return 1.0 / self._repeater.interval
 
 
 def _create_image_data(id: str, size: ImageSize, color: str) -> bytes:  # pylint: disable=redefined-builtin
