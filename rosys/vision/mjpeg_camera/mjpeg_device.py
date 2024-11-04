@@ -18,24 +18,28 @@ class MjpegDevice:
                  username: str | None = None,
                  password: str | None = None,
                  on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
-        self.mac = mac
-        self.ip = ip
-        self.index = index
-        self.on_new_image_data = on_new_image_data
-        self.capture_task: Task | None = None
-        self.authentication = None if username is None or password is None else httpx.DigestAuth(username, password)
-        self.log = logging.getLogger('rosys.mjpeg_device ' + self.mac)
+        self._mac = mac
+        self._ip = ip
+        self.log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device.' + self._mac)
+
+        self._on_new_image_data = on_new_image_data
+        self._capture_task: Task | None = None
+        self._authentication = None if username is None or password is None else httpx.DigestAuth(username, password)
         url = mac_to_url(mac, ip, index=index)
         if url is None:
             raise ValueError(f'could not determine URL for {mac}')
-        self.url = url
+        self._url = url
 
         self.start_capture_task()
+
+    @property
+    def is_connected(self) -> bool:
+        return (self._capture_task is not None) and (not self._capture_task.done())
 
     def start_capture_task(self) -> None:
         def create_capture_task() -> None:
             loop = asyncio.get_event_loop()
-            self.capture_task = loop.create_task(self.run_capture_task())
+            self._capture_task = loop.create_task(self.run_capture_task())
         on_startup(create_capture_task)
 
     def restart_capture(self) -> None:
@@ -44,16 +48,16 @@ class MjpegDevice:
         self.start_capture_task()
 
     async def run_capture_task(self) -> None:
-        self.log.debug('Starting capture task for %s', self.url)
+        self.log.debug('Starting capture task for %s', self._url)
 
         async def stream() -> AsyncGenerator[bytes, None]:
             async with httpx.AsyncClient() as client:
-                assert self.url is not None
+                assert self._url is not None
                 try:
-                    async with client.stream('GET', self.url, auth=self.authentication) as response:  # type: ignore
+                    async with client.stream('GET', self._url, auth=self._authentication) as response:  # type: ignore
                         if response.status_code != 200:
                             self.log.error('could not connect to %s (credentials: %s): %s %s',
-                                           self.url, self.authentication, response.status_code, response.reason_phrase)
+                                           self._url, self._authentication, response.status_code, response.reason_phrase)
                             return
 
                         buffer_size = 16 * 1024 * 1024
@@ -87,9 +91,9 @@ class MjpegDevice:
 
                             self.log.debug('Stream ended')
                         except httpx.ReadTimeout:
-                            self.log.warning('Connection to %s timed out', self.url)
+                            self.log.warning('Connection to %s timed out', self._url)
                 except Exception as e:
-                    self.log.warning('Connection to %s failed. Was something disconnected?\n%s', self.url, e)
+                    self.log.warning('Connection to %s failed. Was something disconnected?\n%s', self._url, e)
                     raise e
 
         async for image in stream():
@@ -97,20 +101,20 @@ class MjpegDevice:
                 continue
             try:
                 timestamp = rosys.time()
-                result = self.on_new_image_data(remove_exif(image), timestamp)
+                result = self._on_new_image_data(remove_exif(image), timestamp)
                 if isinstance(result, Awaitable):
                     await result
             except Exception as e:
                 self.log.error('Error processing image: %s', e)
 
         self.log.warning('Capture task stopped')
-        self.capture_task = None
+        self._capture_task = None
 
     def shutdown(self) -> None:
         self.log.debug('Shutting down capture task')
-        if self.capture_task is not None:
-            self.capture_task.cancel()
-            self.capture_task = None
+        if self._capture_task is not None:
+            self._capture_task.cancel()
+            self._capture_task = None
 
     async def get_fps(self) -> int:
         return 0
