@@ -9,9 +9,13 @@ class TransformableCamera(Camera):
 
     def __init__(self, crop: Rectangle | dict | None = None, rotation: ImageRotation | int = ImageRotation.NONE, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.crop: Rectangle | None = crop if isinstance(
-            crop, Rectangle) else persistence.from_dict(Rectangle, crop) if crop else None
+        self.crop: Rectangle | None = None
         """region to crop on the original resolution before rotation"""
+        if isinstance(crop, Rectangle):
+            self.crop = crop
+        elif isinstance(crop, dict):
+            self.crop = persistence.from_dict(Rectangle, crop)
+
         self.rotation: ImageRotation = rotation if isinstance(
             rotation, ImageRotation) else ImageRotation.from_degrees(rotation)
         """rotation which should be applied after grabbing and cropping"""
