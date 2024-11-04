@@ -106,70 +106,41 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
     def set_auto_exposure(self, auto: bool) -> None:
         assert self.device is not None
-
-        device = self.device
-
-        if device.has_manual_exposure:
-            is_auto_exposure = self.get_auto_exposure()
-            if auto and not is_auto_exposure:
-                # self.log.info(f'activating auto-exposure for {self.id}')
-                device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
-            else:
-                device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)
-                self.set_exposure(self._parameters['exposure'].value)
+        fallback_exposure = self._parameters['exposure'].value
+        self.device.set_auto_exposure(auto, fallback_exposure)
 
     def set_exposure(self, value: float) -> None:
         assert self.device is not None
-
-        device = self.device
-        assert device.capture is not None
-
-        if device.has_manual_exposure:
-            is_auto_exposure = self.get_auto_exposure()
-            if not is_auto_exposure:
-                exposure = device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
-                if value != exposure:
-                    device.capture.set(cv2.CAP_PROP_EXPOSURE, int(value * device.exposure_max))
+        self.device.set_exposure(value)
 
     def get_auto_exposure(self) -> bool | None:
         assert self.device is not None
-        device = self.device
-        return device.capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
+        return self.device.get_auto_exposure()
 
     def get_exposure(self) -> float | None:
         assert self.device is not None
-
-        device = self.device
-        if not device.has_manual_exposure:
-            return None
-        return device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
+        return self.device.get_exposure()
 
     def set_width(self, width: int) -> None:
         assert self.device is not None
-        device = self.device
-        device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        self.device.set_width(width)
 
     def get_width(self) -> int:
         assert self.device is not None
-        device = self.device
-        return int(device.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        return self.device.get_width()
 
     def set_height(self, height: int) -> None:
         assert self.device is not None
-        device = self.device
-        device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        self.device.set_height(height)
 
     def get_height(self) -> int:
         assert self.device is not None
-        device = self.device
-        return int(device.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        return self.device.get_height()
 
     def set_fps(self, fps: int) -> None:
         assert self.device is not None
-        device = self.device
-        device.capture.set(cv2.CAP_PROP_FPS, fps)
+        self.device.set_fps(fps)
 
     def get_fps(self) -> int:
         assert self.device is not None
-        device = self.device
-        return int(device.capture.get(cv2.CAP_PROP_FPS))
+        return self.device.get_fps()
