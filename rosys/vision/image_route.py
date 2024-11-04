@@ -13,7 +13,6 @@ from .. import run
 from .calibration import Calibration
 from .image import Image
 
-
 if TYPE_CHECKING:
     from .camera import Camera
 
