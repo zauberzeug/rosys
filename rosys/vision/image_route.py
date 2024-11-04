@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import math
 from typing import TYPE_CHECKING
 
 import cv2
@@ -27,11 +28,11 @@ def create_image_route(camera: Camera) -> None:
     app.remove_route(timestamp_url)
     app.remove_route(undistorted_url)
 
-    async def get_camera_image(timestamp: str, shrink: int = 1) -> Response:
-        return await _get_image(camera, timestamp, shrink=shrink)
+    async def get_camera_image(timestamp: str, shrink: int = 1, max_size: int | None = None) -> Response:
+        return await _get_image(camera, timestamp, shrink=shrink, max_size=max_size)
 
-    async def get_camera_image_undistorted(timestamp: str, shrink: int = 1) -> Response:
-        return await _get_image(camera, timestamp, shrink=shrink, undistort=True)
+    async def get_camera_image_undistorted(timestamp: str, shrink: int = 1, max_size: int | None = None) -> Response:
+        return await _get_image(camera, timestamp, shrink=shrink, max_size=max_size, undistort=True)
 
     app.add_api_route(placeholder_url, _get_placeholder)
     app.add_api_route(timestamp_url, get_camera_image)
@@ -42,13 +43,13 @@ async def _get_placeholder(shrink: int = 1) -> Response:
     return Response(content=Image.create_placeholder('no image', shrink=shrink).data, media_type='image/jpeg')
 
 
-async def _get_image(camera: Camera, timestamp: str, *, shrink: int = 1, undistort: bool = False) -> Response:
+async def _get_image(camera: Camera, timestamp: str, *, shrink: int = 1, max_size: int | None = None, undistort: bool = False) -> Response:
     try:
         if not camera:
             return Response(content='Camera not found', status_code=404)
         if undistort and getattr(camera, 'calibration', None) is None:
             return Response(content='Camera is not calibrated', status_code=404)
-        jpeg = await _try_get_jpeg(camera, timestamp, shrink=shrink, undistort=undistort)
+        jpeg = await _try_get_jpeg(camera, timestamp, shrink=shrink, max_size=max_size, undistort=undistort)
         if not jpeg:
             return Response(content='Image not found', status_code=404)
         return Response(content=jpeg, headers={'cache-control': 'max-age=7776000'}, media_type='image/jpeg')
@@ -57,9 +58,12 @@ async def _get_image(camera: Camera, timestamp: str, *, shrink: int = 1, undisto
         raise
 
 
-async def _try_get_jpeg(camera: Camera, timestamp: str, *, shrink: int, undistort: bool) -> bytes | None:
+async def _try_get_jpeg(camera: Camera, timestamp: str, *, shrink: int, max_size: int | None, undistort: bool) -> bytes | None:
     for image in reversed(camera.images):
         if str(image.time) == timestamp and image.data is not None:
+            shrink_for_max_size = max(1,
+                                      math.ceil(max(image.size.width, image.size.height) / max_size)) if max_size else shrink
+            shrink = max(shrink, shrink_for_max_size)
             if shrink == 1 and not undistort:
                 return image.data
             else:
