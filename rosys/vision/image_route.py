@@ -28,11 +28,30 @@ def create_image_route(camera: Camera) -> None:
     app.remove_route(timestamp_url)
     app.remove_route(undistorted_url)
 
-    async def get_camera_image(timestamp: str, shrink: float = 1.0, max_size: float | None = None, fast: bool = True, compression: int = 60) -> Response:
-        return await _get_image(camera, timestamp, shrink=shrink, max_size=max_size, undistort=False, fast=fast, compression=compression)
+    async def get_camera_image(timestamp: str,
+                               shrink: float = 1.0,
+                               max_dimension: float | None = None,
+                               fast: bool = True,
+                               compression: int = 60) -> Response:
+        return await _get_image(camera, timestamp,
+                                shrink=shrink,
+                                max_dimension=max_dimension,
+                                undistort=False,
+                                fast=fast,
+                                compression=compression)
 
-    async def get_camera_image_undistorted(timestamp: str, shrink: float = 1.0, max_size: float | None = None, fast: bool = True, compression: int = 60) -> Response:
-        return await _get_image(camera, timestamp, shrink=shrink, max_size=max_size, undistort=True, fast=fast, compression=compression)
+    async def get_camera_image_undistorted(timestamp: str,
+                                           shrink: float = 1.0,
+                                           max_dimension: float | None = None,
+                                           fast: bool = True,
+                                           compression: int = 60) -> Response:
+        return await _get_image(camera,
+                                timestamp,
+                                shrink=shrink,
+                                max_dimension=max_dimension,
+                                undistort=True,
+                                fast=fast,
+                                compression=compression)
 
     app.add_api_route(placeholder_url, _get_placeholder)
     app.add_api_route(timestamp_url, get_camera_image)
@@ -43,11 +62,23 @@ async def _get_placeholder(shrink: int = 1) -> Response:
     return Response(content=Image.create_placeholder('no image', shrink=shrink).data, media_type='image/jpeg')
 
 
-async def _get_image(camera: Camera, timestamp: str, *, shrink: float, max_size: float | None, undistort: bool, fast: bool, compression: int) -> Response:
+async def _get_image(camera: Camera,
+                     timestamp: str, *,
+                     shrink: float,
+                     max_dimension: float | None,
+                     undistort: bool,
+                     fast: bool,
+                     compression: int) -> Response:
     try:
         if undistort and getattr(camera, 'calibration', None) is None:
             return Response(content='Camera is not calibrated', status_code=404)
-        jpeg = await _try_get_jpeg(camera, timestamp, shrink=shrink, max_size=max_size, undistort=undistort, fast=fast, compression=compression)
+        jpeg = await _try_get_jpeg(camera,
+                                   timestamp,
+                                   shrink=shrink,
+                                   max_dimension=max_dimension,
+                                   undistort=undistort,
+                                   fast=fast,
+                                   compression=compression)
         if not jpeg:
             return Response(content='Image not found', status_code=404)
         return Response(content=jpeg, headers={'cache-control': 'max-age=7776000'}, media_type='image/jpeg')
@@ -56,25 +87,34 @@ async def _get_image(camera: Camera, timestamp: str, *, shrink: float, max_size:
         raise
 
 
-async def _try_get_jpeg(camera: Camera, timestamp: str, *, shrink: float, max_size: float | None, undistort: bool, fast: bool, compression: int) -> bytes | None:
+async def _try_get_jpeg(camera: Camera,
+                        timestamp: str, *,
+                        shrink: float,
+                        max_dimension: float | None,
+                        undistort: bool,
+                        fast: bool,
+                        compression: int) -> bytes | None:
     for image in reversed(camera.images):
         if str(image.time) == timestamp and image.data is not None:
-            shrink_from_max_size = max(image.size.width, image.size.height) / max_size if max_size else shrink
-            if fast:
-                shrink_from_max_size = math.ceil(shrink_from_max_size)
-                shrink = math.ceil(shrink)
+            shrink_from_max = max(image.size.width, image.size.height) / max_dimension if max_dimension else shrink
 
-            shrink = max(1, shrink, shrink_from_max_size)
+            shrink = max(1, shrink, shrink_from_max)
 
             if shrink == 1 and not undistort and compression == 60:
                 return image.data
-            else:
-                calibration = camera.calibration if undistort else None  # type: ignore
-                return await run.cpu_bound(_process, image.data, calibration, shrink, undistort, fast, compression)
+
+            calibration = camera.calibration if undistort else None  # type: ignore
+            return await run.cpu_bound(_process, image.data, calibration, shrink, undistort, fast, compression)
+
     return None
 
 
-def _process(data: bytes, calibration: Calibration | None, shrink: float, undistort: bool, fast: bool, compression: int) -> bytes | None:
+def _process(data: bytes,
+             calibration: Calibration | None,
+             shrink: float,
+             undistort: bool,
+             fast: bool,
+             compression: int) -> bytes | None:
     array = np.frombuffer(data, dtype=np.uint8)
     if array is None:
         return None
@@ -89,7 +129,7 @@ def _process(data: bytes, calibration: Calibration | None, shrink: float, undist
 
     if shrink != 1.0:
         if fast:
-            shrink_factor = int(shrink)
+            shrink_factor = math.ceil(shrink)
             image_array = image_array[::shrink_factor, ::shrink_factor]
         else:
             new_width = int(image_array.shape[1] / shrink)
