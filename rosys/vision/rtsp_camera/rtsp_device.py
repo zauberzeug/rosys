@@ -18,10 +18,9 @@ class RtspDevice:
 
     def __init__(self, mac: str, ip: str, *,
                  jovision_profile: int, fps: int, on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
-        self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device')
-
         self._mac = mac
         self._ip = ip
+        self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device.' + self._mac)
 
         self._fps = fps
         self._jovision_profile = jovision_profile
@@ -40,10 +39,7 @@ class RtspDevice:
             self.log.warning('[%s] No settings interface for vendor type %s', self._mac, vendor_type)
             self.log.warning('[%s] Using default fps of 10', self._mac)
 
-        url = mac_to_url(mac, ip, jovision_profile)
-        if url is None:
-            raise ValueError(f'could not determine RTSP URL for {mac}')
-        self.log.info('[%s] Starting VideoStream for %s', self._mac, url)
+        self.log.info('[%s] Starting VideoStream for %s', self._mac, self.url)
         self._start_gstreamer_task()
 
     @property
