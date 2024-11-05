@@ -63,7 +63,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
     @property
     def is_connected(self) -> bool:
-        return (self.device is not None) and (self.device.capture_task is not None) and (not self.device.capture_task.done())
+        return (self.device is not None) and self.device.is_connected
 
     async def connect(self) -> None:
         if self.is_connected:
@@ -89,7 +89,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         self.device.shutdown()
         self.device = None
 
-    async def _handle_new_image_data(self, image: bytes) -> None:
+    async def _handle_new_image_data(self, image: bytes, timestamp: float) -> None:
         if self.crop or self.rotation != ImageRotation.NONE:
             image = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
         if image is None:
@@ -99,7 +99,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         except ValueError:
             return
 
-        self._add_image(Image(camera_id=self.id, data=image, time=rosys.time(), size=final_image_resolution))
+        self._add_image(Image(camera_id=self.id, data=image, time=timestamp, size=final_image_resolution))
 
     async def _set_fps(self, fps: int) -> None:
         assert self.device is not None

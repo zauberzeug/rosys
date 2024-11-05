@@ -54,7 +54,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     @property
     def is_connected(self) -> bool:
-        return self.device is not None and self.device.capture_task is not None
+        return self.device is not None and self.device.is_connected
 
     @property
     def url(self) -> str | None:
@@ -88,7 +88,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         await self.device.shutdown()
         self.device = None
 
-    async def _handle_new_image_data(self, image_bytes: bytes) -> None:
+    async def _handle_new_image_data(self, image_bytes: bytes, timestamp: float) -> None:
         if not image_bytes:
             return
         transformed_image_bytes = await rosys.run.cpu_bound(process_jpeg_image, image_bytes, self.rotation, self.crop)
@@ -100,7 +100,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         except ValueError:
             return
 
-        image = Image(time=rosys.time(), camera_id=self.id, size=final_image_resolution, data=transformed_image_bytes)
+        image = Image(time=timestamp, camera_id=self.id, size=final_image_resolution, data=transformed_image_bytes)
         self._add_image(image)
 
     async def set_fps(self, fps: int) -> None:
