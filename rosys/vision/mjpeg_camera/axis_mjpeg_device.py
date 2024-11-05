@@ -26,7 +26,7 @@ class AxisMjpegDevice(MjpegDevice):
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes], Awaitable | None]) -> None:
+                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
         super().__init__(mac, ip, index=index, username=username, password=password, on_new_image_data=on_new_image_data)
 
         self.axis_settings = AxisSettings(fps=6, resolution=(640, 480), mirrored=False)
@@ -40,9 +40,9 @@ class AxisMjpegDevice(MjpegDevice):
 
     async def set_fps(self, fps: int) -> None:
         self.axis_settings.fps = fps
-        self.url = re.sub(r'fps=\d+', f'fps={fps}', self.url)
-        if 'fps=' not in self.url:
-            self.url += f'&fps={fps}'
+        self._url = re.sub(r'fps=\d+', f'fps={fps}', self._url)
+        if 'fps=' not in self._url:
+            self._url += f'&fps={fps}'
         self.restart_capture()
 
     async def get_resolution(self) -> tuple[int, int]:
@@ -50,9 +50,9 @@ class AxisMjpegDevice(MjpegDevice):
 
     async def set_resolution(self, width: int, height: int) -> None:
         self.axis_settings.resolution = (width, height)
-        self.url = re.sub(r'resolution=\d+x\d+', f'resolution={width}x{height}', self.url)
-        if 'resolution=' not in self.url:
-            self.url += f'&resolution={width}x{height}'
+        self._url = re.sub(r'resolution=\d+x\d+', f'resolution={width}x{height}', self._url)
+        if 'resolution=' not in self._url:
+            self._url += f'&resolution={width}x{height}'
         self.restart_capture()
 
     async def get_mirrored(self) -> bool:
@@ -61,7 +61,7 @@ class AxisMjpegDevice(MjpegDevice):
     async def set_mirrored(self, mirrored: bool) -> None:
         self.axis_settings.mirrored = mirrored
         value = 1 if mirrored else 0
-        self.url = re.sub(r'mirror=\d', f'mirror={value}', self.url)
-        if 'mirror=' not in self.url:
-            self.url += f'&mirror={value}'
+        self._url = re.sub(r'mirror=\d', f'mirror={value}', self._url)
+        if 'mirror=' not in self._url:
+            self._url += f'&mirror={value}'
         self.restart_capture()
