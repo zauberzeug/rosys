@@ -9,7 +9,7 @@ from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image, ImageSize
-from ..image_processing import process_jpeg_image, process_ndarray_image
+from ..image_processing import get_image_size_from_bytes, process_jpeg_image, process_ndarray_image
 from ..image_rotation import ImageRotation
 from .usb_device import UsbDevice
 
@@ -78,12 +78,6 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self.device = None
         logging.info('camera %s: disconnected', self.id)
 
-    def _resolution_after_transform(self, original_resolution: ImageSize) -> ImageSize:
-        width = int(self.crop.width) if self.crop else original_resolution.width
-        height = int(self.crop.height) if self.crop else original_resolution.height
-        if self.rotation in {ImageRotation.LEFT, ImageRotation.RIGHT}:
-            width, height = height, width
-        return ImageSize(width=width, height=height)
 
     async def _handle_new_image_data(self, image_array: np.ndarray) -> None:
         if not self.is_connected:
@@ -105,8 +99,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         if bytes_ is None:
             return
 
-        image_size = ImageSize(width=image_array.shape[1], height=image_array.shape[0])
-        final_image_resolution = self._resolution_after_transform(image_size)
+        final_image_resolution = get_image_size_from_bytes(bytes_)
 
         image = Image(time=rosys.time(), camera_id=self.id, size=final_image_resolution, data=bytes_)
         self._add_image(image)
