@@ -7,8 +7,8 @@ from typing_extensions import Self
 from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
-from ..image import Image, ImageSize
-from ..image_processing import process_jpeg_image, process_ndarray_image
+from ..image import Image
+from ..image_processing import get_image_size_from_bytes, process_jpeg_image, process_ndarray_image
 from ..image_rotation import ImageRotation
 from .usb_device import UsbDevice
 
@@ -97,8 +97,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         if bytes_ is None:
             return
 
-        image_size = ImageSize(width=image_array.shape[1], height=image_array.shape[0])
-        final_image_resolution = self._resolution_after_transform(image_size)
+        final_image_resolution = get_image_size_from_bytes(bytes_)
 
         image = Image(time=timestamp, camera_id=self.id, size=final_image_resolution, data=bytes_)
         self._add_image(image)
