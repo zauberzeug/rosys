@@ -105,8 +105,11 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
     def set_auto_exposure(self, auto: bool) -> None:
         assert self.device is not None
-        fallback_exposure = self._parameters['exposure'].value
-        self.device.set_auto_exposure(auto, fallback_exposure)
+        self.device.set_auto_exposure(auto)
+        if not auto:
+            manual_exposure = self._parameters['exposure'].value
+            assert manual_exposure is not None
+            self.device.set_exposure(manual_exposure)
 
     def set_exposure(self, value: float) -> None:
         assert self.device is not None

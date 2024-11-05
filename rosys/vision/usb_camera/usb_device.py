@@ -123,15 +123,12 @@ class UsbDevice:
             if self._capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
                 self._capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
-    def set_auto_exposure(self, auto: bool, fallback_exposure: float) -> None:
+    def set_auto_exposure(self, auto: bool) -> None:
         if self._has_manual_exposure:
-            is_auto_exposure = self.get_auto_exposure()
-            if auto and not is_auto_exposure:
-                # self.log.info(f'activating auto-exposure for {self.id}')
+            if auto:
                 self._capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
             else:
                 self._capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)
-                self.set_exposure(fallback_exposure)
 
     def set_exposure(self, value: float) -> None:
         if self._has_manual_exposure:
