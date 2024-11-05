@@ -8,7 +8,7 @@ from typing_extensions import Self
 from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
-from ..image import Image, ImageSize
+from ..image import Image
 from ..image_processing import get_image_size_from_bytes, process_jpeg_image, process_ndarray_image
 from ..image_rotation import ImageRotation
 from .usb_device import UsbDevice
