@@ -78,6 +78,13 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self.device = None
         logging.info('camera %s: disconnected', self.id)
 
+    def _resolution_after_transform(self, original_resolution: ImageSize) -> ImageSize:
+        width = int(self.crop.width) if self.crop else original_resolution.width
+        height = int(self.crop.height) if self.crop else original_resolution.height
+        if self.rotation in {ImageRotation.LEFT, ImageRotation.RIGHT}:
+            width, height = height, width
+        return ImageSize(width=width, height=height)
+
     async def _handle_new_image_data(self, image_array: np.ndarray) -> None:
         if not self.is_connected:
             return None
