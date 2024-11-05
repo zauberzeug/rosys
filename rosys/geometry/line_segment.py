@@ -26,6 +26,8 @@ class LineSegment:
         p3 = other.point1
         p4 = other.point2
         d = (p1.x - p2.x) * (p3.y - p4.y) - (p1.y - p2.y) * (p3.x - p4.x)
+        if d == 0:
+            return None
         s = ((p1.x - p3.x) * (p3.y - p4.y) - (p1.y - p3.y) * (p3.x - p4.x)) / d
         t = ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) / d
         if allow_outside or (0 <= s <= 1 and 0 <= t <= 1):
