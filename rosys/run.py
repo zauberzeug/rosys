@@ -23,9 +23,9 @@ running_sh_processes: list[subprocess.Popen] = []
 log = logging.getLogger('rosys.run')
 
 
-async def io_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
+async def io_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R | None:
     if is_stopping():
-        return
+        return None
     try:
         return await run.io_bound(callback, *args, **kwargs)
     except RuntimeError as e:
@@ -33,6 +33,7 @@ async def io_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) 
             raise
     except asyncio.exceptions.CancelledError:
         pass
+    return None
 
 
 def awaitable(func: Callable) -> Callable:
@@ -43,9 +44,9 @@ def awaitable(func: Callable) -> Callable:
     return inner
 
 
-async def cpu_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
+async def cpu_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R | None:
     if is_stopping():
-        return
+        return None
     with cpu():
         try:
             return await run.cpu_bound(callback, *args, **kwargs)
@@ -54,6 +55,7 @@ async def cpu_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs)
                 raise
         except asyncio.exceptions.CancelledError:
             pass
+    return None
 
 
 @contextmanager
@@ -111,7 +113,9 @@ async def sh(command: list[str] | str, *,
     if is_stopping():
         return ''
     try:
-        return await asyncio.wait_for(io_bound(popen), timeout) or ''
+        async def popen_coro() -> str:
+            return await io_bound(popen) or ''
+        return await asyncio.wait_for(popen_coro(), timeout)
     except asyncio.TimeoutError:
         log.warning('Command "%s" timed out after %s seconds.', command, timeout)
         return ''

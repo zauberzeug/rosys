@@ -45,8 +45,11 @@ class LizardFirmware:
         await self.read_core_checksum()
 
     async def read_online_version(self) -> None:
-        response = (await rosys.run.io_bound(requests.get, self.GITHUB_URL)).json()
-        for i, item in enumerate(response):
+        response = await rosys.run.io_bound(requests.get, self.GITHUB_URL)
+        if response is None:
+            return
+        response_data = response.json()
+        for i, item in enumerate(response_data):
             try:
                 assert 'tag_name' in item
                 version_name = item['tag_name'].removeprefix('v')
@@ -58,7 +61,7 @@ class LizardFirmware:
                     continue
                 self.online_versions[version_name] = browser_download_url
             except KeyError:
-                rosys.notify(response.get('message', 'Could not access online version'), 'warning')
+                rosys.notify(response_data.get('message', 'Could not access online version'), 'warning')
                 break
 
     def read_local_version(self) -> None:

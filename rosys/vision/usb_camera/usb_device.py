@@ -76,10 +76,10 @@ class UsbDevice:
     async def _capture_image(self) -> None:
         if not self._capture.isOpened():
             return
-        result = await rosys.run.io_bound(self._capture.read)
-        if result is None:
+        read_result = await rosys.run.io_bound(self._capture.read)
+        if read_result is None:
             return
-        capture_success, frame = result
+        capture_success, frame = read_result
         if capture_success:
             timestamp = rosys.time()
             result = self._on_new_image_data(frame, timestamp)

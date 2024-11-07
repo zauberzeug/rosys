@@ -88,8 +88,11 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         def to_bytes(image: list[np.ndarray]) -> bytes:
             return image[0].tobytes()
 
+        bytes_: bytes | None
         if image_is_MJPG:
             bytes_ = await rosys.run.io_bound(to_bytes, image_array)
+            if bytes_ is None:
+                return
             if self.crop or self.rotation != ImageRotation.NONE:
                 bytes_ = await rosys.run.cpu_bound(process_jpeg_image, bytes_, self.rotation, self.crop)
         else:

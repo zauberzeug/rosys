@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, cast
 
 from typing_extensions import Self
 
@@ -91,7 +91,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
     async def _handle_new_image_data(self, image: bytes, timestamp: float) -> None:
         if self.crop or self.rotation != ImageRotation.NONE:
-            image = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
+            image = cast(bytes, await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop))
         if image is None:
             return
         try:

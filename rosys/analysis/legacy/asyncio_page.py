@@ -31,9 +31,10 @@ class AsyncioPage(ui.element):
         super().__init__()
 
         async def update() -> None:
-            names, data = await run.cpu_bound(prepare_data, asyncio_monitor.timings)
-            chart.options['xAxis']['categories'][:] = names
-            chart.options['series']['data'][:] = data
+            result = await run.cpu_bound(prepare_data, asyncio_monitor.timings)
+            assert result is not None
+            chart.options['xAxis']['categories'][:] = result[0]
+            chart.options['series']['data'][:] = result[1]
             chart.update()
 
         with self:

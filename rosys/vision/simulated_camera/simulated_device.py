@@ -32,6 +32,7 @@ class SimulatedDevice:
 
     async def _create_image(self) -> None:
         timestamp = rosys.time()
+        image_data: bytes | None
         if rosys.is_test:
             image_data = b'test data'
         else:
