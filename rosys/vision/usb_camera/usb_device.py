@@ -23,6 +23,10 @@ def find_video_id(camera_uid: str) -> int | None:
     return min(video_ids) if video_ids else None
 
 
+def to_bytes(image: np.ndarray) -> bytes:
+    return image.tobytes()
+
+
 class UsbDevice:
 
     def __init__(self, video_id: int, capture: cv2.VideoCapture, *,
@@ -35,6 +39,7 @@ class UsbDevice:
         self._exposure_default: int = 0
         self._has_manual_exposure: bool = False
         self._video_formats: set[str] = set()
+        self._image_is_jpg: bool = False
 
         self.set_video_format()
 
@@ -48,8 +53,12 @@ class UsbDevice:
     def video_formats(self) -> set[str]:
         return self._video_formats
 
+    @property
+    def image_is_jpg(self) -> bool:
+        return self._image_is_jpg
+
     @staticmethod
-    def from_uid(camera_id: str, on_new_image_data: Callable[[np.ndarray, float], Awaitable | None]) -> UsbDevice | None:
+    def from_uid(camera_id: str, on_new_image_data: Callable[[np.ndarray | bytes, float], Awaitable | None]) -> UsbDevice | None:
         video_id = find_video_id(camera_id)
         if video_id is None:
             logging.error('Could not find video device for camera %s', camera_id)
@@ -80,9 +89,16 @@ class UsbDevice:
         if read_result is None:
             return
         capture_success, frame = read_result
+
         if capture_success:
             timestamp = rosys.time()
-            result = self._on_new_image_data(frame, timestamp)
+            if self._image_is_jpg:
+                bytes_ = await rosys.run.io_bound(to_bytes, frame[0])
+                if bytes_ is None:
+                    return
+                result = self._on_new_image_data(bytes_, timestamp)
+            else:
+                result = self._on_new_image_data(frame, timestamp)
             if isinstance(result, Awaitable):
                 await result
 
@@ -122,6 +138,9 @@ class UsbDevice:
             # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
             if self._capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
                 self._capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+            self._image_is_jpg = True
+        else:
+            self._image_is_jpg = False
 
     def set_auto_exposure(self, auto: bool) -> None:
         if self._has_manual_exposure:

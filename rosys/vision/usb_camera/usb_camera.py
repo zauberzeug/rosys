@@ -77,26 +77,19 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self.device = None
         logging.info('camera %s: disconnected', self.id)
 
-    async def _handle_new_image_data(self, image_array: np.ndarray, timestamp: float) -> None:
+    async def _handle_new_image_data(self, image_data: np.ndarray | bytes, timestamp: float) -> None:
         if not self.is_connected:
             return None
 
         assert self.device is not None
 
-        image_is_MJPG = 'MJPG' in self.device.video_formats
-
-        def to_bytes(image: list[np.ndarray]) -> bytes:
-            return image[0].tobytes()
-
         bytes_: bytes | None
-        if image_is_MJPG:
-            bytes_ = await rosys.run.io_bound(to_bytes, image_array)
-            if bytes_ is None:
-                return
+        if isinstance(image_data, np.ndarray):
+            bytes_ = await rosys.run.cpu_bound(process_ndarray_image, image_data, self.rotation, self.crop)
+        else:
+            bytes_ = image_data
             if self.crop or self.rotation != ImageRotation.NONE:
                 bytes_ = await rosys.run.cpu_bound(process_jpeg_image, bytes_, self.rotation, self.crop)
-        else:
-            bytes_ = await rosys.run.cpu_bound(process_ndarray_image, image_array, self.rotation, self.crop)
         if bytes_ is None:
             return
 
