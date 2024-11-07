@@ -30,7 +30,7 @@ def to_bytes(image: np.ndarray) -> bytes:
 class UsbDevice:
 
     def __init__(self, video_id: int, capture: cv2.VideoCapture, *,
-                 on_new_image_data: Callable[[np.ndarray, float], Awaitable | None]) -> None:
+                 on_new_image_data: Callable[[np.ndarray | bytes, float], Awaitable | None]) -> None:
         self._video_id: int = video_id
         self._capture: cv2.VideoCapture = capture
         self._on_new_image_data = on_new_image_data
