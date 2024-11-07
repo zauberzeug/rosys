@@ -9,18 +9,21 @@ from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from functools import wraps
 from pathlib import Path
-from typing import Any
+from typing import ParamSpec, TypeVar
 
 from nicegui import run
 
 from .helpers import is_stopping
+
+P = ParamSpec('P')
+R = TypeVar('R')
 
 running_cpu_bound_processes: list[str] = []  # NOTE is used in tests to advance time slower until computation is done
 running_sh_processes: list[subprocess.Popen] = []
 log = logging.getLogger('rosys.run')
 
 
-async def io_bound(callback: Callable, *args: Any, **kwargs: Any):
+async def io_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
     if is_stopping():
         return
     try:
@@ -40,12 +43,12 @@ def awaitable(func: Callable) -> Callable:
     return inner
 
 
-async def cpu_bound(callback: Callable, *args: Any):
+async def cpu_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
     if is_stopping():
         return
     with cpu():
         try:
-            return await run.cpu_bound(callback, *args)
+            return await run.cpu_bound(callback, *args, **kwargs)
         except RuntimeError as e:
             if 'cannot schedule new futures after shutdown' not in str(e):
                 raise
