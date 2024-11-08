@@ -1,4 +1,3 @@
-import time
 from collections.abc import Awaitable, Callable
 
 import cv2
@@ -36,7 +35,7 @@ class SimulatedDevice:
         if rosys.is_test:
             image_data = b'test data'
         else:
-            image_data = await rosys.run.cpu_bound(_create_image_data, self._id, self._size, self.color)
+            image_data = await rosys.run.cpu_bound(_create_image_data, self._id, self._size, self.color, timestamp)
         if not image_data:
             return
         result = self._on_new_image_data(image_data, timestamp)
@@ -50,11 +49,11 @@ class SimulatedDevice:
         return 1.0 / self._repeater.interval
 
 
-def _create_image_data(id: str, size: ImageSize, color: str) -> bytes:  # pylint: disable=redefined-builtin
+def _create_image_data(id: str, size: ImageSize, color: str, timestamp: float) -> bytes:  # pylint: disable=redefined-builtin
     img = PIL.Image.new('RGB', size=(size.width, size.height), color=color)
     d = PIL.ImageDraw.Draw(img)
-    text = f'{id}: {time.time():.2f}'
-    position = _floating_text_position(size.width, size.height)
+    text = f'{id}: {timestamp:.2f}'
+    position = _floating_text_position(size.width, size.height, timestamp)
 
     d.text((position.x, position.y), text, fill=(0, 0, 0))
     d.text((position.x + 1, position.y + 1), text, fill=(255, 255, 255))
@@ -63,8 +62,7 @@ def _create_image_data(id: str, size: ImageSize, color: str) -> bytes:  # pylint
     return encoded_image.tobytes()
 
 
-def _floating_text_position(box_width: int, box_height: int, speed: float = 100, angle: float = np.deg2rad(45)) -> Point:
+def _floating_text_position(box_width: int, box_height: int, timestamp: float, speed: float = 100, angle: float = np.deg2rad(45)) -> Point:
     """Calculate the position of the text that floats around the image."""
-    t = time.time()
-    return Point(x=(speed * t * np.cos(angle)) % box_width,
-                 y=(speed * t * np.sin(angle)) % box_height)
+    return Point(x=(speed * timestamp * np.cos(angle)) % box_width,
+                 y=(speed * timestamp * np.sin(angle)) % box_height)
