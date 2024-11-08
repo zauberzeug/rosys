@@ -11,7 +11,7 @@ class VendorType(Enum):
 def mac_to_vendor(mac: str) -> VendorType:
     if mac.startswith('e0:62:90'):
         return VendorType.JOVISION
-    if mac.startswith('e4:24:6c') or mac.startswith('3c:e3:6b') or mac.startswith('d4:43:0e'):
+    if mac.startswith(('e4:24:6c', '3c:e3:6b', 'd4:43:0e')):
         return VendorType.DAHUA
     return VendorType.OTHER
 

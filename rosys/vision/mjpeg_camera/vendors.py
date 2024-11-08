@@ -8,7 +8,7 @@ class VendorType(Enum):
 
 
 def mac_to_vendor(mac: str) -> VendorType:
-    if any(mac.startswith(prefix) for prefix in ['00:40:8c', 'ac:cc:8e', 'b8:a4:4f', 'e8:27:25']):
+    if mac.startswith(('00:40:8c', 'ac:cc:8e', 'b8:a4:4f', 'e8:27:25')):
         return VendorType.AXIS
     if mac.startswith('2c:26:5f'):
         return VendorType.MOTEC
