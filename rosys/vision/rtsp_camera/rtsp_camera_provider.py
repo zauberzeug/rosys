@@ -45,6 +45,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
         return await find_known_cameras(network_interface=network_interface)
 
     async def update_device_list(self) -> None:
+        self.log.debug('scanning for cameras...')
         for mac, ip in await find_known_cameras(network_interface=self.network_interface):
             if mac not in self._cameras:
                 self.add_camera(RtspCamera(id=mac, fps=self.frame_rate, jovision_profile=self.jovision_profile, ip=ip))
