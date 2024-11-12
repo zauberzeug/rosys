@@ -91,9 +91,10 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
     async def _handle_new_image_data(self, image: bytes, timestamp: float) -> None:
         if self.crop or self.rotation != ImageRotation.NONE:
-            image = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
-        if image is None:
-            return
+            image_ = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
+            if image_ is None:
+                return
+            image = image_
         try:
             final_image_resolution = get_image_size_from_bytes(image)
         except ValueError:
