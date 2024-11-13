@@ -1,5 +1,6 @@
 import abc
 import logging
+from datetime import datetime
 from enum import Enum
 from uuid import uuid4
 
@@ -38,8 +39,11 @@ class Detector(abc.ABC):
     @abc.abstractmethod
     async def detect(self,
                      image: Image,
+                     *,
                      autoupload: Autoupload = Autoupload.FILTERED,
                      tags: list[str] | None = None,
+                     source: str | None = None,
+                     creation_date: datetime | str | None = None
                      ) -> Detections | None:
         """Runs detections on the image. Afterwards the `image.detections` property is filled."""
 

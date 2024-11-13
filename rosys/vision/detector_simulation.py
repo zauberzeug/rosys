@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from uuid import uuid4
+from datetime import datetime
 
 import numpy as np
 
@@ -57,8 +58,11 @@ class DetectorSimulation(Detector):
 
     async def detect(self,
                      image: Image,
+                     *,
                      autoupload: Autoupload = Autoupload.FILTERED,
                      tags: list[str] | None = None,
+                     source: str | None = None,
+                     creation_date: datetime | str | None = None
                      ) -> Detections | None:
         is_blocked = image.camera_id in self.blocked_cameras
         await rosys.sleep(self.detection_delay)
