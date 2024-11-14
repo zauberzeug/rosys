@@ -19,7 +19,7 @@ from .config import Config
 from .geometry.frame3d_registry import frame_registry
 from .helpers import invoke, is_stopping
 from .helpers import is_test as is_test_
-from .persistence.registry import backup, restore
+from .persistence.registry import backup, restore, sync_backup
 
 log = logging.getLogger('rosys.core')
 
@@ -254,7 +254,7 @@ async def shutdown() -> None:
         log.debug('invoking shutdown handler "%s"', handler.__qualname__)
         await invoke(handler)
     log.debug('creating data backup')
-    await backup(force=True)
+    sync_backup(force=True)
     log.debug('tear down "run" tasks')
     run.tear_down()
     log.debug('stopping all repeaters')

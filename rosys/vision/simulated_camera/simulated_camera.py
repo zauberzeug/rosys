@@ -1,6 +1,5 @@
 import random
 
-from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image, ImageSize
@@ -52,8 +51,8 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
     async def disconnect(self) -> None:
         self.device = None
 
-    def _handle_new_image_data(self, image_data: bytes) -> None:
-        image = Image(time=rosys.time(), camera_id=self.id, size=self.resolution, data=image_data)
+    async def _handle_new_image_data(self, image_data: bytes, timestamp: float) -> None:
+        image = Image(time=timestamp, camera_id=self.id, size=self.resolution, data=image_data)
         self._add_image(image)
 
     def _set_color(self, value: str) -> None:

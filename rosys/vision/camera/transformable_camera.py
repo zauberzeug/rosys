@@ -1,30 +1,41 @@
+from ... import persistence
 from ...geometry import Rectangle
-from ..image import ImageSize
 from ..image_rotation import ImageRotation
 from .camera import Camera
 
 
 class TransformableCamera(Camera):
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, *, crop: Rectangle | dict | None = None, rotation: ImageRotation | int = ImageRotation.NONE, **kwargs) -> None:
+        """
+        A camera for which the image can be cropped and rotated.
+
+        This mixin does not implement the actual cropping and rotation.
+        It only provides the infrastructure for storing the crop and rotation parameters.
+
+        :param crop: region to crop on the original resolution before rotation
+        :param rotation: clockwise rotation which should be applied after cropping
+        """
         super().__init__(**kwargs)
+
         self.crop: Rectangle | None = None
-        """region to crop on the original resolution before rotation"""
-        self.rotation: ImageRotation = ImageRotation.NONE
-        """rotation which should be applied after grabbing and cropping"""
+        if isinstance(crop, Rectangle):
+            self.crop = crop
+        elif isinstance(crop, dict):
+            self.crop = persistence.from_dict(Rectangle, crop)
 
-        self._resolution: ImageSize | None = None
+        self.rotation: ImageRotation = rotation if isinstance(
+            rotation, ImageRotation) else ImageRotation.from_degrees(rotation)
 
-    def _resolution_after_transform(self, original_resolution: ImageSize) -> ImageSize:
-        width = int(self.crop.width) if self.crop else original_resolution.width
-        height = int(self.crop.height) if self.crop else original_resolution.height
-        if self.rotation in {ImageRotation.LEFT, ImageRotation.RIGHT}:
-            width, height = height, width
-        return ImageSize(width=width, height=height)
+    def to_dict(self) -> dict:
+        return super().to_dict() | {
+            'crop': persistence.to_dict(self.crop),
+            'rotation': self.rotation.value,
+        }
 
     @property
     def rotation_angle(self) -> int:
-        """Rotation angle in degrees."""
+        """Clockwise rotation angle in degrees."""
         return int(self.rotation)
 
     @rotation_angle.setter

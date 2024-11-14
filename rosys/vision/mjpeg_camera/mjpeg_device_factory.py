@@ -13,7 +13,7 @@ class MjpegDeviceFactory:
                username: str | None = None,
                password: str | None = None,
                control_port: int | None = None,
-               on_new_image_data: Callable[[bytes], Awaitable | None]) -> MjpegDevice:
+               on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> MjpegDevice:
 
         if mac_to_vendor(mac) == VendorType.AXIS:
             return AxisMjpegDevice(mac, ip,
