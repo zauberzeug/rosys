@@ -89,7 +89,13 @@ class DetectorHardware(Detector):
             rosys.background_tasks.create(upload_priority_images(), name='upload_priority_images')
             self.uploads.priority_queue.clear()
 
-    async def upload(self, image: Image, *, tags: list[str] | None = None, source: str | None = None) -> None:
+    async def upload(self,
+                     image: Image,
+                     *,
+                     tags: list[str] | None = None,
+                     source: str | None = None,
+                     creation_date: datetime | str | None = None
+                     ) -> None:
         assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
         tags = tags or []
         try:
@@ -104,7 +110,7 @@ class DetectorHardware(Detector):
                 data_dict['detections'] = detections_dict
             data_dict['tags'] = list(image.tags.union(tags))
             data_dict['source'] = source
-
+            data_dict['creation_date'] = _creation_date_to_isoformat(creation_date)
             await self.sio.emit('upload', data_dict)
 
         except Exception:
@@ -112,30 +118,35 @@ class DetectorHardware(Detector):
 
     async def detect(self,
                      image: Image,
+                     *,
                      autoupload: Autoupload = Autoupload.FILTERED,
                      tags: list[str] | None = None,
-                     source: str | None = None
+                     source: str | None = None,
+                     creation_date: datetime | str | None = None,
                      ) -> Detections | None:
         assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
         tags = tags or []
-        return await self.lazy_worker.run(self._detect(image, autoupload, tags, source))
+        return await self.lazy_worker.run(self._detect(image, autoupload, tags, source, creation_date))
 
     async def _detect(self,
                       image: Image,
                       autoupload: Autoupload,
                       tags: list[str],
-                      source: str | None = None
+                      source: str | None = None,
+                      creation_date: datetime | str | None = None,
                       ) -> Detections | None:
         if image.is_broken:
             return None
         try:
-            result: dict = await self.sio.call('detect', {
+            result = await self.sio.call('detect', {
                 'image': image.data,
                 'mac': image.camera_id,
                 'autoupload': autoupload.value,
                 'tags': tags,
                 'source': source,
+                'creation_date': _creation_date_to_isoformat(creation_date),
             }, timeout=3)
+            assert isinstance(result, dict)
             if image.is_broken:  # NOTE: image can be marked broken while detection is underway
                 return None
             detections = Detections(
@@ -175,3 +186,15 @@ def _box_detections_to_int(detections: list[dict]) -> list[dict]:
         detection['width'] = int(detection['width'])
         detection['height'] = int(detection['height'])
     return detections
+
+
+def _creation_date_to_isoformat(creation_date: datetime | str | None) -> str | None:
+    if isinstance(creation_date, str):
+        try:
+            datetime.fromisoformat(creation_date)  # validate format
+        except ValueError as e:
+            raise ValueError(f'creation_date string "{creation_date}" is not in valid ISO format') from e
+        return creation_date
+    elif isinstance(creation_date, datetime):
+        return creation_date.isoformat()
+    return None
