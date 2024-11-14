@@ -122,7 +122,7 @@ class DetectorHardware(Detector):
                      autoupload: Autoupload = Autoupload.FILTERED,
                      tags: list[str] | None = None,
                      source: str | None = None,
-                     creation_date: datetime | str | None = None
+                     creation_date: datetime | str | None = None,
                      ) -> Detections | None:
         assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
         tags = tags or []
@@ -133,7 +133,7 @@ class DetectorHardware(Detector):
                       autoupload: Autoupload,
                       tags: list[str],
                       source: str | None = None,
-                      creation_date: datetime | str | None = None
+                      creation_date: datetime | str | None = None,
                       ) -> Detections | None:
         if image.is_broken:
             return None
@@ -146,7 +146,7 @@ class DetectorHardware(Detector):
                 'source': source,
                 'creation_date': _creation_date_to_isoformat(creation_date),
             }, timeout=3)
-            assert isinstance(result, dict), 'Error: Result returned by detect call was not a dictionary'
+            assert isinstance(result, dict)
             if image.is_broken:  # NOTE: image can be marked broken while detection is underway
                 return None
             detections = Detections(

@@ -43,7 +43,7 @@ class Detector(abc.ABC):
                      autoupload: Autoupload = Autoupload.FILTERED,
                      tags: list[str] | None = None,
                      source: str | None = None,
-                     creation_date: datetime | str | None = None
+                     creation_date: datetime | str | None = None,
                      ) -> Detections | None:
         """Runs detections on the image. Afterwards the `image.detections` property is filled.
 
@@ -51,10 +51,12 @@ class Detector(abc.ABC):
         """
 
     @abc.abstractmethod
-    async def upload(self, image: Image, *,
+    async def upload(self,
+                     image: Image,
+                     *,
                      tags: list[str] | None = None,
                      source: str | None = None,
-                     creation_date: datetime | str | None = None
+                     creation_date: datetime | str | None = None,
                      ) -> None:
         """Uploads the image to the Learning Loop.
 

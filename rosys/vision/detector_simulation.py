@@ -62,7 +62,7 @@ class DetectorSimulation(Detector):
                      autoupload: Autoupload = Autoupload.FILTERED,
                      tags: list[str] | None = None,
                      source: str | None = None,
-                     creation_date: datetime | str | None = None
+                     creation_date: datetime | str | None = None,
                      ) -> Detections | None:
         is_blocked = image.camera_id in self.blocked_cameras
         await rosys.sleep(self.detection_delay)
@@ -73,7 +73,9 @@ class DetectorSimulation(Detector):
         self.NEW_DETECTIONS.emit(image)
         return image.get_detections(self.name)
 
-    async def upload(self, image: Image, *,
+    async def upload(self,
+                     image: Image,
+                     *,
                      tags: list[str] | None = None,
                      source: str | None = None,
                      creation_date: datetime | str | None = None,
