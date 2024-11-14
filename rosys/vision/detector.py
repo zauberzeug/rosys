@@ -45,12 +45,19 @@ class Detector(abc.ABC):
                      source: str | None = None,
                      creation_date: datetime | str | None = None
                      ) -> Detections | None:
-        """Runs detections on the image. Afterwards the `image.detections` property is filled."""
+        """Runs detections on the image. Afterwards the `image.detections` property is filled.
+
+        The parameters `tags`, `source`, and `creation_date` are added as metadata if the image is uploaded.
+        """
 
     @abc.abstractmethod
-    async def upload(self, image: Image, *, tags: list[str] | None = None) -> None:
+    async def upload(self, image: Image, *,
+                     tags: list[str] | None = None,
+                     source: str | None = None,
+                     creation_date: datetime | str | None = None
+                     ) -> None:
         """Uploads the image to the Learning Loop.
 
-        The `tags` are added to the image.
+        The parameters `tags`, `source`, and `creation_date` are added as metadata.
         If the image has detections, they are also uploaded.
         """

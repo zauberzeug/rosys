@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
-from uuid import uuid4
 from datetime import datetime
+from uuid import uuid4
 
 import numpy as np
 
@@ -73,7 +73,11 @@ class DetectorSimulation(Detector):
         self.NEW_DETECTIONS.emit(image)
         return image.get_detections(self.name)
 
-    async def upload(self, image: Image, *, tags: list[str] | None = None) -> None:
+    async def upload(self, image: Image, *,
+                     tags: list[str] | None = None,
+                     source: str | None = None,
+                     creation_date: datetime | str | None = None,
+                     ) -> None:
         self.log.info('Uploading %s', image.id)
 
     def update_simulated_objects(self, image: Image) -> None:
