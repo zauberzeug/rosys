@@ -138,7 +138,7 @@ class DetectorHardware(Detector):
         if image.is_broken:
             return None
         try:
-            result: dict = await self.sio.call('detect', {
+            result = await self.sio.call('detect', {
                 'image': image.data,
                 'mac': image.camera_id,
                 'autoupload': autoupload.value,
@@ -146,6 +146,7 @@ class DetectorHardware(Detector):
                 'source': source,
                 'creation_date': _creation_date_to_isoformat(creation_date),
             }, timeout=3)
+            assert isinstance(result, dict), 'Error: Result returned by detect call was not a dictionary'
             if image.is_broken:  # NOTE: image can be marked broken while detection is underway
                 return None
             detections = Detections(
