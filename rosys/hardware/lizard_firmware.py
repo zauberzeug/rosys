@@ -49,12 +49,10 @@ class LizardFirmware:
         if response is None:
             return
         response_data = response.json()
-        for i, item in enumerate(response_data):
+        for item in response_data:
             try:
                 assert 'tag_name' in item
                 version_name = item['tag_name'].removeprefix('v')
-                if i == 0:
-                    self.selected_online_version = version_name
                 assert 'assets' in item
                 browser_download_url = item['assets'][0]['browser_download_url']
                 if not browser_download_url.endswith('.zip'):
