@@ -53,7 +53,6 @@ class RobotBrain:
             version_select.set_options(list(self.lizard_firmware.online_versions.keys()))
             if len(version_select.options) > 0:
                 version_select.value = version_select.options[0]
-                self.lizard_firmware.selected_online_version = version_select.value
 
         async def online_update() -> None:
             await self.lizard_firmware.download()
