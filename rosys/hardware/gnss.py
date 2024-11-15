@@ -75,6 +75,7 @@ class GnssHardware(Gnss):
         super().__init__()
         self.antenna_offset = antenna_offset
         serial_port = self._find_device_port()
+        assert serial_port is not None
         self.ser = self._connect_to_device(serial_port)
         rosys.on_startup(self._run)
 
