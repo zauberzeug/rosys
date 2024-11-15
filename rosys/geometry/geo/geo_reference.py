@@ -47,3 +47,7 @@ class GeoReference:
     def point_to_local(self, geo_point: GeoPoint | GeoPose) -> rosys.geometry.Point:
         """Convert a global point to a local point."""
         return ZERO_POINT.polar(self.origin.distance(geo_point), self.direction - self.origin.direction(geo_point))
+
+    @property
+    def tuple(self) -> tuple[float, float, float]:
+        return (*self.origin.tuple, self.direction)
