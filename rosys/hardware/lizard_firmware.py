@@ -49,7 +49,7 @@ class LizardFirmware:
         if response is None:
             return
         response_data = response.json()
-        for i, item in enumerate(response_data):
+        for item in response_data:
             try:
                 assert 'tag_name' in item
                 version_name = item['tag_name'].removeprefix('v')
