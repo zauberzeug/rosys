@@ -27,7 +27,7 @@ class LoggingPage:
         def page():
             loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]  # pylint: disable=no-member
             groups = {name: [l for l in loggers if l.name.startswith(name)] for name in group_names}
-            groups['others'] = [l for l in loggers if not any(l.name.startswith(name) for name in group_names)]
+            groups['others'] = [l for l in loggers if not l.name.startswith(tuple(group_names))]
 
             @ui.refreshable
             def _column(group_name: str, loggers: list[logging.Logger]) -> None:

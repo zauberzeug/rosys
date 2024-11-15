@@ -1,15 +1,14 @@
 import logging
 from typing import Any
 
-import cv2
 import numpy as np
 from typing_extensions import Self
 
 from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
-from ..image import Image, ImageSize
-from ..image_processing import process_jpeg_image, process_ndarray_image
+from ..image import Image
+from ..image_processing import get_image_size_from_bytes, process_jpeg_image, process_ndarray_image
 from ..image_rotation import ImageRotation
 from .usb_device import UsbDevice
 
@@ -74,102 +73,71 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
             return
 
         assert self.device is not None
-        await rosys.run.io_bound(self.device.capture.release)
+        await self.device.release_capture()
         self.device = None
         logging.info('camera %s: disconnected', self.id)
 
-    async def _handle_new_image_data(self, image_array: np.ndarray) -> None:
+    async def _handle_new_image_data(self, image_data: np.ndarray | bytes, timestamp: float) -> None:
         if not self.is_connected:
             return None
 
         assert self.device is not None
 
-        image_is_MJPG = 'MJPG' in self.device.video_formats
-
-        def to_bytes(image: list[np.ndarray]) -> bytes:
-            return image[0].tobytes()
-
-        if image_is_MJPG:
-            bytes_ = await rosys.run.io_bound(to_bytes, image_array)
+        bytes_: bytes | None
+        if isinstance(image_data, np.ndarray):
+            bytes_ = await rosys.run.cpu_bound(process_ndarray_image, image_data, self.rotation, self.crop)
+        else:
+            bytes_ = image_data
             if self.crop or self.rotation != ImageRotation.NONE:
                 bytes_ = await rosys.run.cpu_bound(process_jpeg_image, bytes_, self.rotation, self.crop)
-        else:
-            bytes_ = await rosys.run.cpu_bound(process_ndarray_image, image_array, self.rotation, self.crop)
         if bytes_ is None:
             return
 
-        image_size = ImageSize(width=image_array.shape[1], height=image_array.shape[0])
-        final_image_resolution = self._resolution_after_transform(image_size)
+        final_image_resolution = get_image_size_from_bytes(bytes_)
 
-        image = Image(time=rosys.time(), camera_id=self.id, size=final_image_resolution, data=bytes_)
+        image = Image(time=timestamp, camera_id=self.id, size=final_image_resolution, data=bytes_)
         self._add_image(image)
 
     def set_auto_exposure(self, auto: bool) -> None:
         assert self.device is not None
-
-        device = self.device
-
-        if device.has_manual_exposure:
-            is_auto_exposure = self.get_auto_exposure()
-            if auto and not is_auto_exposure:
-                # self.log.info(f'activating auto-exposure for {self.id}')
-                device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
-            else:
-                device.capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)
-                self.set_exposure(self._parameters['exposure'].value)
+        self.device.set_auto_exposure(auto)
+        if not auto:
+            manual_exposure = self._parameters['exposure'].value
+            assert manual_exposure is not None
+            self.device.set_exposure(manual_exposure)
 
     def set_exposure(self, value: float) -> None:
         assert self.device is not None
-
-        device = self.device
-        assert device.capture is not None
-
-        if device.has_manual_exposure:
-            is_auto_exposure = self.get_auto_exposure()
-            if not is_auto_exposure:
-                exposure = device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
-                if value != exposure:
-                    device.capture.set(cv2.CAP_PROP_EXPOSURE, int(value * device.exposure_max))
+        self.device.set_exposure(value)
 
     def get_auto_exposure(self) -> bool | None:
         assert self.device is not None
-        device = self.device
-        return device.capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
+        return self.device.get_auto_exposure()
 
     def get_exposure(self) -> float | None:
         assert self.device is not None
-
-        device = self.device
-        if not device.has_manual_exposure:
-            return None
-        return device.capture.get(cv2.CAP_PROP_EXPOSURE) / device.exposure_max
+        return self.device.get_exposure()
 
     def set_width(self, width: int) -> None:
         assert self.device is not None
-        device = self.device
-        device.capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        self.device.set_width(width)
 
     def get_width(self) -> int:
         assert self.device is not None
-        device = self.device
-        return int(device.capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        return self.device.get_width()
 
     def set_height(self, height: int) -> None:
         assert self.device is not None
-        device = self.device
-        device.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        self.device.set_height(height)
 
     def get_height(self) -> int:
         assert self.device is not None
-        device = self.device
-        return int(device.capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        return self.device.get_height()
 
     def set_fps(self, fps: int) -> None:
         assert self.device is not None
-        device = self.device
-        device.capture.set(cv2.CAP_PROP_FPS, fps)
+        self.device.set_fps(fps)
 
     def get_fps(self) -> int:
         assert self.device is not None
-        device = self.device
-        return int(device.capture.get(cv2.CAP_PROP_FPS))
+        return self.device.get_fps()

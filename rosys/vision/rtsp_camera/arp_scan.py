@@ -11,7 +11,7 @@ from .vendors import VendorType, mac_to_vendor
 def get_network_interface() -> str | None:
     """Return the first network interface that is not a loopback or virtual interface."""
     for interface in ifaddr.get_adapters():
-        if any(interface.name.startswith(prefix) for prefix in ['lo', 'can', 'docker', 'veth', 'br']):
+        if interface.name.startswith(('lo', 'can', 'docker', 'veth', 'br')):
             continue
         if interface.ips is None:
             continue

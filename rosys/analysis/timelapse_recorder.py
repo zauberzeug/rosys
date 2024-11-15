@@ -108,7 +108,8 @@ class TimelapseRecorder:
         target_dir = STORAGE_PATH / id_
         target_dir.mkdir(parents=True, exist_ok=True)
         target_filename = f'{id_}.mp4'
-        await rosys.run.sh(f'mv {STORAGE_PATH}/*.jpg {target_dir}', shell=True)
+        for jpg in STORAGE_PATH.glob('*.jpg'):
+            jpg.rename(target_dir / jpg.name)
         source_file = target_dir / 'source.txt'
         with source_file.open('w') as f:
             jpegs = sorted(target_dir.glob('*.jpg'))
