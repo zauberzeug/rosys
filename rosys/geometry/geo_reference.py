@@ -3,13 +3,12 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-import rosys
-
-from .fixpoint import Fixpoint
-from .geo_point import GeoPoint
+from .geo_point import Fixpoint, GeoPoint
 from .geo_pose import GeoPose
+from .point import Point
+from .pose import Pose
 
-ZERO_POINT = rosys.geometry.Point(x=0, y=0)
+ZERO_POINT = Point(x=0, y=0)
 
 
 @dataclass(slots=True)
@@ -28,23 +27,23 @@ class GeoReference:
             .polar(A.local_point.y, x_direction + math.radians(90))
         return cls(origin, x_direction)
 
-    def pose_to_geo(self, pose: rosys.geometry.Pose) -> GeoPose:
+    def pose_to_geo(self, pose: Pose) -> GeoPose:
         """Convert a local pose to a global geo pose."""
         geo_point1 = self.point_to_geo(pose)
-        geo_point2 = self.point_to_geo(pose.transform_pose(rosys.geometry.Pose(x=1)))
+        geo_point2 = self.point_to_geo(pose.transform_pose(Pose(x=1)))
         return GeoPose(geo_point1.lat, geo_point1.lon, geo_point1.direction(geo_point2))
 
-    def point_to_geo(self, point: rosys.geometry.Point | rosys.geometry.Pose) -> GeoPoint:
+    def point_to_geo(self, point: Point | Pose) -> GeoPoint:
         """Convert a local point to a global point (latitude, longitude; all in degrees)."""
         return self.origin.polar(ZERO_POINT.distance(point), self.direction - ZERO_POINT.direction(point))
 
-    def pose_to_local(self, geo_pose: GeoPose) -> rosys.geometry.Pose:
+    def pose_to_local(self, geo_pose: GeoPose) -> Pose:
         """Convert a global geo pose to a local pose."""
         point1 = self.point_to_local(geo_pose)
         point2 = self.point_to_local(geo_pose.point.polar(1, geo_pose.heading))
-        return rosys.geometry.Pose(x=point1.x, y=point1.y, yaw=point1.direction(point2))
+        return Pose(x=point1.x, y=point1.y, yaw=point1.direction(point2))
 
-    def point_to_local(self, geo_point: GeoPoint | GeoPose) -> rosys.geometry.Point:
+    def point_to_local(self, geo_point: GeoPoint | GeoPose) -> Point:
         """Convert a global point to a local point."""
         return ZERO_POINT.polar(self.origin.distance(geo_point), self.direction - self.origin.direction(geo_point))
 

@@ -4,12 +4,19 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from .point import Point
+
 if TYPE_CHECKING:
-    from ..point import Point
     from .geo_pose import GeoPose
     from .geo_reference import GeoReference
 
 R = 6371000
+
+
+@dataclass(slots=True)
+class Fixpoint:
+    local_point: Point
+    geo_point: GeoPoint | None = None
 
 
 @dataclass(slots=True)
@@ -44,7 +51,7 @@ class GeoPoint:
 
     def shifted(self, point: Point, *, reference: GeoReference | None = None) -> GeoPoint:
         """Shift by the given Cartesian coordinates (x, y) relative to the current point.
-        # TODO
+        If a reference is given, the shift is relative to the reference's direction.
         """
         if reference:
             length = math.sqrt(point.x**2 + point.y**2)

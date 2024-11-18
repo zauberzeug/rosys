@@ -1,3 +1,6 @@
+from .geo_point import Fixpoint, GeoPoint
+from .geo_pose import GeoPose
+from .geo_reference import GeoReference
 from .line import Line
 from .line_segment import LineSegment
 from .object3d import Object3d
@@ -14,6 +17,10 @@ from .velocity import Velocity
 
 __all__ = [
     'Frame3d',
+    'Fixpoint',
+    'GeoPoint',
+    'GeoPose',
+    'GeoReference',
     'Line',
     'LineSegment',
     'Object3d',
