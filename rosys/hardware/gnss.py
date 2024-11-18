@@ -12,7 +12,7 @@ from serial.tools import list_ports
 
 from .. import rosys
 from ..event import Event
-from ..geometry.geo import GeoPoint, GeoPose, GeoReference
+from ..geometry import GeoPoint, GeoPose, GeoReference, Pose
 from ..run import io_bound
 
 if TYPE_CHECKING:
@@ -67,13 +67,19 @@ class Gnss(ABC):
 
 class GnssHardware(Gnss):
     """
-    #TODO:
+    This hardware module connects to a Septentrio SimpleRTK3b (Mosaic-H) GNSS receiver.
     """
-    ANTENNA_OFFSET = 0.4225  # meters
 
-    def __init__(self, *, antenna_offset: float = ANTENNA_OFFSET) -> None:
+    def __init__(self, *, antenna_pose: Pose | None) -> None:
+        """
+        :param antenna_pose: the position of the main antenna in the robot's coordinate system (yaw = direction to auxiliary antenna)
+        """
         super().__init__()
-        self.antenna_offset = antenna_offset
+        self.antenna_pose = antenna_pose or Pose(x=0.0, y=0.0, yaw=0.0)
+        self._antenna_distance = math.sqrt(self.antenna_pose.x**2 + self.antenna_pose.y**2)
+        """the distance from the robot's center to the main antenna"""
+        self._antenna_angle = math.pi + math.atan2(self.antenna_pose.y, self.antenna_pose.x) - self.antenna_pose.yaw
+        """the angle from the robot's center to the main antenna"""
         serial_port = self._find_device_port()
         assert serial_port is not None
         self.ser = self._connect_to_device(serial_port)
@@ -133,10 +139,10 @@ class GnssHardware(Gnss):
                     last_heading_accuracy = float(parts[7] or 'inf')
                 if last_gga_timestamp == last_gst_timestamp == last_pssn_timestamp != '':
                     antenna = GeoPoint.from_degrees(last_raw_latitude, last_raw_longitude)
-                    robot = antenna.polar(self.ANTENNA_OFFSET, math.radians(last_raw_heading))
+                    robot = antenna.polar(self._antenna_distance, -self._antenna_angle + math.radians(last_raw_heading))
                     last_latitude = math.degrees(robot.lat)
                     last_longitude = math.degrees(robot.lon)
-                    last_heading = last_raw_heading
+                    last_heading = last_raw_heading - self.antenna_pose.yaw
                     self.last_measurement = GnssMeasurement(
                         time=timestamp,
                         location=GeoPose.from_degrees(lat=last_latitude, lon=last_longitude, heading=last_heading),
