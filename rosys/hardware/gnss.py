@@ -46,10 +46,8 @@ class GnssMeasurement:
 
 class Gnss(ABC):
 
-    def __init__(self, *, reference: GeoReference | None = None) -> None:
+    def __init__(self) -> None:
         self.log = logging.getLogger('rosys.gnss')
-        self.reference: GeoReference = GeoReference(origin=GeoPoint(
-            lat=0, lon=0), direction=0) if reference is None else reference
         self.last_measurement: GnssMeasurement | None = None
 
         self.NEW_MEASUREMENT = Event()
@@ -59,16 +57,9 @@ class Gnss(ABC):
     def is_connected(self) -> bool:
         return False
 
-    def update_reference(self, *, reference: GeoReference | None = None) -> None:
-        if reference is not None:
-            self.reference = reference
-        elif self.last_measurement is not None:
-            self.reference = GeoReference(origin=self.last_measurement.point, direction=0.0)
-
     @ui.refreshable
     def developer_ui(self) -> None:
         ui.label('GNSS').classes('text-center text-bold')
-        ui.label(f'Reference: {self.reference}')
         # TODO:
 
 
@@ -189,9 +180,10 @@ class GnssHardware(Gnss):
 
 class GnssSimulation(Gnss):
 
-    def __init__(self, wheels: WheelsSimulation) -> None:
+    def __init__(self, *, wheels: WheelsSimulation, reference: GeoReference) -> None:
         super().__init__()
         self.wheels = wheels
+        self.reference = reference
         self._is_connected = True
         rosys.on_repeat(self.simulate, 1.0)
 
@@ -214,3 +206,19 @@ class GnssSimulation(Gnss):
             gps_qual=4,
         )
         self.NEW_MEASUREMENT.emit(self.last_measurement)
+
+
+class LocalGnssPoseProvider:
+    def __init__(self, *, gnss: Gnss, reference: GeoReference | None = None) -> None:
+        self.gnss = gnss
+        self.reference = reference
+
+        self.LOCAL_GNSS_POSE = Event()
+        """a new local gnss pose is available (argument: Pose and GnssMeasurement)"""
+
+        self.gnss.NEW_MEASUREMENT.register(self._handle_new_gnss_measurement)
+
+    def _handle_new_gnss_measurement(self, measurement: GnssMeasurement) -> None:
+        if self.reference:
+            local_pose = self.reference.pose_to_local(measurement.pose)
+            self.LOCAL_GNSS_POSE.emit((local_pose, measurement))
