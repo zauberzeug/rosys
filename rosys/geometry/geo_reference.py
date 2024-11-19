@@ -14,7 +14,7 @@ ZERO_POINT = Point(x=0, y=0)
 @dataclass(slots=True)
 class GeoReference:
     origin: GeoPoint
-    direction: float  # direction of the local x-axis in the global geo system (0 = north, pi/2 = east)
+    direction: float = 0.0  # direction of the local x-axis in the global geo system (0 = north, pi/2 = east)
 
     @classmethod
     def from_two_fixpoints(cls, A: Fixpoint, B: Fixpoint) -> GeoReference:
