@@ -49,6 +49,7 @@ class GeoReference:
 
     @property
     def tuple(self) -> tuple[float, float, float]:
+        """Latitude, longitude, and direction (in global geo system)."""
         return (*self.origin.tuple, self.direction)
 
     def __str__(self) -> str:
