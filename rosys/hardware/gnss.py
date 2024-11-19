@@ -192,11 +192,16 @@ class GnssSimulation(Gnss):
     def __init__(self, wheels: WheelsSimulation) -> None:
         super().__init__()
         self.wheels = wheels
+        self._is_connected = True
         rosys.on_repeat(self.simulate, 1.0)
 
     @property
     def is_connected(self) -> bool:
-        return True
+        return self._is_connected
+
+    @is_connected.setter
+    def is_connected(self, value: bool) -> None:
+        self._is_connected = value
 
     def simulate(self) -> None:
         geo_pose = self.reference.pose_to_geo(self.wheels.pose)
