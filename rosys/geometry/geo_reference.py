@@ -50,3 +50,9 @@ class GeoReference:
     @property
     def tuple(self) -> tuple[float, float, float]:
         return (*self.origin.tuple, self.direction)
+
+    def __str__(self) -> str:
+        lat_deg = math.degrees(self.origin.lat)
+        lon_deg = math.degrees(self.origin.lon)
+        direction_deg = math.degrees(self.direction)
+        return f'GeoReference(lat={lat_deg:.6f}˚, lon={lon_deg:.6f}˚, heading={direction_deg:.1f}˚)'
