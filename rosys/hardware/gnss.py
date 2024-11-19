@@ -22,8 +22,7 @@ if TYPE_CHECKING:
 @dataclass
 class GnssMeasurement:
     time: float
-    # TODO: back to GeoPoint and Heading
-    location: GeoPose
+    pose: GeoPose
     latitude_std_dev: float = 0.0
     longitude_std_dev: float = 0.0
     heading_std_dev: float = 0.0
@@ -35,6 +34,14 @@ class GnssMeasurement:
     altitude: float = 0.0
     # TODO
     separation: float = 0.0
+
+    @property
+    def point(self) -> GeoPoint:
+        return self.pose.point
+
+    @property
+    def heading(self) -> float:
+        return self.pose.heading
 
 
 class Gnss(ABC):
@@ -56,7 +63,7 @@ class Gnss(ABC):
         if reference is not None:
             self.reference = reference
         elif self.last_measurement is not None:
-            self.reference = GeoReference(origin=self.last_measurement.location.point, direction=0.0)
+            self.reference = GeoReference(origin=self.last_measurement.point, direction=0.0)
 
     @ui.refreshable
     def developer_ui(self) -> None:
@@ -145,7 +152,7 @@ class GnssHardware(Gnss):
                     last_heading = last_raw_heading - self.antenna_pose.yaw
                     self.last_measurement = GnssMeasurement(
                         time=timestamp,
-                        location=GeoPose.from_degrees(lat=last_latitude, lon=last_longitude, heading=last_heading),
+                        pose=GeoPose.from_degrees(lat=last_latitude, lon=last_longitude, heading=last_heading),
                         latitude_std_dev=last_latitude_accuracy,
                         longitude_std_dev=last_longitude_accuracy,
                         heading_std_dev=last_heading_accuracy,
@@ -195,7 +202,7 @@ class GnssSimulation(Gnss):
         geo_pose = self.reference.pose_to_geo(self.wheels.pose)
         self.last_measurement = GnssMeasurement(
             time=rosys.time(),
-            location=geo_pose,
+            pose=geo_pose,
             latitude_std_dev=0.01,
             longitude_std_dev=0.01,
             heading_std_dev=0.1,
