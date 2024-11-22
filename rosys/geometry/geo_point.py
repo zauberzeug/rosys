@@ -56,15 +56,9 @@ class GeoPoint:
         """Shift by the given Cartesian coordinates (x, y) relative to the current point.
         If a reference is given, the shift is relative to the reference's direction.
         """
-        if reference:
-            length = math.sqrt(point.x**2 + point.y**2)
-            angle = math.atan2(point.y, point.x) + reference.direction
-            x, y = length * math.cos(angle), length * math.sin(angle)
-        else:
-            x, y = point.x, point.y
-        lat = self.lat + x / R
-        lon = self.lon - y / (R * math.cos(self.lat))
-        return GeoPoint(lat=lat, lon=lon)
+        distance = math.sqrt(point.x**2 + point.y**2)
+        angle = math.atan2(point.y, point.x) + (reference.direction if reference else 0.0)
+        return self.polar(distance, angle)
 
     def __str__(self) -> str:
         return f'GeoPoint(lat={math.degrees(self.lat):.6f}˚, lon={math.degrees(self.lon):.6f}˚)'
