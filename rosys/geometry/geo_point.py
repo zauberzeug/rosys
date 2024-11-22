@@ -36,9 +36,12 @@ class GeoPoint:
                           math.sin(self.lat) * math.cos(other.lat) * math.cos(other.lon - self.lon))
 
     def distance(self, other: GeoPoint | GeoPose) -> float:
-        """Calculate the distance to another point in meters."""
-        return R * math.acos(math.sin(self.lat) * math.sin(other.lat) +
-                             math.cos(self.lat) * math.cos(other.lat) * math.cos(other.lon - self.lon))
+        """Calculate the distance to another point in meters using the haversine formula."""
+        dlat = other.lat - self.lat
+        dlon = other.lon - self.lon
+        a = math.sin(dlat/2)**2 + math.cos(self.lat) * math.cos(other.lat) * math.sin(dlon/2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+        return R * c
 
     def polar(self, distance: float, direction: float) -> GeoPoint:
         """Calculate the point at a given distance and direction from this point."""
