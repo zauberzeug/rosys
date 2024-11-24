@@ -75,9 +75,9 @@ class GeoPoint:
         return f'GeoPoint(lat={lat_deg:.6f}˚, lon={lon_deg:.6f}˚)'
 
     @property
-    def tuple(self) -> tuple[float, float]:
-        return self.lat, self.lon
-
-    @property
     def degree_tuple(self) -> tuple[float, float]:
         return math.degrees(self.lat), math.degrees(self.lon)
+
+    @property
+    def tuple(self) -> tuple[float, float]:
+        return self.lat, self.lon

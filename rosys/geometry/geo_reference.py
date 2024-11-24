@@ -53,6 +53,7 @@ class GeoReference:
         """Convert a local point to a global point (latitude, longitude; all in degrees)."""
         if not self.is_set:
             raise MissingGeoReferenceError
+        assert self.origin is not None
         return self.origin.polar(ZERO_POINT.distance(point), self.direction - ZERO_POINT.direction(point))
 
     # TODO: keep here or move to GeoPoint?
@@ -60,24 +61,28 @@ class GeoReference:
         """Convert a global point to a local point."""
         if not self.is_set:
             raise MissingGeoReferenceError
+        assert self.origin is not None
         return ZERO_POINT.polar(self.origin.distance(geo_point), self.direction - self.origin.direction(geo_point))
+
+    @property
+    def degree_tuple(self) -> tuple[float, float, float]:
+        if not self.is_set:
+            raise MissingGeoReferenceError
+        assert self.origin is not None
+        return (*self.origin.degree_tuple, math.degrees(self.direction))
 
     @property
     def tuple(self) -> tuple[float, float, float]:
         """Latitude, longitude, and direction (in global geo system)."""
         if not self.is_set:
             raise MissingGeoReferenceError
+        assert self.origin is not None
         return (*self.origin.tuple, self.direction)
-
-    @property
-    def degree_tuple(self) -> tuple[float, float, float]:
-        if not self.is_set:
-            raise MissingGeoReferenceError
-        return (*self.origin.degree_tuple, math.degrees(self.direction))
 
     def __str__(self) -> str:
         if not self.is_set:
             raise MissingGeoReferenceError
+        assert self.origin is not None
         lat_deg, lon_deg, direction_deg = self.degree_tuple
         return f'GeoReference(lat={lat_deg:.6f}˚, lon={lon_deg:.6f}˚, heading={direction_deg:.1f}˚)'
 

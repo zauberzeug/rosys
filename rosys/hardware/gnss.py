@@ -196,7 +196,7 @@ class GnssSimulation(Gnss):
         self._is_connected = value
 
     def simulate(self) -> None:
-        geo_pose = self.reference.pose_to_geo(self.wheels.pose)
+        geo_pose = GeoPose.from_pose(self.wheels.pose)
         self.last_measurement = GnssMeasurement(
             time=rosys.time(),
             pose=geo_pose,
@@ -220,5 +220,5 @@ class LocalGnssPoseProvider:
 
     def _handle_new_gnss_measurement(self, measurement: GnssMeasurement) -> None:
         if self.reference:
-            local_pose = self.reference.pose_to_local(measurement.pose)
+            local_pose = measurement.pose.cartesian()
             self.LOCAL_GNSS_POSE.emit((local_pose, measurement))

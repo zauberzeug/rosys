@@ -42,9 +42,9 @@ class GeoPose:
         return f'GeoPose(lat={lat_deg:.6f}˚, lon={lon_deg:.6f}˚, heading={heading_deg:.1f}˚)'
 
     @property
-    def tuple(self) -> tuple[float, float, float]:
-        return self.lat, self.lon, self.heading
-
-    @property
     def degree_tuple(self) -> tuple[float, float, float]:
         return math.degrees(self.lat), math.degrees(self.lon), math.degrees(self.heading)
+
+    @property
+    def tuple(self) -> tuple[float, float, float]:
+        return self.lat, self.lon, self.heading
