@@ -1,6 +1,6 @@
 from .geo_point import Fixpoint, GeoPoint
 from .geo_pose import GeoPose
-from .geo_reference import GeoReference
+from .geo_reference import GeoReference, current_geo_reference
 from .line import Line
 from .line_segment import LineSegment
 from .object3d import Object3d
@@ -21,6 +21,7 @@ __all__ = [
     'GeoPoint',
     'GeoPose',
     'GeoReference',
+    'current_geo_reference',
     'Line',
     'LineSegment',
     'Object3d',

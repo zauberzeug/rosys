@@ -4,6 +4,7 @@ import math
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from .geo_reference import current_geo_reference
 from .point import Point
 
 if TYPE_CHECKING:
@@ -28,6 +29,11 @@ class GeoPoint:
     def from_degrees(cls, lat: float, lon: float) -> GeoPoint:
         """Create a geo point from latitude and longitude in degrees."""
         return cls(math.radians(lat), math.radians(lon))
+
+    @classmethod
+    def from_point(cls, point: Point) -> GeoPoint:
+        """Create a geo point from a local point."""
+        return current_geo_reference.point_to_geo(point)
 
     def direction(self, other: GeoPoint | GeoPose) -> float:
         """Calculate the direction to another point in degrees."""
@@ -60,8 +66,13 @@ class GeoPoint:
         angle = math.atan2(point.y, point.x) + (reference.direction if reference else 0.0)
         return self.polar(distance, angle)
 
+    def cartesian(self) -> Point:
+        """Transform to local cartesian coordinates relative to current reference."""
+        return current_geo_reference.point_to_local(self)
+
     def __str__(self) -> str:
-        return f'GeoPoint(lat={math.degrees(self.lat):.6f}˚, lon={math.degrees(self.lon):.6f}˚)'
+        lat_deg, lon_deg = self.degree_tuple
+        return f'GeoPoint(lat={lat_deg:.6f}˚, lon={lon_deg:.6f}˚)'
 
     @property
     def tuple(self) -> tuple[float, float]:

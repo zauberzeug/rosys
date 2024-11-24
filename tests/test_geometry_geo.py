@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from rosys.geometry import Fixpoint, GeoPoint, GeoReference, Point
+from rosys.geometry import Fixpoint, GeoPoint, GeoReference, Point, current_geo_reference
 from rosys.geometry.geo_point import R
 
 equator_circumference = R * 2 * math.pi
@@ -47,11 +47,29 @@ def test_reference_from_fixpoints():
     assert reference.direction == pytest.approx(0, abs=1e-2)
 
 
-def test_cartesian():
+def test_update_reference():
+    geo_reference = GeoReference(GeoPoint.from_degrees(lat=0, lon=0))
+    current_geo_reference.update(geo_reference)
+    point_1 = GeoPoint.from_degrees(lat=0, lon=1)
+    assert current_geo_reference.origin.distance(point_1) == pytest.approx(one_degree_at_equator, abs=1e-8)
+    current_geo_reference.update(GeoReference(point_1))
+    assert current_geo_reference.origin.distance(point_1) == pytest.approx(0, abs=1e-8)
+
+
+def test_point_cartesian():
     reference = GeoReference(GeoPoint.from_degrees(lat=0, lon=0), direction=0)
     point_west = GeoPoint.from_degrees(lat=0, lon=-1)
     point_east = GeoPoint.from_degrees(lat=0, lon=1)
     point_west_local = reference.point_to_local(point_west)
     point_east_local = reference.point_to_local(point_east)
+    assert point_west_local.x == pytest.approx(0, abs=1e-8)
     assert point_west_local.y == pytest.approx(one_degree_at_equator, abs=1e-8)
+    assert point_east_local.x == pytest.approx(0, abs=1e-8)
     assert point_east_local.y == pytest.approx(-one_degree_at_equator, abs=1e-8)
+    assert reference.point_to_geo(point_west_local).distance(point_west) == pytest.approx(0, abs=1e-8)
+    assert reference.point_to_geo(point_east_local).distance(point_east) == pytest.approx(0, abs=1e-8)
+
+
+def test_pose_cartesian():
+    # TODO
+    pass
