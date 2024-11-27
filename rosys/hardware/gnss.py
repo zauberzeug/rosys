@@ -26,14 +26,12 @@ class GnssMeasurement:
     latitude_std_dev: float = 0.0
     longitude_std_dev: float = 0.0
     heading_std_dev: float = 0.0
-    # TODO
+    # TODO: remove mode, still here for field_friend
     mode: str = ''
-    # TODO
     gps_qual: int = 0
-    # TODO
+    num_satellites: int = 0
+    hdop: float = 0.0
     altitude: float = 0.0
-    # TODO
-    separation: float = 0.0
 
     @property
     def point(self) -> GeoPoint:
@@ -101,6 +99,10 @@ class GnssHardware(Gnss):
         last_latitude_accuracy = 0.0
         last_longitude_accuracy = 0.0
         last_heading_accuracy = 0.0
+        last_gps_qual = 0
+        last_num_satellites = 0
+        last_hdop = 0.0
+        last_altitude = 0.0
         last_gga_timestamp = ''
         last_gst_timestamp = ''
         last_pssn_timestamp = ''
@@ -122,11 +124,15 @@ class GnssHardware(Gnss):
             self.log.debug(sentence)
             parts = sentence.split(',')
             try:
-                timestamp = parts[{'$GPGGA': 1, '$GPGST': 1, '$PSSN': 2}[parts[0]]]
+                timestamp = float(parts[{'$GPGGA': 1, '$GPGST': 1, '$PSSN': 2}[parts[0]]])
                 if parts[0] == '$GPGGA':
-                    last_gga_timestamp = timestamp
+                    last_gga_timestamp = float(timestamp)
                     last_raw_latitude = self._convert_to_decimal(parts[2], parts[3])
                     last_raw_longitude = self._convert_to_decimal(parts[4], parts[5])
+                    last_gps_qual = int(parts[6]) if parts[6] else 0
+                    last_num_satellites = int(parts[7]) if parts[7] else 0
+                    last_hdop = float(parts[8]) if parts[8] else 0.0
+                    last_altitude = float(parts[9]) if parts[9] else 0.0
                 if parts[0] == '$GPGST' and parts[6] and parts[7]:
                     last_gst_timestamp = timestamp
                     last_latitude_accuracy = float(parts[6])
@@ -147,6 +153,10 @@ class GnssHardware(Gnss):
                         latitude_std_dev=last_latitude_accuracy,
                         longitude_std_dev=last_longitude_accuracy,
                         heading_std_dev=last_heading_accuracy,
+                        gps_qual=last_gps_qual,
+                        num_satellites=last_num_satellites,
+                        hdop=last_hdop,
+                        altitude=last_altitude,
                     )
                     self.NEW_MEASUREMENT.emit(self.last_measurement)
             except Exception as e:
@@ -164,14 +174,15 @@ class GnssHardware(Gnss):
     def _connect_to_device(self, port: str, *, baudrate: int = 115200, timeout: float = 0.2) -> serial.Serial:
         self.log.info('Connecting to GNSS device "%s"...', port)
         try:
-            return serial.Serial(port, baudrate, timeout)
+            return serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
         except serial.SerialException as e:
             raise RuntimeError(f'Could not connect to GNSS device: {port}') from e
 
     @staticmethod
     def _convert_to_decimal(coord: str, direction: str) -> float:
-        degrees = float(coord[:2])
-        minutes = float(coord[2:])
+        split_index = coord.find('.') - 2
+        degrees = float(coord[:split_index])
+        minutes = float(coord[split_index:])
         decimal = degrees + minutes / 60
         if direction in ['S', 'W']:
             decimal = -decimal
