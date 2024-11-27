@@ -10,7 +10,7 @@ import rosys
 from rosys.analysis import KpiLogger
 from rosys.automation import Automator
 from rosys.driving import Driver, Odometer
-from rosys.geometry import Prism
+from rosys.geometry import GeoPoint, GeoReference, Prism, current_geo_reference
 from rosys.hardware import Robot, RobotSimulation, Wheels, WheelsSimulation
 from rosys.pathplanning import PathPlanner
 from rosys.testing import helpers, log_configuration
@@ -74,3 +74,10 @@ async def kpi_logger(rosys_integration: None) -> KpiLogger:
 def enforce_spawn_process() -> None:
     if multiprocessing.get_start_method() != 'spawn':
         multiprocessing.set_start_method('spawn', force=True)
+
+
+@pytest.fixture
+def geo_reference() -> GeoReference:
+    geo_reference = GeoReference(GeoPoint.from_degrees(lat=0, lon=0))
+    current_geo_reference.update(geo_reference)
+    return current_geo_reference
