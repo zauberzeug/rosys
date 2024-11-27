@@ -58,7 +58,9 @@ class Gnss(ABC):
     @ui.refreshable
     def developer_ui(self) -> None:
         ui.label('GNSS').classes('text-center text-bold')
-        # TODO:
+        with ui.grid(columns='auto auto').classes('gap-y-1 w-2/5'):
+            ui.label('connected')
+            ui.icon('close').bind_name_from(self, 'is_connected', lambda x: 'check' if x else 'close')
 
 
 class GnssHardware(Gnss):
