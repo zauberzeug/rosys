@@ -140,7 +140,12 @@ class GeoReference:
 
     @classmethod
     def from_two_fixpoints(cls, A: Fixpoint, B: Fixpoint) -> GeoReference:
-        """Create a geo reference from two fixpoints."""
+        """Create a geo reference from two fixpoints.
+
+        :param A: The first fixpoint.
+        :param B: The second fixpoint.
+        :raises: AssertionError: If either fixpoint does not have a geo_point.
+        """
         assert A.geo_point is not None, 'Fixpoint "A" must have a geo_point'
         assert B.geo_point is not None, 'Fixpoint "B" must have a geo_point'
         x_direction = A.geo_point.direction(B.geo_point) + A.local_point.direction(B.local_point)
@@ -149,41 +154,62 @@ class GeoReference:
             .polar(A.local_point.y, x_direction + math.radians(90))
         return cls(origin, x_direction)
 
-    # TODO: provide GeoReference or GeoPoint and Heading?
     def update(self, new_reference: GeoReference) -> None:
-        """Update the current reference to the given reference."""
+        """Update the current reference to the given reference.
+
+        :param new_reference: The new reference to update to.
+        """
         self.origin = new_reference.origin
         self.direction = new_reference.direction
 
     def point_to_geo(self, point: Point | Pose) -> GeoPoint:
-        """Convert a local point to a global point."""
+        """Convert a local point to a global point.
+
+        :param point: The local point to convert.
+        :raises: MissingGeoReferenceError: If the geo reference is not set.
+        """
         if not self.is_set:
             raise MissingGeoReferenceError
         assert self.origin is not None
         return self.origin.polar(ZERO_POINT.distance(point), self.direction - ZERO_POINT.direction(point))
 
     def pose_to_geo(self, pose: Pose) -> GeoPose:
-        """Convert a local pose to a global geo pose."""
+        """Convert a local pose to a global geo pose.
+
+        :param pose: The local pose to convert.
+        :raises: MissingGeoReferenceError: If the geo reference is not set.
+        """
         geo_point1 = self.point_to_geo(pose)
         geo_point2 = self.point_to_geo(pose.transform_pose(Pose(x=1)))
         return GeoPose(geo_point1.lat, geo_point1.lon, geo_point1.direction(geo_point2))
 
     def point_to_local(self, geo_point: GeoPoint | GeoPose) -> Point:
-        """Convert a global point to a local point."""
+        """Convert a global point to a local point.
+
+        :param geo_point: The global point to convert to local coordinates.
+        :raises: MissingGeoReferenceError: If the geo reference is not set.
+        """
         if not self.is_set:
             raise MissingGeoReferenceError
         assert self.origin is not None
         return ZERO_POINT.polar(self.origin.distance(geo_point), self.direction - self.origin.direction(geo_point))
 
     def pose_to_local(self, geo_pose: GeoPose) -> Pose:
-        """Convert a global geo pose to a local pose."""
+        """Convert a global geo pose to a local pose.
+
+        :param geo_pose: The global geo pose to convert to local coordinates.
+        :raises: MissingGeoReferenceError: If the geo reference is not set.
+        """
         point1 = self.point_to_local(geo_pose)
         point2 = self.point_to_local(geo_pose.point.polar(1, geo_pose.heading))
         return Pose(x=point1.x, y=point1.y, yaw=point1.direction(point2))
 
     @property
     def degree_tuple(self) -> tuple[float, float, float]:
-        """Latitude, longitude, and direction (in global geo system, in degrees)."""
+        """Latitude, longitude, and direction (in global geo system, in degrees).
+
+        :raises: MissingGeoReferenceError: If the geo reference is not set.
+        """
         if not self.is_set:
             raise MissingGeoReferenceError
         assert self.origin is not None
@@ -191,7 +217,10 @@ class GeoReference:
 
     @property
     def tuple(self) -> tuple[float, float, float]:
-        """Latitude, longitude, and direction (in global geo system)."""
+        """Latitude, longitude, and direction (in global geo system).
+
+        :raises: MissingGeoReferenceError: If the geo reference is not set.
+        """
         if not self.is_set:
             raise MissingGeoReferenceError
         assert self.origin is not None
@@ -202,5 +231,4 @@ class GeoReference:
         return f'GeoReference(lat={lat_deg:.6f}˚, lon={lon_deg:.6f}˚, heading={direction_deg:.1f}˚)'
 
 
-# TODO: naming
 current_geo_reference = GeoReference()
