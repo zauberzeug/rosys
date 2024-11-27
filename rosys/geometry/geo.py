@@ -49,12 +49,12 @@ class GeoPoint:
                                      math.cos(angular_distance) - math.sin(self.lat) * math.sin(lat2))
         return GeoPoint(lat2, lon2)
 
-    def shifted(self, point: Point) -> GeoPoint:
+    def shifted(self, *, x: float = 0.0, y: float = 0.0) -> GeoPoint:
         """Shift by the given Cartesian coordinates (x, y) relative to the current point.
         (x, y) are in the local coordinate frame where x is the direction of the reference in a right hand frame.
         """
-        distance = math.sqrt(point.x**2 + point.y**2)
-        angle = math.atan2(-point.y, point.x) + current_geo_reference.direction if current_geo_reference.is_set else 0
+        distance = math.sqrt(x**2 + y**2)
+        angle = math.atan2(-y, x) + current_geo_reference.direction if current_geo_reference.is_set else 0
         return self.polar(distance, angle)
 
     def cartesian(self) -> Point:
