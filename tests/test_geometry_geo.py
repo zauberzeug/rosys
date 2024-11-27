@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from rosys.geometry import Fixpoint, GeoPoint, GeoReference, Point, current_geo_reference
+from rosys.geometry import Fixpoint, GeoPoint, GeoPose, GeoReference, Point, current_geo_reference
 from rosys.geometry.geo import R
 
 equator_circumference = R * 2 * math.pi
@@ -79,5 +79,13 @@ def test_point_cartesian():
 
 
 def test_pose_cartesian():
-    # TODO
-    pass
+    reference = GeoReference(GeoPoint.from_degrees(lat=0, lon=0), direction=0)
+    current_geo_reference.update(reference)
+    pose = GeoPose.from_degrees(lat=0, lon=1, heading=0).cartesian()
+    assert pose.x == pytest.approx(0, abs=1e-8)
+    assert pose.y == pytest.approx(-one_degree_at_equator, abs=1e-8)
+    assert pose.yaw == pytest.approx(0, abs=1e-8)
+    pose = GeoPose.from_degrees(lat=0, lon=0, heading=45).cartesian()
+    assert pose.x == pytest.approx(0, abs=1e-8)
+    assert pose.y == pytest.approx(0, abs=1e-8)
+    assert pose.yaw == pytest.approx(math.radians(-45), abs=1e-8)
