@@ -3,7 +3,6 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 
-from .. import helpers
 from .point import Point
 from .pose import Pose
 
@@ -55,8 +54,7 @@ class GeoPoint:
         (x, y) are in the local coordinate frame where x is the direction of the reference in a right hand frame.
         """
         distance = math.sqrt(point.x**2 + point.y**2)
-        reference_direction = current_geo_reference.direction if current_geo_reference.is_set else 0
-        angle = math.atan2(point.y, point.x) + helpers.angle(math.radians(180), reference_direction)
+        angle = math.atan2(-point.y, point.x) + current_geo_reference.direction if current_geo_reference.is_set else 0
         return self.polar(distance, angle)
 
     def cartesian(self) -> Point:

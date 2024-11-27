@@ -37,12 +37,13 @@ def test_polar():
 def test_shifted():
     point_1 = GeoPoint.from_degrees(lat=0, lon=0)
     for distance in (1, 100, one_degree_arc_length, 10_000_000):
-        point_2 = point_1.shifted(point=Point(x=0, y=distance))
-        assert point_1.distance(point_2) == pytest.approx(distance, abs=1e-8)
+        diagonal_distance = math.sqrt(4 + distance**2)
+        point_2 = point_1.shifted(point=Point(x=2, y=distance))
+        assert point_1.distance(point_2) == pytest.approx(diagonal_distance, abs=1e-8)
         point_2_cartesian = point_2.cartesian()
-        assert Point(x=0, y=0).distance(point_2_cartesian) == pytest.approx(distance, abs=1e-8)
+        assert Point(x=0, y=0).distance(point_2_cartesian) == pytest.approx(diagonal_distance, abs=1e-8)
         assert point_2_cartesian.y == pytest.approx(distance, abs=1e-8)
-        assert point_2_cartesian.x == pytest.approx(0, abs=1e-8)
+        assert point_2_cartesian.x == pytest.approx(2, abs=1e-8)
 
 
 def test_reference_from_fixpoints():
