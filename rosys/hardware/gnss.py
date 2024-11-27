@@ -12,7 +12,7 @@ from serial.tools import list_ports
 
 from .. import rosys
 from ..event import Event
-from ..geometry import GeoPoint, GeoPose, GeoReference, Pose
+from ..geometry import GeoPoint, GeoPose, Pose
 from ..run import io_bound
 
 if TYPE_CHECKING:
@@ -180,10 +180,9 @@ class GnssHardware(Gnss):
 
 class GnssSimulation(Gnss):
 
-    def __init__(self, *, wheels: WheelsSimulation, reference: GeoReference) -> None:
+    def __init__(self, *, wheels: WheelsSimulation) -> None:
         super().__init__()
         self.wheels = wheels
-        self.reference = reference
         self._is_connected = True
         rosys.on_repeat(self.simulate, 1.0)
 
@@ -206,19 +205,3 @@ class GnssSimulation(Gnss):
             gps_qual=4,
         )
         self.NEW_MEASUREMENT.emit(self.last_measurement)
-
-
-class LocalGnssPoseProvider:
-    def __init__(self, *, gnss: Gnss, reference: GeoReference | None = None) -> None:
-        self.gnss = gnss
-        self.reference = reference
-
-        self.LOCAL_GNSS_POSE = Event()
-        """a new local gnss pose is available (argument: Pose and GnssMeasurement)"""
-
-        self.gnss.NEW_MEASUREMENT.register(self._handle_new_gnss_measurement)
-
-    def _handle_new_gnss_measurement(self, measurement: GnssMeasurement) -> None:
-        if self.reference:
-            local_pose = measurement.pose.cartesian()
-            self.LOCAL_GNSS_POSE.emit((local_pose, measurement))
