@@ -103,9 +103,9 @@ class GnssHardware(Gnss):
         last_num_satellites = 0
         last_hdop = 0.0
         last_altitude = 0.0
-        last_gga_timestamp = ''
-        last_gst_timestamp = ''
-        last_pssn_timestamp = ''
+        last_gga_timestamp: float | None = None
+        last_gst_timestamp: float | None = None
+        last_pssn_timestamp: float | None = None
         while True:
             if not self.is_connected:
                 return None
@@ -186,7 +186,7 @@ class GnssHardware(Gnss):
         decimal = degrees + minutes / 60
         if direction in ['S', 'W']:
             decimal = -decimal
-        return round(decimal, 6)
+        return decimal
 
 
 class GnssSimulation(Gnss):
