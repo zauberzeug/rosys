@@ -124,9 +124,9 @@ class GnssHardware(Gnss):
             self.log.debug(sentence)
             parts = sentence.split(',')
             try:
-                timestamp = float(parts[{'$GPGGA': 1, '$GPGST': 1, '$PSSN': 2}[parts[0]]])
+                timestamp = parts[{'$GPGGA': 1, '$GPGST': 1, '$PSSN': 2}[parts[0]]]
                 if parts[0] == '$GPGGA':
-                    last_gga_timestamp = float(timestamp)
+                    last_gga_timestamp = timestamp
                     last_raw_latitude = self._convert_to_decimal(parts[2], parts[3])
                     last_raw_longitude = self._convert_to_decimal(parts[4], parts[5])
                     last_gps_qual = int(parts[6]) if parts[6] else 0
@@ -148,7 +148,7 @@ class GnssHardware(Gnss):
                     last_longitude = math.degrees(robot.lon)
                     last_heading = last_raw_heading - self.antenna_pose.yaw
                     self.last_measurement = GnssMeasurement(
-                        time=timestamp,
+                        time=float(timestamp),
                         pose=GeoPose.from_degrees(lat=last_latitude, lon=last_longitude, heading=last_heading),
                         latitude_std_dev=last_latitude_accuracy,
                         longitude_std_dev=last_longitude_accuracy,
