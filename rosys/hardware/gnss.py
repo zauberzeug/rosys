@@ -4,6 +4,7 @@ import logging
 import math
 from abc import ABC
 from dataclasses import dataclass
+from enum import IntEnum
 from typing import TYPE_CHECKING
 
 import serial
@@ -19,6 +20,18 @@ if TYPE_CHECKING:
     from ..hardware import WheelsSimulation
 
 
+class GpsQuality(IntEnum):
+    INVALID = 0
+    GPS = 1
+    DGPS = 2
+    PPS = 3
+    RTK_FIXED = 4
+    RTK_FLOAT = 5
+    DEAD_RECKONING = 6
+    MANUAL = 7
+    SIMULATION = 8
+
+
 @dataclass
 class GnssMeasurement:
     time: float
@@ -28,7 +41,7 @@ class GnssMeasurement:
     heading_std_dev: float = 0.0
     # TODO: remove mode, still here for field_friend
     mode: str = ''
-    gps_qual: int = 0
+    gps_qual: GpsQuality = GpsQuality.INVALID
     num_satellites: int = 0
     hdop: float = 0.0
     altitude: float = 0.0
@@ -155,7 +168,7 @@ class GnssHardware(Gnss):
                         latitude_std_dev=last_latitude_accuracy,
                         longitude_std_dev=last_longitude_accuracy,
                         heading_std_dev=last_heading_accuracy,
-                        gps_qual=last_gps_qual,
+                        gps_qual=GpsQuality(last_gps_qual),
                         num_satellites=last_num_satellites,
                         hdop=last_hdop,
                         altitude=last_altitude,
