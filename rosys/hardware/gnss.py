@@ -68,12 +68,43 @@ class Gnss(ABC):
     def is_connected(self) -> bool:
         return False
 
-    @ui.refreshable
     def developer_ui(self) -> None:
         ui.label('GNSS').classes('text-center text-bold')
         with ui.grid(columns='auto auto').classes('gap-y-1 w-2/5'):
-            ui.label('connected')
-            ui.icon('close').bind_name_from(self, 'is_connected', lambda x: 'check' if x else 'close')
+            ui.label('Connected:')
+            ui.icon('close').bind_name_from(self, 'is_connected',
+                                            lambda x: 'check' if x else 'close')
+            ui.label('Position:')
+            with ui.column().classes('gap-y-0'):
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda x: f'{math.degrees(x.pose.lat):.6f}˚' if x else '-')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda x: f'± {x.latitude_std_dev:.3f}m' if x else '-')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda x: f'{math.degrees(x.pose.lon):.6f}˚' if x else '-')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda x: f'± {x.longitude_std_dev:.3f}m' if x else '-')
+            ui.label('Heading:')
+            with ui.column().classes('gap-y-0'):
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda x: f'{math.degrees(x.pose.heading):.2f}˚' if x else '-')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda x: f'± {x.heading_std_dev:.2f}˚' if x else '-')
+            ui.label('Quality:')
+            ui.label().bind_text_from(self, 'last_measurement',
+                                      lambda x: x.gps_qual.name if x else '')
+            ui.label('Satellites:')
+            ui.label().bind_text_from(self, 'last_measurement',
+                                      lambda x: str(x.num_satellites) if x else '-')
+            ui.label('HDOP:')
+            ui.label().bind_text_from(self, 'last_measurement',
+                                      lambda x: f'{x.hdop:.2f}' if x else '-')
+            ui.label('Altitude:')
+            ui.label().bind_text_from(self, 'last_measurement',
+                                      lambda x: f'{x.altitude:.3f}m' if x else '-')
+            ui.label('Last update:')
+            ui.label().bind_text_from(self, 'last_measurement',
+                                      lambda x: f'{rosys.time() - x.time:.2f}s' if x else '')
 
 
 class GnssHardware(Gnss):
