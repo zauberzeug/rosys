@@ -123,29 +123,11 @@ class Fixpoint:
     geo_point: GeoPoint | None = None
 
 
-class MissingGeoReferenceError(Exception):
-    """Raised when a geo reference is required but not set."""
-
-    def __str__(self) -> str:
-        return 'Geo reference is not set. See rosys.geometry.geo_reference.current_geo_reference'
-
-
 @dataclass(slots=True)
 class GeoReference:
-    _current: ClassVar[GeoReference | None] = None
+    current: ClassVar[GeoReference | None] = None
     origin: GeoPoint
     direction: float = 0.0  # direction of the local x-axis in the global geo system (0 = north, pi/2 = east)
-
-    @classmethod
-    @property
-    def current(cls) -> GeoReference:
-        """The current geo reference.
-
-        :raises: MissingGeoReferenceError: If the geo reference is not set.
-        """
-        if cls._current is None:
-            raise MissingGeoReferenceError
-        return cls._current
 
     @classmethod
     def update(cls, new_reference: GeoReference) -> None:
@@ -153,11 +135,11 @@ class GeoReference:
 
         :param new_reference: The new reference to update to.
         """
-        if cls._current is None:
-            cls._current = new_reference
+        if cls.current is None:
+            cls.current = new_reference
         else:
-            cls._current.origin = new_reference.origin
-            cls._current.direction = new_reference.direction
+            cls.current.origin = new_reference.origin
+            cls.current.direction = new_reference.direction
 
     @classmethod
     def from_two_fixpoints(cls, A: Fixpoint, B: Fixpoint) -> GeoReference:
