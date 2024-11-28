@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from rosys.geometry import Fixpoint, GeoPoint, GeoPose, GeoReference, Point, current_geo_reference
+from rosys.geometry import Fixpoint, GeoPoint, GeoPose, GeoReference, Point
 from rosys.geometry.geo import R
 
 CIRCUMFERENCE = R * 2 * math.pi
@@ -15,8 +15,8 @@ def test_distance():
     assert point.distance(GeoPoint.from_degrees(lat=0, lon=1)) == pytest.approx(ONE_DEGREE_ARC_LENGTH, abs=1e-8)
 
 
-def test_direction(geo_reference: GeoReference):
-    assert geo_reference.is_set
+def test_direction(geo_reference: None) -> None:  # pylint: disable=unused-argument
+    assert GeoReference.current is not None
     point_1 = GeoPoint.from_degrees(lat=0, lon=0)
     point_east = GeoPoint.from_degrees(lat=0, lon=1)
     assert point_1.direction(point_east) == pytest.approx(math.radians(90), abs=1e-8)
@@ -25,7 +25,7 @@ def test_direction(geo_reference: GeoReference):
 
 
 @pytest.mark.parametrize('angle_degrees', (0, 45, 90, 135, 180, -45, -90, -135, -180))
-def test_polar(angle_degrees: float):
+def test_polar(angle_degrees: float) -> None:
     point_1 = GeoPoint.from_degrees(lat=0, lon=0)
     angle = math.radians(angle_degrees)
     point_2 = point_1.polar(distance=1, direction=angle)
@@ -34,8 +34,8 @@ def test_polar(angle_degrees: float):
 
 
 @pytest.mark.parametrize('distance', (1, 100, ONE_DEGREE_ARC_LENGTH, 10_000_000))
-def test_shifted(geo_reference: GeoReference, distance: float):
-    assert geo_reference.is_set
+def test_shifted(geo_reference: None, distance: float) -> None:  # pylint: disable=unused-argument
+    assert GeoReference.current is not None
     point_1 = GeoPoint.from_degrees(lat=0, lon=0)
     diagonal_distance = math.sqrt(4 + distance**2)
     point_2 = point_1.shifted(x=2, y=distance)
@@ -46,7 +46,7 @@ def test_shifted(geo_reference: GeoReference, distance: float):
     assert point_2_cartesian.x == pytest.approx(2, abs=1e-8)
 
 
-def test_reference_from_fixpoints():
+def test_reference_from_fixpoints() -> None:
     fixpoint_1 = Fixpoint(local_point=Point(x=0, y=0), geo_point=GeoPoint.from_degrees(lat=0, lon=1))
     fixpoint_2 = Fixpoint(local_point=Point(x=0, y=ONE_DEGREE_ARC_LENGTH),
                           geo_point=GeoPoint.from_degrees(lat=0, lon=0))
@@ -58,22 +58,22 @@ def test_reference_from_fixpoints():
     assert reference.direction == pytest.approx(0, abs=1e-2)
 
 
-def test_update_reference(geo_reference: GeoReference):
-    assert geo_reference.origin is not None
+def test_update_reference(geo_reference: None) -> None:  # pylint: disable=unused-argument
+    assert GeoReference.current is not None
     point_1 = GeoPoint.from_degrees(lat=0, lon=1)
-    assert geo_reference.origin.distance(point_1) == pytest.approx(ONE_DEGREE_ARC_LENGTH, abs=1e-8)
+    assert GeoReference.current.origin.distance(point_1) == pytest.approx(ONE_DEGREE_ARC_LENGTH, abs=1e-8)
     new_geo_reference = GeoReference(GeoPoint.from_degrees(lat=0, lon=1))
-    current_geo_reference.update(new_geo_reference)
-    assert current_geo_reference.origin is not None
+    GeoReference.update(new_geo_reference)
+    assert GeoReference.current is not None
     assert new_geo_reference.origin is not None
-    assert current_geo_reference.origin.lat == pytest.approx(new_geo_reference.origin.lat, abs=1e-8)
-    assert current_geo_reference.origin.lon == pytest.approx(new_geo_reference.origin.lon, abs=1e-8)
-    assert current_geo_reference.origin.distance(point_1) == pytest.approx(0, abs=1e-8)
+    assert GeoReference.current.origin.lat == pytest.approx(new_geo_reference.origin.lat, abs=1e-8)
+    assert GeoReference.current.origin.lon == pytest.approx(new_geo_reference.origin.lon, abs=1e-8)
+    assert GeoReference.current.origin.distance(point_1) == pytest.approx(0, abs=1e-8)
 
 
 @pytest.mark.parametrize('orientation', ('east', 'west'))
-def test_point_cartesian(geo_reference: GeoReference, orientation: str):
-    assert geo_reference.origin is not None
+def test_point_cartesian(geo_reference: None, orientation: str) -> None:  # pylint: disable=unused-argument
+    assert GeoReference.current is not None
     orientation_sign = 1 if orientation == 'east' else -1
     point = GeoPoint.from_degrees(lat=0, lon=orientation_sign)
     point_local = point.cartesian()
@@ -83,8 +83,8 @@ def test_point_cartesian(geo_reference: GeoReference, orientation: str):
 
 
 @pytest.mark.parametrize('heading_degrees', (0, 45, 90, 179, -45, -90, -179))
-def test_pose_cartesian(geo_reference: GeoReference, heading_degrees: int):
-    assert geo_reference.origin is not None
+def test_pose_cartesian(geo_reference: None, heading_degrees: int) -> None:  # pylint: disable=unused-argument
+    assert GeoReference.current is not None
     pose = GeoPose.from_degrees(lat=0, lon=0.01, heading=heading_degrees).cartesian()
     assert pose.x == pytest.approx(0, abs=1e-8)
     assert pose.y == pytest.approx(-ONE_DEGREE_ARC_LENGTH*0.01, abs=1e-8)

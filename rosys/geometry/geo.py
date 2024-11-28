@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
+from typing import ClassVar
 
 from .point import Point
 from .pose import Pose
@@ -24,7 +25,7 @@ class GeoPoint:
     @classmethod
     def from_point(cls, point: Point) -> GeoPoint:
         """Create a geo point from a local point."""
-        return current_geo_reference.point_to_geo(point)
+        return GeoReference.current.point_to_geo(point)
 
     def direction(self, other: GeoPoint | GeoPose) -> float:
         """Calculate the direction to another point in degrees."""
@@ -54,12 +55,12 @@ class GeoPoint:
         (x, y) are in the local coordinate frame where x is the direction of the reference in a right hand frame.
         """
         distance = math.sqrt(x**2 + y**2)
-        angle = math.atan2(-y, x) + current_geo_reference.direction if current_geo_reference.is_set else 0
+        angle = math.atan2(-y, x) + GeoReference.current.direction if GeoReference.current is not None else 0
         return self.polar(distance, angle)
 
     def cartesian(self) -> Point:
         """Transform to local cartesian coordinates relative to current reference."""
-        return current_geo_reference.point_to_local(self)
+        return GeoReference.current.point_to_local(self)
 
     def __str__(self) -> str:
         lat_deg, lon_deg = self.degree_tuple
@@ -88,8 +89,8 @@ class GeoPose:
     @classmethod
     def from_pose(cls, pose: Pose) -> GeoPose:
         """Create a geo pose from a pose."""
-        geo_point1 = current_geo_reference.point_to_geo(pose)
-        geo_point2 = current_geo_reference.point_to_geo(pose.transform_pose(Pose(x=1)))
+        geo_point1 = GeoReference.current.point_to_geo(pose)
+        geo_point2 = GeoReference.current.point_to_geo(pose.transform_pose(Pose(x=1)))
         return cls(geo_point1.lat, geo_point1.lon, geo_point1.direction(geo_point2))
 
     @property
@@ -99,8 +100,8 @@ class GeoPose:
 
     def cartesian(self) -> Pose:
         """Convert the geo pose to a local pose."""
-        point1 = current_geo_reference.point_to_local(self)
-        point2 = current_geo_reference.point_to_local(self.point.polar(1, self.heading))
+        point1 = GeoReference.current.point_to_local(self)
+        point2 = GeoReference.current.point_to_local(self.point.polar(1, self.heading))
         return Pose(x=point1.x, y=point1.y, yaw=point1.direction(point2))
 
     def __str__(self) -> str:
@@ -131,12 +132,32 @@ class MissingGeoReferenceError(Exception):
 
 @dataclass(slots=True)
 class GeoReference:
-    origin: GeoPoint | None = None
+    _current: ClassVar[GeoReference | None] = None
+    origin: GeoPoint
     direction: float = 0.0  # direction of the local x-axis in the global geo system (0 = north, pi/2 = east)
 
+    @classmethod
     @property
-    def is_set(self) -> bool:
-        return self.origin is not None
+    def current(cls) -> GeoReference:
+        """The current geo reference.
+
+        :raises: MissingGeoReferenceError: If the geo reference is not set.
+        """
+        if cls._current is None:
+            raise MissingGeoReferenceError
+        return cls._current
+
+    @classmethod
+    def update(cls, new_reference: GeoReference) -> None:
+        """Update the current reference to the given reference.
+
+        :param new_reference: The new reference to update to.
+        """
+        if cls._current is None:
+            cls._current = new_reference
+        else:
+            cls._current.origin = new_reference.origin
+            cls._current.direction = new_reference.direction
 
     @classmethod
     def from_two_fixpoints(cls, A: Fixpoint, B: Fixpoint) -> GeoReference:
@@ -154,30 +175,17 @@ class GeoReference:
             .polar(A.local_point.y, x_direction + math.radians(90))
         return cls(origin, x_direction)
 
-    def update(self, new_reference: GeoReference) -> None:
-        """Update the current reference to the given reference.
-
-        :param new_reference: The new reference to update to.
-        """
-        self.origin = new_reference.origin
-        self.direction = new_reference.direction
-
     def point_to_geo(self, point: Point | Pose) -> GeoPoint:
         """Convert a local point to a global point.
 
         :param point: The local point to convert.
-        :raises: MissingGeoReferenceError: If the geo reference is not set.
         """
-        if not self.is_set:
-            raise MissingGeoReferenceError
-        assert self.origin is not None
         return self.origin.polar(ZERO_POINT.distance(point), self.direction - ZERO_POINT.direction(point))
 
     def pose_to_geo(self, pose: Pose) -> GeoPose:
         """Convert a local pose to a global geo pose.
 
         :param pose: The local pose to convert.
-        :raises: MissingGeoReferenceError: If the geo reference is not set.
         """
         geo_point1 = self.point_to_geo(pose)
         geo_point2 = self.point_to_geo(pose.transform_pose(Pose(x=1)))
@@ -187,18 +195,13 @@ class GeoReference:
         """Convert a global point to a local point.
 
         :param geo_point: The global point to convert to local coordinates.
-        :raises: MissingGeoReferenceError: If the geo reference is not set.
         """
-        if not self.is_set:
-            raise MissingGeoReferenceError
-        assert self.origin is not None
         return ZERO_POINT.polar(self.origin.distance(geo_point), self.direction - self.origin.direction(geo_point))
 
     def pose_to_local(self, geo_pose: GeoPose) -> Pose:
         """Convert a global geo pose to a local pose.
 
         :param geo_pose: The global geo pose to convert to local coordinates.
-        :raises: MissingGeoReferenceError: If the geo reference is not set.
         """
         point1 = self.point_to_local(geo_pose)
         point2 = self.point_to_local(geo_pose.point.polar(1, geo_pose.heading))
@@ -206,29 +209,14 @@ class GeoReference:
 
     @property
     def degree_tuple(self) -> tuple[float, float, float]:
-        """Latitude, longitude, and direction (in global geo system, in degrees).
-
-        :raises: MissingGeoReferenceError: If the geo reference is not set.
-        """
-        if not self.is_set:
-            raise MissingGeoReferenceError
-        assert self.origin is not None
+        """Latitude, longitude, and direction (in global geo system, in degrees)."""
         return (*self.origin.degree_tuple, math.degrees(self.direction))
 
     @property
     def tuple(self) -> tuple[float, float, float]:
-        """Latitude, longitude, and direction (in global geo system).
-
-        :raises: MissingGeoReferenceError: If the geo reference is not set.
-        """
-        if not self.is_set:
-            raise MissingGeoReferenceError
-        assert self.origin is not None
+        """Latitude, longitude, and direction (in global geo system)."""
         return (*self.origin.tuple, self.direction)
 
     def __str__(self) -> str:
         lat_deg, lon_deg, direction_deg = self.degree_tuple
         return f'GeoReference(lat={lat_deg:.6f}˚, lon={lon_deg:.6f}˚, heading={direction_deg:.1f}˚)'
-
-
-current_geo_reference = GeoReference()
