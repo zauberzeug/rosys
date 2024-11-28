@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import TYPE_CHECKING
 
+import numpy as np
 import serial
 from nicegui import ui
 from serial.tools import list_ports
@@ -54,6 +55,7 @@ class GnssMeasurement:
 
 
 class Gnss(ABC):
+    """A GNSS module that provides GnssMeasurement from a GNSS receiver."""
 
     def __init__(self) -> None:
         self.log = logging.getLogger('rosys.gnss')
@@ -75,22 +77,22 @@ class Gnss(ABC):
             ui.label('Position:')
             with ui.column().classes('gap-y-0'):
                 ui.label().bind_text_from(self, 'last_measurement',
-                                          lambda x: f'{math.degrees(x.pose.lat):.6f}˚' if x else '-')
-                ui.label().bind_text_from(self.last_measurement, 'latitude_std_dev',
-                                          lambda x: f'± {x:.3f}m' if x else '-')
+                                          lambda x: f'{math.degrees(x.pose.lat):.8f}˚' if x else '-')
                 ui.label().bind_text_from(self, 'last_measurement',
-                                          lambda x: f'{math.degrees(x.pose.lon):.6f}˚' if x else '-')
-                ui.label().bind_text_from(self.last_measurement, 'longitude_std_dev',
-                                          lambda x: f'± {x:.3f}m' if x else '-')
+                                          lambda x: f'± {x.latitude_std_dev:.3f}m' if x else '-')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda x: f'{math.degrees(x.pose.lon):.8f}˚' if x else '-')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda x: f'± {x.longitude_std_dev:.3f}m' if x else '-')
             ui.label('Heading:')
             with ui.column().classes('gap-y-0'):
                 ui.label().bind_text_from(self, 'last_measurement',
                                           lambda x: f'{math.degrees(x.pose.heading):.2f}˚' if x else '-')
-                ui.label().bind_text_from(self.last_measurement, 'heading_std_dev',
-                                          lambda x: f'± {x:.2f}˚' if x else '-')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda x: f'± {x.heading_std_dev:.2f}˚' if x else '-')
             ui.label('Quality:')
-            ui.label().bind_text_from(self.last_measurement, 'gps_qual',
-                                      lambda x: x.name if x else '')
+            ui.label().bind_text_from(self, 'last_measurement',
+                                      lambda x: x.gps_qual.name if x else '')
             ui.label('Satellites:')
             ui.label().bind_text_from(self, 'last_measurement',
                                       lambda x: str(x.num_satellites) if x else '-')
@@ -106,9 +108,7 @@ class Gnss(ABC):
 
 
 class GnssHardware(Gnss):
-    """
-    This hardware module connects to a Septentrio SimpleRTK3b (Mosaic-H) GNSS receiver.
-    """
+    """This hardware module connects to a Septentrio SimpleRTK3b (Mosaic-H) GNSS receiver."""
 
     def __init__(self, *, antenna_pose: Pose | None) -> None:
         """
@@ -226,6 +226,12 @@ class GnssHardware(Gnss):
 
     @staticmethod
     def _convert_to_decimal(coord: str, direction: str) -> float:
+        """Convert a coordinate in the format DDMM.mmmm to decimal degrees.
+
+        :param coord: the coordinate to convert
+        :param direction: the direction (N/S/E/W)
+        :return: the coordinate in decimal degrees
+        """
         split_index = coord.find('.') - 2
         degrees = float(coord[:split_index])
         minutes = float(coord[split_index:])
@@ -236,8 +242,7 @@ class GnssHardware(Gnss):
 
     @staticmethod
     def _gnss_time_to_unix(gnss_time: float, reference_time: float) -> float:
-        """
-        Convert GNSS time (HHMMSS.ss) to Unix time, matching the current day from reference_time.
+        """Convert GNSS time to Unix time, matching the current day from reference_time.
 
         :param gnss_time: GNSS time in HHMMSS.ss format (e.g., 123456.78 for 12:34:56.78)
         :param reference_time: Reference Unix timestamp (e.g., from rosys.time())
@@ -252,19 +257,25 @@ class GnssHardware(Gnss):
 
 
 class GnssSimulation(Gnss):
+    """Simulation of a GNSS receiver."""
 
-    def __init__(self, *, wheels: WheelsSimulation) -> None:
+    def __init__(self, *, wheels: WheelsSimulation, lat_std_dev: float = 0.01, lon_std_dev: float = 0.01,
+                 heading_std_dev: float = 0.01, gps_qual: GpsQuality = GpsQuality.RTK_FIXED) -> None:
+        """
+        :param wheels: the wheels to use for the simulation
+        :param lat_std_dev: the standard deviation of the latitude in meters
+        :param lon_std_dev: the standard deviation of the longitude in meters
+        :param heading_std_dev: the standard deviation of the heading in degrees
+        :param gps_qual: the quality of the GPS signal
+        """
         super().__init__()
         self.wheels = wheels
         self._is_connected = True
-        self.last_measurement = GnssMeasurement(
-            time=rosys.time(),
-            pose=GeoPose.from_pose(self.wheels.pose),
-            latitude_std_dev=0.01,
-            longitude_std_dev=0.01,
-            heading_std_dev=0.1,
-            gps_qual=GpsQuality(4),
-        )
+        self._lat_std_dev = lat_std_dev
+        self._lon_std_dev = lon_std_dev
+        self._heading_std_dev = heading_std_dev
+        self._gps_qual = gps_qual
+        self.last_measurement: GnssMeasurement | None = None
         rosys.on_repeat(self.simulate, 1.0)
 
     @property
@@ -279,13 +290,22 @@ class GnssSimulation(Gnss):
         if not self.is_connected:
             return
         geo_pose = GeoPose.from_pose(self.wheels.pose)
+
+        noise_lat = np.random.normal(0, self._lat_std_dev)
+        noise_lon = np.random.normal(0, self._lon_std_dev)
+        noise_heading = np.random.normal(0, math.radians(self._heading_std_dev))
+
+        direction = math.atan2(noise_lon, noise_lat)
+        noise_point = geo_pose.point.polar(noise_lat, direction)
+        noise_pose = GeoPose(lat=noise_point.lat, lon=noise_point.lon, heading=geo_pose.heading + noise_heading)
+
         self.last_measurement = GnssMeasurement(
             time=rosys.time(),
-            pose=geo_pose,
-            latitude_std_dev=self.last_measurement.latitude_std_dev,
-            longitude_std_dev=self.last_measurement.longitude_std_dev,
-            heading_std_dev=self.last_measurement.heading_std_dev,
-            gps_qual=self.last_measurement.gps_qual,
+            pose=noise_pose,
+            latitude_std_dev=self._lat_std_dev,
+            longitude_std_dev=self._lon_std_dev,
+            heading_std_dev=self._heading_std_dev,
+            gps_qual=self._gps_qual,
         )
         self.NEW_MEASUREMENT.emit(self.last_measurement)
 
@@ -294,12 +314,11 @@ class GnssSimulation(Gnss):
         ui.label('Simulation').classes('text-center text-bold')
         with ui.column().classes('gap-y-1'):
             ui.checkbox('Connected').bind_value(self, '_is_connected')
-            ui.select({quality: quality.name for quality in GpsQuality}, value=GpsQuality.RTK_FIXED,
-                      label='Quality').bind_value(self.last_measurement, 'gps_qual').classes('w-4/5')
-
-            ui.number(label='Latitude Std Dev', value=0.01, format='%.3f', prefix='± ', suffix='m').bind_value(
-                self.last_measurement, 'latitude_std_dev').classes('w-4/5')
-            ui.number(label='Longitude Std Dev', value=0.01, format='%.3f', prefix='± ', suffix='m').bind_value(
-                self.last_measurement, 'longitude_std_dev').classes('w-4/5')
-            ui.number(label='Heading Std Dev', value=0.1, format='%.2f', prefix='± ', suffix='°').bind_value(
-                self.last_measurement, 'heading_std_dev').classes('w-4/5')
+            ui.number(label='Latitude Std Dev', format='%.3f', prefix='± ',
+                      suffix='m').bind_value(self, '_lat_std_dev').classes('w-4/5')
+            ui.number(label='Longitude Std Dev', format='%.3f', prefix='± ',
+                      suffix='m').bind_value(self, '_lon_std_dev').classes('w-4/5')
+            ui.number(label='Heading Std Dev', format='%.2f', prefix='± ',
+                      suffix='°').bind_value(self, '_heading_std_dev').classes('w-4/5')
+            ui.select({quality: quality.name for quality in GpsQuality},
+                      label='Quality').bind_value(self, '_gps_qual').classes('w-4/5')
