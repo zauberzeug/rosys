@@ -262,6 +262,14 @@ class GnssSimulation(Gnss):
         super().__init__()
         self.wheels = wheels
         self._is_connected = True
+        self.last_measurement = GnssMeasurement(
+            time=rosys.time(),
+            pose=GeoPose.from_pose(self.wheels.pose),
+            latitude_std_dev=0.01,
+            longitude_std_dev=0.01,
+            heading_std_dev=0.1,
+            gps_qual=GpsQuality(4),
+        )
         rosys.on_repeat(self.simulate, 1.0)
 
     @property
@@ -273,13 +281,23 @@ class GnssSimulation(Gnss):
         self._is_connected = value
 
     def simulate(self) -> None:
+        if not self.is_connected:
+            return
         geo_pose = GeoPose.from_pose(self.wheels.pose)
         self.last_measurement = GnssMeasurement(
             time=rosys.time(),
             pose=geo_pose,
-            latitude_std_dev=0.01,
-            longitude_std_dev=0.01,
-            heading_std_dev=0.1,
-            gps_qual=4,
+            latitude_std_dev=self.last_measurement.latitude_std_dev,
+            longitude_std_dev=self.last_measurement.longitude_std_dev,
+            heading_std_dev=self.last_measurement.heading_std_dev,
+            gps_qual=self.last_measurement.gps_qual,
         )
         self.NEW_MEASUREMENT.emit(self.last_measurement)
+
+    def developer_ui(self) -> None:
+        super().developer_ui()
+        ui.label('Simulation').classes('text-center text-bold')
+        with ui.grid(columns='auto auto').classes('gap-y-1 w-2/5'):
+            ui.label('Connected:')
+            ui.checkbox().bind_value(self, '_is_connected')
+            # TODO: other options
