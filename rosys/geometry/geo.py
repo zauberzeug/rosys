@@ -25,6 +25,7 @@ class GeoPoint:
     @classmethod
     def from_point(cls, point: Point) -> GeoPoint:
         """Create a geo point from a local point."""
+        assert GeoReference.current is not None
         return GeoReference.current.point_to_geo(point)
 
     def direction(self, other: GeoPoint | GeoPose) -> float:
@@ -60,6 +61,7 @@ class GeoPoint:
 
     def cartesian(self) -> Point:
         """Transform to local cartesian coordinates relative to current reference."""
+        assert GeoReference.current is not None
         return GeoReference.current.point_to_local(self)
 
     def __str__(self) -> str:
@@ -89,6 +91,7 @@ class GeoPose:
     @classmethod
     def from_pose(cls, pose: Pose) -> GeoPose:
         """Create a geo pose from a pose."""
+        assert GeoReference.current is not None
         geo_point1 = GeoReference.current.point_to_geo(pose)
         geo_point2 = GeoReference.current.point_to_geo(pose.transform_pose(Pose(x=1)))
         return cls(geo_point1.lat, geo_point1.lon, geo_point1.direction(geo_point2))
@@ -100,6 +103,7 @@ class GeoPose:
 
     def cartesian(self) -> Pose:
         """Convert the geo pose to a local pose."""
+        assert GeoReference.current is not None
         point1 = GeoReference.current.point_to_local(self)
         point2 = GeoReference.current.point_to_local(self.point.polar(1, self.heading))
         return Pose(x=point1.x, y=point1.y, yaw=point1.direction(point2))
