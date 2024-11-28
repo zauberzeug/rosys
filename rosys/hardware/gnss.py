@@ -118,9 +118,9 @@ class GnssHardware(Gnss):
         last_num_satellites = 0
         last_hdop = 0.0
         last_altitude = 0.0
-        last_gga_timestamp: float | None = None
-        last_gst_timestamp: float | None = None
-        last_pssn_timestamp: float | None = None
+        last_gga_timestamp = ''
+        last_gst_timestamp = ''
+        last_pssn_timestamp = ''
         while True:
             if not self.is_connected:
                 return None
@@ -141,6 +141,8 @@ class GnssHardware(Gnss):
             try:
                 timestamp = parts[{'$GPGGA': 1, '$GPGST': 1, '$PSSN': 2}[parts[0]]]
                 if parts[0] == '$GPGGA':
+                    if parts[2] == '' or parts[4] == '':
+                        continue
                     last_gga_timestamp = timestamp
                     last_raw_latitude = self._convert_to_decimal(parts[2], parts[3])
                     last_raw_longitude = self._convert_to_decimal(parts[4], parts[5])
@@ -163,7 +165,7 @@ class GnssHardware(Gnss):
                     last_longitude = math.degrees(robot.lon)
                     last_heading = last_raw_heading - self.antenna_pose.yaw
                     self.last_measurement = GnssMeasurement(
-                        time=float(timestamp),
+                        time=self._gnss_time_to_unix(float(timestamp), rosys.time()),
                         pose=GeoPose.from_degrees(lat=last_latitude, lon=last_longitude, heading=last_heading),
                         latitude_std_dev=last_latitude_accuracy,
                         longitude_std_dev=last_longitude_accuracy,
@@ -202,6 +204,25 @@ class GnssHardware(Gnss):
         if direction in ['S', 'W']:
             decimal = -decimal
         return decimal
+
+    @staticmethod
+    def _gnss_time_to_unix(gnss_time: float, reference_time: float) -> float:
+        """
+        Convert GNSS time (HHMMSS.ss) to Unix time, matching the current day from reference_time.
+
+        :param gnss_time: GNSS time in HHMMSS.ss format (e.g., 123456.78 for 12:34:56.78)
+        :param reference_time: Reference Unix timestamp (e.g., from rosys.time())
+        :return: Unix timestamp for the GNSS time on the same day as reference_time
+        """
+        # Extract hours, minutes, and seconds from GNSS time
+        hours = int(gnss_time // 10000)
+        minutes = int((gnss_time % 10000) // 100)
+        seconds = gnss_time % 100
+        # Convert to seconds since midnight
+        seconds_since_midnight = hours * 3600 + minutes * 60 + seconds
+        # Get the start of the current day from reference time
+        day_start = reference_time - (reference_time % 86400)
+        return day_start + seconds_since_midnight
 
 
 class GnssSimulation(Gnss):
