@@ -14,8 +14,8 @@ from .spline import Spline
 from .velocity import Velocity
 
 __all__ = [
-    'Frame3d',
     'Fixpoint',
+    'Frame3d',
     'GeoPoint',
     'GeoPose',
     'GeoReference',
