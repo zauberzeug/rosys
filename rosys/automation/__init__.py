@@ -7,9 +7,9 @@ from .schedule import Schedule
 
 __all__ = [
     'AppButton',
+    'Automator',
+    'Schedule',
     'app_controls',
     'automation_controls',
-    'Automator',
     'parallelize',
-    'Schedule',
 ]

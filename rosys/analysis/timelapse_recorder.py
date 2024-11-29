@@ -117,7 +117,7 @@ class TimelapseRecorder:
                 cam = jpg.stem.split('_')[-1]
                 before = jpegs[i - 1].stem.split('_')[-1] if i > 0 else None
                 after = jpegs[i + 1].stem.split('_')[-1] if i < len(jpegs) - 1 else None
-                if before and after and cam != before and cam != after:
+                if before and after and cam not in (before, after):
                     # NOTE: within sequences, we skip isolated frames from a different camera to reduce flickering
                     continue
                 f.write(f"file '{jpg}'\n")

@@ -10,8 +10,8 @@ __all__ = [
     'approx',
     'assert_point',
     'assert_pose',
-    'poses_equal',
     'automate_drive_to',
     'forward',
     'log_configuration',
+    'poses_equal',
 ]
