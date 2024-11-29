@@ -55,7 +55,7 @@ cryptography = ">=43.0.1" # https://github.com/zauberzeug/rosys/security/dependa
 sh = "^1.14.2"
 mypy = "^1.10.1"
 pylint = "^3.2.5"
-pre-commit = "^3.7.1"
+pre-commit = "^4.0.1"
 
 [build-system]
 requires = [
@@ -148,6 +148,7 @@ select = [
 ]
 fixable = [
     "I",  # isort
+    "RUF022", # `__all__` is not sorted
 ]
 ignore = [
     "B024", # abstract class without abstract method
