@@ -40,7 +40,7 @@ class GnssMeasurement:
     latitude_std_dev: float = 0.0
     longitude_std_dev: float = 0.0
     heading_std_dev: float = 0.0
-    gps_qual: GpsQuality = GpsQuality.INVALID
+    gps_quality: GpsQuality = GpsQuality.INVALID
     num_satellites: int = 0
     hdop: float = 0.0
     altitude: float = 0.0
@@ -92,7 +92,7 @@ class Gnss(ABC):
                                           lambda x: f'± {x.heading_std_dev:.2f}˚' if x else '-')
             ui.label('Quality:')
             ui.label().bind_text_from(self, 'last_measurement',
-                                      lambda x: x.gps_qual.name if x else '')
+                                      lambda x: x.gps_quality.name if x else '')
             ui.label('Satellites:')
             ui.label().bind_text_from(self, 'last_measurement',
                                       lambda x: str(x.num_satellites) if x else '-')
@@ -143,7 +143,7 @@ class GnssHardware(Gnss):
         last_latitude_accuracy = 0.0
         last_longitude_accuracy = 0.0
         last_heading_accuracy = 0.0
-        last_gps_qual = 0
+        last_gps_quality = 0
         last_num_satellites = 0
         last_hdop = 0.0
         last_altitude = 0.0
@@ -175,7 +175,7 @@ class GnssHardware(Gnss):
                     last_gga_timestamp = timestamp
                     last_raw_latitude = self._convert_to_decimal(parts[2], parts[3])
                     last_raw_longitude = self._convert_to_decimal(parts[4], parts[5])
-                    last_gps_qual = int(parts[6]) if parts[6] else 0
+                    last_gps_quality = int(parts[6]) if parts[6] else 0
                     last_num_satellites = int(parts[7]) if parts[7] else 0
                     last_hdop = float(parts[8]) if parts[8] else 0.0
                     last_altitude = float(parts[9]) if parts[9] else 0.0
@@ -199,7 +199,7 @@ class GnssHardware(Gnss):
                         latitude_std_dev=last_latitude_accuracy,
                         longitude_std_dev=last_longitude_accuracy,
                         heading_std_dev=last_heading_accuracy,
-                        gps_qual=GpsQuality(last_gps_qual),
+                        gps_quality=GpsQuality(last_gps_quality),
                         num_satellites=last_num_satellites,
                         hdop=last_hdop,
                         altitude=last_altitude,
@@ -249,13 +249,13 @@ class GnssSimulation(Gnss):
                  lat_std_dev: float = 0.01,
                  lon_std_dev: float = 0.01,
                  heading_std_dev: float = 0.01,
-                 gps_qual: GpsQuality = GpsQuality.RTK_FIXED) -> None:
+                 gps_quality: GpsQuality = GpsQuality.RTK_FIXED) -> None:
         """
         :param wheels: the wheels to use for the simulation
         :param lat_std_dev: the standard deviation of the latitude in meters
         :param lon_std_dev: the standard deviation of the longitude in meters
         :param heading_std_dev: the standard deviation of the heading in degrees
-        :param gps_qual: the quality of the GPS signal
+        :param gps_quality: the quality of the GPS signal
         """
         super().__init__()
         self.wheels = wheels
@@ -263,7 +263,7 @@ class GnssSimulation(Gnss):
         self._lat_std_dev = lat_std_dev
         self._lon_std_dev = lon_std_dev
         self._heading_std_dev = heading_std_dev
-        self._gps_qual = gps_qual
+        self._gps_quality = gps_quality
         self.last_measurement: GnssMeasurement | None = None
         rosys.on_repeat(self.simulate, 1.0)
 
@@ -294,7 +294,7 @@ class GnssSimulation(Gnss):
             latitude_std_dev=self._lat_std_dev,
             longitude_std_dev=self._lon_std_dev,
             heading_std_dev=self._heading_std_dev,
-            gps_qual=self._gps_qual,
+            gps_quality=self._gps_quality,
         )
         self.NEW_MEASUREMENT.emit(self.last_measurement)
 
@@ -310,4 +310,4 @@ class GnssSimulation(Gnss):
             ui.number(label='Heading Std Dev', format='%.2f', prefix='± ', suffix='°') \
                 .bind_value(self, '_heading_std_dev').classes('w-4/5')
             ui.select({quality: quality.name for quality in GpsQuality}, label='Quality') \
-                .bind_value(self, '_gps_qual').classes('w-4/5')
+                .bind_value(self, '_gps_quality').classes('w-4/5')

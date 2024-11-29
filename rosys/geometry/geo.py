@@ -50,7 +50,7 @@ class GeoPoint:
                                      math.cos(angular_distance) - math.sin(self.lat) * math.sin(lat2))
         return GeoPoint(lat2, lon2)
 
-    def shifted(self, *, x: float = 0.0, y: float = 0.0) -> GeoPoint:
+    def shift_by(self, *, x: float = 0.0, y: float = 0.0) -> GeoPoint:
         """Shift the geo point by Cartesian coordinates in meters relative to the current geo reference.
 
         If no current geo reference is set, x will be applied in North direction and y in West direction.
@@ -59,7 +59,7 @@ class GeoPoint:
         angle = math.atan2(-y, x) + GeoReference.current.direction if GeoReference.current is not None else 0
         return self.polar(distance, angle)
 
-    def cartesian(self) -> Point:
+    def to_local(self) -> Point:
         """Transform to local Cartesian coordinates relative to the current geo reference."""
         assert GeoReference.current is not None
         return GeoReference.current.point_to_local(self)
@@ -103,7 +103,7 @@ class GeoPose:
         """The geo point of the geo pose."""
         return GeoPoint(self.lat, self.lon)
 
-    def cartesian(self) -> Pose:
+    def to_local(self) -> Pose:
         """Transform to local Cartesian coordinates relative to the current geo reference."""
         assert GeoReference.current is not None
         point1 = GeoReference.current.point_to_local(self)

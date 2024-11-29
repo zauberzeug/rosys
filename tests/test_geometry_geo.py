@@ -37,13 +37,13 @@ def test_polar(angle_degrees: float) -> None:
 @pytest.mark.parametrize('dy', (1, 100, ONE_DEGREE_ARC_LENGTH, 10_000_000))
 def test_shifted(dy: float) -> None:
     point_1 = GeoPoint.from_degrees(lat=0, lon=0)
-    point_2 = point_1.shifted(x=2, y=dy)
+    point_2 = point_1.shift_by(x=2, y=dy)
     distance = math.sqrt(4 + dy**2)
     assert point_1.distance(point_2) == pytest.approx(distance)
-    point_2_cartesian = point_2.cartesian()
-    assert Point(x=0, y=0).distance(point_2_cartesian) == pytest.approx(distance)
-    assert point_2_cartesian.x == pytest.approx(2)
-    assert point_2_cartesian.y == pytest.approx(dy)
+    point_2_local = point_2.to_local()
+    assert Point(x=0, y=0).distance(point_2_local) == pytest.approx(distance)
+    assert point_2_local.x == pytest.approx(2)
+    assert point_2_local.y == pytest.approx(dy)
 
 
 def test_reference_from_fixpoints() -> None:
@@ -71,10 +71,10 @@ def test_update_reference() -> None:
 
 @pytest.mark.usefixtures('geo_reference')
 @pytest.mark.parametrize('direction', ('east', 'west'))
-def test_point_cartesian(direction: str) -> None:
+def test_point_to_local(direction: str) -> None:
     lon_degrees = 0.001 if direction == 'east' else -0.001
     point = GeoPoint.from_degrees(lat=0, lon=lon_degrees)
-    point_local = point.cartesian()
+    point_local = point.to_local()
     assert point_local.x == pytest.approx(0)
     assert point_local.y == pytest.approx(-lon_degrees * ONE_DEGREE_ARC_LENGTH)
     assert GeoPoint.from_point(point_local).distance(point) == pytest.approx(0)
@@ -82,8 +82,8 @@ def test_point_cartesian(direction: str) -> None:
 
 @pytest.mark.usefixtures('geo_reference')
 @pytest.mark.parametrize('heading_degrees', (0, 45, 90, 179, -45, -90, -179))
-def test_pose_cartesian(heading_degrees: int) -> None:
-    pose = GeoPose.from_degrees(lat=0, lon=0.001, heading=heading_degrees).cartesian()
+def test_pose_to_local(heading_degrees: int) -> None:
+    pose = GeoPose.from_degrees(lat=0, lon=0.001, heading=heading_degrees).to_local()
     assert pose.x == pytest.approx(0)
     assert pose.y == pytest.approx(-0.001 * ONE_DEGREE_ARC_LENGTH)
     assert pose.yaw == pytest.approx(math.radians(-heading_degrees))
