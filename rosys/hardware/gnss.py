@@ -55,14 +55,14 @@ class GnssMeasurement:
 
 
 class Gnss(ABC):
-    """A GNSS module that provides GnssMeasurement from a GNSS receiver."""
+    """A GNSS module that provides measurements from a GNSS receiver."""
 
     def __init__(self) -> None:
         self.log = logging.getLogger('rosys.gnss')
         self.last_measurement: GnssMeasurement | None = None
 
         self.NEW_MEASUREMENT = Event()
-        """a new measurement has been received"""
+        """a new measurement has been received (argument: ``GnssMeasurement``)"""
 
     @property
     def is_connected(self) -> bool:
@@ -112,7 +112,7 @@ class GnssHardware(Gnss):
 
     def __init__(self, *, antenna_pose: Pose | None) -> None:
         """
-        :param antenna_pose: the position of the main antenna in the robot's coordinate system (yaw = direction to auxiliary antenna)
+        :param antenna_pose: the pose of the main antenna in the robot's coordinate frame (yaw: direction to the auxiliary antenna)
         """
         super().__init__()
         self.antenna_pose = antenna_pose or Pose(x=0.0, y=0.0, yaw=0.0)
@@ -120,17 +120,17 @@ class GnssHardware(Gnss):
         """the distance from the robot's center to the main antenna"""
         self._antenna_angle = math.pi + math.atan2(self.antenna_pose.y, self.antenna_pose.x) - self.antenna_pose.yaw
         """the angle from the robot's center to the main antenna"""
-        serial_port = self._find_device_port()
-        assert serial_port is not None
-        self.ser = self._connect_to_device(serial_port)
+
+        serial_device_path = self._find_device()
+        self.serial_connection = self._connect_to_device(serial_device_path)
         rosys.on_startup(self._run)
 
     @property
     def is_connected(self) -> bool:
-        if self.ser is None:
+        if self.serial_connection is None:
             self.log.debug('Device not connected')
             return False
-        if not self.ser.isOpen():
+        if not self.serial_connection.isOpen():
             self.log.debug('Device not open')
             return False
         return True
@@ -153,7 +153,7 @@ class GnssHardware(Gnss):
         while True:
             if not self.is_connected:
                 return None
-            result = await io_bound(self.ser.read_until, b'\r\n')
+            result = await io_bound(self.serial_connection.read_until, b'\r\n')
             if not result:
                 self.log.debug('No data')
                 continue
@@ -194,7 +194,7 @@ class GnssHardware(Gnss):
                     last_longitude = math.degrees(robot.lon)
                     last_heading = last_raw_heading - self.antenna_pose.yaw
                     self.last_measurement = GnssMeasurement(
-                        time=self._gnss_time_to_unix(float(timestamp), rosys.time()),
+                        time=rosys.time(),
                         pose=GeoPose.from_degrees(lat=last_latitude, lon=last_longitude, heading=last_heading),
                         latitude_std_dev=last_latitude_accuracy,
                         longitude_std_dev=last_longitude_accuracy,
@@ -209,7 +209,7 @@ class GnssHardware(Gnss):
                 self.log.exception(e)
 
     # TODO: move to helper and add search argument; for other serial devices
-    def _find_device_port(self) -> str | None:
+    def _find_device(self) -> str:
         for port in list_ports.comports():
             self.log.debug('Found port: %s - %s', port.device, port.description)
             if 'Septentrio' in port.description:
@@ -240,27 +240,16 @@ class GnssHardware(Gnss):
             decimal = -decimal
         return decimal
 
-    @staticmethod
-    def _gnss_time_to_unix(gnss_time: float, reference_time: float) -> float:
-        """Convert GNSS time to Unix time, matching the current day from reference_time.
-
-        :param gnss_time: GNSS time in HHMMSS.ss format (e.g., 123456.78 for 12:34:56.78)
-        :param reference_time: Reference Unix timestamp (e.g., from rosys.time())
-        :return: Unix timestamp for the GNSS time on the same day as reference_time
-        """
-        hours = int(gnss_time // 10000)
-        minutes = int((gnss_time % 10000) // 100)
-        seconds = gnss_time % 100
-        seconds_since_midnight = hours * 3600 + minutes * 60 + seconds
-        day_start = reference_time - (reference_time % 86400)
-        return day_start + seconds_since_midnight
-
 
 class GnssSimulation(Gnss):
     """Simulation of a GNSS receiver."""
 
-    def __init__(self, *, wheels: WheelsSimulation, lat_std_dev: float = 0.01, lon_std_dev: float = 0.01,
-                 heading_std_dev: float = 0.01, gps_qual: GpsQuality = GpsQuality.RTK_FIXED) -> None:
+    def __init__(self, *,
+                 wheels: WheelsSimulation,
+                 lat_std_dev: float = 0.01,
+                 lon_std_dev: float = 0.01,
+                 heading_std_dev: float = 0.01,
+                 gps_qual: GpsQuality = GpsQuality.RTK_FIXED) -> None:
         """
         :param wheels: the wheels to use for the simulation
         :param lat_std_dev: the standard deviation of the latitude in meters
@@ -314,11 +303,11 @@ class GnssSimulation(Gnss):
         ui.label('Simulation').classes('text-center text-bold')
         with ui.column().classes('gap-y-1'):
             ui.checkbox('Connected').bind_value(self, '_is_connected')
-            ui.number(label='Latitude Std Dev', format='%.3f', prefix='± ',
-                      suffix='m').bind_value(self, '_lat_std_dev').classes('w-4/5')
-            ui.number(label='Longitude Std Dev', format='%.3f', prefix='± ',
-                      suffix='m').bind_value(self, '_lon_std_dev').classes('w-4/5')
-            ui.number(label='Heading Std Dev', format='%.2f', prefix='± ',
-                      suffix='°').bind_value(self, '_heading_std_dev').classes('w-4/5')
-            ui.select({quality: quality.name for quality in GpsQuality},
-                      label='Quality').bind_value(self, '_gps_qual').classes('w-4/5')
+            ui.number(label='Latitude Std Dev', format='%.3f', prefix='± ', suffix='m') \
+                .bind_value(self, '_lat_std_dev').classes('w-4/5')
+            ui.number(label='Longitude Std Dev', format='%.3f', prefix='± ', suffix='m') \
+                .bind_value(self, '_lon_std_dev').classes('w-4/5')
+            ui.number(label='Heading Std Dev', format='%.2f', prefix='± ', suffix='°') \
+                .bind_value(self, '_heading_std_dev').classes('w-4/5')
+            ui.select({quality: quality.name for quality in GpsQuality}, label='Quality') \
+                .bind_value(self, '_gps_qual').classes('w-4/5')

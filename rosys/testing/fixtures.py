@@ -79,4 +79,4 @@ def enforce_spawn_process() -> None:
 @pytest.fixture
 def geo_reference() -> None:
     geo_reference = GeoReference(GeoPoint.from_degrees(lat=0, lon=0))
-    GeoReference.update(geo_reference)
+    GeoReference.update_current(geo_reference)

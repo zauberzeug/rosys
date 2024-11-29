@@ -7,9 +7,8 @@ from typing import ClassVar
 from .point import Point
 from .pose import Pose
 
-R = 6371000
+RADIUS = 6371000.0
 ZERO_POINT = Point(x=0, y=0)
-current_geo_reference: GeoReference
 
 
 @dataclass(slots=True)
@@ -24,27 +23,27 @@ class GeoPoint:
 
     @classmethod
     def from_point(cls, point: Point) -> GeoPoint:
-        """Create a geo point from a local point."""
+        """Create a geo point from a local point in the current geo reference."""
         assert GeoReference.current is not None
         return GeoReference.current.point_to_geo(point)
 
     def direction(self, other: GeoPoint | GeoPose) -> float:
-        """Calculate the direction to another point in degrees."""
+        """Calculate the direction to another geo point."""
         return math.atan2(math.sin(other.lon - self.lon) * math.cos(other.lat),
                           math.cos(self.lat) * math.sin(other.lat) -
                           math.sin(self.lat) * math.cos(other.lat) * math.cos(other.lon - self.lon))
 
     def distance(self, other: GeoPoint | GeoPose) -> float:
-        """Calculate the distance to another point in meters using the haversine formula."""
-        dlat = other.lat - self.lat
-        dlon = other.lon - self.lon
-        a = math.sin(dlat/2)**2 + math.cos(self.lat) * math.cos(other.lat) * math.sin(dlon/2)**2
-        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
-        return R * c
+        """Calculate the distance to another geo point in meters using the Haversine formula."""
+        d_lat = other.lat - self.lat
+        d_lon = other.lon - self.lon
+        a = math.sin(d_lat / 2)**2 + math.cos(self.lat) * math.cos(other.lat) * math.sin(d_lon / 2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+        return RADIUS * c
 
     def polar(self, distance: float, direction: float) -> GeoPoint:
-        """Calculate the point at a given distance and direction from this point."""
-        angular_distance = distance / R
+        """Calculate the geo point at a given distance and direction from this geo point."""
+        angular_distance = distance / RADIUS
         lat2 = math.asin(math.sin(self.lat) * math.cos(angular_distance) +
                          math.cos(self.lat) * math.sin(angular_distance) * math.cos(direction))
         lon2 = self.lon + math.atan2(math.sin(direction) * math.sin(angular_distance) * math.cos(self.lat),
@@ -52,15 +51,16 @@ class GeoPoint:
         return GeoPoint(lat2, lon2)
 
     def shifted(self, *, x: float = 0.0, y: float = 0.0) -> GeoPoint:
-        """Shift by the given Cartesian coordinates (x, y) relative to the current point.
-        (x, y) are in the local coordinate frame where x is the direction of the reference in a right hand frame.
+        """Shift the geo point by Cartesian coordinates in meters relative to the current geo reference.
+
+        If no current geo reference is set, x will be applied in North direction and y in West direction.
         """
         distance = math.sqrt(x**2 + y**2)
         angle = math.atan2(-y, x) + GeoReference.current.direction if GeoReference.current is not None else 0
         return self.polar(distance, angle)
 
     def cartesian(self) -> Point:
-        """Transform to local cartesian coordinates relative to current reference."""
+        """Transform to local Cartesian coordinates relative to the current geo reference."""
         assert GeoReference.current is not None
         return GeoReference.current.point_to_local(self)
 
@@ -70,10 +70,12 @@ class GeoPoint:
 
     @property
     def degree_tuple(self) -> tuple[float, float]:
+        """Latitude and longitude in degrees."""
         return math.degrees(self.lat), math.degrees(self.lon)
 
     @property
     def tuple(self) -> tuple[float, float]:
+        """Latitude and longitude in radians."""
         return self.lat, self.lon
 
 
@@ -90,7 +92,7 @@ class GeoPose:
 
     @classmethod
     def from_pose(cls, pose: Pose) -> GeoPose:
-        """Create a geo pose from a pose."""
+        """Create a geo pose from a pose in the current geo reference."""
         assert GeoReference.current is not None
         geo_point1 = GeoReference.current.point_to_geo(pose)
         geo_point2 = GeoReference.current.point_to_geo(pose.transform_pose(Pose(x=1)))
@@ -98,11 +100,11 @@ class GeoPose:
 
     @property
     def point(self) -> GeoPoint:
-        """Convert the geo pose to a geo point."""
+        """The geo point of the geo pose."""
         return GeoPoint(self.lat, self.lon)
 
     def cartesian(self) -> Pose:
-        """Convert the geo pose to a local pose."""
+        """Transform to local Cartesian coordinates relative to the current geo reference."""
         assert GeoReference.current is not None
         point1 = GeoReference.current.point_to_local(self)
         point2 = GeoReference.current.point_to_local(self.point.polar(1, self.heading))
@@ -114,10 +116,12 @@ class GeoPose:
 
     @property
     def degree_tuple(self) -> tuple[float, float, float]:
+        """Latitude, longitude, and heading in degrees."""
         return math.degrees(self.lat), math.degrees(self.lon), math.degrees(self.heading)
 
     @property
     def tuple(self) -> tuple[float, float, float]:
+        """Latitude, longitude, and heading in radians."""
         return self.lat, self.lon, self.heading
 
 
@@ -134,11 +138,8 @@ class GeoReference:
     direction: float = 0.0  # direction of the local x-axis in the global geo system (0 = north, pi/2 = east)
 
     @classmethod
-    def update(cls, new_reference: GeoReference) -> None:
-        """Update the current reference to the given reference.
-
-        :param new_reference: The new reference to update to.
-        """
+    def update_current(cls, new_reference: GeoReference) -> None:
+        """Update the current geo reference to the given reference."""
         if cls.current is None:
             cls.current = new_reference
         else:
@@ -162,45 +163,33 @@ class GeoReference:
         return cls(origin, x_direction)
 
     def point_to_geo(self, point: Point | Pose) -> GeoPoint:
-        """Convert a local point to a global point.
-
-        :param point: The local point to convert.
-        """
+        """Convert a local point to a global point."""
         return self.origin.polar(ZERO_POINT.distance(point), self.direction - ZERO_POINT.direction(point))
 
     def pose_to_geo(self, pose: Pose) -> GeoPose:
-        """Convert a local pose to a global geo pose.
-
-        :param pose: The local pose to convert.
-        """
+        """Convert a local pose to a global geo pose."""
         geo_point1 = self.point_to_geo(pose)
         geo_point2 = self.point_to_geo(pose.transform_pose(Pose(x=1)))
         return GeoPose(geo_point1.lat, geo_point1.lon, geo_point1.direction(geo_point2))
 
     def point_to_local(self, geo_point: GeoPoint | GeoPose) -> Point:
-        """Convert a global point to a local point.
-
-        :param geo_point: The global point to convert to local coordinates.
-        """
+        """Convert a global point to a local point."""
         return ZERO_POINT.polar(self.origin.distance(geo_point), self.direction - self.origin.direction(geo_point))
 
     def pose_to_local(self, geo_pose: GeoPose) -> Pose:
-        """Convert a global geo pose to a local pose.
-
-        :param geo_pose: The global geo pose to convert to local coordinates.
-        """
+        """Convert a global geo pose to a local pose."""
         point1 = self.point_to_local(geo_pose)
         point2 = self.point_to_local(geo_pose.point.polar(1, geo_pose.heading))
         return Pose(x=point1.x, y=point1.y, yaw=point1.direction(point2))
 
     @property
     def degree_tuple(self) -> tuple[float, float, float]:
-        """Latitude, longitude, and direction (in global geo system, in degrees)."""
+        """Latitude, longitude, and direction of the x-axis in degrees."""
         return (*self.origin.degree_tuple, math.degrees(self.direction))
 
     @property
     def tuple(self) -> tuple[float, float, float]:
-        """Latitude, longitude, and direction (in global geo system)."""
+        """Latitude, longitude, and direction of the x-axis in radians."""
         return (*self.origin.tuple, self.direction)
 
     def __str__(self) -> str:
