@@ -7,6 +7,7 @@ from .communication import Communication, SerialCommunication, WebCommunication
 from .esp_pins import EspPins
 from .estop import EStop, EStopHardware, EStopSimulation
 from .expander import ExpanderHardware
+from .gnss import Gnss, GnssHardware, GnssMeasurement, GnssSimulation
 from .imu import Imu, ImuHardware, ImuSimulation
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot import Robot, RobotHardware, RobotSimulation
@@ -30,6 +31,10 @@ __all__ = [
     'EStopSimulation',
     'EspPins',
     'ExpanderHardware',
+    'Gnss',
+    'GnssHardware',
+    'GnssMeasurement',
+    'GnssSimulation',
     'Imu',
     'ImuHardware',
     'ImuSimulation',
