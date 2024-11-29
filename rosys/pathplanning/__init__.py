@@ -10,9 +10,9 @@ __all__ = [
     'Area',
     'AreaManipulation',
     'AreaManipulationMode',
-    'area_object',
     'Obstacle',
+    'PathPlanner',
+    'area_object',
     'obstacle_object',
     'path_object',
-    'PathPlanner',
 ]

@@ -16,18 +16,18 @@ from .lazy_worker import LazyWorker
 
 __all__ = [
     'LazyWorker',
-    'invoke',
-    'measure',
-    'angle',
-    'eliminate_pi',
-    'eliminate_2pi',
-    'ramp',
-    'remove_indentation',
     'ModificationContext',
+    'PackagePathFilter',
+    'angle',
+    'eliminate_2pi',
+    'eliminate_pi',
     'from_dict',
+    'invoke',
     'is_stopping',
     'is_test',
-    'PackagePathFilter',
+    'measure',
+    'ramp',
+    'remove_indentation',
 ]
 
 
