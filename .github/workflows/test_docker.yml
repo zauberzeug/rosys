@@ -48,4 +48,5 @@ jobs:
           platforms: linux/arm64
           build-args: INSTALL_DEV=true
           push: false
+          cache-from: type=registry,ref=${{ steps.prep.outputs.docker_image }}:buildcache-arm64
           cache-to: type=registry,ref=${{ steps.prep.outputs.docker_image }}:buildcache-arm64,mode=max
