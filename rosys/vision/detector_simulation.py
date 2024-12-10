@@ -8,8 +8,8 @@ from .. import rosys
 from ..geometry import Point3d
 from .calibratable_camera_provider import CalibratableCameraProvider
 from .camera import CalibratableCamera
-from .detections import BoxDetection, Detections, PointDetection
-from .detector import Autoupload, Detector
+from .detections import BoxDetection, Detections, PointDetection, Category
+from .detector import Autoupload, Detector, DetectorInfo
 from .image import Image
 
 
@@ -81,6 +81,12 @@ class DetectorSimulation(Detector):
                      creation_date: datetime | str | None = None,
                      ) -> None:
         self.log.info('Uploading %s', image.id)
+
+    async def fetch_detector_information(self) -> DetectorInfo:
+        return DetectorInfo(operation_mode='simulation',
+                            version_control='pause',
+                            state=None,
+                            categories=[])
 
     def update_simulated_objects(self, image: Image) -> None:
         pass

@@ -4,11 +4,12 @@ from typing import Any
 
 import socketio
 import socketio.exceptions
+from typing import Literal
 
 from .. import persistence, rosys
 from ..helpers import LazyWorker
-from .detections import BoxDetection, Detections, PointDetection, SegmentationDetection
-from .detector import Autoupload, Detector
+from .detections import BoxDetection, Category, Detections, PointDetection, SegmentationDetection
+from .detector import Autoupload, Detector, DetectorException, DetectorInfo
 from .image import Image
 
 
@@ -96,7 +97,19 @@ class DetectorHardware(Detector):
                      source: str | None = None,
                      creation_date: datetime | str | None = None
                      ) -> None:
-        assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
+
+        if not self.is_connected:
+            self.log.error('Upload failed: detector is not connected')
+            raise DetectorException('detector is not connected')
+
+        if not image.data:
+            self.log.error('Upload failed: image data is empty')
+            raise DetectorException('image data is empty')
+
+        if len(image.data) > self.MAX_IMAGE_SIZE:
+            self.log.error('Upload failed: image too large: %s', len(image.data))
+            raise DetectorException('image too large')
+
         tags = tags or []
         try:
             self.log.info('Upload detections to port %s', self.port)
@@ -113,8 +126,9 @@ class DetectorHardware(Detector):
             data_dict['creation_date'] = _creation_date_to_isoformat(creation_date)
             await self.sio.emit('upload', data_dict)
 
-        except Exception:
-            self.log.exception('could not upload %s', image.id)
+        except Exception as e:
+            self.log.error('Upload failed with exception: %s', e)
+            raise DetectorException('Upload failed') from e
 
     async def detect(self,
                      image: Image,
@@ -124,6 +138,15 @@ class DetectorHardware(Detector):
                      source: str | None = None,
                      creation_date: datetime | str | None = None,
                      ) -> Detections | None:
+
+        if not self.is_connected:
+            self.log.error('Detection failed: detector is not connected')
+            raise DetectorException('detector is not connected')
+
+        if image.is_broken:
+            self.log.error('Detection failed: image is broken')
+            raise DetectorException('image is broken')
+
         assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
         tags = tags or []
         return await self.lazy_worker.run(self._detect(image, autoupload, tags, source, creation_date))
@@ -135,8 +158,7 @@ class DetectorHardware(Detector):
                       source: str | None = None,
                       creation_date: datetime | str | None = None,
                       ) -> Detections | None:
-        if image.is_broken:
-            return None
+
         try:
             result = await self.sio.call('detect', {
                 'image': image.data,
@@ -152,24 +174,23 @@ class DetectorHardware(Detector):
             detections = Detections(
                 boxes=[persistence.from_dict(BoxDetection, d) for d in result.get('box_detections', [])],
                 points=[persistence.from_dict(PointDetection, d) for d in result.get('point_detections', [])],
-                segmentations=[
-                    persistence.from_dict(SegmentationDetection, d)
-                    for d in result.get('segmentation_detections', [])
-                ],
-            )
+                segmentations=[persistence.from_dict(SegmentationDetection, d)
+                               for d in result.get('segmentation_detections', [])],)
             image.set_detections(self.name, detections)
             self.timeout_count = 0
             if image.is_broken:
                 return None
             self.NEW_DETECTIONS.emit(image)
             return detections
+
         except socketio.exceptions.TimeoutError:
-            self.log.debug('detection for %s on %s took too long', image.id, self.port)
+            self.log.debug('detection for %s on %s took too long', image.id, self.name)
             self.timeout_count += 1
         except asyncio.exceptions.CancelledError:
             self.log.debug('task has been cancelled')
-        except Exception:
-            self.log.exception('could not detect %s', image.id)
+        except Exception as e:
+            self.log.error('Detection failed with exception %s', e)
+            raise DetectorException('Detection failed') from e
         finally:
             if self.timeout_count > 5:
                 await self.disconnect()
@@ -177,6 +198,71 @@ class DetectorHardware(Detector):
 
     def __str__(self) -> str:
         return f'{type(self).__name__} ({"connected" if self.is_connected else "disconnected"})'
+
+    async def fetch_detector_information(self) -> DetectorInfo:
+        try:
+            about_dict = await self.sio.call('about', timeout=5)
+        except socketio.exceptions.TimeoutError as e:
+            self.log.error('could not get info for detector %s', self.name)
+            raise DetectorException('could not get info due to timeout') from e
+        except Exception as e:
+            self.log.error('could not get info for detector %s: %s', self.name, e)
+            raise DetectorException('could not get info') from e
+
+        model_info_dict = about_dict.get('model_info', {})
+        categories = [Category(uuid=c['id'],
+                               name=c['name'],
+                               color=c.get('color'),
+                               category_type=c.get('type'))
+                      for c in model_info_dict.get('categories', [])]
+
+        return DetectorInfo(operation_mode=about_dict['operation_mode'],
+                            state=about_dict.get('state'),
+                            organization=model_info_dict.get('organization'),
+                            project=model_info_dict.get('project'),
+                            current_version=model_info_dict.get('version'),
+                            categories=categories,
+                            resolution=model_info_dict.get('resolution'),
+                            target_version=about_dict.get('target_model'),
+                            version_control=about_dict.get('version_control'))
+
+    async def fetch_model_versioning_information(self) -> dict[str, Any]:
+        try:
+            response_dict = await self.sio.call('get_model_version', timeout=5)
+        except socketio.exceptions.TimeoutError as e:
+            self.log.error('could not get info for detector %s', self.name)
+            raise DetectorException('could not get info due to timeout') from e
+        except Exception as e:
+            self.log.error('could not get info for detector %s: %s', self.name, e)
+            raise DetectorException('could not get info') from e
+
+        return response_dict
+
+    async def set_model_version_mode(self, version_control_mode: Literal['follow_loop', 'pause'] | str) -> None:
+        if version_control_mode not in ['follow_loop', 'pause']:
+            if not version_control_mode.replace('.', '').isdigit():
+                self.log.error('invalid version control mode: %s (allowed: follow_loop, pause or a version number like 1.2)',
+                               version_control_mode)
+            raise DetectorException('invalid version control mode')
+
+        try:
+            await self.sio.call('set_model_version_mode', version_control_mode, timeout=5)
+        except socketio.exceptions.TimeoutError as e:
+            self.log.error('could not get info for detector %s', self.name)
+            raise DetectorException('could not get info due to timeout') from e
+        except Exception as e:
+            self.log.error('could not get info for detector %s: %s', self.name, e)
+            raise DetectorException('could not get info') from e
+
+    async def trigger_soft_reload(self) -> None:
+        try:
+            await self.sio.call('soft_reload', timeout=5)
+        except socketio.exceptions.TimeoutError as e:
+            self.log.error('could not get info for detector %s', self.name)
+            raise DetectorException('could not get info due to timeout') from e
+        except Exception as e:
+            self.log.error('could not get info for detector %s: %s', self.name, e)
+            raise DetectorException('could not get info') from e
 
 
 def _box_detections_to_int(detections: list[dict]) -> list[dict]:

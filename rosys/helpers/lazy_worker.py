@@ -22,8 +22,13 @@ class LazyWorker:
             return None
 
         self._is_free = False
-        result = await coro
-        self._is_free = True
+        try:
+            result = await coro
+        except Exception:
+            return None
+        finally:
+            self._is_free = True
+
         self._notify()
         return result
 
