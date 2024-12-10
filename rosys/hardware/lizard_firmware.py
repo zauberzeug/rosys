@@ -123,7 +123,25 @@ class LizardFirmware:
         await self.read_core_version()
         rosys.notify('Finished.', 'positive')
 
+    async def check_p0_strapping_pins(self) -> bool:
+        strapping_pins_ok = True
+        gpio_pin_12 = await self.robot_brain.esp_pins_p0.get_pin_level(12)
+        if gpio_pin_12:
+            rosys.notify('GPIO 12 state is HIGH, this can cause issues with flash voltage selection', 'warning')
+        gpio_pin_1 = await self.robot_brain.esp_pins_p0.get_pin_level(0)
+        if gpio_pin_1:
+            rosys.notify('GPIO 0 current state is HIGH - must be LOW for boot mode', 'warning')
+            strapping_pins_ok = False
+        gpio_pin_2 = await self.robot_brain.esp_pins_p0.get_pin_level(2)
+        if gpio_pin_2:
+            rosys.notify('GPIO 2 current state is HIGH - must be LOW or floating for flash mode', 'warning')
+            strapping_pins_ok = False
+        return strapping_pins_ok
+
     async def flash_p0(self, timeout: float = 120) -> None:
+        strapping_pins_ok = await self.check_p0_strapping_pins()
+        if not strapping_pins_ok:
+            return
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
         await self.robot_brain.send('p0.flash()')
         start = rosys.time()

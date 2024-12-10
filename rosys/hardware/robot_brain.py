@@ -6,6 +6,7 @@ from nicegui import ui
 from .. import rosys
 from ..event import Event
 from .communication import Communication
+from .esp_pins import EspPins
 from .lizard_firmware import LizardFirmware
 
 CLOCK_OFFSET_HISTORY_LENGTH = 100
@@ -40,6 +41,9 @@ class RobotBrain:
         self.hardware_time: float | None = None
         if enable_esp_on_startup:
             rosys.on_startup(self.enable_esp)
+
+        self.esp_pins_core = EspPins(name='core', robot_brain=self)
+        self.esp_pins_p0 = EspPins(name='p0', robot_brain=self)
 
     @property
     def clock_offset(self) -> float | None:
@@ -107,6 +111,8 @@ class RobotBrain:
                         .tooltip('Flash the downloaded Lizard firmware to the Core microcontroller')
                     ui.menu_item('Flash P0', on_click=self.lizard_firmware.flash_p0) \
                         .tooltip('Flash the downloaded Lizard firmware to the P0 microcontroller')
+                    ui.menu_item('Check P0 Strapping Pins', on_click=self.lizard_firmware.check_p0_strapping_pins) \
+                        .tooltip('Check if the P0 strapping pins are in the correct state for flashing.')
                     ui.menu_item('Enable', on_click=self.enable_esp) \
                         .tooltip('Enable the microcontroller module (will later be done automatically)')
                     ui.menu_item('Configure', on_click=self.configure) \

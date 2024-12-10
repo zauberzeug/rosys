@@ -72,6 +72,10 @@ class EspPins:
         for pin in self._pins.values():
             await self.update_pin(pin)
 
+    async def get_pin_level(self, pin_id: int) -> bool:
+        await self.update_pin(self._pins[pin_id])
+        return self._pins[pin_id].level
+
     async def set_pin_level(self, pin: GpioPin, level: bool) -> None:
         await self.robot_brain.send(f'{self.name}.set_pin_level({pin.gpio}, {1 if level else 0})')
 
