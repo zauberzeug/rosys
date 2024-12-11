@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -39,6 +40,7 @@ class EspPins:
 
     def __init__(self, name: str, robot_brain: RobotBrain) -> None:
         self.name = name
+        self.log = logging.getLogger(f'rosys.esp_pins.{name}')
         self.robot_brain = robot_brain
         _pin_numbers: list[int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
                                    10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
@@ -78,6 +80,19 @@ class EspPins:
 
     async def set_pin_level(self, pin: GpioPin, level: bool) -> None:
         await self.robot_brain.send(f'{self.name}.set_pin_level({pin.gpio}, {1 if level else 0})')
+
+    async def check_strapping_pins(self) -> bool:
+        gpio_1_level = await self.get_pin_level(0)
+        gpio_2_level = await self.get_pin_level(2)
+        gpio_12_level = await self.get_pin_level(12)
+        strapping_pins_ok = gpio_12_level == 0 and gpio_1_level == 0 and gpio_2_level == 0
+        if gpio_1_level:
+            self.log.warning('GPIO 0 current state is HIGH - must be LOW for boot mode')
+        if gpio_2_level:
+            self.log.warning('GPIO 2 current state is HIGH - must be LOW or floating for flash mode')
+        if gpio_12_level:
+            self.log.warning('GPIO 12 state is HIGH, this can cause issues with flash voltage selection')
+        return strapping_pins_ok
 
     def developer_ui(self) -> None:
         with ui.column():

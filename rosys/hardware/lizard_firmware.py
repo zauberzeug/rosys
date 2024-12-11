@@ -115,6 +115,10 @@ class LizardFirmware:
     async def flash_core(self) -> None:
         assert isinstance(self.robot_brain.communication, SerialCommunication)
         rosys.notify(f'Flashing Lizard firmware {self.local_version} to Core...')
+        strapping_pins_ok = await self.robot_brain.esp_pins_p0.check_strapping_pins()
+        if not strapping_pins_ok:
+            rosys.notify('Failed. Check strapping pins.', 'negative')
+            return
         self.robot_brain.communication.disconnect()
         await rosys.sleep(0.3)
         output = await rosys.run.sh(['sudo', './flash.py', *self.flash_params], timeout=None, working_dir=self.PATH)
@@ -123,24 +127,10 @@ class LizardFirmware:
         await self.read_core_version()
         rosys.notify('Finished.', 'positive')
 
-    async def check_p0_strapping_pins(self) -> bool:
-        strapping_pins_ok = True
-        gpio_pin_12 = await self.robot_brain.esp_pins_p0.get_pin_level(12)
-        if gpio_pin_12:
-            rosys.notify('GPIO 12 state is HIGH, this can cause issues with flash voltage selection', 'warning')
-        gpio_pin_1 = await self.robot_brain.esp_pins_p0.get_pin_level(0)
-        if gpio_pin_1:
-            rosys.notify('GPIO 0 current state is HIGH - must be LOW for boot mode', 'warning')
-            strapping_pins_ok = False
-        gpio_pin_2 = await self.robot_brain.esp_pins_p0.get_pin_level(2)
-        if gpio_pin_2:
-            rosys.notify('GPIO 2 current state is HIGH - must be LOW or floating for flash mode', 'warning')
-            strapping_pins_ok = False
-        return strapping_pins_ok
-
     async def flash_p0(self, timeout: float = 120) -> None:
-        strapping_pins_ok = await self.check_p0_strapping_pins()
+        strapping_pins_ok = await self.robot_brain.esp_pins_p0.check_strapping_pins()
         if not strapping_pins_ok:
+            rosys.notify('Failed. Check strapping pins.', 'negative')
             return
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
         await self.robot_brain.send('p0.flash()')
