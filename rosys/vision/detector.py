@@ -61,6 +61,15 @@ class DetectorInfo:
                   "example": "follow_loop, specific_version, pause"})
 
 
+@dataclass(slots=True, kw_only=True)
+class ModelVersioningInfo:
+    current_version: str = field(metadata={"description": "The version of the model currently used by the detector."})
+    target_version: str = field(metadata={"description": "The target model version set in the detector."})
+    loop_version: str = field(metadata={"description": "The target model version specified by the loop."})
+    local_versions: list[str] = field(metadata={"description": "The locally available versions of the model."})
+    version_control: str = field(metadata={"description": "The version control mode."})
+
+
 class Detector(abc.ABC):
     """A detector allows detecting objects in images.
 

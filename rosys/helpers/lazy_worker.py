@@ -12,6 +12,11 @@ class LazyWorker:
         self._is_free = True
 
     async def run(self, coro: Coroutine[Any, None, _T]) -> _T | None:
+        '''Run the coroutine and return the result.
+
+        If the worker is busy, the coroutine is put in a lifo queue with a size of 1.
+        All other coroutines are discarded.
+        '''
         self._notify()
 
         if not self._is_free:
@@ -24,12 +29,10 @@ class LazyWorker:
         self._is_free = False
         try:
             result = await coro
-        except Exception:
-            return None
         finally:
             self._is_free = True
+            self._notify()
 
-        self._notify()
         return result
 
     def _notify(self) -> None:
