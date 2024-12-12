@@ -16,6 +16,8 @@ class LazyWorker:
 
         If the worker is busy, the coroutine is put in a lifo queue with a size of 1.
         All other coroutines are discarded.
+
+        :return: the result of the coroutine or None if the coroutine was discarded.
         '''
         self._notify()
 
