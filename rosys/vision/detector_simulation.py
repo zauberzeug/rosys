@@ -1,7 +1,8 @@
 from dataclasses import dataclass, field
 from datetime import datetime
-from uuid import uuid4
 from typing import Literal
+from uuid import uuid4
+
 import numpy as np
 
 from .. import rosys

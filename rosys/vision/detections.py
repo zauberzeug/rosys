@@ -8,14 +8,14 @@ from ..geometry import Point
 
 
 @dataclass(slots=True, kw_only=True)
-class Category():
-    uuid: str = field(metadata={"description": "The uuid of the category."})
-    name: str = field(metadata={"description": "The name of the category."})
+class Category:
+    uuid: str = field(metadata={'description': 'The uuid of the category.'})
+    name: str = field(metadata={'description': 'The name of the category.'})
     color: str | None = field(default=None, metadata={
-        "description": "The color of the category when displayed in the Learning Loop UI."})
+        'description': 'The color of the category when displayed in the Learning Loop UI.'})
     category_type: str | None = field(default=None, metadata={
-        "description": "The type of the category",
-        "example": "box, point, segmentation, classification"})
+        'description': 'The type of the category',
+        'example': 'box, point, segmentation, classification'})
 
 
 @dataclass(slots=True, kw_only=True)

@@ -1,14 +1,14 @@
 
-from dataclasses import dataclass, field
 import abc
 import logging
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from uuid import uuid4
 from typing import Literal
+from uuid import uuid4
 
 from ..event import Event
-from .detections import Detections, Category
+from .detections import Category, Detections
 from .image import Image
 from .uploads import Uploads
 
@@ -34,39 +34,39 @@ class DetectorException(Exception):
 class DetectorInfo:
     '''Information about the detector.'''
     operation_mode: str = field(
-        metadata={"description": "The operation mode of the detector node"})
+        metadata={'description': 'The operation mode of the detector node'})
     state: str | None = field(
-        metadata={"description": "The state of the detector node", "example": "idle, online, detecting"})
+        metadata={'description': 'The state of the detector node', 'example': 'idle, online, detecting'})
     organization: str | None = field(
         default=None,
-        metadata={"description": "The owner organization of the model."})
+        metadata={'description': 'The owner organization of the model.'})
     project: str | None = field(
         default=None,
-        metadata={"description": "The project of the model."})
+        metadata={'description': 'The project of the model.'})
     current_version: str | None = field(
         default=None,
-        metadata={"description": "The currently used version of the model."})
+        metadata={'description': 'The currently used version of the model.'})
     categories: list[Category] = field(
         default_factory=list,
-        metadata={"description": "The categories used in the model."})
+        metadata={'description': 'The categories used in the model.'})
     resolution: int | None = field(
         default=None,
-        metadata={"description": "The resolution of the model (width and height of the image after preprocessing in pixels)."})
+        metadata={'description': 'The resolution of the model (width and height of the image after preprocessing in pixels).'})
     target_version: str | None = field(
         default=None,
-        metadata={"description": "The target version of the detector node"})
+        metadata={'description': 'The target version of the detector node'})
     version_control: str = field(
-        metadata={"description": "The version control mode of the detector node",
-                  "example": "follow_loop, specific_version, pause"})
+        metadata={'description': 'The version control mode of the detector node',
+                  'example': 'follow_loop, specific_version, pause'})
 
 
 @dataclass(slots=True, kw_only=True)
 class ModelVersioningInfo:
-    current_version: str = field(metadata={"description": "The version of the model currently used by the detector."})
-    target_version: str = field(metadata={"description": "The target model version set in the detector."})
-    loop_version: str = field(metadata={"description": "The target model version specified by the loop."})
-    local_versions: list[str] = field(metadata={"description": "The locally available versions of the model."})
-    version_control: str = field(metadata={"description": "The version control mode."})
+    current_version: str = field(metadata={'description': 'The version of the model currently used by the detector.'})
+    target_version: str = field(metadata={'description': 'The target model version set in the detector.'})
+    loop_version: str = field(metadata={'description': 'The target model version specified by the loop.'})
+    local_versions: list[str] = field(metadata={'description': 'The locally available versions of the model.'})
+    version_control: str = field(metadata={'description': 'The version control mode.'})
 
 
 class Detector(abc.ABC):
