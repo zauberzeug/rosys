@@ -285,8 +285,7 @@ class DetectorHardware(Detector):
     async def soft_reload(self) -> None:
         """Trigger a soft reload of the detector.
 
-        Raises:
-            DetectorException: if the communication fails.
+        :raises DetectorException: if the communication fails.
         """
         try:
             await self.sio.call('soft_reload', timeout=5)

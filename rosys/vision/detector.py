@@ -100,11 +100,8 @@ class Detector(abc.ABC):
         If the detect function is called again, the queued image is dropped and the new image is queued instead.
         In this case this method returns `None`.
 
-        Returns:
-            Detections: the detections found in the image.
-
-        Raises:
-            DetectorException: if the detection fails.
+        :return: the detections found in the image.
+        :raises DetectorException: if the detection fails.
         """
 
     @abc.abstractmethod
@@ -119,31 +116,23 @@ class Detector(abc.ABC):
 
         The parameters `tags`, `source`, and `creation_date` are added as metadata.
         If the image has detections, they are also uploaded.
-
-        Raises:
-            DetectorException: if the upload fails.
+        :raises DetectorException: if the upload fails.
         """
 
     @abc.abstractmethod
     async def fetch_detector_info(self) -> DetectorInfo:
         """Retrieve information about the detector.
 
-        Returns:
-            DetectorInfo: information about the detector.
-
-        Raises:
-            DetectorException: if the about information cannot be retrieved.
+        :return: information about the detector.
+        :raises DetectorException: if the about information cannot be retrieved.
         """
 
     @abc.abstractmethod
     async def fetch_model_version_info(self) -> ModelVersioningInfo:
         """Retrieve information about the model version and versioning mode.
 
-        Returns:
-            ModelVersioningInfo: the information about the model versioning as data class.
-
-        Raises:
-            DetectorException: if the detector is not connected or the information cannot be retrieved.
+        :return: the information about the model versioning as data class.
+        :raises DetectorException: if the detector is not connected or the information cannot be retrieved.
         """
 
     @abc.abstractmethod
@@ -154,6 +143,5 @@ class Detector(abc.ABC):
         Set to 'pause' to stop automatic updates and keep the current model version.
         Set to a version number (e.g. '1.2') to use a specific version.
 
-        Raises:
-            DetectorException: if the version control mode is not valid or the version could not be set.
+        :raises DetectorException: if the version control mode is not valid or the version could not be set.
         """
