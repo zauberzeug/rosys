@@ -116,6 +116,7 @@ class Detector(abc.ABC):
 
         The parameters `tags`, `source`, and `creation_date` are added as metadata.
         If the image has detections, they are also uploaded.
+
         :raises DetectorException: if the upload fails.
         """
 
