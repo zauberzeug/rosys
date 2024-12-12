@@ -1,16 +1,12 @@
 import copy
 
-import cv2.omnidir
 import numpy as np
-import pytest
 
 from rosys.geometry import Point3d, Pose3d
 from rosys.geometry.object3d import frame_registry
 from rosys.testing import approx
 from rosys.vision import CalibratableCamera, Calibration
 from rosys.vision.calibration import CameraModel, OmnidirParameters
-
-HAS_OMNIDIR = not all(name.startswith('__') for name in dir(cv2.omnidir))
 
 
 def demo_data() -> tuple[CalibratableCamera, list[Point3d]]:
@@ -116,8 +112,6 @@ def test_fisheye_calibration_from_points():
 
 
 def test_omnidirectional_calibration_from_points():
-    if not HAS_OMNIDIR:
-        pytest.skip('OpenCV is not installed with omnidirectional camera support')
     cam, world_points = demo_omnidirectional_data()
     assert cam.calibration is not None
     image_size = cam.calibration.intrinsics.size
@@ -215,8 +209,6 @@ def test_fisheye_projection():
 
 
 def test_omnidirectional_projection():
-    if not HAS_OMNIDIR:
-        pytest.skip('OpenCV is not installed with omnidirectional camera support')
     cam, world_points = demo_omnidirectional_data()
     assert cam.calibration is not None
 
@@ -283,8 +275,6 @@ def test_fisheye_array_projection():
 
 
 def test_omnidirectional_array_projection():
-    if not HAS_OMNIDIR:
-        pytest.skip('OpenCV is not installed with omnidirectional camera support')
     cam, world_points = demo_omnidirectional_data()
     assert cam.calibration is not None
 
@@ -321,8 +311,6 @@ def test_fisheye_project_from_behind():
 
 
 def test_omnidirectional_project_from_behind():
-    if not HAS_OMNIDIR:
-        pytest.skip('OpenCV is not installed with omnidirectional camera support')
     cam = CalibratableCamera(id='1')
     cam.set_perfect_calibration(z=1, roll=np.deg2rad(180 + 10))
     assert cam.calibration is not None
