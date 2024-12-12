@@ -1,8 +1,6 @@
 import copy
 
-import cv2.omnidir
 import numpy as np
-import pytest
 
 from rosys.geometry import Point3d, Pose3d
 from rosys.geometry.object3d import frame_registry
