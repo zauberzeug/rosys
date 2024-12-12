@@ -1,17 +1,16 @@
-from .detections import Category
-from dataclasses import field
+
+from dataclasses import dataclass, field
 import abc
 import logging
 from datetime import datetime
 from enum import Enum
 from uuid import uuid4
+from typing import Literal
 
 from ..event import Event
-from .detections import Detections
+from .detections import Detections, Category
 from .image import Image
 from .uploads import Uploads
-
-from dataclasses import dataclass
 
 
 class Autoupload(Enum):
@@ -121,12 +120,33 @@ class Detector(abc.ABC):
         """
 
     @abc.abstractmethod
-    async def fetch_detector_information(self) -> DetectorInfo:
-        """Get information about the detector.
+    async def fetch_detector_info(self) -> DetectorInfo:
+        """Retrieve information about the detector.
 
         Returns:
             DetectorInfo: information about the detector.
 
         Raises:
             DetectorException: if the about information cannot be retrieved.
+        """
+
+    async def fetch_model_version_info(self) -> ModelVersioningInfo:
+        """Retrieve information about the model version and versioning mode.
+
+        Returns:
+            ModelVersioningInfo: the information about the model versioning as data class.
+
+        Raises:
+            DetectorException: if the detector is not connected or the information cannot be retrieved.
+        """
+
+    async def set_model_version(self, version: Literal['follow_loop', 'pause'] | str) -> None:
+        """Set the model version or versioning mode.
+
+        Set to 'follow_loop' to automatically update the model version to the latest version in the learning loop.
+        Set to 'pause' to stop automatic updates and keep the current model version.
+        Set to a version number (e.g. '1.2') to use a specific version.
+
+        Raises:
+            DetectorException: if the version control mode is not valid or the version could not be set.
         """
