@@ -14,7 +14,8 @@ nicegui = ">=2.5.0"
 pyserial = "^3.5"
 numpy = ">=1.20.1"
 scipy = "^1.7.2"
-opencv-python = "^4.5.5"
+opencv-python = "4.9.0.80"
+opencv-contrib-python-headless = "4.9.0.80"
 psutil = "^5.9.0"
 networkx = "^2.6.2"
 tabulate = "^0.8.9"
@@ -98,9 +99,6 @@ testpaths = [
 
 [tool.poetry.plugins.pytest11]
 rosys = "rosys.testing.fixtures"
-
-[tool.poetry.scripts]
-install-deps = "install_opencv:main"
 
 [tool.pylint]
 disable = [
