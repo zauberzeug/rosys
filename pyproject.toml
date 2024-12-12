@@ -12,7 +12,7 @@ keywords = ["robot", "framework", "automation", "control", "steer"]
 python = ">=3.10, <3.13"
 nicegui = ">=2.5.0"
 pyserial = "^3.5"
-numpy = ">=1.20.1"
+numpy = ">=1.20.1,<2.0.0"
 scipy = "^1.7.2"
 opencv-python = "4.9.0.80"
 opencv-contrib-python-headless = "4.9.0.80"
