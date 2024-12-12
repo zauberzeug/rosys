@@ -14,25 +14,25 @@ from .uploads import Uploads
 
 
 class Autoupload(Enum):
-    """Configures the auto-submitting of images to the Learning Loop"""
+    '''Configures the auto-submitting of images to the Learning Loop'''
 
     FILTERED = 'filtered'
-    """only submit images with novel detections and in an uncertainty range (this is the default)"""
+    '''only submit images with novel detections and in an uncertainty range (this is the default)'''
 
     DISABLED = 'disabled'
-    """no auto-submitting"""
+    '''no auto-submitting'''
 
     ALL = 'all'
-    """submit all images which are run through the detector"""
+    '''submit all images which are run through the detector'''
 
 
 class DetectorException(Exception):
-    """An exception that is raised by a detector."""
+    '''An exception that is raised by a detector.'''
 
 
 @dataclass(slots=True, kw_only=True)
 class DetectorInfo:
-    """Information about the detector."""
+    '''Information about the detector.'''
     operation_mode: str = field(
         metadata={"description": "The operation mode of the detector node"})
     state: str | None = field(
@@ -70,15 +70,15 @@ class ModelVersioningInfo:
 
 
 class Detector(abc.ABC):
-    """A detector allows detecting objects in images.
+    '''A detector allows detecting objects in images.
 
     It also holds an upload queue for sending images with uncertain results to an active learning infrastructure like the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
-    """
+    '''
 
     def __init__(self, *, name: str | None = None) -> None:
         self.name = name or str(uuid4())
         self.NEW_DETECTIONS = Event()
-        """detection on an image is completed (argument: image)"""
+        '''detection on an image is completed (argument: image)'''
         self.log = logging.getLogger('rosys.detector')
         self.uploads = Uploads()
 
@@ -91,7 +91,7 @@ class Detector(abc.ABC):
                      source: str | None = None,
                      creation_date: datetime | str | None = None,
                      ) -> Detections | None:
-        """Runs detections on the image. Afterwards the `image.detections` property is filled.
+        '''Runs detections on the image. Afterwards the `image.detections` property is filled.
 
         The parameters `tags`, `source`, and `creation_date` are added as metadata if the image is uploaded.
 
@@ -100,7 +100,7 @@ class Detector(abc.ABC):
 
         Raises:
             DetectorException: if the detection fails.
-        """
+        '''
 
     @abc.abstractmethod
     async def upload(self,
@@ -110,38 +110,40 @@ class Detector(abc.ABC):
                      source: str | None = None,
                      creation_date: datetime | str | None = None,
                      ) -> None:
-        """Uploads the image to the Learning Loop.
+        '''Uploads the image to the Learning Loop.
 
         The parameters `tags`, `source`, and `creation_date` are added as metadata.
         If the image has detections, they are also uploaded.
 
         Raises:
             DetectorException: if the upload fails.
-        """
+        '''
 
     @abc.abstractmethod
     async def fetch_detector_info(self) -> DetectorInfo:
-        """Retrieve information about the detector.
+        '''Retrieve information about the detector.
 
         Returns:
             DetectorInfo: information about the detector.
 
         Raises:
             DetectorException: if the about information cannot be retrieved.
-        """
+        '''
 
+    @abc.abstractmethod
     async def fetch_model_version_info(self) -> ModelVersioningInfo:
-        """Retrieve information about the model version and versioning mode.
+        '''Retrieve information about the model version and versioning mode.
 
         Returns:
             ModelVersioningInfo: the information about the model versioning as data class.
 
         Raises:
             DetectorException: if the detector is not connected or the information cannot be retrieved.
-        """
+        '''
 
+    @abc.abstractmethod
     async def set_model_version(self, version: Literal['follow_loop', 'pause'] | str) -> None:
-        """Set the model version or versioning mode.
+        '''Set the model version or versioning mode.
 
         Set to 'follow_loop' to automatically update the model version to the latest version in the learning loop.
         Set to 'pause' to stop automatic updates and keep the current model version.
@@ -149,4 +151,4 @@ class Detector(abc.ABC):
 
         Raises:
             DetectorException: if the version control mode is not valid or the version could not be set.
-        """
+        '''

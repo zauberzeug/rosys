@@ -174,7 +174,7 @@ class DetectorHardware(Detector):
             if self.timeout_count > 5 and self.auto_disconnect:
                 self.log.error('Detection timed out 5 times in a row. Disconnecting from detector %s', self.name)
                 await self.disconnect()
-            raise DetectorException('Detection timeout')  # pylint: disable=raise-missing-from
+            raise DetectorException('Detection timeout') from None
         except Exception as e:
             raise DetectorException('Detection failed') from e
 
@@ -208,7 +208,7 @@ class DetectorHardware(Detector):
             response = await self.sio.call('about', timeout=5)
         except socketio.exceptions.TimeoutError:
             self.log.error('Communication timeout for detector %s', self.name)
-            raise DetectorException('Communication timeut')  # pylint: disable=raise-missing-from
+            raise DetectorException('Communication timeut') from None
         except Exception as e:
             raise DetectorException('Communication failed') from e
 
@@ -241,7 +241,7 @@ class DetectorHardware(Detector):
             response = await self.sio.call('get_model_version', timeout=5)
         except socketio.exceptions.TimeoutError:
             self.log.error('Communication timeout for detector %s', self.name)
-            raise DetectorException('Communication timed out')  # pylint: disable=raise-missing-from
+            raise DetectorException('Communication timed out') from None
         except Exception as e:
             raise DetectorException('Communication failed') from e
 
@@ -270,7 +270,7 @@ class DetectorHardware(Detector):
             response = await self.sio.call('set_model_version_mode', version, timeout=5)
         except socketio.exceptions.TimeoutError:
             self.log.error('Communication timeout for detector %s', self.name)
-            raise DetectorException('Communication timeout')  # pylint: disable=raise-missing-from
+            raise DetectorException('Communication timeout') from None
         except Exception as e:
             self.log.error('Communication failed for detector %s: %s', self.name, e)
             raise DetectorException('Communication failed') from e
@@ -292,7 +292,7 @@ class DetectorHardware(Detector):
             await self.sio.call('soft_reload', timeout=5)
         except socketio.exceptions.TimeoutError:
             self.log.error('Communication timeout for detector %s', self.name)
-            raise DetectorException('Communication timeout')  # pylint: disable=raise-missing-from
+            raise DetectorException('Communication timeout') from None
         except Exception as e:
             self.log.error('Communication failed for detector %s: %s', self.name, e)
             raise DetectorException('Communication failed') from e
