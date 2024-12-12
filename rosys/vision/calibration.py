@@ -336,7 +336,7 @@ class Calibration:
             new_K, _ = cv2.getOptimalNewCameraMatrix(K, D, (w, h), 1, (w, h), centerPrincipalPoint=True)
         elif self.intrinsics.model == CameraModel.FISHEYE:
             new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(K, D, (w, h), np.eye(3),
-                                                                           balance=0.0 if crop else 1.0,
+                                                                           balance=0.5 if crop else 1.0,
                                                                            new_size=(w, h),
                                                                            fov_scale=1)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
@@ -376,9 +376,7 @@ class Calibration:
                 x, y, roi_w, roi_h = roi
                 dst = dst[y:y+roi_h, x:x+roi_w]
         elif self.intrinsics.model == CameraModel.FISHEYE:
-            balance = 0.0 if crop else 1.0
-            new_K = cv2.fisheye.estimateNewCameraMatrixForUndistortRectify(K, D, (w, h), np.eye(3), balance=balance)
-
+            new_K = self.get_undistorted_camera_matrix(crop=crop)
             map1, map2 = cv2.fisheye.initUndistortRectifyMap(  # pylint: disable=unpacking-non-sequence
                 K, D, np.eye(3), new_K, (w, h), cv2.CV_16SC2)
             dst = cv2.remap(image_array, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
