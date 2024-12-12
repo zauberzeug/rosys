@@ -94,6 +94,12 @@ class Detector(abc.ABC):
 
         The parameters `tags`, `source`, and `creation_date` are added as metadata if the image is uploaded.
 
+        Note that the hardware detector uses a lazy strategy to schedule the inference tasks.
+        In particular a lifo queue with a max size of 1 is used. This means if the detector is busy,
+        the image is not processed immediately, but queued up.
+        If the detect function is called again, the queued image is dropped and the new image is queued instead.
+        In this case this method returns `None`.
+
         Returns:
             Detections: the detections found in the image.
 
