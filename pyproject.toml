@@ -14,8 +14,8 @@ nicegui = ">=2.5.0"
 pyserial = "^3.5"
 numpy = ">=1.20.1,<2.0.0" # required by opencv-python < 4.9.0
 scipy = "^1.7.2"
-opencv-python-headless = "4.9.0.80" 
-opencv-contrib-python-headless = "4.9.0.80" # 4.10 currently does not support the omnidir module properly
+opencv-python = "4.9.0.80" 
+opencv-contrib-python = "4.9.0.80" # 4.10 currently does not support the omnidir module properly
 psutil = "^5.9.0"
 networkx = "^2.6.2"
 tabulate = "^0.8.9"
