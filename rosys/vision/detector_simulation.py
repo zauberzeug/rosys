@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime
+from typing import Literal
 from uuid import uuid4
 
 import numpy as np
@@ -9,7 +10,7 @@ from ..geometry import Point3d
 from .calibratable_camera_provider import CalibratableCameraProvider
 from .camera import CalibratableCamera
 from .detections import BoxDetection, Detections, PointDetection
-from .detector import Autoupload, Detector
+from .detector import Autoupload, Detector, DetectorInfo, ModelVersioningInfo
 from .image import Image
 
 
@@ -81,6 +82,22 @@ class DetectorSimulation(Detector):
                      creation_date: datetime | str | None = None,
                      ) -> None:
         self.log.info('Uploading %s', image.id)
+
+    async def fetch_detector_info(self) -> DetectorInfo:
+        return DetectorInfo(operation_mode='simulation',
+                            version_control='pause',
+                            state=None,
+                            categories=[])
+
+    async def fetch_model_version_info(self) -> ModelVersioningInfo:
+        return ModelVersioningInfo(current_version='None',
+                                   target_version='None',
+                                   loop_version='None',
+                                   local_versions=[],
+                                   version_control='pause')
+
+    async def set_model_version(self, version: Literal['follow_loop', 'pause'] | str) -> None:
+        self.log.info('Setting model version to %s', version)
 
     def update_simulated_objects(self, image: Image) -> None:
         pass
