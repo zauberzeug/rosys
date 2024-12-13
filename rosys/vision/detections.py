@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from typing import Literal
 
 import numpy as np
 
@@ -9,13 +10,10 @@ from ..geometry import Point
 
 @dataclass(slots=True, kw_only=True)
 class Category:
-    uuid: str = field(metadata={'description': 'The uuid of the category.'})
-    name: str = field(metadata={'description': 'The name of the category.'})
-    color: str | None = field(default=None, metadata={
-        'description': 'The color of the category when displayed in the Learning Loop UI.'})
-    category_type: str | None = field(default=None, metadata={
-        'description': 'The type of the category',
-        'example': 'box, point, segmentation, classification'})
+    uuid: str
+    name: str
+    color: str | None = None
+    category_type: Literal['box', 'point', 'segmentation', 'classification'] | None = None
 
 
 @dataclass(slots=True, kw_only=True)
@@ -60,8 +58,12 @@ class BoxDetection(Detection):
         color = 'red'
         x = self.x / shrink
         y = self.y / shrink
-        return f'<rect x="{x}" y="{y}" width="{self.width/shrink}" height="{self.height/shrink}" stroke-width="2" stroke="{color}" fill="none" />' \
-            f'<text x="{x}" y="{y - 7}" text-anchor="start" stroke="{color}" fill="{color}" font-size="10">{self.category_name} ({int(self.confidence*100)}%)</text>'
+        return (
+            f'<rect x="{x}" y="{y}" width="{self.width/shrink}" height="{self.height/shrink}" stroke-width="2" '
+            f'stroke="{color}" fill="none" />'
+            f'<text x="{x}" y="{y - 7}" text-anchor="start" stroke="{color}" fill="{color}" font-size="10">'
+            f'{self.category_name} ({self.confidence:.0%})</text>'
+        )
 
     def intersection_over_union(self, other_detection: BoxDetection) -> float:
         # https://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/
@@ -109,8 +111,11 @@ class SegmentationDetection:
         d = ' '.join([f"{'L' if i > 0 else 'M'} {p.x/shrink} {p.y/shrink}" for i, p in enumerate(self.shape.points)])
         d += ' Z'
         p0 = self.shape.points[0]
-        return f'<path d="{d}" stroke-width="2" stroke="{color}" fill="none" />' \
-            f'<text x="{p0.x / shrink + 10}" y="{p0.y / shrink + 4}" text-anchor="start" stroke="{color}" fill="{color}" font-size="12" font-weight="light">{self.category_name} ({int(self.confidence*100)}%)</text>'
+        return (
+            f'<path d="{d}" stroke-width="2" stroke="{color}" fill="none" />'
+            f'<text x="{p0.x / shrink + 10}" y="{p0.y / shrink + 4}" text-anchor="start" stroke="{color}" '
+            f'fill="{color}" font-size="12" font-weight="light">{self.category_name} ({self.confidence:.0%})</text>'
+        )
 
 
 @dataclass(slots=True, kw_only=True)
@@ -134,8 +139,11 @@ class PointDetection(Detection):
         color = 'red'
         x = self.x / shrink
         y = self.y / shrink
-        return f'<circle cx="{x}" cy="{y}" r="4" stroke-width="2" stroke="{color}" fill="none" />' \
-            f'<text x="{x + 10}" y="{y + 4}" text-anchor="start" stroke="{color}" fill="{color}" font-size="12" font-weight="light">{self.category_name} ({int(self.confidence*100)}%)</text>'
+        return (
+            f'<circle cx="{x}" cy="{y}" r="4" stroke-width="2" stroke="{color}" fill="none" />'
+            f'<text x="{x + 10}" y="{y + 4}" text-anchor="start" stroke="{color}" fill="{color}" font-size="12" '
+            f'font-weight="light">{self.category_name} ({self.confidence:.0%})</text>'
+        )
 
 
 @dataclass(slots=True, kw_only=True)

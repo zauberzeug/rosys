@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime, timedelta
 from typing import Any, Literal
 
@@ -14,7 +15,8 @@ from .image import Image
 class DetectorHardware(Detector):
     """This detector communicates with a [YOLO detector](https://hub.docker.com/r/zauberzeug/yolov5-detector) via Socket.IO.
 
-    It automatically connects and reconnects, submits and receives detections and sends images that should be uploaded to the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
+    It automatically connects and reconnects, submits and receives detections and sends images
+    that should be uploaded to the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
 
     Note: Images must be smaller than ``MAX_IMAGE_SIZE`` bytes (default: 10 MB).
     """
@@ -100,7 +102,6 @@ class DetectorHardware(Detector):
                      source: str | None = None,
                      creation_date: datetime | str | None = None
                      ) -> None:
-
         if not self.is_connected:
             self.log.error('Upload failed: detector is not connected')
             raise DetectorException('detector is not connected')
@@ -151,7 +152,10 @@ class DetectorHardware(Detector):
 
         assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
         tags = tags or []
-        return await self.lazy_worker.run(self._detect(image, autoupload, tags, source, creation_date))
+        try:
+            return await self.lazy_worker.run(self._detect(image, autoupload, tags, source, creation_date))
+        except asyncio.exceptions.CancelledError:
+            raise DetectorException('Detection cancelled') from None
 
     async def _detect(self,
                       image: Image,
@@ -185,7 +189,8 @@ class DetectorHardware(Detector):
                 boxes=[persistence.from_dict(BoxDetection, d) for d in response.get('box_detections', [])],
                 points=[persistence.from_dict(PointDetection, d) for d in response.get('point_detections', [])],
                 segmentations=[persistence.from_dict(SegmentationDetection, d)
-                               for d in response.get('segmentation_detections', [])],)
+                               for d in response.get('segmentation_detections', [])],
+            )
         except Exception as e:
             raise DetectorException('Failed to parse detections') from e
         image.set_detections(self.name, detections)
@@ -208,33 +213,34 @@ class DetectorHardware(Detector):
             response = await self.sio.call('about', timeout=5)
         except socketio.exceptions.TimeoutError:
             self.log.error('Communication timeout for detector %s', self.name)
-            raise DetectorException('Communication timeut') from None
+            raise DetectorException('Communication timeout') from None
         except Exception as e:
             raise DetectorException('Communication failed') from e
 
         if not isinstance(response, dict):
             raise DetectorException('Invalid response from detector')
+
         try:
             model_info_dict = response.get('model_info', {})
-            categories = [Category(uuid=c['id'],
-                                   name=c['name'],
-                                   color=c.get('color'),
-                                   category_type=c.get('type'))
-                          for c in model_info_dict.get('categories', [])]
-
-            result = DetectorInfo(operation_mode=response['operation_mode'],
-                                  state=response.get('state'),
-                                  organization=model_info_dict.get('organization'),
-                                  project=model_info_dict.get('project'),
-                                  current_version=model_info_dict.get('version'),
-                                  categories=categories,
-                                  resolution=model_info_dict.get('resolution'),
-                                  target_version=response.get('target_model'),
-                                  version_control=response['version_control'])
+            return DetectorInfo(
+                operation_mode=response['operation_mode'],
+                state=response.get('state'),
+                organization=model_info_dict.get('organization'),
+                project=model_info_dict.get('project'),
+                current_version=model_info_dict.get('version'),
+                categories=[
+                    Category(uuid=c['id'],
+                             name=c['name'],
+                             color=c.get('color'),
+                             category_type=c.get('type'))
+                    for c in model_info_dict.get('categories', [])
+                ],
+                resolution=model_info_dict.get('resolution'),
+                target_version=response.get('target_model'),
+                version_control=response['version_control'],
+            )
         except Exception as e:
             raise DetectorException('Failed to parse detector info') from e
-
-        return result
 
     async def fetch_model_version_info(self) -> ModelVersioningInfo:
         try:
@@ -249,22 +255,20 @@ class DetectorHardware(Detector):
             raise DetectorException('Invalid response from detector')
 
         try:
-            result = ModelVersioningInfo(
+            return ModelVersioningInfo(
                 current_version=response['current_version'],
                 target_version=response['target_version'],
                 loop_version=response['loop_version'],
                 local_versions=response['local_versions'],
-                version_control=response['version_control'])
+                version_control=response['version_control'],
+            )
         except Exception as e:
             raise DetectorException('Failed to parse model versioning info') from e
 
-        return result
-
     async def set_model_version(self, version: Literal['follow_loop', 'pause'] | str) -> None:
-        if version not in ['follow_loop', 'pause']:
-            if not version.replace('.', '').isdigit():
-                raise DetectorException(
-                    f'invalid version control mode: {version} (allowed: follow_loop, pause or a version number like 1.2)')
+        if version not in ['follow_loop', 'pause'] and not version.replace('.', '').isdigit():
+            raise DetectorException(f'invalid version control mode: {version} '
+                                    f'(allowed: "follow_loop", "pause" or a version number like "1.2")')
 
         try:
             response = await self.sio.call('set_model_version_mode', version, timeout=5)
