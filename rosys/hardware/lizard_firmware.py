@@ -115,6 +115,9 @@ class LizardFirmware:
     async def flash_core(self) -> None:
         assert isinstance(self.robot_brain.communication, SerialCommunication)
         rosys.notify(f'Flashing Lizard firmware {self.local_version} to Core...')
+        if any(await self.robot_brain.esp_pins_p0.get_strapping_pins()):
+            rosys.notify('Flashing Core failed. Check strapping pins.', 'negative')
+            return
         self.robot_brain.communication.disconnect()
         await rosys.sleep(0.3)
         output = await rosys.run.sh(['sudo', './flash.py', *self.flash_params], timeout=None, working_dir=self.PATH)
@@ -125,6 +128,9 @@ class LizardFirmware:
 
     async def flash_p0(self, timeout: float = 120) -> None:
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
+        if any(await self.robot_brain.esp_pins_p0.get_strapping_pins()):
+            rosys.notify('Flashing P0 failed. Check strapping pins.', 'negative')
+            return
         await self.robot_brain.send('p0.flash()')
         start = rosys.time()
         deadline = start + timeout

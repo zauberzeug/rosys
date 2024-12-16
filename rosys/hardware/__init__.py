@@ -4,7 +4,6 @@ from .bms import Bms, BmsHardware, BmsSimulation
 from .bumper import Bumper, BumperHardware, BumperSimulation
 from .can import CanHardware
 from .communication import Communication, SerialCommunication, WebCommunication
-from .esp_pins import EspPins
 from .estop import EStop, EStopHardware, EStopSimulation
 from .expander import ExpanderHardware
 from .gnss import Gnss, GnssHardware, GnssMeasurement, GnssSimulation
@@ -29,7 +28,6 @@ __all__ = [
     'EStop',
     'EStopHardware',
     'EStopSimulation',
-    'EspPins',
     'ExpanderHardware',
     'Gnss',
     'GnssHardware',

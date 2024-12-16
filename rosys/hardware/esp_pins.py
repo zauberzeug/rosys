@@ -72,8 +72,19 @@ class EspPins:
         for pin in self._pins.values():
             await self.update_pin(pin)
 
+    async def get_pin_level(self, pin_id: int) -> bool:
+        await self.update_pin(self._pins[pin_id])
+        return self._pins[pin_id].level
+
     async def set_pin_level(self, pin: GpioPin, level: bool) -> None:
         await self.robot_brain.send(f'{self.name}.set_pin_level({pin.gpio}, {1 if level else 0})')
+
+    async def get_strapping_pins(self) -> list[bool]:
+        """Get the state of the strapping pins.
+
+        See https://github.com/zauberzeug/lizard/issues/75 and https://github.com/zauberzeug/lizard/pull/95.
+        """
+        return [await self.get_pin_level(number) for number in [0, 2, 12]]
 
     def developer_ui(self) -> None:
         with ui.column():

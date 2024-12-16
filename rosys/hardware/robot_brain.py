@@ -6,6 +6,7 @@ from nicegui import ui
 from .. import rosys
 from ..event import Event
 from .communication import Communication
+from .esp_pins import EspPins
 from .lizard_firmware import LizardFirmware
 
 CLOCK_OFFSET_HISTORY_LENGTH = 100
@@ -40,6 +41,9 @@ class RobotBrain:
         self.hardware_time: float | None = None
         if enable_esp_on_startup:
             rosys.on_startup(self.enable_esp)
+
+        self.esp_pins_core = EspPins(name='core', robot_brain=self)
+        self.esp_pins_p0 = EspPins(name='p0', robot_brain=self)
 
     @property
     def clock_offset(self) -> float | None:
@@ -103,10 +107,21 @@ class RobotBrain:
                 with ui.menu() as menu:
                     ui.menu_item('Download', on_click=self.lizard_firmware.download) \
                         .tooltip('Download the latest Lizard firmware from GitHub')
+
+                    async def check_strapping_pins_core():
+                        ui.notify(await self.esp_pins_core.get_strapping_pins())
+                    ui.menu_item('Check Core Strapping Pins', on_click=check_strapping_pins_core) \
+                        .tooltip('Check if the Core strapping pins are in the correct state for flashing.')
                     ui.menu_item('Flash Core', on_click=self.lizard_firmware.flash_core) \
                         .tooltip('Flash the downloaded Lizard firmware to the Core microcontroller')
+
+                    async def check_strapping_pins_p0():
+                        ui.notify(await self.esp_pins_p0.get_strapping_pins())
+                    ui.menu_item('Check P0 Strapping Pins', on_click=check_strapping_pins_p0) \
+                        .tooltip('Check if the P0 strapping pins are in the correct state for flashing.')
                     ui.menu_item('Flash P0', on_click=self.lizard_firmware.flash_p0) \
                         .tooltip('Flash the downloaded Lizard firmware to the P0 microcontroller')
+
                     ui.menu_item('Enable', on_click=self.enable_esp) \
                         .tooltip('Enable the microcontroller module (will later be done automatically)')
                     ui.menu_item('Configure', on_click=self.configure) \
