@@ -1039,6 +1039,33 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#rosys.vision.Detector.fetch_detector_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      fetch_detector_info
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.Detector.fetch_model_version_info" class="md-nav__link">
+    <span class="md-ellipsis">
+      fetch_model_version_info
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.Detector.set_model_version" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_model_version
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rosys.vision.Detector.upload" class="md-nav__link">
     <span class="md-ellipsis">
       upload
@@ -1067,6 +1094,21 @@
       DetectorHardware
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="DetectorHardware">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.DetectorHardware.soft_reload" class="md-nav__link">
+    <span class="md-ellipsis">
+      soft_reload
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1469,7 +1511,8 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
 
         <p>A detector allows detecting objects in images.</p>
-<p>It also holds an upload queue for sending images with uncertain results to an active learning infrastructure like the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Learning Loop</a>.</p>
+<p>It also holds an upload queue for sending images with uncertain results to an active learning infrastructure
+like the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Learning Loop</a>.</p>
 
 
 
@@ -1514,8 +1557,97 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
     <div class="doc doc-contents ">
 
-        <p>Runs detections on the image. Afterwards the <code>image.detections</code> property is filled.</p>
+        <p>Runs detections on the image and fills the <code>image.detections</code> property.</p>
 <p>The parameters <code>tags</code>, <code>source</code>, and <code>creation_date</code> are added as metadata if the image is uploaded.</p>
+<p>Note that the hardware detector uses a lazy strategy to schedule the inference tasks.
+In particular a queue with a maximum size of 1 is used.
+This means if the detector is busy, the image is not processed immediately, but queued up.
+If the <code>detect</code> function is called again, the queued image is dropped and the new image is queued instead.
+In this case this method returns <code>None</code>.</p>
+<p>:return: the detections found in the image.
+:raises DetectorException: if the detection fails.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.Detector.fetch_detector_info" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">fetch_detector_info</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.vision.Detector.fetch_detector_info" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">fetch_detector_info</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">DetectorInfo</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Retrieve information about the detector.</p>
+<p>:return: information about the detector.
+:raises DetectorException: if the about information cannot be retrieved.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.Detector.fetch_model_version_info" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">fetch_model_version_info</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.vision.Detector.fetch_model_version_info" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">fetch_model_version_info</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ModelVersioningInfo</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Retrieve information about the model version and versioning mode.</p>
+<p>:return: the information about the model versioning as data class.
+:raises DetectorException: if the detector is not connected or the information cannot be retrieved.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.Detector.set_model_version" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">set_model_version</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.vision.Detector.set_model_version" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">set_model_version</span><span class="p">(</span>
+    <span class="n">version</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;follow_loop&quot;</span><span class="p">,</span> <span class="s2">&quot;pause&quot;</span><span class="p">]</span> <span class="o">|</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Set the model version or versioning mode.</p>
+<p>Set to "follow_loop" to automatically update the model version to the latest version in the learning loop.
+Set to "pause" to stop automatic updates and keep the current model version.
+Set to a version number (e.g. "1.2") to use a specific version.</p>
+<p>:raises DetectorException: if the version control mode is not valid or the version could not be set.</p>
 
     </div>
 
@@ -1548,6 +1680,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
         <p>Uploads the image to the Learning Loop.</p>
 <p>The parameters <code>tags</code>, <code>source</code>, and <code>creation_date</code> are added as metadata.
 If the image has detections, they are also uploaded.</p>
+<p>:raises DetectorException: if the upload fails.</p>
 
     </div>
 
@@ -1586,7 +1719,10 @@ If the image has detections, they are also uploaded.</p>
 
 <a href="#rosys.vision.DetectorHardware" class="headerlink" title="Permanent link">&para;</a></h2>
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">DetectorHardware</span><span class="p">(</span>
-    <span class="o">*</span><span class="p">,</span> <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8004</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8004</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">auto_disconnect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -1596,7 +1732,8 @@ If the image has detections, they are also uploaded.</p>
 
 
         <p>This detector communicates with a <a href="https://hub.docker.com/r/zauberzeug/yolov5-detector">YOLO detector</a> via Socket.IO.</p>
-<p>It automatically connects and reconnects, submits and receives detections and sends images that should be uploaded to the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Learning Loop</a>.</p>
+<p>It automatically connects and reconnects, submits and receives detections and sends images
+that should be uploaded to the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Learning Loop</a>.</p>
 <p>Note: Images must be smaller than <code>MAX_IMAGE_SIZE</code> bytes (default: 10 MB).</p>
 
 
@@ -1616,6 +1753,30 @@ If the image has detections, they are also uploaded.</p>
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.DetectorHardware.soft_reload" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">soft_reload</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.vision.DetectorHardware.soft_reload" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">soft_reload</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Trigger a soft reload of the detector.</p>
+<p>:raises DetectorException: if the communication fails.</p>
+
+    </div>
+
+</div>
 
 
 
