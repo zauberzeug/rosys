@@ -103,6 +103,13 @@ class GeoPose:
         """The geo point of the geo pose."""
         return GeoPoint(self.lat, self.lon)
 
+    def relative_shift_by(self, *, x: float = 0.0, y: float = 0.0) -> GeoPose:
+        """Shift the geo pose by Cartesian coordinates in meters relative to its current heading."""
+        distance = math.sqrt(x**2 + y**2)
+        angle = math.atan2(-y, x) + self.heading
+        shifted_point = self.point.polar(distance, angle)
+        return GeoPose(shifted_point.lat, shifted_point.lon, self.heading)
+
     def to_local(self) -> Pose:
         """Transform to local Cartesian coordinates relative to the current geo reference."""
         assert GeoReference.current is not None
