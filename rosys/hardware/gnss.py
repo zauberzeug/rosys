@@ -14,7 +14,7 @@ from serial.tools import list_ports
 
 from .. import rosys
 from ..event import Event
-from ..geometry import GeoPoint, GeoPose, Pose
+from ..geometry import GeoPoint, GeoPose, Point, Pose
 from ..run import io_bound
 
 if TYPE_CHECKING:
@@ -278,19 +278,30 @@ class GnssSimulation(Gnss):
     def simulate(self) -> None:
         if not self.is_connected:
             return
-        geo_pose = GeoPose.from_pose(self.wheels.pose)
+        # TODO: switch back to old simulation
+        # geo_pose = GeoPose.from_pose(self.wheels.pose)
+        relative_antenna_pose = Pose(x=0.041, y=-0.255, yaw=np.deg2rad(90))
+        distance_to_antenna = Point(x=0, y=0).distance(relative_antenna_pose.point)
+        angle_to_antenna = Point(x=0, y=0).direction(relative_antenna_pose.point)
+
+        antenna_point = self.wheels.pose.point.polar(distance_to_antenna, angle_to_antenna)
+        geo_point = GeoPoint.from_point(antenna_point)
+        # geo_pose = GeoPose.from_pose(Pose(x=antenna_point.x, y=antenna_point.y, yaw=self.wheels.pose.yaw))
 
         noise_lat = np.random.normal(0, self._lat_std_dev)
         noise_lon = np.random.normal(0, self._lon_std_dev)
         noise_heading = np.random.normal(0, math.radians(self._heading_std_dev))
-
         direction = math.atan2(noise_lon, noise_lat)
-        noise_point = geo_pose.point.polar(noise_lat, direction)
-        noise_pose = GeoPose(lat=noise_point.lat, lon=noise_point.lon, heading=geo_pose.heading + noise_heading)
+        noise_point = geo_point.polar(noise_lat, direction)
+        heading = -self.wheels.pose.yaw + noise_heading
+
+        angle_to_center = -(angle_to_antenna + np.pi)
+        center_geo_point = noise_point.polar(distance_to_antenna, angle_to_center)
+        center_geo_pose = GeoPose(lat=center_geo_point.lat, lon=center_geo_point.lon, heading=heading)
 
         self.last_measurement = GnssMeasurement(
             time=rosys.time(),
-            pose=noise_pose,
+            pose=center_geo_pose,
             latitude_std_dev=self._lat_std_dev,
             longitude_std_dev=self._lon_std_dev,
             heading_std_dev=self._heading_std_dev,
