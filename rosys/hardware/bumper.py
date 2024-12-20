@@ -1,7 +1,6 @@
 import abc
 
 from ..event import Event
-from ..helpers import remove_indentation
 from .estop import EStop
 from .expander import ExpanderHardware
 from .module import Module, ModuleHardware, ModuleSimulation
@@ -38,12 +37,6 @@ class BumperHardware(Bumper, ModuleHardware):
         lizard_code = ''
         for pin, number in pins.items():
             lizard_code += f'{name}_{pin} = {expander.name + "." if expander else ""}Input({number})\n'
-            if expander:
-                lizard_code += remove_indentation(f'''
-                    # TODO: remove when lizard issue 66 is fixed.
-                    {name}_{pin}.level = 0
-                    {name}_{pin}.active = false
-                ''')
         core_message_fields = [f'{name}_{pin}.level' for pin in pins]
         super().__init__(robot_brain=robot_brain,
                          lizard_code=lizard_code,
