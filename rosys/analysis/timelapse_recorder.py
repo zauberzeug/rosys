@@ -44,6 +44,9 @@ class TimelapseRecorder:
         :param height: height of the images to capture (default: 600)
         :param capture_rate: images per second to capture (default: 1.0)
         """
+        STORAGE_PATH.mkdir(parents=True, exist_ok=True)
+        VIDEO_PATH.mkdir(parents=True, exist_ok=True)
+
         self.log = logging.getLogger('rosys.timelapse_recorder')
         self.width = width
         self.height = height
