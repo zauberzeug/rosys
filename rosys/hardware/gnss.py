@@ -116,11 +116,6 @@ class GnssHardware(Gnss):
         """
         super().__init__()
         self.antenna_pose = antenna_pose or Pose(x=0.0, y=0.0, yaw=0.0)
-        self._antenna_distance = math.sqrt(self.antenna_pose.x**2 + self.antenna_pose.y**2)
-        """the distance from the robot's center to the main antenna"""
-        self._antenna_angle = math.pi + math.atan2(self.antenna_pose.y, self.antenna_pose.x) - self.antenna_pose.yaw
-        """the angle from the robot's center to the main antenna"""
-
         serial_device_path = self._find_device()
         self.serial_connection = self._connect_to_device(serial_device_path)
         rosys.on_startup(self._run)
@@ -188,14 +183,12 @@ class GnssHardware(Gnss):
                     last_raw_heading = float(parts[4] or 0.0)
                     last_heading_accuracy = float(parts[7] or 'inf')
                 if last_gga_timestamp == last_gst_timestamp == last_pssn_timestamp != '':
-                    antenna = GeoPoint.from_degrees(last_raw_latitude, last_raw_longitude)
-                    robot = antenna.polar(self._antenna_distance, -self._antenna_angle + math.radians(last_raw_heading))
-                    last_latitude = math.degrees(robot.lat)
-                    last_longitude = math.degrees(robot.lon)
-                    last_heading = last_raw_heading - self.antenna_pose.yaw
+                    last_heading = last_raw_heading + self.antenna_pose.yaw_deg
+                    antenna_pose = GeoPose.from_degrees(last_raw_latitude, last_raw_longitude, last_heading)
+                    robot_pose = antenna_pose.relative_shift_by(x=-self.antenna_pose.x, y=-self.antenna_pose.y)
                     self.last_measurement = GnssMeasurement(
                         time=rosys.time(),
-                        pose=GeoPose.from_degrees(lat=last_latitude, lon=last_longitude, heading=last_heading),
+                        pose=robot_pose,
                         latitude_std_dev=last_latitude_accuracy,
                         longitude_std_dev=last_longitude_accuracy,
                         heading_std_dev=last_heading_accuracy,
