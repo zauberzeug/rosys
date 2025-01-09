@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import ClassVar
+from warnings import warn
 
 import cv2
 import numpy as np
@@ -30,9 +31,14 @@ class Image:
     data: bytes | None = None
     _detections: dict[str, Detections] = field(default_factory=dict)
     is_broken: bool | None = None
-    tags: set[str] = field(default_factory=set)
+    tags: set[str] = field(default_factory=set, metadata={'deprecated': True})
 
     DEFAULT_PLACEHOLDER_SIZE: ClassVar[tuple[int, int]] = (320, 240)
+
+    def __post_init__(self) -> None:
+        if self.tags:
+            warn('The tags field is deprecated and will be removed in a future version.',
+                 DeprecationWarning, stacklevel=2)
 
     @property
     def detections(self) -> Detections | None:
