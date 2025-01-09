@@ -2,7 +2,7 @@ FROM python:3.12-bookworm
 
 RUN apt update && apt install -y \
     sudo vim less ack-grep rsync wget curl cmake arp-scan iproute2 iw python3-pip python3-autopep8 libgeos-dev graphviz graphviz-dev v4l-utils psmisc sysstat \
-    libgl1-mesa-glx ffmpeg libsm6 libxext6 \
+    libgl1 ffmpeg libsm6 libxext6 \
     avahi-utils iputils-ping \
     jq \
     && rm -rf /var/lib/apt/lists/*
