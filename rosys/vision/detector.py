@@ -12,16 +12,16 @@ from .image import Image
 
 
 class Autoupload(Enum):
-    """Configures the auto-submitting of images to the Learning Loop"""
+    """Configuration options for image auto-upload behavior to the Learning Loop"""
 
     FILTERED = 'filtered'
-    """only submit images with novel detections and in an uncertainty range (this is the default)"""
+    """Upload mode for images with novel detections within uncertainty thresholds (default)"""
 
     DISABLED = 'disabled'
-    """no auto-submitting"""
+    """Upload mode where no images are auto-uploaded"""
 
     ALL = 'all'
-    """submit all images which are run through the detector"""
+    """Upload mode where every processed image is uploaded"""
 
 
 class DetectorException(Exception):
