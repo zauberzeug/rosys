@@ -47,7 +47,7 @@ jobs:
       - name: install dependencies
         run: |
           poetry install --with dev
-          sudo apt-get update && sudo apt-get install -y v4l-utils psmisc libgl1-mesa-glx
+          sudo apt-get update && sudo apt-get install -y v4l-utils psmisc
       - name: test
         run: poetry run pytest
       - name: examples
