@@ -37,8 +37,7 @@ class Image:
 
     def __post_init__(self) -> None:
         if self.tags:
-            warn('The tags field is deprecated and will be removed in a future version.',
-                 DeprecationWarning, stacklevel=2)
+            warn('The tags field is deprecated and will be removed in a future version.', stacklevel=2)
 
     @property
     def detections(self) -> Detections | None:

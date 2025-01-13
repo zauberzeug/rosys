@@ -5,7 +5,7 @@ from typing import Any, Literal
 import socketio
 import socketio.exceptions
 
-from .. import persistence
+from .. import persistence, rosys
 from ..helpers import LazyWorker
 from .detections import BoxDetection, Category, Detections, PointDetection, SegmentationDetection
 from .detector import Autoupload, Detector, DetectorException, DetectorInfo, ModelVersioningInfo
@@ -46,9 +46,17 @@ class DetectorHardware(Detector):
         def on_sio_connect_error(err) -> None:
             self.log.warning('sio connect error on %s: %s', port, err)
 
+        rosys.on_repeat(self._ensure_connection, 10.0)
+
     @property
     def is_connected(self) -> bool:
         return self.sio.connected
+
+    async def _ensure_connection(self) -> None:
+        if not self.is_connected:
+            self.log.info('trying reconnect %s', self.name)
+            if not await self.connect():
+                self.log.error('connection to %s at port %s failed; trying again', self.name, self.port)
 
     async def connect(self) -> bool:
         try:
