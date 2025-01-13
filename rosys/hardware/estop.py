@@ -19,7 +19,8 @@ class EStop(Module, abc.ABC):
 
         self.ESTOP_TRIGGERED = Event()
         """the e-stop was triggered"""
-
+        self.ESTOP_RELEASED = Event()
+        """the e-stop was released"""
         self.active: bool = False
         self.is_soft_estop_active: bool = False
         self.pressed_estops: list[int] = []
@@ -57,6 +58,8 @@ class EStopHardware(EStop, ModuleHardware):
         self.pressed_estops[:] = pressed
         if active and not self.active:
             self.ESTOP_TRIGGERED.emit()
+        if self.active and not active:
+            self.ESTOP_RELEASED.emit()
         self.active = active
 
 
