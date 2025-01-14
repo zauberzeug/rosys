@@ -17,13 +17,13 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 class RtspDevice:
 
     def __init__(self, mac: str, ip: str, *,
-                 jovision_profile: int, fps: int, on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
+                 substream: int, fps: int, on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
         self._mac = mac
         self._ip = ip
         self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device.' + self._mac)
 
         self._fps = fps
-        self._jovision_profile = jovision_profile
+        self._substream = substream
         self._on_new_image_data = on_new_image_data
 
         self._capture_task: asyncio.Task | None = None
@@ -52,7 +52,7 @@ class RtspDevice:
 
     @property
     def url(self) -> str:
-        url = mac_to_url(self._mac, self._ip, self._jovision_profile)
+        url = mac_to_url(self._mac, self._ip, self._substream)
         if url is None:
             raise ValueError(f'could not determine RTSP URL for {self._mac}')
         return url
@@ -101,9 +101,6 @@ class RtspDevice:
 
         async def stream() -> AsyncGenerator[bytes, None]:
             url = self.url
-            if 'subtype=0' in url:
-                url = url.replace('subtype=0', 'subtype=1')
-
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
             command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! jpegenc ! fdsink'
@@ -185,24 +182,24 @@ class RtspDevice:
         self._fps = fps
 
         if self._settings_interface is not None:
-            await self._settings_interface.set_fps(stream_id=self._jovision_profile, fps=self._fps)
+            await self._settings_interface.set_fps(stream_id=self._substream, fps=self._fps)
 
     async def get_fps(self) -> int | None:
         if self._settings_interface is not None:
-            return await self._settings_interface.get_fps(stream_id=self._jovision_profile)
+            return await self._settings_interface.get_fps(stream_id=self._substream)
         return self._fps
 
     def set_jovision_profile(self, profile: int) -> None:
-        self._jovision_profile = profile
+        self._substream = profile
 
     def get_jovision_profile(self) -> int:
-        return self._jovision_profile
+        return self._substream
 
     async def set_bitrate(self, bitrate: int) -> None:
         if self._settings_interface is not None:
-            await self._settings_interface.set_bitrate(stream_id=self._jovision_profile, bitrate=bitrate)
+            await self._settings_interface.set_bitrate(stream_id=self._substream, bitrate=bitrate)
 
     async def get_bitrate(self) -> int | None:
         if self._settings_interface is not None:
-            return await self._settings_interface.get_bitrate(stream_id=self._jovision_profile)
+            return await self._settings_interface.get_bitrate(stream_id=self._substream)
         return None

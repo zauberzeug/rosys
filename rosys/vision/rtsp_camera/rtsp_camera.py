@@ -73,7 +73,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             return
 
         self.device = RtspDevice(mac=self.id, ip=self.ip,
-                                 jovision_profile=self.parameters['jovision_profile'],
+                                 substream=self.parameters['jovision_profile'],
                                  fps=self.parameters['fps'],
                                  on_new_image_data=self._handle_new_image_data)
 
