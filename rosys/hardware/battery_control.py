@@ -19,12 +19,6 @@ class BatteryControlHardware(ModuleHardware):
             {self.name}_reset = {expander.name + "." if expander else ""}Output({reset_pin})
             {self.name}_status = {expander.name + "." if expander else ""}Input({status_pin})
         ''')
-        if expander:
-            lizard_code += remove_indentation(f'''
-                # TODO: remove when lizard issue 66 is fixed.
-                {self.name}_status.level = 0
-                {self.name}_status.active = false
-            ''')
         core_message_fields = [f'{self.name}_status.level']
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
