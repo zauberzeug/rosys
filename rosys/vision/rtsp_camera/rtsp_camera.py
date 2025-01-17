@@ -1,4 +1,5 @@
 import logging
+import warnings
 from typing import Any
 
 from typing_extensions import Self
@@ -38,7 +39,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.ip: str | None = ip
 
         self.substream = jovision_profile or substream
-        self._register_parameter('jovision_profile', self.get_substream, self.set_substream,
+        self._register_parameter('jovision_profile', self.get_jovision_profile, self.set_jovision_profile,
                                  min_value=0, max_value=1, step=1, default_value=substream)
         self._register_parameter('substream', self.get_substream, self.set_substream,
                                  min_value=0, max_value=1, step=1, default_value=substream)
@@ -124,6 +125,18 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
 
         return await self.device.get_fps()
+
+    def get_jovision_profile(self) -> int | None:
+        assert self.device is not None
+        warnings.warn('get_jovision_profile is deprecated, use get_substream instead', stacklevel=3)
+
+        return self.device.get_substream()
+
+    def set_jovision_profile(self, profile: int) -> None:
+        assert self.device is not None
+        warnings.warn('set_jovision_profile is deprecated, use set_substream instead', stacklevel=3)
+
+        self.device.set_substream(profile)
 
     def set_substream(self, index: int) -> None:
         assert self.device is not None
