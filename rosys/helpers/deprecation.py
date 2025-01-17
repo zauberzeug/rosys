@@ -12,7 +12,6 @@ def deprecated_param(param_name):
             if param_name in kwargs:
                 warnings.warn(
                     f"The '{param_name}' parameter is deprecated and will be removed in future versions.",
-                    DeprecationWarning,
                     stacklevel=2,
                 )
             return func(*args, **kwargs)
