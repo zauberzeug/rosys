@@ -1,9 +1,11 @@
 import logging
+import warnings
 from typing import Any
 
 from typing_extensions import Self
 
 from ... import rosys
+from ...helpers.deprecation import deprecated_param
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image
@@ -13,13 +15,15 @@ from .rtsp_device import RtspDevice
 
 class RtspCamera(ConfigurableCamera, TransformableCamera):
 
+    @deprecated_param('jovision_profile')
     def __init__(self,
                  *,
                  id: str,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
                  fps: int = 5,
-                 jovision_profile: int = 1,
+                 substream: int = 1,
+                 jovision_profile: int | None = None,
                  bitrate: int = 4096,
                  ip: str | None = None,
                  **kwargs,
@@ -34,22 +38,31 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.device: RtspDevice | None = None
         self.ip: str | None = ip
 
+        self.substream = jovision_profile or substream
         self._register_parameter('jovision_profile', self.get_jovision_profile, self.set_jovision_profile,
-                                 min_value=0, max_value=1, step=1, default_value=jovision_profile)
+                                 min_value=0, max_value=1, step=1, default_value=substream)
+        self._register_parameter('substream', self.get_substream, self.set_substream,
+                                 min_value=0, max_value=1, step=1, default_value=substream)
         self._register_parameter('fps', self.get_fps, self.set_fps,
                                  min_value=1, max_value=30, step=1, default_value=fps)
         self._register_parameter('bitrate', self.get_bitrate, self.set_bitrate,
                                  min_value=32, max_value=8192, step=1, default_value=bitrate)
 
     def to_dict(self) -> dict[str, Any]:
-        return super().to_dict() | {
+        parameters = {
             name: param.value for name, param in self._parameters.items()
-        } | {
+        }
+        if 'jovision_profile' in parameters:
+            parameters['substream'] = parameters['jovision_profile']
+            del parameters['jovision_profile']
+        return super().to_dict() | parameters | {
             'ip': self.ip,
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:
+        if 'jovision_profile' in data:
+            data['substream'] = data['jovision_profile']
         return cls(**data)
 
     @property
@@ -73,7 +86,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             return
 
         self.device = RtspDevice(mac=self.id, ip=self.ip,
-                                 jovision_profile=self.parameters['jovision_profile'],
+                                 substream=self.parameters['jovision_profile'],
                                  fps=self.parameters['fps'],
                                  on_new_image_data=self._handle_new_image_data)
 
@@ -113,15 +126,27 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         return await self.device.get_fps()
 
-    def set_jovision_profile(self, profile: int) -> None:
-        assert self.device is not None
-
-        self.device.set_jovision_profile(profile)
-
     def get_jovision_profile(self) -> int | None:
         assert self.device is not None
+        warnings.warn('get_jovision_profile is deprecated, use get_substream instead', stacklevel=3)
 
-        return self.device.get_jovision_profile()
+        return self.device.get_substream()
+
+    def set_jovision_profile(self, profile: int) -> None:
+        assert self.device is not None
+        warnings.warn('set_jovision_profile is deprecated, use set_substream instead', stacklevel=3)
+
+        self.device.set_substream(profile)
+
+    def set_substream(self, index: int) -> None:
+        assert self.device is not None
+
+        self.device.set_substream(index)
+
+    def get_substream(self) -> int | None:
+        assert self.device is not None
+
+        return self.device.get_substream()
 
     async def set_bitrate(self, bitrate: int) -> None:
         assert self.device is not None

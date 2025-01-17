@@ -16,10 +16,10 @@ def mac_to_vendor(mac: str) -> VendorType:
     return VendorType.OTHER
 
 
-def mac_to_url(mac: str, ip: str, jovision_profile: int = 0) -> str | None:
+def mac_to_url(mac: str, ip: str, substream: int = 0) -> str | None:
     vendor = mac_to_vendor(mac)
     if vendor == VendorType.JOVISION:
-        return f'rtsp://admin:admin@{ip}/profile{jovision_profile}'
+        return f'rtsp://admin:admin@{ip}/profile{substream}'
     if vendor == VendorType.DAHUA:
-        return f'rtsp://admin:Adminadmin@{ip}/cam/realmonitor?channel=1&subtype=0'
+        return f'rtsp://admin:Adminadmin@{ip}/cam/realmonitor?channel=1&subtype={substream}'
     return None
