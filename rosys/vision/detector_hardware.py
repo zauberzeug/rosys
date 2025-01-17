@@ -153,7 +153,11 @@ class DetectorHardware(Detector):
         assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
         tags = tags or []
         try:
-            return await self.lazy_worker.run(self._detect(image, autoupload, tags, source, creation_date))
+            detections = await self.lazy_worker.run(self._detect(image, autoupload, tags, source, creation_date))
+            if detections is not None:
+                image.set_detections(self.name, detections)
+                self.NEW_DETECTIONS.emit(image)
+            return detections
         except asyncio.exceptions.CancelledError:
             raise DetectorException('Detection cancelled') from None
 
@@ -193,13 +197,11 @@ class DetectorHardware(Detector):
             )
         except Exception as e:
             raise DetectorException('Failed to parse detections') from e
-        image.set_detections(self.name, detections)
 
         self.timeout_count = 0
         if image.is_broken:  # NOTE: image can be marked broken while detection is underway
             raise DetectorException('Image is broken')
 
-        self.NEW_DETECTIONS.emit(image)
         return detections
 
     def __str__(self) -> str:
