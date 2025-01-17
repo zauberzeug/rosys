@@ -189,10 +189,10 @@ class RtspDevice:
             return await self._settings_interface.get_fps(stream_id=self._substream)
         return self._fps
 
-    def set_jovision_profile(self, profile: int) -> None:
-        self._substream = profile
+    def set_substream(self, index: int) -> None:
+        self._substream = index
 
-    def get_jovision_profile(self) -> int:
+    def get_substream(self) -> int:
         return self._substream
 
     async def set_bitrate(self, bitrate: int) -> None:
