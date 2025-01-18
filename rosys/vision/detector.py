@@ -9,7 +9,6 @@ from uuid import uuid4
 from ..event import Event
 from .detections import Category, Detections
 from .image import Image
-from .uploads import Uploads
 
 
 class Autoupload(Enum):
@@ -93,7 +92,6 @@ class Detector(abc.ABC):
         """detection on an image is completed (argument: image)"""
 
         self.log = logging.getLogger('rosys.detector')
-        self.uploads = Uploads()
 
     @abc.abstractmethod
     async def detect(self,

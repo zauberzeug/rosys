@@ -51,12 +51,6 @@ class DetectorSimulation(Detector):
         self.simulated_objects: list[SimulatedObject] = []
         self.detection_delay = detection_delay
 
-        rosys.on_repeat(self.step, 0.1)
-
-    def step(self) -> None:
-        self.uploads.queue.clear()
-        self.uploads.priority_queue.clear()
-
     async def detect(self,
                      image: Image,
                      *,
