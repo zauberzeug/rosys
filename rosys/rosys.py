@@ -6,6 +6,7 @@ import os
 import signal
 import threading
 import time as pytime
+import warnings
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any, ClassVar, Literal
@@ -20,6 +21,8 @@ from .geometry.frame3d_registry import frame_registry
 from .helpers import invoke, is_stopping
 from .helpers import is_test as is_test_
 from .persistence.registry import backup, restore, sync_backup
+
+warnings.filterwarnings('once', category=DeprecationWarning, module='rosys')
 
 log = logging.getLogger('rosys.core')
 
