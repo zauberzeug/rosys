@@ -1,6 +1,7 @@
 import logging
 
 from ... import persistence, rosys
+from ...helpers.deprecation import deprecated_param
 from ..camera_provider import CameraProvider
 from .arp_scan import find_known_cameras
 from .rtsp_camera import RtspCamera
@@ -10,15 +11,17 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
     """This module collects and provides real RTSP streaming cameras."""
     SCAN_INTERVAL = 10
 
+    @deprecated_param('jovision_profile', remove_in_version='0.27.0')
     def __init__(self, *,
                  frame_rate: int = 6,
-                 jovision_profile: int = 0,
+                 substream: int = 0,
+                 jovision_profile: int | None = None,
                  network_interface: str | None = None,
                  auto_scan: bool = True) -> None:
         super().__init__()
 
         self.frame_rate = frame_rate
-        self.jovision_profile = jovision_profile
+        self.substream = jovision_profile if jovision_profile is not None else substream
         self.network_interface = network_interface
 
         self.log = logging.getLogger('rosys.rtsp_camera_provider')
@@ -49,7 +52,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
         for mac, ip in await find_known_cameras(network_interface=self.network_interface):
             if mac not in self._cameras:
                 self.log.debug('found new camera %s', mac)
-                self.add_camera(RtspCamera(id=mac, fps=self.frame_rate, jovision_profile=self.jovision_profile, ip=ip))
+                self.add_camera(RtspCamera(id=mac, fps=self.frame_rate, substream=self.substream, ip=ip))
             camera = self._cameras[mac]
             if not camera.is_connected:
                 self.log.info('activating authorized camera %s...', camera.id)
