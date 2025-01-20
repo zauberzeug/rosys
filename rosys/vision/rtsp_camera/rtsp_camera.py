@@ -126,6 +126,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         return await self.device.get_fps()
 
+    # DEPRECATED: 0.27.0
     def set_jovision_profile(self, profile: int) -> None:
         assert self.device is not None
         warnings.warn('setting jovision_profile is deprecated, use "substream" instead',
