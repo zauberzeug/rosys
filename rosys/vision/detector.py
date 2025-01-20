@@ -9,20 +9,19 @@ from uuid import uuid4
 from ..event import Event
 from .detections import Category, Detections
 from .image import Image
-from .uploads import Uploads
 
 
 class Autoupload(Enum):
-    """Configures the auto-submitting of images to the Learning Loop"""
+    """Configuration options for image auto-upload behavior to the Learning Loop"""
 
     FILTERED = 'filtered'
-    """only submit images with novel detections and in an uncertainty range (this is the default)"""
+    """Upload mode for images with novel detections within uncertainty thresholds (default)"""
 
     DISABLED = 'disabled'
-    """no auto-submitting"""
+    """Upload mode where no images are auto-uploaded"""
 
     ALL = 'all'
-    """submit all images which are run through the detector"""
+    """Upload mode where every processed image is uploaded"""
 
 
 class DetectorException(Exception):
@@ -93,7 +92,6 @@ class Detector(abc.ABC):
         """detection on an image is completed (argument: image)"""
 
         self.log = logging.getLogger('rosys.detector')
-        self.uploads = Uploads()
 
     @abc.abstractmethod
     async def detect(self,

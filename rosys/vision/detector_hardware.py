@@ -1,5 +1,5 @@
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Literal
 
 import socketio
@@ -46,22 +46,17 @@ class DetectorHardware(Detector):
         def on_sio_connect_error(err) -> None:
             self.log.warning('sio connect error on %s: %s', port, err)
 
-        rosys.on_repeat(self.step, 1.0)
+        rosys.on_repeat(self._ensure_connection, 10.0)
 
     @property
     def is_connected(self) -> bool:
         return self.sio.connected
 
-    async def step(self) -> None:
+    async def _ensure_connection(self) -> None:
         if not self.is_connected:
             self.log.info('trying reconnect %s', self.name)
             if not await self.connect():
                 self.log.error('connection to %s at port %s failed; trying again', self.name, self.port)
-                await rosys.sleep(3.0)
-                return
-
-        await self.try_start_one_upload()
-        await self.upload_priority_queue()
 
     async def connect(self) -> bool:
         try:
@@ -75,25 +70,6 @@ class DetectorHardware(Detector):
 
     async def disconnect(self) -> None:
         await self.sio.disconnect()
-
-    async def try_start_one_upload(self) -> None:
-        if datetime.now() < self.uploads.last_upload + timedelta(minutes=self.uploads.minimal_minutes_between_uploads):
-            return
-
-        upload_images = self.uploads.get_queued()
-        if upload_images:
-            rosys.background_tasks.create(self.upload(upload_images[0]), name='upload_image')
-            self.uploads.queue.clear()  # old images should not be uploaded later when the robot is inactive
-            self.uploads.last_upload = datetime.now()
-
-    async def upload_priority_queue(self) -> None:
-        upload_images = self.uploads.get_priority_queued()
-        if upload_images:
-            async def upload_priority_images():
-                for image in upload_images:
-                    await self.upload(image)
-            rosys.background_tasks.create(upload_priority_images(), name='upload_priority_images')
-            self.uploads.priority_queue.clear()
 
     async def upload(self,
                      image: Image,
@@ -125,7 +101,6 @@ class DetectorHardware(Detector):
                 detections_dict['point_detections'] = detections_dict.pop('points')
                 detections_dict['segmentation_detections'] = detections_dict.pop('segmentations')
                 data_dict['detections'] = detections_dict
-            data_dict['tags'] = list(image.tags.union(tags))
             data_dict['source'] = source
             data_dict['creation_date'] = _creation_date_to_isoformat(creation_date)
             await self.sio.emit('upload', data_dict)
@@ -153,7 +128,11 @@ class DetectorHardware(Detector):
         assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
         tags = tags or []
         try:
-            return await self.lazy_worker.run(self._detect(image, autoupload, tags, source, creation_date))
+            detections = await self.lazy_worker.run(self._detect(image, autoupload, tags, source, creation_date))
+            if detections is not None:
+                image.set_detections(self.name, detections)
+                self.NEW_DETECTIONS.emit(image)
+            return detections
         except asyncio.exceptions.CancelledError:
             raise DetectorException('Detection cancelled') from None
 
@@ -193,13 +172,11 @@ class DetectorHardware(Detector):
             )
         except Exception as e:
             raise DetectorException('Failed to parse detections') from e
-        image.set_detections(self.name, detections)
 
         self.timeout_count = 0
         if image.is_broken:  # NOTE: image can be marked broken while detection is underway
             raise DetectorException('Image is broken')
 
-        self.NEW_DETECTIONS.emit(image)
         return detections
 
     def __str__(self) -> str:

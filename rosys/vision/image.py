@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import warnings
 from dataclasses import dataclass, field
 from typing import ClassVar
 
@@ -33,6 +34,11 @@ class Image:
     tags: set[str] = field(default_factory=set)
 
     DEFAULT_PLACEHOLDER_SIZE: ClassVar[tuple[int, int]] = (320, 240)
+
+    def __post_init__(self) -> None:
+        if self.tags:
+            warnings.warn('The "tags" field is deprecated and will be removed in a future version.',
+                          DeprecationWarning, stacklevel=2)
 
     @property
     def detections(self) -> Detections | None:
