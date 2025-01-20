@@ -39,7 +39,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.ip: str | None = ip
 
         self.substream = jovision_profile or substream
-        self._register_parameter('jovision_profile', self.get_substream, self.set_jovision_profile,
+        self._register_parameter('jovision_profile', self.get_jovision_profile, self.set_jovision_profile,
                                  min_value=0, max_value=1, step=1, default_value=substream)
         self._register_parameter('substream', self.get_substream, self.set_substream,
                                  min_value=0, max_value=1, step=1, default_value=substream)
@@ -53,8 +53,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             name: param.value for name, param in self._parameters.items()
         }
         if 'jovision_profile' in parameters:
-            parameters['substream'] = parameters['jovision_profile']
-            del parameters['jovision_profile']
+            del parameters['jovision_profile']  # DEPRECATED: 0.27.0
         return super().to_dict() | parameters | {
             'ip': self.ip,
         }
@@ -125,6 +124,13 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
 
         return await self.device.get_fps()
+
+    @deprecated_function(remove_in_version='0.27.0', stacklevel=3)
+    def get_jovision_profile(self) -> int | None:
+        assert self.device is not None
+        self.parameters['substream'].value = profile
+
+        return self.get_substream()
 
     @deprecated_function(remove_in_version='0.27.0', stacklevel=3)
     def set_jovision_profile(self, profile: int) -> None:
