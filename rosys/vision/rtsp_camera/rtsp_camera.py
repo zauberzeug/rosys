@@ -5,7 +5,7 @@ from typing import Any
 from typing_extensions import Self
 
 from ... import rosys
-from ...helpers.deprecation import deprecated_param
+from ...helpers.deprecation import deprecated_function, deprecated_param
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image
@@ -126,12 +126,9 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         return await self.device.get_fps()
 
-    # DEPRECATED: 0.27.0
+    @deprecated_function(remove_in_version='0.27.0', stacklevel=3)
     def set_jovision_profile(self, profile: int) -> None:
         assert self.device is not None
-        warnings.warn('setting jovision_profile is deprecated, use "substream" instead',
-                      category=DeprecationWarning,
-                      stacklevel=3)
 
         self.device.set_substream(profile)
 
