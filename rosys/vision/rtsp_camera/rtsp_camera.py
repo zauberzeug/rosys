@@ -15,7 +15,7 @@ from .rtsp_device import RtspDevice
 
 class RtspCamera(ConfigurableCamera, TransformableCamera):
 
-    @deprecated_param('jovision_profile')
+    @deprecated_param('jovision_profile', remove_in_version='0.27.0')
     def __init__(self,
                  *,
                  id: str,  # pylint: disable=redefined-builtin
