@@ -128,13 +128,17 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     def get_jovision_profile(self) -> int | None:
         assert self.device is not None
-        warnings.warn('get_jovision_profile is deprecated, use get_substream instead', stacklevel=3)
+        warnings.warn('get_jovision_profile is deprecated, use get_substream instead',
+                      category=DeprecationWarning,
+                      stacklevel=3)
 
         return self.device.get_substream()
 
     def set_jovision_profile(self, profile: int) -> None:
         assert self.device is not None
-        warnings.warn('set_jovision_profile is deprecated, use set_substream instead', stacklevel=3)
+        warnings.warn('set_jovision_profile is deprecated, use set_substream instead',
+                      category=DeprecationWarning,
+                      stacklevel=3)
 
         self.device.set_substream(profile)
 
