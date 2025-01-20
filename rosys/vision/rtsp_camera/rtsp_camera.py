@@ -1,5 +1,4 @@
 import logging
-import warnings
 from typing import Any
 
 from typing_extensions import Self
