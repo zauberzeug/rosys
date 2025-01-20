@@ -61,12 +61,16 @@ class ImuHardware(Imu, ModuleHardware):
         if self.gyro_calibration < 1.0:
             return
 
-        self.rotation = rotation * self.offset_rotation.T
+        # TODO: refactor
+        # self.rotation = rotation * self.offset_rotation.T
+        self.rotation = rotation
         self.emit_measurement()
 
 
 class ImuSimulation(Imu, ModuleSimulation):
 
     def simulate_measurement(self, rotation: Rotation) -> None:
-        self.rotation = rotation * self.offset_rotation.T
+        # TODO: refactor
+        # self.rotation = rotation * self.offset_rotation.T
+        self.rotation = rotation
         self.emit_measurement()
