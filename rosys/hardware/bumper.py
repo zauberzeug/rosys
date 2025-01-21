@@ -51,9 +51,9 @@ class BumperHardware(Bumper, ModuleHardware):
                          estop=estop)
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
+        active_bumpers = [pin for pin in self.pins if int(words.pop(0)) == 1]
         if self.estop and self.estop.active:
             return
-        active_bumpers = [pin for pin in self.pins if int(words.pop(0)) == 1]
         for pin in active_bumpers:
             if pin not in self.active_bumpers:
                 self.BUMPER_TRIGGERED.emit(pin)
