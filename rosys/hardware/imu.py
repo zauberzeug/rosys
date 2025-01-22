@@ -29,6 +29,7 @@ class ImuMeasurement:
 
 
 class Imu(Module):
+    """A module that provides measurements from an IMU."""
 
     def __init__(self, offset_rotation: Rotation | None = None, **kwargs) -> None:
         super().__init__(**kwargs)
@@ -93,6 +94,7 @@ class Imu(Module):
 
 
 class ImuHardware(Imu, ModuleHardware):
+    """A hardware module that handles the communication with an IMU."""
 
     def __init__(self, robot_brain: RobotBrain, name: str = 'imu', **kwargs) -> None:
         self.name = name
@@ -121,6 +123,7 @@ class ImuHardware(Imu, ModuleHardware):
 
 
 class ImuSimulation(Imu, ModuleSimulation):
+    """Simulation of an IMU."""
 
     def __init__(self, *, wheels: WheelsSimulation, interval: float = 0.1, roll_noise: float = 0.0, pitch_noise: float = 0.0, yaw_noise: float = 0.0, **kwargs) -> None:
         super().__init__(**kwargs)
