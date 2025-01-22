@@ -35,21 +35,3 @@ def deprecated_function(*, remove_in_version: str | None = None, stacklevel: int
         return wrapper
     return decorator
 
-
-def deprecated_class(*, remove_in_version: str | None = None, stacklevel: int = 2) -> Callable:
-    """Mark a class as deprecated."""
-    def decorator(cls: type) -> type:
-        original_init = cls.__init__
-
-        def new_init(self, *args, **kwargs):
-            warnings.warn(
-                f'The class "{cls.__name__}" is deprecated and will be removed in '
-                f'{("RoSys " + remove_in_version) if remove_in_version else "a future version"}.',
-                category=DeprecationWarning,
-                stacklevel=stacklevel,
-            )
-            original_init(self, *args, **kwargs)
-
-        cls.__init__ = new_init
-        return cls
-    return decorator
