@@ -4,7 +4,7 @@ from typing import Any
 from typing_extensions import Self
 
 from ... import rosys
-from ...helpers.deprecation import deprecated_function, deprecated_param
+from ...helpers.deprecation import deprecated_param
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image
