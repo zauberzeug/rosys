@@ -38,6 +38,8 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.ip: str | None = ip
 
         substream = jovision_profile or substream
+        self._register_parameter('jovision_profile', self.get_jovision_profile, self.set_jovision_profile,
+                                 min_value=0, max_value=1, step=1, default_value=substream)
         self._register_parameter('substream', self.get_substream, self.set_substream,
                                  min_value=0, max_value=1, step=1, default_value=substream)
         self._register_parameter('fps', self.get_fps, self.set_fps,
@@ -121,6 +123,19 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
 
         return await self.device.get_fps()
+
+    def get_jovision_profile(self) -> int | None:
+        assert self.device is not None
+        profile = self.get_substream()
+        if profile is not None:
+            self._parameters['substream'].value = profile
+        return profile
+
+    def set_jovision_profile(self, profile: int) -> None:
+        assert self.device is not None
+        self._parameters['substream'].value = profile
+
+        self.device.set_substream(profile)
 
     def set_substream(self, index: int) -> None:
         assert self.device is not None
