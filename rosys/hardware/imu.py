@@ -20,12 +20,8 @@ if TYPE_CHECKING:
 class ImuMeasurement:
     """Imu measurement data with corrected and uncorrected angles and angular velocities in radians."""
     time: float
-    roll: float
-    pitch: float
-    yaw: float
-    roll_corrected: float
-    pitch_corrected: float
-    yaw_corrected: float
+    rotation: Rotation
+    corrected_rotation: Rotation
     roll_velocity: float | None
     pitch_velocity: float | None
     yaw_velocity: float | None
@@ -45,32 +41,22 @@ class Imu(Module):
     def _emit_measurement(self, rotation: Rotation, time: float) -> None:
         assert self.offset_rotation is not None
         corrected_rotation = rotation * self.offset_rotation.T
-        corrected_euler = corrected_rotation.euler
         new_measurement = ImuMeasurement(
             time=time,
-            roll=rotation.roll,
-            pitch=rotation.pitch,
-            yaw=rotation.yaw,
-            roll_corrected=corrected_euler[0],
-            pitch_corrected=corrected_euler[1],
-            yaw_corrected=corrected_euler[2],
+            rotation=rotation,
+            corrected_rotation=corrected_rotation,
             roll_velocity=None,
             pitch_velocity=None,
             yaw_velocity=None,
         )
         if self.last_measurement is not None:
             d_t = time - self.last_measurement.time
-            d_roll = helpers.angle(self.last_measurement.roll, rotation.roll)
-            d_pitch = helpers.angle(self.last_measurement.pitch, rotation.pitch)
-            d_yaw = helpers.angle(self.last_measurement.yaw, rotation.yaw)
-
-            roll_velocity = d_roll / d_t
-            pitch_velocity = d_pitch / d_t
-            yaw_velocity = d_yaw / d_t
-
-            new_measurement.roll_velocity = roll_velocity
-            new_measurement.pitch_velocity = pitch_velocity
-            new_measurement.yaw_velocity = yaw_velocity
+            d_roll = helpers.angle(self.last_measurement.rotation.roll, rotation.roll)
+            d_pitch = helpers.angle(self.last_measurement.rotation.pitch, rotation.pitch)
+            d_yaw = helpers.angle(self.last_measurement.rotation.yaw, rotation.yaw)
+            new_measurement.roll_velocity = d_roll / d_t
+            new_measurement.pitch_velocity = d_pitch / d_t
+            new_measurement.yaw_velocity = d_yaw / d_t
             self.NEW_MEASUREMENT.emit(new_measurement)
         self.last_measurement = new_measurement
 
