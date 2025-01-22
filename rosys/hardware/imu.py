@@ -33,9 +33,9 @@ class ImuMeasurement:
 
 class Imu(Module):
 
-    def __init__(self, offset_rotation: Rotation, **kwargs) -> None:
+    def __init__(self, offset_rotation: Rotation | None = None, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.offset_rotation = offset_rotation
+        self.offset_rotation = offset_rotation or Rotation.zero()
         self.gyro_calibration: float = 0.0
         self.last_measurement: ImuMeasurement | None = None
 
@@ -116,7 +116,7 @@ class ImuHardware(Imu, ModuleHardware):
 class ImuSimulation(Imu, ModuleSimulation):
 
     def __init__(self, *, wheels: WheelsSimulation, interval: float = 0.1, roll_noise: float = 0.0, pitch_noise: float = 0.0, yaw_noise: float = 0.0, **kwargs) -> None:
-        super().__init__(offset_rotation=Rotation.zero(), **kwargs)
+        super().__init__(**kwargs)
         self.wheels = wheels
         self._roll_noise = roll_noise
         self._pitch_noise = pitch_noise
