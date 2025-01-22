@@ -62,13 +62,31 @@ class Imu(Module):
 
     def developer_ui(self) -> None:
         ui.label('IMU').classes('text-center text-bold')
-        with ui.column().classes('gap-y-1'):
-            ui.label().bind_text_from(self, 'last_measurement',
-                                      lambda m: f'Roll: {np.rad2deg(m.roll):.2f}°' if m is not None else 'Roll: N/A')
-            ui.label().bind_text_from(self, 'last_measurement',
-                                      lambda m: f'Pitch: {np.rad2deg(m.pitch):.2f}°' if m is not None else 'Pitch: N/A')
-            ui.label().bind_text_from(self, 'last_measurement',
-                                      lambda m: f'Yaw: {np.rad2deg(m.yaw):.2f}°' if m is not None else 'Yaw: N/A')
+        with ui.row().classes('gap-0 w-56'):
+            with ui.column().classes('gap-y-0 w-1/3'):
+                ui.label('Roll:')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda m: f'{np.rad2deg(m.rotation.roll):.2f}°' if m is not None else 'N/A')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda m: f'{np.rad2deg(m.corrected_rotation.roll):.2f}°' if m is not None else 'N/A')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda m: f'{np.rad2deg(m.roll_velocity):.2f}°/s' if m is not None and m.roll_velocity is not None else 'N/A')
+            with ui.column().classes('gap-y-0 w-1/3'):
+                ui.label('Pitch:')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda m: f'{np.rad2deg(m.rotation.pitch):.2f}°' if m is not None else 'N/A')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda m: f'{np.rad2deg(m.corrected_rotation.pitch):.2f}°' if m is not None else 'N/A')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda m: f'{np.rad2deg(m.pitch_velocity):.2f}°/s' if m is not None and m.pitch_velocity is not None else 'N/A')
+            with ui.column().classes('gap-y-0 w-1/3'):
+                ui.label('Yaw:')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda m: f'{np.rad2deg(m.rotation.yaw):.2f}°' if m is not None else 'N/A')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda m: f'{np.rad2deg(m.corrected_rotation.yaw):.2f}°' if m is not None else 'N/A')
+                ui.label().bind_text_from(self, 'last_measurement',
+                                          lambda m: f'{np.rad2deg(m.yaw_velocity):.2f}°/s' if m is not None and m.yaw_velocity is not None else 'N/A')
 
 
 class ImuHardware(Imu, ModuleHardware):
@@ -117,7 +135,7 @@ class ImuSimulation(Imu, ModuleSimulation):
 
     def developer_ui(self) -> None:
         super().developer_ui()
-        with ui.column().classes('gap-y-1'):
+        with ui.column().classes('gap-y-0'):
             ui.number(label='Roll Noise', format='%.3f', prefix='± ', suffix='°') \
                 .bind_value(self, '_roll_noise', forward=np.deg2rad, backward=np.rad2deg).classes('w-4/5')
             ui.number(label='Pitch Noise', format='%.3f', prefix='± ', suffix='°') \
