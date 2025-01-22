@@ -20,6 +20,7 @@ if TYPE_CHECKING:
 class ImuMeasurement:
     """Imu measurement data with corrected and uncorrected angles and angular velocities in radians."""
     time: float
+    gyro_calibration: float
     rotation: Rotation
     corrected_rotation: Rotation
     roll_velocity: float | None
@@ -32,17 +33,17 @@ class Imu(Module):
     def __init__(self, offset_rotation: Rotation | None = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.offset_rotation = offset_rotation or Rotation.zero()
-        self.gyro_calibration: float = 0.0
         self.last_measurement: ImuMeasurement | None = None
 
         self.NEW_MEASUREMENT = Event()
         """a new measurement has been received (argument: ImuMeasurement)"""
 
-    def _emit_measurement(self, rotation: Rotation, time: float) -> None:
+    def _emit_measurement(self, gyro_calibration: float, rotation: Rotation, time: float) -> None:
         assert self.offset_rotation is not None
         corrected_rotation = rotation * self.offset_rotation.T
         new_measurement = ImuMeasurement(
             time=time,
+            gyro_calibration=gyro_calibration,
             rotation=rotation,
             corrected_rotation=corrected_rotation,
             roll_velocity=None,
@@ -87,6 +88,8 @@ class Imu(Module):
                                           lambda m: f'{np.rad2deg(m.corrected_rotation.yaw):.2f}°' if m is not None else 'N/A')
                 ui.label().bind_text_from(self, 'last_measurement',
                                           lambda m: f'{np.rad2deg(m.yaw_velocity):.2f}°/s' if m is not None and m.yaw_velocity is not None else 'N/A')
+        ui.label().bind_text_from(self, 'last_measurement',
+                                  lambda m: f'Gyro-Calibration: {m.gyro_calibration:.0f}' if m is not None else 'N/A')
 
 
 class ImuHardware(Imu, ModuleHardware):
@@ -104,7 +107,7 @@ class ImuHardware(Imu, ModuleHardware):
         super().__init__(robot_brain=robot_brain, lizard_code=self.lizard_code, core_message_fields=self.core_message_fields, **kwargs)
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        self.gyro_calibration = float(words.pop(0))
+        gyro_calibration = float(words.pop(0))
         rotation = Rotation.from_quaternion(
             float(words.pop(0)),
             float(words.pop(0)),
@@ -112,9 +115,9 @@ class ImuHardware(Imu, ModuleHardware):
             float(words.pop(0)),
         )
 
-        if self.gyro_calibration < 1.0:
+        if gyro_calibration < 1.0:
             return
-        self._emit_measurement(rotation, time)
+        self._emit_measurement(gyro_calibration, rotation, time)
 
 
 class ImuSimulation(Imu, ModuleSimulation):
@@ -131,7 +134,7 @@ class ImuSimulation(Imu, ModuleSimulation):
         roll = np.random.normal(0, self._roll_noise)
         pitch = np.random.normal(0, self._pitch_noise)
         yaw = self.wheels.pose.yaw + np.random.normal(0, self._yaw_noise)
-        self._emit_measurement(Rotation.from_euler(roll, pitch, yaw), rosys.time())
+        self._emit_measurement(3.0, Rotation.from_euler(roll, pitch, yaw), rosys.time())
 
     def developer_ui(self) -> None:
         super().developer_ui()
