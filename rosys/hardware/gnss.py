@@ -107,12 +107,14 @@ class Gnss(ABC):
 class GnssHardware(Gnss):
     """This hardware module connects to a Septentrio SimpleRTK3b (Mosaic-H) GNSS receiver."""
 
-    def __init__(self, *, antenna_pose: Pose | None) -> None:
+    def __init__(self, *, antenna_pose: Pose | None, reconnect_interval: float = 3.0) -> None:
         """
         :param antenna_pose: the pose of the main antenna in the robot's coordinate frame (yaw: direction to the auxiliary antenna)
+        :param reconnect_interval: the interval to wait before reconnecting to the device
         """
         super().__init__()
         self.antenna_pose = antenna_pose or Pose(x=0.0, y=0.0, yaw=0.0)
+        self._reconnect_interval = reconnect_interval
         self.serial_device_path = self._find_device()
         self.serial_connection: serial.Serial | None = None
         rosys.on_startup(self._run)
@@ -148,7 +150,7 @@ class GnssHardware(Gnss):
                     self.serial_connection = self._connect_to_device(self.serial_device_path)
                 except RuntimeError:
                     self.log.error('Could not connect to GNSS device: %s', self.serial_device_path)
-                    await rosys.sleep(3.0)
+                    await rosys.sleep(self._reconnect_interval)
                     continue
                 self.log.debug('Connected to GNSS device: %s', self.serial_device_path)
 
