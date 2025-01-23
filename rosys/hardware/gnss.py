@@ -152,6 +152,7 @@ class GnssHardware(Gnss):
                     continue
                 self.log.debug('Connected to GNSS device: %s', self.serial_device_path)
 
+            assert self.serial_connection is not None
             result = await io_bound(self.serial_connection.read_until, b'\r\n')
             if not result:
                 self.log.debug('No data')
