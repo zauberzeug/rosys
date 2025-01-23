@@ -5,7 +5,6 @@ import math
 from abc import ABC
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import TYPE_CHECKING
 
 import numpy as np
 import serial
@@ -13,12 +12,10 @@ from nicegui import ui
 from serial.tools import list_ports
 
 from .. import rosys
+from ..driving.driver import PoseProvider
 from ..event import Event
 from ..geometry import GeoPoint, GeoPose, Pose
 from ..run import io_bound
-
-if TYPE_CHECKING:
-    from ..hardware import WheelsSimulation
 
 
 class GpsQuality(IntEnum):
@@ -33,7 +30,7 @@ class GpsQuality(IntEnum):
     SIMULATION = 8
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class GnssMeasurement:
     time: float
     pose: GeoPose
@@ -238,7 +235,7 @@ class GnssSimulation(Gnss):
     """Simulation of a GNSS receiver."""
 
     def __init__(self, *,
-                 wheels: WheelsSimulation,
+                 wheels: PoseProvider,
                  lat_std_dev: float = 0.01,
                  lon_std_dev: float = 0.01,
                  heading_std_dev: float = 0.01,
