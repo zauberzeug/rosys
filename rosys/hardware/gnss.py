@@ -210,12 +210,12 @@ class GnssHardware(Gnss):
         for port in list_ports.comports():
             self.log.debug('Found port: %s - %s', port.device, port.description)
             if 'Septentrio' in port.description:
-                self.log.info('Found GNSS device: %s', port.device)
+                self.log.debug('Found GNSS device: %s', port.device)
                 return port.device
         raise RuntimeError('No GNSS device found')
 
     def _connect_to_device(self, port: str, *, baudrate: int = 115200, timeout: float = 0.2) -> serial.Serial:
-        self.log.info('Connecting to GNSS device "%s"...', port)
+        self.log.debug('Connecting to GNSS device "%s"...', port)
         try:
             return serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
         except serial.SerialException as e:
