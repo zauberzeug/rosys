@@ -1,22 +1,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
 
 import numpy as np
 from nicegui import ui
 
 from .. import helpers, rosys
+from ..driving.driver import PoseProvider
 from ..event import Event
 from ..geometry import Rotation
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot_brain import RobotBrain
 
-if TYPE_CHECKING:
-    from .wheels import WheelsSimulation
 
-
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class ImuMeasurement:
     """Imu measurement data with corrected and uncorrected angles and angular velocities in radians."""
     time: float
@@ -40,7 +37,6 @@ class Imu(Module):
         """a new measurement has been received (argument: ImuMeasurement)"""
 
     def _emit_measurement(self, gyro_calibration: float, rotation: Rotation, time: float) -> None:
-        assert self.offset_rotation is not None
         corrected_rotation = rotation * self.offset_rotation.T
         new_measurement = ImuMeasurement(
             time=time,
@@ -125,7 +121,13 @@ class ImuHardware(Imu, ModuleHardware):
 class ImuSimulation(Imu, ModuleSimulation):
     """Simulation of an IMU."""
 
-    def __init__(self, *, wheels: WheelsSimulation, interval: float = 0.1, roll_noise: float = 0.0, pitch_noise: float = 0.0, yaw_noise: float = 0.0, **kwargs) -> None:
+    def __init__(self, *,
+                 wheels: PoseProvider,
+                 interval: float = 0.1,
+                 roll_noise: float = 0.0,
+                 pitch_noise: float = 0.0,
+                 yaw_noise: float = 0.0,
+                 **kwargs) -> None:
         super().__init__(**kwargs)
         self.wheels = wheels
         self._roll_noise = roll_noise
@@ -136,7 +138,7 @@ class ImuSimulation(Imu, ModuleSimulation):
     def simulate(self) -> None:
         roll = np.random.normal(0, self._roll_noise)
         pitch = np.random.normal(0, self._pitch_noise)
-        yaw = self.wheels.pose.yaw + np.random.normal(0, self._yaw_noise)
+        yaw = np.random.normal(self.wheels.pose.yaw, self._yaw_noise)
         self._emit_measurement(3.0, Rotation.from_euler(roll, pitch, yaw), rosys.time())
 
     def developer_ui(self) -> None:
