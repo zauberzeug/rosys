@@ -5,7 +5,7 @@ from dataclasses import dataclass
 import numpy as np
 from nicegui import ui
 
-from .. import helpers, rosys
+from .. import rosys
 from ..driving.driver import PoseProvider
 from ..event import Event
 from ..geometry import Rotation
@@ -19,10 +19,7 @@ class ImuMeasurement:
     time: float
     gyro_calibration: float
     rotation: Rotation
-    corrected_rotation: Rotation
-    roll_velocity: float | None
-    pitch_velocity: float | None
-    yaw_velocity: float | None
+    angular_velocity: Rotation
 
 
 class Imu(Module):
@@ -36,27 +33,20 @@ class Imu(Module):
         self.NEW_MEASUREMENT = Event()
         """a new measurement has been received (argument: ImuMeasurement)"""
 
-    def _emit_measurement(self, gyro_calibration: float, rotation: Rotation, time: float) -> None:
-        corrected_rotation = rotation * self.offset_rotation.T
+    def _emit_measurement(self, gyro_calibration: float, raw_rotation: Rotation, time: float) -> None:
         new_measurement = ImuMeasurement(
             time=time,
             gyro_calibration=gyro_calibration,
-            rotation=rotation,
-            corrected_rotation=corrected_rotation,
-            roll_velocity=None,
-            pitch_velocity=None,
-            yaw_velocity=None,
+            rotation=raw_rotation * self.offset_rotation.T,
+            angular_velocity=Rotation.zero(),
         )
         if self.last_measurement is not None:
+            d_rotation = new_measurement.rotation * self.last_measurement.rotation.T
+            d_roll, d_pitch, d_yaw = d_rotation.euler
             d_t = time - self.last_measurement.time
-            d_roll = helpers.angle(self.last_measurement.rotation.roll, rotation.roll)
-            d_pitch = helpers.angle(self.last_measurement.rotation.pitch, rotation.pitch)
-            d_yaw = helpers.angle(self.last_measurement.rotation.yaw, rotation.yaw)
-            new_measurement.roll_velocity = d_roll / d_t
-            new_measurement.pitch_velocity = d_pitch / d_t
-            new_measurement.yaw_velocity = d_yaw / d_t
-            self.NEW_MEASUREMENT.emit(new_measurement)
+            new_measurement.angular_velocity = Rotation.from_euler(d_roll / d_t, d_pitch / d_t, d_yaw / d_t)
         self.last_measurement = new_measurement
+        self.NEW_MEASUREMENT.emit(new_measurement)
 
     def developer_ui(self) -> None:
         ui.label('IMU').classes('text-center text-bold')
@@ -106,7 +96,7 @@ class ImuHardware(Imu, ModuleHardware):
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         gyro_calibration = float(words.pop(0))
-        rotation = Rotation.from_quaternion(
+        raw_rotation = Rotation.from_quaternion(
             float(words.pop(0)),
             float(words.pop(0)),
             float(words.pop(0)),
@@ -115,7 +105,7 @@ class ImuHardware(Imu, ModuleHardware):
 
         if gyro_calibration < 1.0:
             return
-        self._emit_measurement(gyro_calibration, rotation, time)
+        self._emit_measurement(gyro_calibration, raw_rotation, time)
 
 
 class ImuSimulation(Imu, ModuleSimulation):
