@@ -956,15 +956,15 @@ The driving speed of the robot remains the same.</p>
 <p>This is achieved simply by placing <code>rosys.simulation_ui()</code> in your UI.
 The rest of the code is needed to define the boundary, draw it in the 3D scene and start the automation for random movement:</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
-<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
 
-<span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nicegui</span><span class="w"> </span><span class="kn">import</span> <span class="n">ui</span>
 
-<span class="kn">import</span> <span class="nn">rosys</span>
-<span class="kn">from</span> <span class="nn">rosys.automation</span> <span class="kn">import</span> <span class="n">Automator</span>
-<span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Driver</span><span class="p">,</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">robot_object</span>
-<span class="kn">from</span> <span class="nn">rosys.geometry</span> <span class="kn">import</span> <span class="n">Point</span><span class="p">,</span> <span class="n">Prism</span>
-<span class="kn">from</span> <span class="nn">rosys.hardware</span> <span class="kn">import</span> <span class="n">RobotSimulation</span><span class="p">,</span> <span class="n">WheelsSimulation</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">rosys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.automation</span><span class="w"> </span><span class="kn">import</span> <span class="n">Automator</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.driving</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span><span class="p">,</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">robot_object</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Point</span><span class="p">,</span> <span class="n">Prism</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.hardware</span><span class="w"> </span><span class="kn">import</span> <span class="n">RobotSimulation</span><span class="p">,</span> <span class="n">WheelsSimulation</span>
 
 <span class="n">wheels</span> <span class="o">=</span> <span class="n">WheelsSimulation</span><span class="p">()</span>
 <span class="n">robot</span> <span class="o">=</span> <span class="n">RobotSimulation</span><span class="p">([</span><span class="n">wheels</span><span class="p">])</span>
@@ -987,7 +987,7 @@ The rest of the code is needed to define the boundary, draw it in the 3D scene a
 </span>    <span class="n">rosys</span><span class="o">.</span><span class="n">simulation_ui</span><span class="p">()</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">move_around</span><span class="p">():</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">move_around</span><span class="p">():</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
         <span class="k">await</span> <span class="n">driver</span><span class="o">.</span><span class="n">drive_to</span><span class="p">(</span><span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="n">size</span><span class="p">,</span> <span class="n">size</span><span class="p">),</span> <span class="n">y</span><span class="o">=</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="o">-</span><span class="n">size</span><span class="p">,</span> <span class="n">size</span><span class="p">)))</span>
 

@@ -1028,26 +1028,26 @@ Depending on your environment you can then instantiate the correct implementatio
 <p>For a differential-steering controlled robot, RoSys offers a <a href="../../reference/rosys/hardware/#rosys.hardware.Wheels"><code>Wheels</code></a> base class plus a <a href="../../reference/rosys/hardware/#rosys.hardware.WheelsSimulation"><code>WheelsSimulation</code></a>.
 The following example illustrates how to implement a <code>CustomWheelsHardware</code> module that derives from <code>Wheels</code>, reads the currrent velocity regularly and can be steered with linear and angular velocity.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
-<span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nicegui</span><span class="w"> </span><span class="kn">import</span> <span class="n">ui</span>
 
-<span class="kn">import</span> <span class="nn">rosys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">rosys</span>
 
 
-<span class="k">class</span> <span class="nc">CustomWheelsHardware</span><span class="p">(</span><span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">Wheels</span><span class="p">):</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CustomWheelsHardware</span><span class="p">(</span><span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">Wheels</span><span class="p">):</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="n">rosys</span><span class="o">.</span><span class="n">on_repeat</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">read_current_velocity</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">drive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linear</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">angular</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">drive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">linear</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">angular</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">await</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">drive</span><span class="p">(</span><span class="n">linear</span><span class="p">,</span> <span class="n">angular</span><span class="p">)</span>
         <span class="c1"># TODO send hardware command to drive with given linear and angular velocity</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">stop</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="k">await</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
         <span class="c1"># TODO send hardware command to stop the wheels</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">read_current_velocity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">read_current_velocity</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">velocities</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">rosys</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">Velocity</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="c1"># TODO: read measured velocities from the hardware</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">VELOCITY_MEASURED</span><span class="o">.</span><span class="n">emit</span><span class="p">(</span><span class="n">velocities</span><span class="p">)</span>
@@ -1079,10 +1079,10 @@ It has a built-in ESP32 microcontroller with <a href="https://lizard.dev/">Lizar
 You can call <code>SerialCommunication.is_possible()</code> to automatically switch between simulation and real hardware.
 The module <code>WheelsHardware</code> expects a <code>RobotBrain</code>, which controls the <code>SerialCommunication</code> with the microcontroller.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
-<span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nicegui</span><span class="w"> </span><span class="kn">import</span> <span class="n">ui</span>
 
-<span class="kn">from</span> <span class="nn">rosys.driving</span> <span class="kn">import</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">Steerer</span><span class="p">,</span> <span class="n">joystick</span><span class="p">,</span> <span class="n">keyboard_control</span>
-<span class="kn">from</span> <span class="nn">rosys.hardware</span> <span class="kn">import</span> <span class="p">(</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.driving</span><span class="w"> </span><span class="kn">import</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">Steerer</span><span class="p">,</span> <span class="n">joystick</span><span class="p">,</span> <span class="n">keyboard_control</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.hardware</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
     <span class="n">CanHardware</span><span class="p">,</span>
     <span class="n">RobotBrain</span><span class="p">,</span>
     <span class="n">RobotHardware</span><span class="p">,</span>

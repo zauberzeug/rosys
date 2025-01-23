@@ -1008,13 +1008,13 @@ Here, we have a moving blue box and a rotating pink box with a camera attached t
 The button allows switching the pink box between the blue box's frame and the world frame at runtime.
 Note that the relationship between the pink box and the camera is unaffected by the frame switch.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
-<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 
-<span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nicegui</span><span class="w"> </span><span class="kn">import</span> <span class="n">ui</span>
 
-<span class="kn">import</span> <span class="nn">rosys</span>
-<span class="kn">from</span> <span class="nn">rosys.geometry</span> <span class="kn">import</span> <span class="n">Pose3d</span><span class="p">,</span> <span class="n">Rotation</span>
-<span class="kn">from</span> <span class="nn">rosys.vision</span> <span class="kn">import</span> <span class="n">CameraSceneObject</span><span class="p">,</span> <span class="n">SimulatedCalibratableCamera</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">rosys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Pose3d</span><span class="p">,</span> <span class="n">Rotation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.vision</span><span class="w"> </span><span class="kn">import</span> <span class="n">CameraSceneObject</span><span class="p">,</span> <span class="n">SimulatedCalibratableCamera</span>
 
 <span class="n">blue</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span><span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="s1">&#39;blue&#39;</span><span class="p">)</span>
 <span class="n">pink</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mf">0.75</span><span class="p">)</span><span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="s1">&#39;pink&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">in_frame</span><span class="p">(</span><span class="n">blue</span><span class="p">)</span>
@@ -1026,7 +1026,7 @@ Note that the relationship between the pink box and the camera is unaffected by 
     <span class="n">camera_object</span> <span class="o">=</span> <span class="n">CameraSceneObject</span><span class="p">(</span><span class="n">camera</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">update</span><span class="p">():</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">():</span>
     <span class="n">blue</span><span class="o">.</span><span class="n">x</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">rosys</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
     <span class="n">blue</span><span class="o">.</span><span class="n">y</span> <span class="o">=</span> <span class="n">math</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">*</span> <span class="n">rosys</span><span class="o">.</span><span class="n">time</span><span class="p">())</span>
     <span class="n">pink</span><span class="o">.</span><span class="n">rotation</span> <span class="o">*=</span> <span class="n">Rotation</span><span class="o">.</span><span class="n">from_euler</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.005</span><span class="p">)</span>

@@ -950,13 +950,13 @@
 <p>In this example, we use the <code>AutomationControls</code> UI element to start, pause and stop an automation.
 Here we let the robot drive to predefined checkpoints one after the other.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
-<span class="kn">from</span> <span class="nn">nicegui</span> <span class="kn">import</span> <span class="n">ui</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nicegui</span><span class="w"> </span><span class="kn">import</span> <span class="n">ui</span>
 
-<span class="kn">import</span> <span class="nn">rosys</span>
-<span class="kn">from</span> <span class="nn">rosys.geometry</span> <span class="kn">import</span> <span class="n">Point</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">rosys</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Point</span>
 
 
-<span class="k">async</span> <span class="k">def</span> <span class="nf">run</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">checkpoints</span><span class="p">:</span>
         <span class="k">await</span> <span class="n">driver</span><span class="o">.</span><span class="n">drive_to</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
 

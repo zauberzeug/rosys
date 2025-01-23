@@ -1214,7 +1214,7 @@
               Bases: <code><span title="enum.Enum">Enum</span></code></p>
 
 
-        <p>Configures the auto-submitting of images to the Learning Loop</p>
+        <p>Configuration options for image auto-upload behavior to the Learning Loop</p>
 
 
 
@@ -1251,7 +1251,7 @@
 
     <div class="doc doc-contents ">
 
-        <p>submit all images which are run through the detector</p>
+        <p>Upload mode where every processed image is uploaded</p>
     </div>
 
 </div>
@@ -1275,7 +1275,7 @@
 
     <div class="doc doc-contents ">
 
-        <p>no auto-submitting</p>
+        <p>Upload mode where no images are auto-uploaded</p>
     </div>
 
 </div>
@@ -1299,7 +1299,7 @@
 
     <div class="doc doc-contents ">
 
-        <p>only submit images with novel detections and in an uncertainty range (this is the default)</p>
+        <p>Upload mode for images with novel detections within uncertainty thresholds (default)</p>
     </div>
 
 </div>
@@ -1900,7 +1900,8 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">RtspCameraProvider</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">frame_rate</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
-    <span class="n">jovision_profile</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">substream</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">jovision_profile</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">network_interface</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">auto_scan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span>
