@@ -34,4 +34,3 @@ def deprecated_function(*, remove_in_version: str | None = None, stacklevel: int
             return func(*args, **kwargs)
         return wrapper
     return decorator
-
