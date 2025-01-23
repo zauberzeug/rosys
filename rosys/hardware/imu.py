@@ -56,25 +56,19 @@ class Imu(Module):
                 ui.label().bind_text_from(self, 'last_measurement',
                                           lambda m: f'{np.rad2deg(m.rotation.roll):.2f}°' if m is not None else 'N/A')
                 ui.label().bind_text_from(self, 'last_measurement',
-                                          lambda m: f'{np.rad2deg(m.corrected_rotation.roll):.2f}°' if m is not None else 'N/A')
-                ui.label().bind_text_from(self, 'last_measurement',
-                                          lambda m: f'{np.rad2deg(m.roll_velocity):.2f}°/s' if m is not None and m.roll_velocity is not None else 'N/A')
+                                          lambda m: f'{np.rad2deg(m.angular_velocity.roll):.2f}°/s' if m is not None and m.angular_velocity.roll is not None else 'N/A')
             with ui.column().classes('gap-y-0 w-1/3'):
                 ui.label('Pitch:')
                 ui.label().bind_text_from(self, 'last_measurement',
                                           lambda m: f'{np.rad2deg(m.rotation.pitch):.2f}°' if m is not None else 'N/A')
                 ui.label().bind_text_from(self, 'last_measurement',
-                                          lambda m: f'{np.rad2deg(m.corrected_rotation.pitch):.2f}°' if m is not None else 'N/A')
-                ui.label().bind_text_from(self, 'last_measurement',
-                                          lambda m: f'{np.rad2deg(m.pitch_velocity):.2f}°/s' if m is not None and m.pitch_velocity is not None else 'N/A')
+                                          lambda m: f'{np.rad2deg(m.angular_velocity.pitch):.2f}°/s' if m is not None and m.angular_velocity.pitch is not None else 'N/A')
             with ui.column().classes('gap-y-0 w-1/3'):
                 ui.label('Yaw:')
                 ui.label().bind_text_from(self, 'last_measurement',
                                           lambda m: f'{np.rad2deg(m.rotation.yaw):.2f}°' if m is not None else 'N/A')
                 ui.label().bind_text_from(self, 'last_measurement',
-                                          lambda m: f'{np.rad2deg(m.corrected_rotation.yaw):.2f}°' if m is not None else 'N/A')
-                ui.label().bind_text_from(self, 'last_measurement',
-                                          lambda m: f'{np.rad2deg(m.yaw_velocity):.2f}°/s' if m is not None and m.yaw_velocity is not None else 'N/A')
+                                          lambda m: f'{np.rad2deg(m.angular_velocity.yaw):.2f}°/s' if m is not None and m.angular_velocity.yaw is not None else 'N/A')
         ui.label().bind_text_from(self, 'last_measurement',
                                   lambda m: f'Gyro-Calibration: {m.gyro_calibration:.0f}' if m is not None else 'N/A')
 
