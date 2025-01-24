@@ -198,7 +198,7 @@ class DetectorHardware(Detector):
             raise DetectorException('Invalid response from detector')
 
         try:
-            model_info_dict = response.get('model_info', {}) or {}
+            model_info_dict = response.get('model_info') or {}
             return DetectorInfo(
                 operation_mode=response['operation_mode'],
                 state=response.get('state'),
