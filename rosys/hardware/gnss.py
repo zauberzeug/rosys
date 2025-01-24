@@ -152,7 +152,7 @@ class GnssHardware(Gnss):
                     self.log.error('Could not connect to GNSS device: %s', serial_device_path)
                     await rosys.sleep(self._reconnect_interval)
                     continue
-                self.log.debug('Connected to GNSS device: %s', self.serial_device_path)
+                self.log.info('Connected to GNSS device: %s', serial_device_path)
 
             assert self.serial_connection is not None
             result = await io_bound(self.serial_connection.read_until, b'\r\n')
