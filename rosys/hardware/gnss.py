@@ -107,14 +107,15 @@ class Gnss(ABC):
 class GnssHardware(Gnss):
     """This hardware module connects to a Septentrio SimpleRTK3b (Mosaic-H) GNSS receiver."""
 
-    def __init__(self, *, antenna_pose: Pose | None) -> None:
+    def __init__(self, *, antenna_pose: Pose | None, reconnect_interval: float = 3.0) -> None:
         """
         :param antenna_pose: the pose of the main antenna in the robot's coordinate frame (yaw: direction to the auxiliary antenna)
+        :param reconnect_interval: the interval to wait before reconnecting to the device
         """
         super().__init__()
         self.antenna_pose = antenna_pose or Pose(x=0.0, y=0.0, yaw=0.0)
-        serial_device_path = self._find_device()
-        self.serial_connection = self._connect_to_device(serial_device_path)
+        self._reconnect_interval = reconnect_interval
+        self.serial_connection: serial.Serial | None = None
         rosys.on_startup(self._run)
 
     @property
@@ -144,7 +145,16 @@ class GnssHardware(Gnss):
         last_pssn_timestamp = ''
         while True:
             if not self.is_connected:
-                return None
+                try:
+                    serial_device_path = self._find_device()
+                    self.serial_connection = self._connect_to_device(serial_device_path)
+                except RuntimeError:
+                    self.log.error('Could not connect to GNSS device: %s', serial_device_path)
+                    await rosys.sleep(self._reconnect_interval)
+                    continue
+                self.log.info('Connected to GNSS device: %s', serial_device_path)
+
+            assert self.serial_connection is not None
             result = await io_bound(self.serial_connection.read_until, b'\r\n')
             if not result:
                 self.log.debug('No data')
@@ -203,12 +213,12 @@ class GnssHardware(Gnss):
         for port in list_ports.comports():
             self.log.debug('Found port: %s - %s', port.device, port.description)
             if 'Septentrio' in port.description:
-                self.log.info('Found GNSS device: %s', port.device)
+                self.log.debug('Found GNSS device: %s', port.device)
                 return port.device
         raise RuntimeError('No GNSS device found')
 
     def _connect_to_device(self, port: str, *, baudrate: int = 115200, timeout: float = 0.2) -> serial.Serial:
-        self.log.info('Connecting to GNSS device "%s"...', port)
+        self.log.debug('Connecting to GNSS device "%s"...', port)
         try:
             return serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
         except serial.SerialException as e:
