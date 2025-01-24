@@ -2990,7 +2990,11 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
 
 <a href="#rosys.hardware.GnssHardware" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">GnssHardware</span><span class="p">(</span><span class="o">*</span><span class="p">,</span> <span class="n">antenna_pose</span><span class="p">:</span> <span class="n">Pose</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">GnssHardware</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">antenna_pose</span><span class="p">:</span> <span class="n">Pose</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">reconnect_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span>
+<span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
@@ -3000,7 +3004,8 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
         <p>This hardware module connects to a Septentrio SimpleRTK3b (Mosaic-H) GNSS receiver.</p>
 
-        <p>:param antenna_pose: the pose of the main antenna in the robot's coordinate frame (yaw: direction to the auxiliary antenna)</p>
+        <p>:param antenna_pose: the pose of the main antenna in the robot's coordinate frame (yaw: direction to the auxiliary antenna)
+:param reconnect_interval: the interval to wait before reconnecting to the device</p>
 
 
 
