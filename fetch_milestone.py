@@ -12,12 +12,18 @@ parser.add_argument('milestone_title', help='Title of the milestone to fetch.')
 args = parser.parse_args()
 milestone_title: str = args.milestone_title
 
-milestones = requests.get(f'{BASE_URL}/milestones?state=all', timeout=5).json()
-matching_milestones = [milestone for milestone in milestones if milestone['title'] == milestone_title]
-if not matching_milestones:
-    print(f'Milestone "{milestone_title}" not found!')
-    sys.exit(1)
-milestone_number = matching_milestones[0]['number']
+page = 0
+while True:
+    page += 1
+    response = requests.get(f'{BASE_URL}/milestones?state=all&page={page}&per_page=100', timeout=5)
+    milestones = response.json()
+    if not milestones:
+        print(f'Milestone "{milestone_title}" not found!')
+        sys.exit(1)
+    matching = [m for m in milestones if m['title'] == milestone_title]
+    if matching:
+        milestone_number = matching[0]['number']
+        break
 
 issues = requests.get(f'{BASE_URL}/issues?milestone={milestone_number}&state=all', timeout=5).json()
 sections: dict[str, list[str]] = {
