@@ -115,7 +115,6 @@ class GnssHardware(Gnss):
         super().__init__()
         self.antenna_pose = antenna_pose or Pose(x=0.0, y=0.0, yaw=0.0)
         self._reconnect_interval = reconnect_interval
-        self.serial_device_path = self._find_device()
         self.serial_connection: serial.Serial | None = None
         rosys.on_startup(self._run)
 
@@ -147,9 +146,10 @@ class GnssHardware(Gnss):
         while True:
             if not self.is_connected:
                 try:
-                    self.serial_connection = self._connect_to_device(self.serial_device_path)
+                    serial_device_path = self._find_device()
+                    self.serial_connection = self._connect_to_device(serial_device_path)
                 except RuntimeError:
-                    self.log.error('Could not connect to GNSS device: %s', self.serial_device_path)
+                    self.log.error('Could not connect to GNSS device: %s', serial_device_path)
                     await rosys.sleep(self._reconnect_interval)
                     continue
                 self.log.debug('Connected to GNSS device: %s', self.serial_device_path)
