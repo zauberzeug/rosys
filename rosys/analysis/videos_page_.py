@@ -24,19 +24,23 @@ class VideosPage:
                         if selected_date not in all_videos:
                             ui.label('No videos for this date')
                         else:
-                            with ui.grid(columns='auto auto auto').classes('items-center'):
+                            with ui.list().classes('items-center'):
                                 for mp4 in all_videos[selected_date]:
                                     video_date, video_duration = format_video_name(mp4)
-                                    ui.label(video_date)
-                                    ui.label(video_duration)
-                                    with ui.row().classes('gap-1'):
-                                        ui.button(on_click=lambda mp4=mp4: ui.download(mp4)) \
-                                            .props('icon=download flat') \
-                                            .tooltip('download')
-                                        ui.button(on_click=lambda mp4=mp4: mp4.unlink(),
-                                                  color='negative') \
-                                            .props('icon=delete flat') \
-                                            .tooltip('delete')
+                                    with ui.item().classes('p-0'):
+                                        with ui.item_section().props('avatar'):
+                                            ui.button(icon='download', on_click=lambda mp4=mp4: ui.download(mp4)) \
+                                                .props('flat').tooltip('download')
+                                        with ui.item_section().classes('min-w-24'):
+                                            ui.item_label(video_date)
+                                            ui.item_label(video_duration).props('caption')
+                                        with ui.item_section().classes('pl-1'):
+                                            with ui.button(icon='more_vert').props('flat fab-mini'):
+                                                with ui.menu():
+                                                    with ui.menu_item(on_click=lambda mp4=mp4: mp4.unlink()):
+                                                        with ui.item_section().props('side'):
+                                                            ui.icon('delete', color='negative')
+                                                        ui.item_section('delete')
 
             async def watch_videos():
                 async for _ in watchfiles.awatch(VIDEO_FILES):
@@ -58,9 +62,8 @@ def _format_date(date: str) -> str:
 
 def format_video_name(video: Path) -> tuple[str, str]:
     parts = video.stem.split('_')
-    date = _format_date(parts[0])
     time = parts[1].replace('-', ':')
-    return f'{date} {time}', f'{parts[2]} {parts[3]}'
+    return time, f'{parts[2]} {parts[3]}'
 
 
 async def get_all_videos() -> dict[str, list[Path]]:
