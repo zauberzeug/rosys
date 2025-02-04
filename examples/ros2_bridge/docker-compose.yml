@@ -1,0 +1,9 @@
+services:
+  ros_bridge:
+    build: .
+    container_name: ros2_bridge
+    ports:
+      - "9090:9090" # Default ROS bridge WebSocket port
+    environment:
+      - ROS_DOMAIN_ID=0
+    restart: unless-stopped
