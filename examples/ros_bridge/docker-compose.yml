@@ -2,7 +2,7 @@ version: "3"
 services:
   foxglove_bridge:
     build: .
-    container_name: ros2_foxglove_bridge
+    container_name: ros_foxglove_bridge
     ports:
       - "8765:8765" # Default Foxglove WebSocket port
     environment:
