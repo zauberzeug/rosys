@@ -18,21 +18,23 @@ def publish_test_image():
     bridge = CvBridge()
 
     # Set the publishing rate (1 Hz)
-    rate = rospy.Rate(1)
+    rate = rospy.Rate(30)
 
     while not rospy.is_shutdown():
         # Create a test image (a simple gradient)
-        height, width = 480, 640
+        height, width = 1080, 1920
         image = np.zeros((height, width, 3), dtype=np.uint8)
 
-        # Create a color gradient
-        for i in range(height):
-            for j in range(width):
-                image[i, j] = [
-                    int(255 * i / height),
-                    int(255 * j / width),
-                    128
-                ]
+        # Get current timestamp
+        timestamp = rospy.get_time()
+
+        # Fill entire image with blue color
+        image[:, :] = [255, 0, 0]  # BGR format - blue is [0,0,255]
+
+        # Write timestamp on the image
+        timestamp_text = f"Time: {timestamp:.2f}"
+        cv2.putText(image, timestamp_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX,
+                    1, (255, 255, 255), 2, cv2.LINE_AA)
 
         # Convert the image to a ROS message
         ros_image = bridge.cv2_to_imgmsg(image, encoding="bgr8")

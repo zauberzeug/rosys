@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
+import base64
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Callable
 
 import cv2
 import numpy as np
-from nicegui import ui
+from fastapi import Response
+from nicegui import app, ui
 from norospy import ROSFoxgloveClient
 
 import rosys
+from rosys.vision.image_route import _process
 
 
-class RosBridge():
+class RosBridge:
     def __init__(self, websocket_url: str = "ws://localhost:8765") -> None:
         """Initialize ROS bridge with Foxglove WebSocket connection.
 
@@ -21,14 +24,11 @@ class RosBridge():
         self.client: ROSFoxgloveClient | None = None
         self._image_callback: Callable | None = None
         self._connected = False
-
-        # Ensure images directory exists
-        self.image_dir = Path('images')
-        self.image_dir.mkdir(exist_ok=True)
-
         rosys.on_repeat(self.connect, 0.1)
+        # rosys.on_startup(self.run)
 
     async def run(self) -> None:
+        # TODO: not working
         while True:
             if not self._connected:
                 await self.connect()
@@ -42,7 +42,7 @@ class RosBridge():
         if self._connected:
             return True
 
-        for attempt in range(max_attempts):
+        for _ in range(max_attempts):
             try:
                 self.client = ROSFoxgloveClient(self.websocket_url)
                 self.client.run_background()
@@ -50,15 +50,14 @@ class RosBridge():
                 print("Connected to Foxglove WebSocket server")
                 return True
             except ConnectionRefusedError:
-                if attempt < max_attempts - 1:
-                    print(f"Connection attempt {attempt + 1} failed. Retrying in {retry_delay} seconds...")
-                else:
-                    print("Error: Could not connect to Foxglove WebSocket server")
-                    print("Please make sure:")
-                    print("1. The ROS2 Foxglove bridge container is running")
-                    print("2. The container has network access")
-                    print("3. No other service is using the port")
+                await rosys.sleep(retry_delay)
         return False
+
+    @staticmethod
+    def convert(bgr_image: np.ndarray) -> bytes:
+        _, jpeg_image = cv2.imencode('.jpg', bgr_image)
+        jpeg_image_bytes = jpeg_image.tobytes()
+        return jpeg_image_bytes
 
     def _handle_image(self, msg, ts):
         """Internal handler for image messages."""
@@ -72,18 +71,17 @@ class RosBridge():
         width = msg.width
         img_array = np.frombuffer(msg.data, dtype=np.uint8).reshape(height, width, 3)
 
-        # Save as JPEG
-        image_path = self.image_dir / f"{ts}.jpg"
-        is_success, buffer = cv2.imencode('.jpg', img_array)
-
-        if is_success:
-            image_path.write_bytes(buffer.tobytes())
-        else:
-            print("Failed to encode image")
+        jpeg_image_bytes = self.convert(img_array)
+        new_image = rosys.vision.Image(
+            camera_id='test',
+            size=rosys.vision.ImageSize(width=width, height=height),
+            time=ts,
+            data=jpeg_image_bytes,
+        )
 
         # Call user callback if set
         if self._image_callback:
-            self._image_callback(img_array, ts)
+            self._image_callback(new_image, ts)
 
     def subscribe_to_images(self, topic: str, callback: Callable | None = None) -> None:
         """Subscribe to ROS image topic.
@@ -107,21 +105,28 @@ class RosBridge():
         self._connected = False
 
 
-class FileCounter(ui.label):
-    def __init__(self) -> None:
-        super().__init__()
-        self.count = 0
-        rosys.on_repeat(self.count_files, 1)
-
-    def count_files(self) -> None:
-        # Count files in images directory
-        image_files = len(list(Path('./images').glob('*.jpg')))
-        self.count = image_files
-        self.text = f"Files: {self.count}"
+image: rosys.vision.Image | None = None
+placeholder = Response(
+    content=cv2.imencode('.jpg', np.zeros((480, 640, 3), dtype=np.uint8))[1].tobytes(),
+    media_type='image/jpeg'
+)
+with ui.card().tight():
+    image_view = ui.interactive_image('/image?1')
 
 
-def on_image(image_array: np.ndarray, timestamp: float) -> None:
-    print(f"Custom handler: Received image at {timestamp}")
+def on_image(new_image: rosys.vision.Image, timestamp: float) -> None:
+    print(f'Received image at timestamp: {timestamp}')
+    global image
+    image = new_image
+    image_view.set_source(f'/image?{image.time}')
+
+
+@app.get('/image')
+async def grab_frame() -> Response:
+    if image is None:
+        return placeholder
+    data = _process(image.data, calibration=None, shrink=1, fast=False, undistort=False, compression=100)
+    return Response(content=data, media_type='image/jpeg')
 
 
 ros_bridge = RosBridge()
@@ -133,5 +138,4 @@ def subscribe_to_images():
 
 ui.button('Subscribe to images', on_click=subscribe_to_images)
 
-FileCounter()
 ui.run(title='Camera Arm')
