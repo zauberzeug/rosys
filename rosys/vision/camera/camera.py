@@ -91,6 +91,7 @@ class Camera(abc.ABC):
             'name': self.name,
             'connect_after_init': self.connect_after_init,
             'image_history_length': self.images.maxlen,
+            'base_path_overwrite': self.base_path,
         }
 
     @classmethod
