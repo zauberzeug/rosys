@@ -78,3 +78,6 @@ class Point:
 
     def __str__(self) -> str:
         return f'Point({self.x:.3f}, {self.y:.3f})'
+
+    def __hash__(self) -> int:
+        return hash((self.x, self.y))
