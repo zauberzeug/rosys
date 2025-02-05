@@ -14,7 +14,7 @@ from rosys.vision import (
 
 
 @pytest.fixture
-def camera_parameters() -> dict:
+def base_camera_parameters() -> dict:
     return {
         'id': 'test_cam',
         'name': 'T3:5T',
@@ -24,8 +24,8 @@ def camera_parameters() -> dict:
     }
 
 
-async def test_storing_camera_as_dict(rosys_integration, camera_parameters):
-    camera = Camera(**camera_parameters)
+async def test_storing_camera_as_dict(rosys_integration, base_camera_parameters):
+    camera = Camera(**base_camera_parameters)
     await camera.connect()
     camera_as_dict = camera.to_dict()
     restored_camera = Camera.from_dict(camera_as_dict)
@@ -35,8 +35,8 @@ async def test_storing_camera_as_dict(rosys_integration, camera_parameters):
     assert restored_camera.images.maxlen == camera.images.maxlen
 
 
-async def test_storing_simulated_camera_as_dict(rosys_integration, camera_parameters):
-    camera = SimulatedCamera(width=808, height=606, color='#010101', fps=1, **camera_parameters)
+async def test_storing_simulated_camera_as_dict(rosys_integration, base_camera_parameters):
+    camera = SimulatedCamera(width=808, height=606, color='#010101', fps=1, **base_camera_parameters)
     await camera.connect()
     camera_as_dict = camera.to_dict()
     restored_camera = SimulatedCamera.from_dict(camera_as_dict)
@@ -48,9 +48,9 @@ async def test_storing_simulated_camera_as_dict(rosys_integration, camera_parame
     assert restored_camera.parameters == camera.parameters
 
 
-def test_storing_transformable_camera_as_dict(rosys_integration, camera_parameters):
+def test_storing_transformable_camera_as_dict(rosys_integration, base_camera_parameters):
     camera = TransformableCamera(crop=Rectangle(x=10, y=10, width=100, height=100),
-                                 rotation=90, **camera_parameters)
+                                 rotation=90, **base_camera_parameters)
     camera_as_dict = camera.to_dict()
     restored_camera = TransformableCamera.from_dict(camera_as_dict)
     assert isinstance(restored_camera, TransformableCamera)
@@ -61,9 +61,9 @@ def test_storing_transformable_camera_as_dict(rosys_integration, camera_paramete
     assert restored_camera.rotation_angle == camera.rotation_angle
 
 
-async def test_storing_mjpeg_camera_as_dict(rosys_integration, camera_parameters):
+async def test_storing_mjpeg_camera_as_dict(rosys_integration, base_camera_parameters):
     camera = MjpegCamera(ip='192.168.1.1', username='admin', password='admin', fps=1,
-                         resolution=(808, 606), mirrored=True, **camera_parameters)
+                         resolution=(808, 606), mirrored=True, **base_camera_parameters)
     await camera.connect()
     camera_as_dict = camera.to_dict()
     restored_camera = MjpegCamera.from_dict(camera_as_dict)
@@ -78,8 +78,8 @@ async def test_storing_mjpeg_camera_as_dict(rosys_integration, camera_parameters
     assert restored_camera.mac == camera.mac
 
 
-def test_storing_rtsp_camera_as_dict(rosys_integration, camera_parameters):
-    camera = RtspCamera(fps=1, substream=2, bitrate=4097, ip='192.168.1.1', **camera_parameters)
+def test_storing_rtsp_camera_as_dict(rosys_integration, base_camera_parameters):
+    camera = RtspCamera(fps=1, substream=2, bitrate=4097, ip='192.168.1.1', **base_camera_parameters)
     camera_as_dict = camera.to_dict()
     restored_camera = RtspCamera.from_dict(camera_as_dict)
     assert isinstance(restored_camera, RtspCamera)
@@ -89,8 +89,8 @@ def test_storing_rtsp_camera_as_dict(rosys_integration, camera_parameters):
     assert restored_camera.ip == camera.ip
 
 
-def test_storing_usb_camera_as_dict(rosys_integration, camera_parameters):
-    camera = UsbCamera(auto_exposure=False, exposure=100, width=808, height=606, fps=1, **camera_parameters)
+def test_storing_usb_camera_as_dict(rosys_integration, base_camera_parameters):
+    camera = UsbCamera(auto_exposure=False, exposure=100, width=808, height=606, fps=1, **base_camera_parameters)
     camera_as_dict = camera.to_dict()
     restored_camera = UsbCamera.from_dict(camera_as_dict)
     assert isinstance(restored_camera, UsbCamera)
@@ -99,9 +99,10 @@ def test_storing_usb_camera_as_dict(rosys_integration, camera_parameters):
     assert restored_camera.parameters == camera.parameters
 
 
-def test_storing_calibratable_camera_as_dict(rosys_integration, camera_parameters):
+def test_storing_calibratable_camera_as_dict(rosys_integration, base_camera_parameters):
     camera = CalibratableCamera.create_calibrated(id='test_cam', width=808, height=606,
-                                                  focal_length=577, x=1.0, y=2.0, z=3.0)
+                                                  focal_length=577, x=1.0, y=2.0, z=3.0,
+                                                  **base_camera_parameters)
     assert isinstance(camera.calibration, Calibration)
     camera_as_dict = camera.to_dict()
     restored_camera = CalibratableCamera.from_dict(camera_as_dict)
