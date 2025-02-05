@@ -24,15 +24,19 @@ def base_camera_parameters() -> dict:
     }
 
 
+def assert_camera_parameters_match(camera1: Camera, camera2: Camera, parameters: dict) -> None:
+    for key, value in parameters.items():
+        assert getattr(camera1, key) == value
+        assert getattr(camera2, key) == value
+
+
 async def test_storing_camera_as_dict(rosys_integration, base_camera_parameters):
     camera = Camera(**base_camera_parameters)
     await camera.connect()
     camera_as_dict = camera.to_dict()
     restored_camera = Camera.from_dict(camera_as_dict)
     assert isinstance(restored_camera, Camera)
-    assert restored_camera.name == camera.name
-    assert restored_camera.base_path == camera.base_path
-    assert restored_camera.images.maxlen == camera.images.maxlen
+    assert_camera_parameters_match(camera, restored_camera, base_camera_parameters)
 
 
 async def test_storing_simulated_camera_as_dict(rosys_integration, base_camera_parameters):
@@ -41,9 +45,7 @@ async def test_storing_simulated_camera_as_dict(rosys_integration, base_camera_p
     camera_as_dict = camera.to_dict()
     restored_camera = SimulatedCamera.from_dict(camera_as_dict)
     assert isinstance(restored_camera, SimulatedCamera)
-    assert restored_camera.id == camera.id
-    assert restored_camera.name == camera.name
-    assert restored_camera.connect_after_init == camera.connect_after_init
+    assert_camera_parameters_match(camera, restored_camera, base_camera_parameters)
     assert restored_camera.resolution == camera.resolution
     assert restored_camera.parameters == camera.parameters
 
@@ -54,8 +56,7 @@ def test_storing_transformable_camera_as_dict(rosys_integration, base_camera_par
     camera_as_dict = camera.to_dict()
     restored_camera = TransformableCamera.from_dict(camera_as_dict)
     assert isinstance(restored_camera, TransformableCamera)
-    assert restored_camera.id == camera.id
-    assert restored_camera.name == camera.name
+    assert_camera_parameters_match(camera, restored_camera, base_camera_parameters)
     assert restored_camera.crop == camera.crop
     assert restored_camera.rotation == camera.rotation
     assert restored_camera.rotation_angle == camera.rotation_angle
@@ -68,10 +69,8 @@ async def test_storing_mjpeg_camera_as_dict(rosys_integration, base_camera_param
     camera_as_dict = camera.to_dict()
     restored_camera = MjpegCamera.from_dict(camera_as_dict)
     assert isinstance(restored_camera, MjpegCamera)
-    assert restored_camera.id == camera.id
-    assert restored_camera.name == camera.name
+    assert_camera_parameters_match(camera, restored_camera, base_camera_parameters)
     assert restored_camera.parameters == camera.parameters
-    assert restored_camera.connect_after_init == camera.connect_after_init
     assert restored_camera.username == camera.username
     assert restored_camera.password == camera.password
     assert restored_camera.ip == camera.ip
@@ -83,8 +82,7 @@ def test_storing_rtsp_camera_as_dict(rosys_integration, base_camera_parameters):
     camera_as_dict = camera.to_dict()
     restored_camera = RtspCamera.from_dict(camera_as_dict)
     assert isinstance(restored_camera, RtspCamera)
-    assert restored_camera.id == camera.id
-    assert restored_camera.name == camera.name
+    assert_camera_parameters_match(camera, restored_camera, base_camera_parameters)
     assert restored_camera.parameters == camera.parameters
     assert restored_camera.ip == camera.ip
 
@@ -94,8 +92,7 @@ def test_storing_usb_camera_as_dict(rosys_integration, base_camera_parameters):
     camera_as_dict = camera.to_dict()
     restored_camera = UsbCamera.from_dict(camera_as_dict)
     assert isinstance(restored_camera, UsbCamera)
-    assert restored_camera.id == camera.id
-    assert restored_camera.name == camera.name
+    assert_camera_parameters_match(camera, restored_camera, base_camera_parameters)
     assert restored_camera.parameters == camera.parameters
 
 
@@ -108,8 +105,7 @@ def test_storing_calibratable_camera_as_dict(rosys_integration, base_camera_para
     restored_camera = CalibratableCamera.from_dict(camera_as_dict)
     assert isinstance(restored_camera, CalibratableCamera)
     assert isinstance(restored_camera.calibration, Calibration)
-    assert restored_camera.id == camera.id
-    assert restored_camera.name == camera.name
+    assert_camera_parameters_match(camera, restored_camera, base_camera_parameters)
     assert restored_camera.calibration == camera.calibration
 
 
