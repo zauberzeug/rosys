@@ -1,8 +1,6 @@
 import logging
 from typing import Any
 
-from typing_extensions import Self
-
 from ... import rosys
 from ..camera import ConfigurableCamera, TransformableCamera
 from ..image import Image

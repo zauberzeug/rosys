@@ -2,7 +2,6 @@ import logging
 from typing import Any
 
 import numpy as np
-from typing_extensions import Self
 
 from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
