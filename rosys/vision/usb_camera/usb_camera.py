@@ -46,10 +46,6 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
             name: param.value for name, param in self._parameters.items()
         }
 
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Self:
-        return cls(**data)
-
     @property
     def is_connected(self) -> bool:
         return self.device is not None

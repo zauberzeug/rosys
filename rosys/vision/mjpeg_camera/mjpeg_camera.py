@@ -57,10 +57,6 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             'ip': self.ip,
         }
 
-    @classmethod
-    def from_dict(cls, data: dict) -> Self:
-        return cls(**data)
-
     @property
     def is_connected(self) -> bool:
         return (self.device is not None) and self.device.is_connected
