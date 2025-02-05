@@ -8,6 +8,7 @@ from rosys.testing import forward
 from rosys.vision import (
     CalibratableCamera,
     Calibration,
+    Camera,
     ConfigurableCamera,
     MjpegCamera,
     RtspCamera,
@@ -60,6 +61,21 @@ async def test_rtsp_camera(rosys_integration):
     assert len(camera.images) >= 1
 
 
+async def test_storing_camera_as_dict(rosys_integration):
+    camera = Camera(id='test_cam',
+                    name='T3:5T',
+                    connect_after_init=False,
+                    base_path_overwrite='test_cam',
+                    image_history_length=10)
+    await camera.connect()
+    camera_as_dict = camera.to_dict()
+    restored_camera = Camera.from_dict(camera_as_dict)
+    assert isinstance(restored_camera, Camera)
+    assert restored_camera.name == camera.name
+    assert restored_camera.base_path == camera.base_path
+    assert restored_camera.images.maxlen == camera.images.maxlen
+
+
 async def test_storing_simulated_camera_as_dict(rosys_integration):
     camera = SimulatedCamera(id='test_cam', name='T3:5T', connect_after_init=False,
                              width=808, height=606, color='#010101', fps=1)
@@ -76,7 +92,7 @@ async def test_storing_simulated_camera_as_dict(rosys_integration):
 
 async def test_storing_configurable_camera_as_dict(rosys_integration):
     camera = ConfigurableCamera(id='test_cam', name='T3:5T', connect_after_init=False,
-                                base_path_overwrite='test_cam', image_history_length=10)
+                                base_path_overwrite='test_cam')
     await camera.connect()
     camera_as_dict = camera.to_dict()
     restored_camera = ConfigurableCamera.from_dict(camera_as_dict)
@@ -86,7 +102,6 @@ async def test_storing_configurable_camera_as_dict(rosys_integration):
     assert restored_camera.parameters == camera.parameters
     assert restored_camera.connect_after_init == camera.connect_after_init
     assert restored_camera.base_path == camera.base_path
-    assert restored_camera.images.maxlen == camera.images.maxlen
 
 
 def test_storing_transformable_camera_as_dict(rosys_integration):
