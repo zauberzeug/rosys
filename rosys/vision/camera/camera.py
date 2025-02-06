@@ -86,11 +86,13 @@ class Camera(abc.ABC):
         return self.get_image_url(image)
 
     def to_dict(self) -> dict:
+        base_path_id = self.base_path.replace('images/', '', 1) if self.base_path.startswith('images') else None
         return {
             'id': self.id,
             'name': self.name,
             'connect_after_init': self.connect_after_init,
             'image_history_length': self.images.maxlen,
+            'base_path_overwrite': base_path_id if base_path_id != self.id else None,
         }
 
     @classmethod

@@ -1,8 +1,6 @@
 import logging
 from typing import Any
 
-from typing_extensions import Self
-
 from ... import rosys
 from ..camera import ConfigurableCamera, TransformableCamera
 from ..image import Image
@@ -56,10 +54,6 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             'password': self.password,
             'ip': self.ip,
         }
-
-    @classmethod
-    def from_dict(cls, data: dict) -> Self:
-        return cls(**data)
 
     @property
     def is_connected(self) -> bool:

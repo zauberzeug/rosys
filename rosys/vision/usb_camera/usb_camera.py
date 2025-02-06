@@ -2,7 +2,6 @@ import logging
 from typing import Any
 
 import numpy as np
-from typing_extensions import Self
 
 from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
@@ -45,10 +44,6 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         return super().to_dict() | {
             name: param.value for name, param in self._parameters.items()
         }
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Self:
-        return cls(**data)
 
     @property
     def is_connected(self) -> bool:
