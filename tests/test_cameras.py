@@ -4,13 +4,7 @@ import platform
 import pytest
 
 from rosys.testing import forward
-from rosys.vision import (
-    RtspCamera,
-    RtspCameraProvider,
-    SimulatedCamera,
-    UsbCamera,
-    UsbCameraProvider,
-)
+from rosys.vision import RtspCamera, RtspCameraProvider, SimulatedCamera, UsbCamera, UsbCameraProvider
 
 
 async def test_simulated_camera(rosys_integration):
