@@ -314,7 +314,7 @@ class Calibration:
             return self._distort_points_pinhole(image_points)
         elif self.intrinsics.model == CameraModel.FISHEYE:
             new_K = self.get_undistorted_camera_matrix(crop=crop)
-            normalized_points = cv2.undistortPoints(image_points, new_K, None)
+            normalized_points = cv2.undistortPoints(image_points, new_K, [])
             return cv2.fisheye.distortPoints(normalized_points, K, D)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             raise NotImplementedError('Re-distortion for omnidirectional cameras is not supported')
@@ -329,7 +329,7 @@ class Calibration:
         # Note: this is a slight hack of available functions.
         # We first normalize the points, then project them
         # In the end this applies only the distortion during projectPoints
-        normalized_points = cv2.undistortPoints(image_points, new_K, None)
+        normalized_points = cv2.undistortPoints(image_points, new_K, [])
         points_3d = cv2.convertPointsToHomogeneous(normalized_points)
         distorted_points, _ = cv2.projectPoints(points_3d, np.zeros(3), np.zeros(3), K, D)
         return distorted_points
