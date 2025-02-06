@@ -323,7 +323,7 @@ def test_omnidirectional_project_from_behind():
     assert cam.calibration.project_to_image(Point3d(x=0, y=-1, z=1)) is not None
 
 
-@pytest.mark.parametrize("distortion", [
+@pytest.mark.parametrize('distortion', [
     [0.11, -0.12, 0.13, -0.14],
     [0.11, -0.12, 0.13, -0.14, 0.15],
     [20.13, 5.89, 0.0001, -0.00025, 0.0706, 21.58, 13.108, 0.8059],
@@ -344,7 +344,7 @@ def test_distort_points_pinhole(distortion: list[float]):
     assert np.allclose(points, redistorted_points, atol=0.4)
 
 
-@pytest.mark.parametrize("crop", [True, False])
+@pytest.mark.parametrize('crop', [True, False])
 def test_distort_points_fisheye(crop: bool):
     cam = CalibratableCamera(id='1')
     cam.set_perfect_calibration(z=4, roll=np.deg2rad(180 + 10))
