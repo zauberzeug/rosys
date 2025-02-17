@@ -1,10 +1,12 @@
 import logging
 from dataclasses import fields
-from typing import Any
+from typing import Any, TypeVar
 
 from dataclasses_json.core import _asdict, _decode_dataclass
 
 log = logging.getLogger('rosys.persistence.converters')
+
+T = TypeVar('T')
 
 
 def to_dict(obj: Any) -> dict[str, Any]:
@@ -12,7 +14,7 @@ def to_dict(obj: Any) -> dict[str, Any]:
     return _asdict(obj, False)
 
 
-def from_dict(cls: type, d: dict[str, Any]) -> Any:
+def from_dict(cls: type[T], d: dict[str, Any]) -> T:
     """Convert a serializable dict `d` to object of type `cls`."""
     try:
         return _decode_dataclass(cls, d, False)
