@@ -243,7 +243,7 @@ class Calibration:
             return Point3d(x=world_points[0, 0], y=world_points[0, 1], z=world_points[0, 2])  # pylint: disable=unsubscriptable-object
 
         world_extrinsics = self.extrinsics.resolve()
-        image_rays = self.points_to_rays(image_coordinates.astype(np.float32).reshape(-1, 1, 2))
+        image_rays = self._points_to_rays(image_coordinates.astype(np.float32).reshape(-1, 1, 2))
         objPoints = image_rays @ world_extrinsics.rotation.matrix.T
         Z = world_extrinsics.z
         t = world_extrinsics.translation_vector
@@ -256,7 +256,7 @@ class Calibration:
 
         return world_points
 
-    def points_to_rays(self, image_points: np.ndarray) -> np.ndarray:
+    def _points_to_rays(self, image_points: np.ndarray) -> np.ndarray:
         """Convert image points to rays in homogeneous coordinates with respect to the camera coordinate frame."""
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
         D = np.array(self.intrinsics.distortion)
