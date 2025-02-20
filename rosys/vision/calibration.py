@@ -394,7 +394,7 @@ class Calibration:
 
         return dst
 
-    def undistort_image(self, image: Image) -> Image:
+    def undistort_image(self, image: Image, *, crop: bool = False) -> Image:
         """Undistort an image represented as an Image object.
 
         If you already have the image as an unencoded numpy array, use ``undistort_array`` instead.
@@ -407,7 +407,7 @@ class Calibration:
             camera_id=image.camera_id,
             size=image.size,
             time=image.time,
-            data=cv2.imencode('.jpg', self.undistort_array(image.to_array()))[1].tobytes(),
+            data=cv2.imencode('.jpg', self.undistort_array(image.to_array(), crop=crop))[1].tobytes(),
             is_broken=image.is_broken,
             tags=image.tags,
         )
