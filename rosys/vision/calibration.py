@@ -274,49 +274,82 @@ class Calibration:
 
         return cv2.convertPointsToHomogeneous(undistorted).reshape(-1, 3)
 
-    def undistort_points(self, image_points: np.ndarray, crop: bool = False) -> np.ndarray:
+    @overload
+    def undistort_points(self, image_points: list[Point], *, crop: bool = False) -> list[Point]: ...
+
+    @overload
+    def undistort_points(self, image_points: np.ndarray, *, crop: bool = False) -> np.ndarray: ...
+
+    def undistort_points(self, image_points: list[Point] | np.ndarray, *, crop: bool = False) -> list[Point] | np.ndarray:
         """Generalized wrapper for undistorting image points.
 
-        :param image_points: The image points to undistort.
+        :param image_points: The image points to undistort (either a list of Points or a numpy array of shape ``(N, 2)``. The array will be reshaped to ``(N, 1, 2)`` during execution).
         :param crop: Whether cropping is applied to the image during undistortion.
 
-        :return: The undistorted image points.
+        :return: The undistorted image points (either a list of Points or a numpy array of shape ``(N, 2)``).
         """
+        if len(image_points) == 0:
+            return image_points
+
+        if not isinstance(image_points, np.ndarray):
+            image_points = np.array([p.tuple for p in image_points], dtype=np.float32)
+            image_points = self.undistort_points(image_points, crop=crop)
+            return [Point(x=p[0], y=p[1]) for p in image_points]
+
+        image_points = image_points.reshape(-1, 1, 2)
+
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
         D = np.array(self.intrinsics.distortion)
+
         if self.intrinsics.model == CameraModel.PINHOLE:
             new_K = self.get_undistorted_camera_matrix(crop=crop)
-            return cv2.undistortPoints(image_points, K, D, P=new_K, R=np.eye(3))
+            return cv2.undistortPoints(image_points, K, D, P=new_K, R=np.eye(3)).reshape(-1, 2)
         elif self.intrinsics.model == CameraModel.FISHEYE:
             new_K = self.get_undistorted_camera_matrix(crop=crop)
-            return cv2.fisheye.undistortPoints(image_points, K, D, P=new_K)
+            return cv2.fisheye.undistortPoints(image_points, K, D, P=new_K).reshape(-1, 2)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
             R = np.array(self.intrinsics.omnidir_params.rotation, dtype=np.float32)
             xi = np.array(self.intrinsics.omnidir_params.xi, dtype=np.float32)
-            return cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R)
+            return cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R).reshape(-1, 2)
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
 
-    def distort_points(self, image_points: np.ndarray, crop: bool = False) -> np.ndarray:
+    @overload
+    def distort_points(self, image_points: list[Point], *, crop: bool = False) -> list[Point]: ...
+
+    @overload
+    def distort_points(self, image_points: np.ndarray, *, crop: bool = False) -> np.ndarray: ...
+
+    def distort_points(self, image_points: list[Point] | np.ndarray, *, crop: bool = False) -> list[Point] | np.ndarray:
         """Generalized wrapper for distorting image points.
 
-        :param image_points: The image points to distort.
+        :param image_points: The image points to distort (either a list of Points or a numpy array of shape ``(N, 2)``. The array will be reshaped to ``(N, 1, 2)`` during execution).
         :param crop: Whether cropping is applied to the image during distortion.
 
-        :return: The distorted image points.
+        :return: The distorted image points (either a list of Points or a numpy array of shape ``(N, 2)``).
         """
+        if len(image_points) == 0:
+            return image_points
+
+        if not isinstance(image_points, np.ndarray):
+            image_points = np.array([p.tuple for p in image_points], dtype=np.float32)
+            image_points = self.distort_points(image_points, crop=crop)
+            return [Point(x=p[0], y=p[1]) for p in image_points]
+
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
         D = np.array(self.intrinsics.distortion)
 
+        image_points = image_points.reshape(-1, 1, 2)
+
         if self.intrinsics.model == CameraModel.PINHOLE:
             new_K = self.get_undistorted_camera_matrix(crop=crop)
-            return cv2.undistortPoints(image_points, K, D, P=new_K, R=np.eye(3))
+            return cv2.undistortPoints(image_points, K, D, P=new_K, R=np.eye(3)).reshape(-1, 2)
         elif self.intrinsics.model == CameraModel.FISHEYE:
             new_K = self.get_undistorted_camera_matrix(crop=crop)
             normalized_points = np.linalg.inv(new_K) @ cv2.convertPointsToHomogeneous(image_points).reshape(-1, 3).T
             normalized_points = cv2.convertPointsFromHomogeneous(normalized_points.T).reshape(-1, 1, 2)
-            return cv2.fisheye.distortPoints(normalized_points, K, D)
+            return cv2.fisheye.distortPoints(normalized_points, K, D).reshape(-1, 2)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             raise NotImplementedError('Re-distortion for omnidirectional cameras is not supported')
         else:
