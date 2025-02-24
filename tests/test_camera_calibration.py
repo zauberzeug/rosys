@@ -1,6 +1,7 @@
 import copy
 
 import numpy as np
+import pytest
 
 from rosys.geometry import Point3d, Pose3d
 from rosys.geometry.object3d import frame_registry
@@ -320,3 +321,39 @@ def test_omnidirectional_project_from_behind():
     cam.calibration.intrinsics.model = CameraModel.OMNIDIRECTIONAL
     assert cam.calibration.project_to_image(Point3d(x=0, y=1, z=1)) is not None
     assert cam.calibration.project_to_image(Point3d(x=0, y=-1, z=1)) is not None
+
+
+@pytest.mark.parametrize('distortion', [
+    [0.11, -0.12, 0.13, -0.14],
+    [0.11, -0.12, 0.13, -0.14, 0.15],
+    [20.13, 5.89, 0.0001, -0.00025, 0.0706, 21.58, 13.108, 0.8059],
+    [20.13, 5.89, 0.0001, -0.00025, 0.0706, 21.58, 13.108, 0.8059, 0.0001, -0.0003, 0.0678, -0.0012],
+    [20.13, 5.89, 0.0001, -0.00025, 0.0706, 21.58, 13.108, 0.8059, 0.0001, -0.0003, 0.0678, -0.0012, 0.0004, -0.0005],
+])
+def test_distort_points_pinhole(distortion: list[float]):
+    cam = CalibratableCamera(id='1')
+    cam.set_perfect_calibration(z=4)
+    assert cam.calibration is not None
+
+    cam.calibration.intrinsics.distortion = distortion
+    cam.calibration.intrinsics.model = CameraModel.PINHOLE
+
+    points = np.array([[100, 100], [200, 200], [300, 300], [400, 400]], dtype=np.float32).reshape((-1, 1, 2))
+    undistorted_points = cam.calibration.undistort_points(points)
+    redistorted_points = cam.calibration.distort_points(undistorted_points)
+    assert np.allclose(points, redistorted_points, atol=0.4)
+
+
+@pytest.mark.parametrize('crop', [True, False])
+def test_distort_points_fisheye(crop: bool):
+    cam = CalibratableCamera(id='1')
+    cam.set_perfect_calibration(z=4, roll=np.deg2rad(180 + 10))
+    assert cam.calibration is not None
+
+    cam.calibration.intrinsics.distortion = [-0.014, -0.0023, 0.001, 0.001]
+    cam.calibration.intrinsics.model = CameraModel.FISHEYE
+
+    points = np.array([[100, 100], [200, 200], [300, 300], [400, 400]], dtype=np.float32).reshape((-1, 1, 2))
+    undistorted_points = cam.calibration.undistort_points(points, crop=crop)
+    redistorted_points = cam.calibration.distort_points(undistorted_points, crop=crop)
+    assert np.allclose(points, redistorted_points, atol=1e-6)
