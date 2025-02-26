@@ -285,6 +285,8 @@ class Calibration:
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
         D = np.array(self.intrinsics.distortion)
         if self.intrinsics.model == CameraModel.PINHOLE:
+            if crop:
+                log.warning('Cropping is not yet supported for pinhole cameras')
             new_K = self.get_undistorted_camera_matrix(crop=False)
             return cv2.undistortPoints(image_points, K, D, P=new_K, R=np.eye(3))
         elif self.intrinsics.model == CameraModel.FISHEYE:
