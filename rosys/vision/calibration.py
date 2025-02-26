@@ -285,7 +285,9 @@ class Calibration:
         K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
         D = np.array(self.intrinsics.distortion)
         if self.intrinsics.model == CameraModel.PINHOLE:
-            new_K = self.get_undistorted_camera_matrix(crop=crop)
+            if crop:
+                log.warning('Cropping is not yet supported for pinhole cameras')
+            new_K = self.get_undistorted_camera_matrix(crop=False)
             return cv2.undistortPoints(image_points, K, D, P=new_K, R=np.eye(3))
         elif self.intrinsics.model == CameraModel.FISHEYE:
             new_K = self.get_undistorted_camera_matrix(crop=crop)
@@ -300,6 +302,7 @@ class Calibration:
 
     def distort_points(self, image_points: np.ndarray, crop: bool = False) -> np.ndarray:
         """Generalized wrapper for distorting image points.
+        Note: For pinhole models the redistortion can be off by more than 1px for large distortions.
 
         :param image_points: The image points to distort.
         :param crop: Whether cropping is applied to the image during distortion.
@@ -310,17 +313,28 @@ class Calibration:
         D = np.array(self.intrinsics.distortion)
 
         if self.intrinsics.model == CameraModel.PINHOLE:
-            new_K = self.get_undistorted_camera_matrix(crop=crop)
-            return cv2.undistortPoints(image_points, K, D, P=new_K, R=np.eye(3))
+            return self._distort_points_pinhole(image_points)
         elif self.intrinsics.model == CameraModel.FISHEYE:
             new_K = self.get_undistorted_camera_matrix(crop=crop)
-            normalized_points = np.linalg.inv(new_K) @ cv2.convertPointsToHomogeneous(image_points).reshape(-1, 3).T
-            normalized_points = cv2.convertPointsFromHomogeneous(normalized_points.T).reshape(-1, 1, 2)
+            normalized_points = cv2.undistortPoints(image_points, new_K, None)  # type: ignore
             return cv2.fisheye.distortPoints(normalized_points, K, D)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             raise NotImplementedError('Re-distortion for omnidirectional cameras is not supported')
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
+
+    def _distort_points_pinhole(self, image_points: np.ndarray) -> np.ndarray:
+        K = np.array(self.intrinsics.matrix, dtype=np.float32)
+        D = np.array(self.intrinsics.distortion, dtype=np.float32)
+        new_K = self.get_undistorted_camera_matrix(crop=False)
+
+        # Note: this is a slight hack of available functions.
+        # We first normalize the points, then project them
+        # In the end this applies only the distortion during projectPoints
+        normalized_points = cv2.undistortPoints(image_points, new_K, None)  # type: ignore
+        points_3d = cv2.convertPointsToHomogeneous(normalized_points)
+        distorted_points, _ = cv2.projectPoints(points_3d, np.zeros(3), np.zeros(3), K, D)
+        return distorted_points
 
     def get_undistorted_camera_matrix(self, crop: bool = False) -> np.ndarray:
         """Compute the camera matrix for the undistorted image.
