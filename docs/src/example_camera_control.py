@@ -37,10 +37,10 @@ def create_camera_settings_panel(camera: rosys.vision.ConfigurableCamera) -> Non
                 ui.label('FPS:')
                 ui.select(options=list(range(1, 31)), on_change=lambda e: camera.set_parameters({'fps': e.value})) \
                     .bind_value_from(camera, 'parameters', backward=lambda params: params['fps'])
-        if 'jovision_profile' in parameter_names:
+        if 'substream' in parameter_names:
             with ui.card():
                 ui.switch('High Quality',
-                          on_change=lambda e: camera.set_parameters({'jovision_profile': 0 if e.value else 1}))
+                          on_change=lambda e: camera.set_parameters({'substream': 0 if e.value else 1}))
         if 'exposure' in parameter_names:
             with ui.card(), ui.row():
                 ui.label('Exposure:')

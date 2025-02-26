@@ -76,8 +76,9 @@ class Imu(Module):
 class ImuHardware(Imu, ModuleHardware):
     """A hardware module that handles the communication with an IMU."""
 
-    def __init__(self, robot_brain: RobotBrain, name: str = 'imu', **kwargs) -> None:
+    def __init__(self, robot_brain: RobotBrain, name: str = 'imu', *, min_gyro_calibration: float = 1.0, **kwargs) -> None:
         self.name = name
+        self.min_gyro_calibration = min_gyro_calibration
         self.lizard_code = f'{name} = Imu()'
         self.core_message_fields = [
             f'{name}.cal_gyr',
@@ -96,8 +97,7 @@ class ImuHardware(Imu, ModuleHardware):
             float(words.pop(0)),
             float(words.pop(0)),
         )
-
-        if gyro_calibration < 1.0:
+        if gyro_calibration < self.min_gyro_calibration:
             return
         self._emit_measurement(gyro_calibration, raw_rotation, time)
 

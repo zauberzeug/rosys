@@ -61,7 +61,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
     def from_dict(cls, data: dict[str, Any]) -> Self:
         if 'jovision_profile' in data:
             data['substream'] = data['jovision_profile']
-        return cls(**data)
+        return cls(**cls.args_from_dict(data))
 
     @property
     def is_connected(self) -> bool:
