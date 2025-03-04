@@ -117,7 +117,7 @@ def test_fisheye_calibration_from_points():
 
 
 def test_omnidirectional_calibration_from_points():
-    cam, world_points = demo_omnidirectional_data()
+    cam, world_points_ = demo_omnidirectional_data()
     assert cam.calibration is not None
     image_size = cam.calibration.intrinsics.size
 
@@ -129,9 +129,9 @@ def test_omnidirectional_calibration_from_points():
 
     n_views = 10
 
-    image_points = [[calib.project_to_image(p) for p in world_points]
+    image_points = [[calib.project_to_image(p) for p in world_points_]
                     for calib in translated_calibrations(cam.calibration, n_views)]
-    world_points = [world_points for _ in range(n_views)]
+    world_points = [world_points_ for _ in range(n_views)]
     assert not any(p is None for view in image_points for p in view)
     image_points = [[p for p in view if p is not None] for view in image_points]
     focal_length = cam.calibration.intrinsics.matrix[0][0]
@@ -174,6 +174,7 @@ def test_projection_with_custom_coordinate_frame():
         image_point = cam.calibration.project_to_image(world_point)
         assert image_point is not None
         world_point_ = cam.calibration.project_from_image(image_point, target_height=world_point.z)
+        assert world_point_ is not None
         assert np.allclose(world_point.tuple, world_point_.tuple, atol=1e-6)
 
 
@@ -352,27 +353,6 @@ def test_undistort_points():
     assert np.allclose(np.array([p.tuple for p in undistorted_points]), undistorted_array)
 
 
-def test_distort_points():
-    cam, _ = demo_data()
-    assert cam.calibration is not None
-
-    # Test with list[Point]
-    points = [Point(x=100, y=100), Point(x=200, y=200)]
-    distorted_points = cam.calibration.distort_points(points)
-    assert isinstance(distorted_points, list)
-    assert all(isinstance(p, Point) for p in distorted_points)
-
-    # Test with numpy array
-    points_array = np.array([[120, 90], [180, 210], [240, 150]], dtype=np.float32)
-    distorted_array = cam.calibration.distort_points(points_array)
-    assert isinstance(distorted_array, np.ndarray)
-    assert distorted_array.shape == (3, 2)
-
-    # Test with crop parameter
-    distorted_points_crop = cam.calibration.distort_points(points, crop=True)
-    assert len(distorted_points_crop) == len(points)
-
-
 def test_undistort_image_with_crop():
     cam, _ = demo_data()
     assert cam.calibration is not None
@@ -397,6 +377,25 @@ def test_undistort_image_with_crop():
     assert undistorted_crop.size.height <= test_image.size.height
 
 
+@pytest.mark.parametrize('crop', [True, False])
+def test_distort_points_overload(crop: bool):
+    cam, _ = demo_data()
+    assert cam.calibration is not None
+
+    points = [Point(x=100.0, y=100.0), Point(x=200.0, y=200.0), Point(x=300.0, y=300.0)]
+
+    distorted_points = cam.calibration.distort_points(points, crop=crop)
+    assert isinstance(distorted_points, list)
+    assert all(isinstance(p, Point) for p in distorted_points)
+
+    points_array = np.array([point.tuple for point in points], dtype=np.float32).reshape((-1, 2))
+    distorted_array = cam.calibration.distort_points(points_array, crop=crop)
+    assert isinstance(distorted_array, np.ndarray)
+    assert distorted_array.shape == (3, 2)
+
+    assert np.allclose(np.array([p.tuple for p in distorted_points]), distorted_array, atol=1e-4)
+
+
 @pytest.mark.parametrize('distortion', [
     [0.11, -0.12, 0.13, -0.14],
     [0.11, -0.12, 0.13, -0.14, 0.15],
@@ -412,7 +411,7 @@ def test_distort_points_pinhole(distortion: list[float]):
     cam.calibration.intrinsics.distortion = distortion
     cam.calibration.intrinsics.model = CameraModel.PINHOLE
 
-    points = np.array([[100, 100], [200, 200], [300, 300], [400, 400]], dtype=np.float32).reshape((-1, 1, 2))
+    points = np.array([[100, 100], [200, 200], [300, 300], [400, 400]], dtype=np.float32)
     undistorted_points = cam.calibration.undistort_points(points)
     redistorted_points = cam.calibration.distort_points(undistorted_points)
     assert np.allclose(points, redistorted_points, atol=0.4)
@@ -427,7 +426,7 @@ def test_distort_points_fisheye(crop: bool):
     cam.calibration.intrinsics.distortion = [-0.014, -0.0023, 0.001, 0.001]
     cam.calibration.intrinsics.model = CameraModel.FISHEYE
 
-    points = np.array([[100, 100], [200, 200], [300, 300], [400, 400]], dtype=np.float32).reshape((-1, 1, 2))
+    points = np.array([[100, 100], [200, 200], [300, 300], [400, 400]], dtype=np.float32)
     undistorted_points = cam.calibration.undistort_points(points, crop=crop)
     redistorted_points = cam.calibration.distort_points(undistorted_points, crop=crop)
     assert np.allclose(points, redistorted_points, atol=1e-6)
