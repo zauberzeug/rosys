@@ -14,7 +14,7 @@ from .helpers import invoke
 startup_coroutines: list[Awaitable] = []
 tasks: list[asyncio.Task] = []
 log = logging.getLogger('rosys.event')
-events: list[Event[Any]] = []
+events: list[Event] = []
 
 
 @dataclass(slots=True, kw_only=True)
@@ -62,19 +62,19 @@ class Event(Generic[P]):
     def unregister(self, callback: Callable[P, Any]) -> None:
         self.listeners[:] = [l for l in self.listeners if l.callback != callback]
 
-    async def call(self, *args: P.args) -> None:
+    async def call(self, *args: P.args, **kwargs: P.kwargs) -> None:
         """Fires event and waits async until all registered listeners are completed"""
         for listener in self.listeners:
             try:
-                await invoke(listener.callback, *args)
+                await invoke(listener.callback, *args, **kwargs)
             except Exception:
                 log.exception('could not call listener=%s', listener)
 
-    def emit(self, *args: P.args) -> None:
+    def emit(self, *args: P.args, **kwargs: P.kwargs) -> None:
         """Fires event without waiting for the result."""
         for listener in self.listeners:
             try:
-                result = listener.callback(*args)
+                result = listener.callback(*args, **kwargs)
                 if isinstance(result, Awaitable):
                     if core.loop and core.loop.is_running():
                         name = f'{listener.filepath}:{listener.line}'
