@@ -26,22 +26,22 @@ class Automator:
                  steerer: Steerer | None, *,
                  default_automation: Callable | None = None,
                  on_interrupt: Callable | None = None) -> None:
-        self.AUTOMATION_STARTED = Event()
+        self.AUTOMATION_STARTED = Event[[]]()
         """an automation has been started"""
 
-        self.AUTOMATION_PAUSED = Event()
+        self.AUTOMATION_PAUSED = Event[str]()
         """an automation has been paused (string argument: description of the cause)"""
 
-        self.AUTOMATION_RESUMED = Event()
+        self.AUTOMATION_RESUMED = Event[[]]()
         """an automation has been resumed"""
 
-        self.AUTOMATION_STOPPED = Event()
+        self.AUTOMATION_STOPPED = Event[str]()
         """an automation has been stopped (string argument: description of the cause)"""
 
-        self.AUTOMATION_FAILED = Event()
+        self.AUTOMATION_FAILED = Event[str]()
         """an automation has failed to complete (string argument: description of the cause)"""
 
-        self.AUTOMATION_COMPLETED = Event()
+        self.AUTOMATION_COMPLETED = Event[[]]()
         """an automation has been completed"""
 
         self.log = logging.getLogger('rosys.automator')
