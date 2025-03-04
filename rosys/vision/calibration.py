@@ -340,10 +340,13 @@ class Calibration:
             image_points = self.distort_points(image_points, crop=crop)
             return [Point(x=p[0], y=p[1]) for p in image_points]
 
-        K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
-        D = np.array(self.intrinsics.distortion)
+        if image_points.dtype not in [np.float32, np.float64]:
+            raise ValueError('Image point array must be of type float32 or float64')
 
         image_points = image_points.reshape(-1, 1, 2)
+
+        K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
+        D = np.array(self.intrinsics.distortion)
 
         if self.intrinsics.model == CameraModel.PINHOLE:
             return self._distort_points_pinhole(image_points).reshape(-1, 2)
