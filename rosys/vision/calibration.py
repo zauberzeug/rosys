@@ -3,13 +3,16 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import overload
+from typing import cast, overload
 
 import cv2
 import numpy as np
+from numpy.typing import NDArray
 
 from ..geometry import Frame3d, Point, Point3d, Pose3d, Rotation
 from .image import Image, ImageSize
+
+FloatArray = NDArray[np.float32] | NDArray[np.float64]
 
 
 class CameraModel(str, Enum):
@@ -176,14 +179,14 @@ class Calibration:
         """
 
     @overload
-    def project_to_image(self, coordinates: np.ndarray, *, frame: Frame3d | None = None) -> np.ndarray:
+    def project_to_image(self, coordinates: FloatArray, *, frame: Frame3d | None = None) -> FloatArray:
         """Project a 3D coordinate array to the image plane.
 
         :param coordinates: The 3D coordinates of the points to project.
         :param frame: The coordinate frame of the coordinates.
         """
 
-    def project_to_image(self, *args, **kwargs) -> Point | np.ndarray | None:
+    def project_to_image(self, *args, **kwargs) -> Point | FloatArray | None:
         if isinstance(args[0], Point3d):
             point: Point3d = args[0]
             world_array = np.array([point.resolve().tuple], dtype=np.float64)
@@ -192,7 +195,7 @@ class Calibration:
                 return None
             return Point(x=image_array[0, 0], y=image_array[0, 1])  # pylint: disable=unsubscriptable-object
 
-        coordinates: np.ndarray = args[0]
+        coordinates: FloatArray = args[0]
         frame: Frame3d | None = kwargs.get('frame')
         world_extrinsics = self.extrinsics.relative_to(frame)
         R = world_extrinsics.rotation.matrix.astype(np.float64)
@@ -203,13 +206,14 @@ class Calibration:
 
         # pylint: disable=unpacking-non-sequence
         if self.intrinsics.model == CameraModel.PINHOLE:
-            image_array, _ = cv2.projectPoints(coordinates, Rod, t, K, D)
+            image_array, _ = cast(FloatArray, cv2.projectPoints(coordinates, Rod, t, K, D))
         elif self.intrinsics.model == CameraModel.FISHEYE:
-            image_array, _ = cv2.fisheye.projectPoints(coordinates.reshape(-1, 1, 3), Rod, t, K, D)
+            image_array, _ = cast(FloatArray, cv2.fisheye.projectPoints(coordinates.reshape(-1, 1, 3), Rod, t, K, D))
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
             xi = self.intrinsics.omnidir_params.xi
-            image_array, _ = cv2.omnidir.projectPoints(coordinates.reshape(-1, 1, 3), Rod, t, K, xi, D)
+            image_array, _ = cast(FloatArray, cv2.omnidir.projectPoints(
+                coordinates.reshape(-1, 1, 3), Rod, t, K, xi, D))
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
         # pylint: enable=unpacking-non-sequence
@@ -225,9 +229,9 @@ class Calibration:
     def project_from_image(self, image_coordinates: Point, target_height: float = 0) -> Point3d | None: ...
 
     @overload
-    def project_from_image(self, image_coordinates: np.ndarray, target_height: float = 0) -> np.ndarray: ...
+    def project_from_image(self, image_coordinates: FloatArray, target_height: float = 0) -> FloatArray: ...
 
-    def project_from_image(self, image_coordinates: Point | np.ndarray, target_height: float = 0) -> Point3d | None | np.ndarray:
+    def project_from_image(self, image_coordinates: Point | FloatArray, target_height: float = 0) -> Point3d | FloatArray | None:
         """Project a point in image coordinates to a plane in world xy dimensions at a given height.
 
         :param image_coordinates: The image coordinates to project.
@@ -278,9 +282,9 @@ class Calibration:
     def undistort_points(self, image_points: list[Point], *, crop: bool = False) -> list[Point]: ...
 
     @overload
-    def undistort_points(self, image_points: np.ndarray, *, crop: bool = False) -> np.ndarray: ...
+    def undistort_points(self, image_points: FloatArray, *, crop: bool = False) -> FloatArray: ...
 
-    def undistort_points(self, image_points: list[Point] | np.ndarray, *, crop: bool = False) -> list[Point] | np.ndarray:
+    def undistort_points(self, image_points: list[Point] | FloatArray, *, crop: bool = False) -> list[Point] | FloatArray:
         """Generalized wrapper for undistorting image points.
 
         :param image_points: The image points to undistort (either a list of Points or a numpy array of shape ``(N, 2)``. The array will be reshaped to ``(N, 1, 2)`` during execution).
@@ -305,25 +309,27 @@ class Calibration:
             if crop:
                 log.warning('Cropping is not yet supported for pinhole cameras')
             new_K = self.get_undistorted_camera_matrix(crop=False)
-            return cv2.undistortPoints(image_points, K, D, P=new_K, R=np.eye(3)).reshape(-1, 2)
+            return cast(FloatArray, cv2.undistortPoints(image_points, K, D, P=new_K, R=np.eye(3)).reshape(-1, 2))
         elif self.intrinsics.model == CameraModel.FISHEYE:
             new_K = self.get_undistorted_camera_matrix(crop=crop)
-            return cv2.fisheye.undistortPoints(image_points, K, D, P=new_K).reshape(-1, 2)
+            return cast(FloatArray, cv2.fisheye.undistortPoints(image_points, K, D, P=new_K).reshape(-1, 2))
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
             R = np.array(self.intrinsics.omnidir_params.rotation, dtype=np.float32)
             xi = np.array(self.intrinsics.omnidir_params.xi, dtype=np.float32)
-            return cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R).reshape(-1, 2)
+            return cast(FloatArray, cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R).reshape(-1, 2))
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
+
+    FloatArray = NDArray[np.float32] | NDArray[np.float64]
 
     @overload
     def distort_points(self, image_points: list[Point], *, crop: bool = False) -> list[Point]: ...
 
     @overload
-    def distort_points(self, image_points: np.ndarray, *, crop: bool = False) -> np.ndarray: ...
+    def distort_points(self, image_points: FloatArray, *, crop: bool = False) -> FloatArray: ...
 
-    def distort_points(self, image_points: list[Point] | np.ndarray, *, crop: bool = False) -> list[Point] | np.ndarray:
+    def distort_points(self, image_points: list[Point] | FloatArray, *, crop: bool = False) -> list[Point] | FloatArray:
         """Generalized wrapper for distorting image points.
         Note: For pinhole models the redistortion can be off by more than 1px for large distortions.
 
@@ -353,7 +359,7 @@ class Calibration:
         elif self.intrinsics.model == CameraModel.FISHEYE:
             new_K = self.get_undistorted_camera_matrix(crop=crop)
             normalized_points = cv2.undistortPoints(image_points, new_K, None)  # type: ignore
-            return cv2.fisheye.distortPoints(normalized_points, K, D).reshape(-1, 2)
+            return cast(FloatArray, cv2.fisheye.distortPoints(normalized_points, K, D).reshape(-1, 2))
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             raise NotImplementedError('Re-distortion for omnidirectional cameras is not supported')
         else:
