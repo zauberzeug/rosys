@@ -59,7 +59,7 @@ class Intrinsics:
         return Intrinsics(matrix=K, distortion=D, size=size)
 
 
-log = logging.getLogger('rosys.world.calibration')
+log = logging.getLogger('rosys.vision.calibration')
 
 
 @dataclass(slots=True, kw_only=True)
@@ -397,7 +397,7 @@ class Calibration:
                                                                            fov_scale=1)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             if crop:
-                logging.warning('Cropping is not yet supported for omnidirectional cameras')
+                log.warning('Cropping is not yet supported for omnidirectional cameras')
             new_K = np.array([[w / 4, 0, w / 2],
                               [0, h / 4, h / 2],
                               [0, 0, 1]])
