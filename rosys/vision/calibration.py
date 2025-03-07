@@ -10,6 +10,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from ..geometry import Frame3d, Point, Point3d, Pose3d, Rotation
+from ..helpers.deprecation import deprecated_function
 from .image import Image, ImageSize
 
 FloatArray = NDArray[np.float32] | NDArray[np.float64]
@@ -307,6 +308,15 @@ class Calibration:
         return cv2.convertPointsToHomogeneous(undistorted).reshape(-1, 3)
 
     @overload
+    def undistort_points(self, image_points: Point, *, crop: bool = False) -> Point:
+        """Undistort an image point using the camera calibration.
+
+        :param image_points: The image point to undistort.
+        :param crop: Whether cropping is applied to the image during undistortion.
+        :return: The undistorted image point.
+        """
+
+    @overload
     def undistort_points(self, image_points: list[Point], *, crop: bool = False) -> list[Point]:
         """Undistort image points using the camera calibration.
 
@@ -327,6 +337,9 @@ class Calibration:
     def undistort_points(self, image_points: list[Point] | FloatArray, *, crop: bool = False) -> list[Point] | FloatArray:
         if len(image_points) == 0:
             return image_points
+
+        if isinstance(image_points, Point):
+            return self.undistort_points([image_points], crop=crop)[0]
 
         if not isinstance(image_points, np.ndarray):
             image_points = np.array([p.tuple for p in image_points], dtype=np.float32)
@@ -357,6 +370,15 @@ class Calibration:
     FloatArray = NDArray[np.float32] | NDArray[np.float64]
 
     @overload
+    def distort_points(self, image_points: Point, *, crop: bool = False) -> Point:
+        """Distort an image point using the camera calibration.
+
+        :param image_points: The image point to distort.
+        :param crop: Whether cropping is applied to the image during distortion.
+        :return: The distorted image point.
+        """
+
+    @overload
     def distort_points(self, image_points: list[Point], *, crop: bool = False) -> list[Point]:
         """Distort a list of image points.
         Note: For pinhole models the redistortion can be off by more than 1px for large distortions.
@@ -379,6 +401,9 @@ class Calibration:
     def distort_points(self, image_points: list[Point] | FloatArray, *, crop: bool = False) -> list[Point] | FloatArray:
         if len(image_points) == 0:
             return image_points
+
+        if isinstance(image_points, Point):
+            return self.distort_points([image_points], crop=crop)[0]
 
         if not isinstance(image_points, np.ndarray):
             image_points = np.array([p.tuple for p in image_points], dtype=np.float32)
@@ -445,9 +470,13 @@ class Calibration:
 
         return new_K
 
+    @deprecated_function(remove_in_version='0.27.0')
     def undistort_array(self, image_array: np.ndarray, crop: bool = False) -> np.ndarray:
-        """Undistort an image represented as a numpy array.
+        """
+        .. deprecated:: 
+            This funciton has been integrated into `undistort_image` and will be removed in Rosys `0.27.0`.
 
+        Undistort an image represented as a numpy array.
         The image is expected to be decoded (in particular not encoded bytes of a JPEG image).
 
         :param image_array: The image to undistort.
@@ -455,18 +484,55 @@ class Calibration:
 
         :return: The undistorted image.
         """
-        if image_array.shape[0] != self.intrinsics.size.height or image_array.shape[1] != self.intrinsics.size.width:
+
+        return self.undistort_image(image_array, crop=crop)
+
+    @overload
+    def undistort_image(self, image: Image, *, crop: bool = False) -> Image:
+        """Undistort an image represented as an Image object.
+
+        If you already have the image as an unencoded numpy array, use ``undistort_array`` instead.
+
+        :param image: The image to undistort.
+        :param crop: Whether cropping is applied to the image during undistortion.
+
+        :return: The undistorted image.
+        """
+
+    @overload
+    def undistort_image(self, image: NDArray, *, crop: bool = False) -> NDArray:
+        """Undistort an image represented as a numpy array.
+
+        :param image: The image to undistort.
+        :param crop: Whether cropping is applied to the image during undistortion.
+
+        :return: The undistorted image.
+        """
+
+    def undistort_image(self, image: Image | NDArray, *, crop: bool = False) -> Image | NDArray:
+
+        if isinstance(image, Image):
+            return Image(
+                camera_id=image.camera_id,
+                size=image.size,
+                time=image.time,
+                data=cv2.imencode('.jpg', self.undistort_image(image.to_array(), crop=crop))[1].tobytes(),
+                is_broken=image.is_broken,
+                tags=image.tags,
+            )
+
+        if image.shape[0] != self.intrinsics.size.height or image.shape[1] != self.intrinsics.size.width:
             log.warning('Image size does not match calibration size (image: %s, calibration: %s)',
-                        image_array.shape, self.intrinsics.size)
-            return image_array
+                        image.shape, self.intrinsics.size)
+            return image
 
         K = np.array(self.intrinsics.matrix)
         D = np.array(self.intrinsics.distortion)
-        h, w = image_array.shape[:2]
+        h, w = image.shape[:2]
         if self.intrinsics.model == CameraModel.PINHOLE:
             new_K, roi = cv2.getOptimalNewCameraMatrix(K, D, (w, h), 1, (w, h), centerPrincipalPoint=True)
 
-            dst = cv2.undistort(image_array, K, D, None, new_K)
+            dst = cv2.undistort(image, K, D, None, new_K)
             if crop:
                 x, y, roi_w, roi_h = roi
                 dst = dst[y:y+roi_h, x:x+roi_w]
@@ -474,7 +540,7 @@ class Calibration:
             new_K = self.get_undistorted_camera_matrix(crop=crop)
             map1, map2 = cv2.fisheye.initUndistortRectifyMap(  # pylint: disable=unpacking-non-sequence
                 K, D, np.eye(3), new_K, (w, h), cv2.CV_16SC2)
-            dst = cv2.remap(image_array, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
+            dst = cv2.remap(image, map1, map2, interpolation=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             flags = cv2.omnidir.RECTIFY_PERSPECTIVE
             new_K = self.get_undistorted_camera_matrix(crop=crop)
@@ -482,30 +548,12 @@ class Calibration:
             assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
             R = np.array(self.intrinsics.omnidir_params.rotation.R)
             xi = np.array(self.intrinsics.omnidir_params.xi)
-            dst = cv2.omnidir.undistortImage(image_array, K=K, D=D, xi=xi, Knew=new_K,
+            dst = cv2.omnidir.undistortImage(image, K=K, D=D, xi=xi, Knew=new_K,
                                              flags=flags, new_size=(w, h), R=R)
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
 
         return dst
-
-    def undistort_image(self, image: Image, *, crop: bool = False) -> Image:
-        """Undistort an image represented as an Image object.
-
-        If you already have the image as an unencoded numpy array, use ``undistort_array`` instead.
-
-        :param image: The image to undistort.
-
-        :return: The undistorted image.
-        """
-        return Image(
-            camera_id=image.camera_id,
-            size=image.size,
-            time=image.time,
-            data=cv2.imencode('.jpg', self.undistort_array(image.to_array(), crop=crop))[1].tobytes(),
-            is_broken=image.is_broken,
-            tags=image.tags,
-        )
 
     def get_undistorted_size(self) -> ImageSize:
         """Compute the size of the undistorted image after cropping.
