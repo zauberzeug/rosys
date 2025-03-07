@@ -172,31 +172,43 @@ class Calibration:
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 
     @overload
-    def project_to_image(self, point: Point3d) -> Point | None:
+    def project_to_image(self, coordinates: Point3d) -> Point | None:
         """Project a 3D point to the image plane.
 
-        :param point: The point to project.
+        :param coordinates: The 3D point to project.
+        :return: The image coordinates of the projected point, or None if projection failed.
+        """
+
+    @overload
+    def project_to_image(self, coordinates: list[Point3d]) -> list[Point] | None:
+        """Project 3D points to the image plane.
+
+        :param coordinates: The list of 3D points to project.
+        :return: The image coordinates of the projected points, or None if any projection failed.
         """
 
     @overload
     def project_to_image(self, coordinates: FloatArray, *, frame: Frame3d | None = None) -> FloatArray:
-        """Project a 3D coordinate array to the image plane.
+        """Project 3D points to the image plane.
 
-        :param coordinates: The 3D coordinates of the points to project.
+        :param coordinates: (Nx3) The 3D coordinates of the points to project.
         :param frame: The coordinate frame of the coordinates.
+        :return: (Nx2) The image coordinates of the projected points.
         """
 
-    def project_to_image(self, *args, **kwargs) -> Point | FloatArray | None:
-        if isinstance(args[0], Point3d):
-            point: Point3d = args[0]
-            world_array = np.array([point.resolve().tuple], dtype=np.float64)
+    def project_to_image(self, coordinates: Point3d | list[Point3d] | FloatArray, *, frame: Frame3d | None = None) -> Point | list[Point] | FloatArray | None:
+
+        if isinstance(coordinates, Point3d):
+            projected = self.project_to_image([coordinates])
+            return projected[0] if projected is not None else None
+        if isinstance(coordinates, list):
+            world_array = np.array([point.resolve().tuple for point in coordinates], dtype=np.float64)
             image_array = self.project_to_image(world_array)
             if np.isnan(image_array).any():
                 return None
-            return Point(x=image_array[0, 0], y=image_array[0, 1])  # pylint: disable=unsubscriptable-object
+            return [Point(x=image_array[0, 0], y=image_array[0, 1])  # pylint: disable=unsubscriptable-object
+                    for image_array in image_array]
 
-        coordinates: FloatArray = args[0]
-        frame: Frame3d | None = kwargs.get('frame')
         world_extrinsics = self.extrinsics.relative_to(frame)
         R = world_extrinsics.rotation.matrix.astype(np.float64)
         Rod = cv2.Rodrigues(R.T)[0]
@@ -226,21 +238,37 @@ class Calibration:
         return image_array.reshape(-1, 2)
 
     @overload
-    def project_from_image(self, image_coordinates: Point, target_height: float = 0) -> Point3d | None: ...
-
-    @overload
-    def project_from_image(self, image_coordinates: FloatArray, target_height: float = 0) -> FloatArray: ...
-
-    def project_from_image(self, image_coordinates: Point | FloatArray, target_height: float = 0) -> Point3d | FloatArray | None:
-        """Project a point in image coordinates to a plane in world xy dimensions at a given height.
+    def project_from_image(self, image_coordinates: Point, target_height: float = 0) -> Point3d | None:
+        """Project a point in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: The image coordinates to project.
         :param target_height: The height of the plane in world coordinates.
-
-        :return: The world coordinates of the projected point.
+        :return: The world coordinates of the projected point, or None if projection failed.
         """
+
+    @overload
+    def project_from_image(self, image_coordinates: list[Point], target_height: float = 0) -> list[Point3d] | None:
+        """Project points in image coordinates to a plane in world coordinates.
+
+        :param image_coordinates: The list of image coordinates to project.
+        :param target_height: The height of the plane in world coordinates.
+        :return: The world coordinates of the projected points, or None if any projection failed.
+        """
+
+    @overload
+    def project_from_image(self, image_coordinates: FloatArray, target_height: float = 0) -> FloatArray:
+        """Project points in image coordinates to a plane in world coordinates.
+
+        :param image_coordinates: (Nx2) The image coordinates to project.
+        :param target_height: The height of the plane in world coordinates.
+        :return: (Nx3) The world coordinates of the projected points.
+        """
+
+    def project_from_image(self, image_coordinates: Point | list[Point] | FloatArray, target_height: float = 0) -> Point3d | list[Point3d] | FloatArray | None:
         if isinstance(image_coordinates, Point):
-            image_points = np.array(image_coordinates.tuple, dtype=np.float32)
+            image_coordinates = [image_coordinates]
+        if not isinstance(image_coordinates, list):
+            image_points = np.array([image_coordinates.tuple], dtype=np.float32)
             world_points = self.project_from_image(image_points, target_height=target_height)
             if np.isnan(world_points).any():
                 return None
@@ -279,19 +307,24 @@ class Calibration:
         return cv2.convertPointsToHomogeneous(undistorted).reshape(-1, 3)
 
     @overload
-    def undistort_points(self, image_points: list[Point], *, crop: bool = False) -> list[Point]: ...
+    def undistort_points(self, image_points: list[Point], *, crop: bool = False) -> list[Point]:
+        """Undistort image points using the camera calibration.
+
+        :param image_points: The list of image points to undistort.
+        :param crop: Whether cropping is applied to the image during undistortion.
+        :return: The undistorted image points as a list of Points.
+        """
 
     @overload
-    def undistort_points(self, image_points: FloatArray, *, crop: bool = False) -> FloatArray: ...
+    def undistort_points(self, image_points: FloatArray, *, crop: bool = False) -> FloatArray:
+        """Undistort image points using the camera calibration.
+
+        :param image_points: (Nx2) The image points to undistort.
+        :param crop: Whether cropping is applied to the image during undistortion.
+        :return: (Nx2) The undistorted image points.
+        """
 
     def undistort_points(self, image_points: list[Point] | FloatArray, *, crop: bool = False) -> list[Point] | FloatArray:
-        """Generalized wrapper for undistorting image points.
-
-        :param image_points: The image points to undistort (either a list of Points or a numpy array of shape ``(N, 2)``. The array will be reshaped to ``(N, 1, 2)`` during execution).
-        :param crop: Whether cropping is applied to the image during undistortion.
-
-        :return: The undistorted image points (either a list of Points or a numpy array of shape ``(N, 2)``).
-        """
         if len(image_points) == 0:
             return image_points
 
@@ -324,20 +357,26 @@ class Calibration:
     FloatArray = NDArray[np.float32] | NDArray[np.float64]
 
     @overload
-    def distort_points(self, image_points: list[Point], *, crop: bool = False) -> list[Point]: ...
-
-    @overload
-    def distort_points(self, image_points: FloatArray, *, crop: bool = False) -> FloatArray: ...
-
-    def distort_points(self, image_points: list[Point] | FloatArray, *, crop: bool = False) -> list[Point] | FloatArray:
-        """Generalized wrapper for distorting image points.
+    def distort_points(self, image_points: list[Point], *, crop: bool = False) -> list[Point]:
+        """Distort a list of image points.
         Note: For pinhole models the redistortion can be off by more than 1px for large distortions.
 
-        :param image_points: The image points to distort (either a list of Points or a numpy array of shape ``(N, 2)``. The array will be reshaped to ``(N, 1, 2)`` during execution).
+        :param image_points: The list of image points to distort.
         :param crop: Whether cropping is applied to the image during distortion.
-
-        :return: The distorted image points (either a list of Points or a numpy array of shape ``(N, 2)``).
+        :return: The distorted image points as a list of Points.
         """
+
+    @overload
+    def distort_points(self, image_points: FloatArray, *, crop: bool = False) -> FloatArray:
+        """Apply lens distortion to image points using the camera calibration.
+        Note: For pinhole models the redistortion can be off by more than 1px for large distortions.
+
+        :param image_points: (Nx2) The image points to distort.
+        :param crop: Whether cropping is applied to the image during distortion.
+        :return: (Nx2) The distorted image points.
+        """
+
+    def distort_points(self, image_points: list[Point] | FloatArray, *, crop: bool = False) -> list[Point] | FloatArray:
         if len(image_points) == 0:
             return image_points
 
