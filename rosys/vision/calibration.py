@@ -181,7 +181,7 @@ class Calibration:
         """
 
     @overload
-    def project_to_image(self, coordinates: list[Point3d]) -> list[Point] | None:
+    def project_to_image(self, coordinates: list[Point3d]) -> list[Point | None]:
         """Project 3D points to the image plane.
 
         :param coordinates: The list of 3D points to project.
@@ -197,18 +197,14 @@ class Calibration:
         :return: (Nx2) The image coordinates of the projected points.
         """
 
-    def project_to_image(self, coordinates: Point3d | list[Point3d] | FloatArray, *, frame: Frame3d | None = None) -> Point | list[Point] | FloatArray | None:
+    def project_to_image(self, coordinates: Point3d | list[Point3d] | FloatArray, *, frame: Frame3d | None = None) -> Point | None | list[Point | None] | FloatArray:
 
         if isinstance(coordinates, Point3d):
-            projected = self.project_to_image([coordinates])
-            return projected[0] if projected is not None else None
+            return self.project_to_image([coordinates])[0]
         if isinstance(coordinates, list):
             world_array = np.array([point.resolve().tuple for point in coordinates], dtype=np.float64)
             image_array = self.project_to_image(world_array)
-            if np.isnan(image_array).any():
-                return None
-            return [Point(x=image_array[0, 0], y=image_array[0, 1])  # pylint: disable=unsubscriptable-object
-                    for image_array in image_array]
+            return [Point(x=vector[0], y=vector[1]) if not np.isnan(vector).any() else None for vector in image_array]
 
         world_extrinsics = self.extrinsics.relative_to(frame)
         R = world_extrinsics.rotation.matrix.astype(np.float64)
@@ -248,7 +244,7 @@ class Calibration:
         """
 
     @overload
-    def project_from_image(self, image_coordinates: list[Point], target_height: float = 0) -> list[Point3d] | None:
+    def project_from_image(self, image_coordinates: list[Point], target_height: float = 0) -> list[Point3d | None]:
         """Project points in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: The list of image coordinates to project.
@@ -265,29 +261,27 @@ class Calibration:
         :return: (Nx3) The world coordinates of the projected points.
         """
 
-    def project_from_image(self, image_coordinates: Point | list[Point] | FloatArray, target_height: float = 0) -> Point3d | list[Point3d] | FloatArray | None:
+    def project_from_image(self, image_coordinates: Point | list[Point] | FloatArray, target_height: float = 0) -> Point3d | None | list[Point3d | None] | FloatArray:
         if isinstance(image_coordinates, Point):
-            image_coordinates = [image_coordinates]
-        if not isinstance(image_coordinates, list):
-            image_points = np.array([image_coordinates.tuple], dtype=np.float32)
-            world_points = self.project_from_image(image_points, target_height=target_height)
-            if np.isnan(world_points).any():
-                return None
-            return Point3d(x=world_points[0, 0], y=world_points[0, 1], z=world_points[0, 2])  # pylint: disable=unsubscriptable-object
+            return self.project_from_image([image_coordinates], target_height=target_height)[0]
+        if not isinstance(image_coordinates, np.ndarray):
+            image_array = np.array([point.tuple for point in image_coordinates], dtype=np.float64)
+            world_array = self.project_from_image(image_array, target_height=target_height)
+            return [Point3d(x=point[0], y=point[1], z=point[2]) if not np.isnan(point).any() else None for point in world_array]
 
         world_extrinsics = self.extrinsics.resolve()
-        image_rays = self._points_to_rays(image_coordinates.astype(np.float32).reshape(-1, 1, 2))
+        image_rays = self._points_to_rays(image_coordinates.astype(np.float64).reshape(-1, 1, 2))
         objPoints = image_rays @ world_extrinsics.rotation.matrix.T
         Z = world_extrinsics.z
         t = world_extrinsics.translation_vector
-        world_points = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
+        world_array = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
 
-        reprojection = self.project_to_image(world_points)
+        reprojection = self.project_to_image(world_array)
         sign = objPoints[:, -1] * np.sign(Z)
         distance = np.linalg.norm(reprojection - image_coordinates.reshape(-1, 2), axis=1)
-        world_points[np.logical_not(np.logical_and(sign < 0, distance < 2)), :] = np.nan
+        world_array[np.logical_not(np.logical_and(sign < 0, distance < 2)), :] = np.nan
 
-        return world_points
+        return world_array
 
     def _points_to_rays(self, image_points: np.ndarray) -> np.ndarray:
         """Convert image points to rays in homogeneous coordinates with respect to the camera coordinate frame."""
@@ -334,12 +328,12 @@ class Calibration:
         :return: (Nx2) The undistorted image points.
         """
 
-    def undistort_points(self, image_points: list[Point] | FloatArray, *, crop: bool = False) -> list[Point] | FloatArray:
-        if len(image_points) == 0:
-            return image_points
-
+    def undistort_points(self, image_points: Point | list[Point] | FloatArray, *, crop: bool = False) -> Point | list[Point] | FloatArray:
         if isinstance(image_points, Point):
             return self.undistort_points([image_points], crop=crop)[0]
+
+        if len(image_points) == 0:
+            return image_points
 
         if not isinstance(image_points, np.ndarray):
             image_points = np.array([p.tuple for p in image_points], dtype=np.float32)
@@ -398,12 +392,12 @@ class Calibration:
         :return: (Nx2) The distorted image points.
         """
 
-    def distort_points(self, image_points: list[Point] | FloatArray, *, crop: bool = False) -> list[Point] | FloatArray:
-        if len(image_points) == 0:
-            return image_points
-
+    def distort_points(self, image_points: Point | list[Point] | FloatArray, *, crop: bool = False) -> Point | list[Point] | FloatArray:
         if isinstance(image_points, Point):
             return self.distort_points([image_points], crop=crop)[0]
+
+        if len(image_points) == 0:
+            return image_points
 
         if not isinstance(image_points, np.ndarray):
             image_points = np.array([p.tuple for p in image_points], dtype=np.float32)
