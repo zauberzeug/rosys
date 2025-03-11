@@ -19,6 +19,9 @@ class Robot(abc.ABC):
         self.log = logging.getLogger(__name__)
         self.modules = modules
 
+    def add_module(self, module: Module) -> None:
+        self.modules.append(module)
+
 
 class RobotHardware(Robot):
     """A robot that consists of hardware modules.
@@ -32,6 +35,10 @@ class RobotHardware(Robot):
         self.robot_brain.lizard_code = self.generate_lizard_code()
         self.expander_prefixes = set(f'{module.name}:' for module in modules if isinstance(module, ExpanderHardware))
         rosys.on_repeat(self.update, 0.01)
+
+    def add_module(self, module: Module) -> None:
+        super().add_module(module)
+        self.robot_brain.lizard_code = self.generate_lizard_code()
 
     def generate_lizard_code(self) -> str:
         code = remove_indentation('''
