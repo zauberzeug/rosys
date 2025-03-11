@@ -2,8 +2,9 @@ import abc
 import json
 from pathlib import Path
 from typing import Any, ClassVar
-from typing_extensions import Self
+
 from nicegui import app, run
+from typing_extensions import Self
 
 
 class Persistable(abc.ABC):
