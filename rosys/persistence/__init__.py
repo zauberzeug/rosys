@@ -5,11 +5,13 @@ from .converters import from_dict, replace_dataclass, replace_dict, replace_list
 from .persistent_module import PersistentModule
 from .registry import backup, get_export, restore, restore_from_export, sync_backup, write_export
 from .ui import export_button, import_button
+from .persistable import Persistable
 
 exclude: dict[str, dict] = config(exclude=Exclude.ALWAYS)
 
 __all__ = [
     'BackupSchedule',
+    'Persistable',
     'PersistentModule',
     'backup',
     'exclude',
