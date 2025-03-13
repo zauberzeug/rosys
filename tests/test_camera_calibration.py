@@ -195,7 +195,7 @@ def test_projection_with_custom_coordinate_frame():
         assert np.allclose([p.tuple for p in world_points_at_height], [p.tuple for p in reprojected_world_points_], atol=1e-6), \
             f'batch projection of world points at height {height} did not reproject back to the original points'
 
-    for i, world_point in enumerate(world_points):
+    for world_point in world_points:
         image_point = cam.calibration.project_to_image(world_point)
         assert image_point is not None
         world_point_ = cam.calibration.project_from_image(image_point, target_height=world_point.z)
