@@ -1,12 +1,13 @@
 import copy
 
+import cv2
 import numpy as np
 import pytest
 
-from rosys.geometry import Point3d, Pose3d
+from rosys.geometry import Point, Point3d, Pose3d
 from rosys.geometry.object3d import frame_registry
 from rosys.testing import approx
-from rosys.vision import CalibratableCamera, Calibration
+from rosys.vision import CalibratableCamera, Calibration, Image, ImageSize
 from rosys.vision.calibration import CameraModel, OmnidirParameters
 
 
@@ -65,6 +66,7 @@ def test_calibration_from_points():
 
     image_points = [cam.calibration.project_to_image(p) for p in world_points]
     assert not any(p is None for p in image_points)
+    image_points = [p for p in image_points if p is not None]
     focal_length = cam.calibration.intrinsics.matrix[0][0]
 
     calibration = Calibration.from_points(world_points, image_points, image_size=image_size, f0=focal_length)
@@ -85,6 +87,7 @@ def test_calibration_with_custom_coordinate_frame():
 
     image_points = [cam.calibration.project_to_image(p) for p in world_points]
     assert not any(p is None for p in image_points)
+    image_points = [p for p in image_points if p is not None]
     focal_length = cam.calibration.intrinsics.matrix[0][0]
 
     calibration = Calibration.from_points(world_points, image_points, image_size=image_size, f0=focal_length)
@@ -103,6 +106,7 @@ def test_fisheye_calibration_from_points():
 
     image_points = [cam.calibration.project_to_image(p) for p in world_points]
     assert not any(p is None for p in image_points)
+    image_points = [p for p in image_points if p is not None]
     focal_length = cam.calibration.intrinsics.matrix[0][0]
     calibration = Calibration.from_points(world_points, image_points, image_size=image_size, f0=focal_length,
                                           camera_model=CameraModel.FISHEYE)
@@ -113,7 +117,7 @@ def test_fisheye_calibration_from_points():
 
 
 def test_omnidirectional_calibration_from_points():
-    cam, world_points = demo_omnidirectional_data()
+    cam, world_points_ = demo_omnidirectional_data()
     assert cam.calibration is not None
     image_size = cam.calibration.intrinsics.size
 
@@ -125,10 +129,11 @@ def test_omnidirectional_calibration_from_points():
 
     n_views = 10
 
-    image_points = [[calib.project_to_image(p) for p in world_points]
+    image_points = [[calib.project_to_image(p) for p in world_points_]
                     for calib in translated_calibrations(cam.calibration, n_views)]
-    world_points = [world_points for _ in range(n_views)]
+    world_points = [world_points_ for _ in range(n_views)]
     assert not any(p is None for view in image_points for p in view)
+    image_points = [[p for p in view if p is not None] for view in image_points]
     focal_length = cam.calibration.intrinsics.matrix[0][0]
     calibration = Calibration.from_points(world_points, image_points, image_size=image_size, f0=focal_length,
                                           camera_model=CameraModel.OMNIDIRECTIONAL)
@@ -149,12 +154,25 @@ def test_projection():
     cam, world_points = demo_data()
     assert cam.calibration is not None
 
-    for world_point in world_points:
+    heights = set(p.z for p in world_points)
+
+    for height in heights:
+        world_points_at_height = [p for p in world_points if p.z == height]
+        image_points: list[Point] = cam.calibration.project_to_image(world_points_at_height)
+        assert not any(p is None for p in image_points)
+        reprojected_world_points_: list[Point3d] = cam.calibration.project_from_image(
+            image_points, target_height=height)
+        assert not any(p is None for p in reprojected_world_points_)
+        assert np.allclose([p.tuple for p in world_points_at_height], [p.tuple for p in reprojected_world_points_], atol=1e-6), \
+            f'batch projection of world points at height {height} did not reproject back to the original points'
+
+    for i, world_point in enumerate(world_points):
         image_point = cam.calibration.project_to_image(world_point)
         assert image_point is not None
         world_point_ = cam.calibration.project_from_image(image_point, target_height=world_point.z)
         assert world_point_ is not None
-        assert np.allclose(world_point.tuple, world_point_.tuple, atol=1e-6)
+        assert np.allclose(world_point.tuple, world_point_.tuple,
+                           atol=1e-6), f'world_point {i} did not reproject back to the original point'
 
 
 def test_projection_with_custom_coordinate_frame():
@@ -165,10 +183,23 @@ def test_projection_with_custom_coordinate_frame():
     cam_frame = Pose3d(x=0.03, y=-0.02, z=0.0).as_frame('cam')
     cam.calibration.extrinsics.in_frame(cam_frame)
 
+    heights = set(p.z for p in world_points)
+
+    for height in heights:
+        world_points_at_height = [p for p in world_points if p.z == height]
+        image_points: list[Point] = cam.calibration.project_to_image(world_points_at_height)
+        assert not any(p is None for p in image_points)
+        reprojected_world_points_: list[Point3d] = cam.calibration.project_from_image(
+            image_points, target_height=height)
+        assert not any(p is None for p in reprojected_world_points_)
+        assert np.allclose([p.tuple for p in world_points_at_height], [p.tuple for p in reprojected_world_points_], atol=1e-6), \
+            f'batch projection of world points at height {height} did not reproject back to the original points'
+
     for world_point in world_points:
         image_point = cam.calibration.project_to_image(world_point)
         assert image_point is not None
         world_point_ = cam.calibration.project_from_image(image_point, target_height=world_point.z)
+        assert world_point_ is not None
         assert np.allclose(world_point.tuple, world_point_.tuple, atol=1e-6)
 
 
@@ -323,6 +354,89 @@ def test_omnidirectional_project_from_behind():
     assert cam.calibration.project_to_image(Point3d(x=0, y=-1, z=1)) is not None
 
 
+def test_undistort_points():
+    """Test """
+    cam, _ = demo_data()
+    assert cam.calibration is not None
+
+    # Test with list[Point]
+    points = [Point(x=120, y=90), Point(x=180, y=210), Point(x=240, y=150)]
+    undistorted_points = cam.calibration.undistort_points(points)
+    assert isinstance(undistorted_points, list)
+    assert all(isinstance(p, Point) for p in undistorted_points)
+
+    # single point
+    undistorted_point = cam.calibration.undistort_points(points[0])
+    assert isinstance(undistorted_point, Point)
+
+    # Test with numpy array
+    points_array = np.array([point.tuple for point in points], dtype=np.float32)
+    undistorted_array = cam.calibration.undistort_points(points_array)
+    assert isinstance(undistorted_array, np.ndarray)
+    assert undistorted_array.shape == (3, 2)
+
+    distorted_array = cam.calibration.distort_points(undistorted_array)
+    assert np.allclose(points_array, distorted_array, atol=1e-6)
+
+    # Test with crop parameter
+    undistorted_points_crop = cam.calibration.undistort_points(points, crop=True)
+    assert len(undistorted_points_crop) == len(points)
+
+    # check that point, points and array have the same effect
+    assert np.allclose(np.array([p.tuple for p in undistorted_points]), undistorted_array)
+    assert np.allclose(undistorted_points[0].tuple, undistorted_point.tuple)
+
+
+def test_undistort_image_with_crop():
+    cam, _ = demo_data()
+    assert cam.calibration is not None
+
+    # Create a test image
+    test_image = Image(
+        camera_id='1',
+        size=ImageSize(width=800, height=600),
+        time=0.0,
+        data=cv2.imencode('.jpg', np.zeros((600, 800, 3), dtype=np.uint8))[1].tobytes(),
+        is_broken=False,
+        tags=set()
+    )
+
+    # Test without crop
+    undistorted = cam.calibration.undistort_image(test_image, crop=False)
+    assert undistorted.size == test_image.size
+
+    # Test with crop
+    undistorted_crop = cam.calibration.undistort_image(test_image, crop=True)
+    assert undistorted_crop.size.width <= test_image.size.width
+    assert undistorted_crop.size.height <= test_image.size.height
+
+
+@pytest.mark.parametrize('crop', [True, False])
+def test_distort_points_overload(crop: bool):
+    cam, _ = demo_data()
+    assert cam.calibration is not None
+
+    points = [Point(x=100.0, y=100.0), Point(x=200.0, y=200.0), Point(x=300.0, y=300.0)]
+
+    # list of points
+    distorted_points = cam.calibration.distort_points(points, crop=crop)
+    assert isinstance(distorted_points, list)
+    assert all(isinstance(p, Point) for p in distorted_points)
+
+    # single point
+    distorted_point = cam.calibration.distort_points(points[0], crop=crop)
+    assert isinstance(distorted_point, Point)
+
+    # numpy array
+    points_array = np.array([point.tuple for point in points], dtype=np.float32).reshape((-1, 2))
+    distorted_array = cam.calibration.distort_points(points_array, crop=crop)
+    assert isinstance(distorted_array, np.ndarray)
+    assert distorted_array.shape == (3, 2)
+
+    assert np.allclose(np.array([p.tuple for p in distorted_points]), distorted_array, atol=1e-4)
+    assert np.allclose(distorted_points[0].tuple, distorted_point.tuple, atol=1e-4)
+
+
 @pytest.mark.parametrize('distortion', [
     [0.11, -0.12, 0.13, -0.14],
     [0.11, -0.12, 0.13, -0.14, 0.15],
@@ -338,7 +452,7 @@ def test_distort_points_pinhole(distortion: list[float]):
     cam.calibration.intrinsics.distortion = distortion
     cam.calibration.intrinsics.model = CameraModel.PINHOLE
 
-    points = np.array([[100, 100], [200, 200], [300, 300], [400, 400]], dtype=np.float32).reshape((-1, 1, 2))
+    points = np.array([[100, 100], [200, 200], [300, 300], [400, 400]], dtype=np.float32)
     undistorted_points = cam.calibration.undistort_points(points)
     redistorted_points = cam.calibration.distort_points(undistorted_points)
     assert np.allclose(points, redistorted_points, atol=0.4)
@@ -353,7 +467,7 @@ def test_distort_points_fisheye(crop: bool):
     cam.calibration.intrinsics.distortion = [-0.014, -0.0023, 0.001, 0.001]
     cam.calibration.intrinsics.model = CameraModel.FISHEYE
 
-    points = np.array([[100, 100], [200, 200], [300, 300], [400, 400]], dtype=np.float32).reshape((-1, 1, 2))
+    points = np.array([[100, 100], [200, 200], [300, 300], [400, 400]], dtype=np.float32)
     undistorted_points = cam.calibration.undistort_points(points, crop=crop)
     redistorted_points = cam.calibration.distort_points(undistorted_points, crop=crop)
     assert np.allclose(points, redistorted_points, atol=1e-6)
