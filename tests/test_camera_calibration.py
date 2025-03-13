@@ -154,22 +154,25 @@ def test_projection():
     cam, world_points = demo_data()
     assert cam.calibration is not None
 
-    # list of points
-    image_points: list[Point] = cam.calibration.project_to_image(world_points)
-    assert not any(p is None for p in image_points)
-    world_points_: list[Point3d] = cam.calibration.project_from_image(image_points, target_height=world_points[0].z)
-    assert not any(p is None for p in world_points_)
+    heights = set(p.z for p in world_points)
+
+    for height in heights:
+        world_points_at_height = [p for p in world_points if p.z == height]
+        image_points: list[Point] = cam.calibration.project_to_image(world_points_at_height)
+        assert not any(p is None for p in image_points)
+        reprojected_world_points_: list[Point3d] = cam.calibration.project_from_image(
+            image_points, target_height=height)
+        assert not any(p is None for p in reprojected_world_points_)
+        assert np.allclose([p.tuple for p in world_points_at_height], [p.tuple for p in reprojected_world_points_], atol=1e-6), \
+            f'batch projection of world points at height {height} did not reproject back to the original points'
 
     for i, world_point in enumerate(world_points):
         image_point = cam.calibration.project_to_image(world_point)
         assert image_point is not None
-        assert np.allclose(image_point.tuple, image_points[i].tuple, atol=1e-6)
         world_point_ = cam.calibration.project_from_image(image_point, target_height=world_point.z)
         assert world_point_ is not None
-        assert np.allclose(world_point.tuple, world_point_.tuple, atol=1e-6)
-        assert np.allclose(world_point.tuple, world_points_[i].tuple, atol=1e-6)
-
-    assert np.allclose([p.tuple for p in world_points], [p.tuple for p in world_points_], atol=1e-6)
+        assert np.allclose(world_point.tuple, world_point_.tuple,
+                           atol=1e-6), f'world_point {i} did not reproject back to the original point'
 
 
 def test_projection_with_custom_coordinate_frame():
@@ -180,11 +183,24 @@ def test_projection_with_custom_coordinate_frame():
     cam_frame = Pose3d(x=0.03, y=-0.02, z=0.0).as_frame('cam')
     cam.calibration.extrinsics.in_frame(cam_frame)
 
-    image_points: list[Point] = cam.calibration.project_to_image(world_points)
-    assert not any(p is None for p in image_points)
-    world_points_: list[Point3d] = cam.calibration.project_from_image(image_points, target_height=world_points[0].z)
-    assert not any(p is None for p in world_points_)
-    assert np.allclose([p.tuple for p in world_points], [p.tuple for p in world_points_], atol=1e-6)
+    heights = set(p.z for p in world_points)
+
+    for height in heights:
+        world_points_at_height = [p for p in world_points if p.z == height]
+        image_points: list[Point] = cam.calibration.project_to_image(world_points_at_height)
+        assert not any(p is None for p in image_points)
+        reprojected_world_points_: list[Point3d] = cam.calibration.project_from_image(
+            image_points, target_height=height)
+        assert not any(p is None for p in reprojected_world_points_)
+        assert np.allclose([p.tuple for p in world_points_at_height], [p.tuple for p in reprojected_world_points_], atol=1e-6), \
+            f'batch projection of world points at height {height} did not reproject back to the original points'
+
+    for i, world_point in enumerate(world_points):
+        image_point = cam.calibration.project_to_image(world_point)
+        assert image_point is not None
+        world_point_ = cam.calibration.project_from_image(image_point, target_height=world_point.z)
+        assert world_point_ is not None
+        assert np.allclose(world_point.tuple, world_point_.tuple, atol=1e-6)
 
 
 def test_projection_from_one_frame_into_world_frame():
