@@ -88,7 +88,7 @@ class Detector(abc.ABC):
     def __init__(self, *, name: str | None = None) -> None:
         self.name = name or str(uuid4())
 
-        self.NEW_DETECTIONS = Event()
+        self.NEW_DETECTIONS = Event[Image]()
         """detection on an image is completed (argument: image)"""
 
         self.log = logging.getLogger('rosys.detector')

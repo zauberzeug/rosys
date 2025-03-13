@@ -58,7 +58,7 @@ class Gnss(ABC):
         self.log = logging.getLogger('rosys.gnss')
         self.last_measurement: GnssMeasurement | None = None
 
-        self.NEW_MEASUREMENT = Event()
+        self.NEW_MEASUREMENT = Event[GnssMeasurement]()
         """a new measurement has been received (argument: ``GnssMeasurement``)"""
 
     @property

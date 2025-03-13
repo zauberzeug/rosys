@@ -42,7 +42,7 @@ class Camera(abc.ABC):
         if polling_interval is not None:
             logger.warning('The `polling_interval` parameter has been removed. All cameras should now use callbacks.')
 
-        self.NEW_IMAGE: Event = Event()
+        self.NEW_IMAGE = Event[Image]()
 
         self.device_connection_lock: asyncio.Condition = asyncio.Condition()
 

@@ -39,7 +39,7 @@ class AppControls:
     """
 
     def __init__(self, robot_brain: RobotBrain, automator: Automator) -> None:
-        self.APP_CONNECTED = Event()
+        self.APP_CONNECTED = Event[[]]()
         """an app connected via bluetooth (used to refresh information or similar)"""
 
         self.robot_brain = robot_brain

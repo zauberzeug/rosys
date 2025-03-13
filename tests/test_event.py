@@ -4,7 +4,7 @@ import rosys
 from rosys.event import Event
 from rosys.testing import forward
 
-TEST_EVENT = Event()
+TEST_EVENT = Event[int]()
 
 
 async def test_register_and_unregister():

@@ -22,14 +22,14 @@ class CameraProvider(Generic[T], persistence.PersistentModule, metaclass=abc.ABC
     def __init__(self, *, persistence_key: str | None = None) -> None:
         super().__init__(persistence_key=persistence_key)
 
-        self.CAMERA_ADDED = Event()
+        self.CAMERA_ADDED = Event[Camera]()
         """a new camera has been added (argument: camera)"""
 
-        self.CAMERA_REMOVED = Event()
+        self.CAMERA_REMOVED = Event[str]()
         """a camera has been removed (argument: camera id)"""
 
-        self.NEW_IMAGE = Event()
-        """a new image is available (argument: image)"""
+        self.NEW_IMAGE = Event[Image]()
+        """a new image is available from any camera (argument: image)"""
 
         self._cameras: dict[str, T] = {}
 

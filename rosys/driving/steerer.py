@@ -21,10 +21,10 @@ class Steerer:
     """
 
     def __init__(self, wheels: Drivable, speed_scaling: float = 1.0) -> None:
-        self.STEERING_STARTED = Event()
+        self.STEERING_STARTED = Event[[]]()
         """steering has started"""
 
-        self.STEERING_STOPPED = Event()
+        self.STEERING_STOPPED = Event[[]]()
         """steering has stopped"""
 
         self.log = logging.getLogger('rosys.steerer')

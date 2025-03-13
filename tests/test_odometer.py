@@ -7,7 +7,7 @@ from rosys.testing import approx
 
 
 class DummyVelocityProvider:
-    VELOCITY_MEASURED = Event()
+    VELOCITY_MEASURED = Event[list[Velocity]]()
 
 
 async def test_odometer():

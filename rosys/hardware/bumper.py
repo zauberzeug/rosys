@@ -14,7 +14,7 @@ class Bumper(Module, abc.ABC):
         self.estop = estop
         super().__init__(**kwargs)
 
-        self.BUMPER_TRIGGERED = Event()
+        self.BUMPER_TRIGGERED = Event[str]()
         """a bumper was triggered (argument: the bumper name)"""
 
         self.active_bumpers: list[str] = []

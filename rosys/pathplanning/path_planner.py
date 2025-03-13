@@ -41,10 +41,8 @@ class PathPlanner(persistence.PersistentModule):
         self.obstacles: dict[str, Obstacle] = {}
         self.areas: dict[str, Area] = {}
 
-        self.OBSTACLES_CHANGED = Event()
-        """the obstacles have changed (argument: dictionary of obstacles)"""
-        self.AREAS_CHANGED = Event()
-        """the areas have changed (argument: list of areas that have changed, can be None for all areas)"""
+        self.OBSTACLES_CHANGED = Event[dict[str, Obstacle]]()
+        self.AREAS_CHANGED = Event[list[Area] | None]()
 
         rosys.on_startup(self.startup)
         rosys.on_shutdown(self.shutdown)

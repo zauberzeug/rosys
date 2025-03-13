@@ -5,7 +5,7 @@ import inspect
 import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Generic, ParamSpec
 
 from nicegui import background_tasks, context, core
 
@@ -24,13 +24,16 @@ class EventListener:
     line: int
 
 
-class Event:
+P = ParamSpec('P')
+
+
+class Event(Generic[P]):
 
     def __init__(self) -> None:
         self.listeners: list[EventListener] = []
         events.append(self)
 
-    def register(self, callback: Callable) -> Event:
+    def register(self, callback: Callable[P, Any]) -> Event[P]:
         if not callable(callback):
             raise ValueError('non-callable callback')
         if any(l.callback == callback for l in self.listeners):
@@ -42,7 +45,7 @@ class Event:
         self.listeners.append(EventListener(callback=callback, filepath=frame.f_code.co_filename, line=frame.f_lineno))
         return self
 
-    def register_ui(self, callback: Callable) -> Event:
+    def register_ui(self, callback: Callable[P, Any]) -> Event[P]:
         self.register(callback)
         client = context.client
         if not client.shared:
@@ -56,22 +59,22 @@ class Event:
             background_tasks.create(register_disconnect())
         return self
 
-    def unregister(self, callback: Callable) -> None:
+    def unregister(self, callback: Callable[P, Any]) -> None:
         self.listeners[:] = [l for l in self.listeners if l.callback != callback]
 
-    async def call(self, *args) -> None:
+    async def call(self, *args: P.args, **kwargs: P.kwargs) -> None:
         """Fires event and waits async until all registered listeners are completed"""
         for listener in self.listeners:
             try:
-                await invoke(listener.callback, *args)
+                await invoke(listener.callback, *args, **kwargs)
             except Exception:
                 log.exception('could not call listener=%s', listener)
 
-    def emit(self, *args) -> None:
+    def emit(self, *args: P.args, **kwargs: P.kwargs) -> None:
         """Fires event without waiting for the result."""
         for listener in self.listeners:
             try:
-                result = listener.callback(*args)
+                result = listener.callback(*args, **kwargs)
                 if isinstance(result, Awaitable):
                     if core.loop and core.loop.is_running():
                         name = f'{listener.filepath}:{listener.line}'
@@ -85,7 +88,7 @@ class Event:
         """Waits for an event to be emitted and returns its arguments."""
         future: asyncio.Future[Any] = asyncio.Future()
 
-        def callback(*args):
+        def callback(*args: P.args, **kwargs: P.kwargs) -> None:  # pylint: disable=unused-argument
             if not future.done():
                 future.set_result(args[0] if len(args) == 1 else args if args else None)
 

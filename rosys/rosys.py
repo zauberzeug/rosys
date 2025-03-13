@@ -42,7 +42,7 @@ class Notification:
     message: str
 
 
-NEW_NOTIFICATION = event.Event()
+NEW_NOTIFICATION = event.Event[str]()
 """notify the user (string argument: message)"""
 
 
