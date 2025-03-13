@@ -21,7 +21,7 @@ class KeyboardControl:
                  default_speed: float = 2.0,
                  connection_timeout: float = 1.0,
                  check_connection_interval: float = 1.0) -> None:
-        self.CONNECTION_INTERRUPTED = Event()
+        self.CONNECTION_INTERRUPTED = Event[[]]()
         """the keyboard control has lost connection to the browser."""
 
         self.steerer = steerer
