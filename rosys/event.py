@@ -88,7 +88,7 @@ class Event(Generic[P]):
         """Waits for an event to be emitted and returns its arguments."""
         future: asyncio.Future[Any] = asyncio.Future()
 
-        def callback(*args: P.args, **kwargs: P.kwargs) -> None:
+        def callback(*args: P.args, **kwargs: P.kwargs) -> None:  # pylint: disable=unused-argument
             if not future.done():
                 future.set_result(args[0] if len(args) == 1 else args if args else None)
 
