@@ -467,7 +467,7 @@ class Calibration:
     @deprecated_function(remove_in_version='0.27.0')
     def undistort_array(self, image_array: np.ndarray, crop: bool = False) -> np.ndarray:
         """
-        .. deprecated:: 
+        ### deprecated
             This funciton has been integrated into `undistort_image` and will be removed in Rosys `0.27.0`.
 
         Undistort an image represented as a numpy array.
