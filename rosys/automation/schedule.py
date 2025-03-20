@@ -54,7 +54,7 @@ class Schedule(persistence.PersistentModule):
 
         self.log = logging.getLogger('rosys.schedule')
 
-        self.SCHEDULE_CHANGED = Event()
+        self.SCHEDULE_CHANGED = Event[[]]()
         """the schedule has changed"""
 
         self.automator = automator

@@ -17,9 +17,9 @@ class EStop(Module, abc.ABC):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.ESTOP_TRIGGERED = Event()
+        self.ESTOP_TRIGGERED = Event[[]]()
         """the e-stop was triggered"""
-        self.ESTOP_RELEASED = Event()
+        self.ESTOP_RELEASED = Event[[]]()
         """the e-stop was released"""
         self.active: bool = False
         self.is_soft_estop_active: bool = False

@@ -41,7 +41,7 @@ class AreaManipulation:
         self.area_color = 'green'
         self.translator: Translator = rosys.translator or Translator()
 
-        self.MODE_CHANGED = Event()
+        self.MODE_CHANGED = Event[AreaManipulationMode]()
         """the mode has changed (argument: new mode)"""
 
     def create_ui(self) -> ui.row:
