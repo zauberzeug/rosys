@@ -7,6 +7,7 @@ from .point3d import Point3d
 from .polygon import Polygon
 from .pose import Pose, PoseStep
 from .pose3d import Frame3d, Pose3d
+from .pose3d import Frame3dSceneObject as frame_3d_object
 from .prism import Prism
 from .rectangle import Rectangle
 from .rotation import Rotation
@@ -33,4 +34,5 @@ __all__ = [
     'Rotation',
     'Spline',
     'Velocity',
+    'frame_3d_object',
 ]
