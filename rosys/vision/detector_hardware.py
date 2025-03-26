@@ -102,6 +102,7 @@ class DetectorHardware(Detector):
                 detections_dict['segmentation_detections'] = detections_dict.pop('segmentations')
                 data_dict['detections'] = detections_dict
             data_dict['source'] = source
+            data_dict['tags'] = tags
             data_dict['creation_date'] = _creation_date_to_isoformat(creation_date)
             await self.sio.emit('upload', data_dict)
 
