@@ -7,7 +7,14 @@ import socketio.exceptions
 
 from .. import persistence, rosys
 from ..helpers import LazyWorker
-from .detections import BoxDetection, Category, Detections, PointDetection, SegmentationDetection
+from .detections import (
+    BoxDetection,
+    Category,
+    ClassificationDetection,
+    Detections,
+    PointDetection,
+    SegmentationDetection,
+)
 from .detector import Autoupload, Detector, DetectorException, DetectorInfo, ModelVersioningInfo
 from .image import Image
 
@@ -170,6 +177,8 @@ class DetectorHardware(Detector):
                 points=[persistence.from_dict(PointDetection, d) for d in response.get('point_detections', [])],
                 segmentations=[persistence.from_dict(SegmentationDetection, d)
                                for d in response.get('segmentation_detections', [])],
+                classifications=[persistence.from_dict(ClassificationDetection, d)
+                                 for d in response.get('classification_detections', [])],
             )
         except Exception as e:
             raise DetectorException('Failed to parse detections') from e
