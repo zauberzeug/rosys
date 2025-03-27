@@ -77,17 +77,34 @@ class Image:
 
     @classmethod
     def from_pil(cls, pil_image: PIL.Image.Image, *, camera_id: str = 'from_pil', time: float | None = None) -> Self:
+        """
+        Create an Image from a PIL Image. This runs a JPEG encode.
+        """
         bytesio = io.BytesIO()
         pil_image.save(bytesio, format='jpeg')
         size = ImageSize(width=pil_image.width, height=pil_image.height)
         return cls(camera_id=camera_id, size=size, time=time or rosys_time(), data=bytesio.getvalue())
 
+    @classmethod
+    def from_array(cls, array: np.ndarray, *, camera_id: str | None = None, time: float | None = None) -> Self:
+        """
+        Create an Image from a numpy array. This runs a JPEG encode.
+        """
+        _, encoded_image = cv2.imencode('.jpg', array)
+        return cls(camera_id=camera_id, size=ImageSize(width=array.shape[1], height=array.shape[0]), time=time, data=encoded_image.tobytes())
+
     def to_array(self) -> np.ndarray:
+        """
+        Convert the Image to a numpy array. This runs a JPEG decode.
+        """
         if self.data is None:
             raise ValueError('Image data is None')
 
         return cv2.imdecode(np.frombuffer(self.data, dtype=np.uint8), cv2.IMREAD_COLOR)
 
     def to_pil(self) -> PIL.Image.Image:
+        """
+        Convert the Image to a PIL Image. This runs a JPEG decode.
+        """
         assert self.data is not None
         return PIL.Image.open(io.BytesIO(self.data))
