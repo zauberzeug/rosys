@@ -36,6 +36,6 @@ def test_image_pil_conversion():
 
 
 def test_image_without_data():
-    img = Image(camera_id="test_cam", time=123.45, size=ImageSize(width=100, height=100))
-    with pytest.raises(ValueError, match="Image data is None"):
+    img = Image(camera_id='test_cam', time=123.45, size=ImageSize(width=100, height=100))
+    with pytest.raises(ValueError, match='Image data is None'):
         img.to_array()
