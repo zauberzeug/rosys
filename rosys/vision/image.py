@@ -78,7 +78,7 @@ class Image:
     @classmethod
     def from_pil(cls, pil_image: PIL.Image.Image, *, camera_id: str = 'from_pil', time: float | None = None) -> Self:
         bytesio = io.BytesIO()
-        pil_image.save(bytesio, format="jpeg")
+        pil_image.save(bytesio, format='jpeg')
         size = ImageSize(width=pil_image.width, height=pil_image.height)
         return cls(camera_id=camera_id, size=size, time=time or rosys_time(), data=bytesio.getvalue())
 
