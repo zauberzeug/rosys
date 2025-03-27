@@ -86,12 +86,12 @@ class Image:
         return cls(camera_id=camera_id, size=size, time=time or rosys_time(), data=bytesio.getvalue())
 
     @classmethod
-    def from_array(cls, array: np.ndarray, *, camera_id: str | None = None, time: float | None = None) -> Self:
+    def from_array(cls, array: np.ndarray, *, camera_id: str = 'from_array', time: float | None = None) -> Self:
         """
         Create an Image from a numpy array. This runs a JPEG encode.
         """
         _, encoded_image = cv2.imencode('.jpg', array)
-        return cls(camera_id=camera_id, size=ImageSize(width=array.shape[1], height=array.shape[0]), time=time, data=encoded_image.tobytes())
+        return cls(camera_id=camera_id, size=ImageSize(width=array.shape[1], height=array.shape[0]), time=time or rosys_time(), data=encoded_image.tobytes())
 
     def to_array(self) -> np.ndarray:
         """
