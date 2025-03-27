@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import warnings
 from dataclasses import dataclass, field
 from typing import ClassVar
@@ -10,6 +11,7 @@ import PIL.Image
 import PIL.ImageDraw
 from typing_extensions import Self
 
+from ..rosys import time as rosys_time
 from .detections import Detections
 
 
@@ -73,8 +75,19 @@ class Image:
             data=encoded_image.tobytes(),
         )
 
+    @classmethod
+    def from_pil(cls, pil_image: PIL.Image.Image, *, camera_id: str = 'from_pil', time: float | None = None) -> Self:
+        bytesio = io.BytesIO()
+        pil_image.save(bytesio, format="jpeg")
+        size = ImageSize(width=pil_image.width, height=pil_image.height)
+        return cls(camera_id=camera_id, size=size, time=time or rosys_time(), data=bytesio.getvalue())
+
     def to_array(self) -> np.ndarray:
         if self.data is None:
             raise ValueError('Image data is None')
 
         return cv2.imdecode(np.frombuffer(self.data, dtype=np.uint8), cv2.IMREAD_COLOR)
+
+    def to_pil(self) -> PIL.Image.Image:
+        assert self.data is not None
+        return PIL.Image.open(io.BytesIO(self.data))
