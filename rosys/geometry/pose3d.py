@@ -100,9 +100,9 @@ class Frame3d(Pose3d):
 
 
 class Frame3dObject(ui.scene.group):
-    """An object for visualizing the coordinate frame of a 3D object in a NiceGUI scene."""
+    """An object for visualizing the coordinate frame of a 3D pose in a NiceGUI scene."""
 
-    def __init__(self, frame: Object3d, *,
+    def __init__(self, frame: Pose3d, *,
                  name: str = '', show_x: bool = True, show_y: bool = True, show_z: bool = True, length: float = 0.15) -> None:
         super().__init__()
         self.frame = frame
