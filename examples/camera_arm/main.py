@@ -6,7 +6,7 @@ from nicegui import ui
 
 from rosys import config, persistence
 from rosys.driving import Driver, Odometer, Steerer, joystick, keyboard_control
-from rosys.geometry import Frame3d, Pose3d, Rotation
+from rosys.geometry import Frame3d, Pose3d, Rotation, frame_3d_object
 from rosys.hardware import RobotSimulation, WheelsSimulation
 
 wheels = WheelsSimulation()
@@ -88,12 +88,18 @@ def page():
                 scene.box(width=0.1, height=0.1, depth=arm2.length).move(z=arm2.length / 2)
             with scene.group() as camera_box:
                 scene.box(width=0.1, height=0.1, depth=0.1).material(color='SteelBlue')
-            scene.move_camera(y=-2, z=2)
+            scene.move_camera(y=-1, z=1, look_at_z=0.5)
         with ui.column():
             joystick(steerer, size=50, color='blue')
             ui.slider(min=-math.pi / 2, max=math.pi / 2, step=0.01, value=0, on_change=lambda e: arm1.pitch(e.value))
             ui.slider(min=-math.pi / 2, max=math.pi / 2, step=0.01, value=0, on_change=lambda e: arm2.pitch(e.value))
             ui.slider(min=-math.pi / 4, max=math.pi / 4, step=0.01, value=0, on_change=lambda e: cam.pitch(e.value))
+        with ui.scene() as scene2:
+            frame_3d_object(anchor_frame)
+            frame_3d_object(arm1.base, name='Arm 1 Base')
+            frame_3d_object(arm2.base, name='Arm 2 Base')
+            frame_3d_object(cam.pose, name='Camera')
+            scene2.move_camera(y=-1, z=1, look_at_z=0.5)
 
 
 ui.run(title='Camera Arm')

@@ -99,8 +99,11 @@ class Frame3d(Pose3d):
             yield from frame_registry[self.frame_id].ancestors
 
 
-class Frame3dSceneObject(ui.scene.group):
-    def __init__(self, frame: Frame3d | Pose3d, *, name: str = '', show_x: bool = True, show_y: bool = True, show_z: bool = True, length: float = 0.15) -> None:
+class Frame3dObject(ui.scene.group):
+    """An object for visualizing the coordinate frame of a 3D object in a NiceGUI scene."""
+
+    def __init__(self, frame: Object3d, *,
+                 name: str = '', show_x: bool = True, show_y: bool = True, show_z: bool = True, length: float = 0.15) -> None:
         super().__init__()
         self.frame = frame
         with self:
@@ -113,11 +116,9 @@ class Frame3dSceneObject(ui.scene.group):
                 axes.append(('#0000ff', np.pi / 2, 0, 0))
             for color, rx, ry, rz in axes:
                 with ui.scene.group().rotate(rx, ry, rz):
-                    ui.scene.cylinder(0.02 * length, 0.02 * length, 0.8 * length) \
-                        .move(y=0.4 * length).material(color)
-                    ui.scene.cylinder(0, 0.05 * length, 0.2 * length) \
-                        .move(y=0.9 * length).material(color)
-            if name != '':
+                    ui.scene.cylinder(0.02 * length, 0.02 * length, 0.8 * length).move(y=0.4 * length).material(color)
+                    ui.scene.cylinder(0.00 * length, 0.05 * length, 0.2 * length).move(y=0.9 * length).material(color)
+            if name:
                 ui.scene.text(name).move(z=-0.03)
         rosys.on_repeat(self.update, rosys.config.ui_update_interval)
 
