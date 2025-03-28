@@ -99,11 +99,17 @@ class Frame3d(Pose3d):
             yield from frame_registry[self.frame_id].ancestors
 
 
-class Frame3dObject(ui.scene.group):
+class AxesObject(ui.scene.group):
     """An object for visualizing the coordinate frame of a 3D pose in a NiceGUI scene."""
 
-    def __init__(self, frame: Pose3d, *,
-                 name: str = '', show_x: bool = True, show_y: bool = True, show_z: bool = True, length: float = 0.15) -> None:
+    def __init__(self,
+                 frame: Pose3d, *,
+                 name: str = '',
+                 show_x: bool = True,
+                 show_y: bool = True,
+                 show_z: bool = True,
+                 length: float = 1.0,
+                 ) -> None:
         super().__init__()
         self.frame = frame
         with self:
