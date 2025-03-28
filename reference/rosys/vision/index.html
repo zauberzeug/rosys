@@ -641,6 +641,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../geometry/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    geometry
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../hardware/" class="md-nav__link">
         
   
@@ -734,7 +755,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" checked>
         
           
           
@@ -750,14 +771,14 @@
             </a>
             
               
-              <label class="md-nav__link md-nav__link--active" for="__nav_5_8" id="__nav_5_8_label" tabindex="0">
+              <label class="md-nav__link md-nav__link--active" for="__nav_5_9" id="__nav_5_9_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_5_8">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5_9">
             <span class="md-nav__icon md-icon"></span>
             vision
           </label>
@@ -963,15 +984,6 @@
   
 </li>
         
-          <li class="md-nav__item">
-  <a href="#events" class="md-nav__link">
-    <span class="md-ellipsis">
-      Events
-    </span>
-  </a>
-  
-</li>
-        
       </ul>
     </nav>
   
@@ -997,9 +1009,27 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#events_1" class="md-nav__link">
+  <a href="#rosys.vision.CameraProvider.CAMERA_ADDED" class="md-nav__link">
     <span class="md-ellipsis">
-      Events
+      CAMERA_ADDED
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.CameraProvider.CAMERA_REMOVED" class="md-nav__link">
+    <span class="md-ellipsis">
+      CAMERA_REMOVED
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.CameraProvider.NEW_IMAGE" class="md-nav__link">
+    <span class="md-ellipsis">
+      NEW_IMAGE
     </span>
   </a>
   
@@ -1028,6 +1058,15 @@
   
     <nav class="md-nav" aria-label="Detector">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.Detector.NEW_DETECTIONS" class="md-nav__link">
+    <span class="md-ellipsis">
+      NEW_DETECTIONS
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#rosys.vision.Detector.detect" class="md-nav__link">
@@ -1069,15 +1108,6 @@
   <a href="#rosys.vision.Detector.upload" class="md-nav__link">
     <span class="md-ellipsis">
       upload
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#events_2" class="md-nav__link">
-    <span class="md-ellipsis">
-      Events
     </span>
   </a>
   
@@ -1224,6 +1254,7 @@
 
 
 
+
   <div class="doc doc-children">
 
 
@@ -1252,6 +1283,7 @@
     <div class="doc doc-contents ">
 
         <p>Upload mode where every processed image is uploaded</p>
+
     </div>
 
 </div>
@@ -1276,6 +1308,7 @@
     <div class="doc doc-contents ">
 
         <p>Upload mode where no images are auto-uploaded</p>
+
     </div>
 
 </div>
@@ -1300,6 +1333,7 @@
     <div class="doc doc-contents ">
 
         <p>Upload mode for images with novel detections within uncertainty thresholds (default)</p>
+
     </div>
 
 </div>
@@ -1312,22 +1346,7 @@
 
     </div>
 
-</div><h3 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>NEW_DETECTIONS</td>
-<td>detection on an image is completed (argument: image)</td>
-</tr>
-</tbody>
-</table>
-
+</div>
 
 <div class="doc doc-object doc-class">
 
@@ -1350,6 +1369,7 @@
 
         <p>The camera projector computes a grid of projected image points on the ground plane.</p>
 <p>It is mainly used for visualization purposes.</p>
+
 
 
 
@@ -1407,6 +1427,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
 
 
+
   <div class="doc doc-children">
 
 
@@ -1414,6 +1435,78 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.vision.CameraProvider.CAMERA_ADDED" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">CAMERA_ADDED</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.vision.CameraProvider.CAMERA_ADDED" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">CAMERA_ADDED</span> <span class="o">=</span> <span class="n">Event</span><span class="p">[</span><span class="n">Camera</span><span class="p">]()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>a new camera has been added (argument: camera)</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.vision.CameraProvider.CAMERA_REMOVED" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">CAMERA_REMOVED</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.vision.CameraProvider.CAMERA_REMOVED" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">CAMERA_REMOVED</span> <span class="o">=</span> <span class="n">Event</span><span class="p">[</span><span class="nb">str</span><span class="p">]()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>a camera has been removed (argument: camera id)</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.vision.CameraProvider.NEW_IMAGE" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">NEW_IMAGE</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.vision.CameraProvider.NEW_IMAGE" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">NEW_IMAGE</span> <span class="o">=</span> <span class="n">Event</span><span class="p">[</span><span class="n">Image</span><span class="p">]()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>a new image is available from any camera (argument: image)</p>
+
+    </div>
+
+</div>
 
 
 
@@ -1423,30 +1516,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
     </div>
 
-</div><h3 id="events_1">Events<a class="headerlink" href="#events_1" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>CAMERA_ADDED</td>
-<td>a new camera has been added (argument: camera)</td>
-</tr>
-<tr>
-<td>CAMERA_REMOVED</td>
-<td>a camera has been removed (argument: camera id)</td>
-</tr>
-<tr>
-<td>NEW_IMAGE</td>
-<td>a new image is available (argument: image)</td>
-</tr>
-</tbody>
-</table>
-
+</div>
 
 <div class="doc doc-object doc-class">
 
@@ -1466,6 +1536,7 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
 
         <p>A generalized interface for adjusting camera parameters like exposure, brightness or fps.</p>
+
 
 
 
@@ -1522,6 +1593,7 @@ like the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Lear
 
 
 
+
   <div class="doc doc-children">
 
 
@@ -1529,6 +1601,30 @@ like the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Lear
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.vision.Detector.NEW_DETECTIONS" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">NEW_DETECTIONS</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.vision.Detector.NEW_DETECTIONS" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">NEW_DETECTIONS</span> <span class="o">=</span> <span class="n">Event</span><span class="p">[</span><span class="n">Image</span><span class="p">]()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>detection on an image is completed (argument: image)</p>
+
+    </div>
+
+</div>
 
 
 
@@ -1567,6 +1663,7 @@ In this case this method returns <code>None</code>.</p>
 <p>:return: the detections found in the image.
 :raises DetectorException: if the detection fails.</p>
 
+
     </div>
 
 </div>
@@ -1593,6 +1690,7 @@ In this case this method returns <code>None</code>.</p>
 <p>:return: information about the detector.
 :raises DetectorException: if the about information cannot be retrieved.</p>
 
+
     </div>
 
 </div>
@@ -1618,6 +1716,7 @@ In this case this method returns <code>None</code>.</p>
         <p>Retrieve information about the model version and versioning mode.</p>
 <p>:return: the information about the model versioning as data class.
 :raises DetectorException: if the detector is not connected or the information cannot be retrieved.</p>
+
 
     </div>
 
@@ -1648,6 +1747,7 @@ In this case this method returns <code>None</code>.</p>
 Set to "pause" to stop automatic updates and keep the current model version.
 Set to a version number (e.g. "1.2") to use a specific version.</p>
 <p>:raises DetectorException: if the version control mode is not valid or the version could not be set.</p>
+
 
     </div>
 
@@ -1682,6 +1782,7 @@ Set to a version number (e.g. "1.2") to use a specific version.</p>
 If the image has detections, they are also uploaded.</p>
 <p>:raises DetectorException: if the upload fails.</p>
 
+
     </div>
 
 </div>
@@ -1692,22 +1793,7 @@ If the image has detections, they are also uploaded.</p>
 
     </div>
 
-</div><h3 id="events_2">Events<a class="headerlink" href="#events_2" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>NEW_DETECTIONS</td>
-<td>detection on an image is completed (argument: image)</td>
-</tr>
-</tbody>
-</table>
-
+</div>
 
 <div class="doc doc-object doc-class">
 
@@ -1735,6 +1821,7 @@ If the image has detections, they are also uploaded.</p>
 <p>It automatically connects and reconnects, submits and receives detections and sends images
 that should be uploaded to the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Learning Loop</a>.</p>
 <p>Note: Images must be smaller than <code>MAX_IMAGE_SIZE</code> bytes (default: 10 MB).</p>
+
 
 
 
@@ -1773,6 +1860,7 @@ that should be uploaded to the <a href="https://zauberzeug.com/products/learning
 
         <p>Trigger a soft reload of the detector.</p>
 <p>:raises DetectorException: if the communication fails.</p>
+
 
     </div>
 
@@ -1824,6 +1912,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
 
 
+
   <div class="doc doc-children">
 
 
@@ -1861,6 +1950,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
         <p>A multi-camera provider combines multiple camera providers into one.</p>
 <p>This is useful if another module requires a single camera provider but the robot has multiple camera sources like USB and WiFi cameras.</p>
+
 
 
 
@@ -1922,6 +2012,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
 
 
+
   <div class="doc doc-children">
 
 
@@ -1972,6 +2063,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
 
 
+
   <div class="doc doc-children">
 
 
@@ -2001,6 +2093,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
         <p>Simulated device discovery by returning all camera's IDs.</p>
 <p>If simulate_device_failure is set, disconnected cameras are returned with a fixed probability.</p>
+
 
     </div>
 
@@ -2034,6 +2127,7 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
         <p>This module collects and provides real USB cameras.</p>
 <p>Camera devices are discovered through video4linux (v4l) and accessed with openCV.
 Therefore the program v4l2ctl and openCV (including python bindings) must be available.</p>
+
 
 
 
@@ -2089,6 +2183,7 @@ Therefore the program v4l2ctl and openCV (including python bindings) must be ava
 <p>It requires a camera provider as a source of cameras as well as a camera projector to show the current images projected on the ground plane.
 The <code>px_per_m</code> argument can be used to scale the camera frustums.
 With <code>debug=True</code> camera IDs are shown (default: <code>False</code>).</p>
+
 
 
 

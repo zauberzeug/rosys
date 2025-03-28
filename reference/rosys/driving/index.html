@@ -14,7 +14,7 @@
         <link rel="prev" href="../automation/">
       
       
-        <link rel="next" href="../hardware/">
+        <link rel="next" href="../geometry/">
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
@@ -741,9 +741,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#events" class="md-nav__link">
+  <a href="#rosys.driving.Odometer.PREDICTION_UPDATED" class="md-nav__link">
     <span class="md-ellipsis">
-      Events
+      PREDICTION_UPDATED
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.driving.Odometer.WHEELS_TURNED" class="md-nav__link">
+    <span class="md-ellipsis">
+      WHEELS_TURNED
     </span>
   </a>
   
@@ -765,9 +774,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#events_1" class="md-nav__link">
+  <a href="#rosys.driving.Steerer.STEERING_STARTED" class="md-nav__link">
     <span class="md-ellipsis">
-      Events
+      STEERING_STARTED
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.driving.Steerer.STEERING_STOPPED" class="md-nav__link">
+    <span class="md-ellipsis">
+      STEERING_STOPPED
     </span>
   </a>
   
@@ -822,9 +840,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#events_2" class="md-nav__link">
+  <a href="#rosys.driving.keyboard_control.CONNECTION_INTERRUPTED" class="md-nav__link">
     <span class="md-ellipsis">
-      Events
+      CONNECTION_INTERRUPTED
     </span>
   </a>
   
@@ -863,6 +881,27 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../geometry/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    geometry
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -966,7 +1005,7 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" >
         
           
           
@@ -982,14 +1021,14 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_5_8" id="__nav_5_8_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_5_9" id="__nav_5_9_label" tabindex="0">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_8_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_5_8">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_9">
             <span class="md-nav__icon md-icon"></span>
             vision
           </label>
@@ -1238,9 +1277,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#events" class="md-nav__link">
+  <a href="#rosys.driving.Odometer.PREDICTION_UPDATED" class="md-nav__link">
     <span class="md-ellipsis">
-      Events
+      PREDICTION_UPDATED
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.driving.Odometer.WHEELS_TURNED" class="md-nav__link">
+    <span class="md-ellipsis">
+      WHEELS_TURNED
     </span>
   </a>
   
@@ -1262,9 +1310,18 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#events_1" class="md-nav__link">
+  <a href="#rosys.driving.Steerer.STEERING_STARTED" class="md-nav__link">
     <span class="md-ellipsis">
-      Events
+      STEERING_STARTED
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.driving.Steerer.STEERING_STOPPED" class="md-nav__link">
+    <span class="md-ellipsis">
+      STEERING_STOPPED
     </span>
   </a>
   
@@ -1319,9 +1376,9 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#events_2" class="md-nav__link">
+  <a href="#rosys.driving.keyboard_control.CONNECTION_INTERRUPTED" class="md-nav__link">
     <span class="md-ellipsis">
-      Events
+      CONNECTION_INTERRUPTED
     </span>
   </a>
   
@@ -1401,6 +1458,7 @@ Its <code>parameters</code> allow controlling the specific drive behavior.</p>
 
 
 
+
   <div class="doc doc-children">
 
 
@@ -1428,6 +1486,7 @@ Its <code>parameters</code> allow controlling the specific drive behavior.</p>
     <div class="doc doc-contents ">
 
         <p>The current prediction of the robot's pose based on the odometer.</p>
+
     </div>
 
 </div>
@@ -1448,6 +1507,7 @@ Its <code>parameters</code> allow controlling the specific drive behavior.</p>
     <div class="doc doc-contents ">
 
         <p>Abort the current drive routine.</p>
+
 
     </div>
 
@@ -1485,6 +1545,7 @@ the robot stops driving.</p>
 :param stop_at_end: Whether to stop the robot at the end of the circular path (default: <code>False</code>).
 :raises: DrivingAbortedException: If the driving process is aborted.</p>
 
+
     </div>
 
 </div>
@@ -1516,6 +1577,7 @@ the robot stops driving.</p>
 :param throttle_at_end: Whether to throttle down when approaching the end of the path (default: <code>True</code>).
 :param stop_at_end: Whether to stop at the end of the path (default: <code>True</code>).
 :raises: DrivingAbortedException: If the driving process is aborted.</p>
+
 
     </div>
 
@@ -1551,6 +1613,7 @@ the robot stops driving.</p>
 :param stop_at_end: Whether to stop at the end of the spline (default: <code>True</code>).
 :raises DrivingAbortedException: If the driving process is aborted.</p>
 
+
     </div>
 
 </div>
@@ -1584,6 +1647,7 @@ the robot stops driving.</p>
 :param throttle_at_end: Whether to throttle down when approaching the target point (default: <code>True</code>).
 :param stop_at_end: Whether to stop at the target point (default: <code>True</code>).
 :raises: DrivingAbortedException: If the driving process is aborted.</p>
+
 
     </div>
 
@@ -1625,6 +1689,7 @@ Given the history of previously received velocities, it can update its predictio
 
 
 
+
   <div class="doc doc-children">
 
 
@@ -1632,6 +1697,54 @@ Given the history of previously received velocities, it can update its predictio
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.driving.Odometer.PREDICTION_UPDATED" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">PREDICTION_UPDATED</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.driving.Odometer.PREDICTION_UPDATED" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">PREDICTION_UPDATED</span> <span class="o">=</span> <span class="n">Event</span><span class="p">[[]]()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>the pose prediction has been updated</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.driving.Odometer.WHEELS_TURNED" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">WHEELS_TURNED</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.driving.Odometer.WHEELS_TURNED" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">WHEELS_TURNED</span> <span class="o">=</span> <span class="n">Event</span><span class="p">[[]]()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>the wheels have turned with non-zero velocity</p>
+
+    </div>
+
+</div>
 
 
 
@@ -1641,26 +1754,7 @@ Given the history of previously received velocities, it can update its predictio
 
     </div>
 
-</div><h3 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>WHEELS_TURNED</td>
-<td>the wheels have turned with non-zero velocity</td>
-</tr>
-<tr>
-<td>PREDICTION_UPDATED</td>
-<td>the pose prediction has been updated</td>
-</tr>
-</tbody>
-</table>
-
+</div>
 
 <div class="doc doc-object doc-class">
 
@@ -1689,6 +1783,7 @@ Changing the steering state emits events that can be used to react to manual use
 
 
 
+
   <div class="doc doc-children">
 
 
@@ -1696,6 +1791,54 @@ Changing the steering state emits events that can be used to react to manual use
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.driving.Steerer.STEERING_STARTED" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">STEERING_STARTED</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.driving.Steerer.STEERING_STARTED" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">STEERING_STARTED</span> <span class="o">=</span> <span class="n">Event</span><span class="p">[[]]()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>steering has started</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.driving.Steerer.STEERING_STOPPED" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">STEERING_STOPPED</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.driving.Steerer.STEERING_STOPPED" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">STEERING_STOPPED</span> <span class="o">=</span> <span class="n">Event</span><span class="p">[[]]()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>steering has stopped</p>
+
+    </div>
+
+</div>
 
 
 
@@ -1705,26 +1848,7 @@ Changing the steering state emits events that can be used to react to manual use
 
     </div>
 
-</div><h3 id="events_1">Events<a class="headerlink" href="#events_1" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>STEERING_STARTED</td>
-<td>steering has started</td>
-</tr>
-<tr>
-<td>STEERING_STOPPED</td>
-<td>steering has stopped</td>
-</tr>
-</tbody>
-</table>
-
+</div>
 
 <div class="doc doc-object doc-module">
 
@@ -1737,6 +1861,7 @@ Changing the steering state emits events that can be used to react to manual use
 <a href="#rosys.driving.driver_object" class="headerlink" title="Permanent link">&para;</a></h2>
 
     <div class="doc doc-contents first">
+
 
 
 
@@ -1775,6 +1900,7 @@ Changing the steering state emits events that can be used to react to manual use
 <p>The current pose is taken from a given odometer.
 An optional driver module shows debugging information about a current path-following process.
 The <code>debug</code> argument can be set to show a wireframe instead of a closed polygon.</p>
+
 
 
 
@@ -1838,6 +1964,7 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
 
 
 
+
   <div class="doc doc-children">
 
 
@@ -1889,6 +2016,7 @@ You can change the speed with the number keys 1 to 9 and the initial speed via t
 
 
 
+
   <div class="doc doc-children">
 
 
@@ -1896,6 +2024,30 @@ You can change the speed with the number keys 1 to 9 and the initial speed via t
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.driving.keyboard_control.CONNECTION_INTERRUPTED" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">CONNECTION_INTERRUPTED</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.driving.keyboard_control.CONNECTION_INTERRUPTED" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">CONNECTION_INTERRUPTED</span> <span class="o">=</span> <span class="n">Event</span><span class="p">[[]]()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>the keyboard control has lost connection to the browser.</p>
+
+    </div>
+
+</div>
 
 
 
@@ -1905,22 +2057,7 @@ You can change the speed with the number keys 1 to 9 and the initial speed via t
 
     </div>
 
-</div><h3 id="events_2">Events<a class="headerlink" href="#events_2" title="Permanent link">&para;</a></h3>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>CONNECTION_INTERRUPTED</td>
-<td>the keyboard control has lost connection to the browser.</td>
-</tr>
-</tbody>
-</table>
-
+</div>
 
 <div class="doc doc-object doc-class">
 
@@ -1944,6 +2081,7 @@ You can change the speed with the number keys 1 to 9 and the initial speed via t
         <p>The RobotObject UI element displays the robot with its given shape in a 3D scene.</p>
 <p>The current pose is taken from a given odometer.
 The <code>debug</code> argument can be set to show a wireframe instead of a closed polygon.</p>
+
 
 
 
@@ -1990,6 +2128,7 @@ The <code>debug</code> argument can be set to show a wireframe instead of a clos
 
         <p>Sets an STL to be displayed as the robot.</p>
 <p>The file can be served from a local directory with <a href="https://nicegui.io/reference#static_files">app.add_static_files(url, path)</a>.</p>
+
 
     </div>
 

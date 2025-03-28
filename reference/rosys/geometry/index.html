@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://rosys.io/reference/rosys/pathplanning/">
+        <link rel="canonical" href="https://rosys.io/reference/rosys/geometry/">
       
       
-        <link rel="prev" href="../helpers/">
+        <link rel="prev" href="../driving/">
       
       
-        <link rel="next" href="../system/">
+        <link rel="next" href="../hardware/">
       
       
       <link rel="icon" href="../../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>pathplanning - RoSys</title>
+        <title>geometry - RoSys</title>
       
     
     
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#rosys.pathplanning.PathPlanner" class="md-skip">
+        <a href="#rosys.geometry.axes_object" class="md-skip">
           Skip to content
         </a>
       
@@ -104,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              pathplanning
+              geometry
             
           </span>
         </div>
@@ -638,10 +638,28 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../geometry/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    geometry
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -650,6 +668,33 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.geometry.axes_object" class="md-nav__link">
+    <span class="md-ellipsis">
+      axes_object
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -701,28 +746,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    pathplanning
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../pathplanning/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -731,33 +758,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#rosys.pathplanning.PathPlanner" class="md-nav__link">
-    <span class="md-ellipsis">
-      PathPlanner
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -991,9 +991,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#rosys.pathplanning.PathPlanner" class="md-nav__link">
+  <a href="#rosys.geometry.axes_object" class="md-nav__link">
     <span class="md-ellipsis">
-      PathPlanner
+      axes_object
     </span>
   </a>
   
@@ -1014,28 +1014,34 @@
                   
 
 
-  <h1>pathplanning</h1>
+  <h1>geometry</h1>
 
 <div class="doc doc-object doc-class">
 
 
 
-<h2 id="rosys.pathplanning.PathPlanner" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">PathPlanner</span>
+<h2 id="rosys.geometry.axes_object" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">axes_object</span>
 
 
-<a href="#rosys.pathplanning.PathPlanner" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">PathPlanner</span><span class="p">(</span><span class="n">robot_shape</span><span class="p">:</span> <span class="n">Prism</span><span class="p">)</span>
+<a href="#rosys.geometry.axes_object" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">axes_object</span><span class="p">(</span>
+    <span class="n">frame</span><span class="p">:</span> <span class="n">Pose3d</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+    <span class="n">show_x</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">show_y</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">show_z</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">length</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="rosys.persistence.PersistentModule">PersistentModule</span></code></p>
+              Bases: <code><span title="nicegui.ui.scene.group">group</span></code></p>
 
 
-        <p>This module runs a path planning algorithm in a separate process.</p>
-<p>If given, the algorithm respects the given robot shape as well as a dictionary of accessible areas and a dictionary of obstacles, both of which a backed up and restored automatically.
-The path planner can search paths, check if a spline interferes with obstacles and get the distance of a pose to any obstacle.</p>
+        <p>An object for visualizing the coordinate frame of a 3D pose in a NiceGUI scene.</p>
 
 
 
