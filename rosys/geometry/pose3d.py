@@ -4,8 +4,10 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 
 import numpy as np
+from nicegui import ui
 from typing_extensions import Self
 
+from .. import rosys
 from .frame3d_registry import frame_registry
 from .object3d import Object3d
 from .point3d import Point3d
@@ -95,3 +97,38 @@ class Frame3d(Pose3d):
         yield self
         if self.frame_id:
             yield from frame_registry[self.frame_id].ancestors
+
+
+class AxesObject(ui.scene.group):
+    """An object for visualizing the coordinate frame of a 3D pose in a NiceGUI scene."""
+
+    def __init__(self,
+                 frame: Pose3d, *,
+                 name: str = '',
+                 show_x: bool = True,
+                 show_y: bool = True,
+                 show_z: bool = True,
+                 length: float = 1.0,
+                 ) -> None:
+        super().__init__()
+        self.frame = frame
+        with self:
+            axes: list[tuple[str, float, float, float]] = []
+            if show_x:
+                axes.append(('#ff0000', 0, 0, -np.pi / 2))
+            if show_y:
+                axes.append(('#00ff00', 0, 0, 0))
+            if show_z:
+                axes.append(('#0000ff', np.pi / 2, 0, 0))
+            for color, rx, ry, rz in axes:
+                with ui.scene.group().rotate(rx, ry, rz):
+                    ui.scene.cylinder(0.02 * length, 0.02 * length, 0.8 * length).move(y=0.4 * length).material(color)
+                    ui.scene.cylinder(0.00 * length, 0.05 * length, 0.2 * length).move(y=0.9 * length).material(color)
+            if name:
+                ui.scene.text(name).move(z=-0.03)
+        rosys.on_repeat(self.update, rosys.config.ui_update_interval)
+
+    def update(self) -> None:
+        resolved_pose = self.frame.resolve()
+        self.move(*resolved_pose.translation)
+        self.rotate(*resolved_pose.rotation.euler)
