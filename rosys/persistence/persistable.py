@@ -59,8 +59,10 @@ class Persistable(abc.ABC):
             app.timer(backup_check_interval, self._backup_if_requested)
         if backup_interval:
             app.timer(backup_interval, self.backup)
-        if backup_check_interval or backup_interval:
-            app.on_shutdown(self.sync_backup)  # TODO: only if requested?
+        if backup_interval:
+            app.on_shutdown(self.sync_backup)
+        elif backup_check_interval:
+            app.on_shutdown(self._sync_backup_if_requested)
         return self
 
     def request_backup(self) -> None:
@@ -73,6 +75,10 @@ class Persistable(abc.ABC):
     async def _backup_if_requested(self) -> None:
         if self._needs_backup:
             await self.backup()
+
+    def _sync_backup_if_requested(self) -> None:
+        if self._needs_backup:
+            self.sync_backup()
 
     async def backup(self) -> None:
         """Backup the object.
