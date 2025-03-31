@@ -120,13 +120,6 @@ class Persistable(abc.ABC):
             return
         self.restore_from_dict(json.loads(self._filepath.read_text()))
 
-    def delete_persistence(self) -> None:
-        """Delete the persistence file."""
-        if self._filepath is None:
-            raise RuntimeError('Delete persistence failed: This object is not persistent.')
-        self._filepath.unlink()
-        self._filepath = None
-
     @abc.abstractmethod
     def backup_to_dict(self) -> dict[str, Any]:
         """Convert the object to a dictionary."""
