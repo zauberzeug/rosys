@@ -18,9 +18,9 @@ class Persistable(abc.ABC):
     def persistent(self, *,
                    key: str | None = None,
                    path: str | Path | None = None,
-                   restore: bool = True,  # TODO: which default?
-                   backup_check_interval: float | None = 10.0,  # TODO: which default?
-                   backup_interval: float | None = None,  # TODO: which default?
+                   restore: bool = True,
+                   backup_check_interval: float | None = 10.0,
+                   backup_interval: float | None = None,
                    ) -> Self:
         """Make this object persistent.
 
