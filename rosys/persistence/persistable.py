@@ -1,10 +1,13 @@
 import abc
 import json
+import re
 from pathlib import Path
 from typing import Any, ClassVar
 
 from nicegui import app, run
 from typing_extensions import Self
+
+KEY_PATTERN = re.compile(r'^[a-zA-Z0-9_-]+$')
 
 
 class Persistable(abc.ABC):
@@ -28,7 +31,7 @@ class Persistable(abc.ABC):
         If ``backup_check_interval`` is not ``None`` or 0.0, the object will be backed up at the given interval _if a backup has been requested_.
         If ``backup_interval`` is not ``None`` or 0.0, the object will be backed up at the given interval _independently of any backup requests_.
 
-        :param key: The key to use for the persistence file (default: module name)
+        :param key: The key to use for the persistence file (letters, digits, dashes and underscores; default: module name)
         :param path: The path to the persistence file (default: "~/.rosys")
         :param restore: Whether to restore the object from the persistence file (default: True)
         :param backup_check_interval: The interval to check for backups (default: 10.0 seconds)
@@ -36,10 +39,17 @@ class Persistable(abc.ABC):
         """
         if self._filepath is not None:
             raise RuntimeError('This object is already persistent')
-        key = key or self.__module__
+
+        if key is None:
+            key = self.__module__
+        if not key:
+            raise ValueError('Key is empty')
+        if not KEY_PATTERN.match(key):
+            raise ValueError(f'Key "{key}" contains invalid characters')
         if key in self.used_keys:
             raise ValueError(f'Key "{key}" is already used by another persistent object')
         self.used_keys.append(key)
+
         self._filepath = Path(path or '~/.rosys').expanduser() / f'{key}.json'
         if restore:
             self.sync_restore()
