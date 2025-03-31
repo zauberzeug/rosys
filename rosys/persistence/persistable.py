@@ -1,5 +1,6 @@
 import abc
 import json
+import logging
 import re
 from pathlib import Path
 from typing import Any, ClassVar
@@ -15,6 +16,7 @@ class Persistable(abc.ABC):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self.log = logging.getLogger('rosys.persistable')
         self._needs_backup = False
         self._filepath: Path | None = None
 
@@ -108,7 +110,8 @@ class Persistable(abc.ABC):
         if self._filepath is None:
             raise RuntimeError('Restore failed: This object is not persistent.')
         if not self._filepath.exists():
-            raise FileNotFoundError(f'Restore failed: Persistence file "{self._filepath}" not found')
+            self.log.warning('Restore failed: File "%s" not found', self._filepath)
+            return
         self.restore_from_dict(json.loads(self._filepath.read_text()))
 
     def delete_persistence(self) -> None:
