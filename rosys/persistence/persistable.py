@@ -5,8 +5,10 @@ import re
 from pathlib import Path
 from typing import Any, ClassVar
 
-from nicegui import app, run
+from nicegui import run
 from typing_extensions import Self
+
+from .. import rosys
 
 KEY_PATTERN = re.compile(r'^[a-zA-Z0-9_-]+$')
 
@@ -56,13 +58,13 @@ class Persistable(abc.ABC):
         if restore:
             self.sync_restore()
         if backup_check_interval:
-            app.timer(backup_check_interval, self._backup_if_requested)
+            rosys.on_repeat(self._backup_if_requested, backup_check_interval)
         if backup_interval:
-            app.timer(backup_interval, self.backup)
+            rosys.on_repeat(self.backup, backup_interval)
         if backup_interval:
-            app.on_shutdown(self.sync_backup)
+            rosys.on_shutdown(self.sync_backup)
         elif backup_check_interval:
-            app.on_shutdown(self._sync_backup_if_requested)
+            rosys.on_shutdown(self._sync_backup_if_requested)
         return self
 
     def request_backup(self) -> None:
