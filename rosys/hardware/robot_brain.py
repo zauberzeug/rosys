@@ -127,7 +127,7 @@ class RobotBrain:
                     ui.menu_item('Configure', on_click=self.configure) \
                         .tooltip('Configure the microcontroller with the Lizard startup file')
                     ui.menu_item('Download Config', on_click=lambda: ui.download(self.lizard_code.encode('utf-8'), 'config.liz')) \
-                        .tooltip('Download the lizard config file')
+                        .tooltip('Download the Lizard config file')
                     ui.menu_item('Restart', on_click=self.restart) \
                         .tooltip('Restart the microcontroller')
                 ui.button(on_click=menu.open).props('icon=more_vert flat round')
