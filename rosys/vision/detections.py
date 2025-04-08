@@ -54,8 +54,7 @@ class BoxDetection(Detection):
     def __str__(self) -> str:
         return f'x:{self.x:.0f} y:{self.y:.0f}, w:{self.width:.0f} h:{self.height:.0f} cat:{self.category_name} conf:{self.confidence:.2f}'
 
-    def to_svg(self, shrink: int = 1) -> str:
-        color = 'red'
+    def to_svg(self, shrink: int = 1, *, color: str = 'red') -> str:
         x = self.x / shrink
         y = self.y / shrink
         return (
@@ -106,8 +105,7 @@ class SegmentationDetection:
     def __str__(self) -> str:
         return f'shape:{self.shape.__str__} cat:{self.category_name} conf:{self.confidence:.2f}'
 
-    def to_svg(self, shrink: int = 1) -> str:
-        color = 'green'
+    def to_svg(self, shrink: int = 1, *, color: str = 'green') -> str:
         d = ' '.join([f"{'L' if i > 0 else 'M'} {p.x/shrink} {p.y/shrink}" for i, p in enumerate(self.shape.points)])
         d += ' Z'
         p0 = self.shape.points[0]
@@ -135,8 +133,7 @@ class PointDetection(Detection):
     def __str__(self) -> str:
         return f'x:{self.x:.0f} y:{self.y:.0f} cat:{self.category_name} conf:{self.confidence:.2f}'
 
-    def to_svg(self, shrink: int = 1) -> str:
-        color = 'red'
+    def to_svg(self, shrink: int = 1, *, color: str = 'red') -> str:
         x = self.x / shrink
         y = self.y / shrink
         return (
