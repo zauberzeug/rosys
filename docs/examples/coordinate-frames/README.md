@@ -6,10 +6,10 @@ The button allows switching the pink box between the blue box's frame and the wo
 Note that the relationship between the pink box and the camera is unaffected by the frame switch.
 
 ```python
-{!src/example_coordinate_frames.py!}
+{! examples/coordinate-frames/main.py !}
 ```
 
-![Coordinate Frames](coordinate_frames.webp){: style="width:80%"}
+![Coordinate Frames](screenshot.webp){: style="width:80%"}
 
 ## Persistence
 

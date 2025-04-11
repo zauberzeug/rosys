@@ -2,11 +2,11 @@
 
 The following example simulates a robot that can be steered using keyboard controls or a joystick via web interface.
 
-```python hl_lines="12-13"
-{!src/example_steering.py !}
+```python hl_lines="14-15"
+{! examples/steering/main.py !}
 ```
 
-![Joystick](steering.png){: style="width:50%"}
+![Joystick](screenshot.png){: style="width:50%"}
 
 Keyboard Control
 : By adding a `KeyboardControl` to the user interface you enable steering the robot with the keyboard.

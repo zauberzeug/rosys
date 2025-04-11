@@ -30,7 +30,7 @@ In the following examples we use Python's logging `dictConfig` for configuration
 To only print RoSys messages at the info level to the console we can use a configuration like this:
 
 ```python hl_lines="33-37"
-{!src/dev_log_config.py !}
+{! development/log_config.py !}
 ```
 
 As you move the joystick, `rosys.steerer` messages will appear on the console:
@@ -63,19 +63,19 @@ Sometimes it is helpful to write intensive logging into a file and only show som
 For this you can add a file `handler`:
 
 ```python hl_lines="8-15"
-{!src/dev_log_file.py [ln:23-38] !}
+{! development/log_file.py [ln:23-38] !}
 ```
 
 Then you can decide for each logger which handlers should be used:
 
 ```python hl_lines="4 9 14 19"
-{!src/dev_log_file.py [ln:38-59] !}
+{! development/log_file.py [ln:38-59] !}
 ```
 
 !!! note
 
     The above file logger writes to `~/.rosys`.
-    For development it is very helpful to have [auto-reloading on file change activated](getting_started.md#start).
+    For development it is very helpful to have [auto-reloading on file change activated](../getting_started/README.md#start).
     Therefore logging should always be stored outside of your project's source directory.
 
 ### Formatting
@@ -83,15 +83,15 @@ Then you can decide for each logger which handlers should be used:
 It is quite useful to see from which file and line number a log entry was triggered.
 To keep the log lines from getting too long, you can create a log filter which computes the relative path:
 
-```python hl_lines="9 15"
-{!src/dev_log_formatting.py [ln:13-31] !}
+```python hl_lines="9 14"
+{! development/log_formatting.py [ln:13-31] !}
 ```
 
 You need to register the filter and apply it in the handler.
 Then you can change the format for the formatter:
 
 ```python hl_lines="2-4 9 17 22"
-{!src/dev_log_formatting.py [ln:41-66] !}
+{! development/log_formatting.py [ln:42-67] !}
 ```
 
 Log output then looks like this:
@@ -115,8 +115,8 @@ Log output then looks like this:
 
 You can add a `profile` decorator to expensive functions and add a profiler button to your UI:
 
-```python hl_lines="7 16"
-{!src/dev_profiling.py !}
+```python hl_lines="8 17"
+{! development/profiling.py !}
 ```
 
 When the button is pressed, the profiler [yappi](https://github.com/sumerc/yappi) will start recording data.
@@ -138,8 +138,8 @@ Line #      Hits         Time  Per Hit   % Time  Line Contents
 RoSys provides a `@track` decorator that you can put above asynchronous functions that are called as part of automations.
 The UI element `track.ui()` will show the stack of functions that are currently awaited.
 
-```python hl_lines="8 13 18 27"
-{!src/dev_track.py !}
+```python hl_lines="9 14 19 28"
+{! development/track.py !}
 ```
 
 ## Continuous Build
