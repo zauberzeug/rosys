@@ -4,18 +4,7 @@ nav:
   - About: "index.md"
   - installation.md
   - getting_started.md
-  - Examples:
-      - examples/steering.md # NOTE: shown when clicking on "Examples" folder
-      - examples/steering.md
-      - examples/click-and-drive.md
-      - examples/play-pause-stop.md
-      - examples/navigation.md
-      - examples/hardware.md
-      - examples/simulation_speed.md
-      - examples/cameras.md
-      - examples/coordinate_frames.md
-      - examples/schedule.md
-      - examples/persistence.md
+  - Examples: examples/
   - Module Reference: reference/
   - development.md
   - troubleshooting.md
@@ -46,7 +35,8 @@ plugins:
   - search
   - gen-files:
       scripts:
-        - docs/generate_reference.py
+        - docs/generate_examples_nav.py
+        - docs/generate_reference_nav.py
   - literate-nav:
       nav_file: SUMMARY.md
   - section-index

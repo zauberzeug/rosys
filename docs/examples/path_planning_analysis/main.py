@@ -25,7 +25,7 @@ def run() -> None:
     if not robot_shape.value or not search_command.value:
         return
 
-    shape: PlannerSearchCommand = eval(robot_shape.value)  # pylint: disable=eval-used
+    shape: list[tuple[float, float]] = eval(robot_shape.value)  # pylint: disable=eval-used
     cmd: PlannerSearchCommand = eval(search_command.value)  # pylint: disable=eval-used
 
     planner = DelaunayPlanner(shape)
