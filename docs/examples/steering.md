@@ -2,7 +2,7 @@
 
 The following example simulates a robot that can be steered using keyboard controls or a joystick via web interface.
 
-```python hl_lines="12-13"
+```python hl_lines="14-15"
 {!src/example_steering.py !}
 ```
 

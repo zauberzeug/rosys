@@ -21,7 +21,7 @@ In the following illustration these points are depicted as spheres: the coordina
 
 ![Navigation Geometry](navigation_geometry.png){: style="width:60%"}
 
-You can display a wire frame version of the robot by passing `debug=true` to the [`robot_object`](../../reference/rosys/driving/#rosys.driving.robot_object).
+You can display a wire frame version of the robot by passing `debug=true` to the [`robot_object`](../reference/rosys/driving.md#rosys.driving.robot_object).
 
 !!! note
 
