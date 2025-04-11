@@ -6,7 +6,7 @@
 python3 -m pip install rosys
 ```
 
-See [Getting Started](getting_started.md) for what to do next.
+See [Getting Started](getting_started/README.md) for what to do next.
 
 Please note that RoSys has been developed for Unix-like systems.
 While it may partially work on Windows, we do not officially support it.
@@ -21,7 +21,7 @@ docker run -it --rm -v `pwd`:/app zauberzeug/rosys
 ```
 
 from the same directory.
-See [Pushing Code to Robot](development.md#pushing-code-to-robot) on how to get your project onto the remote system.
+See [Pushing Code to Robot](development/README.md#pushing-code-to-robot) on how to get your project onto the remote system.
 
 More complex Docker setups benefit from a compose file.
 There are also some specialties needed to start RoSys in different environments (Mac, Linux, NVidia Jetson, ...).

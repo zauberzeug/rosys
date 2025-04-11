@@ -1,12 +1,13 @@
 site_name: RoSys
 site_url: https://rosys.io/
+use_directory_urls: True
 nav:
   - About: "index.md"
   - installation.md
-  - getting_started.md
+  - getting_started/README.md
   - Examples: examples/
   - Module Reference: reference/
-  - development.md
+  - development/README.md
   - troubleshooting.md
 repo_url: https://github.com/zauberzeug/rosys
 edit_uri: edit/main/docs/

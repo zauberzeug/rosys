@@ -1,16 +1,16 @@
 # Getting Started
 
-First [install RoSys](installation.md) with pip or Docker.
+First [install RoSys](../installation.md) with pip or Docker.
 Then create a directory to host your code and put it under version control.
 Name your entry file `main.py` and add the following content:
 
 ```Python
-{!../main.py!}
+{! ../main.py !}
 ```
 
 If you launch the program, your browser will open the url <http://0.0.0.0:8080/> and present a 3d view:
 
-![Screenshot](getting_started_01.png){: style="width:60%"}
+![Screenshot](screenshot.png){: style="width:60%"}
 
 ## Explanation
 
@@ -23,7 +23,7 @@ The individual RoSys modules come in packages `driving`, `geometry`, `hardware` 
 
 In this example we create a `Steerer` which needs an `Odometer`.
 Here we work without real hardware, so two wheels are simulated.
-Please see [Hardware](examples/hardware.md) for an example which can actually be used on a mobile robot.
+Please see [Hardware](../examples/hardware/README.md) for an example which can actually be used on a mobile robot.
 For visualization purposes we also need the approximate robot shape.
 
 ### User Interface

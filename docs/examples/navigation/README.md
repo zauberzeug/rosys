@@ -1,9 +1,9 @@
 # Navigation
 
-This example is similar to [Click-and-drive](click-and-drive.md) but includes a `PathPlanner` to find a path around an obstacle.
+This example is similar to [Click-and-drive](../click-and-drive/README.md) but includes a `PathPlanner` to find a path around an obstacle.
 
 ```python
-{!src/example_navigation.py !}
+{! examples/navigation/main.py !}
 ```
 
 ### Path Following
@@ -19,9 +19,9 @@ There are three parameters:
 
 In the following illustration these points are depicted as spheres: the coordinate center of the robot (blue, small), the hook (blue, large), carrot (orange, small), offset point ahead of the carrot (orange, large).
 
-![Navigation Geometry](navigation_geometry.png){: style="width:60%"}
+![Navigation Geometry](geometry.png){: style="width:60%"}
 
-You can display a wire frame version of the robot by passing `debug=true` to the [`robot_object`](../reference/rosys/driving.md#rosys.driving.robot_object).
+You can display a wire frame version of the robot by passing `debug=true` to the [`robot_object`](../../reference/rosys/driving.md#rosys.driving.robot_object).
 
 !!! note
 

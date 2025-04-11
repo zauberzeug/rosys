@@ -4,7 +4,7 @@ RoSys' `PersistentModule` provides an easy interface to backup and restore parts
 The following example demonstrates a `Model` class that has `value`, which is manipulated with a `ui.slider`.
 
 ```python
-{!src/example_persistence.py !}
+{! examples/persistence/main.py !}
 ```
 
 By deriving from `PersistentModule` and implementing `backup` and `restore`, RoSys will automatically write the value to a file in the directory ~/.rosys/.

@@ -6,11 +6,13 @@ Depending on your environment you can then instantiate the correct implementatio
 
 ## Custom Implementation
 
-For a differential-steering controlled robot, RoSys offers a [`Wheels`](../reference/rosys/hardware.md#rosys.hardware.Wheels) base class plus a [`WheelsSimulation`](../reference/rosys/hardware.md#rosys.hardware.WheelsSimulation).
+For a differential-steering controlled robot, RoSys offers
+a [`Wheels`](../../reference/rosys/hardware.md#rosys.hardware.Wheels) base class plus
+a [`WheelsSimulation`](../../reference/rosys/hardware.md#rosys.hardware.WheelsSimulation).
 The following example illustrates how to implement a `CustomWheelsHardware` module that derives from `Wheels`, reads the currrent velocity regularly and can be steered with linear and angular velocity.
 
 ```python
-{!src/example_hardware.py !}
+{! examples/hardware/custom.py !}
 ```
 
 Depending on your hardware you may need to modify a PWM signal, send commands via CAN bus or serial, use Protobuf over Ethernet or something else.
@@ -27,7 +29,7 @@ You can call `SerialCommunication.is_possible()` to automatically switch between
 The module `WheelsHardware` expects a `RobotBrain`, which controls the `SerialCommunication` with the microcontroller.
 
 ```python
-{!src/example_robot_brain_hardware.py !}
+{! examples/hardware/robot_brain.py !}
 ```
 
 With `communication.debug_ui()` you can add some helpful UI elements for debugging the serial communication.
@@ -35,6 +37,6 @@ Furthermore, with `robot_brain.developer_ui()` you can add UI elements to config
 
 The Lizard configuration for a differential-steering controlled robot with an [ODrive](https://odriverobotics.com/) might look as follows:
 
-```
-{!src/example_hardware_startup.liz !}
+```python
+{! examples/hardware/startup.liz !}
 ```
