@@ -53,7 +53,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         if self.is_connected:
             return
 
-        device = UsbDevice.from_uid(self.id, self._handle_new_image_data)
+        device = await UsbDevice.from_uid(self.id, self._handle_new_image_data)
         if device is None:
             logging.warning('Connecting camera %s: failed', self.id)
             return

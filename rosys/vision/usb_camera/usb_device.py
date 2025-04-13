@@ -6,6 +6,7 @@ from collections.abc import Awaitable, Callable
 
 import cv2
 import numpy as np
+from linuxpy.video.device import Device
 
 from ... import rosys
 from .usb_camera_scanner import device_nodes_from_uid
@@ -40,14 +41,14 @@ class UsbDevice:
         self._has_manual_exposure: bool = False
         self._video_formats: set[str] = set()
         self._image_is_jpg: bool = False
-
-        self.set_video_format()
+        self.log = logging.getLogger('rosys.vision.usb_device')
 
         self._capture_task = rosys.on_repeat(self._capture_image, interval=0.01)
 
     def __del__(self) -> None:
         self._capture.release()
-        self._capture_task.stop()
+        if self._capture_task is not None:
+            self._capture_task.stop()
 
     @property
     def video_formats(self) -> set[str]:
@@ -58,29 +59,25 @@ class UsbDevice:
         return self._image_is_jpg
 
     @staticmethod
-    def from_uid(camera_id: str, on_new_image_data: Callable[[np.ndarray | bytes, float], Awaitable | None]) -> UsbDevice | None:
+    async def from_uid(camera_id: str, on_new_image_data: Callable[[np.ndarray | bytes, float], Awaitable | None]) -> UsbDevice | None:
         video_id = find_video_id(camera_id)
         if video_id is None:
             logging.error('Could not find video device for camera %s', camera_id)
             return None
 
-        capture = UsbDevice.create_capture(video_id)
+        capture = cv2.VideoCapture(video_id)
         if capture is None:
-            logging.error('Could not open video device %s', video_id)
+            logging.error('No such video device %s', video_id)
             return None
-
-        return UsbDevice(video_id=video_id, capture=capture, on_new_image_data=on_new_image_data)
-
-    @staticmethod
-    def create_capture(index: int) -> cv2.VideoCapture | None:
-        capture = cv2.VideoCapture(index)
-        if capture is None:
-            return None
-        capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+        device = UsbDevice(video_id=video_id, capture=capture, on_new_image_data=on_new_image_data)
+        await device.load_value_ranges()
+        await rosys.sleep(1)
+        device.set_video_format()
         if not capture.isOpened():
+            logging.error('Could not open video device %s', video_id)
             capture.release()
             return None
-        return capture
+        return device
 
     async def _capture_image(self) -> None:
         if not self._capture.isOpened():
@@ -106,6 +103,8 @@ class UsbDevice:
         await rosys.run.io_bound(self._capture.release)
 
     async def load_value_ranges(self) -> None:
+        cam = Device.from_id(self._video_id)
+        cam.open()
         output = await self.run_v4l('--all')
         if output is None:
             return
@@ -117,10 +116,8 @@ class UsbDevice:
             self._exposure_default = int(match.group(3))
         else:
             self._has_manual_exposure = False
-        output = await self.run_v4l('--list-formats')
-        matches = re.finditer(r"$.*'(.*)'.*", output)
-        for m in matches:
-            self._video_formats.add(m.group(1))
+        for m in cam.info.formats:
+            self._video_formats.add(str(m.pixel_format.name))
 
     async def run_v4l(self, *args) -> str:
         cmd = ['v4l2-ctl', '-d', str(self._video_id)]
@@ -128,7 +125,7 @@ class UsbDevice:
         return await rosys.run.sh(cmd)
 
     def set_video_format(self) -> None:
-        if 'MJPG' in self._video_formats:
+        if 'MJPEG' in self._video_formats:
             # NOTE enforcing motion jpeg for now
             if self._capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
                 self._capture.set(cv2.CAP_PROP_FOURCC, MJPG)
