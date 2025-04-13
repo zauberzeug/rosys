@@ -17,10 +17,10 @@ def add_card(camera: rosys.vision.Camera, container: ui.element) -> None:
                 with camera_card:
                     streams[uid] = ui.interactive_image()
                     ui.label(uid).classes('m-2')
-                    with ui.row():
-                        ui.button('disconnect', on_click=camera.disconnect).bind_enabled_from(camera, 'is_connected')
-                    if isinstance(camera, rosys.vision.ConfigurableCamera):
-                        create_camera_settings_panel(camera)
+                    with ui.row().classes('m-2'):
+                        if isinstance(camera, rosys.vision.ConfigurableCamera):
+                            create_camera_settings_panel(camera)
+                        ui.button(icon='delete', on_click=camera.disconnect).bind_visibility_from(camera, 'is_connected')
 
     streams[uid].set_source(camera.get_latest_image_url())
 
@@ -28,33 +28,38 @@ def add_card(camera: rosys.vision.Camera, container: ui.element) -> None:
 def create_camera_settings_panel(camera: rosys.vision.ConfigurableCamera) -> None:
     camera_parameters = camera.get_capabilities()
     parameter_names = [parameter.name for parameter in camera_parameters]
-    with ui.expansion('Settings').classes('w-full').bind_enabled_from(camera, 'is_connected'):
+    with ui.button(icon='settings'), ui.menu().classes('w-48'):
         if isinstance(camera, rosys.vision.RtspCamera):
             ui.label('URL') \
                 .bind_text_from(camera, 'url', backward=lambda x: x or 'URL not available')
         if 'fps' in parameter_names:
-            with ui.card(), ui.row():
+            with ui.row().classes('items-center justify-between mx-4'):
                 ui.label('FPS:')
                 ui.select(options=list(range(1, 31)), on_change=lambda e: camera.set_parameters({'fps': e.value})) \
-                    .bind_value_from(camera, 'parameters', backward=lambda params: params['fps'])
+                    .bind_value_from(camera, 'parameters', backward=lambda params: params['fps']) \
+                    .classes('w-12')
         if 'substream' in parameter_names:
-            with ui.card():
+            with ui.row().classes('items-center justify-between m-4'):
                 ui.switch('High Quality',
-                          on_change=lambda e: camera.set_parameters({'substream': 0 if e.value else 1}))
+                          on_change=lambda e: camera.set_parameters({'substream': 0 if e.value else 1})) \
+                    .classes('w-12')
         if 'exposure' in parameter_names:
-            with ui.card(), ui.row():
+            with ui.row().classes('items-center justify-between m-4'):
                 ui.label('Exposure:')
                 ui.select(options=list(range(0, 255)), on_change=lambda e: camera.set_parameters({'exposure': e.value})) \
-                    .bind_value_from(camera, 'parameters', backward=lambda params: params['exposure'])
+                    .bind_value_from(camera, 'parameters', backward=lambda params: params['exposure']) \
+                    .classes('w-12')
         if 'auto_exposure' in parameter_names:
-            with ui.card():
+            with ui.row().classes('items-center justify-between m-4'):
                 ui.switch('Auto Exposure', on_change=lambda e: camera.set_parameters({'auto_exposure': e.value})) \
-                    .bind_value_from(camera, 'parameters', backward=lambda params: params['auto_exposure'])
+                    .bind_value_from(camera, 'parameters', backward=lambda params: params['auto_exposure']) \
+                    .classes('w-12')
         if 'color' in parameter_names:
-            with ui.card(), ui.row():
+            with ui.row().classes('items-center justify-between m-4'):
                 ui.label('Color:')
                 with ui.button(icon='colorize'):
-                    ui.color_picker(on_pick=lambda e: camera.set_parameters({'color': e.color}))
+                    ui.color_picker(on_pick=lambda e: camera.set_parameters({'color': e.color})) \
+                        .classes('w-12')
 
 
 def update_camera_cards() -> None:
