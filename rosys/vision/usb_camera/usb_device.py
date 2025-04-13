@@ -1,17 +1,13 @@
 from __future__ import annotations
 
 import logging
-import re
 from collections.abc import Awaitable, Callable
 
-import cv2
 import numpy as np
-from linuxpy.video.device import Device
+from linuxpy.video.device import BufferType, Device, PixelFormat
 
 from ... import rosys
 from .usb_camera_scanner import device_nodes_from_uid
-
-MJPG = cv2.VideoWriter.fourcc(*'MJPG')
 
 
 def find_video_id(camera_uid: str) -> int | None:
@@ -24,16 +20,12 @@ def find_video_id(camera_uid: str) -> int | None:
     return min(video_ids) if video_ids else None
 
 
-def to_bytes(image: np.ndarray) -> bytes:
-    return image.tobytes()
-
-
 class UsbDevice:
 
-    def __init__(self, video_id: int, capture: cv2.VideoCapture, *,
+    def __init__(self, video_id: int, device: Device, *,
                  on_new_image_data: Callable[[np.ndarray | bytes, float], Awaitable | None]) -> None:
         self._video_id: int = video_id
-        self._capture: cv2.VideoCapture = capture
+        self._device: Device = device
         self._on_new_image_data = on_new_image_data
         self._exposure_min: int = 0
         self._exposure_max: int = 0
@@ -46,9 +38,12 @@ class UsbDevice:
         self._capture_task = rosys.on_repeat(self._capture_image, interval=0.01)
 
     def __del__(self) -> None:
-        self._capture.release()
-        if self._capture_task is not None:
-            self._capture_task.stop()
+        try:
+            self._device.close()
+            if self._capture_task is not None:
+                self._capture_task.stop()
+        except Exception:
+            pass
 
     @property
     def video_formats(self) -> set[str]:
@@ -65,117 +60,207 @@ class UsbDevice:
             logging.error('Could not find video device for camera %s', camera_id)
             return None
 
-        capture = cv2.VideoCapture(video_id)
-        if capture is None:
-            logging.error('No such video device %s', video_id)
+        try:
+            device = Device.from_id(video_id)
+            device.open()
+            try:
+                _ = device.fileno()
+            except Exception:
+                logging.error('Could not open video device %s', video_id)
+                return None
+
+            usb_device = UsbDevice(video_id=video_id, device=device, on_new_image_data=on_new_image_data)
+            # await usb_device.load_value_ranges()
+            # await rosys.sleep(1)
+            usb_device.set_video_format()
+            return usb_device
+        except Exception as e:
+            logging.error('Error initializing video device %s: %s', video_id, e)
             return None
-        device = UsbDevice(video_id=video_id, capture=capture, on_new_image_data=on_new_image_data)
-        await device.load_value_ranges()
-        await rosys.sleep(1)
-        device.set_video_format()
-        if not capture.isOpened():
-            logging.error('Could not open video device %s', video_id)
-            capture.release()
-            return None
-        return device
 
     async def _capture_image(self) -> None:
-        if not self._capture.isOpened():
-            return
-        read_result = await rosys.run.io_bound(self._capture.read)
-        if read_result is None:
-            return
-        capture_success, frame = read_result
+        """Capture a single frame and process it."""
+        try:
+            # Get a single frame asynchronously
+            async for frame in self._device:
+                timestamp = rosys.time()
 
-        if capture_success:
-            timestamp = rosys.time()
-            if self._image_is_jpg:
-                bytes_ = await rosys.run.io_bound(to_bytes, frame[0])
-                if bytes_ is None:
-                    return
-                result = self._on_new_image_data(bytes_, timestamp)
-            else:
-                result = self._on_new_image_data(frame, timestamp)
-            if isinstance(result, Awaitable):
-                await result
+                if self._image_is_jpg:
+                    result = self._on_new_image_data(frame.data, timestamp)
+                else:
+                    # TODO: Convert frame.data to numpy array
+                    result = self._on_new_image_data(frame.data, timestamp)
+
+                if isinstance(result, Awaitable):
+                    await result
+                break  # Only process one frame per call
+
+        except Exception as e:
+            self.log.error(f'Error capturing frame for video device {self._video_id}: {e}')
 
     async def release_capture(self) -> None:
-        await rosys.run.io_bound(self._capture.release)
+        if self._device:
+            try:
+                self._device.close()
+            except Exception:
+                pass
 
     async def load_value_ranges(self) -> None:
-        cam = Device.from_id(self._video_id)
-        cam.open()
-        output = await self.run_v4l('--all')
-        if output is None:
-            return
-        match = re.search(r'exposure_absolute.*: min=(\d*).*max=(\d*).*default=(\d*).*', output)
-        if match is not None:
-            self._has_manual_exposure = True
-            self._exposure_min = int(match.group(1))
-            self._exposure_max = int(match.group(2))
-            self._exposure_default = int(match.group(3))
-        else:
-            self._has_manual_exposure = False
-        for m in cam.info.formats:
-            self._video_formats.add(str(m.pixel_format.name))
+        try:
+            # Get the exposure control if available
+            controls = self._device.controls
+            if hasattr(controls, 'exposure_absolute'):
+                ctrl = controls.exposure_absolute
+                self._has_manual_exposure = True
+                self._exposure_min = ctrl.minimum
+                self._exposure_max = ctrl.maximum
+                self._exposure_default = ctrl.default
+            else:
+                self._has_manual_exposure = False
 
-    async def run_v4l(self, *args) -> str:
-        cmd = ['v4l2-ctl', '-d', str(self._video_id)]
-        cmd.extend(args)
-        return await rosys.run.sh(cmd)
+            for fmt in self._device.info.formats:
+                self._video_formats.add(fmt.pixelformat.name)
+        except Exception as e:
+            self.log.error(f'Error loading device information: {e}')
 
     def set_video_format(self) -> None:
-        if 'MJPEG' in self._video_formats:
-            # NOTE enforcing motion jpeg for now
-            if self._capture.get(cv2.CAP_PROP_FOURCC) != MJPG:
-                self._capture.set(cv2.CAP_PROP_FOURCC, MJPG)
-            # NOTE disable video decoding (see https://stackoverflow.com/questions/62664621/read-jpeg-frame-from-mjpeg-self-without-decoding-in-python-opencv/70869738?noredirect=1#comment110818859_62664621)
-            if self._capture.get(cv2.CAP_PROP_CONVERT_RGB) != 0:
-                self._capture.set(cv2.CAP_PROP_CONVERT_RGB, 0)
-            # NOTE make sure there is no lag (see https://stackoverflow.com/a/30032945/364388)
-            if self._capture.get(cv2.CAP_PROP_BUFFERSIZE) != 1:
-                self._capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-            self._image_is_jpg = True
-        else:
-            self._image_is_jpg = False
+        """Try to set MJPEG with max resolution."""
+        try:
+            if 'MJPEG' in [format.pixel_format.name for format in self._device.info.formats]:
+                sizes = self._device.info.frame_sizes
+                max_size = max(sizes, key=lambda x: x.width * x.height)
+                self._device.set_format(
+                    width=max_size.width,
+                    height=max_size.height,
+                    pixel_format=PixelFormat.MJPEG,
+                    buffer_type=BufferType.VIDEO_CAPTURE
+                )
+                self._image_is_jpg = True
+            else:
+                self._image_is_jpg = False
+
+            self._device.buffer_count = 1
+        except Exception as e:
+            self.log.error(f'Error setting video format: {e}')
 
     def set_auto_exposure(self, auto: bool) -> None:
-        if self._has_manual_exposure:
-            if auto:
-                self._capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)
-            else:
-                self._capture.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)
+        try:
+            if self._has_manual_exposure:
+                controls = self._device.controls
+                if hasattr(controls, 'exposure_auto'):
+                    ctrl = controls.exposure_auto
+                    if hasattr(ctrl, 'value'):
+                        if isinstance(ctrl.value, bool):
+                            ctrl.value = auto
+                        else:
+                            ctrl.value = 3 if auto else 1  # 3=auto, 1=manual
+        except Exception as e:
+            self.log.error(f'Error setting auto exposure: {e}')
 
     def set_exposure(self, value: float) -> None:
-        if self._has_manual_exposure:
-            is_auto_exposure = self.get_auto_exposure()
-            if not is_auto_exposure:
-                exposure = self._capture.get(cv2.CAP_PROP_EXPOSURE) / self._exposure_max
-                if value != exposure:
-                    self._capture.set(cv2.CAP_PROP_EXPOSURE, int(value * self._exposure_max))
+        try:
+            if self._has_manual_exposure and not self.get_auto_exposure():
+                controls = self._device.controls
+                if hasattr(controls, 'exposure_absolute'):
+                    ctrl = controls.exposure_absolute
+                    new_value = int(value * (self._exposure_max - self._exposure_min) + self._exposure_min)
+                    if new_value != ctrl.value:
+                        ctrl.value = new_value
+        except Exception as e:
+            self.log.error(f'Error setting exposure: {e}')
 
     def get_auto_exposure(self) -> bool | None:
-        return self._capture.get(cv2.CAP_PROP_AUTO_EXPOSURE) == 3
+        try:
+            controls = self._device.controls
+            if hasattr(controls, 'exposure_auto'):
+                ctrl = controls.exposure_auto
+                if isinstance(ctrl.value, bool):
+                    return ctrl.value
+                else:
+                    return ctrl.value == 3  # 3=auto, 1=manual
+            return None
+        except Exception:
+            return None
 
     def get_exposure(self) -> float | None:
-        if not self._has_manual_exposure:
+        try:
+            if not self._has_manual_exposure:
+                return None
+            controls = self._device.controls
+            if hasattr(controls, 'exposure_absolute'):
+                ctrl = controls.exposure_absolute
+                return (ctrl.value - self._exposure_min) / (self._exposure_max - self._exposure_min)
             return None
-        return self._capture.get(cv2.CAP_PROP_EXPOSURE) / self._exposure_max
+        except Exception:
+            return None
 
     def set_width(self, width: int) -> None:
-        self._capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+        return
+        try:
+            fmt = self._device.get_format(BufferType.VIDEO_CAPTURE)
+            current_height = fmt.height
+
+            if 'MJPEG' in self._video_formats:
+                pixel_format = PixelFormat.MJPEG
+            else:
+                # Use whatever format is currently set
+                pixel_format = fmt.pixel_format if hasattr(fmt, 'pixel_format') else None
+
+            if pixel_format:
+                self._device.set_format(
+                    width=width,
+                    height=current_height,
+                    pixel_format=pixel_format,
+                    buffer_type=BufferType.VIDEO_CAPTURE
+                )
+        except Exception as e:
+            self.log.error(f'Error setting width: {e}')
 
     def get_width(self) -> int:
-        return int(self._capture.get(cv2.CAP_PROP_FRAME_WIDTH))
+        try:
+            fmt = self._device.get_format(BufferType.VIDEO_CAPTURE)
+            return fmt.width
+        except Exception:
+            return 0
 
     def set_height(self, height: int) -> None:
-        self._capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        return
+        try:
+            fmt = self._device.get_format(BufferType.VIDEO_CAPTURE)
+            current_width = fmt.width
+
+            if 'MJPEG' in self._video_formats:
+                pixel_format = PixelFormat.MJPEG
+            else:
+                # Use whatever format is currently set
+                pixel_format = fmt.pixel_format if hasattr(fmt, 'pixel_format') else None
+
+            if pixel_format:
+                self._device.set_format(
+                    width=current_width,
+                    height=height,
+                    pixel_format=pixel_format,
+                    buffer_type=BufferType.VIDEO_CAPTURE
+                )
+        except Exception as e:
+            self.log.error(f'Error setting height: {e}')
 
     def get_height(self) -> int:
-        return int(self._capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        try:
+            fmt = self._device.get_format(BufferType.VIDEO_CAPTURE)
+            return fmt.height
+        except Exception:
+            return 0
 
     def set_fps(self, fps: int) -> None:
-        self._capture.set(cv2.CAP_PROP_FPS, fps)
+        return
+        try:
+            self._device.set_fps(fps)
+        except Exception as e:
+            self.log.error(f'Error setting FPS: {e}')
 
     def get_fps(self) -> int:
-        return int(self._capture.get(cv2.CAP_PROP_FPS))
+        try:
+            return self._device.get_fps()
+        except Exception:
+            return 0
