@@ -15,10 +15,13 @@ from rosys.pathplanning.obstacle import Obstacle  # noqa: F401
 from rosys.pathplanning.planner_process import PlannerSearchCommand
 from rosys.pathplanning.robot_renderer import RobotRenderer
 
-robot_shape = ui.input('Robot shape', placeholder='[(x0, y0), (x1, y1), ...]').classes('w-full') \
-    .bind_value(app.storage.general, 'robot_shape')
-search_command = ui.textarea('Search command:', placeholder='PlannerSearchCommand(...)').classes('w-full') \
-    .bind_value(app.storage.general, 'planner_search_command')
+robot_shape = ui.input('Robot shape', placeholder='[(x0, y0), (x1, y1), ...]') \
+    .bind_value(app.storage.general, 'robot_shape') \
+    .classes('w-full')
+search_command = ui.textarea('Search command:',
+                             placeholder='PlannerSearchCommand(...)') \
+    .bind_value(app.storage.general, 'planner_search_command') \
+    .classes('w-full')
 
 
 def run() -> None:
@@ -31,7 +34,9 @@ def run() -> None:
     planner = DelaunayPlanner(shape)
 
     t = time.time()
-    planner.update_map(cmd.areas, cmd.obstacles, [cmd.start.point, cmd.goal.point], deadline=time.time()+10.0)
+    planner.update_map(cmd.areas, cmd.obstacles,
+                       [cmd.start.point, cmd.goal.point],
+                       deadline=time.time()+10.0)
     dt0 = time.time() - t
 
     t = time.time()
@@ -50,16 +55,21 @@ def run() -> None:
         pl.autoscale(False)
         assert planner.tri_points is not None
         assert planner.tri_mesh is not None
-        pl.triplot(planner.tri_points[:, 0], planner.tri_points[:, 1], planner.tri_mesh.simplices, lw=0.1)
+        pl.triplot(planner.tri_points[:, 0], planner.tri_points[:, 1],
+                   planner.tri_mesh.simplices, lw=0.1)
 
         pt.plot_path(path, 'C1')
         robot_renderer = RobotRenderer(shape)
-        pt.plot_robot(robot_renderer, (cmd.start.x, cmd.start.y, cmd.start.yaw), 'C0', lw=2)
-        pt.plot_robot(robot_renderer, (cmd.goal.x, cmd.goal.y, cmd.goal.yaw), 'C0', lw=2)
+        pt.plot_robot(robot_renderer, (cmd.start.x, cmd.start.y, cmd.start.yaw),
+                      'C0', lw=2)
+        pt.plot_robot(robot_renderer, (cmd.goal.x, cmd.goal.y, cmd.goal.yaw),
+                      'C0', lw=2)
         for step in path:
             for t in [0, 1]:
                 yaw = step.spline.yaw(t) + np.pi if step.backward else step.spline.yaw(t)
-                pt.plot_robot(robot_renderer, (step.spline.x(t), step.spline.y(t), yaw), 'C2', lw=1)
+                pt.plot_robot(robot_renderer,
+                              (step.spline.x(t), step.spline.y(t), yaw),
+                              'C2', lw=1)
 
 
 with ui.row():

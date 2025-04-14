@@ -32,7 +32,8 @@ with ui.column().style('width: 400px'):
 
 async def move_around():
     while True:
-        await driver.drive_to(Point(x=random.uniform(-size, size), y=random.uniform(-size, size)))
+        await driver.drive_to(Point(x=random.uniform(-size, size),
+                                    y=random.uniform(-size, size)))
 
 rosys.on_startup(lambda: automator.start(move_around()))
 

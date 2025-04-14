@@ -37,6 +37,7 @@ with ui.card().tight().style('width:30em'):
         with ui.card().tight():
             rosys.driving.joystick(steerer)
             rosys.driving.keyboard_control(steerer)
-        ui.markdown('steer with joystick on the left or<br />SHIFT + arrow keys').classes('m-8 text-center')
+        ui.markdown('steer with joystick on the left or<br />SHIFT + arrow keys') \
+            .classes('m-8 text-center')
 
 ui.run(title='RoSys')

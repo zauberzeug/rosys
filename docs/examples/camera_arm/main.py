@@ -38,7 +38,9 @@ class Link(persistence.PersistentModule):
     def restore(self, data: dict[str, Any]) -> None:
         self.name = data['name']
         self.base = persistence.from_dict(Frame3d, data['base'])
-        self.end = Pose3d(z=self.length).as_frame(f'{self.name}_end').in_frame(self.base)
+        self.end = Pose3d(z=self.length) \
+            .as_frame(f'{self.name}_end') \
+            .in_frame(self.base)
 
 
 class Cam(persistence.PersistentModule):
@@ -81,19 +83,26 @@ def page():
     with ui.row():
         with ui.scene() as scene:
             with scene.group() as chassis:
-                scene.box(width=1.0, height=0.5, depth=0.3).move(z=0.15).material(color='gray')
+                scene.box(width=1.0, height=0.5, depth=0.3) \
+                    .move(z=0.15).material(color='gray')
             with scene.group() as segment1:
-                scene.box(width=0.1, height=0.1, depth=arm1.length).move(z=arm1.length / 2)
+                scene.box(width=0.1, height=0.1, depth=arm1.length) \
+                    .move(z=arm1.length / 2)
             with scene.group() as segment2:
-                scene.box(width=0.1, height=0.1, depth=arm2.length).move(z=arm2.length / 2)
+                scene.box(width=0.1, height=0.1, depth=arm2.length) \
+                    .move(z=arm2.length / 2)
             with scene.group() as camera_box:
-                scene.box(width=0.1, height=0.1, depth=0.1).material(color='SteelBlue')
+                scene.box(width=0.1, height=0.1, depth=0.1) \
+                    .material(color='SteelBlue')
             scene.move_camera(y=-1, z=1, look_at_z=0.5)
         with ui.column():
             joystick(steerer, size=50, color='blue')
-            ui.slider(min=-math.pi / 2, max=math.pi / 2, step=0.01, value=0, on_change=lambda e: arm1.pitch(e.value))
-            ui.slider(min=-math.pi / 2, max=math.pi / 2, step=0.01, value=0, on_change=lambda e: arm2.pitch(e.value))
-            ui.slider(min=-math.pi / 4, max=math.pi / 4, step=0.01, value=0, on_change=lambda e: cam.pitch(e.value))
+            ui.slider(min=-math.pi / 2, max=math.pi / 2, step=0.01, value=0,
+                      on_change=lambda e: arm1.pitch(e.value))
+            ui.slider(min=-math.pi / 2, max=math.pi / 2, step=0.01, value=0,
+                      on_change=lambda e: arm2.pitch(e.value))
+            ui.slider(min=-math.pi / 4, max=math.pi / 4, step=0.01, value=0,
+                      on_change=lambda e: cam.pitch(e.value))
         with ui.scene() as scene2:
             axes_object(anchor_frame, length=0.15)
             axes_object(arm1.base, name='Arm 1 Base', length=0.15)

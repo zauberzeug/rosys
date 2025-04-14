@@ -43,7 +43,8 @@ else:
 steerer = Steerer(wheels)
 odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator(steerer, default_automation=drive_square, on_interrupt=wheels.stop)
+automator = Automator(steerer, default_automation=drive_square,
+                      on_interrupt=wheels.stop)
 
 # ui
 with ui.card():
@@ -51,7 +52,9 @@ with ui.card():
 
     with ui.row():
         state = ui.label()
-        ui.timer(0.1, lambda: state.set_text(f'{rosys.time():.3f} s, {odometer.prediction}'))
+        ui.timer(0.1, lambda: state.set_text(
+            f'{rosys.time():.3f} s, {odometer.prediction}'
+        ))
 
     with ui.row():
         with ui.scene():
@@ -61,8 +64,10 @@ with ui.card():
     with ui.row():
         automation_controls(automator)
         if isinstance(wheels, WheelsHardware):
-            ui.button('configure microcontroller', on_click=robot_brain.configure).props('outline')
-        ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
+            ui.button('configure microcontroller',
+                      on_click=robot_brain.configure).props('outline')
+        ui.button('restart rosys', on_click=lambda: os.utime('main.py')) \
+            .props('outline')
 
 # start
 ui.run(title='hello_bot')

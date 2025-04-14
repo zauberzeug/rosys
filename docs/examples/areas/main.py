@@ -11,8 +11,11 @@ area_manipulation = AreaManipulation(path_planner)
 # ui
 with ui.card().classes('mx-auto'):
     with ui.row().classes('items-center'):
-        select = ui.select({None: 'Asphalt', 'sand': 'Sand'}).bind_value(area_manipulation, 'area_type').classes('w-20')
-        ui.color_input(preview=True).bind_value(area_manipulation, 'area_color').classes('w-40')
+        select = ui.select({None: 'Asphalt', 'sand': 'Sand'}) \
+            .bind_value(area_manipulation, 'area_type') \
+            .classes('w-20')
+        ui.color_input(preview=True).bind_value(area_manipulation, 'area_color') \
+            .classes('w-40')
         area_manipulation.create_ui()
     with ui.scene(640, 480,
                   on_click=area_manipulation.handle_click,

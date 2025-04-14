@@ -22,6 +22,8 @@ class Model(persistence.PersistentModule):
 
 
 model = Model()
-ui.slider(min=0, max=10.0, step=0.1).bind_value(model, 'value').props('label-always')
+ui.slider(min=0, max=10.0, step=0.1) \
+    .bind_value(model, 'value') \
+    .props('label-always')
 
 ui.run(title='RoSys')

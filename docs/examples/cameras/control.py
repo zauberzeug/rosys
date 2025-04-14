@@ -18,7 +18,8 @@ def add_card(camera: rosys.vision.Camera, container: ui.element) -> None:
                     streams[uid] = ui.interactive_image()
                     ui.label(uid).classes('m-2')
                     with ui.row():
-                        ui.button('disconnect', on_click=camera.disconnect).bind_enabled_from(camera, 'is_connected')
+                        ui.button('disconnect', on_click=camera.disconnect) \
+                            .bind_enabled_from(camera, 'is_connected')
                     if isinstance(camera, rosys.vision.ConfigurableCamera):
                         create_camera_settings_panel(camera)
 
@@ -28,15 +29,19 @@ def add_card(camera: rosys.vision.Camera, container: ui.element) -> None:
 def create_camera_settings_panel(camera: rosys.vision.ConfigurableCamera) -> None:
     camera_parameters = camera.get_capabilities()
     parameter_names = [parameter.name for parameter in camera_parameters]
-    with ui.expansion('Settings').classes('w-full').bind_enabled_from(camera, 'is_connected'):
+    with ui.expansion('Settings').classes('w-full') \
+            .bind_enabled_from(camera, 'is_connected'):
         if isinstance(camera, rosys.vision.RtspCamera):
             ui.label('URL') \
-                .bind_text_from(camera, 'url', backward=lambda x: x or 'URL not available')
+                .bind_text_from(camera, 'url',
+                                backward=lambda x: x or 'URL not available')
         if 'fps' in parameter_names:
             with ui.card(), ui.row():
                 ui.label('FPS:')
-                ui.select(options=list(range(1, 31)), on_change=lambda e: camera.set_parameters({'fps': e.value})) \
-                    .bind_value_from(camera, 'parameters', backward=lambda params: params['fps'])
+                ui.select(options=list(range(1, 31)),
+                          on_change=lambda e: camera.set_parameters({'fps': e.value})) \
+                    .bind_value_from(camera, 'parameters',
+                                     backward=lambda params: params['fps'])
         if 'substream' in parameter_names:
             with ui.card():
                 ui.switch('High Quality',
@@ -44,12 +49,16 @@ def create_camera_settings_panel(camera: rosys.vision.ConfigurableCamera) -> Non
         if 'exposure' in parameter_names:
             with ui.card(), ui.row():
                 ui.label('Exposure:')
-                ui.select(options=list(range(0, 255)), on_change=lambda e: camera.set_parameters({'exposure': e.value})) \
-                    .bind_value_from(camera, 'parameters', backward=lambda params: params['exposure'])
+                ui.select(options=list(range(0, 255)),
+                          on_change=lambda e: camera.set_parameters({'exposure': e.value})) \
+                    .bind_value_from(camera, 'parameters',
+                                     backward=lambda params: params['exposure'])
         if 'auto_exposure' in parameter_names:
             with ui.card():
-                ui.switch('Auto Exposure', on_change=lambda e: camera.set_parameters({'auto_exposure': e.value})) \
-                    .bind_value_from(camera, 'parameters', backward=lambda params: params['auto_exposure'])
+                ui.switch('Auto Exposure',
+                          on_change=lambda e: camera.set_parameters({'auto_exposure': e.value})) \
+                    .bind_value_from(camera, 'parameters',
+                                     backward=lambda params: params['auto_exposure'])
         if 'color' in parameter_names:
             with ui.card(), ui.row():
                 ui.label('Color:')

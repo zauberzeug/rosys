@@ -22,15 +22,17 @@ wheels = WheelsSimulation()
 robot = RobotSimulation([wheels])
 odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
-automator = Automator(None, default_automation=drive_around, on_interrupt=wheels.stop)
+automator = Automator(None, default_automation=drive_around,
+                      on_interrupt=wheels.stop)
 
 locations = {
     (52.520008, 13.404954): 'Berlin',
     (40.730610, -73.935242): 'New York',
     None: 'no location',
 }
-schedule = Schedule(automator=automator, on_activate=drive_around, on_deactivate=drive_home,
-                    location=None, locations=locations, is_enabled=True)
+schedule = Schedule(automator=automator, on_activate=drive_around,
+                    on_deactivate=drive_home, location=None,
+                    locations=locations, is_enabled=True)
 schedule.fill(False)  # disable at all times so the user can enable it manually
 schedule.is_enabled = True  # the schedule must be enabled to take any effect
 
