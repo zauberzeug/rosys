@@ -33,7 +33,8 @@ with ui.scene():
     rosys.driving.robot_object(shape, odometer)
 ui.label('hold SHIFT to steer with the keyboard arrow keys')
 if is_real:
-    ui.button('configure microcontroller', on_click=robot_brain.configure).props('outline')
+    ui.button('configure microcontroller',
+              on_click=robot_brain.configure).props('outline')
 
 # start
 ui.run(title='RoSys')
