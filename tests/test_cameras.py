@@ -4,7 +4,7 @@ import platform
 import pytest
 
 from rosys.testing import forward
-from rosys.vision import RtspCamera, RtspCameraProvider, SimulatedCamera, UsbCamera, UsbCameraProvider
+from rosys.vision import RtspCamera, RtspCameraProvider, SimulatedCamera, UsbCameraProvider, V4l2Camera
 
 
 async def test_simulated_camera(rosys_integration):
@@ -23,7 +23,7 @@ async def test_usb_camera(rosys_integration):
     connected_uids = list(await UsbCameraProvider.scan_for_cameras())
     if len(connected_uids) == 0:
         pytest.skip('No USB camera detected. This test requires a physical USB camera to be connected.')
-    camera = UsbCamera(id=connected_uids[0])
+    camera = V4l2Camera(id=connected_uids[0])
     await camera.connect()
     await asyncio.sleep(0.5)
     assert camera.is_connected

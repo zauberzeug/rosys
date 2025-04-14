@@ -9,7 +9,7 @@ from rosys.vision import (
     RtspCamera,
     SimulatedCamera,
     TransformableCamera,
-    UsbCamera,
+    V4l2Camera,
 )
 
 
@@ -99,10 +99,10 @@ def test_storing_rtsp_camera_as_dict(rosys_integration, base_camera_parameters):
 
 
 def test_storing_usb_camera_as_dict(rosys_integration, base_camera_parameters):
-    camera = UsbCamera(auto_exposure=False, exposure=100, width=808, height=606, fps=1, **base_camera_parameters)
+    camera = V4l2Camera(auto_exposure=False, exposure=100, width=808, height=606, fps=1, **base_camera_parameters)
     camera_as_dict = camera.to_dict()
-    restored_camera = UsbCamera.from_dict(camera_as_dict)
-    assert isinstance(restored_camera, UsbCamera)
+    restored_camera = V4l2Camera.from_dict(camera_as_dict)
+    assert isinstance(restored_camera, V4l2Camera)
     assert_base_camera_parameters_match(camera, restored_camera)
     assert restored_camera.parameters == camera.parameters
 
@@ -128,7 +128,7 @@ def test_storing_calibratable_camera_subclasses_as_dict(rosys_integration):
     class CalibratableRtspCamera(CalibratableCamera, RtspCamera):
         pass
 
-    class CalibratableUsbCamera(CalibratableCamera, UsbCamera):
+    class CalibratableUsbCamera(CalibratableCamera, V4l2Camera):
         pass
 
     class CalibratableMjpegCamera(CalibratableCamera, MjpegCamera):
