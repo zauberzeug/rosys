@@ -54,7 +54,6 @@ class V4L2Device:
         if video_id is None:
             logging.error('Could not find video device for camera %s', camera_id)
             return None
-
         try:
             device = Device.from_id(video_id)
             device.open()
@@ -63,10 +62,8 @@ class V4L2Device:
             except Exception:
                 logging.error('Could not open video device %s', video_id)
                 return None
-
             usb_device = V4L2Device(video_id=video_id, device=device, on_new_image_data=on_new_image_data)
             await usb_device.load_value_ranges()
-            # await rosys.sleep(1)
             usb_device.set_video_format()
             return usb_device
         except Exception as e:
@@ -78,11 +75,7 @@ class V4L2Device:
         try:
             async for frame in self._device:
                 timestamp = rosys.time()
-                if self._image_is_jpg:
-                    result = self._on_new_image_data(frame.data, timestamp)
-                else:
-                    # TODO: Convert frame.data to numpy array
-                    result = self._on_new_image_data(frame.data, timestamp)
+                result = self._on_new_image_data(frame.data, timestamp)
                 if isinstance(result, Awaitable):
                     await result
         except Exception:
@@ -124,6 +117,7 @@ class V4L2Device:
                     pixel_format=PixelFormat.MJPEG,
                     buffer_type=BufferType.VIDEO_CAPTURE
                 )
+                self._device.set_fps(BufferType.VIDEO_CAPTURE, 30)
                 self._image_is_jpg = True
             else:
                 self._image_is_jpg = False
