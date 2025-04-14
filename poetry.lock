@@ -1751,6 +1751,26 @@ tests = ["coverage[toml] (>=6.1.1) ; python_version == \"3.6\"", "coverage[toml]
 tests-strict = ["coverage[toml] (==6.1.1) ; python_version == \"3.6\"", "coverage[toml] (==6.5.0) ; python_version < \"3.12\" and python_version >= \"3.10\"", "coverage[toml] (==6.5.0) ; python_version == \"3.7\"", "coverage[toml] (==6.5.0) ; python_version == \"3.8\"", "coverage[toml] (==6.5.0) ; python_version == \"3.9\"", "coverage[toml] (==7.3.0) ; python_version < \"4.0\" and python_version >= \"3.12\"", "pytest (==6.2.5) ; python_version == \"3.6\"", "pytest (==7.4.4) ; python_version < \"4.0\" and python_version >= \"3.13\"", "pytest (==7.4.4) ; python_version == \"3.10\"", "pytest (==7.4.4) ; python_version == \"3.11\"", "pytest (==7.4.4) ; python_version == \"3.12\"", "pytest (==7.4.4) ; python_version == \"3.7\"", "pytest (==7.4.4) ; python_version == \"3.8\"", "pytest (==7.4.4) ; python_version == \"3.9\"", "pytest-cov (==3.0.0) ; python_version >= \"3.6.0\"", "ubelt (==1.3.4)", "xdoctest (==1.1.3)"]
 
 [[package]]
+name = "linuxpy"
+version = "0.20.0"
+description = "Human friendly interface to linux subsystems using python"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "linuxpy-0.20.0-py3-none-any.whl", hash = "sha256:b3e926aa89ca92e885bff7a94026bd68377a489ab8f6af140385527b85ece50c"},
+    {file = "linuxpy-0.20.0.tar.gz", hash = "sha256:98d5a6ce5e7618465410bdeaf1c3f9f6ac4c76e1b58a382cbc6a03e5d7521bde"},
+]
+
+[package.dependencies]
+typing-extensions = {version = ">=4.6,<5", markers = "python_version < \"3.12\""}
+
+[package.extras]
+dev = ["build (>=0.10.0)", "gevent (>=21)", "numpy (>=1.1)", "ruff (>=0.3.0)", "twine (>=4.0.2)", "ward (>=0.68.0b0)", "ward-coverage (>=0.3.0)"]
+docs = ["mkdocs", "mkdocs-coverage", "mkdocs-material", "mkdocstrings[python]", "pygments", "pymdown-extensions"]
+examples = ["Pillow", "fastapi (<1)", "flask (>=2,<4)", "gevent", "gunicorn", "numpy", "opencv-python", "pyqt6", "qtpy", "uvicorn"]
+
+[[package]]
 name = "markdown2"
 version = "2.5.3"
 description = "A fast and complete Python implementation of Markdown"
@@ -4095,4 +4115,4 @@ propcache = ">=0.2.0"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10, <3.13"
-content-hash = "145362c38bea765dea546583422781f2db81c5a838e64e221ff15c56c75fa02d"
+content-hash = "cf7cc51e00fb0c1701d2bf003b46b22631888d47adbc113bb5dce1a32c59da05"
