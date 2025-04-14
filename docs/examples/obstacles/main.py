@@ -42,7 +42,9 @@ with ui.card():
     keyboard_control(steerer)
 
     state = ui.label()
-    ui.timer(0.1, lambda: state.set_text(f'{rosys.time():.3f} s, {odometer.prediction}'))
+    ui.timer(0.1, lambda: state.set_text(
+        f'{rosys.time():.3f} s, {odometer.prediction}'
+    ))
 
     click_mode = ui.toggle({
         'drive': 'Drive',
@@ -68,8 +70,10 @@ with ui.card():
                 automator.start(driver.drive_path(path))
                 return
             if object_type == 'ground' and click_mode.value == 'navigate':
-                goal = Pose(x=hit.x, y=hit.y, yaw=odometer.prediction.direction(target))
-                path = await path_planner.search(start=odometer.prediction, goal=goal, timeout=3.0)
+                goal = Pose(x=hit.x, y=hit.y,
+                            yaw=odometer.prediction.direction(target))
+                path = await path_planner.search(start=odometer.prediction,
+                                                 goal=goal, timeout=3.0)
                 path3d.update(path)
                 automator.start(driver.drive_path(path))
                 return
@@ -96,7 +100,8 @@ with ui.card():
 
     with ui.row():
         automation_controls(automator)
-        ui.button('restart rosys', on_click=lambda: os.utime('main.py')).props('outline')
+        ui.button('restart rosys',
+                  on_click=lambda: os.utime('main.py')).props('outline')
 
 # start
 ui.run(title='obstacles')
