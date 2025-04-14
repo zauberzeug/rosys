@@ -46,12 +46,24 @@ class Rotation:
         return np.arctan2(self.R[2][1], self.R[2][2])
 
     @property
+    def roll_deg(self) -> float:
+        return np.rad2deg(self.roll)
+
+    @property
     def pitch(self) -> float:
         return np.arctan2(-self.R[2][0], np.sqrt(self.R[2][1]**2 + self.R[2][2]**2))
 
     @property
+    def pitch_deg(self) -> float:
+        return np.rad2deg(self.pitch)
+
+    @property
     def yaw(self) -> float:
         return np.arctan2(self.R[1][0], self.R[0][0])
+
+    @property
+    def yaw_deg(self) -> float:
+        return np.rad2deg(self.yaw)
 
     @property
     def euler(self) -> tuple[float, float, float]:
