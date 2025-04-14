@@ -37,6 +37,7 @@ class V4L2Device:
         rosys.background_tasks.create(self._capture_images())
 
     def __del__(self) -> None:
+
         self.close()
 
     @property
@@ -87,7 +88,7 @@ class V4L2Device:
         except Exception:
             self.log.exception('Error capturing frame for video device %s', self._video_id)
 
-    async def close(self) -> None:
+    def close(self) -> None:
         if self._device:
             try:
                 self._device.close()

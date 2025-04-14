@@ -68,7 +68,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
             return
 
         assert self.device is not None
-        await self.device.close()
+        self.device.close()
         self.device = None
         logging.info('camera %s: disconnected', self.id)
 
