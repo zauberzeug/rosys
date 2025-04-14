@@ -63,12 +63,6 @@ def create_camera_settings_panel(camera: rosys.vision.ConfigurableCamera) -> Non
 
 
 def update_camera_cards() -> None:
-    providers: list[rosys.vision.CameraProvider] = [
-        rtsp_camera_provider,
-        mjpeg_camera_provider,
-        usb_camera_provider,
-        simulated_camera_provider,
-    ]
     for provider in providers:
         for camera in provider.cameras.values():
             add_card(camera, camera_grid)
@@ -79,10 +73,12 @@ streams: dict[str, ui.interactive_image] = {}
 camera_cards: dict[str, ui.card] = {}
 camera_grid = ui.row()
 
-rtsp_camera_provider = rosys.vision.RtspCameraProvider()
-mjpeg_camera_provider = rosys.vision.MjpegCameraProvider()
-usb_camera_provider = rosys.vision.UsbCameraProvider()
-simulated_camera_provider = rosys.vision.SimulatedCameraProvider()
+providers: list[rosys.vision.CameraProvider] = [
+    rosys.vision.RtspCameraProvider(),
+    rosys.vision.MjpegCameraProvider(),
+    rosys.vision.UsbCameraProvider(),
+    simulated_camera_provider := rosys.vision.SimulatedCameraProvider(),
+]
 
 ui.timer(0.1, update_camera_cards)
 
