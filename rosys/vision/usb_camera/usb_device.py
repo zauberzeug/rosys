@@ -34,16 +34,10 @@ class UsbDevice:
         self._video_formats: set[str] = set()
         self._image_is_jpg: bool = False
         self.log = logging.getLogger('rosys.vision.usb_device')
-
-        self._capture_task = rosys.on_repeat(self._capture_image, interval=0.01)
+        rosys.background_tasks.create(self._capture_images())
 
     def __del__(self) -> None:
-        try:
-            self._device.close()
-            if self._capture_task is not None:
-                self._capture_task.stop()
-        except Exception:
-            pass
+        self.close()
 
     @property
     def video_formats(self) -> set[str]:
@@ -70,7 +64,7 @@ class UsbDevice:
                 return None
 
             usb_device = UsbDevice(video_id=video_id, device=device, on_new_image_data=on_new_image_data)
-            # await usb_device.load_value_ranges()
+            await usb_device.load_value_ranges()
             # await rosys.sleep(1)
             usb_device.set_video_format()
             return usb_device
@@ -78,10 +72,9 @@ class UsbDevice:
             logging.error('Error initializing video device %s: %s', video_id, e)
             return None
 
-    async def _capture_image(self) -> None:
-        """Capture a single frame and process it."""
+    async def _capture_images(self) -> None:
+        """Capture and process frames."""
         try:
-            # Get a single frame asynchronously
             async for frame in self._device:
                 timestamp = rosys.time()
 
@@ -93,21 +86,19 @@ class UsbDevice:
 
                 if isinstance(result, Awaitable):
                     await result
-                break  # Only process one frame per call
 
-        except Exception as e:
-            self.log.error(f'Error capturing frame for video device {self._video_id}: {e}')
+        except Exception:
+            self.log.exception('Error capturing frame for video device %s', self._video_id)
 
-    async def release_capture(self) -> None:
+    async def close(self) -> None:
         if self._device:
             try:
                 self._device.close()
             except Exception:
-                pass
+                self.log.exception('Error closing video device %s', self._video_id)
 
     async def load_value_ranges(self) -> None:
         try:
-            # Get the exposure control if available
             controls = self._device.controls
             if hasattr(controls, 'exposure_absolute'):
                 ctrl = controls.exposure_absolute
@@ -119,9 +110,9 @@ class UsbDevice:
                 self._has_manual_exposure = False
 
             for fmt in self._device.info.formats:
-                self._video_formats.add(fmt.pixelformat.name)
-        except Exception as e:
-            self.log.error(f'Error loading device information: {e}')
+                self._video_formats.add(fmt.pixel_format.name)
+        except Exception:
+            self.log.exception('Error loading device information')
 
     def set_video_format(self) -> None:
         """Try to set MJPEG with max resolution."""
@@ -140,8 +131,8 @@ class UsbDevice:
                 self._image_is_jpg = False
 
             self._device.buffer_count = 1
-        except Exception as e:
-            self.log.error(f'Error setting video format: {e}')
+        except Exception:
+            self.log.exception('Error setting video format')
 
     def set_auto_exposure(self, auto: bool) -> None:
         try:
@@ -154,8 +145,8 @@ class UsbDevice:
                             ctrl.value = auto
                         else:
                             ctrl.value = 3 if auto else 1  # 3=auto, 1=manual
-        except Exception as e:
-            self.log.error(f'Error setting auto exposure: {e}')
+        except Exception:
+            self.log.exception('Error setting auto exposure')
 
     def set_exposure(self, value: float) -> None:
         try:
@@ -166,8 +157,8 @@ class UsbDevice:
                     new_value = int(value * (self._exposure_max - self._exposure_min) + self._exposure_min)
                     if new_value != ctrl.value:
                         ctrl.value = new_value
-        except Exception as e:
-            self.log.error(f'Error setting exposure: {e}')
+        except Exception:
+            self.log.exception('Error setting exposure')
 
     def get_auto_exposure(self) -> bool | None:
         try:
