@@ -77,16 +77,13 @@ class V4L2Device:
         try:
             async for frame in self._device:
                 timestamp = rosys.time()
-
                 if self._image_is_jpg:
                     result = self._on_new_image_data(frame.data, timestamp)
                 else:
                     # TODO: Convert frame.data to numpy array
                     result = self._on_new_image_data(frame.data, timestamp)
-
                 if isinstance(result, Awaitable):
                     await result
-
         except Exception:
             self.log.exception('Error capturing frame for video device %s', self._video_id)
 
