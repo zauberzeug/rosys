@@ -76,6 +76,7 @@ module = [
     "cairosvg",
     "coloredlogs",
     "imgsize",
+    "linuxpy.*",
     "networkx",
     "objgraph",
     "pylab",
