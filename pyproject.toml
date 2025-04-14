@@ -39,6 +39,7 @@ cairosvg = "^2.7.0"
 pillow = ">=10.3.0" # https://github.com/zauberzeug/rosys/security/dependabot/44
 idna = ">=3.7" # https://github.com/zauberzeug/rosys/security/dependabot/45
 uvicorn = "!=0.29.0" # test_examples.py fails with 0.29.0 due to persistency not correctly writting during teardown
+linuxpy = "^0.20.0"
 
 [tool.poetry.group.dev]
 optional = true
@@ -75,6 +76,7 @@ module = [
     "cairosvg",
     "coloredlogs",
     "imgsize",
+    "linuxpy.*",
     "networkx",
     "objgraph",
     "pylab",

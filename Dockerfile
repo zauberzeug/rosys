@@ -5,6 +5,7 @@ RUN apt update && apt install -y \
     libgl1 libglx-mesa0 ffmpeg libsm6 libxext6 \
     avahi-utils iputils-ping \
     jq \
+    lsof \
     gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav \
     && rm -rf /var/lib/apt/lists/*
 
@@ -36,6 +37,8 @@ RUN CURL="curl -s https://api.github.com/repos/zauberzeug/lizard/releases" && \
 
 # for Lizard monitor
 RUN pip install --no-cache prompt-toolkit
+
+RUN pip install --no-cache icecream
 
 WORKDIR /rosys
 COPY LICENSE README.md rosys.code-workspace ./

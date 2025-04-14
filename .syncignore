@@ -10,7 +10,6 @@ __pycache__/
 .ruff_cache/
 .venv/
 .vscode/
-docs/
 examples/
 tests/
 *.env
