@@ -20,7 +20,7 @@ def find_video_id(camera_uid: str) -> int | None:
     return min(video_ids) if video_ids else None
 
 
-class V4L2Device:
+class V4l2Device:
 
     def __init__(self, video_id: int, device: Device, *,
                  on_new_image_data: Callable[[np.ndarray | bytes, float], Awaitable | None]) -> None:
@@ -49,7 +49,7 @@ class V4L2Device:
         return self._image_is_jpg
 
     @staticmethod
-    async def from_uid(camera_id: str, on_new_image_data: Callable[[np.ndarray | bytes, float], Awaitable | None]) -> V4L2Device | None:
+    async def from_uid(camera_id: str, on_new_image_data: Callable[[np.ndarray | bytes, float], Awaitable | None]) -> V4l2Device | None:
         video_id = find_video_id(camera_id)
         if video_id is None:
             logging.error('Could not find video device for camera %s', camera_id)
@@ -62,7 +62,7 @@ class V4L2Device:
             except Exception:
                 logging.error('Could not open video device %s', video_id)
                 return None
-            usb_device = V4L2Device(video_id=video_id, device=device, on_new_image_data=on_new_image_data)
+            usb_device = V4l2Device(video_id=video_id, device=device, on_new_image_data=on_new_image_data)
             await usb_device.load_value_ranges()
             usb_device.set_video_format()
             return usb_device

@@ -9,7 +9,7 @@ from ..camera.transformable_camera import TransformableCamera
 from ..image import Image
 from ..image_processing import get_image_size_from_bytes, process_jpeg_image, process_ndarray_image
 from ..image_rotation import ImageRotation
-from .v4l2_device import V4L2Device
+from .v4l2_device import V4l2Device
 
 
 class UsbCamera(ConfigurableCamera, TransformableCamera):
@@ -30,7 +30,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                          connect_after_init=connect_after_init,
                          **kwargs)
         self._pending_operations = 0
-        self.device: V4L2Device | None = None
+        self.device: V4l2Device | None = None
         self.detect: bool = False
         self.color: str | None = None
 
@@ -53,7 +53,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         if self.is_connected:
             return
 
-        device = await V4L2Device.from_uid(self.id, self._handle_new_image_data)
+        device = await V4l2Device.from_uid(self.id, self._handle_new_image_data)
         if device is None:
             logging.warning('Connecting camera %s: failed', self.id)
             return
