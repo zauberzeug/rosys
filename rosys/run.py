@@ -143,3 +143,42 @@ def tear_down() -> None:
         _kill(process)
     running_sh_processes.clear()
     log.info('teardown complete.')
+
+
+async def retry(func: Callable, *,
+                max_attempts: int = 3,
+                max_timeout: float = 10,
+                on_failed: Callable | None = None,
+                logging_callback: Callable[[int, int], None] | None = None,
+                raise_on_failure: bool = False) -> bool:
+    """Retry a function multiple times with customizable retry conditions.
+
+    This function attempts to execute a function multiple times until it succeeds
+    or reaches the maximum number of attempts. It allows customization of retry count,
+    timeout duration, failure and logging callbacks.
+
+    :param func: The function to retry
+    :param max_attempts: Maximum number of retry attempts
+    :param max_timeout: Maximum time in seconds to wait for each attempt
+    :param on_failed: Optional callback to execute after each failed attempt
+    :param logging_callback: Optional callback to log the current attempt number and max attempts
+    :param raise_on_failure: If `True`, raises RuntimeError after all attempts fail
+    :return: `True` if the function succeeded within the attempts, `False` otherwise
+    :raises RuntimeError: If `raise_on_failure` is `True` and all attempts fail
+    """
+    for attempt in range(max_attempts):
+        try:
+            await asyncio.wait_for(func(), timeout=max_timeout)
+            return True
+        except Exception:
+            if logging_callback is not None:
+                logging_callback(attempt, max_attempts)
+            if on_failed is None:
+                continue
+            if asyncio.iscoroutinefunction(on_failed):
+                await on_failed()
+            else:
+                on_failed()
+    if raise_on_failure:
+        raise RuntimeError(f'Running {func.__name__} failed.')
+    return False
