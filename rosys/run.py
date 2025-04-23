@@ -8,7 +8,7 @@ import uuid
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from functools import wraps
-from inspect import Parameter, signature
+from inspect import signature
 from pathlib import Path
 from typing import Any, ParamSpec, TypeVar
 
@@ -150,7 +150,7 @@ async def retry(func: Callable, *,
                 max_attempts: int = 3,
                 max_timeout: float | None = None,
                 on_failed: Callable | None = None,
-                raise_on_failure: bool = False) -> bool:
+                raise_on_failure: bool = False) -> tuple[bool, Any]:
     """Call a function multiple times with customizable retry conditions.
 
     This function attempts to run a function multiple times until it succeeds or reaches the maximum number of attempts.
@@ -162,13 +162,14 @@ async def retry(func: Callable, *,
     :param on_failed: Optional callback to execute after each failed attempt. Can optionally accept
                      `attempt` (current 0-based attempt number) and `max_attempts` as keyword arguments.
     :param raise_on_failure: If ``True``, raises RuntimeError after all attempts fail
-    :return: ``True`` if the function succeeded within the attempts, ``False`` otherwise
+    :return: A tuple containing (success: bool, result: Any) where success indicates if the function succeeded
+             and result contains the return value of the function if successful, None otherwise
     :raises RuntimeError: If ``raise_on_failure`` is ``True`` and all attempts fail
     """
     for attempt in range(max_attempts):
         try:
-            await asyncio.wait_for(func(), timeout=max_timeout)
-            return True
+            result = await asyncio.wait_for(func(), timeout=max_timeout)
+            return True, result
         except Exception:
             if on_failed is None:
                 continue
@@ -181,4 +182,4 @@ async def retry(func: Callable, *,
                 on_failed(**kwargs)
     if raise_on_failure:
         raise RuntimeError(f'Running {func.__name__} failed.')
-    return False
+    return False, None

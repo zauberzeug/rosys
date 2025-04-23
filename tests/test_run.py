@@ -7,13 +7,36 @@ from rosys import run
 async def test_retry():
     events = []
 
-    async def func():
+    # retry three times with success
+    async def func_successful():
+        events.append('call')
+
+    events.clear()
+    success, result = await run.retry(func_successful)
+    assert success is True
+    assert result is None
+    assert events == ['call']
+
+    # retry three times with success and return value
+    async def func_successful_with_result():
+        events.append('call')
+        return 'success'
+
+    events.clear()
+    success, result = await run.retry(func_successful_with_result)
+    assert success is True
+    assert result == 'success'
+    assert events == ['call']
+
+    # retry three times without success
+    async def func_unsuccessful():
         events.append('call')
         raise ValueError()
 
-    # just retry three times
     events.clear()
-    await run.retry(func)
+    success, result = await run.retry(func_unsuccessful)
+    assert success is False
+    assert result is None
     assert events == [
         'call',
         'call',
@@ -22,7 +45,9 @@ async def test_retry():
 
     # with on_failed callback
     events.clear()
-    await run.retry(func, on_failed=lambda: events.append('failed'))
+    success, result = await run.retry(func_unsuccessful, on_failed=lambda: events.append('failed'))
+    assert success is False
+    assert result is None
     assert events == [
         'call',
         'failed',
@@ -34,7 +59,9 @@ async def test_retry():
 
     # with on_failed callback and attempt/max_attempts arguments
     events.clear()
-    await run.retry(func, on_failed=lambda attempt, max_attempts: events.append(f'failed {attempt}/{max_attempts}'))
+    success, result = await run.retry(func_unsuccessful, on_failed=lambda attempt, max_attempts: events.append(f'failed {attempt}/{max_attempts}'))
+    assert success is False
+    assert result is None
     assert events == [
         'call',
         'failed 0/3',
@@ -49,7 +76,9 @@ async def test_retry():
         events.append('failed')
 
     events.clear()
-    await run.retry(func, on_failed=handle_failed)
+    success, result = await run.retry(func_unsuccessful, on_failed=handle_failed)
+    assert success is False
+    assert result is None
     assert events == [
         'call',
         'failed',
@@ -64,7 +93,9 @@ async def test_retry():
         events.append(f'failed {attempt}/{max_attempts}')
 
     events.clear()
-    await run.retry(func, on_failed=handle_failed_with_args)
+    success, result = await run.retry(func_unsuccessful, on_failed=handle_failed_with_args)
+    assert success is False
+    assert result is None
     assert events == [
         'call',
         'failed 0/3',
@@ -77,7 +108,9 @@ async def test_retry():
     # with raise_on_failure
     events.clear()
     with pytest.raises(RuntimeError):
-        await run.retry(func, raise_on_failure=True)
+        success, result = await run.retry(func_unsuccessful, raise_on_failure=True)
+    assert success is False
+    assert result is None
     assert events == [
         'call',
         'call',
