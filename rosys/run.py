@@ -147,7 +147,7 @@ def tear_down() -> None:
 
 async def retry(func: Callable, *,
                 max_attempts: int = 3,
-                max_timeout: float = 10,
+                max_timeout: float | None = None,
                 on_failed: Callable | None = None,
                 logging_callback: Callable[[int, int], None] | None = None,
                 raise_on_failure: bool = False) -> bool:
@@ -159,7 +159,7 @@ async def retry(func: Callable, *,
 
     :param func: The function to retry
     :param max_attempts: Maximum number of retry attempts
-    :param max_timeout: Maximum time in seconds to wait for each attempt
+    :param max_timeout: Optional maximum time in seconds to wait for each attempt
     :param on_failed: Optional callback to execute after each failed attempt
     :param logging_callback: Optional callback to log the current attempt number and max attempts
     :param raise_on_failure: If `True`, raises RuntimeError after all attempts fail
