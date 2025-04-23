@@ -151,20 +151,19 @@ async def retry(func: Callable, *,
                 on_failed: Callable | None = None,
                 logging_callback: Callable[[int, int], None] | None = None,
                 raise_on_failure: bool = False) -> bool:
-    """Retry a function multiple times with customizable retry conditions.
+    """Call a function multiple times with customizable retry conditions.
 
-    This function attempts to execute a function multiple times until it succeeds
-    or reaches the maximum number of attempts. It allows customization of retry count,
-    timeout duration, failure and logging callbacks.
+    This function attempts to run a function multiple times until it succeeds or reaches the maximum number of attempts.
+    It allows customization of retry count, timeout duration, failure and logging callbacks.
 
-    :param func: The function to retry
+    :param func: An async function to retry
     :param max_attempts: Maximum number of retry attempts
-    :param max_timeout: Optional maximum time in seconds to wait for each attempt
+    :param max_timeout: Optional maximum time in seconds to wait per attempt
     :param on_failed: Optional callback to execute after each failed attempt
-    :param logging_callback: Optional callback to log the current attempt number and max attempts
-    :param raise_on_failure: If `True`, raises RuntimeError after all attempts fail
-    :return: `True` if the function succeeded within the attempts, `False` otherwise
-    :raises RuntimeError: If `raise_on_failure` is `True` and all attempts fail
+    :param logging_callback: Optional callback to log failed attempts (arguments: current 0-based attempt number and ``max_attempt``)
+    :param raise_on_failure: If ``True``, raises RuntimeError after all attempts fail
+    :return: ``True`` if the function succeeded within the attempts, ``False`` otherwise
+    :raises RuntimeError: If ``raise_on_failure`` is ``True`` and all attempts fail
     """
     for attempt in range(max_attempts):
         try:
