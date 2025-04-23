@@ -8,8 +8,9 @@ import uuid
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
 from functools import wraps
+from inspect import Parameter, signature
 from pathlib import Path
-from typing import ParamSpec, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 from nicegui import run
 
@@ -149,7 +150,6 @@ async def retry(func: Callable, *,
                 max_attempts: int = 3,
                 max_timeout: float | None = None,
                 on_failed: Callable | None = None,
-                logging_callback: Callable[[int, int], None] | None = None,
                 raise_on_failure: bool = False) -> bool:
     """Call a function multiple times with customizable retry conditions.
 
@@ -159,8 +159,8 @@ async def retry(func: Callable, *,
     :param func: An async function to retry
     :param max_attempts: Maximum number of retry attempts
     :param max_timeout: Optional maximum time in seconds to wait per attempt
-    :param on_failed: Optional callback to execute after each failed attempt
-    :param logging_callback: Optional callback to log failed attempts (arguments: current 0-based attempt number and ``max_attempt``)
+    :param on_failed: Optional callback to execute after each failed attempt. Can optionally accept
+                     `attempt` (current 0-based attempt number) and `max_attempts` as keyword arguments.
     :param raise_on_failure: If ``True``, raises RuntimeError after all attempts fail
     :return: ``True`` if the function succeeded within the attempts, ``False`` otherwise
     :raises RuntimeError: If ``raise_on_failure`` is ``True`` and all attempts fail
@@ -170,14 +170,15 @@ async def retry(func: Callable, *,
             await asyncio.wait_for(func(), timeout=max_timeout)
             return True
         except Exception:
-            if logging_callback is not None:
-                logging_callback(attempt, max_attempts)
             if on_failed is None:
                 continue
+            sig = signature(on_failed)
+            kwargs = {k: v for k, v in {'attempt': attempt, 'max_attempts': max_attempts}.items()
+                      if k in sig.parameters}
             if asyncio.iscoroutinefunction(on_failed):
-                await on_failed()
+                await on_failed(**kwargs)
             else:
-                on_failed()
+                on_failed(**kwargs)
     if raise_on_failure:
         raise RuntimeError(f'Running {func.__name__} failed.')
     return False

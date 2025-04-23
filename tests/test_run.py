@@ -11,16 +11,13 @@ async def test_retry():
         events.append('call')
         raise ValueError()
 
-    # with logging callback
+    # just retry three times
     events.clear()
-    await run.retry(func, logging_callback=lambda attempt, max_attempts: events.append(f'failed {attempt}/{max_attempts}'))
+    await run.retry(func)
     assert events == [
         'call',
-        'failed 0/3',
         'call',
-        'failed 1/3',
         'call',
-        'failed 2/3',
     ]
 
     # with on_failed callback
@@ -33,6 +30,18 @@ async def test_retry():
         'failed',
         'call',
         'failed',
+    ]
+
+    # with on_failed callback and attempt/max_attempts arguments
+    events.clear()
+    await run.retry(func, on_failed=lambda attempt, max_attempts: events.append(f'failed {attempt}/{max_attempts}'))
+    assert events == [
+        'call',
+        'failed 0/3',
+        'call',
+        'failed 1/3',
+        'call',
+        'failed 2/3',
     ]
 
     # with async on_failed callback
@@ -48,6 +57,21 @@ async def test_retry():
         'failed',
         'call',
         'failed',
+    ]
+
+    # with async on_failed callback and attempt/max_attempts arguments
+    async def handle_failed_with_args(*, attempt, max_attempts):
+        events.append(f'failed {attempt}/{max_attempts}')
+
+    events.clear()
+    await run.retry(func, on_failed=handle_failed_with_args)
+    assert events == [
+        'call',
+        'failed 0/3',
+        'call',
+        'failed 1/3',
+        'call',
+        'failed 2/3',
     ]
 
     # with raise_on_failure
