@@ -19,8 +19,8 @@ class CameraProvider(Generic[T], persistence.Persistable, metaclass=abc.ABCMeta)
     The camera provider also creates an HTTP route to access camera images.
     """
 
-    def __init__(self, *, persistence_key: str | None = None) -> None:
-        super().__init__(persistence_key=persistence_key)
+    def __init__(self) -> None:
+        super().__init__()
 
         self.CAMERA_ADDED = Event[T]()
         """a new camera has been added (argument: camera)"""
