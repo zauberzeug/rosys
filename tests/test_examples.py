@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import sys
 import time
 from io import StringIO
@@ -49,10 +50,9 @@ if __name__ == '__main__':
     ROOT_PATH = Path(__file__).parent.parent
     success = check(ROOT_PATH / 'main.py')
 
-    for filepath in (ROOT_PATH / 'docs' / 'src').glob('*.py'):
-        if filepath.name == 'dev_profiling.py':
-            continue  # TODO: allow testing dev_profiling.py again as soon as yappi and line-profiler support Python 3.11
-        success &= check(filepath)
+    for filepath in (ROOT_PATH / 'docs').glob('**/*.py'):
+        if os.access(filepath, os.X_OK):
+            success &= check(filepath)
 
     if not success:
         sys.exit(1)
