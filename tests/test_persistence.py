@@ -71,7 +71,6 @@ async def test_persistable() -> None:
             self.y = y
 
         def backup_to_dict(self) -> dict[str, Any]:
-            print('backup_to_dict')
             return {'x': self.x, 'y': self.y}
 
         def restore_from_dict(self, data: dict[str, Any]) -> None:
@@ -79,7 +78,7 @@ async def test_persistable() -> None:
             self.y = data['y']
 
     persistable = MyPersistable(x=42, y=3.14)
-    persistable.persistent()
+    persistable.persistent(restore=False)
     persistable.sync_backup()
 
     # pylint: disable=protected-access
