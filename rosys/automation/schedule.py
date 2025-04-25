@@ -27,7 +27,7 @@ class Translator:
     Sun = 'Sun'
 
 
-class Schedule(persistence.PersistentModule):
+class Schedule(persistence.Persistable):
 
     def __init__(self, *,
                  automator: Automator | None = None,
@@ -72,7 +72,7 @@ class Schedule(persistence.PersistentModule):
         self._is_active = False
         rosys.on_repeat(self.step, 1)
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict:
         return {
             'location': self.location,
             'sunrise_offset': self.sunrise_offset,
@@ -82,7 +82,7 @@ class Schedule(persistence.PersistentModule):
             'half_hours': self.half_hours,
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         self.location = (data['location'][0], data['location'][1]) if data.get('location') else None
         self.sunrise_offset = cast(float, data.get('sunrise_offset'))
         self.sunset_offset = cast(float, data.get('sunset_offset'))
