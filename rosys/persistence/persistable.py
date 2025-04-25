@@ -5,6 +5,7 @@ import json
 import logging
 import re
 import weakref
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -57,7 +58,9 @@ class Persistable(abc.ABC):
             raise ValueError(f'Key "{key}" is already used by another persistent object')
         self.instances[key] = self
 
-        self._filepath = Path(path or '~/.rosys').expanduser() / f'{key}.json'
+        directory = Path(path or '~/.rosys').expanduser()
+        directory.mkdir(parents=True, exist_ok=True)
+        self._filepath = directory / f'{key}.json'
         if restore:
             self.sync_restore()
         if backup_check_interval:
@@ -157,7 +160,7 @@ class Persistable(abc.ABC):
                                                                      filename='export.json'))
 
     @classmethod
-    def import_button(cls, title: str = 'Import', after_import: abc.Callable | None = None) -> ui.button:
+    def import_button(cls, title: str = 'Import', after_import: Callable | None = None) -> ui.button:
         async def restore_from_file(e: events.UploadEventArguments) -> None:
             cls.import_all(json.load(e.content))
             dialog.close()
