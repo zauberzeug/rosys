@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -96,4 +97,5 @@ async def test_persistable() -> None:
     persistable.x = 100
     persistable.request_backup()
     await forward(seconds=15)
+    await asyncio.sleep(1.0)  # give some time for IO
     assert persistable._filepath.read_text() == '{"x": 100, "y": 3.14}'
