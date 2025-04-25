@@ -29,15 +29,19 @@ robot = rosys.hardware.RobotSimulation([wheels])
 def page():
     rosys.driving.keyboard_control(steerer)
     with ui.row():
-        with ui.scene():
+        with ui.scene(width=600, height=400):
             rosys.driving.robot_object(shape, odometer)
         with ui.column(align_items='stretch'):
             rosys.driving.joystick(steerer, size=50, color='blue')
             with ui.row():
                 ui.label().bind_text_from(wheels, 'linear_velocity', lambda v: f'{v:.2f} m/s')
                 ui.label().bind_text_from(wheels, 'angular_velocity', lambda v: f'{v:.2f} rad/s')
-            ui.slider(min=0, max=5).bind_value(steerer, 'speed_scaling')
+            ui.slider(min=0, max=5).props('label-always') \
+                .bind_value(steerer, 'speed_scaling') \
+                .on_value_change(steerer.request_backup)
             ui.button('Restart RoSys', on_click=lambda: os.utime('main.py')).props('flat')
+            rosys.persistence.Persistable.export_button().props('flat icon="download"')
+            rosys.persistence.Persistable.import_button().props('flat icon="upload_file"')
 
 
 ui.run(title='RoSys - Persistence')

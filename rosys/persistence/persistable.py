@@ -1,20 +1,23 @@
+from __future__ import annotations
+
 import abc
 import json
 import logging
 import re
+import weakref
 from pathlib import Path
 from typing import Any, ClassVar
 
-from nicegui import run
+from nicegui import events, run, ui
 from typing_extensions import Self
 
-from .. import rosys
+from .. import helpers, rosys
 
 KEY_PATTERN = re.compile(r'^[a-zA-Z0-9_-]+$')
 
 
 class Persistable(abc.ABC):
-    used_keys: ClassVar[list[str]] = []
+    instances: ClassVar[weakref.WeakValueDictionary[str, Persistable]] = weakref.WeakValueDictionary()
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -50,9 +53,9 @@ class Persistable(abc.ABC):
             raise ValueError('Key is empty')
         if not KEY_PATTERN.match(key):
             raise ValueError(f'Key "{key}" contains invalid characters')
-        if key in self.used_keys:
+        if key in self.instances:
             raise ValueError(f'Key "{key}" is already used by another persistent object')
-        self.used_keys.append(key)
+        self.instances[key] = self
 
         self._filepath = Path(path or '~/.rosys').expanduser() / f'{key}.json'
         if restore:
@@ -129,3 +132,37 @@ class Persistable(abc.ABC):
     @abc.abstractmethod
     def restore_from_dict(self, data: dict[str, Any]) -> None:
         """Restore the object from a dictionary."""
+
+    @classmethod
+    def export_all(cls, path: Path | None = None, indent: int = 4) -> dict[str, Any]:
+        """Export all persistable objects to a dictionary or file."""
+        data = {key: instance.backup_to_dict() for key, instance in cls.instances.items()}
+        if path:
+            path.write_text(json.dumps(data, indent=indent))
+        return data
+
+    @classmethod
+    def import_all(cls, source: Path | dict[str, Any]) -> None:
+        """Import all persistable objects from a file or dictionary."""
+        if isinstance(source, Path):
+            data = json.loads(source.read_text())
+        else:
+            data = source
+        for key, instance in cls.instances.items():
+            instance.restore_from_dict(data[key])
+
+    @classmethod
+    def export_button(cls, title: str = 'Export', indent: int = 4) -> ui.button:
+        return ui.button(title, on_click=lambda: ui.download.content(json.dumps(cls.export_all(), indent=indent),
+                                                                     filename='export.json'))
+
+    @classmethod
+    def import_button(cls, title: str = 'Import', after_import: abc.Callable | None = None) -> ui.button:
+        async def restore_from_file(e: events.UploadEventArguments) -> None:
+            cls.import_all(json.load(e.content))
+            dialog.close()
+            if after_import is not None:
+                await helpers.invoke(after_import)
+        with ui.dialog() as dialog:
+            ui.upload(label=title, on_upload=restore_from_file).props('flat')
+        return ui.button(title, on_click=dialog.open)
