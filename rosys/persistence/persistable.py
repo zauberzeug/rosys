@@ -14,7 +14,7 @@ from typing_extensions import Self
 
 from .. import helpers, rosys
 
-KEY_PATTERN = re.compile(r'^[a-zA-Z0-9_-]+$')
+KEY_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\.]+$')
 
 
 class Persistable(abc.ABC):
