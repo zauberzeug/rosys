@@ -5,74 +5,49 @@ from rosys import run
 
 @pytest.mark.asyncio
 async def test_retry():
-    events = []
-
-    # retry three times with success
-    async def func_successful():
-        events.append('call')
-
-    events.clear()
-    await run.retry(func_successful)
-    assert events == ['call']
-
-    # retry three times with success and return value
-    async def func_successful_with_result() -> str:
+    async def func() -> str:
         events.append('call')
         return 'success'
 
-    events.clear()
-    result = await run.retry(func_successful_with_result)
+    events: list[str] = []
+    result = await run.retry(func)
     assert result == 'success'
     assert events == ['call']
 
-    # retry three times without success
-    async def func_unsuccessful():
+
+@pytest.mark.asyncio
+async def test_retry_failed():
+    async def func() -> None:
         events.append('call')
         raise ValueError()
 
-    events.clear()
-    try:
-        await run.retry(func_unsuccessful)
-    except RuntimeError:
-        pass
-    else:
-        raise AssertionError('Expected RuntimeError')
-    assert events == [
-        'call',
-        'call',
-        'call',
-    ]
+    events: list[str] = []
+    with pytest.raises(RuntimeError):
+        await run.retry(func)
+    assert events == ['call'] * 3
 
-    # with on_failed callback
-    events.clear()
-    try:
-        await run.retry(func_unsuccessful, on_failed=lambda: events.append('failed'))
-    except RuntimeError:
-        pass
-    else:
-        raise AssertionError('Expected RuntimeError')
-    assert events == [
-        'call',
-        'failed',
-        'call',
-        'failed',
-        'call',
-        'failed',
-    ]
 
-    # with on_failed callback and used arguments
-    events.clear()
-    try:
-        await run.retry(func_unsuccessful, on_failed=lambda args: events.append(f'failed {args.attempt}/{args.max_attempts}'))
-    except RuntimeError:
-        pass
-    else:
-        raise AssertionError('Expected RuntimeError')
-    assert events == [
-        'call',
-        'failed 0/3',
-        'call',
-        'failed 1/3',
-        'call',
-        'failed 2/3',
-    ]
+@pytest.mark.asyncio
+async def test_retry_failed_with_on_failed():
+    async def func() -> None:
+        events.append('call')
+        raise ValueError()
+
+    events: list[str] = []
+    with pytest.raises(RuntimeError):
+        await run.retry(func, on_failed=lambda: events.append('failed'))
+    assert events == ['call', 'failed'] * 3
+
+
+@pytest.mark.asyncio
+async def test_retry_failed_with_on_failed_and_args():
+    async def func() -> None:
+        events.append('call')
+        raise ValueError()
+
+    events: list[str] = []
+    with pytest.raises(RuntimeError):
+        await run.retry(func, on_failed=lambda args: events.append(f'failed {args.attempt}/{args.max_attempts}'))
+    assert events == ['call', 'failed 0/3',
+                      'call', 'failed 1/3',
+                      'call', 'failed 2/3']

@@ -160,9 +160,9 @@ async def retry(func: Callable, *,
     """Call a function repeatedly until it succeeds or reaches the maximum number of attempts.
 
     :param func: A function to retry
-    :param max_attempts: Maximum number of retry attempts
+    :param max_attempts: Maximum number of attempts
     :param max_timeout: Optional maximum time in seconds to wait per attempt
-    :param on_failed: Optional callback to execute after each failed attempt. Can optionally accept argument of type `OnFailedArguments`
+    :param on_failed: Optional callback to execute after each failed attempt (optional argument of type ``OnFailedArguments``)
     :return: Result of the called function
     :raises RuntimeError: If all attempts fail
     """
