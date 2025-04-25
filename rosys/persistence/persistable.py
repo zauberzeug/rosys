@@ -12,13 +12,15 @@ from typing import Any, ClassVar
 from nicegui import events, run, ui
 from typing_extensions import Self
 
-from .. import helpers, rosys
+from .. import core, helpers
 
 KEY_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\.]+$')
 
 
 class Persistable(abc.ABC):
     instances: ClassVar[weakref.WeakValueDictionary[str, Persistable]] = weakref.WeakValueDictionary()
+    on_repeat: Callable[[Callable, float], None]
+    on_shutdown: Callable[[Callable], None]
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -64,13 +66,13 @@ class Persistable(abc.ABC):
         if restore:
             self.sync_restore()
         if backup_check_interval:
-            rosys.on_repeat(self._backup_if_requested, backup_check_interval)
+            core.on_repeat(self._backup_if_requested, backup_check_interval)
         if backup_interval:
-            rosys.on_repeat(self.backup, backup_interval)
+            core.on_repeat(self.backup, backup_interval)
         if backup_interval:
-            rosys.on_shutdown(self.sync_backup)
+            core.on_shutdown(self.sync_backup)
         elif backup_check_interval:
-            rosys.on_shutdown(self._sync_backup_if_requested)
+            core.on_shutdown(self._sync_backup_if_requested)
         return self
 
     def request_backup(self) -> None:

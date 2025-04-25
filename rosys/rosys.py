@@ -15,7 +15,7 @@ import numpy as np
 import psutil
 from nicegui import Client, app, background_tasks, ui
 
-from . import event, run
+from . import core, event, run
 from .config import Config
 from .geometry.frame3d_registry import frame_registry
 from .helpers import invoke, is_stopping
@@ -26,7 +26,6 @@ warnings.filterwarnings('once', category=DeprecationWarning, module='rosys')
 
 log = logging.getLogger('rosys.core')
 
-config = Config()
 translator: Any | None = None
 
 is_test = is_test_()
@@ -306,3 +305,9 @@ register_base_startup_handlers()
 
 app.on_startup(startup)
 app.on_shutdown(shutdown)
+
+core.on_repeat = on_repeat
+core.on_startup = on_startup
+core.on_shutdown = on_shutdown
+
+config = Config().persistent()
