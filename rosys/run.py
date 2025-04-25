@@ -7,9 +7,11 @@ import subprocess
 import uuid
 from collections.abc import Callable, Generator
 from contextlib import contextmanager
+from dataclasses import dataclass
 from functools import wraps
+from inspect import signature
 from pathlib import Path
-from typing import ParamSpec, TypeVar
+from typing import Any, ParamSpec, TypeVar
 
 from nicegui import run
 
@@ -143,3 +145,37 @@ def tear_down() -> None:
         _kill(process)
     running_sh_processes.clear()
     log.info('teardown complete.')
+
+
+@dataclass(slots=True, kw_only=True, frozen=True)
+class OnFailedArguments:
+    attempt: int
+    max_attempts: int
+
+
+async def retry(func: Callable, *,
+                max_attempts: int = 3,
+                max_timeout: float | None = None,
+                on_failed: Callable | None = None) -> Any:
+    """Call a function repeatedly until it succeeds or reaches the maximum number of attempts.
+
+    :param func: A function to retry
+    :param max_attempts: Maximum number of attempts
+    :param max_timeout: Optional maximum time in seconds to wait per attempt
+    :param on_failed: Optional callback to execute after each failed attempt (optional argument of type ``OnFailedArguments``)
+    :return: Result of the called function
+    :raises RuntimeError: If all attempts fail
+    """
+    for attempt in range(max_attempts):
+        try:
+            return await asyncio.wait_for(func(), timeout=max_timeout)
+        except Exception:
+            if on_failed is None:
+                continue
+            if signature(on_failed).parameters:
+                result = on_failed(OnFailedArguments(attempt=attempt, max_attempts=max_attempts))
+            else:
+                result = on_failed()
+            if asyncio.iscoroutinefunction(on_failed):
+                await result
+    raise RuntimeError(f'Running {func.__name__} failed.')
