@@ -1,22 +1,9 @@
 # Persistence
 
-RoSys' `PersistentModule` provides an easy interface to backup and restore parts of the object state.
-The following example demonstrates a `Model` class that has `value`, which is manipulated with a `ui.slider`.
+The `Persistable` class is a mixin for objects that need to be persisted.
+It provides a `persistent` method that can be used to make the object persistent.
 
-```python
-{! examples/persistence/main.py !}
-```
-
-By deriving from `PersistentModule` and implementing `backup` and `restore`, RoSys will automatically write the value to a file in the directory ~/.rosys/.
-The filename contains the name of the module.
-After restarting the script, the value will be restored to its last state.
-
-The `request_backup` method can be called to enforce a backup within RoSys' next backup cycle, which happens every 10 seconds.
-During shutdown, all backups are performed, independent of whether `request_backup` has been called.
-
-The `backup` function can return any JSON-serializable dictionary that represents the current state.
-It should match the `restore` function so that it can translate it back to object state.
-
+Derived classes must implement the `backup_to_dict` and `restore_from_dict` methods.
 You should choose wisely which values to persist.
 Try to avoid consuming unnecessary CPU and IO bandwidth for volatile things like wheel odometry or other sensor readings.
 
@@ -29,8 +16,29 @@ Note that the persistence module contains a number of helper functions:
 - `replace_set`: replaces the content of a set using `from_dict` for each item
 - `replace_dataclass`: replaces the attributes of a dataclass with the values of a dictionary
 
-The persistence module also provides UI buttons for exporting the contents of the ~/.rosys directory to a single file and for importing such a file.
+The `export_all` method can be used to export all persistable objects to a dictionary.
+The `import_all` method can be used to import all persistable objects from a dictionary.
+Likewise, `export_button` and `import_button` are UI elements based on these two methods that can be added to a page.
+
+By default, data is stored in the `~/.rosys` directory.
+The filename is derived from the module name.
+Both can be changed by setting the `path` and `key` parameters of the `persistent` method.
 
 If you want to automatically keep daily backups, you can use the `BackupSchedule` module.
 It will backup all the contents of your ~/.rosys directory at a configurable directory and at a given time each day.
 When a maximum number of backup files is reached (specified with `backup_count`), it will delete the oldest file.
+
+```python
+{! examples/persistable/main.py !}
+```
+
+## Migration from the old `PersistentModule` class
+
+The `PersistentModule` class has been replaced by the `Persistable` mixin.
+To migrate, follow these steps:
+
+1. Replace `PersistentModule` with `Persistable` in the class definition.
+2. Rename the `backup` and `restore` methods to `backup_to_dict` and `restore_from_dict`.
+3. Use the `persistent` method to make objects persistent.
+4. If you called `PersistentModule` with a `persistence_key`,
+   remove it and use the `key` parameter of the `persistent` method instead.

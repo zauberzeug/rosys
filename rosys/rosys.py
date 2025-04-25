@@ -20,7 +20,6 @@ from .config import Config
 from .geometry.frame3d_registry import frame_registry
 from .helpers import invoke, is_stopping
 from .helpers import is_test as is_test_
-from .persistence.registry import backup, restore, sync_backup
 
 warnings.filterwarnings('once', category=DeprecationWarning, module='rosys')
 
@@ -221,8 +220,6 @@ async def startup() -> None:
         raise RuntimeError(
             'multiprocessing start method must be "spawn"; see https://pythonspeed.com/articles/python-multiprocessing/')
 
-    restore()
-
     _state.startup_finished = True
 
     for handler in startup_handlers:
@@ -255,8 +252,6 @@ async def shutdown() -> None:
     for handler in shutdown_handlers:
         log.debug('invoking shutdown handler "%s"', handler.__qualname__)
         await invoke(handler)
-    log.debug('creating data backup')
-    sync_backup(force=True)
     log.debug('tear down "run" tasks')
     run.tear_down()
     log.debug('stopping all repeaters')
@@ -297,7 +292,6 @@ def reset_after_test() -> None:
 def register_base_startup_handlers() -> None:
     on_repeat(_garbage_collection, 60)
     on_repeat(_watch_emitted_events, 0.1)
-    on_repeat(backup, 10)
 
 
 gc.disable()  # NOTE disable automatic garbage collection to optimize performance
