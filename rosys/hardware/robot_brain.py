@@ -24,9 +24,9 @@ class RobotBrain:
     """
 
     def __init__(self, communication: Communication, *, enable_esp_on_startup: bool = True) -> None:
-        self.LINE_RECEIVED = Event()
+        self.LINE_RECEIVED = Event[str]()
         """a line has been received from the microcontroller (argument: line as string)"""
-        self.FLASH_P0_COMPLETE = Event()
+        self.FLASH_P0_COMPLETE = Event[[]]()
         """flashing p0 was successful and 'Replica complete' was received"""
 
         self.log = logging.getLogger('rosys.robot_rain')
@@ -126,6 +126,8 @@ class RobotBrain:
                         .tooltip('Enable the microcontroller module (will later be done automatically)')
                     ui.menu_item('Configure', on_click=self.configure) \
                         .tooltip('Configure the microcontroller with the Lizard startup file')
+                    ui.menu_item('Download Config', on_click=lambda: ui.download(self.lizard_code.encode('utf-8'), 'config.liz')) \
+                        .tooltip('Download the Lizard config file')
                     ui.menu_item('Restart', on_click=self.restart) \
                         .tooltip('Restart the microcontroller')
                 ui.button(on_click=menu.open).props('icon=more_vert flat round')

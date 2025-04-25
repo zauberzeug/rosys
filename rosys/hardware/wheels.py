@@ -18,8 +18,7 @@ class Wheels(Module, abc.ABC):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.VELOCITY_MEASURED = Event()
-        """new velocity measurements are available for processing (argument: list of velocities)"""
+        self.VELOCITY_MEASURED = Event[list[Velocity]]()
 
         self.linear_target_speed: float = 0.0
         self.angular_target_speed: float = 0.0

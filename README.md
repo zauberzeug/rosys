@@ -74,7 +74,7 @@ Another module can register on `NEW_SENSOR_DATA` and act accordingly when being 
 
 RoSys provides an `Automator` module for running "automations".
 Automations are coroutines that can not only be started and stopped, but also paused and resumed, e.g. using `AutomationControls`.
-Have a look at our [Click-and-drive](examples/click-and-drive.md) example.
+Have a look at our [Click-and-drive](examples/click-and-drive/README.md) example.
 
 ### Persistence
 
@@ -119,7 +119,7 @@ It is a domain-specific language interpreted by the microcontroller which enable
 RoSys builds upon the open source project [NiceGUI](https://nicegui.io/) and offers many robot-related UI elements.
 NiceGUI is a high-level UI framework for the web.
 This means you can write all UI code in Python and the state is automatically reflected in the browser through WebSockets.
-See any of our [examples](examples/steering.md).
+See any of our [examples](examples/steering/README.md).
 
 RoSys can also be used with other user interfaces or interaction models if required, for example a completely app-based control through Bluetooth Low Energy with Flutter.
 

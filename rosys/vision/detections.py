@@ -54,8 +54,7 @@ class BoxDetection(Detection):
     def __str__(self) -> str:
         return f'x:{self.x:.0f} y:{self.y:.0f}, w:{self.width:.0f} h:{self.height:.0f} cat:{self.category_name} conf:{self.confidence:.2f}'
 
-    def to_svg(self, shrink: int = 1) -> str:
-        color = 'red'
+    def to_svg(self, shrink: int = 1, *, color: str = 'red') -> str:
         x = self.x / shrink
         y = self.y / shrink
         return (
@@ -106,8 +105,7 @@ class SegmentationDetection:
     def __str__(self) -> str:
         return f'shape:{self.shape.__str__} cat:{self.category_name} conf:{self.confidence:.2f}'
 
-    def to_svg(self, shrink: int = 1) -> str:
-        color = 'green'
+    def to_svg(self, shrink: int = 1, *, color: str = 'green') -> str:
         d = ' '.join([f"{'L' if i > 0 else 'M'} {p.x/shrink} {p.y/shrink}" for i, p in enumerate(self.shape.points)])
         d += ' Z'
         p0 = self.shape.points[0]
@@ -135,8 +133,7 @@ class PointDetection(Detection):
     def __str__(self) -> str:
         return f'x:{self.x:.0f} y:{self.y:.0f} cat:{self.category_name} conf:{self.confidence:.2f}'
 
-    def to_svg(self, shrink: int = 1) -> str:
-        color = 'red'
+    def to_svg(self, shrink: int = 1, *, color: str = 'red') -> str:
         x = self.x / shrink
         y = self.y / shrink
         return (
@@ -147,16 +144,36 @@ class PointDetection(Detection):
 
 
 @dataclass(slots=True, kw_only=True)
+class ClassificationDetection:
+    category_name: str
+    model_name: str
+    confidence: float
+    uuid: str = ''  # NOTE this is used to keep track of simulated objects
+
+    def __str__(self) -> str:
+        return f'cat:{self.category_name} conf:{self.confidence:.2f}'
+
+    def to_svg(self) -> str:
+        return (
+            f'<text x="50%" y="50%" text-anchor="middle" dominant-baseline="middle" '
+            f'stroke="black" fill="black" font-size="10%" font-weight="bold">'
+            f'{self.category_name} ({self.confidence:.0%})</text>'
+        )
+
+
+@dataclass(slots=True, kw_only=True)
 class Detections:
     boxes: list[BoxDetection] = field(default_factory=list)
     points: list[PointDetection] = field(default_factory=list)
     segmentations: list[SegmentationDetection] = field(default_factory=list)
+    classifications: list[ClassificationDetection] = field(default_factory=list)
 
     def to_svg(self, shrink: int = 1) -> str:
         return '\n'.join(
             b.to_svg(shrink) for b in self.boxes) + '\n' + '\n'.join(
             p.to_svg(shrink) for p in self.points) + '\n' + '\n'.join(
-            s.to_svg(shrink) for s in self.segmentations)
+            s.to_svg(shrink) for s in self.segmentations) + '\n' + '\n'.join(
+            c.to_svg() for c in self.classifications)
 
     def to_dict(self) -> dict:
         return asdict(self)

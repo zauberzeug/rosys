@@ -58,7 +58,7 @@ class Gnss(ABC):
         self.log = logging.getLogger('rosys.gnss')
         self.last_measurement: GnssMeasurement | None = None
 
-        self.NEW_MEASUREMENT = Event()
+        self.NEW_MEASUREMENT = Event[GnssMeasurement]()
         """a new measurement has been received (argument: ``GnssMeasurement``)"""
 
     @property
@@ -282,11 +282,11 @@ class GnssSimulation(Gnss):
 
         noise_lat = np.random.normal(0, self._lat_std_dev)
         noise_lon = np.random.normal(0, self._lon_std_dev)
-        noise_heading = np.random.normal(0, math.radians(self._heading_std_dev))
-
-        direction = math.atan2(noise_lon, noise_lat)
-        noise_point = geo_pose.point.polar(noise_lat, direction)
-        noise_pose = GeoPose(lat=noise_point.lat, lon=noise_point.lon, heading=geo_pose.heading + noise_heading)
+        noise_magnitude = np.sqrt(noise_lat**2 + noise_lon**2)
+        noise_direction = math.atan2(noise_lon, noise_lat)
+        noise_point = geo_pose.point.polar(noise_magnitude, noise_direction)
+        noise_heading = np.random.normal(geo_pose.heading, math.radians(self._heading_std_dev))
+        noise_pose = GeoPose(lat=noise_point.lat, lon=noise_point.lon, heading=noise_heading)
 
         self.last_measurement = GnssMeasurement(
             time=rosys.time(),

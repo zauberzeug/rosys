@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import io
 import warnings
 from dataclasses import dataclass, field
 from typing import ClassVar
@@ -10,6 +11,7 @@ import PIL.Image
 import PIL.ImageDraw
 from typing_extensions import Self
 
+from .. import rosys
 from .detections import Detections
 
 
@@ -73,8 +75,31 @@ class Image:
             data=encoded_image.tobytes(),
         )
 
+    @classmethod
+    def from_pil(cls, pil_image: PIL.Image.Image, *, camera_id: str = 'from_pil', time: float | None = None) -> Self:
+        """Create an image from a PIL image. This runs a JPEG encode."""
+        bytesio = io.BytesIO()
+        pil_image.save(bytesio, format='jpeg')
+        size = ImageSize(width=pil_image.width, height=pil_image.height)
+        return cls(camera_id=camera_id, size=size, time=time or rosys.time(), data=bytesio.getvalue())
+
+    @classmethod
+    def from_array(cls, array: np.ndarray, *, camera_id: str = 'from_array', time: float | None = None) -> Self:
+        """Create an image from a NumPy array. This runs a JPEG encode."""
+        _, encoded_image = cv2.imencode('.jpg', array)
+        size = ImageSize(width=array.shape[1], height=array.shape[0])
+        return cls(camera_id=camera_id, size=size, time=time or rosys.time(), data=encoded_image.tobytes())
+
     def to_array(self) -> np.ndarray:
+        """Convert the image to a NumPy array. This runs a JPEG decode."""
         if self.data is None:
-            raise ValueError('Image data is None')
+            raise ValueError('Cannot convert image to array because it has no data.')
 
         return cv2.imdecode(np.frombuffer(self.data, dtype=np.uint8), cv2.IMREAD_COLOR)
+
+    def to_pil(self) -> PIL.Image.Image:
+        """Convert the image to a PIL image. This runs a JPEG decode."""
+        if self.data is None:
+            raise ValueError('Cannot convert image to PIL image because it has no data.')
+
+        return PIL.Image.open(io.BytesIO(self.data))

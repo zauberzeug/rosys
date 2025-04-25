@@ -21,10 +21,10 @@ class Odometer:
     """
 
     def __init__(self, wheels: VelocityProvider) -> None:
-        self.WHEELS_TURNED = Event()
+        self.WHEELS_TURNED = Event[[]]()
         """the wheels have turned with non-zero velocity"""
 
-        self.PREDICTION_UPDATED = Event()
+        self.PREDICTION_UPDATED = Event[[]]()
         """the pose prediction has been updated"""
 
         self.log = logging.getLogger('rosys.odometer')

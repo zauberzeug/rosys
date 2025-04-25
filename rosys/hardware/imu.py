@@ -30,7 +30,7 @@ class Imu(Module):
         self.offset_rotation = offset_rotation or Rotation.zero()
         self.last_measurement: ImuMeasurement | None = None
 
-        self.NEW_MEASUREMENT = Event()
+        self.NEW_MEASUREMENT = Event[ImuMeasurement]()
         """a new measurement has been received (argument: ImuMeasurement)"""
 
     def _emit_measurement(self, gyro_calibration: float, raw_rotation: Rotation, time: float) -> None:
