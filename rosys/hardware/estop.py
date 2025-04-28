@@ -38,13 +38,13 @@ class EStopHardware(EStop, ModuleHardware):
     The module expects a dictionary of pin names and pin numbers.
     """
 
-    def __init__(self, robot_brain: RobotBrain, *, name: str = 'estop', pins: dict[str, int], inverted: bool = False) -> None:
+    def __init__(self, robot_brain: RobotBrain, *, name: str = 'estop', pins: dict[str, int], inverted: bool = True) -> None:
         self.name = name
         self.pins = pins
         self.inverted = inverted
         lizard_code = '\n'.join(f'{name}_{pin} = Input({number})' for pin, number in pins.items())
         if inverted:
-            lizard_code += '\n'.join(f'{name}_{pin}.inverted = true' for pin in pins)
+            lizard_code += '\n' + '\n'.join(f'{name}_{pin}.inverted = true' for pin in pins)
         core_message_fields = [f'{name}_{pin}.active' for pin in pins]
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
