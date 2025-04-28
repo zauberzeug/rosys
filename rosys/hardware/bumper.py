@@ -31,20 +31,24 @@ class BumperHardware(Bumper, ModuleHardware):
                  expander: ExpanderHardware | None = None,
                  name: str = 'bumper',
                  pins: dict[str, int],
-                 estop: EStop | None = None) -> None:
+                 estop: EStop | None = None,
+                 inverted: bool = False) -> None:
         self.name = name
         self.pins = pins
+        self.inverted = inverted
         lizard_code = ''
         for pin, number in pins.items():
             lizard_code += f'{name}_{pin} = {expander.name + "." if expander else ""}Input({number})\n'
-        core_message_fields = [f'{name}_{pin}.level' for pin in pins]
+            if inverted:
+                lizard_code += f'{name}_{pin}.inverted = true\n'
+        core_message_fields = [f'{name}_{pin}.active' for pin in pins]
         super().__init__(robot_brain=robot_brain,
                          lizard_code=lizard_code,
                          core_message_fields=core_message_fields,
                          estop=estop)
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        active_bumpers = [pin for pin in self.pins if int(words.pop(0)) == 1]
+        active_bumpers = [pin for pin in self.pins if int(words.pop(0)) == 'true']
         if self.estop and self.estop.active:
             return
         for pin in active_bumpers:
