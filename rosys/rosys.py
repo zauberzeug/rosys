@@ -71,8 +71,10 @@ def notify(message: str,
                'warning',
                'info',
                'ongoing',
-           ] | None = None) -> None:
-    log.info(message)
+           ] | None = None, *,
+           log_level: int = logging.INFO,
+           **kwargs) -> None:
+    log.log(log_level, message, stacklevel=2)
     notifications.append(Notification(time=time(), message=message))
     NEW_NOTIFICATION.emit(message)
     # NOTE show notifications on all pages
@@ -81,7 +83,7 @@ def notify(message: str,
             continue
         with client:
             try:
-                ui.notify(message, type=type)
+                ui.notify(message, type=type, **kwargs)
             except Exception:
                 log.exception('failed to call notify')
 
