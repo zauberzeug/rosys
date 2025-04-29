@@ -53,7 +53,7 @@ class EStopHardware(EStop, ModuleHardware):
         await self.robot_brain.send(f'en3.level({"false" if active else "true"})')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        corelist = [(words.pop(0)) == 'true' for _ in self.pins]
+        corelist = [words.pop(0) == 'true' for _ in self.pins]
         active = any(corelist)
         pressed = [index for index, value in enumerate(corelist) if value]
         if pressed != self.pressed_estops:
