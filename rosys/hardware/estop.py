@@ -38,11 +38,14 @@ class EStopHardware(EStop, ModuleHardware):
     The module expects a dictionary of pin names and pin numbers.
     """
 
-    def __init__(self, robot_brain: RobotBrain, *, name: str = 'estop', pins: dict[str, int]) -> None:
+    def __init__(self, robot_brain: RobotBrain, *, name: str = 'estop', pins: dict[str, int], inverted: bool = True) -> None:
         self.name = name
         self.pins = pins
+        self.inverted = inverted
         lizard_code = '\n'.join(f'{name}_{pin} = Input({number})' for pin, number in pins.items())
-        core_message_fields = [f'{name}_{pin}.level' for pin in pins]
+        if inverted:
+            lizard_code += '\n' + '\n'.join(f'{name}_{pin}.inverted = true' for pin in pins)
+        core_message_fields = [f'{name}_{pin}.active' for pin in pins]
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
     async def set_soft_estop(self, active: bool) -> None:
@@ -50,7 +53,7 @@ class EStopHardware(EStop, ModuleHardware):
         await self.robot_brain.send(f'en3.level({"false" if active else "true"})')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        corelist = [int(words.pop(0)) == 0 for _ in self.pins]
+        corelist = [words.pop(0) == 'true' for _ in self.pins]
         active = any(corelist)
         pressed = [index for index, value in enumerate(corelist) if value]
         if pressed != self.pressed_estops:
