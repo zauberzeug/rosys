@@ -105,7 +105,7 @@ class RobotBrain:
                 .tooltip('Read installed and available versions')
             with ui.row():
                 with ui.menu() as menu:
-                    ui.menu_item('Download', on_click=self.lizard_firmware.download) \
+                    ui.menu_item('Download Lizard', on_click=self.lizard_firmware.download) \
                         .tooltip('Download the latest Lizard firmware from GitHub')
 
                     async def check_strapping_pins_core():
@@ -122,12 +122,19 @@ class RobotBrain:
                     ui.menu_item('Flash P0', on_click=self.lizard_firmware.flash_p0) \
                         .tooltip('Flash the downloaded Lizard firmware to the P0 microcontroller')
 
-                    ui.menu_item('Enable', on_click=self.enable_esp) \
-                        .tooltip('Enable the microcontroller module (will later be done automatically)')
+                    ui.separator()
                     ui.menu_item('Configure', on_click=self.configure) \
                         .tooltip('Configure the microcontroller with the Lizard startup file')
                     ui.menu_item('Download Config', on_click=lambda: ui.download(self.lizard_code.encode('utf-8'), 'config.liz')) \
                         .tooltip('Download the Lizard config file')
+
+                    ui.separator()
+                    ui.menu_item('Enable', on_click=self.enable_esp) \
+                        .tooltip('Enable the microcontroller module')
+                    ui.menu_item('Disable', on_click=self.disable_esp) \
+                        .tooltip('Disable the microcontroller module (needs reset to be enabled again)')
+                    ui.menu_item('Reset', on_click=self.reset_esp) \
+                        .tooltip('Reset the microcontroller module')
                     ui.menu_item('Restart', on_click=self.restart) \
                         .tooltip('Restart the microcontroller')
                 ui.button(on_click=menu.open).props('icon=more_vert flat round')
