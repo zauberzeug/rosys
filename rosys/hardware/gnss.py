@@ -4,6 +4,7 @@ import logging
 import math
 from abc import ABC
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import IntEnum
 
 import numpy as np
@@ -143,6 +144,7 @@ class GnssHardware(Gnss):
         last_gga_timestamp = ''
         last_gst_timestamp = ''
         last_pssn_timestamp = ''
+        self.serial_connection.reset_input_buffer()  # NOTE: start with empty buffer
         while True:
             if not self.is_connected:
                 try:
@@ -156,6 +158,7 @@ class GnssHardware(Gnss):
 
             assert self.serial_connection is not None
             result = await io_bound(self.serial_connection.read_until, b'\r\n')
+            rosys_time = rosys.time()
             if not result:
                 self.log.debug('No data')
                 continue
@@ -170,7 +173,12 @@ class GnssHardware(Gnss):
             self.log.debug(sentence)
             parts = sentence.split(',')
             try:
-                timestamp = parts[{'$GPGGA': 1, '$GPGST': 1, '$PSSN': 2}[parts[0]]]
+                nema_timestamp = parts[{'$GPGGA': 1, '$GPGST': 1, '$PSSN': 2}[parts[0]]]
+                today = datetime.now().date()
+                time_obj = datetime.strptime(nema_timestamp, '%H%M%S.%f').time()
+                utc_time = datetime.combine(today, time_obj).replace(tzinfo=timezone.utc)
+                timestamp = utc_time.timestamp()
+                self.log.debug('timestamp diff = %s', round(timestamp - rosys_time, 3))
                 if parts[0] == '$GPGGA':
                     if parts[2] == '' or parts[4] == '':
                         continue
