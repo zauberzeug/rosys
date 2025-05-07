@@ -108,6 +108,7 @@ class Gnss(ABC):
 class GnssHardware(Gnss):
     """This hardware module connects to a Septentrio SimpleRTK3b (Mosaic-H) GNSS receiver."""
 
+    # Maximum allowed timestamp difference in seconds (default is ok for Kalman Filter with about 1 km/h)
     MAX_TIMESTAMP_DIFF = 0.05
 
     def __init__(self, *, antenna_pose: Pose | None, reconnect_interval: float = 3.0) -> None:
@@ -146,8 +147,6 @@ class GnssHardware(Gnss):
         last_gga_timestamp = 0.0
         last_gst_timestamp = 0.0
         last_pssn_timestamp = 0.0
-
-        # Maximum allowed timestamp difference in seconds (default is ok for Kalman Filter with about 1 km/h)
 
         while True:
             if not self.is_connected:
