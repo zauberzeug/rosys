@@ -141,9 +141,9 @@ class GnssHardware(Gnss):
         last_num_satellites = 0
         last_hdop = 0.0
         last_altitude = 0.0
-        last_gga_timestamp = ''
-        last_gst_timestamp = ''
-        last_pssn_timestamp = ''
+        last_gga_timestamp = 0.0
+        last_gst_timestamp = 0.0
+        last_pssn_timestamp = 0.0
         while True:
             if not self.is_connected:
                 try:
@@ -178,7 +178,7 @@ class GnssHardware(Gnss):
                 utc_time = datetime.combine(today, time_obj).replace(tzinfo=timezone.utc)
                 timestamp = utc_time.timestamp()
                 diff = round(((timestamp - rosys_time + 43200) % 86400) - 43200, 3)
-                if diff > 0.05:  # NOTE: above 50 ms we will get issues with Kalman filter
+                if diff > 0.05:  # NOTE: above 50 ms we will get issues with Kalman Filter
                     self.log.warning('timestamp diff = %s', diff)
                 else:
                     self.log.debug('timestamp diff = %s', diff)
