@@ -180,6 +180,7 @@ class GnssHardware(Gnss):
                 diff = round(((timestamp - rosys_time + 43200) % 86400) - 43200, 3)
                 if diff > 0.05:  # NOTE: above 50 ms we will get issues with Kalman Filter
                     self.log.warning('timestamp diff = %s', diff)
+                    continue
                 else:
                     self.log.debug('timestamp diff = %s', diff)
                 if parts[0] == '$GPGGA':
