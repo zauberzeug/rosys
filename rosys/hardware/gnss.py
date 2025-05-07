@@ -108,6 +108,8 @@ class Gnss(ABC):
 class GnssHardware(Gnss):
     """This hardware module connects to a Septentrio SimpleRTK3b (Mosaic-H) GNSS receiver."""
 
+    MAX_TIMESTAMP_DIFF = 0.05
+
     def __init__(self, *, antenna_pose: Pose | None, reconnect_interval: float = 3.0) -> None:
         """
         :param antenna_pose: the pose of the main antenna in the robot's coordinate frame (yaw: direction to the auxiliary antenna)
@@ -146,7 +148,6 @@ class GnssHardware(Gnss):
         last_pssn_timestamp = 0.0
 
         # Maximum allowed timestamp difference in seconds (default is ok for Kalman Filter with about 1 km/h)
-        MAX_TIMESTAMP_DIFF = 0.05
 
         while True:
             if not self.is_connected:
@@ -182,14 +183,17 @@ class GnssHardware(Gnss):
             self.log.debug(sentence)
             parts = sentence.split(',')
             try:
-                nema_timestamp = parts[{'$GPGGA': 1, '$GPGST': 1, '$PSSN': 2}[parts[0]]]
+                field_index = {'$GPGGA': 1, '$GPGST': 1, '$PSSN': 2}
+                if parts[0] not in field_index:
+                    continue
+                nema_timestamp = parts[field_index[parts[0]]]
                 today = datetime.now().date()
                 time_obj = datetime.strptime(nema_timestamp, '%H%M%S.%f').time()
                 utc_time = datetime.combine(today, time_obj).replace(tzinfo=timezone.utc)
                 timestamp = utc_time.timestamp()
                 diff = round(((timestamp - rosys_time + 43200) % 86400) - 43200, 3)
-                if abs(diff) > MAX_TIMESTAMP_DIFF:
-                    self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, MAX_TIMESTAMP_DIFF)
+                if abs(diff) > self.MAX_TIMESTAMP_DIFF:
+                    self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
                     continue
                 else:
                     self.log.debug('timestamp diff = %s', diff)
@@ -227,8 +231,8 @@ class GnssHardware(Gnss):
                         altitude=last_altitude,
                     )
                     self.NEW_MEASUREMENT.emit(self.last_measurement)
-            except Exception as e:
-                self.log.exception(e)
+            except (KeyError, ValueError) as e:
+                self.log.exception('GNSS parse error: %s', e)
 
     # TODO: move to helper and add search argument; for other serial devices
     def _find_device(self) -> str:
