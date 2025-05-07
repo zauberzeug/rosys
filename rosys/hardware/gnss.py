@@ -201,7 +201,7 @@ class GnssHardware(Gnss):
                     last_pssn_timestamp = timestamp
                     last_raw_heading = float(parts[4] or 0.0)
                     last_heading_accuracy = float(parts[7] or 'inf')
-                if last_gga_timestamp > 0 and last_gst_timestamp > 0 and last_pssn_timestamp > 0:
+                if last_gga_timestamp == last_gst_timestamp == last_pssn_timestamp:
                     last_heading = last_raw_heading + self.antenna_pose.yaw_deg
                     antenna_pose = GeoPose.from_degrees(last_raw_latitude, last_raw_longitude, last_heading)
                     robot_pose = antenna_pose.relative_shift_by(x=-self.antenna_pose.x, y=-self.antenna_pose.y)
