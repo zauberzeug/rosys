@@ -183,9 +183,9 @@ class GnssHardware(Gnss):
                 field_index = {'$GPGGA': 1, '$GPGST': 1, '$PSSN': 2}
                 if parts[0] not in field_index:
                     continue
-                nema_timestamp = parts[field_index[parts[0]]]
+                nmea_timestamp = parts[field_index[parts[0]]]
                 today = datetime.now().date()
-                time_obj = datetime.strptime(nema_timestamp, '%H%M%S.%f').time()
+                time_obj = datetime.strptime(nmea_timestamp, '%H%M%S.%f').time()
                 utc_time = datetime.combine(today, time_obj).replace(tzinfo=timezone.utc)
                 timestamp = utc_time.timestamp()
                 diff = round(((timestamp - rosys_time + 43200) % 86400) - 43200, 3)
