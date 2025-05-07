@@ -243,8 +243,7 @@ class GnssHardware(Gnss):
     def _connect_to_device(self, port: str, *, baudrate: int = 460800, timeout: float = 0.2) -> serial.Serial:
         self.log.debug('Connecting to GNSS device "%s"...', port)
         try:
-            serial_connection = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
-            return serial_connection
+            return serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
         except serial.SerialException as e:
             raise RuntimeError(f'Could not connect to GNSS device: {port}') from e
 
