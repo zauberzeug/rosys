@@ -163,8 +163,6 @@ class GnssHardware(Gnss):
                 await rosys.sleep(0.1)
                 assert self.serial_connection is not None
                 self.serial_connection.reset_input_buffer()
-                self.serial_connection.send_break(duration=0.25)
-                self.serial_connection.reset_input_buffer()
 
             assert self.serial_connection is not None
             result = await io_bound(self.serial_connection.read_until, b'\r\n')
