@@ -144,6 +144,10 @@ class GnssHardware(Gnss):
         last_gga_timestamp = 0.0
         last_gst_timestamp = 0.0
         last_pssn_timestamp = 0.0
+
+        # Maximum allowed timestamp difference in seconds (default is ok for Kalman Filter with about 1 km/h)
+        MAX_TIMESTAMP_DIFF = 0.05
+
         while True:
             if not self.is_connected:
                 try:
@@ -154,6 +158,12 @@ class GnssHardware(Gnss):
                     await rosys.sleep(self._reconnect_interval)
                     continue
                 self.log.info('Connected to GNSS device: %s', serial_device_path)
+                # NOTE: Allow time for the device to stabilize after connection
+                await rosys.sleep(0.1)
+                assert self.serial_connection is not None
+                self.serial_connection.reset_input_buffer()
+                self.serial_connection.send_break(duration=0.25)
+                self.serial_connection.reset_input_buffer()
 
             assert self.serial_connection is not None
             result = await io_bound(self.serial_connection.read_until, b'\r\n')
@@ -178,8 +188,8 @@ class GnssHardware(Gnss):
                 utc_time = datetime.combine(today, time_obj).replace(tzinfo=timezone.utc)
                 timestamp = utc_time.timestamp()
                 diff = round(((timestamp - rosys_time + 43200) % 86400) - 43200, 3)
-                if diff > 0.05:  # NOTE: above 50 ms we will get issues with Kalman Filter
-                    self.log.warning('timestamp diff = %s', diff)
+                if abs(diff) > MAX_TIMESTAMP_DIFF:
+                    self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, MAX_TIMESTAMP_DIFF)
                     continue
                 else:
                     self.log.debug('timestamp diff = %s', diff)
@@ -233,7 +243,6 @@ class GnssHardware(Gnss):
         self.log.debug('Connecting to GNSS device "%s"...', port)
         try:
             serial_connection = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
-            serial_connection.reset_input_buffer()  # NOTE: make sure the buffer is empty, OS might have data stored
             return serial_connection
         except serial.SerialException as e:
             raise RuntimeError(f'Could not connect to GNSS device: {port}') from e
