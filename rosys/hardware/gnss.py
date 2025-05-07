@@ -177,7 +177,11 @@ class GnssHardware(Gnss):
                 time_obj = datetime.strptime(nema_timestamp, '%H%M%S.%f').time()
                 utc_time = datetime.combine(today, time_obj).replace(tzinfo=timezone.utc)
                 timestamp = utc_time.timestamp()
-                self.log.debug('timestamp diff = %s', round(timestamp - rosys_time, 3))
+                diff = round(((timestamp - rosys_time + 43200) % 86400) - 43200, 3)
+                if diff > 0.05:  # NOTE: above 50 ms we will get issues with Kalman filter
+                    self.log.warning('timestamp diff = %s', diff)
+                else:
+                    self.log.debug('timestamp diff = %s', diff)
                 if parts[0] == '$GPGGA':
                     if parts[2] == '' or parts[4] == '':
                         continue
