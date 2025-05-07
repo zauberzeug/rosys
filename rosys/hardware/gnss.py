@@ -144,7 +144,6 @@ class GnssHardware(Gnss):
         last_gga_timestamp = ''
         last_gst_timestamp = ''
         last_pssn_timestamp = ''
-        self.serial_connection.reset_input_buffer()  # NOTE: start with empty buffer
         while True:
             if not self.is_connected:
                 try:
@@ -225,10 +224,12 @@ class GnssHardware(Gnss):
                 return port.device
         raise RuntimeError('No GNSS device found')
 
-    def _connect_to_device(self, port: str, *, baudrate: int = 115200, timeout: float = 0.2) -> serial.Serial:
+    def _connect_to_device(self, port: str, *, baudrate: int = 460800, timeout: float = 0.2) -> serial.Serial:
         self.log.debug('Connecting to GNSS device "%s"...', port)
         try:
-            return serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
+            serial_connection = serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
+            serial_connection.reset_input_buffer()  # NOTE: make sure the buffer is empty, OS might have data stored
+            return serial_connection
         except serial.SerialException as e:
             raise RuntimeError(f'Could not connect to GNSS device: {port}') from e
 
