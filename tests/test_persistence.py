@@ -1,6 +1,11 @@
+import asyncio
 from dataclasses import dataclass, field
+from typing import Any
+
+import pytest
 
 from rosys import persistence
+from rosys.testing import forward
 
 
 @dataclass
@@ -56,3 +61,41 @@ def test_dict_replacement() -> None:
     persistence.replace_dict(target, A, {'c': {'s': 'buz', 'b': False}})
     assert id(target) == target_id, 'target should still be the same object'
     assert target == {'c': A('buz', False)}, 'target content should be completely replaced with new content'
+
+
+@pytest.mark.usefixtures('rosys_integration')
+async def test_persistable() -> None:
+    class MyPersistable(persistence.Persistable):
+        def __init__(self, x: int, y: float) -> None:
+            super().__init__()
+            self.x = x
+            self.y = y
+
+        def backup_to_dict(self) -> dict[str, Any]:
+            return {'x': self.x, 'y': self.y}
+
+        def restore_from_dict(self, data: dict[str, Any]) -> None:
+            self.x = data['x']
+            self.y = data['y']
+
+    persistable = MyPersistable(x=42, y=3.14)
+    persistable.persistent(restore=False)
+    persistable.sync_backup()
+
+    # pylint: disable=protected-access
+    assert persistable._filepath is not None
+    assert persistable._filepath.read_text() == '{"x": 42, "y": 3.14}'
+
+    with pytest.raises(RuntimeError, match='already persistent'):
+        persistable.persistent()
+
+    persistable.x = 100
+    persistable.sync_restore()
+    assert persistable.x == 42
+    assert persistable.y == 3.14
+
+    persistable.x = 100
+    persistable.request_backup()
+    await forward(seconds=15)
+    await asyncio.sleep(1.0)  # give some time for IO
+    assert persistable._filepath.read_text() == '{"x": 100, "y": 3.14}'

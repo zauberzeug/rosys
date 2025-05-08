@@ -1,13 +1,13 @@
 import logging
 
-from ... import persistence, rosys
+from ... import rosys
 from ...helpers.deprecation import deprecated_param
 from ..camera_provider import CameraProvider
 from .arp_scan import find_known_cameras
 from .rtsp_camera import RtspCamera
 
 
-class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModule):
+class RtspCameraProvider(CameraProvider[RtspCamera]):
     """This module collects and provides real RTSP streaming cameras."""
     SCAN_INTERVAL = 10
 
@@ -30,13 +30,13 @@ class RtspCameraProvider(CameraProvider[RtspCamera], persistence.PersistentModul
         if auto_scan:
             rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict:
         cameras = {}
         for camera in self._cameras.values():
             cameras[camera.id] = camera.to_dict()
         return {'cameras': cameras}
 
-    def restore(self, data: dict[str, dict]) -> None:
+    def restore_from_dict(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
             camera = RtspCamera.from_dict(camera_data)
             self.add_camera(camera)

@@ -3,7 +3,7 @@ import logging
 from pathlib import Path
 
 from .. import rosys
-from . import registry
+from .import_export import export_all
 
 
 class BackupSchedule:
@@ -33,7 +33,7 @@ class BackupSchedule:
         if now.time() < self.time or filepath.exists():
             return
         self.log.info('Backing up persistence files to %s', filepath)
-        registry.write_export(filepath)
+        export_all(filepath)
         self.prune()
 
     def prune(self) -> None:

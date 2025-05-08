@@ -18,7 +18,7 @@ def str_to_date(date_: str) -> datetime:
     return datetime.fromisoformat(date_)
 
 
-class KpiLogger(persistence.PersistentModule):
+class KpiLogger(persistence.Persistable):
 
     def __init__(self) -> None:
         super().__init__()
@@ -27,14 +27,14 @@ class KpiLogger(persistence.PersistentModule):
         self.days: list[Day] = []
         self.months: list[Month] = []
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict:
         self.pack()
         return {
             'days': persistence.to_dict(self.days),
             'months': persistence.to_dict(self.months),
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         persistence.replace_list(self.days, Day, data.get('days', []))
         persistence.replace_list(self.months, Month, data.get('months', []))
 

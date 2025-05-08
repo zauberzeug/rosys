@@ -2,14 +2,14 @@ import logging
 
 import httpx
 
-from ... import persistence, rosys
+from ... import rosys
 from ..camera_provider import CameraProvider
 from ..rtsp_camera.arp_scan import find_cameras
 from .mjpeg_camera import MjpegCamera
 from .vendors import VendorType, mac_to_vendor
 
 
-class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentModule):
+class MjpegCameraProvider(CameraProvider[MjpegCamera]):
     SCAN_INTERVAL = 10
 
     def __init__(self, *,
@@ -34,7 +34,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera], persistence.PersistentMod
         if auto_scan:
             rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
-    def restore(self, data: dict[str, dict]) -> None:
+    def restore_from_dict(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
             self.log.debug('restoring camera: %s', camera_data)
             camera = MjpegCamera.from_dict(camera_data)

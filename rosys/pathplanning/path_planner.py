@@ -22,7 +22,7 @@ from .planner_process import (
 )
 
 
-class PathPlanner(persistence.PersistentModule):
+class PathPlanner(persistence.Persistable):
     """This module runs a path planning algorithm in a separate process.
 
     If given, the algorithm respects the given robot shape as well as a dictionary of accessible areas and a dictionary of obstacles, both of which a backed up and restored automatically.
@@ -48,14 +48,14 @@ class PathPlanner(persistence.PersistentModule):
         rosys.on_shutdown(self.shutdown)
         rosys.on_repeat(self.step, 0.1)
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict:
         finished_areas = {area_id: copy(area).close() for area_id, area in self.areas.items() if len(area.outline) >= 3}
         return {
             'obstacles': persistence.to_dict(self.obstacles),
             'areas': persistence.to_dict(finished_areas),
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         persistence.replace_dict(self.obstacles, Obstacle, data.get('obstacles', {}))
         persistence.replace_dict(self.areas, Area, data.get('areas', {}))
         self.AREAS_CHANGED.emit(None)
