@@ -105,7 +105,7 @@ class RobotBrain:
                 .tooltip('Read installed and available versions')
             with ui.row():
                 with ui.menu() as menu:
-                    ui.menu_item('Download', on_click=self.lizard_firmware.download) \
+                    ui.menu_item('Download Lizard', on_click=self.lizard_firmware.download) \
                         .tooltip('Download the latest Lizard firmware from GitHub')
 
                     async def check_strapping_pins_core():
@@ -122,12 +122,19 @@ class RobotBrain:
                     ui.menu_item('Flash P0', on_click=self.lizard_firmware.flash_p0) \
                         .tooltip('Flash the downloaded Lizard firmware to the P0 microcontroller')
 
-                    ui.menu_item('Enable', on_click=self.enable_esp) \
-                        .tooltip('Enable the microcontroller module (will later be done automatically)')
+                    ui.separator()
                     ui.menu_item('Configure', on_click=self.configure) \
                         .tooltip('Configure the microcontroller with the Lizard startup file')
                     ui.menu_item('Download Config', on_click=lambda: ui.download(self.lizard_code.encode('utf-8'), 'config.liz')) \
                         .tooltip('Download the Lizard config file')
+
+                    ui.separator()
+                    ui.menu_item('Enable', on_click=self.enable_esp) \
+                        .tooltip('Enable the microcontroller module')
+                    ui.menu_item('Disable', on_click=self.disable_esp) \
+                        .tooltip('Disable the microcontroller module (needs reset to be enabled again)')
+                    ui.menu_item('Reset', on_click=self.reset_esp) \
+                        .tooltip('Reset the microcontroller module')
                     ui.menu_item('Restart', on_click=self.restart) \
                         .tooltip('Restart the microcontroller')
                 ui.button(on_click=menu.open).props('icon=more_vert flat round')
@@ -197,8 +204,34 @@ class RobotBrain:
         rosys.notify('Enabling ESP...')
         command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'enable']
         output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
-        self.log.debug(output)
-        rosys.notify('Enabling ESP: done', 'positive')
+        if 'enable complete' in output:
+            self.log.debug(output)
+            rosys.notify('Enabling ESP: done', 'positive')
+        else:
+            self.log.error(output)
+            rosys.notify('Enabling ESP: failed', 'negative')
+
+    async def disable_esp(self) -> None:
+        rosys.notify('Disabling ESP...')
+        command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'disable']
+        output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
+        if 'disable complete' in output:
+            self.log.debug(output)
+            rosys.notify('Disabling ESP: done', 'positive')
+        else:
+            self.log.error(output)
+            rosys.notify('Disabling ESP: failed', 'negative')
+
+    async def reset_esp(self) -> None:
+        rosys.notify('Resetting ESP...')
+        command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'reset']
+        output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
+        if 'reset complete' in output:
+            self.log.debug(output)
+            rosys.notify('Resetting ESP: done', 'positive')
+        else:
+            self.log.error(output)
+            rosys.notify('Resetting ESP: failed', 'negative')
 
     def __del__(self) -> None:
         self.communication.disconnect()
