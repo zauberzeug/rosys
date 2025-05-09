@@ -29,7 +29,7 @@ class RobotBrain:
         self.FLASH_P0_COMPLETE = Event[[]]()
         """flashing p0 was successful and 'Replica complete' was received"""
 
-        self.log = logging.getLogger('rosys.robot_rain')
+        self.log = logging.getLogger('rosys.robot_brain')
 
         self.communication = communication
         self.lizard_code = ''
