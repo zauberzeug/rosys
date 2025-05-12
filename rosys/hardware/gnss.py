@@ -240,7 +240,7 @@ class GnssHardware(Gnss):
                 return port.device
         raise RuntimeError('No GNSS device found')
 
-    def _connect_to_device(self, port: str, *, baudrate: int = 460800, timeout: float = 0.2) -> serial.Serial:
+    def _connect_to_device(self, port: str, *, baudrate: int = 921600, timeout: float = 0.2) -> serial.Serial:
         self.log.debug('Connecting to GNSS device "%s"...', port)
         try:
             return serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
