@@ -4,6 +4,7 @@ import logging
 import math
 from abc import ABC
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import IntEnum
 
 import numpy as np
@@ -16,6 +17,9 @@ from ..driving.driver import PoseProvider
 from ..event import Event
 from ..geometry import GeoPoint, GeoPose, Pose
 from ..run import io_bound
+
+SECONDS_DAY = 86400
+SECONDS_HALF_DAY = 43200
 
 
 class GpsQuality(IntEnum):
@@ -107,6 +111,9 @@ class Gnss(ABC):
 class GnssHardware(Gnss):
     """This hardware module connects to a Septentrio SimpleRTK3b (Mosaic-H) GNSS receiver."""
 
+    # Maximum allowed timestamp difference in seconds (default is ok for Kalman Filter with about 1 km/h)
+    MAX_TIMESTAMP_DIFF = 0.05
+
     def __init__(self, *, antenna_pose: Pose | None, reconnect_interval: float = 3.0) -> None:
         """
         :param antenna_pose: the pose of the main antenna in the robot's coordinate frame (yaw: direction to the auxiliary antenna)
@@ -140,9 +147,10 @@ class GnssHardware(Gnss):
         last_num_satellites = 0
         last_hdop = 0.0
         last_altitude = 0.0
-        last_gga_timestamp = ''
-        last_gst_timestamp = ''
-        last_pssn_timestamp = ''
+        last_gga_timestamp = 0.0
+        last_gst_timestamp = 0.0
+        last_pssn_timestamp = 0.0
+
         while True:
             if not self.is_connected:
                 try:
@@ -153,9 +161,14 @@ class GnssHardware(Gnss):
                     await rosys.sleep(self._reconnect_interval)
                     continue
                 self.log.info('Connected to GNSS device: %s', serial_device_path)
+                # NOTE: Allow time for the device to stabilize after connection
+                await rosys.sleep(0.1)
+                assert self.serial_connection is not None
+                self.serial_connection.reset_input_buffer()
 
             assert self.serial_connection is not None
             result = await io_bound(self.serial_connection.read_until, b'\r\n')
+            rosys_time = rosys.time()
             if not result:
                 self.log.debug('No data')
                 continue
@@ -170,7 +183,20 @@ class GnssHardware(Gnss):
             self.log.debug(sentence)
             parts = sentence.split(',')
             try:
-                timestamp = parts[{'$GPGGA': 1, '$GPGST': 1, '$PSSN': 2}[parts[0]]]
+                field_index = {'$GPGGA': 1, '$GPGST': 1, '$PSSN': 2}
+                if parts[0] not in field_index:
+                    continue
+                nmea_timestamp = parts[field_index[parts[0]]]
+                today = datetime.now().date()
+                time_obj = datetime.strptime(nmea_timestamp, '%H%M%S.%f').time()
+                utc_time = datetime.combine(today, time_obj).replace(tzinfo=timezone.utc)
+                timestamp = utc_time.timestamp()
+                diff = round(((timestamp - rosys_time + SECONDS_HALF_DAY) % SECONDS_DAY) - SECONDS_HALF_DAY, 3)
+                if abs(diff) > self.MAX_TIMESTAMP_DIFF:
+                    self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
+                    continue
+                else:
+                    self.log.debug('timestamp diff = %s', diff)
                 if parts[0] == '$GPGGA':
                     if parts[2] == '' or parts[4] == '':
                         continue
@@ -189,7 +215,7 @@ class GnssHardware(Gnss):
                     last_pssn_timestamp = timestamp
                     last_raw_heading = float(parts[4] or 0.0)
                     last_heading_accuracy = float(parts[7] or 'inf')
-                if last_gga_timestamp == last_gst_timestamp == last_pssn_timestamp != '':
+                if last_gga_timestamp == last_gst_timestamp == last_pssn_timestamp:
                     last_heading = last_raw_heading + self.antenna_pose.yaw_deg
                     antenna_pose = GeoPose.from_degrees(last_raw_latitude, last_raw_longitude, last_heading)
                     robot_pose = antenna_pose.relative_shift_by(x=-self.antenna_pose.x, y=-self.antenna_pose.y)
@@ -205,8 +231,8 @@ class GnssHardware(Gnss):
                         altitude=last_altitude,
                     )
                     self.NEW_MEASUREMENT.emit(self.last_measurement)
-            except Exception as e:
-                self.log.exception(e)
+            except (KeyError, ValueError) as e:
+                self.log.exception('GNSS parse error: %s', e)
 
     # TODO: move to helper and add search argument; for other serial devices
     def _find_device(self) -> str:
@@ -217,7 +243,7 @@ class GnssHardware(Gnss):
                 return port.device
         raise RuntimeError('No GNSS device found')
 
-    def _connect_to_device(self, port: str, *, baudrate: int = 115200, timeout: float = 0.2) -> serial.Serial:
+    def _connect_to_device(self, port: str, *, baudrate: int = 921600, timeout: float = 0.2) -> serial.Serial:
         self.log.debug('Connecting to GNSS device "%s"...', port)
         try:
             return serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
