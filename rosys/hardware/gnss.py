@@ -110,6 +110,8 @@ class GnssHardware(Gnss):
 
     # Maximum allowed timestamp difference in seconds (default is ok for Kalman Filter with about 1 km/h)
     MAX_TIMESTAMP_DIFF = 0.05
+    SECONDS_DAY = 86400
+    SECONDS_HALF_DAY = 43200
 
     def __init__(self, *, antenna_pose: Pose | None, reconnect_interval: float = 3.0) -> None:
         """
@@ -188,7 +190,7 @@ class GnssHardware(Gnss):
                 time_obj = datetime.strptime(nmea_timestamp, '%H%M%S.%f').time()
                 utc_time = datetime.combine(today, time_obj).replace(tzinfo=timezone.utc)
                 timestamp = utc_time.timestamp()
-                diff = round(((timestamp - rosys_time + 43200) % 86400) - 43200, 3)
+                diff = round(((timestamp - rosys_time + self.SECONDS_HALF_DAY) % self.SECONDS_DAY) - self.SECONDS_HALF_DAY, 3)
                 if abs(diff) > self.MAX_TIMESTAMP_DIFF:
                     self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
                     continue
