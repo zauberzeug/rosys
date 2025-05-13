@@ -5,7 +5,6 @@ import json
 import logging
 import re
 import weakref
-from collections.abc import Callable
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -19,8 +18,6 @@ KEY_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\.]+$')
 
 class Persistable(abc.ABC):
     instances: ClassVar[weakref.WeakValueDictionary[str, Persistable]] = weakref.WeakValueDictionary()
-    on_repeat: Callable[[Callable, float], None]
-    on_shutdown: Callable[[Callable], None]
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -37,13 +34,13 @@ class Persistable(abc.ABC):
                    ) -> Self:
         """Make this object persistent.
 
-        If ``restore`` is ``True``, the object will be restored from the persistence file.
+        If ``restore`` is ``True``, the object will be restored immediately from the persistence file.
         If ``backup_check_interval`` is not ``None`` or 0.0, the object will be backed up at the given interval _if a backup has been requested_.
         If ``backup_interval`` is not ``None`` or 0.0, the object will be backed up at the given interval _independently of any backup requests_.
 
         :param key: The key to use for the persistence file (letters, digits, dashes and underscores; default: module name)
         :param path: The path to the persistence file (default: "~/.rosys")
-        :param restore: Whether to restore the object from the persistence file (default: True)
+        :param restore: Whether to restore the object immediately from the persistence file (default: True)
         :param backup_check_interval: The interval to check for backups (default: 10.0 seconds)
         :param backup_interval: The interval to backup the object (default: None)
         """
@@ -52,7 +49,7 @@ class Persistable(abc.ABC):
 
         if key is None:
             key = self.__module__
-        if not key:
+        if not key.strip('.'):
             raise ValueError('Key is empty')
         if not KEY_PATTERN.match(key):
             raise ValueError(f'Key "{key}" contains invalid characters')
@@ -106,7 +103,7 @@ class Persistable(abc.ABC):
         To avoid blocking the main thread, use ``request_backup()`` instead.
         """
         if self._filepath is None:
-            raise RuntimeError('Backup failed: This object is not persistent.')
+            raise RuntimeError('Backup failed: This object is not persistent. Call persistent() first.')
         self._filepath.write_text(json.dumps(self.backup_to_dict()))
         self._needs_backup = False
 
@@ -124,7 +121,7 @@ class Persistable(abc.ABC):
         To avoid blocking the main thread, use ``restore()`` instead.
         """
         if self._filepath is None:
-            raise RuntimeError('Restore failed: This object is not persistent.')
+            raise RuntimeError('Restore failed: This object is not persistent. Call persistent() first.')
         if not self._filepath.exists():
             self.log.warning('Restore failed: File "%s" not found', self._filepath)
             return

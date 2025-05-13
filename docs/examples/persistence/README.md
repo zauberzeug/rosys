@@ -39,6 +39,7 @@ To migrate, follow these steps:
 
 1. Replace `PersistentModule` with `Persistable` in the class definition.
 2. Rename the `backup` and `restore` methods to `backup_to_dict` and `restore_from_dict`.
-3. Use the `persistent` method to make objects persistent.
+3. Use the `persistent` method to make objects persistent which used to be derived from `PersistentModule`:
+   `KpiLogger`, `Schedule`, `PathPlanner`, `CameraProvider` and derived classes.
 4. If you called `PersistentModule` with a `persistence_key`,
    remove it and use the `key` parameter of the `persistent` method instead.
