@@ -187,6 +187,8 @@ class GnssHardware(Gnss):
                 if parts[0] not in field_index:
                     continue
                 nmea_timestamp = parts[field_index[parts[0]]]
+                if not nmea_timestamp:
+                    continue
                 today = datetime.now().date()
                 time_obj = datetime.strptime(nmea_timestamp, '%H%M%S.%f').time()
                 utc_time = datetime.combine(today, time_obj).replace(tzinfo=timezone.utc)
