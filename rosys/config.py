@@ -1,17 +1,17 @@
 from typing import Any
 
-from .persistence.persistent_module import PersistentModule
+from .persistence.persistable import Persistable
 
 
-class Config(PersistentModule):
+class Config(Persistable):
 
     def __init__(self) -> None:
         super().__init__()
         self.ui_update_interval: float = 0.1
         self.simulation_speed: float = 1.0
 
-    def backup(self) -> dict[str, Any]:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {'simulation_speed': self.simulation_speed}
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         self.simulation_speed = data.get('simulation_speed', 1.0)

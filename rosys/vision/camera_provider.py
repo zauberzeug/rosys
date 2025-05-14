@@ -10,7 +10,7 @@ from .image import Image
 T = TypeVar('T', bound=Camera)
 
 
-class CameraProvider(Generic[T], persistence.PersistentModule, metaclass=abc.ABCMeta):
+class CameraProvider(Generic[T], persistence.Persistable, metaclass=abc.ABCMeta):
     """A camera provider holds a dictionary of cameras and manages additions and removals.
 
     The camera dictionary should not be modified directly but by using the camera provider's methods.
@@ -19,8 +19,8 @@ class CameraProvider(Generic[T], persistence.PersistentModule, metaclass=abc.ABC
     The camera provider also creates an HTTP route to access camera images.
     """
 
-    def __init__(self, *, persistence_key: str | None = None) -> None:
-        super().__init__(persistence_key=persistence_key)
+    def __init__(self) -> None:
+        super().__init__()
 
         self.CAMERA_ADDED = Event[T]()
         """a new camera has been added (argument: camera)"""
@@ -33,12 +33,12 @@ class CameraProvider(Generic[T], persistence.PersistentModule, metaclass=abc.ABC
 
         self._cameras: dict[str, T] = {}
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict:
         return {
             'cameras': {id: camera.to_dict() for id, camera in self._cameras.items()},
         }
 
-    def restore(self, data: dict[str, dict]) -> None:
+    def restore_from_dict(self, data: dict[str, dict]) -> None:
         persistence.replace_dict(self._cameras, Camera, data.get('cameras', {}))
         for camera in self._cameras.values():
             camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)

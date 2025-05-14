@@ -1,13 +1,13 @@
 import logging
 import shutil
 
-from ... import persistence, rosys
+from ... import rosys
 from ..camera_provider import CameraProvider
 from .usb_camera import UsbCamera
 from .usb_camera_scanner import scan_for_connected_devices
 
 
-class UsbCameraProvider(CameraProvider[UsbCamera], persistence.PersistentModule):
+class UsbCameraProvider(CameraProvider[UsbCamera]):
     """This module collects and provides real USB cameras.
 
     Camera devices are discovered through video4linux (v4l) and accessed with openCV.
@@ -24,12 +24,12 @@ class UsbCameraProvider(CameraProvider[UsbCamera], persistence.PersistentModule)
         if auto_scan:
             rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
-    def backup(self) -> dict:
+    def backup_to_dict(self) -> dict:
         return {
             'cameras': {camera.id: camera.to_dict() for camera in self._cameras.values()}
         }
 
-    def restore(self, data: dict[str, dict]) -> None:
+    def restore_from_dict(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
             self.add_camera(UsbCamera.from_dict(camera_data))
 

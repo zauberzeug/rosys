@@ -16,10 +16,10 @@ odometer = Odometer(wheels)
 driver = Driver(wheels, odometer)
 
 
-class Link(persistence.PersistentModule):
+class Link(persistence.Persistable):
 
     def __init__(self, name: str, parent_frame: Frame3d, *, length: float) -> None:
-        super().__init__(persistence_key=name)
+        super().__init__()
         self.name = name
         self.length = length
         self.base = Pose3d().in_frame(parent_frame).as_frame(f'{name}_base')
@@ -29,13 +29,13 @@ class Link(persistence.PersistentModule):
         self.base.rotation = Rotation.from_euler(0, angle, 0)
         self.request_backup()
 
-    def backup(self) -> dict[str, Any]:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {
             'name': self.name,
             'base': persistence.to_dict(self.base),
         }
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         self.name = data['name']
         self.base = persistence.from_dict(Frame3d, data['base'])
         self.end = Pose3d(z=self.length) \
@@ -43,27 +43,27 @@ class Link(persistence.PersistentModule):
             .in_frame(self.base)
 
 
-class Cam(persistence.PersistentModule):
+class Cam(persistence.Persistable):
 
     def __init__(self, parent_frame: Frame3d) -> None:
-        super().__init__(persistence_key='cam')
+        super().__init__()
         self.pose = Pose3d(z=0.05).in_frame(parent_frame)
 
     def pitch(self, angle: float) -> None:
         self.pose.rotation = Rotation.from_euler(0, angle, 0)
         self.request_backup()
 
-    def backup(self) -> dict[str, Any]:
+    def backup_to_dict(self) -> dict[str, Any]:
         return {'pose': persistence.to_dict(self.pose)}
 
-    def restore(self, data: dict[str, Any]) -> None:
+    def restore_from_dict(self, data: dict[str, Any]) -> None:
         self.pose = persistence.from_dict(Frame3d, data['pose'])
 
 
 anchor_frame = Pose3d(z=0.3).as_frame('anchor').in_frame(odometer.prediction_frame)
-arm1 = Link('arm1', anchor_frame, length=0.3)
-arm2 = Link('arm2', arm1.end, length=0.3)
-cam = Cam(arm2.end)
+arm1 = Link('arm1', anchor_frame, length=0.3).persistent(key='arm1')
+arm2 = Link('arm2', arm1.end, length=0.3).persistent(key='arm2')
+cam = Cam(arm2.end).persistent(key='cam')
 
 
 @ui.page('/')
