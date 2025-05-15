@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections import deque
 
@@ -44,6 +45,8 @@ class RobotBrain:
 
         self.esp_pins_core = EspPins(name='core', robot_brain=self)
         self.esp_pins_p0 = EspPins(name='p0', robot_brain=self)
+
+        self._esp_lock = asyncio.Lock()
 
     @property
     def clock_offset(self) -> float | None:
@@ -201,37 +204,50 @@ class RobotBrain:
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
     async def enable_esp(self) -> None:
-        rosys.notify('Enabling ESP...')
-        command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'enable']
-        output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
-        if 'enable complete' in output:
+        async with self._esp_lock:
+            rosys.notify('Enabling ESP...')
+            command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'enable']
+            output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
             self.log.debug(output)
             rosys.notify('Enabling ESP: done', 'positive')
-        else:
-            self.log.error(output)
-            rosys.notify('Enabling ESP: failed', 'negative')
 
     async def disable_esp(self) -> None:
-        rosys.notify('Disabling ESP...')
-        command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'disable']
-        output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
-        if 'disable complete' in output:
-            self.log.debug(output)
-            rosys.notify('Disabling ESP: done', 'positive')
-        else:
-            self.log.error(output)
-            rosys.notify('Disabling ESP: failed', 'negative')
+        async with self._esp_lock:
+            rosys.notify('Disabling ESP...')
+            command = ['sudo', './espresso.py', 'disable', *self._convert_flash_params(self.lizard_firmware.flash_params)]
+            self.log.debug('disable: %s', command)
+            output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
+            if 'Finished.' in output:
+                self.log.debug(output)
+                rosys.notify('Disabling ESP: done', 'positive')
+            else:
+                self.log.error(output)
+                rosys.notify('Disabling ESP: failed', 'negative')
 
     async def reset_esp(self) -> None:
-        rosys.notify('Resetting ESP...')
-        command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'reset']
-        output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
-        if 'reset complete' in output:
+        async with self._esp_lock:
+            rosys.notify('Resetting ESP...')
+            command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'reset']
+            output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
             self.log.debug(output)
             rosys.notify('Resetting ESP: done', 'positive')
-        else:
-            self.log.error(output)
-            rosys.notify('Resetting ESP: failed', 'negative')
+
+    def _convert_flash_params(self, flash_params: list[str]) -> list[str]:
+        """Until the deprecation of the flash.py script, we need to convert the flash_params to espresso parameters."""
+        espresso_parameters = []
+        self.log.debug('flash_params: %s', flash_params)
+        if 'orin' in flash_params:
+            espresso_parameters.extend(['--jetson', 'orin'])
+        elif 'xavier' in flash_params:
+            espresso_parameters.extend(['--jetson', 'xavier'])
+        elif 'nano' in flash_params:
+            espresso_parameters.extend(['--jetson', 'nano'])
+        if 'nand' in flash_params:
+            espresso_parameters.append('--nand')
+        if 'v05' not in flash_params:
+            espresso_parameters.append('--swap_pins')
+        self.log.debug('espresso_parameters: %s', espresso_parameters)
+        return espresso_parameters
 
     def __del__(self) -> None:
         self.communication.disconnect()
