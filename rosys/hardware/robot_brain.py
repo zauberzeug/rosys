@@ -133,11 +133,11 @@ class RobotBrain:
 
                     ui.separator()
                     ui.menu_item('Enable', on_click=self.enable_esp) \
-                        .tooltip('Enable the microcontroller module')
+                        .tooltip('Enable the microcontroller')
                     ui.menu_item('Disable', on_click=self.disable_esp) \
-                        .tooltip('Disable the microcontroller module (needs reset to be enabled again)')
+                        .tooltip('Disable the microcontroller')
                     ui.menu_item('Reset', on_click=self.reset_esp) \
-                        .tooltip('Reset the microcontroller module')
+                        .tooltip('Reset the microcontroller')
                     ui.menu_item('Restart', on_click=self.restart) \
                         .tooltip('Restart the microcontroller')
                 ui.button(on_click=menu.open).props('icon=more_vert flat round')
