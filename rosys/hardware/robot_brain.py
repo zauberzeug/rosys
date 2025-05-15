@@ -250,7 +250,7 @@ class RobotBrain:
             espresso_parameters.extend(['--jetson', 'nano'])
         if 'nand' in flash_params:
             espresso_parameters.append('--nand')
-        if 'v05' not in flash_params:
+        if 'orin' in flash_params and 'v05' not in flash_params:
             espresso_parameters.append('--swap_pins')
         self.log.debug('espresso_parameters: %s', espresso_parameters)
         return espresso_parameters
