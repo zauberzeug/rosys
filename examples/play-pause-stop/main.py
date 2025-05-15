@@ -2,7 +2,7 @@
 from nicegui import ui
 
 import rosys
-from rosys.geometry import Point
+from rosys.geometry import Point, Prism
 
 
 async def run() -> None:
@@ -14,10 +14,11 @@ wheels = rosys.hardware.WheelsSimulation()
 robot = rosys.hardware.RobotSimulation([wheels])
 odometer = rosys.driving.Odometer(wheels)
 driver = rosys.driving.Driver(wheels, odometer)
-automator = rosys.automation.Automator(None, default_automation=run, on_interrupt=wheels.stop)
+automator = rosys.automation.Automator(None, default_automation=run,
+                                       on_interrupt=wheels.stop)
 
 with ui.scene(width=600).classes('drop-shadow-lg') as scene:
-    rosys.driving.robot_object(rosys.geometry.Prism.default_robot_shape(), odometer)
+    rosys.driving.robot_object(Prism.default_robot_shape(), odometer)
     for i, point in enumerate(checkpoints):
         scene.text(f'{i+1}').move(x=point.x, y=point.y)
 

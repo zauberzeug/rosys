@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://rosys.io/examples/navigation/">
+        <link rel="canonical" href="https://rosys.io/examples/kpi/">
       
       
-        <link rel="prev" href="../kpi/">
+        <link rel="prev" href="../hello_bot/">
       
       
-        <link rel="next" href="../obstacles/">
+        <link rel="next" href="../navigation/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>Navigation - RoSys</title>
+        <title>Kpi - RoSys</title>
       
     
     
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#navigation" class="md-skip">
+        <a href="#kpi" class="md-skip">
           Skip to content
         </a>
       
@@ -104,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Navigation
+              Kpi
             
           </span>
         </div>
@@ -462,27 +462,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../kpi/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Kpi
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -495,18 +474,29 @@
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
   
   <span class="md-ellipsis">
-    Navigation
+    Kpi
   </span>
   
 
-          <span class="md-nav__icon md-icon"></span>
-        </label>
+      </a>
       
-      <a href="./" class="md-nav__link md-nav__link--active">
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../navigation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -515,35 +505,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#path-following" class="md-nav__link">
-    <span class="md-ellipsis">
-      Path Following
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1108,23 +1069,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#path-following" class="md-nav__link">
-    <span class="md-ellipsis">
-      Path Following
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1141,69 +1085,71 @@
   
 
 
-<h1 id="navigation">Navigation<a class="headerlink" href="#navigation" title="Permanent link">&para;</a></h1>
-<p>This example is similar to <a href="../click-and-drive/">Click-and-drive</a> but includes a <code>PathPlanner</code> to find a path around an obstacle.</p>
+<h1 id="kpi">KPI<a class="headerlink" href="#kpi" title="Permanent link">&para;</a></h1>
+<p>This example demonstrates how to create a KPI page.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="kn">import</span> <span class="n">randint</span>
+
 <span class="kn">from</span><span class="w"> </span><span class="nn">nicegui</span><span class="w"> </span><span class="kn">import</span> <span class="n">ui</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">nicegui.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">SceneClickEventArguments</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.automation</span><span class="w"> </span><span class="kn">import</span> <span class="n">Automator</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.driving</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span><span class="p">,</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">robot_object</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Point</span><span class="p">,</span> <span class="n">Pose</span><span class="p">,</span> <span class="n">Prism</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.hardware</span><span class="w"> </span><span class="kn">import</span> <span class="n">RobotSimulation</span><span class="p">,</span> <span class="n">WheelsSimulation</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.pathplanning</span><span class="w"> </span><span class="kn">import</span> <span class="n">Obstacle</span><span class="p">,</span> <span class="n">PathPlanner</span><span class="p">,</span> <span class="n">obstacle_object</span><span class="p">,</span> <span class="n">path_object</span>
-
-<span class="n">shape</span> <span class="o">=</span> <span class="n">Prism</span><span class="o">.</span><span class="n">default_robot_shape</span><span class="p">()</span>
-<span class="n">PathPlanner</span><span class="o">.</span><span class="n">USE_PERSISTENCE</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="n">path_planner</span> <span class="o">=</span> <span class="n">PathPlanner</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
-<span class="n">path_planner</span><span class="o">.</span><span class="n">obstacles</span><span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Obstacle</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;0&#39;</span><span class="p">,</span> <span class="n">outline</span><span class="o">=</span><span class="p">[</span><span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
-                                                        <span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">),</span>
-                                                        <span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">)])</span>
-<span class="n">wheels</span> <span class="o">=</span> <span class="n">WheelsSimulation</span><span class="p">()</span>
-<span class="n">robot</span> <span class="o">=</span> <span class="n">RobotSimulation</span><span class="p">([</span><span class="n">wheels</span><span class="p">])</span>
-<span class="n">odometer</span> <span class="o">=</span> <span class="n">Odometer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
-<span class="n">driver</span> <span class="o">=</span> <span class="n">Driver</span><span class="p">(</span><span class="n">wheels</span><span class="p">,</span> <span class="n">odometer</span><span class="p">)</span>
-<span class="n">automator</span> <span class="o">=</span> <span class="n">Automator</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_interrupt</span><span class="o">=</span><span class="n">wheels</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">Day</span><span class="p">,</span> <span class="n">KpiChart</span><span class="p">,</span> <span class="n">KpiLogger</span><span class="p">,</span> <span class="n">date_to_str</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">kpi_page</span> <span class="k">as</span> <span class="n">rosys_kpi_page</span>
 
 
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_click</span><span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">SceneClickEventArguments</span><span class="p">):</span>
-    <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">hits</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">hit</span><span class="o">.</span><span class="n">object_id</span> <span class="o">==</span> <span class="s1">&#39;ground&#39;</span><span class="p">:</span>
-            <span class="n">goal</span> <span class="o">=</span> <span class="n">Pose</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
-                        <span class="n">yaw</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span><span class="o">.</span><span class="n">direction</span><span class="p">(</span><span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">y</span><span class="p">)))</span>
-            <span class="n">path</span> <span class="o">=</span> <span class="k">await</span> <span class="n">path_planner</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span><span class="p">,</span> <span class="n">goal</span><span class="o">=</span><span class="n">goal</span><span class="p">)</span>
-            <span class="n">path3d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-            <span class="n">automator</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">driver</span><span class="o">.</span><span class="n">drive_path</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">generate_example_kpis</span><span class="p">(</span><span class="n">logger</span><span class="p">:</span> <span class="n">KpiLogger</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">days</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">Day</span><span class="p">(</span>
+            <span class="n">date</span><span class="o">=</span><span class="n">date_to_str</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">date</span><span class="p">()</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">i</span><span class="p">)),</span>
+            <span class="n">incidents</span><span class="o">=</span><span class="p">{</span>
+                <span class="s1">&#39;wheels_slipped&#39;</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
+                <span class="s1">&#39;wheels_blocking&#39;</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span>
+                <span class="s1">&#39;tests_run&#39;</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
+                <span class="s1">&#39;finished_task&#39;</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+                <span class="s1">&#39;connection_established&#39;</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">200</span><span class="p">),</span>
+                <span class="s1">&#39;bumps&#39;</span><span class="p">:</span> <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">50</span><span class="p">),</span>
+            <span class="p">},</span>
+        <span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">7</span> <span class="o">*</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="p">][::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
-<span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">(</span><span class="n">on_click</span><span class="o">=</span><span class="n">handle_click</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">600</span><span class="p">):</span>
-    <span class="n">robot_object</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">odometer</span><span class="p">)</span>
-    <span class="n">obstacle_object</span><span class="p">(</span><span class="n">path_planner</span><span class="p">)</span>
-    <span class="n">path3d</span> <span class="o">=</span> <span class="n">path_object</span><span class="p">()</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;click into the scene to drive the robot&#39;</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">kpi_page</span><span class="p">(</span><span class="n">rosys_kpi_page</span><span class="p">):</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">title</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">&#39;KPI Example Page&#39;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">charts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">KpiChart</span><span class="p">]:</span>
+        <span class="n">positives</span> <span class="o">=</span> <span class="n">KpiChart</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Positive Events&#39;</span><span class="p">,</span> <span class="n">indicators</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">&#39;finished_task&#39;</span><span class="p">:</span> <span class="s1">&#39;Finished Tasks&#39;</span><span class="p">,</span>
+        <span class="p">},</span> <span class="n">colormap</span><span class="o">=</span><span class="s1">&#39;Greens&#39;</span><span class="p">)</span>
+        <span class="n">neutral_events</span> <span class="o">=</span> <span class="n">KpiChart</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Neutral Events&#39;</span><span class="p">,</span> <span class="n">indicators</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">&#39;connection_established&#39;</span><span class="p">:</span> <span class="s1">&#39;Connection was established&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;tests_run&#39;</span><span class="p">:</span> <span class="s1">&#39;Tests&#39;</span><span class="p">,</span>
+        <span class="p">})</span>
+        <span class="n">negatives</span> <span class="o">=</span> <span class="n">KpiChart</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Exceptions&#39;</span><span class="p">,</span> <span class="n">indicators</span><span class="o">=</span><span class="p">{</span>
+            <span class="s1">&#39;wheels_slipped&#39;</span><span class="p">:</span> <span class="s1">&#39;Wheels Slipping&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;wheels_blocking&#39;</span><span class="p">:</span> <span class="s1">&#39;Wheels Blocking&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;bumps&#39;</span><span class="p">:</span> <span class="s1">&#39;Robot bumped into something&#39;</span><span class="p">,</span>
+        <span class="p">},</span> <span class="n">colormap</span><span class="o">=</span><span class="s1">&#39;Reds&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">positives</span><span class="p">,</span> <span class="n">neutral_events</span><span class="p">,</span> <span class="n">negatives</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">timespans</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="mi">7</span><span class="p">:</span> <span class="s1">&#39;7 days&#39;</span><span class="p">,</span>
+            <span class="mi">14</span><span class="p">:</span> <span class="s1">&#39;2 weeks&#39;</span><span class="p">,</span>
+            <span class="mi">21</span><span class="p">:</span> <span class="s1">&#39;3 weeks&#39;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+
+<span class="n">kpi_logger</span> <span class="o">=</span> <span class="n">KpiLogger</span><span class="p">()</span>
+<span class="n">generate_example_kpis</span><span class="p">(</span><span class="n">kpi_logger</span><span class="p">)</span>
+<span class="n">kpi_page</span><span class="p">(</span><span class="n">kpi_logger</span><span class="p">)</span>
+
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;KPI Example&#39;</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="path-following">Path Following<a class="headerlink" href="#path-following" title="Permanent link">&para;</a></h3>
-<p>When following a path, a "carrot" is dragged along a spline and the robot follows it like a donkey.
-Additionally, there is a virtual "hook" attached to the robot, which is pulled towards the carrot.</p>
-<p>There are three parameters:</p>
-<ul>
-<li><code>hook_offset</code>: How far from the wheel axis (i.e. the coordinate center of the robot) is the hook, which is pulled towards the carrot.</li>
-<li><code>carrot_offset</code>: How far <em>ahead of the carrot</em> is the robot pulled. This parameter is necessary in order to have the hook pulled a bit further, even though the carrot already reached the end of the spline.</li>
-<li><code>carrot_distance</code>: How long is the "thread" between hook and carrot (or the offset point <em>ahead</em> of the carrot, respectively).</li>
-</ul>
-<p>In the following illustration these points are depicted as spheres: the coordinate center of the robot (blue, small), the hook (blue, large), carrot (orange, small), offset point ahead of the carrot (orange, large).</p>
-<p><img alt="Navigation Geometry" src="geometry.png" style="width:60%" /></p>
-<p>You can display a wire frame version of the robot by passing <code>debug=true</code> to the <a href="../../reference/rosys/driving/#rosys.driving.robot_object"><code>robot_object</code></a>.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The automation <code>drive_spline</code> has an optional argument <code>flip_hook</code>.
-It turns the hook 180 degrees to the back of the robot, while preserving the distance <code>hook_offset</code> to the robot's coordinate center.
-This allows the robot to drive backwards to a point behind it instead of turning around and approaching it forwards.</p>
-</div>
-<p>A more complex example can be found in the <a href="https://github.com/zauberzeug/rosys/tree/main/examples/obstacles">RoSys GitHub repository</a>.
-There you can create new obstacles and choose between straight driving or navigation.</p>
 
 
 

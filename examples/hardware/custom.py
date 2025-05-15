@@ -35,7 +35,9 @@ steerer = rosys.driving.Steerer(wheels)
 
 rosys.driving.keyboard_control(steerer)
 rosys.driving.joystick(steerer)
-ui.label().bind_text_from(wheels, 'linear_target_speed', lambda l: f'Linear: {l:.2f} m/s')
-ui.label().bind_text_from(wheels, 'angular_target_speed', lambda a: f'Angular: {a:.2f} rad/s')
+ui.label().bind_text_from(wheels, 'linear_target_speed',
+                          lambda l: f'Linear: {l:.2f} m/s')
+ui.label().bind_text_from(wheels, 'angular_target_speed',
+                          lambda a: f'Angular: {a:.2f} rad/s')
 
 ui.run(title='RoSys')

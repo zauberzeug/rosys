@@ -11,10 +11,10 @@
         <link rel="canonical" href="https://rosys.io/examples/cameras/">
       
       
-        <link rel="prev" href="../simulation_speed/">
+        <link rel="prev" href="../camera_arm/">
       
       
-        <link rel="next" href="../coordinate_frames/">
+        <link rel="next" href="../click-and-drive/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -293,24 +293,16 @@
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          
-          <div class="md-nav__link md-nav__container">
-            <a href="../steering/" class="md-nav__link ">
-              
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
   
   <span class="md-ellipsis">
     Examples
   </span>
   
 
-            </a>
-            
-              
-              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
-                <span class="md-nav__icon md-icon"></span>
-              </label>
-            
-          </div>
+            <span class="md-nav__icon md-icon"></span>
+          </label>
         
         <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
@@ -326,11 +318,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../steering/" class="md-nav__link">
+      <a href="../areas/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Steering
+    Areas
   </span>
   
 
@@ -347,95 +339,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../click-and-drive/" class="md-nav__link">
+      <a href="../camera_arm/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Click-and-drive
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../play-pause-stop/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Play-pause-stop
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../navigation/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Navigation
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../hardware/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Hardware
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../simulation_speed/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Simulation Speed
+    Camera Arm
   </span>
   
 
@@ -524,6 +432,24 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#controlling-the-camera" class="md-nav__link">
+    <span class="md-ellipsis">
+      Controlling the Camera
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming-rtsp-cameras" class="md-nav__link">
+    <span class="md-ellipsis">
+      Streaming RTSP Cameras
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -540,11 +466,11 @@
   
   
     <li class="md-nav__item">
-      <a href="../coordinate_frames/" class="md-nav__link">
+      <a href="../click-and-drive/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Coordinate Frames
+    Click-And-Drive
   </span>
   
 
@@ -561,11 +487,137 @@
   
   
     <li class="md-nav__item">
-      <a href="../schedule/" class="md-nav__link">
+      <a href="../coordinate-frames/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
-    Schedule automations
+    Coordinate-Frames
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hardware/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hardware
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hello_bot/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Hello Bot
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../kpi/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Kpi
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../navigation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Navigation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../obstacles/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Obstacles
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../path_planning_analysis/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Path Planning Analysis
   </span>
   
 
@@ -587,6 +639,90 @@
   
   <span class="md-ellipsis">
     Persistence
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../play-pause-stop/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Play-Pause-Stop
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../schedule/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Schedule
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../simulation-speed/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Simulation-Speed
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../steering/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Steering
   </span>
   
 
@@ -1041,6 +1177,24 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#controlling-the-camera" class="md-nav__link">
+    <span class="md-ellipsis">
+      Controlling the Camera
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming-rtsp-cameras" class="md-nav__link">
+    <span class="md-ellipsis">
+      Streaming RTSP Cameras
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1128,11 +1282,139 @@ Here we use the <code>NEW_CAMERA</code> event to display the first camera to con
         <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">():</span>
             <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
             <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">keyboard_control</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
-        <span class="n">ui</span><span class="o">.</span><span class="n">markdown</span><span class="p">(</span><span class="s1">&#39;steer with joystick on the left or&lt;br /&gt;SHIFT + arrow keys&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-8 text-center&#39;</span><span class="p">)</span>
+        <span class="n">ui</span><span class="o">.</span><span class="n">markdown</span><span class="p">(</span><span class="s1">&#39;steer with joystick on the left or&lt;br /&gt;SHIFT + arrow keys&#39;</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-8 text-center&#39;</span><span class="p">)</span>
 
 <span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
 </code></pre></div>
 <p>By adding a <code>Joystick</code> and <code>KeyboardControl</code> the robot is ready to go for remote operation.</p>
+<h2 id="controlling-the-camera">Controlling the Camera<a class="headerlink" href="#controlling-the-camera" title="Permanent link">&para;</a></h2>
+<p>The following example creates a web interface for controlling multiple camera types.
+It displays cameras in a grid, showing their live feeds along with controls to connect/disconnect and adjust settings like FPS, quality, exposure, and color.
+The demo supports RTSP, MJPEG, USB, and simulated cameras.
+It automatically updates every 0.1 seconds to detect and display new cameras, and initializes with one simulated camera.</p>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">nicegui</span><span class="w"> </span><span class="kn">import</span> <span class="n">ui</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">rosys.vision</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">add_card</span><span class="p">(</span><span class="n">camera</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">Camera</span><span class="p">,</span> <span class="n">container</span><span class="p">:</span> <span class="n">ui</span><span class="o">.</span><span class="n">element</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">uid</span> <span class="o">=</span> <span class="n">camera</span><span class="o">.</span><span class="n">id</span>
+    <span class="k">if</span> <span class="n">uid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">streams</span><span class="p">:</span>
+        <span class="k">with</span> <span class="n">container</span><span class="p">:</span>
+            <span class="n">camera_card</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">()</span>
+            <span class="n">camera_cards</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span> <span class="o">=</span> <span class="n">camera_card</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;adding card for </span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="n">camera_grid</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">camera_card</span><span class="p">:</span>
+                    <span class="n">streams</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">()</span>
+                    <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-2&#39;</span><span class="p">)</span>
+                    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
+                        <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;disconnect&#39;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">camera</span><span class="o">.</span><span class="n">disconnect</span><span class="p">)</span> \
+                            <span class="o">.</span><span class="n">bind_enabled_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;is_connected&#39;</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">ConfigurableCamera</span><span class="p">):</span>
+                        <span class="n">create_camera_settings_panel</span><span class="p">(</span><span class="n">camera</span><span class="p">)</span>
+
+    <span class="n">streams</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">get_latest_image_url</span><span class="p">())</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">create_camera_settings_panel</span><span class="p">(</span><span class="n">camera</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">ConfigurableCamera</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">camera_parameters</span> <span class="o">=</span> <span class="n">camera</span><span class="o">.</span><span class="n">get_capabilities</span><span class="p">()</span>
+    <span class="n">parameter_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">parameter</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="n">camera_parameters</span><span class="p">]</span>
+    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">expansion</span><span class="p">(</span><span class="s1">&#39;Settings&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;w-full&#39;</span><span class="p">)</span> \
+            <span class="o">.</span><span class="n">bind_enabled_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;is_connected&#39;</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">RtspCamera</span><span class="p">):</span>
+            <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;URL&#39;</span><span class="p">)</span> \
+                <span class="o">.</span><span class="n">bind_text_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;url&#39;</span><span class="p">,</span>
+                                <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="ow">or</span> <span class="s1">&#39;URL not available&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="s1">&#39;fps&#39;</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">(),</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;FPS:&#39;</span><span class="p">)</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">31</span><span class="p">)),</span>
+                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">&#39;fps&#39;</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">}))</span> \
+                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;parameters&#39;</span><span class="p">,</span>
+                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;fps&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;substream&#39;</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">():</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span><span class="s1">&#39;High Quality&#39;</span><span class="p">,</span>
+                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">&#39;substream&#39;</span><span class="p">:</span> <span class="mi">0</span> <span class="k">if</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span> <span class="k">else</span> <span class="mi">1</span><span class="p">}))</span>
+        <span class="k">if</span> <span class="s1">&#39;exposure&#39;</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">(),</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;Exposure:&#39;</span><span class="p">)</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">select</span><span class="p">(</span><span class="n">options</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">255</span><span class="p">)),</span>
+                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">&#39;exposure&#39;</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">}))</span> \
+                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;parameters&#39;</span><span class="p">,</span>
+                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;exposure&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;auto_exposure&#39;</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">():</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span><span class="s1">&#39;Auto Exposure&#39;</span><span class="p">,</span>
+                          <span class="n">on_change</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">&#39;auto_exposure&#39;</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">value</span><span class="p">}))</span> \
+                    <span class="o">.</span><span class="n">bind_value_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;parameters&#39;</span><span class="p">,</span>
+                                     <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">params</span><span class="p">:</span> <span class="n">params</span><span class="p">[</span><span class="s1">&#39;auto_exposure&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="s1">&#39;color&#39;</span> <span class="ow">in</span> <span class="n">parameter_names</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">(),</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;Color:&#39;</span><span class="p">)</span>
+                <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="n">icon</span><span class="o">=</span><span class="s1">&#39;colorize&#39;</span><span class="p">):</span>
+                    <span class="n">ui</span><span class="o">.</span><span class="n">color_picker</span><span class="p">(</span><span class="n">on_pick</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">color</span><span class="p">}))</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">update_camera_cards</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">providers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">CameraProvider</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">rtsp_camera_provider</span><span class="p">,</span>
+        <span class="n">mjpeg_camera_provider</span><span class="p">,</span>
+        <span class="n">usb_camera_provider</span><span class="p">,</span>
+        <span class="n">simulated_camera_provider</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="k">for</span> <span class="n">provider</span> <span class="ow">in</span> <span class="n">providers</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">camera</span> <span class="ow">in</span> <span class="n">provider</span><span class="o">.</span><span class="n">cameras</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">add_card</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="n">camera_grid</span><span class="p">)</span>
+
+
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+<span class="n">streams</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">camera_cards</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">camera_grid</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">()</span>
+
+<span class="n">rtsp_camera_provider</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">RtspCameraProvider</span><span class="p">()</span>
+<span class="n">mjpeg_camera_provider</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">MjpegCameraProvider</span><span class="p">()</span>
+<span class="n">usb_camera_provider</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">UsbCameraProvider</span><span class="p">()</span>
+<span class="n">simulated_camera_provider</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">SimulatedCameraProvider</span><span class="p">()</span>
+
+<span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">update_camera_cards</span><span class="p">)</span>
+
+<span class="n">simulated_camera_provider</span><span class="o">.</span><span class="n">add_cameras</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8080</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="streaming-rtsp-cameras">Streaming RTSP Cameras<a class="headerlink" href="#streaming-rtsp-cameras" title="Permanent link">&para;</a></h2>
+<p>The following example shows how to stream images from an RTSP camera.</p>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nicegui</span><span class="w"> </span><span class="kn">import</span> <span class="n">ui</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">rosys</span>
+
+<span class="n">camera_provider</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">RtspCameraProvider</span><span class="p">()</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">refresh</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">for</span> <span class="n">uid</span><span class="p">,</span> <span class="n">camera</span> <span class="ow">in</span> <span class="n">camera_provider</span><span class="o">.</span><span class="n">cameras</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="k">if</span> <span class="n">uid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">streams</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">camera_grid</span><span class="p">:</span>
+                <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">():</span>
+                    <span class="n">streams</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">()</span>
+                    <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-2&#39;</span><span class="p">)</span>
+        <span class="n">streams</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">get_latest_image_url</span><span class="p">())</span>
+
+
+<span class="n">streams</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="n">camera_grid</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">()</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">refresh</span><span class="p">)</span>
+
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
+</code></pre></div>
 
 
 

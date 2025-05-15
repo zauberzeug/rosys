@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://rosys.io/examples/navigation/">
+        <link rel="canonical" href="https://rosys.io/examples/path_planning_analysis/">
       
       
-        <link rel="prev" href="../kpi/">
+        <link rel="prev" href="../obstacles/">
       
       
-        <link rel="next" href="../obstacles/">
+        <link rel="next" href="../persistence/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>Navigation - RoSys</title>
+        <title>Path Planning Analysis - RoSys</title>
       
     
     
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#navigation" class="md-skip">
+        <a href="#path-planning-analysis" class="md-skip">
           Skip to content
         </a>
       
@@ -104,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Navigation
+              Path Planning Analysis
             
           </span>
         </div>
@@ -483,30 +483,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Navigation
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../navigation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -515,35 +495,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#path-following" class="md-nav__link">
-    <span class="md-ellipsis">
-      Path Following
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -574,10 +525,19 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../path_planning_analysis/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -586,6 +546,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -1108,23 +1069,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#path-following" class="md-nav__link">
-    <span class="md-ellipsis">
-      Path Following
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -1141,69 +1085,89 @@
   
 
 
-<h1 id="navigation">Navigation<a class="headerlink" href="#navigation" title="Permanent link">&para;</a></h1>
-<p>This example is similar to <a href="../click-and-drive/">Click-and-drive</a> but includes a <code>PathPlanner</code> to find a path around an obstacle.</p>
+<h1 id="path-planning-analysis">Path Planning Analysis<a class="headerlink" href="#path-planning-analysis" title="Permanent link">&para;</a></h1>
+<p>This example demonstrates how to analyze the path planning results.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">nicegui</span><span class="w"> </span><span class="kn">import</span> <span class="n">ui</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">nicegui.events</span><span class="w"> </span><span class="kn">import</span> <span class="n">SceneClickEventArguments</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
 
-<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.automation</span><span class="w"> </span><span class="kn">import</span> <span class="n">Automator</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.driving</span><span class="w"> </span><span class="kn">import</span> <span class="n">Driver</span><span class="p">,</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">robot_object</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Point</span><span class="p">,</span> <span class="n">Pose</span><span class="p">,</span> <span class="n">Prism</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.hardware</span><span class="w"> </span><span class="kn">import</span> <span class="n">RobotSimulation</span><span class="p">,</span> <span class="n">WheelsSimulation</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.pathplanning</span><span class="w"> </span><span class="kn">import</span> <span class="n">Obstacle</span><span class="p">,</span> <span class="n">PathPlanner</span><span class="p">,</span> <span class="n">obstacle_object</span><span class="p">,</span> <span class="n">path_object</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pylab</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nicegui</span><span class="w"> </span><span class="kn">import</span> <span class="n">app</span><span class="p">,</span> <span class="n">ui</span>
 
-<span class="n">shape</span> <span class="o">=</span> <span class="n">Prism</span><span class="o">.</span><span class="n">default_robot_shape</span><span class="p">()</span>
-<span class="n">PathPlanner</span><span class="o">.</span><span class="n">USE_PERSISTENCE</span> <span class="o">=</span> <span class="kc">False</span>
-<span class="n">path_planner</span> <span class="o">=</span> <span class="n">PathPlanner</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
-<span class="n">path_planner</span><span class="o">.</span><span class="n">obstacles</span><span class="p">[</span><span class="s1">&#39;0&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Obstacle</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;0&#39;</span><span class="p">,</span> <span class="n">outline</span><span class="o">=</span><span class="p">[</span><span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span>
-                                                        <span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">),</span>
-                                                        <span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">3</span><span class="p">)])</span>
-<span class="n">wheels</span> <span class="o">=</span> <span class="n">WheelsSimulation</span><span class="p">()</span>
-<span class="n">robot</span> <span class="o">=</span> <span class="n">RobotSimulation</span><span class="p">([</span><span class="n">wheels</span><span class="p">])</span>
-<span class="n">odometer</span> <span class="o">=</span> <span class="n">Odometer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
-<span class="n">driver</span> <span class="o">=</span> <span class="n">Driver</span><span class="p">(</span><span class="n">wheels</span><span class="p">,</span> <span class="n">odometer</span><span class="p">)</span>
-<span class="n">automator</span> <span class="o">=</span> <span class="n">Automator</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">on_interrupt</span><span class="o">=</span><span class="n">wheels</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+<span class="c1"># pylint: disable=unused-import</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Point</span><span class="p">,</span> <span class="n">Pose</span>  <span class="c1"># noqa: F401</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.pathplanning</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_tools</span> <span class="k">as</span> <span class="n">pt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.pathplanning.area</span><span class="w"> </span><span class="kn">import</span> <span class="n">Area</span>  <span class="c1"># noqa: F401</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.pathplanning.delaunay_planner</span><span class="w"> </span><span class="kn">import</span> <span class="n">DelaunayPlanner</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.pathplanning.obstacle</span><span class="w"> </span><span class="kn">import</span> <span class="n">Obstacle</span>  <span class="c1"># noqa: F401</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.pathplanning.planner_process</span><span class="w"> </span><span class="kn">import</span> <span class="n">PlannerSearchCommand</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.pathplanning.robot_renderer</span><span class="w"> </span><span class="kn">import</span> <span class="n">RobotRenderer</span>
+
+<span class="n">robot_shape</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">input</span><span class="p">(</span><span class="s1">&#39;Robot shape&#39;</span><span class="p">,</span> <span class="n">placeholder</span><span class="o">=</span><span class="s1">&#39;[(x0, y0), (x1, y1), ...]&#39;</span><span class="p">)</span> \
+    <span class="o">.</span><span class="n">bind_value</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">general</span><span class="p">,</span> <span class="s1">&#39;robot_shape&#39;</span><span class="p">)</span> \
+    <span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;w-full&#39;</span><span class="p">)</span>
+<span class="n">search_command</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">textarea</span><span class="p">(</span><span class="s1">&#39;Search command:&#39;</span><span class="p">,</span>
+                             <span class="n">placeholder</span><span class="o">=</span><span class="s1">&#39;PlannerSearchCommand(...)&#39;</span><span class="p">)</span> \
+    <span class="o">.</span><span class="n">bind_value</span><span class="p">(</span><span class="n">app</span><span class="o">.</span><span class="n">storage</span><span class="o">.</span><span class="n">general</span><span class="p">,</span> <span class="s1">&#39;planner_search_command&#39;</span><span class="p">)</span> \
+    <span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;w-full&#39;</span><span class="p">)</span>
 
 
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">handle_click</span><span class="p">(</span><span class="n">e</span><span class="p">:</span> <span class="n">SceneClickEventArguments</span><span class="p">):</span>
-    <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">hits</span><span class="p">:</span>
-        <span class="k">if</span> <span class="n">hit</span><span class="o">.</span><span class="n">object_id</span> <span class="o">==</span> <span class="s1">&#39;ground&#39;</span><span class="p">:</span>
-            <span class="n">goal</span> <span class="o">=</span> <span class="n">Pose</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
-                        <span class="n">yaw</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span><span class="o">.</span><span class="n">direction</span><span class="p">(</span><span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">y</span><span class="p">)))</span>
-            <span class="n">path</span> <span class="o">=</span> <span class="k">await</span> <span class="n">path_planner</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span><span class="p">,</span> <span class="n">goal</span><span class="o">=</span><span class="n">goal</span><span class="p">)</span>
-            <span class="n">path3d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
-            <span class="n">automator</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">driver</span><span class="o">.</span><span class="n">drive_path</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">robot_shape</span><span class="o">.</span><span class="n">value</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">search_command</span><span class="o">.</span><span class="n">value</span><span class="p">:</span>
+        <span class="k">return</span>
 
-<span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">(</span><span class="n">on_click</span><span class="o">=</span><span class="n">handle_click</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">600</span><span class="p">):</span>
-    <span class="n">robot_object</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">odometer</span><span class="p">)</span>
-    <span class="n">obstacle_object</span><span class="p">(</span><span class="n">path_planner</span><span class="p">)</span>
-    <span class="n">path3d</span> <span class="o">=</span> <span class="n">path_object</span><span class="p">()</span>
+    <span class="n">shape</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">robot_shape</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># pylint: disable=eval-used</span>
+    <span class="n">cmd</span><span class="p">:</span> <span class="n">PlannerSearchCommand</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">search_command</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>  <span class="c1"># pylint: disable=eval-used</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;click into the scene to drive the robot&#39;</span><span class="p">)</span>
+    <span class="n">planner</span> <span class="o">=</span> <span class="n">DelaunayPlanner</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
+    <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="n">planner</span><span class="o">.</span><span class="n">update_map</span><span class="p">(</span><span class="n">cmd</span><span class="o">.</span><span class="n">areas</span><span class="p">,</span> <span class="n">cmd</span><span class="o">.</span><span class="n">obstacles</span><span class="p">,</span>
+                       <span class="p">[</span><span class="n">cmd</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">point</span><span class="p">,</span> <span class="n">cmd</span><span class="o">.</span><span class="n">goal</span><span class="o">.</span><span class="n">point</span><span class="p">],</span>
+                       <span class="n">deadline</span><span class="o">=</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="o">+</span><span class="mf">10.0</span><span class="p">)</span>
+    <span class="n">dt0</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span>
+
+    <span class="n">t</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">planner</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">cmd</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">cmd</span><span class="o">.</span><span class="n">goal</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">RuntimeError</span><span class="p">:</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">exception</span><span class="p">(</span><span class="s1">&#39;could not find path&#39;</span><span class="p">)</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">dt1</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">t</span>
+
+    <span class="k">with</span> <span class="n">plot</span><span class="p">:</span>
+        <span class="n">pl</span><span class="o">.</span><span class="n">clf</span><span class="p">()</span>
+        <span class="n">pl</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;map: </span><span class="si">{</span><span class="n">dt0</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1"> s, path: </span><span class="si">{</span><span class="n">dt1</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1"> s&#39;</span><span class="p">)</span>
+        <span class="n">pt</span><span class="o">.</span><span class="n">show_obstacle_map</span><span class="p">(</span><span class="n">planner</span><span class="o">.</span><span class="n">obstacle_map</span><span class="p">)</span>
+        <span class="n">pl</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+        <span class="n">pl</span><span class="o">.</span><span class="n">autoscale</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">planner</span><span class="o">.</span><span class="n">tri_points</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="k">assert</span> <span class="n">planner</span><span class="o">.</span><span class="n">tri_mesh</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="n">pl</span><span class="o">.</span><span class="n">triplot</span><span class="p">(</span><span class="n">planner</span><span class="o">.</span><span class="n">tri_points</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">planner</span><span class="o">.</span><span class="n">tri_points</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">],</span>
+                   <span class="n">planner</span><span class="o">.</span><span class="n">tri_mesh</span><span class="o">.</span><span class="n">simplices</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+        <span class="n">pt</span><span class="o">.</span><span class="n">plot_path</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s1">&#39;C1&#39;</span><span class="p">)</span>
+        <span class="n">robot_renderer</span> <span class="o">=</span> <span class="n">RobotRenderer</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+        <span class="n">pt</span><span class="o">.</span><span class="n">plot_robot</span><span class="p">(</span><span class="n">robot_renderer</span><span class="p">,</span> <span class="p">(</span><span class="n">cmd</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">cmd</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">cmd</span><span class="o">.</span><span class="n">start</span><span class="o">.</span><span class="n">yaw</span><span class="p">),</span>
+                      <span class="s1">&#39;C0&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">pt</span><span class="o">.</span><span class="n">plot_robot</span><span class="p">(</span><span class="n">robot_renderer</span><span class="p">,</span> <span class="p">(</span><span class="n">cmd</span><span class="o">.</span><span class="n">goal</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">cmd</span><span class="o">.</span><span class="n">goal</span><span class="o">.</span><span class="n">y</span><span class="p">,</span> <span class="n">cmd</span><span class="o">.</span><span class="n">goal</span><span class="o">.</span><span class="n">yaw</span><span class="p">),</span>
+                      <span class="s1">&#39;C0&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">path</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]:</span>
+                <span class="n">yaw</span> <span class="o">=</span> <span class="n">step</span><span class="o">.</span><span class="n">spline</span><span class="o">.</span><span class="n">yaw</span><span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="k">if</span> <span class="n">step</span><span class="o">.</span><span class="n">backward</span> <span class="k">else</span> <span class="n">step</span><span class="o">.</span><span class="n">spline</span><span class="o">.</span><span class="n">yaw</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+                <span class="n">pt</span><span class="o">.</span><span class="n">plot_robot</span><span class="p">(</span><span class="n">robot_renderer</span><span class="p">,</span>
+                              <span class="p">(</span><span class="n">step</span><span class="o">.</span><span class="n">spline</span><span class="o">.</span><span class="n">x</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">step</span><span class="o">.</span><span class="n">spline</span><span class="o">.</span><span class="n">y</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">yaw</span><span class="p">),</span>
+                              <span class="s1">&#39;C2&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
+    <span class="n">plot</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">pyplot</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+    <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;Re-run&#39;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">run</span><span class="p">)</span><span class="o">.</span><span class="n">props</span><span class="p">(</span><span class="s1">&#39;icon=replay outline&#39;</span><span class="p">)</span>
+<span class="n">run</span><span class="p">()</span>
+
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Path Planning Analysis&#39;</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="path-following">Path Following<a class="headerlink" href="#path-following" title="Permanent link">&para;</a></h3>
-<p>When following a path, a "carrot" is dragged along a spline and the robot follows it like a donkey.
-Additionally, there is a virtual "hook" attached to the robot, which is pulled towards the carrot.</p>
-<p>There are three parameters:</p>
-<ul>
-<li><code>hook_offset</code>: How far from the wheel axis (i.e. the coordinate center of the robot) is the hook, which is pulled towards the carrot.</li>
-<li><code>carrot_offset</code>: How far <em>ahead of the carrot</em> is the robot pulled. This parameter is necessary in order to have the hook pulled a bit further, even though the carrot already reached the end of the spline.</li>
-<li><code>carrot_distance</code>: How long is the "thread" between hook and carrot (or the offset point <em>ahead</em> of the carrot, respectively).</li>
-</ul>
-<p>In the following illustration these points are depicted as spheres: the coordinate center of the robot (blue, small), the hook (blue, large), carrot (orange, small), offset point ahead of the carrot (orange, large).</p>
-<p><img alt="Navigation Geometry" src="geometry.png" style="width:60%" /></p>
-<p>You can display a wire frame version of the robot by passing <code>debug=true</code> to the <a href="../../reference/rosys/driving/#rosys.driving.robot_object"><code>robot_object</code></a>.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The automation <code>drive_spline</code> has an optional argument <code>flip_hook</code>.
-It turns the hook 180 degrees to the back of the robot, while preserving the distance <code>hook_offset</code> to the robot's coordinate center.
-This allows the robot to drive backwards to a point behind it instead of turning around and approaching it forwards.</p>
-</div>
-<p>A more complex example can be found in the <a href="https://github.com/zauberzeug/rosys/tree/main/examples/obstacles">RoSys GitHub repository</a>.
-There you can create new obstacles and choose between straight driving or navigation.</p>
 
 
 

@@ -1,0 +1,13 @@
+version: "3.9"
+services:
+  rosys:
+    image: "zauberzeug/rosys:latest"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/app
+      - ./../..:/rosys # to directly modify rosys code and have it reflected in the container
+      - ./:/rosys/examples/obstacles # for developing the example within rosys workspace
+    devices:
+      - "/dev/ttyTHS1:/dev/esp"
+    hostname: docker
