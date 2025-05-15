@@ -204,6 +204,8 @@ class RobotBrain:
         return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
     async def enable_esp(self) -> None:
+        if self._esp_lock.locked():
+            return
         async with self._esp_lock:
             rosys.notify('Enabling ESP...')
             command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'enable']
@@ -212,6 +214,8 @@ class RobotBrain:
             rosys.notify('Enabling ESP: done', 'positive')
 
     async def disable_esp(self) -> None:
+        if self._esp_lock.locked():
+            return
         async with self._esp_lock:
             rosys.notify('Disabling ESP...')
             command = ['sudo', './espresso.py', 'disable', *self._convert_flash_params(self.lizard_firmware.flash_params)]
@@ -225,6 +229,8 @@ class RobotBrain:
                 rosys.notify('Disabling ESP: failed', 'negative')
 
     async def reset_esp(self) -> None:
+        if self._esp_lock.locked():
+            return
         async with self._esp_lock:
             rosys.notify('Resetting ESP...')
             command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'reset']
