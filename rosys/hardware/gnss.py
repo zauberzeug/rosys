@@ -37,6 +37,7 @@ class GpsQuality(IntEnum):
 @dataclass(slots=True, kw_only=True)
 class GnssMeasurement:
     time: float
+    gnss_time: float
     pose: GeoPose
     latitude_std_dev: float = 0.0
     longitude_std_dev: float = 0.0
@@ -223,6 +224,7 @@ class GnssHardware(Gnss):
                     robot_pose = antenna_pose.relative_shift_by(x=-self.antenna_pose.x, y=-self.antenna_pose.y)
                     self.last_measurement = GnssMeasurement(
                         time=rosys.time(),
+                        gnss_time=timestamp,
                         pose=robot_pose,
                         latitude_std_dev=last_latitude_accuracy,
                         longitude_std_dev=last_longitude_accuracy,
@@ -318,6 +320,7 @@ class GnssSimulation(Gnss):
 
         self.last_measurement = GnssMeasurement(
             time=rosys.time(),
+            gnss_time=rosys.time(),
             pose=noise_pose,
             latitude_std_dev=self._lat_std_dev,
             longitude_std_dev=self._lon_std_dev,
