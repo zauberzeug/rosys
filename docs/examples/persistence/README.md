@@ -32,7 +32,7 @@ You should choose wisely which values to persist.
 In particular, avoid to persist volatile things like wheel odometry or other sensor readings to save CPU and IO bandwidth.
 
 ```python
-{! examples/persistable/main.py !}
+{! examples/persistence/main.py !}
 ```
 
 ## Migration from the old `PersistentModule` class
