@@ -42,7 +42,7 @@ for issue in issues:
     numbers_str = ', '.join(f'#{number}' for number in sorted(numbers))
     note = f'{title.strip()} ({numbers_str} by @{user})'
     if 'breaking change' in labels:
-        note += '\n  ⚠️  **Breaking change:** add information regarding the breaking change'
+        note += '\n  ⚠️  **Breaking change:** TODO: add information regarding the breaking change'
     if 'bug' in labels:
         sections['Bugfixes'].append(note)
     elif 'enhancement' in labels:
