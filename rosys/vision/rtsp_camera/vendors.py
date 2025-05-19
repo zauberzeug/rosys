@@ -6,6 +6,7 @@ class VendorType(Enum):
     DAHUA = 2
     AXIS = 3
     REOLINK = 4
+    UNIARCH = 5
     OTHER = -1
 
 
@@ -16,6 +17,8 @@ def mac_to_vendor(mac: str) -> VendorType:
         return VendorType.DAHUA
     if mac.startswith('ec:71:db'):
         return VendorType.REOLINK
+    if mac.startswith('6c:f1:7e'):
+        return VendorType.UNIARCH
     return VendorType.OTHER
 
 
@@ -27,4 +30,6 @@ def mac_to_url(mac: str, ip: str, substream: int = 0) -> str | None:
         return f'rtsp://admin:Adminadmin@{ip}/cam/realmonitor?channel=1&subtype={substream}'
     if vendor == VendorType.REOLINK:
         return f'rtsp://admin:Adminadmin@{ip}/Preview_01_{"sub" if substream else "main"}'
+    if vendor == VendorType.UNIARCH:
+        return f'rtsp://admin:Admin_adm1n@{ip}/media/video{2 if substream else 1}'
     return None
