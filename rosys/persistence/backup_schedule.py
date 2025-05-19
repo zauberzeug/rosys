@@ -2,7 +2,7 @@ import datetime
 import logging
 from pathlib import Path
 
-from .. import rosys
+from .. import core
 from .import_export import export_all
 
 
@@ -24,7 +24,7 @@ class BackupSchedule:
         self.backup_count = backup_count
         self.log = logging.getLogger('rosys.persistence')
 
-        rosys.on_repeat(self.backup, 60)
+        core.on_repeat(self.backup, 60)
 
     def backup(self) -> None:
         """Backup the persistence files every day at the specified time."""
