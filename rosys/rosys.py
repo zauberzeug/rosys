@@ -20,6 +20,7 @@ from .config import Config
 from .geometry.frame3d_registry import frame_registry
 from .helpers import invoke, is_stopping
 from .helpers import is_test as is_test_
+from .persistence import Persistable
 
 warnings.filterwarnings('once', category=DeprecationWarning, module='rosys')
 
@@ -288,6 +289,7 @@ def reset_after_test() -> None:
     event.reset()
     frame_registry.clear()
 
+    Persistable.instances.clear()
     register_base_startup_handlers()
 
 
