@@ -2,182 +2,182 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://rosys.io/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/installation/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/troubleshooting/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/development/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/SUMMARY/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/areas/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/camera_arm/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/cameras/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/click-and-drive/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/coordinate-frames/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/hardware/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/hello_bot/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/kpi/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/navigation/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/obstacles/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/path_planning_analysis/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/persistence/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/play-pause-stop/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/schedule/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/simulation-speed/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/examples/steering/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/getting_started/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/reference/SUMMARY/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/reference/rosys/analysis/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/reference/rosys/automation/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/reference/rosys/driving/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/reference/rosys/geometry/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/reference/rosys/hardware/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/reference/rosys/helpers/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/reference/rosys/pathplanning/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/reference/rosys/system/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/reference/rosys/vision/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/reference/rosys/vision/camera/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/reference/rosys/vision/rtsp_camera/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/reference/rosys/vision/simulated_camera/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://rosys.io/reference/rosys/vision/usb_camera/</loc>
-         <lastmod>2025-05-15</lastmod>
+         <lastmod>2025-05-19</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
