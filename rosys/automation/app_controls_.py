@@ -56,11 +56,15 @@ class AppControls:
         }
         self.extra_buttons: dict[str, AppButton] = {}
 
-        rosys.on_shutdown(self.clear)
-        rosys.on_repeat(self.refresh, 0.1)
-        rosys.NEW_NOTIFICATION.register(self.notify)
-        robot_brain.ESP_CONNECTED.register(self.sync)
-        robot_brain.LINE_RECEIVED.register(self.parse)
+        def handle_esp_ready():
+            rosys.on_shutdown(self.clear)
+            rosys.on_repeat(self.refresh, 0.1)
+            rosys.NEW_NOTIFICATION.register(self.notify)
+            robot_brain.ESP_CONNECTED.register(self.sync)
+            robot_brain.LINE_RECEIVED.register(self.parse)
+            robot_brain.ESP_CONNECTED.unregister(handle_esp_ready)
+
+        robot_brain.ESP_CONNECTED.register(handle_esp_ready)
 
     async def refresh(self) -> None:
         if not self.main_buttons:  # happens on shutdown
