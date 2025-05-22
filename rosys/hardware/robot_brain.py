@@ -237,11 +237,9 @@ class RobotBrain:
         self.log.warning('Lizard\'s flash.py will be deprecated in the future, consider updating Lizard and using the new espresso.py instead')
         async with self._esp_lock:
             self._hardware_time = None
-            rosys.notify('Enabling ESP...')
             command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'enable']
             output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
             self.log.debug(output)
-            rosys.notify('Enabling ESP: done', 'positive')
 
     async def _enable_espresso(self) -> None:
         if self._esp_lock.locked():
@@ -254,10 +252,8 @@ class RobotBrain:
             output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
             if 'Finished.' in output:
                 self.log.debug(output)
-                rosys.notify('Enabling ESP: done', 'positive')
             else:
                 self.log.error(output)
-                rosys.notify('Enabling ESP: failed', 'negative')
 
     async def disable_esp(self) -> None:
         if self._esp_lock.locked():
@@ -270,10 +266,8 @@ class RobotBrain:
             output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
             if 'Finished.' in output:
                 self.log.debug(output)
-                rosys.notify('Disabling ESP: done', 'positive')
             else:
                 self.log.error(output)
-                rosys.notify('Disabling ESP: failed', 'negative')
 
     async def reset_esp(self) -> None:
         if self._esp_lock.locked():
@@ -284,27 +278,22 @@ class RobotBrain:
         self.log.warning('Lizard\'s flash.py will be deprecated in the future, consider updating Lizard and using the new espresso.py instead')
         async with self._esp_lock:
             self._hardware_time = None
-            rosys.notify('Resetting ESP...')
             command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'reset']
             output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
             self.log.debug(output)
-            rosys.notify('Resetting ESP: done', 'positive')
 
     async def _reset_espresso(self) -> None:
         if self._esp_lock.locked():
             return
         async with self._esp_lock:
             self._hardware_time = None
-            rosys.notify('Resetting ESP...')
             command = ['sudo', './espresso.py', 'reset', *self._convert_flash_params(self.lizard_firmware.flash_params)]
             self.log.debug('reset: %s', command)
             output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
             if 'Finished.' in output:
                 self.log.debug(output)
-                rosys.notify('Resetting ESP: done', 'positive')
             else:
                 self.log.error(output)
-                rosys.notify('Resetting ESP: failed', 'negative')
 
     def _convert_flash_params(self, flash_params: list[str]) -> list[str]:
         """Until the deprecation of the flash.py script, we need to convert the flash_params to espresso parameters."""
