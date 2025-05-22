@@ -207,9 +207,13 @@ class RobotBrain:
         self._clock_offset = sum(self._clock_offsets) / len(self._clock_offsets)
 
     async def send(self, msg: str) -> None:
+        if not self.is_ready:
+            raise EspNotReadyException('Sending message failed because ESP is not ready')
         await self.communication.send(augment(msg))
 
     async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf')) -> str | None:
+        if not self.is_ready:
+            raise EspNotReadyException('Sending message failed because ESP is not ready')
         self.waiting_list[ack] = None
         await self.send(msg)
         t0 = rosys.time()
@@ -317,6 +321,11 @@ class RobotBrain:
 
     def __repr__(self) -> str:
         return f'<RobotBrain {self.communication}>'
+
+
+class EspNotReadyException(Exception):
+    """Raised when trying to use the ESP before it is ready."""
+    pass
 
 
 def augment(line: str) -> str:
