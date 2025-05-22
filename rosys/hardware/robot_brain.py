@@ -321,7 +321,6 @@ class RobotBrain:
 
 class EspNotReadyException(Exception):
     """Raised when trying to use the ESP before it is ready."""
-    pass
 
 
 def augment(line: str) -> str:
