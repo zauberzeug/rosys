@@ -29,6 +29,8 @@ class RobotBrain:
         """a line has been received from the microcontroller (argument: line as string)"""
         self.FLASH_P0_COMPLETE = Event[[]]()
         """flashing p0 was successful and 'Replica complete' was received"""
+        self.ESP_CONNECTED = Event[[]]()
+        """ESP has been connected and Lizard is ready to use"""
 
         self.log = logging.getLogger('rosys.robot_brain')
 
@@ -184,16 +186,21 @@ class RobotBrain:
             first = words.pop(0)
             if first in self.waiting_list:
                 self.waiting_list[first] = line
+            hardware_time: float | None = None
             if first == 'core':
                 millis = float(words.pop(0))
                 if self.clock_offset is None:
                     continue
-                self._hardware_time = millis / 1000 + self.clock_offset
+                hardware_time = millis / 1000 + self.clock_offset
             if 'Replica complete' in line:
                 self.FLASH_P0_COMPLETE.emit()
             self.LINE_RECEIVED.emit(line)
-            if self._hardware_time is None:
+            if hardware_time is None:
                 continue
+            if self._hardware_time is None:
+                rosys.notify('ESP connected', 'positive')
+                self.ESP_CONNECTED.emit()
+            self._hardware_time = hardware_time
             lines.append((self._hardware_time, line))
         if millis is not None:
             self._handle_clock_offset(rosys.time() - millis / 1000)
