@@ -197,12 +197,11 @@ class RobotBrain:
             if 'Replica complete' in line:
                 self.FLASH_P0_COMPLETE.emit()
             self.LINE_RECEIVED.emit(line)
-            if hardware_time is None:
-                continue
-            if self._hardware_time is None:
-                rosys.notify('ESP connected', 'positive')
-                self.ESP_CONNECTED.emit()
-            self._hardware_time = hardware_time
+            if hardware_time is not None:
+                if self._hardware_time is None:
+                    rosys.notify('ESP connected', 'positive')
+                    self.ESP_CONNECTED.emit()
+                self._hardware_time = hardware_time
             lines.append((self._hardware_time, line))
         if millis is not None:
             self._handle_clock_offset(rosys.time() - millis / 1000)
