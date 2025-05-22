@@ -39,7 +39,7 @@ class RobotBrain:
         self.waiting_list: dict[str, str | None] = {}
         self._clock_offset: float | None = None
         self._clock_offsets: deque[float] = deque(maxlen=CLOCK_OFFSET_HISTORY_LENGTH)
-        self.hardware_time: float | None = None
+        self._hardware_time: float | None = None
         if enable_esp_on_startup:
             rosys.on_startup(self.enable_esp)
 
@@ -51,6 +51,14 @@ class RobotBrain:
     @property
     def clock_offset(self) -> float | None:
         return self._clock_offset
+
+    @property
+    def hardware_time(self) -> float | None:
+        return self._hardware_time
+
+    @property
+    def is_ready(self) -> bool:
+        return self._hardware_time is not None
 
     def developer_ui(self) -> None:
         version_select: ui.select
@@ -143,6 +151,7 @@ class RobotBrain:
                 ui.button(on_click=menu.open).props('icon=more_vert flat round')
 
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
+        ui.label().bind_text_from(self, 'is_ready', lambda ready: f'Ready: {ready}')
 
     async def configure(self) -> None:
         rosys.notify('Configuring Lizard...')
@@ -155,12 +164,16 @@ class RobotBrain:
 
     async def restart(self) -> None:
         await self.send('core.restart()')
+        await rosys.sleep(0.1)  # Note: we have to wait for the last core message to be sent
+        self._hardware_time = None
 
     async def read_lines(self) -> list[tuple[float, str]]:
         lines: list[tuple[float, str]] = []
         millis = None
         while True:
             unchecked = await self.communication.read()
+            if self._esp_lock.locked():
+                break
             line = check(unchecked)
             if not line:
                 break
@@ -174,13 +187,13 @@ class RobotBrain:
                 millis = float(words.pop(0))
                 if self.clock_offset is None:
                     continue
-                self.hardware_time = millis / 1000 + self.clock_offset
+                self._hardware_time = millis / 1000 + self.clock_offset
             if 'Replica complete' in line:
                 self.FLASH_P0_COMPLETE.emit()
             self.LINE_RECEIVED.emit(line)
-            if self.hardware_time is None:
+            if self._hardware_time is None:
                 continue
-            lines.append((self.hardware_time, line))
+            lines.append((self._hardware_time, line))
         if millis is not None:
             self._handle_clock_offset(rosys.time() - millis / 1000)
         return lines
@@ -207,6 +220,7 @@ class RobotBrain:
         if self._esp_lock.locked():
             return
         async with self._esp_lock:
+            self._hardware_time = None
             rosys.notify('Enabling ESP...')
             command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'enable']
             output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
@@ -217,6 +231,7 @@ class RobotBrain:
         if self._esp_lock.locked():
             return
         async with self._esp_lock:
+            self._hardware_time = None
             rosys.notify('Disabling ESP...')
             command = ['sudo', './espresso.py', 'disable', *self._convert_flash_params(self.lizard_firmware.flash_params)]
             self.log.debug('disable: %s', command)
@@ -232,6 +247,7 @@ class RobotBrain:
         if self._esp_lock.locked():
             return
         async with self._esp_lock:
+            self._hardware_time = None
             rosys.notify('Resetting ESP...')
             command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'reset']
             output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
