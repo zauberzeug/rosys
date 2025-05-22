@@ -56,10 +56,10 @@ class AppControls:
         }
         self.extra_buttons: dict[str, AppButton] = {}
 
-        rosys.on_startup(self._startup_sync)
         rosys.on_shutdown(self.clear)
         rosys.on_repeat(self.refresh, 0.1)
         rosys.NEW_NOTIFICATION.register(self.notify)
+        robot_brain.ESP_CONNECTED.register(self.sync)
         robot_brain.LINE_RECEIVED.register(self.parse)
 
     async def refresh(self) -> None:
@@ -111,10 +111,6 @@ class AppControls:
 
     async def sync(self):
         await self.send('PUT', lambda b: b.get_properties())
-
-    async def _startup_sync(self):
-        await self.robot_brain.ESP_CONNECTED
-        await self.sync()
 
     async def clear(self):
         await self.send('DELETE')
