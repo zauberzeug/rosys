@@ -10,7 +10,7 @@ from .gnss import Gnss, GnssHardware, GnssMeasurement, GnssSimulation
 from .imu import Imu, ImuHardware, ImuMeasurement, ImuSimulation
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot import Robot, RobotHardware, RobotSimulation
-from .robot_brain import RobotBrain
+from .robot_brain import EspNotReadyException, RobotBrain
 from .serial import SerialHardware
 from .wheels import Wheels, WheelsHardware, WheelsSimulation
 
@@ -28,6 +28,7 @@ __all__ = [
     'EStop',
     'EStopHardware',
     'EStopSimulation',
+    'EspNotReadyException',
     'ExpanderHardware',
     'Gnss',
     'GnssHardware',

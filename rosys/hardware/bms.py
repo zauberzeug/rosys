@@ -67,7 +67,7 @@ class BmsHardware(Bms, ModuleHardware):
         self.message_hooks[name] = self._handle_bms
 
     async def _request(self) -> None:
-        if rosys.time() > self.state.last_update + self.UPDATE_INTERVAL:
+        if self.robot_brain.is_ready and rosys.time() > self.state.last_update + self.UPDATE_INTERVAL:
             await self.robot_brain.send(f'{self.name}.send(0xdd, 0xa5, 0x03, 0x00, 0xff, 0xfd, 0x77)')
 
     def _handle_bms(self, line: str) -> None:

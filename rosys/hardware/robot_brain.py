@@ -24,7 +24,9 @@ class RobotBrain:
     If the offset changes significantly, a notification is sent and the offset history is cleared.
     """
 
-    def __init__(self, communication: Communication, *, enable_esp_on_startup: bool = True) -> None:
+    def __init__(self, communication: Communication, *, enable_esp_on_startup: bool = True, use_espresso: bool = False) -> None:
+        self.ESP_CONNECTED = Event[[]]()
+        """ESP has been connected and Lizard is ready to use"""
         self.LINE_RECEIVED = Event[str]()
         """a line has been received from the microcontroller (argument: line as string)"""
         self.FLASH_P0_COMPLETE = Event[[]]()
@@ -39,7 +41,8 @@ class RobotBrain:
         self.waiting_list: dict[str, str | None] = {}
         self._clock_offset: float | None = None
         self._clock_offsets: deque[float] = deque(maxlen=CLOCK_OFFSET_HISTORY_LENGTH)
-        self.hardware_time: float | None = None
+        self._hardware_time: float | None = None
+        self._use_espresso = use_espresso
         if enable_esp_on_startup:
             rosys.on_startup(self.enable_esp)
 
@@ -51,6 +54,14 @@ class RobotBrain:
     @property
     def clock_offset(self) -> float | None:
         return self._clock_offset
+
+    @property
+    def hardware_time(self) -> float | None:
+        return self._hardware_time
+
+    @property
+    def is_ready(self) -> bool:
+        return self._hardware_time is not None
 
     def developer_ui(self) -> None:
         version_select: ui.select
@@ -143,6 +154,7 @@ class RobotBrain:
                 ui.button(on_click=menu.open).props('icon=more_vert flat round')
 
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
+        ui.label().bind_text_from(self, 'is_ready', lambda ready: f'Ready: {ready}')
 
     async def configure(self) -> None:
         rosys.notify('Configuring Lizard...')
@@ -155,12 +167,18 @@ class RobotBrain:
 
     async def restart(self) -> None:
         await self.send('core.restart()')
+        try:
+            await self.LINE_RECEIVED.emitted(timeout=1.0)  # Note: we have to wait for the last core message to be sent
+        finally:
+            self._hardware_time = None
 
     async def read_lines(self) -> list[tuple[float, str]]:
         lines: list[tuple[float, str]] = []
         millis = None
         while True:
             unchecked = await self.communication.read()
+            if self._esp_lock.locked():
+                break
             line = check(unchecked)
             if not line:
                 break
@@ -170,17 +188,23 @@ class RobotBrain:
             first = words.pop(0)
             if first in self.waiting_list:
                 self.waiting_list[first] = line
+            hardware_time: float | None = None
             if first == 'core':
                 millis = float(words.pop(0))
                 if self.clock_offset is None:
                     continue
-                self.hardware_time = millis / 1000 + self.clock_offset
+                hardware_time = millis / 1000 + self.clock_offset
             if 'Replica complete' in line:
                 self.FLASH_P0_COMPLETE.emit()
             self.LINE_RECEIVED.emit(line)
-            if self.hardware_time is None:
+            if hardware_time is not None:
+                if self._hardware_time is None:
+                    rosys.notify('ESP connected', 'positive')
+                    self.ESP_CONNECTED.emit()
+                self._hardware_time = hardware_time
+            if self._hardware_time is None:
                 continue
-            lines.append((self.hardware_time, line))
+            lines.append((self._hardware_time, line))
         if millis is not None:
             self._handle_clock_offset(rosys.time() - millis / 1000)
         return lines
@@ -193,9 +217,13 @@ class RobotBrain:
         self._clock_offset = sum(self._clock_offsets) / len(self._clock_offsets)
 
     async def send(self, msg: str) -> None:
+        if not self.is_ready:
+            raise EspNotReadyException('Sending message failed because ESP is not ready')
         await self.communication.send(augment(msg))
 
     async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf')) -> str | None:
+        if not self.is_ready:
+            raise EspNotReadyException('Sending message failed because ESP is not ready')
         self.waiting_list[ack] = None
         await self.send(msg)
         t0 = rosys.time()
@@ -206,19 +234,44 @@ class RobotBrain:
     async def enable_esp(self) -> None:
         if self._esp_lock.locked():
             return
+        if self._use_espresso:
+            await self._enable_espresso()
+            return
+        self.log.warning("Lizard's flash.py will be deprecated in the future. "
+                         'Consider updating Lizard and using the new espresso.py instead.')
         async with self._esp_lock:
+            self._hardware_time = None
             rosys.notify('Enabling ESP...')
             command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'enable']
             output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
             self.log.debug(output)
-            rosys.notify('Enabling ESP: done', 'positive')
+            rosys.notify('Enabling ESP: done')
+
+    async def _enable_espresso(self) -> None:
+        if self._esp_lock.locked():
+            return
+        async with self._esp_lock:
+            self._hardware_time = None
+            rosys.notify('Enabling ESP...')
+            command = ['sudo', './espresso.py', 'enable',
+                       *self._convert_flash_params(self.lizard_firmware.flash_params)]
+            self.log.debug('enable: %s', command)
+            output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
+            if 'Finished.' in output:
+                self.log.debug(output)
+                rosys.notify('Enabling ESP: done', 'positive')
+            else:
+                self.log.error(output)
+                rosys.notify('Enabling ESP: failed', 'negative')
 
     async def disable_esp(self) -> None:
         if self._esp_lock.locked():
             return
         async with self._esp_lock:
+            self._hardware_time = None
             rosys.notify('Disabling ESP...')
-            command = ['sudo', './espresso.py', 'disable', *self._convert_flash_params(self.lizard_firmware.flash_params)]
+            command = ['sudo', './espresso.py', 'disable', *
+                       self._convert_flash_params(self.lizard_firmware.flash_params)]
             self.log.debug('disable: %s', command)
             output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
             if 'Finished.' in output:
@@ -231,12 +284,34 @@ class RobotBrain:
     async def reset_esp(self) -> None:
         if self._esp_lock.locked():
             return
+        if self._use_espresso:
+            await self._reset_espresso()
+            return
+        self.log.warning("Lizard's flash.py will be deprecated in the future. "
+                         'Consider updating Lizard and using the new espresso.py instead.')
         async with self._esp_lock:
+            self._hardware_time = None
             rosys.notify('Resetting ESP...')
             command = ['sudo', './flash.py', *self.lizard_firmware.flash_params, 'reset']
             output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
             self.log.debug(output)
-            rosys.notify('Resetting ESP: done', 'positive')
+            rosys.notify('Resetting ESP: done')
+
+    async def _reset_espresso(self) -> None:
+        if self._esp_lock.locked():
+            return
+        async with self._esp_lock:
+            self._hardware_time = None
+            rosys.notify('Resetting ESP...')
+            command = ['sudo', './espresso.py', 'reset', *self._convert_flash_params(self.lizard_firmware.flash_params)]
+            self.log.debug('reset: %s', command)
+            output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
+            if 'Finished.' in output:
+                self.log.debug(output)
+                rosys.notify('Resetting ESP: done', 'positive')
+            else:
+                self.log.error(output)
+                rosys.notify('Resetting ESP: failed', 'negative')
 
     def _convert_flash_params(self, flash_params: list[str]) -> list[str]:
         """Until the deprecation of the flash.py script, we need to convert the flash_params to espresso parameters."""
@@ -260,6 +335,10 @@ class RobotBrain:
 
     def __repr__(self) -> str:
         return f'<RobotBrain {self.communication}>'
+
+
+class EspNotReadyException(Exception):
+    """Raised when trying to use the ESP before it is ready."""
 
 
 def augment(line: str) -> str:

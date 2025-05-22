@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import inspect
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 
 from .. import rosys
 from ..event import Event
-from ..hardware import RobotBrain
+from ..hardware import EspNotReadyException, RobotBrain
 from .automator import Automator
 
 
@@ -42,6 +43,8 @@ class AppControls:
         self.APP_CONNECTED = Event[[]]()
         """an app connected via bluetooth (used to refresh information or similar)"""
 
+        self.log = logging.getLogger('rosys.app_controls')
+
         self.robot_brain = robot_brain
         self.automator = automator
 
@@ -53,11 +56,15 @@ class AppControls:
         }
         self.extra_buttons: dict[str, AppButton] = {}
 
-        rosys.on_startup(self.sync)
-        rosys.on_shutdown(self.clear)
-        rosys.on_repeat(self.refresh, 0.1)
-        rosys.NEW_NOTIFICATION.register(self.notify)
-        robot_brain.LINE_RECEIVED.register(self.parse)
+        def handle_esp_ready():
+            rosys.on_shutdown(self.clear)
+            rosys.on_repeat(self.refresh, 0.1)
+            rosys.NEW_NOTIFICATION.register(self.notify)
+            robot_brain.ESP_CONNECTED.register(self.sync)
+            robot_brain.LINE_RECEIVED.register(self.parse)
+            robot_brain.ESP_CONNECTED.unregister(handle_esp_ready)
+
+        robot_brain.ESP_CONNECTED.register(handle_esp_ready)
 
     async def refresh(self) -> None:
         if not self.main_buttons:  # happens on shutdown
@@ -74,11 +81,17 @@ class AppControls:
 
     async def set_info(self, msg: str) -> None:
         """replace constantly shown info text on mobile device"""
-        await self.robot_brain.send(f'bluetooth.send("PUT /info {msg}")')
+        try:
+            await self.robot_brain.send(f'bluetooth.send("PUT /info {msg}")')
+        except EspNotReadyException:
+            self.log.error('Failed to set info: ESP not ready')
 
     async def notify(self, msg: str) -> None:
         """show notification as Snackbar message on mobile device"""
-        await self.robot_brain.send(f'bluetooth.send("POST /notification {msg}")')
+        try:
+            await self.robot_brain.send(f'bluetooth.send("POST /notification {msg}")')
+        except EspNotReadyException:
+            self.log.error('Failed to notify: ESP not ready')
 
     def parse(self, line: str) -> None:
         if line.startswith('"'):
@@ -113,8 +126,11 @@ class AppControls:
                 for prop in get_properties(button):
                     cmd = f'bluetooth.send("{method} /button/{group}/{name}{prop}")'
                     await self.robot_brain.send(cmd)
-        await run('main', self.main_buttons)
-        await run('extra', self.extra_buttons)
+        try:
+            await run('main', self.main_buttons)
+            await run('extra', self.extra_buttons)
+        except EspNotReadyException:
+            self.log.error('Failed to send app controls from %s: ESP not ready', inspect.stack()[1].function)
 
     def _invoke(self, callback: Callable):
         if inspect.iscoroutinefunction(callback):
