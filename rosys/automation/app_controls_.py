@@ -122,8 +122,11 @@ class AppControls:
                 for prop in get_properties(button):
                     cmd = f'bluetooth.send("{method} /button/{group}/{name}{prop}")'
                     await self.robot_brain.send(cmd)
-        await run('main', self.main_buttons)
-        await run('extra', self.extra_buttons)
+        try:
+            await run('main', self.main_buttons)
+            await run('extra', self.extra_buttons)
+        except EspNotReadyException:
+            self.log.error('Failed to send app controls from %s: ESP not ready', inspect.stack()[1].function)
 
     def _invoke(self, callback: Callable):
         if inspect.iscoroutinefunction(callback):
