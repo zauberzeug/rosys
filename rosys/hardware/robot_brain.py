@@ -202,6 +202,8 @@ class RobotBrain:
                     rosys.notify('ESP connected', 'positive')
                     self.ESP_CONNECTED.emit()
                 self._hardware_time = hardware_time
+            if self._hardware_time is None:
+                continue
             lines.append((self._hardware_time, line))
         if millis is not None:
             self._handle_clock_offset(rosys.time() - millis / 1000)
