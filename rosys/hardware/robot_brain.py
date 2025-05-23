@@ -158,15 +158,15 @@ class RobotBrain:
 
     async def configure(self) -> None:
         rosys.notify('Configuring Lizard...')
-        await self.send('!-')
+        await self.send('!-', force_send=True)
         for line in self.lizard_code.splitlines():
-            await self.send(f'!+{line}')
-        await self.send('!.')
+            await self.send(f'!+{line}', force_send=True)
+        await self.send('!.', force_send=True)
         await self.restart()
         rosys.notify('Lizard configured successfully.', 'positive')
 
     async def restart(self) -> None:
-        await self.send('core.restart()')
+        await self.send('core.restart()', force_send=True)
         try:
             await self.LINE_RECEIVED.emitted(timeout=1.0)  # Note: we have to wait for the last core message to be sent
         finally:
@@ -216,16 +216,16 @@ class RobotBrain:
         self._clock_offsets.append(offset)
         self._clock_offset = sum(self._clock_offsets) / len(self._clock_offsets)
 
-    async def send(self, msg: str) -> None:
-        if not self.is_ready:
+    async def send(self, msg: str, * , force_send: bool = False) -> None:
+        if not self.is_ready and not force_send:
             raise EspNotReadyException('Sending message failed because ESP is not ready')
         await self.communication.send(augment(msg))
 
-    async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf')) -> str | None:
-        if not self.is_ready:
+    async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf'), force_send: bool = False) -> str | None:
+        if not self.is_ready and not force_send:
             raise EspNotReadyException('Sending message failed because ESP is not ready')
         self.waiting_list[ack] = None
-        await self.send(msg)
+        await self.send(msg, force_send=force_send)
         t0 = rosys.time()
         while self.waiting_list.get(ack) is None and rosys.time() < t0 + timeout:
             await rosys.sleep(0.1)
