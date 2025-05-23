@@ -217,11 +217,26 @@ class RobotBrain:
         self._clock_offset = sum(self._clock_offsets) / len(self._clock_offsets)
 
     async def send(self, msg: str, * , force_send: bool = False) -> None:
+        """Sends a Lizard command to the ESP.
+
+        :param msg: The Lizard command to send
+        :param force_send: Optional to ignore whether the ESP is ready to receive the message
+        :raises EspNotReadyException: When the ESP is not ready and force_send is False
+        """
         if not self.is_ready and not force_send:
             raise EspNotReadyException('Sending message failed because ESP is not ready')
         await self.communication.send(augment(msg))
 
     async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf'), force_send: bool = False) -> str | None:
+        """Sends a Lizard command and awaits a response.
+
+        :param msg: The Lizard command to send
+        :param ack: The first word of the response message to wait for
+        :param timeout: Optional timeout
+        :param force_send: Optional to ignore whether the ESP is ready to receive the message
+        :raises EspNotReadyException: When the ESP is not ready and force_send is False
+        :return: The response message or None if the timeout is reached
+        """
         if not self.is_ready and not force_send:
             raise EspNotReadyException('Sending message failed because ESP is not ready')
         self.waiting_list[ack] = None
