@@ -115,7 +115,7 @@ class LizardFirmware:
     async def flash_core(self) -> None:
         assert isinstance(self.robot_brain.communication, SerialCommunication)
         rosys.notify(f'Flashing Lizard firmware {self.local_version} to Core...')
-        if any(await self.robot_brain.esp_pins_p0.get_strapping_pins()):
+        if any(await self.robot_brain.esp_pins_core.get_strapping_pins()):
             rosys.notify('Flashing Core failed. Check strapping pins.', 'negative')
             return
         self.robot_brain.communication.disconnect()
