@@ -158,15 +158,15 @@ class RobotBrain:
 
     async def configure(self) -> None:
         rosys.notify('Configuring Lizard...')
-        await self.send('!-', force_send=True)
+        await self.send('!-', force=True)
         for line in self.lizard_code.splitlines():
-            await self.send(f'!+{line}', force_send=True)
-        await self.send('!.', force_send=True)
+            await self.send(f'!+{line}', force=True)
+        await self.send('!.', force=True)
         await self.restart()
         rosys.notify('Lizard configured successfully.', 'positive')
 
     async def restart(self) -> None:
-        await self.send('core.restart()', force_send=True)
+        await self.send('core.restart()', force=True)
         try:
             await self.LINE_RECEIVED.emitted(timeout=1.0)  # Note: we have to wait for the last core message to be sent
         finally:
@@ -216,31 +216,31 @@ class RobotBrain:
         self._clock_offsets.append(offset)
         self._clock_offset = sum(self._clock_offsets) / len(self._clock_offsets)
 
-    async def send(self, msg: str, * , force_send: bool = False) -> None:
-        """Sends a Lizard command to the ESP.
+    async def send(self, msg: str, *, force: bool = False) -> None:
+        """Send a Lizard command to the ESP.
 
         :param msg: The Lizard command to send
-        :param force_send: Optional to ignore whether the ESP is ready to receive the message
-        :raises EspNotReadyException: When the ESP is not ready and force_send is False
+        :param force: Whether to send the message even if the ESP is not ready
+        :raises EspNotReadyException: When the ESP is not ready and force is ``False``
         """
-        if not self.is_ready and not force_send:
+        if not self.is_ready and not force:
             raise EspNotReadyException('Sending message failed because ESP is not ready')
         await self.communication.send(augment(msg))
 
-    async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf'), force_send: bool = False) -> str | None:
-        """Sends a Lizard command and awaits a response.
+    async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf'), force: bool = False) -> str | None:
+        """Send a Lizard command to the ESP and await a response.
 
         :param msg: The Lizard command to send
         :param ack: The first word of the response message to wait for
-        :param timeout: Optional timeout
-        :param force_send: Optional to ignore whether the ESP is ready to receive the message
-        :raises EspNotReadyException: When the ESP is not ready and force_send is False
-        :return: The response message or None if the timeout is reached
+        :param timeout: Response timeout
+        :param force: Whether to send the message even if the ESP is not ready
+        :raises EspNotReadyException: When the ESP is not ready and force is ``False``
+        :return: The response message or ``None`` if the timeout is reached
         """
-        if not self.is_ready and not force_send:
+        if not self.is_ready and not force:
             raise EspNotReadyException('Sending message failed because ESP is not ready')
         self.waiting_list[ack] = None
-        await self.send(msg, force_send=force_send)
+        await self.send(msg, force=force)
         t0 = rosys.time()
         while self.waiting_list.get(ack) is None and rosys.time() < t0 + timeout:
             await rosys.sleep(0.1)
