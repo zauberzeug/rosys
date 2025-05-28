@@ -23,6 +23,7 @@ class DriveParameters(ModificationContext):
     carrot_offset: float = 0.6
     carrot_distance: float = 0.1
     hook_bending_factor: float = 0
+    minimum_drive_distance: float = 0.01
 
 
 @dataclass(slots=True, kw_only=True)
@@ -163,7 +164,7 @@ class Driver:
         :param stop_at_end: Whether to stop at the end of the spline (default: ``True``).
         :raises DrivingAbortedException: If the driving process is aborted.
         """
-        if spline.start.distance(spline.end) < 0.01:
+        if spline.start.distance(spline.end) < self.parameters.minimum_drive_distance:
             return  # NOTE: skip tiny splines
 
         hook_offset = Point(x=self.parameters.hook_offset, y=0) * (-1 if flip_hook else 1)
