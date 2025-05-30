@@ -193,7 +193,7 @@ class Driver:
             if drive_backward and not self.parameters.can_drive_backwards:
                 drive_backward = False
                 curvature = (-1 if curvature > 0 else 1) / max(self.parameters.minimum_turning_radius, 0.001)
-            linear: float = -1 if drive_backward else 1
+            linear: float = self.parameters.linear_speed_limit * (-1 if drive_backward else 1)
             t = spline.closest_point(hook.x, hook.y)
             if t >= 1.0 and throttle_at_end:
                 target_distance = self.prediction.projected_distance(spline.pose(1.0))
