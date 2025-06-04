@@ -232,9 +232,10 @@ async def startup() -> None:
         await coroutine
 
 
-async def _garbage_collection(mbyte_limit: float = 300) -> None:
-    if psutil.virtual_memory().free < mbyte_limit * 1_000_000:
-        log.warning('less than %s mb of memory remaining -> start garbage collection', mbyte_limit)
+async def _garbage_collection() -> None:
+    if psutil.virtual_memory().free < config.garbage_collection_mbyte_limit * 1_000_000:
+        log.warning('less than %s mb of memory remaining -> start garbage collection',
+                    config.garbage_collection_mbyte_limit)
         gc.collect()
         await sleep(1)  # NOTE ensure all warnings appear before sending "finished" message
         log.warning('finished garbage collection')
