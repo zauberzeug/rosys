@@ -74,10 +74,10 @@ class RobotHardware(Robot):
                 if len(words) != self.output_length:
                     current_time = rosys.time()
                     if current_time - self._last_warning_time >= self._warning_cooldown:
-                        rosys.notify(
-                            f'Lizard output configuration is incorrect, expected {self.output_length} parameters, got {len(words)}',
-                            type='negative',
-                            log_level=logging.ERROR)
+                        rosys.notify('Lizard output configuration is incorrect, '
+                                     f'expected {self.output_length} parameters, got {len(words)}',
+                                     type='negative',
+                                     log_level=logging.ERROR)
                         self._last_warning_time = current_time
                     return
                 words.pop(0)
