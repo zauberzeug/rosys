@@ -32,7 +32,7 @@ class RobotHardware(Robot):
     def __init__(self, modules: list[Module], robot_brain: RobotBrain) -> None:
         super().__init__(modules)
         self.robot_brain = robot_brain
-        self.output_length = 0
+        self._expected_output_length = 0
         self._warning_cooldown = 30.0
         self._last_warning_time = 0.0
         self.robot_brain.lizard_code = self.generate_lizard_code()
@@ -58,7 +58,7 @@ class RobotHardware(Robot):
             rdyp.on()
             en3.on()
         ''')
-        self.output_length = len(output_fields) + 2  # account for the two words "core" and `core.millis`
+        self._expected_output_length = len(output_fields) + 2  # account for the two words "core" and `core.millis`
         return code
 
     async def update(self) -> None:
@@ -71,11 +71,11 @@ class RobotHardware(Robot):
             if not words:
                 continue
             if words[0] == 'core':
-                if len(words) != self.output_length:
+                if len(words) != self._expected_output_length:
                     current_time = rosys.time()
                     if current_time - self._last_warning_time >= self._warning_cooldown:
-                        rosys.notify('Lizard output configuration is incorrect, '
-                                     f'expected {self.output_length} parameters, got {len(words)}',
+                        rosys.notify('Lizard configuration is incorrect, '
+                                     f'expected {self._expected_output_length} words, got {len(words)}',
                                      type='negative',
                                      log_level=logging.ERROR)
                         self._last_warning_time = current_time
