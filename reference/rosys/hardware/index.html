@@ -993,6 +993,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rosys.hardware.EspNotReadyException" class="md-nav__link">
+    <span class="md-ellipsis">
+      EspNotReadyException
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rosys.hardware.ExpanderHardware" class="md-nav__link">
     <span class="md-ellipsis">
       ExpanderHardware
@@ -1105,6 +1114,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotBrain.ESP_CONNECTED" class="md-nav__link">
+    <span class="md-ellipsis">
+      ESP_CONNECTED
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rosys.hardware.RobotBrain.FLASH_P0_COMPLETE" class="md-nav__link">
     <span class="md-ellipsis">
       FLASH_P0_COMPLETE
@@ -1117,6 +1135,24 @@
   <a href="#rosys.hardware.RobotBrain.LINE_RECEIVED" class="md-nav__link">
     <span class="md-ellipsis">
       LINE_RECEIVED
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotBrain.send" class="md-nav__link">
+    <span class="md-ellipsis">
+      send
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotBrain.send_and_await" class="md-nav__link">
+    <span class="md-ellipsis">
+      send_and_await
     </span>
   </a>
   
@@ -1736,6 +1772,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rosys.hardware.EspNotReadyException" class="md-nav__link">
+    <span class="md-ellipsis">
+      EspNotReadyException
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rosys.hardware.ExpanderHardware" class="md-nav__link">
     <span class="md-ellipsis">
       ExpanderHardware
@@ -1848,6 +1893,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotBrain.ESP_CONNECTED" class="md-nav__link">
+    <span class="md-ellipsis">
+      ESP_CONNECTED
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rosys.hardware.RobotBrain.FLASH_P0_COMPLETE" class="md-nav__link">
     <span class="md-ellipsis">
       FLASH_P0_COMPLETE
@@ -1860,6 +1914,24 @@
   <a href="#rosys.hardware.RobotBrain.LINE_RECEIVED" class="md-nav__link">
     <span class="md-ellipsis">
       LINE_RECEIVED
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotBrain.send" class="md-nav__link">
+    <span class="md-ellipsis">
+      send
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotBrain.send_and_await" class="md-nav__link">
+    <span class="md-ellipsis">
+      send_and_await
     </span>
   </a>
   
@@ -2698,6 +2770,35 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 
 
 
+<h2 id="rosys.hardware.EspNotReadyException" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">EspNotReadyException</span>
+
+
+<a href="#rosys.hardware.EspNotReadyException" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="Exception">Exception</span></code></p>
+
+
+        <p>Raised when trying to use the ESP before it is ready.</p>
+
+
+
+
+
+
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h2 id="rosys.hardware.ExpanderHardware" class="doc doc-heading">
             <span class="doc doc-object-name doc-class-name">ExpanderHardware</span>
 
@@ -3164,7 +3265,8 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">RobotBrain</span><span class="p">(</span>
     <span class="n">communication</span><span class="p">:</span> <span class="n">Communication</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">enable_esp_on_startup</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">enable_esp_on_startup</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">use_espresso</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -3194,6 +3296,30 @@ If the offset changes significantly, a notification is sent and the offset histo
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.hardware.RobotBrain.ESP_CONNECTED" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">ESP_CONNECTED</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.hardware.RobotBrain.ESP_CONNECTED" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">ESP_CONNECTED</span> <span class="o">=</span> <span class="n">Event</span><span class="p">[[]]()</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>ESP has been connected and Lizard is ready to use</p>
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-attribute">
 
@@ -3244,6 +3370,69 @@ If the offset changes significantly, a notification is sent and the offset histo
 </div>
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.hardware.RobotBrain.send" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">send</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.hardware.RobotBrain.send" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">send</span><span class="p">(</span><span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Send a Lizard command to the ESP.</p>
+<p>:param msg: The Lizard command to send
+:param force: Whether to send the message even if the ESP is not ready
+:raises EspNotReadyException: When the ESP is not ready and force is <code>False</code></p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.hardware.RobotBrain.send_and_await" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">send_and_await</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.hardware.RobotBrain.send_and_await" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">send_and_await</span><span class="p">(</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">ack</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">),</span>
+    <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Send a Lizard command to the ESP and await a response.</p>
+<p>:param msg: The Lizard command to send
+:param ack: The first word of the response message to wait for
+:param timeout: Response timeout
+:param force: Whether to send the message even if the ESP is not ready
+:raises EspNotReadyException: When the ESP is not ready and force is <code>False</code>
+:return: The response message or <code>None</code> if the timeout is reached</p>
+
+
+    </div>
+
+</div>
 
 
 
