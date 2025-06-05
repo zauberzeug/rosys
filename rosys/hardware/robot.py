@@ -58,7 +58,7 @@ class RobotHardware(Robot):
             rdyp.on()
             en3.on()
         ''')
-        self.output_length = len(output_fields)+2  # add 2 for core and core.millis
+        self.output_length = len(output_fields) + 2  # account for the two words "core" and `core.millis`
         return code
 
     async def update(self) -> None:
