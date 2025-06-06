@@ -295,11 +295,11 @@ def reset_after_test() -> None:
 
 
 def register_base_startup_handlers() -> None:
-    on_repeat(_garbage_collection, 60)
+    # on_repeat(_garbage_collection, 60)
     on_repeat(_watch_emitted_events, 0.1)
 
 
-gc.disable()  # NOTE disable automatic garbage collection to optimize performance
+# gc.disable()  # NOTE disable automatic garbage collection to optimize performance
 register_base_startup_handlers()
 
 app.on_startup(startup)
