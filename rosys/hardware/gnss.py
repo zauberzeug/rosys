@@ -197,6 +197,7 @@ class GnssHardware(Gnss):
                 diff = round(((timestamp - rosys_time + SECONDS_HALF_DAY) % SECONDS_DAY) - SECONDS_HALF_DAY, 3)
                 if abs(diff) > self.MAX_TIMESTAMP_DIFF:
                     self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
+                    self.serial_connection.reset_input_buffer()
                     continue
                 else:
                     self.log.debug('timestamp diff = %s', diff)
