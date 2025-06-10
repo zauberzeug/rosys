@@ -25,7 +25,7 @@ class DriveParameters(ModificationContext):
     hook_bending_factor: float = 0
     minimum_drive_distance: float = 0.01
     throttle_at_end_distance: float = 0.5
-    throttle_at_end_linear_speed_min: float = 0.91
+    throttle_at_end_linear_speed_min: float = 0.01
 
 @dataclass(slots=True, kw_only=True)
 class DriveState:
