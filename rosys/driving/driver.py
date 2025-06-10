@@ -25,7 +25,8 @@ class DriveParameters(ModificationContext):
     hook_bending_factor: float = 0
     minimum_drive_distance: float = 0.01
     throttle_at_end_distance: float = 0.5
-    throttle_at_end_linear_speed_min: float = 0.01
+    throttle_at_end_min_speed: float = 0.01
+
 
 @dataclass(slots=True, kw_only=True)
 class DriveState:
@@ -199,10 +200,9 @@ class Driver:
             t = spline.closest_point(hook.x, hook.y)
             if t >= 1.0 and throttle_at_end:
                 target_distance = self.prediction.projected_distance(spline.pose(1.0))
-                linear *= ramp(target_distance,
-                        self.parameters.throttle_at_end_distance, 0.0,
-                        1.0, self.parameters.throttle_at_end_linear_speed_min,
-                        clip=True)
+                throttle_distance = self.parameters.throttle_at_end_distance
+                min_linear_speed = self.parameters.throttle_at_end_min_speed
+                linear *= ramp(target_distance, throttle_distance, 0.0, 1.0, min_linear_speed, clip=True)
             angular = linear * curvature
 
             self.state = DriveState(
