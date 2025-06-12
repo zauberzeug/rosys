@@ -168,7 +168,9 @@ class RobotBrain:
     async def restart(self) -> None:
         await self.send('core.restart()', force=True)
         try:
-            await self.LINE_RECEIVED.emitted(timeout=1.0)  # Note: we have to wait for the last core message to be sent
+            await self.LINE_RECEIVED.emitted(timeout=1.0)  # NOTE: we have to wait for the last core message to be sent
+        except TimeoutError:
+            pass
         finally:
             self._hardware_time = None
 
