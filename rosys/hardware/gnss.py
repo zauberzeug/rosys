@@ -252,6 +252,7 @@ class GnssHardware(Gnss):
             self.log.debug('Reset clock offset')
 
         grid = super().developer_ui()
+        assert grid is not None
         with grid:
             ui.label('Clock Offset:')
             with ui.row().classes('gap-x-1'):
