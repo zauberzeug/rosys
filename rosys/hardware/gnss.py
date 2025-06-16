@@ -70,7 +70,7 @@ class Gnss(ABC):
     def is_connected(self) -> bool:
         return False
 
-    def developer_ui(self) -> ui.grid:
+    def developer_ui(self) -> ui.grid | None:
         ui.label('GNSS').classes('text-center text-bold')
         with ui.grid(columns='auto auto').classes('gap-y-1 w-2/5') as grid:
             ui.label('Connected:')
@@ -246,7 +246,7 @@ class GnssHardware(Gnss):
             except (KeyError, ValueError) as e:
                 self.log.exception('GNSS parse error: %s', e)
 
-    def developer_ui(self) -> ui.grid:
+    def developer_ui(self) -> ui.grid | None:
         def reset_clock_offset() -> None:
             self._clock_offset = None
             self.log.debug('Reset clock offset')
@@ -350,7 +350,7 @@ class GnssSimulation(Gnss):
         )
         self.NEW_MEASUREMENT.emit(self.last_measurement)
 
-    def developer_ui(self) -> None:
+    def developer_ui(self) -> ui.grid | None:
         super().developer_ui()
         ui.label('Simulation').classes('text-center text-bold')
         with ui.column().classes('gap-y-1'):
@@ -363,3 +363,4 @@ class GnssSimulation(Gnss):
                 .bind_value(self, '_heading_std_dev').classes('w-4/5')
             ui.select({quality: quality.name for quality in GpsQuality}, label='Quality') \
                 .bind_value(self, '_gps_quality').classes('w-4/5')
+        return None
