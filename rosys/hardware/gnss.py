@@ -70,9 +70,9 @@ class Gnss(ABC):
     def is_connected(self) -> bool:
         return False
 
-    def developer_ui(self) -> None:
+    def developer_ui(self) -> ui.grid:
         ui.label('GNSS').classes('text-center text-bold')
-        with ui.grid(columns='auto auto').classes('gap-y-1 w-2/5'):
+        with ui.grid(columns='auto auto').classes('gap-y-1 w-2/5') as grid:
             ui.label('Connected:')
             ui.icon('close').bind_name_from(self, 'is_connected',
                                             lambda x: 'check' if x else 'close')
@@ -107,6 +107,7 @@ class Gnss(ABC):
             ui.label('Last update:')
             ui.label().bind_text_from(self, 'last_measurement',
                                       lambda x: f'{rosys.time() - x.time:.2f}s' if x else '')
+        return grid
 
 
 class GnssHardware(Gnss):
@@ -122,6 +123,7 @@ class GnssHardware(Gnss):
         """
         super().__init__()
         self.antenna_pose = antenna_pose or Pose(x=0.0, y=0.0, yaw=0.0)
+        self._clock_offset: float | None = None
         self._reconnect_interval = reconnect_interval
         self.serial_connection: serial.Serial | None = None
         rosys.on_startup(self._run)
@@ -195,6 +197,11 @@ class GnssHardware(Gnss):
                 utc_time = datetime.combine(today, time_obj).replace(tzinfo=timezone.utc)
                 timestamp = utc_time.timestamp()
                 diff = round(((timestamp - rosys_time + SECONDS_HALF_DAY) % SECONDS_DAY) - SECONDS_HALF_DAY, 3)
+                if self._clock_offset is None:
+                    self.log.warning('Setting clock offset to %s', diff)
+                    self._clock_offset = diff
+                    continue
+                diff -= self._clock_offset
                 if abs(diff) > self.MAX_TIMESTAMP_DIFF:
                     self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
                     self.serial_connection.reset_input_buffer()
@@ -238,6 +245,19 @@ class GnssHardware(Gnss):
                     self.NEW_MEASUREMENT.emit(self.last_measurement)
             except (KeyError, ValueError) as e:
                 self.log.exception('GNSS parse error: %s', e)
+
+    def developer_ui(self) -> ui.grid:
+        def reset_clock_offset() -> None:
+            self._clock_offset = None
+            self.log.debug('Reset clock offset')
+
+        grid = super().developer_ui()
+        with grid:
+            ui.label('Clock Offset:')
+            with ui.row().classes('gap-x-1'):
+                ui.label('').bind_text_from(self, '_clock_offset', lambda x: f'{x if x is not None else "None"}s')
+                ui.button(icon='refresh', on_click=reset_clock_offset).classes('p-0').props('flat round dense')
+        return grid
 
     # TODO: move to helper and add search argument; for other serial devices
     def _find_device(self) -> str:
