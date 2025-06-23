@@ -11,7 +11,8 @@ from typing import Any, ClassVar
 from nicegui import run
 from typing_extensions import Self
 
-from .. import core, rosys
+from .. import core
+from ..helpers import is_test
 
 KEY_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\.]+$')
 
@@ -46,7 +47,7 @@ class Persistable(abc.ABC):
         :param backup_interval: The interval to backup the object (default: None)
         :param allow_tests: Whether to allow persistence in tests (default: False)
         """
-        if rosys.is_test and not allow_tests:
+        if is_test() and not allow_tests:
             return self
         if self._filepath is not None:
             raise RuntimeError('This object is already persistent')
@@ -107,7 +108,7 @@ class Persistable(abc.ABC):
         To avoid blocking the main thread, use ``request_backup()`` instead.
         """
         if self._filepath is None:
-            if rosys.is_test:
+            if is_test():
                 raise RuntimeError('Backup failed: Persistence is disabled in tests')
             raise RuntimeError('Backup failed: This object is not persistent. Call persistent() first.')
         self._filepath.write_text(json.dumps(self.backup_to_dict()))
@@ -127,7 +128,7 @@ class Persistable(abc.ABC):
         To avoid blocking the main thread, use ``restore()`` instead.
         """
         if self._filepath is None:
-            if rosys.is_test:
+            if is_test():
                 raise RuntimeError('Restore failed: Persistence is disabled in tests')
             raise RuntimeError('Restore failed: This object is not persistent. Call persistent() first.')
         if not self._filepath.exists():
