@@ -24,6 +24,7 @@ class Persistable(abc.ABC):
         self.log = logging.getLogger('rosys.persistable')
         self._needs_backup = False
         self._filepath: Path | None = None
+        self._disabled = False
 
     def persistent(self, *,
                    key: str | None = None,
@@ -31,6 +32,7 @@ class Persistable(abc.ABC):
                    restore: bool = True,
                    backup_check_interval: float | None = 10.0,
                    backup_interval: float | None = None,
+                   disable_in_tests: bool = True,
                    ) -> Self:
         """Make this object persistent.
 
@@ -43,7 +45,11 @@ class Persistable(abc.ABC):
         :param restore: Whether to restore the object immediately from the persistence file (default: True)
         :param backup_check_interval: The interval to check for backups (default: 10.0 seconds)
         :param backup_interval: The interval to backup the object (default: None)
+        :param disable_in_tests: Whether to disable persistence in tests (default: True)
         """
+        self._disabled = core.is_test and disable_in_tests
+        if self._disabled:
+            return self
         if self._filepath is not None:
             raise RuntimeError('This object is already persistent')
 
@@ -102,6 +108,8 @@ class Persistable(abc.ABC):
         The file is written synchronously.
         To avoid blocking the main thread, use ``request_backup()`` instead.
         """
+        if self._disabled:
+            raise RuntimeError('Backup failed: Persistence is disabled.')
         if self._filepath is None:
             raise RuntimeError('Backup failed: This object is not persistent. Call persistent() first.')
         self._filepath.write_text(json.dumps(self.backup_to_dict()))
@@ -120,6 +128,8 @@ class Persistable(abc.ABC):
         The file is read synchronously.
         To avoid blocking the main thread, use ``restore()`` instead.
         """
+        if self._disabled:
+            raise RuntimeError('Restore failed: Persistence is disabled.')
         if self._filepath is None:
             raise RuntimeError('Restore failed: This object is not persistent. Call persistent() first.')
         if not self._filepath.exists():
