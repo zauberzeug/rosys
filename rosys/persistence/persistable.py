@@ -25,6 +25,7 @@ class Persistable(abc.ABC):
         self.log = logging.getLogger('rosys.persistable')
         self._needs_backup = False
         self._filepath: Path | None = None
+        self._disabled = False
 
     def persistent(self, *,
                    key: str | None = None,
@@ -32,7 +33,7 @@ class Persistable(abc.ABC):
                    restore: bool = True,
                    backup_check_interval: float | None = 10.0,
                    backup_interval: float | None = None,
-                   allow_tests: bool = False,
+                   disable_in_tests: bool = True,
                    ) -> Self:
         """Make this object persistent.
 
@@ -45,9 +46,10 @@ class Persistable(abc.ABC):
         :param restore: Whether to restore the object immediately from the persistence file (default: True)
         :param backup_check_interval: The interval to check for backups (default: 10.0 seconds)
         :param backup_interval: The interval to backup the object (default: None)
-        :param allow_tests: Whether to allow persistence in tests (default: False)
+        :param disable_in_tests: Whether to disable persistence in tests (default: True)
         """
-        if is_test() and not allow_tests:
+        self._disabled = is_test() and disable_in_tests
+        if self._disabled:
             return self
         if self._filepath is not None:
             raise RuntimeError('This object is already persistent')
@@ -107,9 +109,9 @@ class Persistable(abc.ABC):
         The file is written synchronously.
         To avoid blocking the main thread, use ``request_backup()`` instead.
         """
+        if self._disabled:
+            raise RuntimeError('Backup failed: Persistence is disabled.')
         if self._filepath is None:
-            if is_test():
-                raise RuntimeError('Backup failed: Persistence is disabled in tests')
             raise RuntimeError('Backup failed: This object is not persistent. Call persistent() first.')
         self._filepath.write_text(json.dumps(self.backup_to_dict()))
         self._needs_backup = False
@@ -127,9 +129,9 @@ class Persistable(abc.ABC):
         The file is read synchronously.
         To avoid blocking the main thread, use ``restore()`` instead.
         """
+        if self._disabled:
+            raise RuntimeError('Restore failed: Persistence is disabled.')
         if self._filepath is None:
-            if is_test():
-                raise RuntimeError('Restore failed: Persistence is disabled in tests')
             raise RuntimeError('Restore failed: This object is not persistent. Call persistent() first.')
         if not self._filepath.exists():
             self.log.warning('Restore failed: File "%s" not found', self._filepath)

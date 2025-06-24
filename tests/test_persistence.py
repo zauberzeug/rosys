@@ -79,7 +79,7 @@ async def test_persistable() -> None:
             self.y = data['y']
 
     persistable = MyPersistable(x=42, y=3.14)
-    persistable.persistent(restore=False, allow_tests=True)
+    persistable.persistent(restore=False, disable_in_tests=False)
     persistable.sync_backup()
 
     # pylint: disable=protected-access
@@ -87,7 +87,7 @@ async def test_persistable() -> None:
     assert persistable._filepath.read_text() == '{"x": 42, "y": 3.14}'
 
     with pytest.raises(RuntimeError, match='already persistent'):
-        persistable.persistent(allow_tests=True)
+        persistable.persistent(disable_in_tests=False)
 
     persistable.x = 100
     persistable.sync_restore()
