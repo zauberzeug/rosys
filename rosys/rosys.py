@@ -15,11 +15,10 @@ import numpy as np
 import psutil
 from nicegui import Client, app, background_tasks, ui
 
-from . import core, event, run
+from . import core, event, helpers, run
 from .config import Config
 from .geometry.frame3d_registry import frame_registry
 from .helpers import invoke, is_stopping
-from .helpers import is_test as is_test_
 from .persistence import Persistable
 
 warnings.filterwarnings('once', category=DeprecationWarning, module='rosys')
@@ -28,7 +27,7 @@ log = logging.getLogger('rosys.core')
 
 translator: Any | None = None
 
-is_test = is_test_()
+core.is_test = is_test = helpers.is_test()
 
 # POSIX standard to create processes is "fork", which is inherently broken for python (see https://pythonspeed.com/articles/python-multiprocessing/)
 if __name__ == '__main__':

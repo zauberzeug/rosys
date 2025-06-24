@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 # This is a workaround to avoid a circular dependency for modules that are part of rosys (e.g. config.py)
 # and would need to import rosys (via persistable.py).
 
+is_test: bool
 on_repeat: Callable[[Callable, float], Repeater]
 on_startup: Callable[[Callable], None]
 on_shutdown: Callable[[Callable], None]

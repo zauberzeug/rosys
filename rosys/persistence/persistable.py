@@ -12,7 +12,6 @@ from nicegui import run
 from typing_extensions import Self
 
 from .. import core
-from ..helpers import is_test
 
 KEY_PATTERN = re.compile(r'^[a-zA-Z0-9_\-\.]+$')
 
@@ -48,7 +47,7 @@ class Persistable(abc.ABC):
         :param backup_interval: The interval to backup the object (default: None)
         :param disable_in_tests: Whether to disable persistence in tests (default: True)
         """
-        self._disabled = is_test() and disable_in_tests
+        self._disabled = core.is_test and disable_in_tests
         if self._disabled:
             return self
         if self._filepath is not None:
