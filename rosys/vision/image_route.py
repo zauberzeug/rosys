@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import math
+import weakref
 from typing import TYPE_CHECKING
 
 import cv2
@@ -24,15 +25,23 @@ def create_image_route(camera: Camera) -> None:
     timestamp_url = '/' + camera.base_path + '/{timestamp}'
     undistorted_url = '/' + camera.base_path + '/{timestamp}/undistorted'
 
-    app.remove_route(placeholder_url)
-    app.remove_route(timestamp_url)
-    app.remove_route(undistorted_url)
+    def remove_api_routes() -> None:
+        app.remove_route(placeholder_url)
+        app.remove_route(timestamp_url)
+        app.remove_route(undistorted_url)
+
+    remove_api_routes()
+
+    camera_ref = weakref.ref(camera, lambda _: remove_api_routes())
 
     async def get_camera_image(timestamp: str,
                                shrink: float = 1.0,
                                max_dimension: float | None = None,
                                fast: bool = True,
                                compression: int = 60) -> Response:
+        camera = camera_ref()
+        if not camera:
+            return Response(content='Camera was removed', status_code=404)
         return await _get_image(camera, timestamp,
                                 shrink=shrink,
                                 max_dimension=max_dimension,
@@ -45,6 +54,9 @@ def create_image_route(camera: Camera) -> None:
                                            max_dimension: float | None = None,
                                            fast: bool = True,
                                            compression: int = 60) -> Response:
+        camera = camera_ref()
+        if not camera:
+            return Response(content='Camera was removed', status_code=404)
         return await _get_image(camera,
                                 timestamp,
                                 shrink=shrink,
