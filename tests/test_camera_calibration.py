@@ -322,40 +322,43 @@ def test_omnidirectional_array_projection():
     assert np.allclose(world_point_array, world_point_array_, atol=1e-6)
 
 
-def test_project_from_behind():
-    cam = CalibratableCamera(id='1')
-    cam.set_perfect_calibration(z=1, roll=np.deg2rad(180 + 10))
-    assert cam.calibration is not None
-
-    assert cam.calibration.project_to_image(Point3d(x=0, y=1, z=1)) is not None
-    assert cam.calibration.project_to_image(Point3d(x=0, y=-1, z=1)) is None
-
-
-def test_fisheye_project_from_behind():
-    cam = CalibratableCamera(id='1')
-    cam.set_perfect_calibration(z=1, roll=np.deg2rad(180 + 10))
-    assert cam.calibration is not None
-
-    cam.calibration.intrinsics.distortion = [0.1, 0.2, 0.3, 0.4]
-    cam.calibration.intrinsics.model = CameraModel.FISHEYE
-    assert cam.calibration.project_to_image(Point3d(x=0, y=1, z=1)) is not None
-    assert cam.calibration.project_to_image(Point3d(x=0, y=-1, z=1)) is None
-
-
-def test_omnidirectional_project_from_behind():
+@pytest.mark.parametrize('camera_model,can_see_behind', [
+    (CameraModel.PINHOLE, False),
+    (CameraModel.FISHEYE, False),
+    (CameraModel.OMNIDIRECTIONAL, True),
+])
+def test_project_from_behind(camera_model: CameraModel, can_see_behind: bool):
+    """Test projection behavior for points behind the camera for different camera models."""
     cam = CalibratableCamera(id='1')
     cam.set_perfect_calibration(z=1, roll=np.deg2rad(180 + 10))
     assert cam.calibration is not None
 
     cam.calibration.intrinsics.distortion = [0.1, 0.2, 0.3, 0.4]
-    cam.calibration.intrinsics.omnidir_params = OmnidirParameters(xi=0.8)
-    cam.calibration.intrinsics.model = CameraModel.OMNIDIRECTIONAL
-    assert cam.calibration.project_to_image(Point3d(x=0, y=1, z=1)) is not None
-    assert cam.calibration.project_to_image(Point3d(x=0, y=-1, z=1)) is not None
+    cam.calibration.intrinsics.model = camera_model
+    if camera_model == CameraModel.OMNIDIRECTIONAL:
+        cam.calibration.intrinsics.omnidir_params = OmnidirParameters(xi=0.8)
+
+    point_front = Point3d(x=0, y=1, z=1)
+    point_behind = Point3d(x=0, y=-1, z=1)
+
+    assert cam.calibration.project_to_image(point_front) is not None
+    assert (cam.calibration.project_to_image(point_behind) is not None) == can_see_behind
+
+    points = [point_front, point_behind]
+    result_list = cam.calibration.project_to_image(points)
+    assert isinstance(result_list, list)
+    assert result_list[0] is not None
+    assert (result_list[1] is not None) == can_see_behind
+
+    points_array = np.array([point_front.tuple, point_behind.tuple], dtype=np.float64)
+    result_array = cam.calibration.project_to_image(points_array)
+    assert isinstance(result_array, np.ndarray)
+    assert result_array.shape == (2, 2)
+    assert not np.isnan(result_array[0]).any()
+    assert np.isnan(result_array[1]).any() != can_see_behind
 
 
 def test_undistort_points():
-    """Test """
     cam, _ = demo_data()
     assert cam.calibration is not None
 
