@@ -25,14 +25,11 @@ def create_image_route(camera: Camera) -> None:
     timestamp_url = '/' + camera.base_path + '/{timestamp}'
     undistorted_url = '/' + camera.base_path + '/{timestamp}/undistorted'
 
-    def remove_api_routes() -> None:
-        app.remove_route(placeholder_url)
-        app.remove_route(timestamp_url)
-        app.remove_route(undistorted_url)
+    app.remove_route(placeholder_url)
+    app.remove_route(timestamp_url)
+    app.remove_route(undistorted_url)
 
-    remove_api_routes()
-
-    camera_ref = weakref.ref(camera, lambda _: remove_api_routes())
+    camera_ref = weakref.ref(camera)
 
     async def get_camera_image(timestamp: str,
                                shrink: float = 1.0,
