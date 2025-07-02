@@ -4,7 +4,7 @@ import numpy as np
 from scipy.optimize import least_squares
 
 from rosys.geometry import Line3d, Point, Point3d, Pose3d, Rotation
-from rosys.vision import Calibration, Intrinsics
+from rosys.vision.calibration import Calibration, Intrinsics
 
 
 @dataclass
