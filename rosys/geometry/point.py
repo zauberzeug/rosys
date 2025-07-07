@@ -21,17 +21,9 @@ class Point:
             y=np.imag(number),
         )
 
-    @staticmethod
-    def from_array(array: np.ndarray) -> Point:
-        return Point(x=array[0], y=array[1])
-
     @property
     def tuple(self) -> tuple[float, float]:
         return (self.x, self.y)
-
-    @property
-    def array(self) -> np.ndarray:
-        return np.array([self.x, self.y])
 
     @property
     def complex(self) -> complex:
