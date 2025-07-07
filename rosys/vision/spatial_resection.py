@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import numpy as np
 from scipy.optimize import least_squares
 
-from rosys.geometry import Line3d, Point, Point3d, Pose3d, Rotation
+from rosys.geometry import Point3d, Pose3d, Rotation
 from rosys.vision.calibration import Calibration, Intrinsics
 
 
@@ -36,11 +36,11 @@ class SpatialResection:
                        *,
                        p0: Point3d,
                        r0: Rotation,
-                       world_lines: np.ndarray | list[Line3d],
-                       image_line_points: np.ndarray | list[Point],
-                       s0: np.ndarray | list[float] | None = None,
-                       world_points: np.ndarray | list[Point3d] | None = None,
-                       image_points: np.ndarray | list[Point] | None = None,
+                       world_lines: np.ndarray,
+                       image_line_points: np.ndarray,
+                       s0: np.ndarray | None = None,
+                       world_points: np.ndarray | None = None,
+                       image_points: np.ndarray | None = None,
                        **ls_args) -> SpatialResectionResult:
         """
         Solves the spatial resection problem by minimizing the reprojection error between
@@ -51,9 +51,9 @@ class SpatialResection:
 
         :param p0: The initial position of the camera
         :param r0: The initial rotation of the camera
-        :param world_lines: The lines in object space (origin, direction), shape (m, 6) or list of m Line3d
-        :param image_line_points: The 2D coordinates of the points in the image, shape (m, 2) or list of m Points
-        :param s0: The initial running variables of the lines, shape (m,) or list of m floats or None
+        :param world_lines: The lines in object space (origin, direction), shape (m, 6)
+        :param image_line_points: The 2D coordinates of the points in the image, shape (m, 2)
+        :param s0: The initial running variables of the lines, shape (m,) or None
         :param world_points: The 3D coordinates of the points in object space, shape (n, 3) or None
         :param image_points: The 2D coordinates of the points in the image, shape (n, 2) or None
         :param ls_args: Additional arguments for the least squares solver.
@@ -62,23 +62,6 @@ class SpatialResection:
         """
 
         intrinsics = self.intrinsics
-
-        # Convert to numpy arrays
-
-        if isinstance(image_line_points, list):
-            image_line_points = np.array([p.array for p in image_line_points])
-
-        if isinstance(world_lines, list):
-            world_lines = np.array([l.array for l in world_lines])
-
-        if isinstance(world_points, list):
-            world_points = np.array([p.array.ravel() for p in world_points])
-
-        if isinstance(image_points, list):
-            image_points = np.array([p.array for p in image_points])
-
-        if s0 is not None and isinstance(s0, list):
-            s0 = np.array(s0)
 
         # Check sizes
 
@@ -153,17 +136,9 @@ class SpatialResection:
 
             Xc = all_world_points @ R.T
 
-            fl_x = camera_matrix[0, 0]
-            fl_y = camera_matrix[1, 1]
-            cx = camera_matrix[0, 2]
-            cy = camera_matrix[1, 2]
-
             # Project 3D points to 2D image points
-            u = (fl_x * Xc[:, 0] / Xc[:, 2]) + cx
-            v = (fl_y * Xc[:, 1] / Xc[:, 2]) + cy
-
-            image_points_projected[:, 0] = u
-            image_points_projected[:, 1] = v
+            image_points_projected[:, 0] = camera_matrix[0, 0] * Xc[:, 0] / Xc[:, 2] + camera_matrix[0, 2]
+            image_points_projected[:, 1] = camera_matrix[1, 1] * Xc[:, 1] / Xc[:, 2] + camera_matrix[1, 2]
 
             # Compute residuals
             np.subtract(image_points_projected, all_image_points, out=residuals)
@@ -174,7 +149,6 @@ class SpatialResection:
         # Transform result to Rosys conventions
 
         q = res.x[3:]
-        q = q / np.linalg.norm(q)
         R_cam = Rotation.from_quaternion(q[0], q[1], q[2], q[3])
         R_world = R_cam.T
 
