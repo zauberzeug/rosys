@@ -34,11 +34,6 @@ class Point3d(Object3d):
         """Create a Point3d from a Point with a given z-coordinate."""
         return Point3d(x=p.x, y=p.y, z=z)
 
-    @staticmethod
-    def from_array(array: np.ndarray) -> Point3d:
-        """Create a Point3d from a (3,) numpy array."""
-        return Point3d(x=array[0], y=array[1], z=array[2])
-
     @property
     def tuple(self) -> tuple[float, float, float]:
         return (self.x, self.y, self.z)
