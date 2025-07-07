@@ -45,8 +45,9 @@ class CalibratableCamera(Camera):
                                 x: float = 0.0, y: float = 0.0, z: float = 1.0,
                                 roll: float = np.pi, pitch: float = 0.0, yaw: float = 0.0,
                                 frame: Frame3d | None = None,
+                                distortion: list[float] | None = None,
                                 ) -> None:
         self.calibration = Calibration(
-            intrinsics=Intrinsics.create_default(width, height, focal_length=focal_length),
+            intrinsics=Intrinsics.create_default(width, height, focal_length=focal_length, distortion=distortion),
             extrinsics=Pose3d(x=x, y=y, z=z, rotation=Rotation.from_euler(roll, pitch, yaw)).in_frame(frame),
         )
