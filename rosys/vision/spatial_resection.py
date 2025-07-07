@@ -7,7 +7,7 @@ from rosys.geometry import Line3d, Point, Point3d, Pose3d, Rotation
 from rosys.vision.calibration import Calibration, Intrinsics
 
 
-@dataclass
+@dataclass(slots=True, kw_only=True)
 class SpatialResectionResult:
     """
     Result of the spatial resection.
@@ -25,7 +25,7 @@ class SpatialResection:
     _DUMMY_ARRAY_2D = np.zeros(shape=(0, 2))
     _DUMMY_ARRAY_3D = np.zeros(shape=(0, 3))
 
-    def __init__(self, intrinsics: Intrinsics):
+    def __init__(self, intrinsics: Intrinsics) -> None:
         """
         Spatial resection can be used to find the pose of a camera given a set of correspondences
         between coordinates in object space and image space.
@@ -151,7 +151,7 @@ class SpatialResection:
             all_world_points[n:] = world_line_points
             np.subtract(all_world_points, C, out=all_world_points)
 
-            Xc = (R @ all_world_points.T).T
+            Xc = all_world_points @ R.T
 
             fl_x = camera_matrix[0, 0]
             fl_y = camera_matrix[1, 1]
