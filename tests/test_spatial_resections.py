@@ -70,5 +70,5 @@ def test_spatial_resection_with_line_points(parallel_lines: bool):
     assert np.allclose(result.camera_pose.rotation.quaternion, ground_truth_rotation.quaternion, atol=0.001)
 
     # Check the estimated object space points on lines
-    for line_point, world_point in zip(result.estimated_points_on_lines or [], world_points, strict=False):
+    for line_point, world_point in zip(result.estimated_points_on_lines, world_points, strict=False):
         assert np.allclose(line_point.array, world_point, atol=5)

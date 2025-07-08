@@ -9,13 +9,13 @@ from rosys.vision.calibration import Calibration, Intrinsics
 
 @dataclass(slots=True, kw_only=True)
 class SpatialResectionResult:
-    """Result of the spatial resection."""
+    """Result of the spatial resection with lines."""
     success: bool
     iterations: int
     average_reprojection_error: float
     camera_pose: Pose3d
-    running_variables: list[float] | None  # None?
-    estimated_points_on_lines: list[Point3d] | None  # None?
+    running_variables: list[float]
+    estimated_points_on_lines: list[Point3d]
 
 
 class SpatialResection:
@@ -72,7 +72,7 @@ class SpatialResection:
         all_image_points = np.concatenate([
             calibration.undistort_points(image_points),
             calibration.undistort_points(image_line_points),
-        ], axis=0)
+        ])
 
         # Prepare state vector
         # - 3D position of the camera
@@ -127,12 +127,9 @@ class SpatialResection:
             all_world_points[n:] = world_line_points
             np.subtract(all_world_points, C, out=all_world_points)
 
-            Xc = all_world_points @ R.T
-
             # Project 3D points to 2D image points
-            image_points_projected[:, 0] = camera_matrix[0, 0] * Xc[:, 0] / Xc[:, 2] + camera_matrix[0, 2]
-            image_points_projected[:, 1] = camera_matrix[1, 1] * Xc[:, 1] / Xc[:, 2] + camera_matrix[1, 2]
-            # image_points_projected[:] = (Xc @ camera_matrix.T)[:, :2] / Xc[:, 2:3]
+            Xc = all_world_points @ R.T
+            image_points_projected[:] = (Xc @ camera_matrix.T)[:, :2] / Xc[:, 2:3]
 
             # Compute residuals
             np.subtract(image_points_projected, all_image_points, out=residuals)
@@ -145,7 +142,7 @@ class SpatialResection:
             iterations=res.nfev,
             average_reprojection_error=np.mean(np.abs(res.fun)),
             camera_pose=Pose3d(x=res.x[0], y=res.x[1], z=res.x[2], rotation=Rotation.from_quaternion(*res.x[3:7]).T),
-            running_variables=res.x[7:],
+            running_variables=res.x[7:].tolist(),
             estimated_points_on_lines=[
                 Point3d(x=x, y=y, z=z)
                 for x, y, z in world_lines[:, :3] + world_lines[:, 3:] * res.x[7:, None]
