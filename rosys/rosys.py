@@ -198,7 +198,7 @@ class Repeater:
             repeater.cancel()
 
 
-def on_repeat(handler: Callable, interval: float, start_on_creation: bool = True) -> Repeater:
+def on_repeat(handler: Callable, interval: float, *, start_on_creation: bool = True) -> Repeater:
     repeater = Repeater(handler, interval)
     if start_on_creation:
         repeater.start()
