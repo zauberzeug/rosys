@@ -11,17 +11,15 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
     """This module collects and provides real RTSP streaming cameras."""
     SCAN_INTERVAL = 10
 
-    @deprecated_param('jovision_profile', remove_in_version='0.27.0')
     def __init__(self, *,
                  frame_rate: int = 6,
                  substream: int = 0,
-                 jovision_profile: int | None = None,
                  network_interface: str | None = None,
                  auto_scan: bool = True) -> None:
         super().__init__()
 
         self.frame_rate = frame_rate
-        self.substream = jovision_profile if jovision_profile is not None else substream
+        self.substream = substream
         self.network_interface = network_interface
 
         self.log = logging.getLogger('rosys.rtsp_camera_provider')
