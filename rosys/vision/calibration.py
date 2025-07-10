@@ -10,7 +10,6 @@ import numpy as np
 from numpy.typing import NDArray
 
 from ..geometry import Frame3d, Point, Point3d, Pose3d, Rotation
-from ..helpers.deprecation import deprecated_function
 from .image import Image, ImageSize
 
 FloatArray = NDArray[np.float32] | NDArray[np.float64]

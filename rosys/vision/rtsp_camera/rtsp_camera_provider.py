@@ -1,7 +1,6 @@
 import logging
 
 from ... import rosys
-from ...helpers.deprecation import deprecated_param
 from ..camera_provider import CameraProvider
 from .arp_scan import find_known_cameras
 from .rtsp_camera import RtspCamera
