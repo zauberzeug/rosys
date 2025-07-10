@@ -17,7 +17,8 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 class RtspDevice:
 
     def __init__(self, mac: str, ip: str, *,
-                 substream: int, fps: int, on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
+                 substream: int, fps: int, on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 h265: bool = False) -> None:
         self._mac = mac
         self._ip = ip
         self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device.' + self._mac)
@@ -25,6 +26,7 @@ class RtspDevice:
         self._fps = fps
         self._substream = substream
         self._on_new_image_data = on_new_image_data
+        self._h265 = h265
 
         self._capture_task: asyncio.Task | None = None
         self._capture_process: Process | None = None
@@ -103,7 +105,10 @@ class RtspDevice:
             url = self.url
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
-            command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! jpegenc ! fdsink'
+            if self._h265:
+                command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph265depay ! avdec_h265 ! videoconvert ! jpegenc ! fdsink'
+            else:
+                command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! jpegenc ! fdsink'
             self.log.debug('[%s] Running command: %s', self._mac, command)
             process = await asyncio.create_subprocess_exec(
                 *shlex.split(command),
@@ -203,3 +208,9 @@ class RtspDevice:
         if self._settings_interface is not None:
             return await self._settings_interface.get_bitrate(stream_id=self._substream)
         return None
+
+    def get_h265(self) -> bool:
+        return self._h265
+
+    def set_h265(self, h265: bool) -> None:
+        self._h265 = h265
