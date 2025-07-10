@@ -464,23 +464,6 @@ class Calibration:
 
         return new_K
 
-    @deprecated_function(remove_in_version='0.27.0')
-    def undistort_array(self, image_array: np.ndarray, crop: bool = False) -> np.ndarray:
-        """
-        ### deprecated
-            This funciton has been integrated into `undistort_image` and will be removed in Rosys `0.27.0`.
-
-        Undistort an image represented as a numpy array.
-        The image is expected to be decoded (in particular not encoded bytes of a JPEG image).
-
-        :param image_array: The image to undistort.
-        :param crop: Whether cropping is applied to the image during undistortion.
-
-        :return: The undistorted image.
-        """
-
-        return self.undistort_image(image_array, crop=crop)
-
     @overload
     def undistort_image(self, image: Image, *, crop: bool = False) -> Image:
         """Undistort an image represented as an Image object.
