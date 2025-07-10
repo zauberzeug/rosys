@@ -16,6 +16,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
                  frame_rate: int = 6,
                  substream: int = 0,
                  jovision_profile: int | None = None,
+                 h265: bool = False,
                  network_interface: str | None = None,
                  auto_scan: bool = True) -> None:
         super().__init__()
@@ -23,6 +24,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
         self.frame_rate = frame_rate
         self.substream = jovision_profile if jovision_profile is not None else substream
         self.network_interface = network_interface
+        self.h265 = h265
 
         self.log = logging.getLogger('rosys.rtsp_camera_provider')
 
@@ -52,7 +54,11 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
         for mac, ip in await find_known_cameras(network_interface=self.network_interface):
             if mac not in self._cameras:
                 self.log.debug('found new camera %s', mac)
-                self.add_camera(RtspCamera(id=mac, fps=self.frame_rate, substream=self.substream, ip=ip))
+                self.add_camera(RtspCamera(id=mac,
+                                           fps=self.frame_rate,
+                                           substream=self.substream,
+                                           ip=ip,
+                                           h265=self.h265))
             camera = self._cameras[mac]
             if not camera.is_connected:
                 self.log.info('activating authorized camera %s...', camera.id)

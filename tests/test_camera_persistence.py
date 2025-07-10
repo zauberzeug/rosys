@@ -89,7 +89,7 @@ async def test_storing_mjpeg_camera_as_dict(rosys_integration, base_camera_param
 
 
 def test_storing_rtsp_camera_as_dict(rosys_integration, base_camera_parameters):
-    camera = RtspCamera(fps=1, substream=2, bitrate=4097, ip='192.168.1.1', **base_camera_parameters)
+    camera = RtspCamera(fps=1, substream=2, bitrate=4097, h265=True, ip='192.168.1.1', **base_camera_parameters)
     camera_as_dict = camera.to_dict()
     restored_camera = RtspCamera.from_dict(camera_as_dict)
     assert isinstance(restored_camera, RtspCamera)
