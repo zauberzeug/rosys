@@ -131,7 +131,7 @@ def _process(data: bytes,
 
     if undistort:
         assert calibration is not None
-        image_array = calibration.undistort_array(image_array, crop=True)
+        image_array = calibration.undistort_image(image_array, crop=True)
         if image_array is None or image_array.size == 0:
             logging.warning('undistort_array returned an empty image')
             return None

@@ -4,7 +4,6 @@ from typing import Any
 from typing_extensions import Self
 
 from ... import rosys
-from ...helpers.deprecation import deprecated_param
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image
@@ -14,7 +13,6 @@ from .rtsp_device import RtspDevice
 
 class RtspCamera(ConfigurableCamera, TransformableCamera):
 
-    @deprecated_param('jovision_profile', remove_in_version='0.27.0')
     def __init__(self,
                  *,
                  id: str,  # pylint: disable=redefined-builtin
@@ -22,7 +20,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                  connect_after_init: bool = True,
                  fps: int = 5,
                  substream: int = 1,
-                 jovision_profile: int | None = None,
                  bitrate: int = 4096,
                  ip: str | None = None,
                  **kwargs,
@@ -37,9 +34,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.device: RtspDevice | None = None
         self.ip: str | None = ip
 
-        substream = jovision_profile or substream
-        self._register_parameter('jovision_profile', self.get_jovision_profile, self.set_jovision_profile,
-                                 min_value=0, max_value=1, step=1, default_value=substream)
         self._register_parameter('substream', self.get_substream, self.set_substream,
                                  min_value=0, max_value=1, step=1, default_value=substream)
         self._register_parameter('fps', self.get_fps, self.set_fps,
@@ -51,16 +45,12 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         parameters = {
             name: param.value for name, param in self._parameters.items()
         }
-        if 'jovision_profile' in parameters:
-            del parameters['jovision_profile']  # DEPRECATED: 0.27.0
         return super().to_dict() | parameters | {
             'ip': self.ip,
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:
-        if 'jovision_profile' in data:
-            data['substream'] = data['jovision_profile']
         return cls(**cls.args_from_dict(data))
 
     @property
@@ -84,7 +74,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             return
 
         self.device = RtspDevice(mac=self.id, ip=self.ip,
-                                 substream=self.parameters['jovision_profile'],
+                                 substream=self.parameters['substream'],
                                  fps=self.parameters['fps'],
                                  on_new_image_data=self._handle_new_image_data)
 
@@ -123,19 +113,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
 
         return await self.device.get_fps()
-
-    def get_jovision_profile(self) -> int | None:
-        assert self.device is not None
-        profile = self.get_substream()
-        if profile is not None:
-            self._parameters['substream'].value = profile
-        return profile
-
-    def set_jovision_profile(self, profile: int) -> None:
-        assert self.device is not None
-        self._parameters['substream'].value = profile
-
-        self.device.set_substream(profile)
 
     def set_substream(self, index: int) -> None:
         assert self.device is not None
