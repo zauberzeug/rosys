@@ -105,10 +105,8 @@ class RtspDevice:
             url = self.url
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
-            if self._h265:
-                command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph265depay ! avdec_h265 ! videoconvert ! jpegenc ! fdsink'
-            else:
-                command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! jpegenc ! fdsink'
+            avdec = 'h265' if self._h265 else 'h264'
+            command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtp{avdec}depay ! avdec_{avdec} ! videoconvert ! jpegenc ! fdsink'
             self.log.debug('[%s] Running command: %s', self._mac, command)
             process = await asyncio.create_subprocess_exec(
                 *shlex.split(command),
