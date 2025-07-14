@@ -207,8 +207,8 @@ class RtspDevice:
             return await self._settings_interface.get_bitrate(stream_id=self._substream)
         return None
 
-    def get_h265(self) -> bool:
-        return self._h265
+    def get_avdec(self) -> Literal['h264', 'h265'] | None:
+        return self._avdec
 
-    def set_h265(self, h265: bool) -> None:
-        self._h265 = h265
+    def set_avdec(self, avdec: Literal['h264', 'h265']) -> None:
+        self._avdec = avdec

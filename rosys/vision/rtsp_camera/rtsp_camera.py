@@ -162,12 +162,12 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
     def get_avdec(self) -> Literal['h264', 'h265'] | None:
         assert self.device is not None
 
-        return self.device.avdec
+        return self.device.get_avdec()
 
     def set_avdec(self, avdec: Literal['h264', 'h265']) -> None:
         assert self.device is not None
 
-        self.device.avdec = avdec
+        self.device.set_avdec(avdec)
 
     async def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
         await super()._apply_parameters(new_values, force_set)
