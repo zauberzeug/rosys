@@ -1,4 +1,5 @@
 import logging
+from typing import Literal
 
 from ... import rosys
 from ...helpers.deprecation import deprecated_param
@@ -16,7 +17,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
                  frame_rate: int = 6,
                  substream: int = 0,
                  jovision_profile: int | None = None,
-                 h265: bool = False,
+                 avdec: Literal['h264', 'h265'] = 'h264',
                  network_interface: str | None = None,
                  auto_scan: bool = True) -> None:
         super().__init__()
@@ -24,7 +25,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
         self.frame_rate = frame_rate
         self.substream = jovision_profile if jovision_profile is not None else substream
         self.network_interface = network_interface
-        self.h265 = h265
+        self.avdec = avdec
 
         self.log = logging.getLogger('rosys.rtsp_camera_provider')
 
@@ -57,8 +58,8 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
                 self.add_camera(RtspCamera(id=mac,
                                            fps=self.frame_rate,
                                            substream=self.substream,
-                                           ip=ip,
-                                           h265=self.h265))
+                                           avdec=self.avdec,
+                                           ip=ip))
             camera = self._cameras[mac]
             if not camera.is_connected:
                 self.log.info('activating authorized camera %s...', camera.id)

@@ -1,5 +1,5 @@
 import logging
-from typing import Any
+from typing import Any, Literal
 
 from typing_extensions import Self
 
@@ -24,7 +24,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                  substream: int = 1,
                  jovision_profile: int | None = None,
                  bitrate: int = 4096,
-                 h265: bool = False,
+                 avdec: Literal['h264', 'h265'] = 'h264',
                  ip: str | None = None,
                  **kwargs) -> None:
         super().__init__(id=id,
@@ -46,8 +46,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                                  min_value=1, max_value=30, step=1, default_value=fps)
         self._register_parameter('bitrate', self.get_bitrate, self.set_bitrate,
                                  min_value=32, max_value=8192, step=1, default_value=bitrate)
-        self._register_parameter('h265', self.get_h265, self.set_h265,
-                                 min_value=0, max_value=1, step=1, default_value=int(h265))
+        self._register_parameter('avdec', self.get_avdec, self.set_avdec, default_value=avdec)
 
     def to_dict(self) -> dict[str, Any]:
         parameters = {
@@ -89,7 +88,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                                  substream=self.parameters['jovision_profile'],
                                  fps=self.parameters['fps'],
                                  on_new_image_data=self._handle_new_image_data,
-                                 h265=self.parameters['h265'])
+                                 avdec=self.parameters['avdec'])
 
         await self._apply_all_parameters()
 
@@ -160,15 +159,15 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         return await self.device.get_bitrate()
 
-    def get_h265(self) -> int | None:
+    def get_avdec(self) -> Literal['h264', 'h265'] | None:
         assert self.device is not None
 
-        return int(self.device.get_h265())
+        return self.device.avdec
 
-    def set_h265(self, h265: int) -> None:
+    def set_avdec(self, avdec: Literal['h264', 'h265']) -> None:
         assert self.device is not None
 
-        self.device.set_h265(bool(h265))
+        self.device.avdec = avdec
 
     async def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
         await super()._apply_parameters(new_values, force_set)
