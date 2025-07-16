@@ -20,12 +20,15 @@ class Automator:
     The passed function should return a new coroutine on every call (see [Play-pause-stop](https://rosys.io/examples/play-pause-stop/) example).
 
     _on_interrupt_: Optional callback that will be called when an automation pauses or stops (the cause is provided as string parameter).
+
+    _notify_: If True, the automator will send notifications when an automation starts, pauses, resumes, stops or fails.
     """
 
     def __init__(self,
                  steerer: Steerer | None, *,
                  default_automation: Callable | None = None,
-                 on_interrupt: Callable | None = None) -> None:
+                 on_interrupt: Callable | None = None,
+                 notify: bool = True) -> None:
         self.AUTOMATION_STARTED = Event[[]]()
         """an automation has been started"""
 
@@ -47,6 +50,7 @@ class Automator:
         self.log = logging.getLogger('rosys.automator')
 
         self.default_automation = default_automation
+        self.notify = notify
 
         self.enabled: bool = True
         self.automation: Automation | None = None
@@ -89,7 +93,8 @@ class Automator:
         self.automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
         rosys.background_tasks.create(self.automation.run(), name='automation')  # type: ignore
         self.AUTOMATION_STARTED.emit()
-        rosys.notify('automation started')
+        if self.notify:
+            rosys.notify('automation started')
         if paused:
             self.automation.pause()
 
@@ -102,7 +107,8 @@ class Automator:
             assert self.automation is not None
             self.automation.pause()
             self.AUTOMATION_PAUSED.emit(because)
-            rosys.notify(f'automation paused because {because}')
+            if self.notify:
+                rosys.notify(f'automation paused because {because}')
 
     def resume(self) -> None:
         """Resumes the current automation."""
@@ -112,7 +118,8 @@ class Automator:
             assert self.automation is not None
             self.automation.resume()
             self.AUTOMATION_RESUMED.emit()
-            rosys.notify('automation resumed')
+            if self.notify:
+                rosys.notify('automation resumed')
 
     def stop(self, because: str) -> None:
         """Stops the current automation.
@@ -124,7 +131,8 @@ class Automator:
             self.automation.stop()
             self.automation = None
             self.AUTOMATION_STOPPED.emit(because)
-            rosys.notify(f'automation stopped because {because}')
+            if self.notify:
+                rosys.notify(f'automation stopped because {because}')
 
     def enable(self) -> None:
         """Enables the automator.
@@ -154,10 +162,12 @@ class Automator:
     def _handle_exception(self, e: Exception) -> None:
         self.stop(because='an exception occurred in an automation')
         self.AUTOMATION_FAILED.emit(f'automation aborted because of {e}')
-        rosys.notify('automation failed', 'negative')
+        if self.notify:
+            rosys.notify('automation failed', 'negative')
         if rosys.is_test:
             self.log.exception('automation failed')
 
     def _on_complete(self) -> None:
         self.AUTOMATION_COMPLETED.emit()
-        rosys.notify('automation completed', 'positive')
+        if self.notify:
+            rosys.notify('automation completed', 'positive')
