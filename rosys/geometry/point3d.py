@@ -31,7 +31,7 @@ class Point3d(Object3d):
 
     @staticmethod
     def from_point(p: Point, z: float = 0) -> Point3d:
-        """Create a Point3d from a Point."""
+        """Create a Point3d from a Point with a given z-coordinate."""
         return Point3d(x=p.x, y=p.y, z=z)
 
     @property

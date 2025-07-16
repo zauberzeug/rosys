@@ -1,4 +1,5 @@
 import logging
+from typing import Literal
 
 from ... import rosys
 from ..camera_provider import CameraProvider
@@ -13,6 +14,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
     def __init__(self, *,
                  frame_rate: int = 6,
                  substream: int = 0,
+                 avdec: Literal['h264', 'h265'] = 'h264',
                  network_interface: str | None = None,
                  auto_scan: bool = True) -> None:
         super().__init__()
@@ -20,6 +22,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
         self.frame_rate = frame_rate
         self.substream = substream
         self.network_interface = network_interface
+        self.avdec = avdec
 
         self.log = logging.getLogger('rosys.rtsp_camera_provider')
 
@@ -49,7 +52,11 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
         for mac, ip in await find_known_cameras(network_interface=self.network_interface):
             if mac not in self._cameras:
                 self.log.debug('found new camera %s', mac)
-                self.add_camera(RtspCamera(id=mac, fps=self.frame_rate, substream=self.substream, ip=ip))
+                self.add_camera(RtspCamera(id=mac,
+                                           fps=self.frame_rate,
+                                           substream=self.substream,
+                                           avdec=self.avdec,
+                                           ip=ip))
             camera = self._cameras[mac]
             if not camera.is_connected:
                 self.log.info('activating authorized camera %s...', camera.id)

@@ -50,13 +50,20 @@ class Intrinsics:
     size: ImageSize
 
     @staticmethod
-    def create_default(width: int = 800, height: int = 600, *, focal_length: float = 570) -> Intrinsics:
-        size = ImageSize(width=width, height=height)
-        K: list[list[float]] = [[focal_length, 0, size.width / 2],
-                                [0, focal_length, size.height / 2],
-                                [0, 0, 1]]
-        D: list[float] = [0] * 5
-        return Intrinsics(matrix=K, distortion=D, size=size)
+    def create_default(width: int = 800,
+                       height: int = 600, *,
+                       focal_length: float = 570,
+                       distortion: list[float] | None = None,
+                       ) -> Intrinsics:
+        return Intrinsics(
+            matrix=[
+                [focal_length, 0, width / 2],
+                [0, focal_length, height / 2],
+                [0, 0, 1],
+            ],
+            distortion=distortion or [0.0, 0.0, 0.0, 0.0, 0.0],
+            size=ImageSize(width=width, height=height),
+        )
 
 
 log = logging.getLogger('rosys.vision.calibration')

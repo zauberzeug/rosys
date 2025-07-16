@@ -6,6 +6,7 @@ import subprocess
 from asyncio.subprocess import Process
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from io import BytesIO
+from typing import Literal
 
 from nicegui import background_tasks
 
@@ -17,7 +18,8 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 class RtspDevice:
 
     def __init__(self, mac: str, ip: str, *,
-                 substream: int, fps: int, on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
+                 substream: int, fps: int, on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 avdec: Literal['h264', 'h265'] = 'h264') -> None:
         self._mac = mac
         self._ip = ip
         self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device.' + self._mac)
@@ -25,6 +27,7 @@ class RtspDevice:
         self._fps = fps
         self._substream = substream
         self._on_new_image_data = on_new_image_data
+        self._avdec = avdec
 
         self._capture_task: asyncio.Task | None = None
         self._capture_process: Process | None = None
@@ -103,7 +106,7 @@ class RtspDevice:
             url = self.url
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
-            command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtph264depay ! avdec_h264 ! videoconvert ! jpegenc ! fdsink'
+            command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtp{self._avdec}depay ! avdec_{self._avdec} ! videoconvert ! jpegenc ! fdsink'
             self.log.debug('[%s] Running command: %s', self._mac, command)
             process = await asyncio.create_subprocess_exec(
                 *shlex.split(command),
@@ -203,3 +206,9 @@ class RtspDevice:
         if self._settings_interface is not None:
             return await self._settings_interface.get_bitrate(stream_id=self._substream)
         return None
+
+    def get_avdec(self) -> Literal['h264', 'h265'] | None:
+        return self._avdec
+
+    def set_avdec(self, avdec: Literal['h264', 'h265']) -> None:
+        self._avdec = avdec
