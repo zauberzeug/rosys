@@ -173,10 +173,8 @@ class Automator:
                     'warning',
                     'info',
                     'ongoing',
-                ] | None = None, *,
-                log_level: int = logging.INFO,
-                **kwargs) -> None:
+                ] | None = None) -> None:
         if self.notify:
-            rosys.notify(message, type, log_level=log_level, **kwargs)
+            rosys.notify(message, type)
         else:
             rosys.log.info(message)
