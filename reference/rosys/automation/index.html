@@ -1543,7 +1543,8 @@
     <span class="n">steerer</span><span class="p">:</span> <span class="n">Steerer</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">default_automation</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">on_interrupt</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">on_interrupt</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">notify</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -1557,6 +1558,7 @@
 (e.g. via an "Play"-button like offered by the <a href="https://rosys.io/reference/rosys/automation/#rosys.automation.automation_controls">automation controls</a>).
 The passed function should return a new coroutine on every call (see <a href="https://rosys.io/examples/play-pause-stop/">Play-pause-stop</a> example).</p>
 <p><em>on_interrupt</em>: Optional callback that will be called when an automation pauses or stops (the cause is provided as string parameter).</p>
+<p><em>notify</em>: If True, the automator will send notifications when an automation starts, pauses, resumes, stops or fails.</p>
 
 
 
