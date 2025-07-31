@@ -212,7 +212,7 @@ class Calibration:
             image_array = self.project_to_image(world_array)
             return [Point(x=vector[0], y=vector[1]) if not np.isnan(vector).any() else None for vector in image_array]
 
-        world_extrinsics = self.extrinsics.relative_to(frame)
+        world_extrinsics = self.extrinsics.transform_with(frame) if frame else self.extrinsics.resolve()
         R = world_extrinsics.rotation.matrix.astype(np.float64)
         Rod = cv2.Rodrigues(R.T)[0]
         t = -R.T @ world_extrinsics.translation
@@ -259,15 +259,16 @@ class Calibration:
         """
 
     @overload
-    def project_from_image(self, image_coordinates: FloatArray, target_height: float = 0) -> FloatArray:
+    def project_from_image(self, image_coordinates: FloatArray, target_height: float = 0, frame: Frame3d | None = None) -> FloatArray:
         """Project points in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: (Nx2) The image coordinates to project.
         :param target_height: The height of the plane in world coordinates.
+        :param frame: The coordinate frame from which to project the image coordinates to.
         :return: (Nx3) The world coordinates of the projected points.
         """
 
-    def project_from_image(self, image_coordinates: Point | list[Point] | FloatArray, target_height: float = 0) -> Point3d | None | list[Point3d | None] | FloatArray:
+    def project_from_image(self, image_coordinates: Point | list[Point] | FloatArray, target_height: float = 0, frame: Frame3d | None = None) -> Point3d | None | list[Point3d | None] | FloatArray:
         if isinstance(image_coordinates, Point):
             return self.project_from_image([image_coordinates], target_height=target_height)[0]
         if not isinstance(image_coordinates, np.ndarray):
@@ -275,7 +276,7 @@ class Calibration:
             world_array = self.project_from_image(image_array, target_height=target_height)
             return [Point3d(x=point[0], y=point[1], z=point[2]) if not np.isnan(point).any() else None for point in world_array]
 
-        world_extrinsics = self.extrinsics.resolve()
+        world_extrinsics = self.extrinsics.transform_with(frame) if frame else self.extrinsics.resolve()
         image_rays = self._points_to_rays(image_coordinates.astype(np.float64).reshape(-1, 1, 2))
         objPoints = image_rays @ world_extrinsics.rotation.matrix.T
         Z = world_extrinsics.z
