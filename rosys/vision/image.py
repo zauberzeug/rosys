@@ -3,13 +3,12 @@ from __future__ import annotations
 import io
 import warnings
 from dataclasses import dataclass, field
-from typing import ClassVar
+from typing import ClassVar, Self
 
 import cv2
 import numpy as np
 import PIL.Image
 import PIL.ImageDraw
-from typing_extensions import Self
 
 from .. import rosys
 from .detections import Detections

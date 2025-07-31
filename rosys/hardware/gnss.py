@@ -4,7 +4,7 @@ import logging
 import math
 from abc import ABC
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import IntEnum
 
 import numpy as np
@@ -192,7 +192,7 @@ class GnssHardware(Gnss):
                     continue
                 today = datetime.now().date()
                 time_obj = datetime.strptime(nmea_timestamp, '%H%M%S.%f').time()
-                utc_time = datetime.combine(today, time_obj).replace(tzinfo=timezone.utc)
+                utc_time = datetime.combine(today, time_obj).replace(tzinfo=UTC)
                 timestamp = utc_time.timestamp()
                 diff = round(((timestamp - rosys_time + SECONDS_HALF_DAY) % SECONDS_DAY) - SECONDS_HALF_DAY, 3)
                 if abs(diff) > self.MAX_TIMESTAMP_DIFF:

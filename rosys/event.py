@@ -95,7 +95,7 @@ class Event(Generic[P]):
         self.register(callback)
         try:
             return await asyncio.wait_for(future, timeout)
-        except asyncio.TimeoutError as error:
+        except TimeoutError as error:
             raise TimeoutError(f'Timed out waiting for event after {timeout} seconds') from error
         finally:
             self.unregister(callback)

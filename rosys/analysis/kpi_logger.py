@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from itertools import groupby
 from typing import Any
 
@@ -51,7 +51,7 @@ class KpiLogger(persistence.Persistable):
             self.request_backup()
 
     def today(self) -> Day:
-        date_ = date_to_str(datetime.fromtimestamp(rosys.time(), tz=timezone.utc).date())
+        date_ = date_to_str(datetime.fromtimestamp(rosys.time(), tz=UTC).date())
         if not self.days or self.days[-1].date != date_:
             self.days.append(Day(date=date_))
         return self.days[-1]
