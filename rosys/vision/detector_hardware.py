@@ -31,6 +31,7 @@ class DetectorHardware(Detector):
 
     def __init__(self,
                  *,
+                 host: str = 'localhost',
                  port: int = 8004,
                  name: str | None = None,
                  auto_disconnect: bool = True) -> None:
@@ -41,6 +42,7 @@ class DetectorHardware(Detector):
         }
         self.sio = socketio.AsyncClient(websocket_extra_options=websocket_options)
         self.lazy_worker = LazyWorker()
+        self.host = host
         self.port = port
         self.auto_disconnect = auto_disconnect
         self.timeout_count = 0
@@ -67,7 +69,7 @@ class DetectorHardware(Detector):
 
     async def connect(self) -> bool:
         try:
-            url = f'ws://localhost:{self.port}'
+            url = f'ws://{self.host}:{self.port}'
             self.log.info('connecting to detector at %s', url)
             await self.sio.connect(url, socketio_path='/ws/socket.io', wait_timeout=3.0)
             self.log.info('connected successfully')
