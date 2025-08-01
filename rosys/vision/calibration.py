@@ -241,7 +241,8 @@ class Calibration:
         return image_array.reshape(-1, 2)
 
     @overload
-    def project_from_image(self, image_coordinates: Point, target_height: float = 0) -> Point3d | None:
+    def project_from_image(self, image_coordinates: Point, target_height: float = 0,
+                           reprojection_tolerance: float | None = 2) -> Point3d | None:
         """Project a point in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: The image coordinates to project.
@@ -250,7 +251,8 @@ class Calibration:
         """
 
     @overload
-    def project_from_image(self, image_coordinates: list[Point], target_height: float = 0) -> list[Point3d | None]:
+    def project_from_image(self, image_coordinates: list[Point], target_height: float = 0,
+                           reprojection_tolerance: float | None = 2) -> list[Point3d | None]:
         """Project points in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: The list of image coordinates to project.
@@ -259,7 +261,8 @@ class Calibration:
         """
 
     @overload
-    def project_from_image(self, image_coordinates: FloatArray, target_height: float = 0) -> FloatArray:
+    def project_from_image(self, image_coordinates: FloatArray, target_height: float = 0,
+                           reprojection_tolerance: float | None = 2) -> FloatArray:
         """Project points in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: (Nx2) The image coordinates to project.
@@ -272,10 +275,14 @@ class Calibration:
                            target_height: float = 0,
                            reprojection_tolerance: float | None = 2) -> Point3d | None | list[Point3d | None] | FloatArray:
         if isinstance(image_coordinates, Point):
-            return self.project_from_image([image_coordinates], target_height=target_height)[0]
+            return self.project_from_image([image_coordinates],
+                                           target_height=target_height,
+                                           reprojection_tolerance=reprojection_tolerance)[0]
         if not isinstance(image_coordinates, np.ndarray):
             image_array = np.array([point.tuple for point in image_coordinates], dtype=np.float64)
-            world_array = self.project_from_image(image_array, target_height=target_height)
+            world_array = self.project_from_image(image_array,
+                                                  target_height=target_height,
+                                                  reprojection_tolerance=reprojection_tolerance)
             return [Point3d(x=point[0], y=point[1], z=point[2]) if not np.isnan(point).any() else None for point in world_array]
 
         world_extrinsics = self.extrinsics.resolve()
