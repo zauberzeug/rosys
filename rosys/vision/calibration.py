@@ -243,7 +243,7 @@ class Calibration:
     @overload
     def project_from_image(self,
                            image_coordinates: Point,
-                           target_height: float = 0,
+                           target_height: float = 0, *,
                            reprojection_tolerance: float = 0.002) -> Point3d | None:
         """Project a point in image coordinates to a plane in world coordinates.
 
@@ -256,7 +256,7 @@ class Calibration:
     @overload
     def project_from_image(self,
                            image_coordinates: list[Point],
-                           target_height: float = 0,
+                           target_height: float = 0, *,
                            reprojection_tolerance: float = 0.002) -> list[Point3d | None]:
         """Project points in image coordinates to a plane in world coordinates.
 
@@ -269,7 +269,7 @@ class Calibration:
     @overload
     def project_from_image(self,
                            image_coordinates: FloatArray,
-                           target_height: float = 0,
+                           target_height: float = 0, *,
                            reprojection_tolerance: float = 0.002) -> FloatArray:
         """Project points in image coordinates to a plane in world coordinates.
 
@@ -281,7 +281,7 @@ class Calibration:
 
     def project_from_image(self,
                            image_coordinates: Point | list[Point] | FloatArray,
-                           target_height: float = 0,
+                           target_height: float = 0, *,
                            reprojection_tolerance: float = 0.002) -> Point3d | None | list[Point3d | None] | FloatArray:
         if isinstance(image_coordinates, Point):
             return self.project_from_image([image_coordinates],
