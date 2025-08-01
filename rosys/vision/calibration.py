@@ -241,38 +241,57 @@ class Calibration:
         return image_array.reshape(-1, 2)
 
     @overload
-    def project_from_image(self, image_coordinates: Point, target_height: float = 0) -> Point3d | None:
+    def project_from_image(self,
+                           image_coordinates: Point,
+                           target_height: float = 0, *,
+                           reprojection_tolerance: float = 0.002) -> Point3d | None:
         """Project a point in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: The image coordinates to project.
         :param target_height: The height of the plane in world coordinates.
+        :param reprojection_tolerance: The reprojection tolerance as a fraction of the maximum image dimension.
         :return: The world coordinates of the projected point, or None if projection failed.
         """
 
     @overload
-    def project_from_image(self, image_coordinates: list[Point], target_height: float = 0) -> list[Point3d | None]:
+    def project_from_image(self,
+                           image_coordinates: list[Point],
+                           target_height: float = 0, *,
+                           reprojection_tolerance: float = 0.002) -> list[Point3d | None]:
         """Project points in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: The list of image coordinates to project.
         :param target_height: The height of the plane in world coordinates.
+        :param reprojection_tolerance: The reprojection tolerance as a fraction of the maximum image dimension.
         :return: The world coordinates of the projected points, or None if any projection failed.
         """
 
     @overload
-    def project_from_image(self, image_coordinates: FloatArray, target_height: float = 0) -> FloatArray:
+    def project_from_image(self,
+                           image_coordinates: FloatArray,
+                           target_height: float = 0, *,
+                           reprojection_tolerance: float = 0.002) -> FloatArray:
         """Project points in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: (Nx2) The image coordinates to project.
         :param target_height: The height of the plane in world coordinates.
+        :param reprojection_tolerance: The reprojection tolerance as a fraction of the maximum image dimension.
         :return: (Nx3) The world coordinates of the projected points.
         """
 
-    def project_from_image(self, image_coordinates: Point | list[Point] | FloatArray, target_height: float = 0) -> Point3d | None | list[Point3d | None] | FloatArray:
+    def project_from_image(self,
+                           image_coordinates: Point | list[Point] | FloatArray,
+                           target_height: float = 0, *,
+                           reprojection_tolerance: float = 0.002) -> Point3d | None | list[Point3d | None] | FloatArray:
         if isinstance(image_coordinates, Point):
-            return self.project_from_image([image_coordinates], target_height=target_height)[0]
+            return self.project_from_image([image_coordinates],
+                                           target_height=target_height,
+                                           reprojection_tolerance=reprojection_tolerance)[0]
         if not isinstance(image_coordinates, np.ndarray):
             image_array = np.array([point.tuple for point in image_coordinates], dtype=np.float64)
-            world_array = self.project_from_image(image_array, target_height=target_height)
+            world_array = self.project_from_image(image_array,
+                                                  target_height=target_height,
+                                                  reprojection_tolerance=reprojection_tolerance)
             return [Point3d(x=point[0], y=point[1], z=point[2]) if not np.isnan(point).any() else None for point in world_array]
 
         world_extrinsics = self.extrinsics.resolve()
@@ -282,10 +301,16 @@ class Calibration:
         t = world_extrinsics.translation_vector
         world_array = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
 
-        reprojection = self.project_to_image(world_array)
+        # Check if the point is in front of the camera
         sign = objPoints[:, -1] * np.sign(Z)
-        distance = np.linalg.norm(reprojection - image_coordinates.reshape(-1, 2), axis=1)
-        world_array[np.logical_not(np.logical_and(sign < 0, distance < 2)), :] = np.nan
+        world_array[sign >= 0, :] = np.nan
+
+        # Check if the point is within the reprojection tolerance
+        if reprojection_tolerance != float('inf'):
+            tolerance_px = max(self.intrinsics.size.width, self.intrinsics.size.height) * reprojection_tolerance
+            reprojection = self.project_to_image(world_array)
+            distance = np.linalg.norm(reprojection - image_coordinates.reshape(-1, 2), axis=1)
+            world_array[distance > tolerance_px, :] = np.nan
 
         return world_array
 
