@@ -267,7 +267,10 @@ class Calibration:
         :return: (Nx3) The world coordinates of the projected points.
         """
 
-    def project_from_image(self, image_coordinates: Point | list[Point] | FloatArray, target_height: float = 0) -> Point3d | None | list[Point3d | None] | FloatArray:
+    def project_from_image(self,
+                           image_coordinates: Point | list[Point] | FloatArray,
+                           target_height: float = 0,
+                           reprojection_tolerance: float | None = 2) -> Point3d | None | list[Point3d | None] | FloatArray:
         if isinstance(image_coordinates, Point):
             return self.project_from_image([image_coordinates], target_height=target_height)[0]
         if not isinstance(image_coordinates, np.ndarray):
@@ -282,10 +285,15 @@ class Calibration:
         t = world_extrinsics.translation_vector
         world_array = t.T - objPoints * (Z - target_height) / objPoints[:, 2:]
 
-        reprojection = self.project_to_image(world_array)
+        # Check if the point is in front of the camera
         sign = objPoints[:, -1] * np.sign(Z)
-        distance = np.linalg.norm(reprojection - image_coordinates.reshape(-1, 2), axis=1)
-        world_array[np.logical_not(np.logical_and(sign < 0, distance < 2)), :] = np.nan
+        world_array[sign >= 0, :] = np.nan
+
+        # Check if the point is within the reprojection tolerance
+        if reprojection_tolerance is not None:
+            reprojection = self.project_to_image(world_array)
+            distance = np.linalg.norm(reprojection - image_coordinates.reshape(-1, 2), axis=1)
+            world_array[distance > reprojection_tolerance, :] = np.nan
 
         return world_array
 
