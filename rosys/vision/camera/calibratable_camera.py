@@ -1,5 +1,6 @@
+from typing import Self
+
 import numpy as np
-from typing_extensions import Self
 
 from ...geometry import Frame3d, Pose3d, Rotation
 from ...persistence.converters import from_dict, to_dict

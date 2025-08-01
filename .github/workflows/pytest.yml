@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: set up Poetry
-        uses: abatilo/actions-poetry@v2.4.0
+        uses: abatilo/actions-poetry@v4
       - name: set up Python
         uses: actions/setup-python@v5
         with:
@@ -31,14 +31,14 @@ jobs:
   pytest:
     strategy:
       matrix:
-        python: ["3.10", "3.11", "3.12"]
+        python: ["3.11", "3.12", "3.13"]
       fail-fast: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: set up Poetry
-        uses: abatilo/actions-poetry@v2.4.0
+        uses: abatilo/actions-poetry@v4
       - name: set up Python
         uses: actions/setup-python@v5
         with:

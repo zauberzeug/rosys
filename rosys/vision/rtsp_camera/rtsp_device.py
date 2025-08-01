@@ -66,7 +66,7 @@ class RtspDevice:
             self._capture_process.terminate()
             try:
                 await asyncio.wait_for(self._capture_process.wait(), timeout=5)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 self.log.warning('[%s] Timeout while waiting for gstreamer process to terminate', self._mac)
             else:
                 self.log.debug('[%s] Successfully shut down process (code %s)',
@@ -77,7 +77,7 @@ class RtspDevice:
             self._capture_task.cancel()
             try:
                 await asyncio.wait_for(self._capture_task, timeout=5)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 self.log.warning('[%s] Timeout while waiting for capture task to cancel', self._mac)
                 return
             except asyncio.CancelledError:
@@ -154,7 +154,7 @@ class RtspDevice:
 
             try:
                 await asyncio.wait_for(process.wait(), timeout=5)
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 self.log.warning(
                     '[%s] Stream ended. Timeout while waiting for gstreamer process to terminate', self._mac)
                 return

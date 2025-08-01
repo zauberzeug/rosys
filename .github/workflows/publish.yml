@@ -17,11 +17,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: set up Poetry
-        uses: abatilo/actions-poetry@v2.4.0
+        uses: abatilo/actions-poetry@v4
       - name: set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
           cache: "poetry"
       - name: get version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
@@ -147,7 +147,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.13"
       - name: Install dependencies
         run: |
           python3 -m pip install -r mkdocs_requirements.txt
@@ -155,6 +155,6 @@ jobs:
       - name: Build docs
         run: mkdocs build -v
       - name: Deploy gh-pages
-        uses: JamesIves/github-pages-deploy-action@v4.3.4
+        uses: JamesIves/github-pages-deploy-action@v4.7.3
         with:
           folder: site

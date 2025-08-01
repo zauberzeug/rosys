@@ -6,10 +6,9 @@ import logging
 import re
 import weakref
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any, ClassVar, Self
 
 from nicegui import run
-from typing_extensions import Self
 
 from .. import core
 

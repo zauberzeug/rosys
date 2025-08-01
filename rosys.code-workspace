@@ -2,14 +2,6 @@
   "folders": [
     {
       "path": "."
-    },
-    {
-      "name": "NiceGUI local",
-      "path": "../nicegui"
-    },
-    {
-      "name": "NiceGUI docker",
-      "path": "/usr/local/lib/python3.11/site-packages/nicegui"
     }
   ],
   "settings": {

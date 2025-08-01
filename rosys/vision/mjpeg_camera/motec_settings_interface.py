@@ -1,8 +1,7 @@
 import asyncio
 import logging
 import struct
-
-from typing_extensions import Self
+from typing import Self
 
 
 class AsyncTcpClient:

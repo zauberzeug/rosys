@@ -118,7 +118,7 @@ async def sh(command: list[str] | str, *,
         async def popen_coro() -> str:
             return await io_bound(popen) or ''
         return await asyncio.wait_for(popen_coro(), timeout)
-    except asyncio.TimeoutError:
+    except TimeoutError:
         log.warning('Command "%s" timed out after %s seconds.', command, timeout)
         return ''
 

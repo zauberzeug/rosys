@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
+from typing import Self
 
 import numpy as np
 from nicegui import ui
-from typing_extensions import Self
 
 from .. import rosys
 from .frame3d_registry import frame_registry

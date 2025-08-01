@@ -6,9 +6,7 @@ import logging
 from collections import deque
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any
-
-from typing_extensions import Self
+from typing import Any, Self
 
 from ... import rosys
 from ...event import Event
