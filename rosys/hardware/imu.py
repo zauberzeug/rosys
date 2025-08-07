@@ -108,29 +108,39 @@ class ImuSimulation(Imu, ModuleSimulation):
     def __init__(self, *,
                  wheels: PoseProvider,
                  interval: float = 0.1,
+                 roll: float = 0.0,
+                 pitch: float = 0.0,
                  roll_noise: float = 0.0,
                  pitch_noise: float = 0.0,
                  yaw_noise: float = 0.0,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.wheels = wheels
-        self._roll_noise = roll_noise
-        self._pitch_noise = pitch_noise
-        self._yaw_noise = yaw_noise
+        self.roll = roll
+        self.pitch = pitch
+        self.roll_noise = roll_noise
+        self.pitch_noise = pitch_noise
+        self.yaw_noise = yaw_noise
         rosys.on_repeat(self.simulate, interval)
 
     def simulate(self) -> None:
-        roll = np.random.normal(0, self._roll_noise)
-        pitch = np.random.normal(0, self._pitch_noise)
-        yaw = np.random.normal(self.wheels.pose.yaw, self._yaw_noise)
+        roll = np.random.normal(self.roll, self.roll_noise)
+        pitch = np.random.normal(self.pitch, self.pitch_noise)
+        yaw = np.random.normal(self.wheels.pose.yaw, self.yaw_noise)
         self._emit_measurement(3.0, Rotation.from_euler(roll, pitch, yaw), rosys.time())
 
     def developer_ui(self) -> None:
         super().developer_ui()
-        with ui.column().classes('gap-y-0'):
-            ui.number(label='Roll Noise', format='%.3f', prefix='± ', suffix='°') \
-                .bind_value(self, '_roll_noise', forward=np.deg2rad, backward=np.rad2deg).classes('w-4/5')
-            ui.number(label='Pitch Noise', format='%.3f', prefix='± ', suffix='°') \
-                .bind_value(self, '_pitch_noise', forward=np.deg2rad, backward=np.rad2deg).classes('w-4/5')
-            ui.number(label='Yaw Noise', format='%.3f', prefix='± ', suffix='°') \
-                .bind_value(self, '_yaw_noise', forward=np.deg2rad, backward=np.rad2deg).classes('w-4/5')
+        with ui.row():
+            with ui.column().classes('gap-y-0'):
+                ui.number(label='Roll', format='%.3f', suffix='°') \
+                    .bind_value(self, 'roll', forward=np.deg2rad, backward=np.rad2deg).classes('w-16')
+                ui.number(label='Pitch', format='%.3f', suffix='°') \
+                    .bind_value(self, 'pitch', forward=np.deg2rad, backward=np.rad2deg).classes('w-16')
+            with ui.column().classes('gap-y-0'):
+                ui.number(label='Roll Noise', format='%.3f', prefix='± ', suffix='°') \
+                    .bind_value(self, 'roll_noise', forward=np.deg2rad, backward=np.rad2deg).classes('w-20')
+                ui.number(label='Pitch Noise', format='%.3f', prefix='± ', suffix='°') \
+                    .bind_value(self, 'pitch_noise', forward=np.deg2rad, backward=np.rad2deg).classes('w-20')
+                ui.number(label='Yaw Noise', format='%.3f', prefix='± ', suffix='°') \
+                    .bind_value(self, 'yaw_noise', forward=np.deg2rad, backward=np.rad2deg).classes('w-20')
