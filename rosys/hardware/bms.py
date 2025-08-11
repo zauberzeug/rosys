@@ -1,6 +1,7 @@
 import abc
 
 import numpy as np
+from nicegui import ui
 
 from .. import helpers, rosys
 from ..helpers import remove_indentation
@@ -38,6 +39,30 @@ class Bms(Module, abc.ABC):
     def is_below_voltage(self, value: float) -> bool:
         """Returns whether the battery voltage is below the given value."""
         return self.state.voltage is not None and self.state.voltage < value
+
+    def developer_ui(self):
+        ui.label('Battery Management System').classes('text-center text-bold')
+        with ui.grid(columns=2).classes('gap-y-1'):
+            ui.label('Percentage:')
+            percentage_label = ui.label('N/A').classes('text-center')
+            ui.label('Voltage:')
+            voltage_label = ui.label('N/A').classes('text-center')
+            ui.label('Current:')
+            current_label = ui.label('N/A').classes('text-center')
+            ui.label('Temperature:')
+            temperature_label = ui.label('N/A').classes('text-center')
+            ui.label('Charging:')
+            charging_label = ui.label('N/A').classes('text-center')
+
+        def update_state():
+            state = self.state
+            percentage_label.text = f'{state.percentage:.1f}%'
+            voltage_label.text = f'{state.voltage:.1f}V'
+            current_label.text = f'{state.current:.1f}A'
+            temperature_label.text = f'{state.temperature:.1f}°C'
+            charging_label.text = f'{state.is_charging}'
+
+        rosys.on_repeat(update_state, rosys.config.ui_update_interval)
 
 
 class BmsHardware(Bms, ModuleHardware):
@@ -110,3 +135,9 @@ class BmsSimulation(Bms, ModuleSimulation):
         self.state.temperature = self.AVERAGE_TEMPERATURE + \
             self.TEMPERATURE_AMPLITUDE * np.sin(self.TEMPERATURE_FREQUENCY * rosys.time())
         self.state.last_update = rosys.time()
+
+    def developer_ui(self):
+        super().developer_ui()
+        ui.number('', suffix='V/s', step=0.001, format='%.3f').props('dense').classes('w-20') \
+            .bind_value(self, 'voltage_per_second') \
+            .tooltip('Voltage change per second (positive means it is charging)')
