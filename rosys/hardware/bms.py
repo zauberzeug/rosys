@@ -1,5 +1,4 @@
 import abc
-from collections.abc import Callable
 
 import numpy as np
 
@@ -89,8 +88,6 @@ class BmsSimulation(Bms, ModuleSimulation):
     """This module simulates a BMS module."""
 
     AVERAGE_VOLTAGE = 25.0
-    VOLTAGE_AMPLITUDE = 1.0
-    VOLTAGE_FREQUENCY = 0.01
     MIN_VOLTAGE = 22.5
     MAX_VOLTAGE = 27.5
     CHARGING_CURRENT = 1.0
@@ -99,16 +96,15 @@ class BmsSimulation(Bms, ModuleSimulation):
     TEMPERATURE_AMPLITUDE = 1.0
     TEMPERATURE_FREQUENCY = 0.01
 
-    def __init__(self, is_charging: Callable[[], bool] | None = None, fixed_voltage: float | None = None) -> None:
+    def __init__(self, *, voltage_per_second: float = 0.0) -> None:
         super().__init__()
-        self.is_charging = is_charging
-        self.fixed_voltage = fixed_voltage
+        self.voltage_per_second = voltage_per_second
+        self.state = BmsState(voltage=self.AVERAGE_VOLTAGE)
 
     async def step(self, dt: float) -> None:
-        self.state.is_charging = self.is_charging is not None and self.is_charging()
-        self.state.voltage = \
-            self.AVERAGE_VOLTAGE + self.VOLTAGE_AMPLITUDE * np.sin(self.VOLTAGE_FREQUENCY * rosys.time()) \
-            if self.fixed_voltage is None else self.fixed_voltage
+        next_voltage = self.state.voltage + self.voltage_per_second * dt
+        self.state.voltage = max(min(next_voltage, self.MAX_VOLTAGE), self.MIN_VOLTAGE)
+        self.state.is_charging = self.voltage_per_second > 0
         self.state.percentage = helpers.ramp(self.state.voltage, self.MIN_VOLTAGE, self.MAX_VOLTAGE, 0.0, 100.0)
         self.state.current = self.CHARGING_CURRENT if self.state.is_charging else self.DISCHARGING_CURRENT
         self.state.temperature = self.AVERAGE_TEMPERATURE + \
