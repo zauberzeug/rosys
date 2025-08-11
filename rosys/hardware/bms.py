@@ -55,12 +55,13 @@ class Bms(Module, abc.ABC):
             charging_label = ui.label('N/A').classes('text-center')
 
         def update_state():
-            state = self.state
-            percentage_label.text = f'{state.percentage:.1f}%'
-            voltage_label.text = f'{state.voltage:.1f}V'
-            current_label.text = f'{state.current:.1f}A'
-            temperature_label.text = f'{state.temperature:.1f}°C'
-            charging_label.text = f'{state.is_charging}'
+            if self.state.last_update == 0:
+                return
+            percentage_label.text = f'{self.state.percentage:.1f}%'
+            voltage_label.text = f'{self.state.voltage:.1f}V'
+            current_label.text = f'{self.state.current:.1f}A'
+            temperature_label.text = f'{self.state.temperature:.1f}°C'
+            charging_label.text = f'{self.state.is_charging}'
 
         rosys.on_repeat(update_state, rosys.config.ui_update_interval)
 
