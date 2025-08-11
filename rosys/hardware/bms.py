@@ -128,6 +128,7 @@ class BmsSimulation(Bms, ModuleSimulation):
         self.state = BmsState(voltage=self.AVERAGE_VOLTAGE)
 
     async def step(self, dt: float) -> None:
+        assert self.state.voltage is not None
         next_voltage = self.state.voltage + self.voltage_per_second * dt
         self.state.voltage = max(min(next_voltage, self.MAX_VOLTAGE), self.MIN_VOLTAGE)
         self.state.is_charging = self.voltage_per_second > 0
