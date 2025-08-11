@@ -142,4 +142,4 @@ class BmsSimulation(Bms, ModuleSimulation):
         super().developer_ui()
         ui.number('', suffix='V/s', step=0.001, format='%.3f').props('dense').classes('w-20') \
             .bind_value(self, 'voltage_per_second') \
-            .tooltip('Voltage change per second (positive means it is charging)')
+            .tooltip('Voltage change per second (positive for charging, negative for discharging)')
