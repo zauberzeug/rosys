@@ -1,8 +1,8 @@
 from nicegui import binding
 
 
-@binding.bindable_dataclass(kw_only=True)  # type: ignore
-class BmsState:
+@binding.bindable_dataclass(kw_only=True)
+class BmsState:  # type: ignore[call-arg]
     percentage: float | None = None
     voltage: float | None = None
     current: float | None = None
