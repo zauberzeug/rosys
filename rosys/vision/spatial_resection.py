@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 
+import cv2
 import numpy as np
 from scipy.optimize import least_squares
 
@@ -23,6 +24,86 @@ class SpatialResection:
     def __init__(self, intrinsics: Intrinsics) -> None:
         """Spatial resection to find a camera pose from correspondences between object space and image space."""
         self.intrinsics = intrinsics
+
+    def pnp_with_lsa(self,
+                     *,
+                     world_points: np.ndarray,
+                     image_points: np.ndarray,
+                     algorithm: int | None = None) -> SpatialResectionResult:
+        """Solve the spatial resection problem using OpenCV's PnP and finalize with a least-squares refinement.
+
+        :param world_points: The 3D coordinates of the points in object space, shape (n, 3)
+        :param image_points: The 2D coordinates of the points in the image, shape (n, 2)
+        :param algorithm: PnP algorithm flag or name (e.g., 'ITERATIVE', 'EPNP', 'P3P', 'AP3P', 'IPPE'). If None, choose automatically.
+
+        :return: The result of the spatial resection
+        """
+        assert world_points.shape[0] == image_points.shape[0] and world_points.shape[0] >= 3, 'Need at least 3 correspondences'
+
+        # Prepare calibration and undistort image observations for a unified pinhole model
+        calibration = Calibration(intrinsics=self.intrinsics)
+        K_undist = calibration.get_undistorted_camera_matrix()
+
+        object_points = world_points.astype(np.float64).reshape(-1, 1, 3)
+        image_points_undist = calibration.undistort_points(image_points).astype(np.float64).reshape(-1, 1, 2)
+        D_zeros = np.zeros((1, 5), dtype=np.float64)
+
+        # Decide on algorithm
+        num_points = object_points.shape[0]
+
+        def is_planar(points: np.ndarray) -> bool:
+            centered = points.reshape(-1, 3) - points.reshape(-1, 3).mean(axis=0)
+            _, s, _ = np.linalg.svd(centered, full_matrices=False)
+            return s[-1] / max(s[0], 1e-12) < 1e-3
+
+        def resolve_method_flag(algo: int | None) -> int:
+            if algo is not None:
+                return algo
+            # Automatic selection
+            if num_points >= 6 and not is_planar(object_points):
+                return int(cv2.SOLVEPNP_EPNP)
+            if num_points >= 4 and is_planar(object_points) and hasattr(cv2, 'SOLVEPNP_IPPE'):
+                return int(cv2.SOLVEPNP_IPPE)
+            if num_points == 3:
+                return int(cv2.SOLVEPNP_P3P)
+            if num_points >= 4 and hasattr(cv2, 'SOLVEPNP_AP3P'):
+                return int(cv2.SOLVEPNP_AP3P)
+            return int(cv2.SOLVEPNP_ITERATIVE)
+
+        method_flag = resolve_method_flag(algorithm)
+
+        # Run PnP on undistorted points with zero distortion and K_undist
+        ok, rvec, tvec = cv2.solvePnP(
+            object_points, image_points_undist, K_undist, D_zeros,
+            None, None, False, int(method_flag)
+        )
+        if not ok:
+            # Fallback to ITERATIVE
+            ok, rvec, tvec = cv2.solvePnP(
+                object_points, image_points_undist, K_undist, D_zeros,
+                None, None, False, int(cv2.SOLVEPNP_ITERATIVE)
+            )
+
+        cv2.solvePnPRefineLM(object_points, image_points_undist, K_undist, D_zeros, rvec, tvec)
+
+        Rwc = Rotation.from_rvec(rvec).T
+        C = -1 * (cv2.Rodrigues(rvec)[0].T @ tvec).reshape(3)
+
+        # Compute reprojection error on all observations (undistorted domain)
+        proj_all, _ = cv2.projectPoints(object_points, rvec, tvec, K_undist, D_zeros)
+        proj_all_np = np.asarray(proj_all, dtype=np.float64).reshape(-1, 2)
+        img_all_np = image_points_undist.reshape(-1, 2)
+        residuals_all = (proj_all_np - img_all_np)
+        avg_reproj_error = float(np.mean(np.abs(residuals_all)))
+
+        return SpatialResectionResult(
+            success=True,
+            iterations=0,
+            average_reprojection_error=avg_reproj_error,
+            camera_pose=Pose3d(x=float(C[0]), y=float(C[1]), z=float(C[2]), rotation=Rwc),
+            running_variables=[],
+            estimated_points_on_lines=[],
+        )
 
     def lsa_with_lines(self,
                        *,
