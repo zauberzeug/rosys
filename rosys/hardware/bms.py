@@ -1,7 +1,7 @@
 import abc
-from collections.abc import Callable
 
 import numpy as np
+from nicegui import ui
 
 from .. import helpers, rosys
 from ..helpers import remove_indentation
@@ -39,6 +39,20 @@ class Bms(Module, abc.ABC):
     def is_below_voltage(self, value: float) -> bool:
         """Returns whether the battery voltage is below the given value."""
         return self.state.voltage is not None and self.state.voltage < value
+
+    def developer_ui(self) -> None:
+        ui.label('Battery Management System').classes('text-center text-bold')
+        with ui.grid(columns=2).classes('gap-y-1 [&>*:nth-child(even)]:justify-self-end'):
+            ui.label('Percentage:')
+            ui.label().bind_text_from(self.state, 'percentage', lambda x: f'{x:.1f}%' if x is not None else 'N/A')
+            ui.label('Voltage:')
+            ui.label().bind_text_from(self.state, 'voltage', lambda x: f'{x:.1f}V' if x is not None else 'N/A')
+            ui.label('Current:')
+            ui.label().bind_text_from(self.state, 'current', lambda x: f'{x:.1f}A' if x is not None else 'N/A')
+            ui.label('Temperature:')
+            ui.label().bind_text_from(self.state, 'temperature', lambda x: f'{x:.1f}°C' if x is not None else 'N/A')
+            ui.label('Charging:')
+            ui.label().bind_text_from(self.state, 'is_charging', lambda x: 'Yes' if x else 'No')
 
 
 class BmsHardware(Bms, ModuleHardware):
@@ -89,8 +103,6 @@ class BmsSimulation(Bms, ModuleSimulation):
     """This module simulates a BMS module."""
 
     AVERAGE_VOLTAGE = 25.0
-    VOLTAGE_AMPLITUDE = 1.0
-    VOLTAGE_FREQUENCY = 0.01
     MIN_VOLTAGE = 22.5
     MAX_VOLTAGE = 27.5
     CHARGING_CURRENT = 1.0
@@ -99,18 +111,24 @@ class BmsSimulation(Bms, ModuleSimulation):
     TEMPERATURE_AMPLITUDE = 1.0
     TEMPERATURE_FREQUENCY = 0.01
 
-    def __init__(self, is_charging: Callable[[], bool] | None = None, fixed_voltage: float | None = None) -> None:
+    def __init__(self, *, voltage_per_second: float = 0.0) -> None:
         super().__init__()
-        self.is_charging = is_charging
-        self.fixed_voltage = fixed_voltage
+        self.voltage_per_second = voltage_per_second
+        self.state.voltage = self.AVERAGE_VOLTAGE
 
     async def step(self, dt: float) -> None:
-        self.state.is_charging = self.is_charging is not None and self.is_charging()
-        self.state.voltage = \
-            self.AVERAGE_VOLTAGE + self.VOLTAGE_AMPLITUDE * np.sin(self.VOLTAGE_FREQUENCY * rosys.time()) \
-            if self.fixed_voltage is None else self.fixed_voltage
+        assert self.state.voltage is not None
+        next_voltage = self.state.voltage + self.voltage_per_second * dt
+        self.state.voltage = max(min(next_voltage, self.MAX_VOLTAGE), self.MIN_VOLTAGE)
+        self.state.is_charging = self.voltage_per_second > 0
         self.state.percentage = helpers.ramp(self.state.voltage, self.MIN_VOLTAGE, self.MAX_VOLTAGE, 0.0, 100.0)
         self.state.current = self.CHARGING_CURRENT if self.state.is_charging else self.DISCHARGING_CURRENT
         self.state.temperature = self.AVERAGE_TEMPERATURE + \
             self.TEMPERATURE_AMPLITUDE * np.sin(self.TEMPERATURE_FREQUENCY * rosys.time())
         self.state.last_update = rosys.time()
+
+    def developer_ui(self) -> None:
+        super().developer_ui()
+        ui.number(suffix='V/s', step=0.001, format='%.3f').props('dense').classes('w-20') \
+            .bind_value(self, 'voltage_per_second') \
+            .tooltip('Voltage change per second (positive for charging, negative for discharging)')
