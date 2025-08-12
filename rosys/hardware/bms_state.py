@@ -1,7 +1,7 @@
-from dataclasses import dataclass
+from nicegui import binding
 
 
-@dataclass(slots=True, kw_only=True)
+@binding.bindable_dataclass(kw_only=True)
 class BmsState:
     percentage: float | None = None
     voltage: float | None = None

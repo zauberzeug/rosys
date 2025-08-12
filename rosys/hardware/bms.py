@@ -40,30 +40,19 @@ class Bms(Module, abc.ABC):
         """Returns whether the battery voltage is below the given value."""
         return self.state.voltage is not None and self.state.voltage < value
 
-    def developer_ui(self):
+    def developer_ui(self) -> None:
         ui.label('Battery Management System').classes('text-center text-bold')
-        with ui.grid(columns=2).classes('gap-y-1'):
+        with ui.grid(columns=2).classes('gap-y-1 [&>*:nth-child(even)]:justify-self-end'):
             ui.label('Percentage:')
-            percentage_label = ui.label('N/A').classes('text-center')
+            ui.label().bind_text_from(self.state, 'percentage', lambda x: f'{x:.1f}%' if x is not None else 'N/A')
             ui.label('Voltage:')
-            voltage_label = ui.label('N/A').classes('text-center')
+            ui.label().bind_text_from(self.state, 'voltage', lambda x: f'{x:.1f}V' if x is not None else 'N/A')
             ui.label('Current:')
-            current_label = ui.label('N/A').classes('text-center')
+            ui.label().bind_text_from(self.state, 'current', lambda x: f'{x:.1f}A' if x is not None else 'N/A')
             ui.label('Temperature:')
-            temperature_label = ui.label('N/A').classes('text-center')
+            ui.label().bind_text_from(self.state, 'temperature', lambda x: f'{x:.1f}°C' if x is not None else 'N/A')
             ui.label('Charging:')
-            charging_label = ui.label('N/A').classes('text-center')
-
-        def update_state():
-            if self.state.last_update == 0:
-                return
-            percentage_label.text = f'{self.state.percentage:.1f}%'
-            voltage_label.text = f'{self.state.voltage:.1f}V'
-            current_label.text = f'{self.state.current:.1f}A'
-            temperature_label.text = f'{self.state.temperature:.1f}°C'
-            charging_label.text = f'{self.state.is_charging}'
-
-        rosys.on_repeat(update_state, rosys.config.ui_update_interval)
+            ui.label().bind_text_from(self.state, 'is_charging', lambda x: 'Yes' if x else 'No')
 
 
 class BmsHardware(Bms, ModuleHardware):
@@ -125,7 +114,7 @@ class BmsSimulation(Bms, ModuleSimulation):
     def __init__(self, *, voltage_per_second: float = 0.0) -> None:
         super().__init__()
         self.voltage_per_second = voltage_per_second
-        self.state = BmsState(voltage=self.AVERAGE_VOLTAGE)
+        self.state.voltage = self.AVERAGE_VOLTAGE
 
     async def step(self, dt: float) -> None:
         assert self.state.voltage is not None
@@ -138,8 +127,8 @@ class BmsSimulation(Bms, ModuleSimulation):
             self.TEMPERATURE_AMPLITUDE * np.sin(self.TEMPERATURE_FREQUENCY * rosys.time())
         self.state.last_update = rosys.time()
 
-    def developer_ui(self):
+    def developer_ui(self) -> None:
         super().developer_ui()
-        ui.number('', suffix='V/s', step=0.001, format='%.3f').props('dense').classes('w-20') \
+        ui.number(suffix='V/s', step=0.001, format='%.3f').props('dense').classes('w-20') \
             .bind_value(self, 'voltage_per_second') \
             .tooltip('Voltage change per second (positive for charging, negative for discharging)')
