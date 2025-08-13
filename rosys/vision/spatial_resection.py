@@ -40,12 +40,15 @@ class SpatialResection:
         """
         assert world_points.shape[0] == image_points.shape[0] and world_points.shape[0] >= 3, 'Need at least 3 correspondences'
 
+        if np.isnan(world_points).any() or np.isnan(image_points).any():
+            raise ValueError('Points contain NaNs')
+
         # Prepare calibration and undistort image observations for a unified pinhole model
         calibration = Calibration(intrinsics=self.intrinsics)
         K_undist = calibration.get_undistorted_camera_matrix()
 
         object_points = world_points.astype(np.float64).reshape(-1, 1, 3)
-        image_points_undist = calibration.undistort_points(image_points).astype(np.float64).reshape(-1, 1, 2)
+        image_points_undist = calibration.undistort_points(image_points.astype(np.float64).reshape(-1, 1, 2))
         D_zeros = np.zeros((1, 5), dtype=np.float64)
 
         # Decide on algorithm
