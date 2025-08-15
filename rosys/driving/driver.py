@@ -167,6 +167,8 @@ class Driver:
         :raises DrivingAbortedException: If the driving process is aborted.
         """
         if spline.start.distance(spline.end) < self.parameters.minimum_drive_distance:
+            if stop_at_end:
+                await self.wheels.stop()
             return  # NOTE: skip tiny splines
 
         hook_offset = Point(x=self.parameters.hook_offset, y=0) * (-1 if flip_hook else 1)
