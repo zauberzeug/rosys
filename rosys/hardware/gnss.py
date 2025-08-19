@@ -71,42 +71,43 @@ class Gnss(ABC):
         return False
 
     def developer_ui(self) -> None:
-        ui.label('GNSS').classes('text-center text-bold')
-        with ui.grid(columns='auto auto').classes('gap-y-1 w-2/5'):
-            ui.label('Connected:')
-            ui.icon('close').bind_name_from(self, 'is_connected',
-                                            lambda x: 'check' if x else 'close')
-            ui.label('Position:')
-            with ui.column().classes('gap-y-0'):
+        with ui.column():
+            ui.label('GNSS').classes('text-center text-bold')
+            with ui.grid(columns='auto auto').classes('gap-y-1 w-2/5'):
+                ui.label('Connected:')
+                ui.icon('close').bind_name_from(self, 'is_connected',
+                                                lambda x: 'check' if x else 'close')
+                ui.label('Position:')
+                with ui.column().classes('gap-y-0'):
+                    ui.label().bind_text_from(self, 'last_measurement',
+                                              lambda x: f'{math.degrees(x.pose.lat):.8f}˚' if x else '-')
+                    ui.label().bind_text_from(self, 'last_measurement',
+                                              lambda x: f'± {x.latitude_std_dev:.3f}m' if x else '-')
+                    ui.label().bind_text_from(self, 'last_measurement',
+                                              lambda x: f'{math.degrees(x.pose.lon):.8f}˚' if x else '-')
+                    ui.label().bind_text_from(self, 'last_measurement',
+                                              lambda x: f'± {x.longitude_std_dev:.3f}m' if x else '-')
+                ui.label('Heading:')
+                with ui.column().classes('gap-y-0'):
+                    ui.label().bind_text_from(self, 'last_measurement',
+                                              lambda x: f'{math.degrees(x.pose.heading):.2f}˚' if x else '-')
+                    ui.label().bind_text_from(self, 'last_measurement',
+                                              lambda x: f'± {x.heading_std_dev:.2f}˚' if x else '-')
+                ui.label('Quality:')
                 ui.label().bind_text_from(self, 'last_measurement',
-                                          lambda x: f'{math.degrees(x.pose.lat):.8f}˚' if x else '-')
+                                          lambda x: x.gps_quality.name if x else '')
+                ui.label('Satellites:')
                 ui.label().bind_text_from(self, 'last_measurement',
-                                          lambda x: f'± {x.latitude_std_dev:.3f}m' if x else '-')
+                                          lambda x: str(x.num_satellites) if x else '-')
+                ui.label('HDOP:')
                 ui.label().bind_text_from(self, 'last_measurement',
-                                          lambda x: f'{math.degrees(x.pose.lon):.8f}˚' if x else '-')
+                                          lambda x: f'{x.hdop:.2f}' if x else '-')
+                ui.label('Altitude:')
                 ui.label().bind_text_from(self, 'last_measurement',
-                                          lambda x: f'± {x.longitude_std_dev:.3f}m' if x else '-')
-            ui.label('Heading:')
-            with ui.column().classes('gap-y-0'):
+                                          lambda x: f'{x.altitude:.3f}m' if x else '-')
+                ui.label('Last update:')
                 ui.label().bind_text_from(self, 'last_measurement',
-                                          lambda x: f'{math.degrees(x.pose.heading):.2f}˚' if x else '-')
-                ui.label().bind_text_from(self, 'last_measurement',
-                                          lambda x: f'± {x.heading_std_dev:.2f}˚' if x else '-')
-            ui.label('Quality:')
-            ui.label().bind_text_from(self, 'last_measurement',
-                                      lambda x: x.gps_quality.name if x else '')
-            ui.label('Satellites:')
-            ui.label().bind_text_from(self, 'last_measurement',
-                                      lambda x: str(x.num_satellites) if x else '-')
-            ui.label('HDOP:')
-            ui.label().bind_text_from(self, 'last_measurement',
-                                      lambda x: f'{x.hdop:.2f}' if x else '-')
-            ui.label('Altitude:')
-            ui.label().bind_text_from(self, 'last_measurement',
-                                      lambda x: f'{x.altitude:.3f}m' if x else '-')
-            ui.label('Last update:')
-            ui.label().bind_text_from(self, 'last_measurement',
-                                      lambda x: f'{rosys.time() - x.time:.2f}s' if x else '')
+                                          lambda x: f'{rosys.time() - x.time:.2f}s' if x else '')
 
 
 class GnssHardware(Gnss):
@@ -332,14 +333,15 @@ class GnssSimulation(Gnss):
 
     def developer_ui(self) -> None:
         super().developer_ui()
-        ui.label('Simulation').classes('text-center text-bold')
-        with ui.column().classes('gap-y-1'):
-            ui.checkbox('Connected').bind_value(self, '_is_connected')
-            ui.number(label='Latitude Std Dev', format='%.3f', prefix='± ', suffix='m') \
-                .bind_value(self, '_lat_std_dev').classes('w-4/5')
-            ui.number(label='Longitude Std Dev', format='%.3f', prefix='± ', suffix='m') \
-                .bind_value(self, '_lon_std_dev').classes('w-4/5')
-            ui.number(label='Heading Std Dev', format='%.2f', prefix='± ', suffix='°') \
-                .bind_value(self, '_heading_std_dev').classes('w-4/5')
-            ui.select({quality: quality.name for quality in GpsQuality}, label='Quality') \
-                .bind_value(self, '_gps_quality').classes('w-4/5')
+        with ui.column():
+            ui.label('Simulation').classes('text-center text-bold')
+            with ui.column().classes('gap-y-1'):
+                ui.checkbox('Connected').bind_value(self, '_is_connected')
+                ui.number(label='Latitude Std Dev', format='%.3f', prefix='± ', suffix='m') \
+                    .bind_value(self, '_lat_std_dev').classes('w-4/5')
+                ui.number(label='Longitude Std Dev', format='%.3f', prefix='± ', suffix='m') \
+                    .bind_value(self, '_lon_std_dev').classes('w-4/5')
+                ui.number(label='Heading Std Dev', format='%.2f', prefix='± ', suffix='°') \
+                    .bind_value(self, '_heading_std_dev').classes('w-4/5')
+                ui.select({quality: quality.name for quality in GpsQuality}, label='Quality') \
+                    .bind_value(self, '_gps_quality').classes('w-4/5')
