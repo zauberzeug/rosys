@@ -4,6 +4,7 @@ import numpy as np
 from nicegui import ui
 
 from .. import helpers, rosys
+from ..event import Event
 from ..helpers import remove_indentation
 from .bms_message import BmsMessage
 from .bms_state import BmsState
@@ -20,6 +21,10 @@ class Bms(Module, abc.ABC):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
+        self.CHARGING_STARTED = Event[[]]()
+        """The battery started charging"""
+        self.CHARGING_STOPPED = Event[[]]()
+        """The battery stopped charging"""
 
         self.state = BmsState()
         self.raw_data: dict = {}
@@ -39,6 +44,12 @@ class Bms(Module, abc.ABC):
     def is_below_voltage(self, value: float) -> bool:
         """Returns whether the battery voltage is below the given value."""
         return self.state.voltage is not None and self.state.voltage < value
+
+    def _send_charging_events(self, is_charging: bool) -> None:
+        if is_charging and not self.state.is_charging:
+            self.CHARGING_STARTED.emit()
+        elif not is_charging and self.state.is_charging:
+            self.CHARGING_STOPPED.emit()
 
     def developer_ui(self) -> None:
         ui.label('Battery Management System').classes('text-center text-bold')
@@ -94,7 +105,9 @@ class BmsHardware(Bms, ModuleHardware):
         self.state.voltage = result.get('total voltage')
         self.state.current = result.get('current')
         self.state.temperature = np.mean(result['temperatures']) if 'temperatures' in result else None
-        self.state.is_charging = (self.state.current or 0) > self.charge_detect_threshold
+        is_charging = (self.state.current or 0) > self.charge_detect_threshold
+        self._send_charging_events(is_charging)
+        self.state.is_charging = is_charging
         self.state.last_update = rosys.time()
         self.raw_data = result
 
@@ -120,7 +133,9 @@ class BmsSimulation(Bms, ModuleSimulation):
         assert self.state.voltage is not None
         next_voltage = self.state.voltage + self.voltage_per_second * dt
         self.state.voltage = max(min(next_voltage, self.MAX_VOLTAGE), self.MIN_VOLTAGE)
-        self.state.is_charging = self.voltage_per_second > 0
+        is_charging = self.voltage_per_second > 0
+        self._send_charging_events(is_charging)
+        self.state.is_charging = is_charging
         self.state.percentage = helpers.ramp(self.state.voltage, self.MIN_VOLTAGE, self.MAX_VOLTAGE, 0.0, 100.0)
         self.state.current = self.CHARGING_CURRENT if self.state.is_charging else self.DISCHARGING_CURRENT
         self.state.temperature = self.AVERAGE_TEMPERATURE + \
