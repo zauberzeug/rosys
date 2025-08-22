@@ -69,20 +69,26 @@ class LizardFirmware:
         self.local_version = head.replace('\x00', '').split('lizard')[0].split('v')[-1]
 
     async def read_core_version(self) -> None:
+        if not self.robot_brain.is_ready:
+            self.log.error('Could not read Lizard version from Core. Robot Brain is not ready.')
+            return
         deadline = rosys.time() + 5.0
         while rosys.time() < deadline:
             if response := await self.robot_brain.send_and_await('core.version()', 'version:', timeout=1):
                 self.core_version = response.split()[-1].split('-')[0][1:]
                 return
-            self.log.warning('Could not read Lizard version from Core')
+        self.log.error('Could not read Lizard version from Core')
 
     async def read_p0_version(self) -> None:
+        if not self.robot_brain.is_ready:
+            self.log.error('Could not read Lizard version from P0. Robot Brain is not ready.')
+            return
         deadline = rosys.time() + 5.0
         while rosys.time() < deadline:
             if response := await self.robot_brain.send_and_await('p0.version()', 'p0:', timeout=1):
                 self.p0_version = response.split()[-1].split('-')[0][1:]
                 return
-            self.log.warning('Could not read Lizard version from P0')
+        self.log.error('Could not read Lizard version from P0')
 
     def read_local_checksum(self) -> None:
         checksum = sum(ord(c) for c in self.robot_brain.lizard_code) % 0x10000
@@ -90,13 +96,16 @@ class LizardFirmware:
         self.log.info('local checksum: %s', self.local_checksum)
 
     async def read_core_checksum(self) -> None:
+        if not self.robot_brain.is_ready:
+            self.log.error('Could not read startup checksum from Core. Robot Brain is not ready.')
+            return
         deadline = rosys.time() + 5.0
         while rosys.time() < deadline:
             if response := await self.robot_brain.send_and_await('core.startup_checksum()', 'checksum:', timeout=1):
                 self.core_checksum = response.split()[-1]
                 self.log.info('core checksum: %s', self.core_checksum)
                 return
-            self.log.warning('Could not read startup checksum from Core')
+        self.log.error('Could not read startup checksum from Core')
 
     @awaitable
     def download(self) -> None:
@@ -113,6 +122,9 @@ class LizardFirmware:
         self.read_local_version()
 
     async def flash_core(self) -> None:
+        if not self.robot_brain.is_ready:
+            rosys.notify('Flashing Core failed. Robot Brain is not ready.', 'negative')
+            return
         assert isinstance(self.robot_brain.communication, SerialCommunication)
         rosys.notify(f'Flashing Lizard firmware {self.local_version} to Core...')
         if any(await self.robot_brain.esp_pins_core.get_strapping_pins()):
@@ -127,6 +139,9 @@ class LizardFirmware:
         rosys.notify('Finished.', 'positive')
 
     async def flash_p0(self, timeout: float = 120) -> None:
+        if not self.robot_brain.is_ready:
+            rosys.notify('Flashing P0 failed. Robot Brain is not ready.', 'negative')
+            return
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
         if any(await self.robot_brain.esp_pins_p0.get_strapping_pins()):
             rosys.notify('Flashing P0 failed. Check strapping pins.', 'negative')
