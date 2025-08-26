@@ -26,14 +26,17 @@ class EStop(Module, abc.ABC):
 
     @property
     def active(self) -> bool:
+        """Whether any hardware e-stop or the soft e-stop is active."""
         return any(self.pressed_estops) or self._soft_estop_active
 
     @property
     def is_soft_estop_active(self) -> bool:
+        """Whether the soft e-stop is active."""
         return self._soft_estop_active
 
     async def set_soft_estop(self, active: bool) -> None:
-        self._emit_events(active)
+        """Set the soft e-stop to the given state."""
+        self._emit_events(any(self.pressed_estops) or active)
         self._soft_estop_active = active
 
     def _emit_events(self, value: bool) -> None:
@@ -76,7 +79,9 @@ class EStopSimulation(EStop, ModuleSimulation):
     """Simulation of the e-stop module."""
 
     async def activate(self) -> None:
+        """Activate the soft e-stop."""
         await self.set_soft_estop(True)
 
     async def deactivate(self) -> None:
+        """Deactivate the soft e-stop."""
         await self.set_soft_estop(False)
