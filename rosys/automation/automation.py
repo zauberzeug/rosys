@@ -1,7 +1,40 @@
 import asyncio
+import functools
 import logging
 from collections.abc import Callable, Coroutine, Generator
+from contextvars import ContextVar
 from typing import Any
+
+# context for the currently running Automation; used by @atomic
+_CURRENT_AUTOMATION: ContextVar[object | None] = ContextVar('rosys_automation_current', default=None)
+
+
+def atomic(func: Callable):
+    """Decorator to make a function (sync or async) uninterruptible by pause until it exits."""
+    if asyncio.iscoroutinefunction(func):
+        @functools.wraps(func)
+        async def _wrapped(*args, **kwargs):
+            automation = _CURRENT_AUTOMATION.get()
+            if automation is not None:
+                automation._atomic_depth += 1  # type: ignore[attr-defined]
+                try:
+                    return await func(*args, **kwargs)
+                finally:
+                    automation._atomic_depth -= 1  # type: ignore[attr-defined]
+            return await func(*args, **kwargs)
+        return _wrapped
+    else:
+        @functools.wraps(func)
+        def _wrapped(*args, **kwargs):
+            automation = _CURRENT_AUTOMATION.get()
+            if automation is not None:
+                automation._atomic_depth += 1  # type: ignore[attr-defined]
+                try:
+                    return func(*args, **kwargs)
+                finally:
+                    automation._atomic_depth -= 1  # type: ignore[attr-defined]
+            return func(*args, **kwargs)
+        return _wrapped
 
 
 class Automation:
@@ -23,6 +56,7 @@ class Automation:
         self._can_run.set()
         self._stop = False
         self._is_waited = False
+        self._atomic_depth = 0  # >0 while inside an @atomic section
 
     @property
     def is_running(self) -> bool:
@@ -40,6 +74,7 @@ class Automation:
         return await self
 
     def __await__(self) -> Generator[Any, None, Any | None]:
+        token = _CURRENT_AUTOMATION.set(self)  # bind this Automation instance into the task context
         try:
             self._is_waited = True
             coro_iter = self.coro.__await__()
@@ -48,7 +83,7 @@ class Automation:
             message: Any = None
             while not self._stop:
                 try:
-                    while not self._can_run.is_set() and not self._stop:
+                    while self._atomic_depth == 0 and not self._can_run.is_set() and not self._stop:
                         yield from self._can_run.wait().__await__()  # pylint: disable=no-member
                 except BaseException as err:
                     send, message = iter_throw, err
@@ -75,6 +110,7 @@ class Automation:
             raise
         finally:
             self._is_waited = False
+            _CURRENT_AUTOMATION.reset(token)
         return None
 
     def pause(self) -> None:
