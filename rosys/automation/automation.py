@@ -72,14 +72,14 @@ class Automation:
             iter_send, iter_throw = coro_iter.send, coro_iter.throw
             send: Callable = iter_send
             message: Any = None
-            while not self._stop:
+            while not (self._atomic_depth == 0 and self._stop):
                 try:
                     while self._atomic_depth == 0 and not self._can_run.is_set() and not self._stop:
                         yield from self._can_run.wait().__await__()  # pylint: disable=no-member
                 except BaseException as err:
                     send, message = iter_throw, err
 
-                if self._stop:
+                if self._atomic_depth == 0 and self._stop:
                     return None
 
                 try:
