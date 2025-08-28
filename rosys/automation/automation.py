@@ -10,31 +10,18 @@ _CURRENT_AUTOMATION: ContextVar[object | None] = ContextVar('rosys_automation_cu
 
 
 def atomic(func: Callable):
-    """Decorator to make a function (sync or async) uninterruptible by pause until it exits."""
-    if asyncio.iscoroutinefunction(func):
-        @functools.wraps(func)
-        async def _wrapped(*args, **kwargs):
-            automation = _CURRENT_AUTOMATION.get()
-            if automation is not None:
-                automation._atomic_depth += 1  # type: ignore[attr-defined]
-                try:
-                    return await func(*args, **kwargs)
-                finally:
-                    automation._atomic_depth -= 1  # type: ignore[attr-defined]
-            return await func(*args, **kwargs)
-        return _wrapped
-    else:
-        @functools.wraps(func)
-        def _wrapped(*args, **kwargs):
-            automation = _CURRENT_AUTOMATION.get()
-            if automation is not None:
-                automation._atomic_depth += 1  # type: ignore[attr-defined]
-                try:
-                    return func(*args, **kwargs)
-                finally:
-                    automation._atomic_depth -= 1  # type: ignore[attr-defined]
-            return func(*args, **kwargs)
-        return _wrapped
+    """Decorator to make an async function uninterruptible until it exits."""
+    @functools.wraps(func)
+    async def _wrapped(*args, **kwargs):
+        automation = _CURRENT_AUTOMATION.get()
+        if automation is not None:
+            automation._atomic_depth += 1  # type: ignore[attr-defined]
+            try:
+                return await func(*args, **kwargs)
+            finally:
+                automation._atomic_depth -= 1  # type: ignore[attr-defined]
+        return await func(*args, **kwargs)
+    return _wrapped
 
 
 class Automation:
