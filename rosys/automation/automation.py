@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import functools
 import logging
@@ -6,7 +8,7 @@ from contextvars import ContextVar
 from typing import Any
 
 # context for the currently running Automation; used by @atomic
-_CURRENT_AUTOMATION: ContextVar[object | None] = ContextVar('rosys_automation_current', default=None)
+_CURRENT_AUTOMATION: ContextVar[Automation | None] = ContextVar('rosys_automation_current', default=None)
 
 
 def atomic(func: Callable):
@@ -14,13 +16,15 @@ def atomic(func: Callable):
     @functools.wraps(func)
     async def _wrapped(*args, **kwargs):
         automation = _CURRENT_AUTOMATION.get()
-        if automation is not None:
-            automation._atomic_depth += 1  # type: ignore[attr-defined]
-            try:
-                return await func(*args, **kwargs)
-            finally:
-                automation._atomic_depth -= 1  # type: ignore[attr-defined]
-        return await func(*args, **kwargs)
+        try:
+            if automation is not None:
+                automation._atomic_depth += 1
+            result = await func(*args, **kwargs)
+        finally:
+            if automation is not None:
+                automation._atomic_depth -= 1
+                await asyncio.sleep(0)
+        return result
     return _wrapped
 
 
