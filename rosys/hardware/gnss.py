@@ -282,7 +282,7 @@ class GnssSimulation(Gnss):
                  lon_std_dev: float = 0.01,
                  heading_std_dev: float = 0.01,
                  interval: float = 1.0,
-                 delay: float = 0.0,
+                 latency: float = 0.0,
                  gps_quality: GpsQuality = GpsQuality.RTK_FIXED) -> None:
         """
         :param wheels: the wheels to use for the simulation
@@ -291,7 +291,7 @@ class GnssSimulation(Gnss):
         :param heading_std_dev: the standard deviation of the heading in degrees
         :param gps_quality: the quality of the GPS signal
         :param interval: the interval between measurements in seconds
-        :param delay: the simulated measurement delay in seconds
+        :param latency: the simulated measurement latency in seconds
         """
         super().__init__()
         self.wheels = wheels
@@ -300,7 +300,7 @@ class GnssSimulation(Gnss):
         self._lon_std_dev = lon_std_dev
         self._heading_std_dev = heading_std_dev
         self._gps_quality = gps_quality
-        self._delay = delay
+        self._latency = latency
         self.last_measurement: GnssMeasurement | None = None
         rosys.on_repeat(self.simulate, interval)
 
@@ -316,7 +316,6 @@ class GnssSimulation(Gnss):
         if not self.is_connected:
             return
         geo_pose = GeoPose.from_pose(self.wheels.pose)
-
         noise_lat = np.random.normal(0, self._lat_std_dev)
         noise_lon = np.random.normal(0, self._lon_std_dev)
         noise_magnitude = np.sqrt(noise_lat**2 + noise_lon**2)
@@ -325,8 +324,6 @@ class GnssSimulation(Gnss):
         noise_heading = np.random.normal(geo_pose.heading, math.radians(self._heading_std_dev))
         noise_pose = GeoPose(lat=noise_point.lat, lon=noise_point.lon, heading=noise_heading)
         timestamp = rosys.time()
-        if self._delay > 0.0:
-            await rosys.sleep(self._delay)
         self.last_measurement = GnssMeasurement(
             time=timestamp,
             gnss_time=timestamp,
@@ -336,6 +333,8 @@ class GnssSimulation(Gnss):
             heading_std_dev=self._heading_std_dev,
             gps_quality=self._gps_quality,
         )
+        if self._latency:
+            await rosys.sleep(self._latency)
         self.NEW_MEASUREMENT.emit(self.last_measurement)
 
     def developer_ui(self) -> None:
@@ -352,5 +351,5 @@ class GnssSimulation(Gnss):
                     .bind_value(self, '_heading_std_dev').classes('w-4/5')
                 ui.select({quality: quality.name for quality in GpsQuality}, label='Quality') \
                     .bind_value(self, '_gps_quality').classes('w-4/5')
-                ui.number(label='Delay', format='%.2f', suffix='s') \
-                    .bind_value(self, '_delay').classes('w-4/5')
+                ui.number(label='Latency', format='%.2f', suffix='s') \
+                    .bind_value(self, '_latency').classes('w-4/5')
