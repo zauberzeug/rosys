@@ -107,6 +107,8 @@ class Event(Generic[P]):
 def reset() -> None:
     for event in events:
         event.listeners.clear()
+    events.clear()
     for task in tasks:
         task.cancel()
     tasks.clear()
+    startup_coroutines.clear()
