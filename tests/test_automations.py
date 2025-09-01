@@ -1,3 +1,5 @@
+from typing import Literal
+
 import pytest
 
 import rosys
@@ -144,3 +146,33 @@ async def test_parallelize_exception(automator: Automator):
     automator.start(run())
     await forward(seconds=10)
     assert failures == ['automation aborted because of i is 3']
+
+
+@pytest.mark.parametrize('method', ['pause', 'stop'])
+async def test_uninterruptible(automator: Automator, method: Literal['pause', 'stop']):
+    state = {'count': 0}
+
+    async def a():
+        for _ in range(10):
+            await rosys.sleep(0.1)
+            state['count'] += 1
+
+    @rosys.automation.uninterruptible
+    async def b():
+        for _ in range(10):
+            await rosys.sleep(0.1)
+            state['count'] += 1
+
+    async def run():
+        await a()
+        await b()
+        await a()
+
+    automator.start(run())
+    await forward(seconds=1.5)
+    if method == 'pause':
+        automator.pause(because='we can')
+    else:
+        automator.stop(because='we can')
+    await forward(seconds=2.0)
+    assert state['count'] == 20
