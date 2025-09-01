@@ -12,7 +12,10 @@ _CURRENT_AUTOMATION: ContextVar[Automation | None] = ContextVar('rosys_automatio
 
 
 def uninterruptible(func: Callable):
-    """Decorator to make an async function uninterruptible until it exits."""
+    """Decorator to make an async function uninterruptible until it exits.
+
+    Note that ``rosys.automation.parallelize`` will also be uninterruptible if one of its coroutines is marked with this decorator.
+    """
     @functools.wraps(func)
     async def _wrapped(*args, **kwargs):
         automation = _CURRENT_AUTOMATION.get()

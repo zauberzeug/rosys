@@ -8,6 +8,8 @@ class parallelize:
     This class allows to combine multiple coroutines into one that can be passed to the
     `automator <https://rosys.io/reference/rosys/automation/#rosys.automation.Automator>`__
     to run them in parallel.
+
+    Note that ``parallelize`` will be uninterruptible if one of its coroutines is marked with ``@rosys.automation.uninterruptible``.
     """
 
     def __init__(self, *coros: Coroutine, return_when_first_completed: bool = False) -> None:
