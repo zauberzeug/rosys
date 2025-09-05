@@ -54,11 +54,13 @@ class _state:
 
 
 def is_simulation() -> bool:
+    """Returns whether system time is being simulated."""
     return _state.is_simulation
 
 
-def set_simulation(value: bool) -> None:
-    _state.is_simulation = value
+def enter_simulation() -> None:
+    """Enter system time simulation mode."""
+    _state.is_simulation = True
 
 
 def get_last_exception() -> BaseException | None:
