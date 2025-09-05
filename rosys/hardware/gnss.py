@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import math
 from abc import ABC
+from collections import deque
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import IntEnum
@@ -127,6 +128,8 @@ class GnssHardware(Gnss):
         self.serial_connection: serial.Serial | None = None
         rosys.on_startup(self._run)
 
+        self.diffs: deque[float] = deque(maxlen=10 * 5)
+
     @property
     def is_connected(self) -> bool:
         if self.serial_connection is None:
@@ -137,21 +140,21 @@ class GnssHardware(Gnss):
             return False
         return True
 
+    def read_message_block(self) -> list[bytes]:
+        bytes_ = []
+        for _ in range(3):
+            if self.serial_connection is None:
+                return []
+            result = self.serial_connection.read_until(b'\r\n')
+            if not result:
+                return []
+            bytes_.append(result)
+        return bytes_
+
     async def _run(self) -> None:
-        buffer = ''
-        last_raw_latitude = 0.0
-        last_raw_longitude = 0.0
-        last_raw_heading = 0.0
-        last_latitude_accuracy = 0.0
-        last_longitude_accuracy = 0.0
-        last_heading_accuracy = 0.0
-        last_gps_quality = 0
-        last_num_satellites = 0
-        last_hdop = 0.0
-        last_altitude = 0.0
-        last_gga_timestamp = 0.0
-        last_gst_timestamp = 0.0
-        last_pssn_timestamp = 0.0
+        last_gga: Gga | None = None
+        last_gst: Gst | None = None
+        last_pssn: Pssn | None = None
 
         while True:
             if not self.is_connected:
@@ -169,76 +172,63 @@ class GnssHardware(Gnss):
                 self.serial_connection.reset_input_buffer()
 
             assert self.serial_connection is not None
-            result = await io_bound(self.serial_connection.read_until, b'\r\n')
+            result = await io_bound(self.read_message_block)
             rosys_time = rosys.time()
             if not result:
                 self.log.debug('No data')
                 continue
-            line = result.decode('utf-8')
-            if line.endswith('\r\n'):
-                sentence = buffer + line.split('*')[0]
-                buffer = ''
-            else:
-                buffer += line
-                continue
-
-            self.log.debug(sentence)
-            parts = sentence.split(',')
-            try:
-                field_index = {'$GPGGA': 1, '$GPGST': 1, '$PSSN': 2}
-                if parts[0] not in field_index:
-                    continue
-                nmea_timestamp = parts[field_index[parts[0]]]
-                if not nmea_timestamp:
-                    continue
-                today = datetime.now().date()
-                time_obj = datetime.strptime(nmea_timestamp, '%H%M%S.%f').time()
-                utc_time = datetime.combine(today, time_obj).replace(tzinfo=UTC)
-                timestamp = utc_time.timestamp()
-                diff = round(((timestamp - rosys_time + SECONDS_HALF_DAY) % SECONDS_DAY) - SECONDS_HALF_DAY, 3)
-                if abs(diff) > self.MAX_TIMESTAMP_DIFF:
-                    self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
-                    self.serial_connection.reset_input_buffer()
-                    continue
-                else:
-                    self.log.debug('timestamp diff = %s', diff)
-                if parts[0] == '$GPGGA':
-                    if parts[2] == '' or parts[4] == '':
+            for bytes_ in result:
+                line = bytes_.decode('utf-8')
+                sentence = line.split('*')[0]
+                self.log.debug(sentence)
+                try:
+                    if sentence.startswith('$GPGGA'):
+                        last_gga = Gga.from_sentence(sentence)
+                        if last_gga is None:
+                            continue
+                        diff = round(((last_gga.timestamp - rosys_time + SECONDS_HALF_DAY) %
+                                     SECONDS_DAY) - SECONDS_HALF_DAY, 3)
+                        self.diffs.append(diff)
+                        if abs(diff) > self.MAX_TIMESTAMP_DIFF:
+                            self.log.warning('timestamp diff = %s (exceeds threshold of %s)',
+                                             diff, self.MAX_TIMESTAMP_DIFF)
+                            self.serial_connection.reset_input_buffer()
+                            break
+                        self.log.debug('timestamp diff = %s', diff)
+                    elif sentence.startswith('$GPGST'):
+                        last_gst = Gst.from_sentence(sentence)
+                    elif sentence.startswith('$PSSN'):
+                        last_pssn = Pssn.from_sentence(sentence)
+                    else:
+                        self.log.warning('unknown sentence: %s', sentence)
                         continue
-                    last_gga_timestamp = timestamp
-                    last_raw_latitude = self._convert_to_decimal(parts[2], parts[3])
-                    last_raw_longitude = self._convert_to_decimal(parts[4], parts[5])
-                    last_gps_quality = int(parts[6]) if parts[6] else 0
-                    last_num_satellites = int(parts[7]) if parts[7] else 0
-                    last_hdop = float(parts[8]) if parts[8] else 0.0
-                    last_altitude = float(parts[9]) if parts[9] else 0.0
-                if parts[0] == '$GPGST' and parts[6] and parts[7]:
-                    last_gst_timestamp = timestamp
-                    last_latitude_accuracy = float(parts[6])
-                    last_longitude_accuracy = float(parts[7])
-                if parts[0] == '$PSSN' and parts[1] == 'HRP':
-                    last_pssn_timestamp = timestamp
-                    last_raw_heading = float(parts[4] or 0.0)
-                    last_heading_accuracy = float(parts[7] or 'inf')
-                if last_gga_timestamp == last_gst_timestamp == last_pssn_timestamp:
-                    last_heading = last_raw_heading + self.antenna_pose.yaw_deg
-                    antenna_pose = GeoPose.from_degrees(last_raw_latitude, last_raw_longitude, last_heading)
+
+                    if last_gga is None or last_gst is None or last_pssn is None:
+                        continue
+                    if not (last_gga.timestamp == last_gst.timestamp == last_pssn.timestamp):
+                        continue
+                    last_heading = last_pssn.heading + self.antenna_pose.yaw_deg
+                    antenna_pose = GeoPose.from_degrees(last_gga.latitude, last_gga.longitude, last_heading)
                     robot_pose = antenna_pose.relative_shift_by(x=-self.antenna_pose.x, y=-self.antenna_pose.y)
                     self.last_measurement = GnssMeasurement(
-                        time=rosys.time(),
-                        gnss_time=timestamp,
+                        time=rosys_time,
+                        gnss_time=last_gga.timestamp,
                         pose=robot_pose,
-                        latitude_std_dev=last_latitude_accuracy,
-                        longitude_std_dev=last_longitude_accuracy,
-                        heading_std_dev=last_heading_accuracy,
-                        gps_quality=GpsQuality(last_gps_quality),
-                        num_satellites=last_num_satellites,
-                        hdop=last_hdop,
-                        altitude=last_altitude,
+                        latitude_std_dev=last_gst.latitude_std_dev,
+                        longitude_std_dev=last_gst.longitude_std_dev,
+                        heading_std_dev=last_pssn.heading_std_dev,
+                        gps_quality=GpsQuality(last_gga.gps_quality),
+                        num_satellites=last_gga.num_satellites,
+                        hdop=last_gga.hdop,
+                        altitude=last_gga.altitude,
                     )
                     self.NEW_MEASUREMENT.emit(self.last_measurement)
-            except (KeyError, ValueError) as e:
-                self.log.exception('GNSS parse error: %s', e)
+                    last_gga = None
+                    last_gst = None
+                    last_pssn = None
+
+                except (KeyError, ValueError) as e:
+                    self.log.exception('GNSS parse error: %s', e)
 
     # TODO: move to helper and add search argument; for other serial devices
     def _find_device(self) -> str:
@@ -255,22 +245,6 @@ class GnssHardware(Gnss):
             return serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
         except serial.SerialException as e:
             raise RuntimeError(f'Could not connect to GNSS device: {port}') from e
-
-    @staticmethod
-    def _convert_to_decimal(coord: str, direction: str) -> float:
-        """Convert a coordinate in the format DDMM.mmmm to decimal degrees.
-
-        :param coord: the coordinate to convert
-        :param direction: the direction (N/S/E/W)
-        :return: the coordinate in decimal degrees
-        """
-        split_index = coord.find('.') - 2
-        degrees = float(coord[:split_index])
-        minutes = float(coord[split_index:])
-        decimal = degrees + minutes / 60
-        if direction in ['S', 'W']:
-            decimal = -decimal
-        return decimal
 
 
 class GnssSimulation(Gnss):
@@ -353,3 +327,120 @@ class GnssSimulation(Gnss):
                     .bind_value(self, '_gps_quality').classes('w-4/5')
                 ui.number(label='Latency', format='%.2f', suffix='s') \
                     .bind_value(self, '_latency').classes('w-4/5')
+
+
+@dataclass(slots=True, kw_only=True)
+class Gga:
+    """
+    GPS fix data and undulation
+
+    https://docs.novatel.com/OEM7/Content/Logs/GPGGA.htm
+    """
+    timestamp: float
+    latitude: float
+    longitude: float
+    gps_quality: GpsQuality
+    num_satellites: int
+    hdop: float
+    altitude: float
+    undulation: float
+    correction_age: float
+
+    @staticmethod
+    def from_sentence(sentence: str) -> Gga | None:
+        parts = sentence.split(',')
+        if parts[2] == '' or parts[4] == '':  # latitude or longitude is missing
+            return None
+        nmea_timestamp = parts[1]
+        if not nmea_timestamp:
+            return None
+        return Gga(timestamp=timestamp_from_nmea(nmea_timestamp),
+                   latitude=convert_to_decimal(parts[2], parts[3]),
+                   longitude=convert_to_decimal(parts[4], parts[5]),
+                   gps_quality=GpsQuality(int(parts[6]) if parts[6] else 0),
+                   num_satellites=int(parts[7]) if parts[7] else 0,
+                   hdop=float(parts[8]) if parts[8] else 0.0,
+                   altitude=float(parts[9]) if parts[9] else 0.0,
+                   undulation=float(parts[11]) if parts[11] else 0.0,
+                   correction_age=float(parts[13]) if parts[13] else 0.0)
+
+
+@dataclass(slots=True, kw_only=True)
+class Gst:
+    """
+    Estimated error in position solution
+
+    https://docs.novatel.com/OEM7/Content/Logs/GPGST.htm
+    """
+    timestamp: float
+    semimajor_axis_std_dev: float
+    semiminor_axis_std_dev: float
+    semi_major_axis_heading: float
+    latitude_std_dev: float
+    longitude_std_dev: float
+    altitude_std_dev: float
+
+    @staticmethod
+    def from_sentence(sentence: str) -> Gst | None:
+        parts = sentence.split(',')
+        if parts[6] == '' or parts[7] == '':
+            return None
+        return Gst(timestamp=timestamp_from_nmea(parts[1]),
+                   semimajor_axis_std_dev=float(parts[3]),
+                   semiminor_axis_std_dev=float(parts[4]),
+                   semi_major_axis_heading=float(parts[5]),
+                   latitude_std_dev=float(parts[6]),
+                   longitude_std_dev=float(parts[7]),
+                   altitude_std_dev=float(parts[8]))
+
+
+@dataclass(slots=True, kw_only=True)
+class Pssn:
+    """PSSN,HRP Septentrio Proprietary Sentence - Heading, Roll, Pitch"""
+    timestamp: float
+    heading: float
+    roll: float
+    pitch: float
+    heading_std_dev: float
+    roll_std_dev: float
+    pitch_std_dev: float
+    num_satellites: int
+    mode: int
+
+    @staticmethod
+    def from_sentence(sentence: str) -> Pssn | None:
+        parts = sentence.split(',')
+        if parts[4] == '' or parts[7] == '':
+            return None
+        return Pssn(timestamp=timestamp_from_nmea(parts[2]),
+                    heading=float(parts[4] or 0.0),
+                    roll=float(parts[5] or 0.0),
+                    pitch=float(parts[6] or 0.0),
+                    heading_std_dev=float(parts[7] or 'inf'),
+                    roll_std_dev=float(parts[8] or 'inf'),
+                    pitch_std_dev=float(parts[9] or 'inf'),
+                    num_satellites=int(parts[10] or 0),
+                    mode=int(parts[11] or 0))
+
+
+def timestamp_from_nmea(nmea_timestamp: str) -> float:
+    today = datetime.now().date()
+    time_obj = datetime.strptime(nmea_timestamp, '%H%M%S.%f').time()
+    utc_time = datetime.combine(today, time_obj).replace(tzinfo=UTC)
+    return utc_time.timestamp()
+
+
+def convert_to_decimal(coord: str, direction: str) -> float:
+    """Convert a coordinate in the format DDMM.mmmm to decimal degrees.
+
+    :param coord: the coordinate to convert
+    :param direction: the direction (N/S/E/W)
+    :return: the coordinate in decimal degrees
+    """
+    split_index = coord.find('.') - 2
+    degrees = float(coord[:split_index])
+    minutes = float(coord[split_index:])
+    decimal = degrees + minutes / 60
+    if direction in ['S', 'W']:
+        decimal = -decimal
+    return decimal
