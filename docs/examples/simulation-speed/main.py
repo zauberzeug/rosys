@@ -9,6 +9,7 @@ from rosys.driving import Driver, Odometer, robot_object
 from rosys.geometry import Point, Prism
 from rosys.hardware import RobotSimulation, WheelsSimulation
 
+rosys.enter_simulation()
 wheels = WheelsSimulation()
 robot = RobotSimulation([wheels])
 odometer = Odometer(wheels)
