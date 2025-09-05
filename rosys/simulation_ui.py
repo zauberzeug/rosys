@@ -8,6 +8,7 @@ from . import rosys
 class simulation_ui:
 
     def __init__(self) -> None:
+        assert rosys.is_simulation(), 'simulation_ui should only be used in time simulation mode. Call rosys.enter_simulation() first.'
         ui.label('Simulation speed')
         ui.slider(min=0, max=10, value=1, step=0.1, on_change=rosys.config.request_backup) \
             .bind_value(rosys.config, 'simulation_speed').props('label-always')
