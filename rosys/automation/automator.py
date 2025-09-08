@@ -69,12 +69,20 @@ class Automator:
         return self.automation is None or self.automation.is_stopped
 
     @property
+    def is_stopping(self) -> bool:
+        return self.automation is not None and self.automation.is_stopping
+
+    @property
     def is_running(self) -> bool:
         return self.automation is not None and self.automation.is_running
 
     @property
     def is_paused(self) -> bool:
         return self.automation is not None and self.automation.is_paused
+
+    @property
+    def is_pausing(self) -> bool:
+        return self.automation is not None and self.automation.is_pausing
 
     def start(self, coro: Coroutine | None = None, *, paused: bool = False) -> None:
         """Starts a new automation.
