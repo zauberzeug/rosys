@@ -183,6 +183,7 @@ class Automator:
             self.log.exception('automation failed')
 
     def _on_complete(self) -> None:
+        self.automation = None
         self.AUTOMATION_COMPLETED.emit()
         self._notify('automation completed', 'positive')
 
