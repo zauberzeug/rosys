@@ -50,6 +50,17 @@ class _state:
     last_time_request: float = start_time
     exception: BaseException | None = None  # NOTE: used for tests
     startup_finished: bool = False
+    is_simulation: bool = False
+
+
+def is_simulation() -> bool:
+    """Returns whether system time is being simulated."""
+    return _state.is_simulation
+
+
+def enter_simulation() -> None:
+    """Enter system time simulation mode."""
+    _state.is_simulation = True
 
 
 def get_last_exception() -> BaseException | None:
@@ -94,9 +105,12 @@ def time() -> float:
         return _state.time
     with time_lock:
         now = pytime.time()
-        _state.time += (now - _state.last_time_request) * config.simulation_speed
+        if _state.is_simulation:
+            _state.time += (now - _state.last_time_request) * config.simulation_speed
+        else:
+            _state.time = now
         _state.last_time_request = now
-        return _state.time
+    return _state.time
 
 
 def set_time(value: float) -> None:
