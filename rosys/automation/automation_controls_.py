@@ -22,10 +22,11 @@ class AutomationControls:
 
         def refresh() -> None:
             play_button.visible = automator.is_stopped
-            pause_button.visible = automator.is_running
-            resume_button.visible = automator.is_paused
-            play_button.enabled = automator.default_automation is not None and automator.enabled
-            resume_button.enabled = automator.enabled
-            stop_button.enabled = not automator.is_stopped
+            play_button.enabled = automator.default_automation is not None and automator.enabled and automator.is_stopped
+            pause_button.visible = automator.is_running and not automator.is_pausing
+            pause_button.enabled = not automator.is_stopping and not automator.is_pausing
+            resume_button.visible = automator.is_paused or automator.is_pausing
+            resume_button.enabled = automator.enabled and not automator.is_stopping
+            stop_button.enabled = not automator.is_stopped and not automator.is_stopping
 
         ui.timer(config.ui_update_interval, refresh)

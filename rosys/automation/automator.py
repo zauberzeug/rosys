@@ -120,7 +120,7 @@ class Automator:
         """Resumes the current automation."""
         if not self.enabled:
             return
-        if self.is_paused:
+        if self.is_paused or self.is_pausing:
             assert self.automation is not None
             self.automation.resume()
             self.AUTOMATION_RESUMED.emit()
