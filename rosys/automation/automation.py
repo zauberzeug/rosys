@@ -54,15 +54,23 @@ class Automation:
 
     @property
     def is_running(self) -> bool:
-        return self._is_waited and self._can_run.is_set()
+        return not self.is_stopped and not self.is_paused
 
     @property
     def is_paused(self) -> bool:
-        return self._is_waited and not self._can_run.is_set()
+        return self._is_waited and not self._can_run.is_set() and self._uninterruptible_depth == 0
+
+    @property
+    def is_pausing(self) -> bool:
+        return self._is_waited and not self._can_run.is_set() and self._uninterruptible_depth > 0
 
     @property
     def is_stopped(self) -> bool:
         return not self._is_waited
+
+    @property
+    def is_stopping(self) -> bool:
+        return self._stop and not self.is_stopped
 
     async def run(self) -> Any | None:
         return await self
