@@ -111,4 +111,6 @@ def reset() -> None:
     for task in tasks:
         task.cancel()
     tasks.clear()
+    for coroutine in startup_coroutines:
+        asyncio.create_task(coroutine).cancel()  # type: ignore
     startup_coroutines.clear()
