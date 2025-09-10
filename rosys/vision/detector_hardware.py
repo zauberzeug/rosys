@@ -114,7 +114,7 @@ class DetectorHardware(Detector):
             metadata_dict['tags'] = tags or []
             metadata_dict['creation_date'] = _creation_date_to_isoformat(creation_date)
 
-            if detections := image.get_detections(self.name) is not None:
+            if detections := image.get_detections(self.name):
                 detections_dict = detections.to_dict()
                 metadata_dict['box_detections'] = _box_detections_to_int(detections_dict['boxes'])
                 metadata_dict['point_detections'] = detections_dict['points']
