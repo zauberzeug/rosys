@@ -109,7 +109,7 @@ class DetectorHardware(Detector):
             self.log.info('Upload detections to port %s', self.port)
             data_dict: dict[str, Any] = {'image': image.data}
 
-            metadata_dict = {}
+            metadata_dict: dict[str, Any] = {}
             metadata_dict['source'] = source
             metadata_dict['tags'] = tags or []
             metadata_dict['creation_date'] = _creation_date_to_isoformat(creation_date)
