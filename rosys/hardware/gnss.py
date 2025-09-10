@@ -158,35 +158,29 @@ class GnssHardware(Gnss):
 
             assert self.serial_connection is not None
             measurement: GnssMeasurement | None = await io_bound(self.read_message_block)
-            if measurement is not None:
-                diff = round(((measurement.gnss_time - measurement.time + SECONDS_HALF_DAY) %
-                             SECONDS_DAY) - SECONDS_HALF_DAY, 3)
-                self.diffs.append(diff)
-                self.log.warning('Measurement: %s %s %s', measurement.gnss_time, measurement.time, diff)
-                self.last_measurement = measurement
-                self.NEW_MEASUREMENT.emit(measurement)
+            if measurement is None:
+                continue
+            diff = round(((measurement.gnss_time - rosys.time() + SECONDS_HALF_DAY) %
+                          SECONDS_DAY) - SECONDS_HALF_DAY, 3)
+            self.diffs.append(diff)
+            if abs(diff) > self.MAX_TIMESTAMP_DIFF:
+                self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
+                self.serial_connection.reset_input_buffer()
+                continue
+            self.log.debug('timestamp diff = %s', diff)
+            self.last_measurement = measurement
+            self.NEW_MEASUREMENT.emit(measurement)
 
     def read_message_block(self) -> GnssMeasurement | None:
         buffer = ''
-        last_raw_latitude = 0.0
-        last_raw_longitude = 0.0
-        last_raw_heading = 0.0
-        last_latitude_accuracy = 0.0
-        last_longitude_accuracy = 0.0
-        last_heading_accuracy = 0.0
-        last_gps_quality = 0
-        last_num_satellites = 0
-        last_hdop = 0.0
-        last_altitude = 0.0
-        last_gga_timestamp = 0.0
-        last_gst_timestamp = 0.0
-        last_pssn_timestamp = 0.0
+        last_gga: Gga | None = None
+        last_gst: Gst | None = None
+        last_pssn: Pssn | None = None
         while True:
             if not self.is_connected:
                 return None
             assert self.serial_connection is not None
             result = self.serial_connection.read_until(b'\r\n')
-            rosys_time = rosys.time()
             if not result:
                 self.log.debug('No data')
                 continue
@@ -199,61 +193,40 @@ class GnssHardware(Gnss):
                 continue
 
             self.log.debug(sentence)
-            parts = sentence.split(',')
             try:
-                field_index = {'$GPGGA': 1, '$GPGST': 1, '$PSSN': 2}
-                if parts[0] not in field_index:
-                    continue
-                nmea_timestamp = parts[field_index[parts[0]]]
-                if not nmea_timestamp:
-                    continue
-                today = datetime.now().date()
-                time_obj = datetime.strptime(nmea_timestamp, '%H%M%S.%f').time()
-                utc_time = datetime.combine(today, time_obj).replace(tzinfo=UTC)
-                timestamp = utc_time.timestamp()
-                diff = round(((timestamp - rosys_time + SECONDS_HALF_DAY) % SECONDS_DAY) - SECONDS_HALF_DAY, 3)
-                if abs(diff) > self.MAX_TIMESTAMP_DIFF:
-                    self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
-                    self.serial_connection.reset_input_buffer()
-                    return None
+                if sentence.startswith('$GPGGA'):
+                    last_gga = Gga.from_sentence(sentence)
+                    self.log.debug('GGA: %s', last_gga)
+                elif sentence.startswith('$GPGST'):
+                    last_gst = Gst.from_sentence(sentence)
+                    self.log.debug('GST: %s', last_gst)
+                elif sentence.startswith('$PSSN'):
+                    last_pssn = Pssn.from_sentence(sentence)
+                    self.log.debug('PSSN: %s', last_pssn)
                 else:
-                    self.log.debug('timestamp diff = %s', diff)
-                if parts[0] == '$GPGGA':
-                    if parts[2] == '' or parts[4] == '':
-                        continue
-                    last_gga_timestamp = timestamp
-                    last_raw_latitude = convert_to_decimal(parts[2], parts[3])
-                    last_raw_longitude = convert_to_decimal(parts[4], parts[5])
-                    last_gps_quality = int(parts[6]) if parts[6] else 0
-                    last_num_satellites = int(parts[7]) if parts[7] else 0
-                    last_hdop = float(parts[8]) if parts[8] else 0.0
-                    last_altitude = float(parts[9]) if parts[9] else 0.0
-                if parts[0] == '$GPGST' and parts[6] and parts[7]:
-                    last_gst_timestamp = timestamp
-                    last_latitude_accuracy = float(parts[6])
-                    last_longitude_accuracy = float(parts[7])
-                if parts[0] == '$PSSN' and parts[1] == 'HRP':
-                    last_pssn_timestamp = timestamp
-                    last_raw_heading = float(parts[4] or 0.0)
-                    last_heading_accuracy = float(parts[7] or 'inf')
-                if last_gga_timestamp == last_gst_timestamp == last_pssn_timestamp:
-                    last_heading = last_raw_heading + self.antenna_pose.yaw_deg
-                    antenna_pose = GeoPose.from_degrees(last_raw_latitude, last_raw_longitude, last_heading)
-                    robot_pose = antenna_pose.relative_shift_by(x=-self.antenna_pose.x, y=-self.antenna_pose.y)
-                    return GnssMeasurement(
-                        time=rosys.time(),
-                        gnss_time=timestamp,
-                        pose=robot_pose,
-                        latitude_std_dev=last_latitude_accuracy,
-                        longitude_std_dev=last_longitude_accuracy,
-                        heading_std_dev=last_heading_accuracy,
-                        gps_quality=GpsQuality(last_gps_quality),
-                        num_satellites=last_num_satellites,
-                        hdop=last_hdop,
-                        altitude=last_altitude,
-                    )
+                    self.log.warning('unknown sentence: %s', sentence)
+                    continue
             except (KeyError, ValueError) as e:
                 self.log.exception('GNSS parse error: %s', e)
+                return None
+
+            if last_gga is None or last_gst is None or last_pssn is None:
+                continue
+            if last_gga.timestamp == last_gst.timestamp == last_pssn.timestamp:
+                last_heading = last_pssn.heading + self.antenna_pose.yaw_deg
+                antenna_pose = GeoPose.from_degrees(last_gga.latitude, last_gga.longitude, last_heading)
+                robot_pose = antenna_pose.relative_shift_by(x=-self.antenna_pose.x, y=-self.antenna_pose.y)
+                return GnssMeasurement(
+                    time=rosys.time(),
+                    gnss_time=last_gga.timestamp,
+                    pose=robot_pose,
+                    latitude_std_dev=last_gst.latitude_std_dev,
+                    longitude_std_dev=last_gst.longitude_std_dev,
+                    heading_std_dev=last_pssn.heading_std_dev,
+                    gps_quality=GpsQuality(last_gga.gps_quality),
+                    num_satellites=last_gga.num_satellites,
+                    hdop=last_gga.hdop,
+                    altitude=last_gga.altitude)
 
     # TODO: move to helper and add search argument; for other serial devices
     def _find_device(self) -> str:
@@ -435,8 +408,6 @@ class Pssn:
     @staticmethod
     def from_sentence(sentence: str) -> Pssn | None:
         parts = sentence.split(',')
-        if parts[4] == '' or parts[7] == '':
-            return None
         return Pssn(timestamp=timestamp_from_nmea(parts[2]),
                     heading=float(parts[4] or 0.0),
                     roll=float(parts[5] or 0.0),
