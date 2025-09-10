@@ -7,6 +7,7 @@ import socketio.exceptions
 
 from .. import persistence, rosys
 from ..helpers import LazyWorker
+from .annotations import Annotations
 from .detections import (
     BoxDetection,
     Category,
@@ -85,8 +86,13 @@ class DetectorHardware(Detector):
                      *,
                      tags: list[str] | None = None,
                      source: str | None = None,
-                     creation_date: datetime | str | None = None
+                     creation_date: datetime | str | None = None,
+                     annotations: Annotations | None = None,
                      ) -> None:
+        """Uploads the image to the Learning Loop.
+
+        Detections stored in the image are also uploaded."""
+
         if not self.is_connected:
             self.log.error('Upload failed: detector is not connected')
             raise DetectorException('detector is not connected')
@@ -99,20 +105,28 @@ class DetectorHardware(Detector):
             self.log.error('Upload failed: image too large: %s', len(image.data))
             raise DetectorException('image too large')
 
-        tags = tags or []
         try:
             self.log.info('Upload detections to port %s', self.port)
-            data_dict: dict[str, Any] = {'image': image.data, 'mac': image.camera_id}
-            detections = image.get_detections(self.name)
-            if detections is not None:
+            data_dict: dict[str, Any] = {'image': image.data}
+
+            metadata_dict = {}
+            metadata_dict['source'] = source
+            metadata_dict['tags'] = tags or []
+            metadata_dict['creation_date'] = _creation_date_to_isoformat(creation_date)
+
+            if detections := image.get_detections(self.name) is not None:
                 detections_dict = detections.to_dict()
-                detections_dict['box_detections'] = _box_detections_to_int(detections_dict.pop('boxes'))
-                detections_dict['point_detections'] = detections_dict.pop('points')
-                detections_dict['segmentation_detections'] = detections_dict.pop('segmentations')
-                data_dict['detections'] = detections_dict
-            data_dict['source'] = source
-            data_dict['tags'] = tags
-            data_dict['creation_date'] = _creation_date_to_isoformat(creation_date)
+                metadata_dict['box_detections'] = _box_detections_to_int(detections_dict['boxes'])
+                metadata_dict['point_detections'] = detections_dict['points']
+                metadata_dict['segmentation_detections'] = detections_dict['segmentations']
+
+            if annotations is not None:
+                annotations_dict = annotations.to_dict()
+                metadata_dict['box_annotations'] = annotations_dict['box_annotations']
+                metadata_dict['point_annotations'] = annotations_dict['point_annotations']
+                metadata_dict['classification_annotation'] = annotations_dict['classification_annotation']
+
+            data_dict['detections'] = metadata_dict
             await self.sio.emit('upload', data_dict)
 
         except Exception as e:
@@ -156,10 +170,10 @@ class DetectorHardware(Detector):
         try:
             response = await self.sio.call('detect', {
                 'image': image.data,
-                'mac': image.camera_id,
-                'autoupload': autoupload.value,
+                'camera-id': image.camera_id,
                 'tags': tags,
                 'source': source,
+                'autoupload': autoupload.value,
                 'creation_date': _creation_date_to_isoformat(creation_date),
             }, timeout=3)
         except socketio.exceptions.TimeoutError:
