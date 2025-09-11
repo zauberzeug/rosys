@@ -128,7 +128,8 @@ class GnssHardware(Gnss):
         self.serial_connection: serial.Serial | None = None
         rosys.on_startup(self._run)
 
-        self.diffs: deque[float] = deque(maxlen=10 * 5)
+        # TODO: just for evaluation, remove later
+        self.diffs: deque[float] = deque(maxlen=10 * 10)
 
     @property
     def is_connected(self) -> bool:
@@ -162,6 +163,7 @@ class GnssHardware(Gnss):
                 continue
             diff = round(((measurement.gnss_time - rosys.time() + SECONDS_HALF_DAY) %
                           SECONDS_DAY) - SECONDS_HALF_DAY, 3)
+            # TODO: just for evaluation, remove later
             self.diffs.append(diff)
             if abs(diff) > self.MAX_TIMESTAMP_DIFF:
                 self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
