@@ -90,7 +90,10 @@ class SpatialResection:
         cv2.solvePnPRefineLM(object_points, image_points_undist, K_undist, D_zeros, rvec, tvec)
 
         Rwc = Rotation.from_rvec(rvec).T
-        C = -1 * (cv2.Rodrigues(rvec)[0].T @ tvec).reshape(3)
+        # Ensure types are numpy arrays so the `@` operator is type-safe for static checkers
+        rmat = np.asarray(cv2.Rodrigues(rvec)[0])
+        tvec_arr = np.asarray(tvec).reshape(-1)
+        C = -1 * (rmat.T @ tvec_arr).reshape(3)
 
         # Compute reprojection error on all observations (undistorted domain)
         proj_all, _ = cv2.projectPoints(object_points, rvec, tvec, K_undist, D_zeros)
