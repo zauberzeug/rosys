@@ -37,6 +37,52 @@ def demo_data(parallel_lines: bool = False) -> tuple[CalibratableCamera, np.ndar
     return cam, world_points, world_lines
 
 
+@pytest.mark.parametrize('guess', ('good', 'bad', 'none'))
+@pytest.mark.parametrize('algorithm', (None, 'ITERATIVE'))
+def test_spatial_resection_with_points(guess: str, algorithm: str | None):
+    """Test the spatial resection with points."""
+    cam, world_points, _ = demo_data()
+    assert cam.calibration is not None
+    intrinsics = cam.calibration.intrinsics
+
+    # Generate image points
+    image_points = cam.calibration.project_to_image(world_points)
+
+    if guess == 'good':
+        p0 = Point3d(x=0.0, y=0.0, z=3.0)
+        r0 = Rotation.from_euler(np.pi, 0, 0)
+    elif guess == 'bad':
+        p0 = Point3d(x=0.0, y=0.0, z=3.0)
+        r0 = Rotation.from_euler(2*np.pi, 0, 0)
+    else:
+        p0 = None
+        r0 = None
+
+    # LSA
+    result = SpatialResection(intrinsics).pnp_with_lsa(
+        world_points=world_points,
+        image_points=image_points,
+        algorithm=algorithm,
+        p0=p0,
+        r0=r0,
+    )
+
+    # Check the camera pose
+    ground_truth_translation = cam.calibration.extrinsics.point_3d
+    ground_truth_rotation = cam.calibration.extrinsics.rotation
+    translation_ok = np.allclose(result.camera_pose.point_3d.array, ground_truth_translation.array, atol=0.001)
+    rotation_ok = np.allclose(result.camera_pose.rotation.quaternion, ground_truth_rotation.quaternion, atol=0.001)
+
+    if guess == 'bad' and algorithm == 'ITERATIVE':
+        # assert not result.success # NOTE: unfortunately OpenCV does not notice the wrong result here
+        assert not translation_ok
+        assert not rotation_ok
+    else:
+        assert result.success
+        assert translation_ok
+        assert rotation_ok
+
+
 @pytest.mark.parametrize('parallel_lines', (False, True))
 def test_spatial_resection_with_line_points(parallel_lines: bool):
     """Test the spatial resection with line points.
