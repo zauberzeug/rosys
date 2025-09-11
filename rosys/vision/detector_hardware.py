@@ -126,7 +126,7 @@ class DetectorHardware(Detector):
                 metadata_dict['point_annotations'] = annotations_dict['point_annotations']
                 metadata_dict['classification_annotation'] = annotations_dict['classification_annotation']
 
-            data_dict['detections'] = metadata_dict
+            data_dict['metadata'] = metadata_dict
             await self.sio.emit('upload', data_dict)
 
         except Exception as e:
@@ -288,6 +288,42 @@ class DetectorHardware(Detector):
         if response.get('status') != 'OK':
             error_message = response.get('error', 'unknown error')
             raise DetectorException(f'Failed to set model version mode: {error_message}')
+
+    async def fetch_outbox_mode(self) -> Literal['continuous_upload', 'stopped']:
+        try:
+            response = await self.sio.call('get_outbox_mode', timeout=5)
+        except socketio.exceptions.TimeoutError:
+            self.log.error('Communication timeout for detector %s', self.name)
+            raise DetectorException('Communication timeout') from None
+        except Exception as e:
+            self.log.error('Communication failed for detector %s: %s', self.name, e)
+            raise DetectorException('Communication failed') from e
+
+        if not isinstance(response, dict):
+            raise DetectorException('Failed to get outbox mode')
+
+        mode = response.get('outbox_mode')
+        if mode not in ['continuous_upload', 'stopped']:
+            raise DetectorException(f'Invalid outbox mode received: {mode}')
+
+        return mode
+
+    async def set_outbox_mode(self, mode: Literal['continuous_upload', 'stopped']) -> None:
+        try:
+            response = await self.sio.call('set_outbox_mode', mode, timeout=5)
+        except socketio.exceptions.TimeoutError:
+            self.log.error('Communication timeout for detector %s', self.name)
+            raise DetectorException('Communication timeout') from None
+        except Exception as e:
+            self.log.error('Communication failed for detector %s: %s', self.name, e)
+            raise DetectorException('Communication failed') from e
+
+        if not isinstance(response, dict):
+            raise DetectorException('Failed to set outbox mode')
+
+        if response.get('status') != 'OK':
+            error_message = response.get('error', 'unknown error')
+            raise DetectorException(f'Failed to set outbox mode: {error_message}')
 
     async def soft_reload(self) -> None:
         """Trigger a soft reload of the detector.
