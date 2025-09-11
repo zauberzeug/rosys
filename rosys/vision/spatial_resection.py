@@ -29,12 +29,16 @@ class SpatialResection:
                      *,
                      world_points: np.ndarray,
                      image_points: np.ndarray,
-                     algorithm: int | None = None) -> SpatialResectionResult:
+                     algorithm: int | None = None,
+                     p0: Point3d | None = None,
+                     r0: Rotation | None = None) -> SpatialResectionResult:
         """Solve the spatial resection problem using OpenCV's PnP and finalize with a least-squares refinement.
 
         :param world_points: The 3D coordinates of the points in object space, shape (n, 3)
         :param image_points: The 2D coordinates of the points in the image, shape (n, 2)
         :param algorithm: PnP algorithm flag or name (e.g., 'ITERATIVE', 'EPNP', 'P3P', 'AP3P', 'IPPE'). If None, choose automatically.
+        :param p0: Initial position of the camera (optional)
+        :param r0: Initial rotation of the camera (optional)
 
         :return: The result of the spatial resection
         """
@@ -52,39 +56,70 @@ class SpatialResection:
         D_zeros = np.zeros((1, 5), dtype=np.float64)
 
         # Decide on algorithm
-        num_points = object_points.shape[0]
-
         def is_planar(points: np.ndarray) -> bool:
             centered = points.reshape(-1, 3) - points.reshape(-1, 3).mean(axis=0)
             _, s, _ = np.linalg.svd(centered, full_matrices=False)
             return s[-1] / max(s[0], 1e-12) < 1e-3
 
-        def resolve_method_flag(algo: int | None) -> int:
-            if algo is not None:
-                return algo
+        if algorithm is None:
             # Automatic selection
+            num_points = object_points.shape[0]
             if num_points >= 6 and not is_planar(object_points):
-                return int(cv2.SOLVEPNP_EPNP)
-            if num_points >= 4 and is_planar(object_points) and hasattr(cv2, 'SOLVEPNP_IPPE'):
-                return int(cv2.SOLVEPNP_IPPE)
-            if num_points == 3:
-                return int(cv2.SOLVEPNP_P3P)
-            if num_points >= 4 and hasattr(cv2, 'SOLVEPNP_AP3P'):
-                return int(cv2.SOLVEPNP_AP3P)
-            return int(cv2.SOLVEPNP_ITERATIVE)
-
-        method_flag = resolve_method_flag(algorithm)
+                method_flag = cv2.SOLVEPNP_EPNP
+            elif num_points >= 4 and is_planar(object_points) and hasattr(cv2, 'SOLVEPNP_IPPE'):
+                method_flag = cv2.SOLVEPNP_IPPE
+            elif num_points == 3:
+                method_flag = cv2.SOLVEPNP_P3P
+            elif num_points >= 4 and hasattr(cv2, 'SOLVEPNP_AP3P'):
+                method_flag = cv2.SOLVEPNP_AP3P
+            else:
+                method_flag = cv2.SOLVEPNP_ITERATIVE
+        elif isinstance(algorithm,  int):
+            method_flag = algorithm
+        elif isinstance(algorithm, str):
+            name = algorithm.upper()
+            if name == 'ITERATIVE':
+                method_flag = cv2.SOLVEPNP_ITERATIVE
+            elif name == 'EPNP':
+                method_flag = cv2.SOLVEPNP_EPNP
+            elif name == 'P3P':
+                method_flag = cv2.SOLVEPNP_P3P
+            elif name == 'AP3P' and hasattr(cv2, 'SOLVEPNP_AP3P'):
+                method_flag = cv2.SOLVEPNP_AP3P
+            elif name == 'IPPE' and hasattr(cv2, 'SOLVEPNP_IPPE'):
+                method_flag = cv2.SOLVEPNP_IPPE
+            else:
+                raise ValueError(f'Unknown PnP algorithm: {algorithm}')
+        else:
+            raise TypeError('Algorithm must be int, str or None')
 
         # Run PnP on undistorted points with zero distortion and K_undist
+        use_guess = p0 is not None and r0 is not None
+        if use_guess:
+            rvec_init = cv2.Rodrigues(r0.T.matrix)[0]
+            tvec_init = -r0.T.matrix @ p0.array.reshape(3, 1)
+        else:
+            rvec_init = None
+            tvec_init = None
+
         ok, rvec, tvec = cv2.solvePnP(
             object_points, image_points_undist, K_undist, D_zeros,
-            None, None, False, int(method_flag)
+            rvec_init, tvec_init, use_guess, int(method_flag)
         )
         if not ok:
             # Fallback to ITERATIVE
             ok, rvec, tvec = cv2.solvePnP(
                 object_points, image_points_undist, K_undist, D_zeros,
-                None, None, False, int(cv2.SOLVEPNP_ITERATIVE)
+                rvec_init, tvec_init, use_guess, int(cv2.SOLVEPNP_ITERATIVE)
+            )
+        if not ok:
+            return SpatialResectionResult(
+                success=False,
+                iterations=0,
+                average_reprojection_error=float('nan'),
+                camera_pose=Pose3d(x=float('nan'), y=float('nan'), z=float('nan'), rotation=Rotation.zero()),
+                running_variables=[],
+                estimated_points_on_lines=[],
             )
 
         cv2.solvePnPRefineLM(object_points, image_points_undist, K_undist, D_zeros, rvec, tvec)
@@ -104,7 +139,7 @@ class SpatialResection:
 
         return SpatialResectionResult(
             success=True,
-            iterations=0,
+            iterations=1,
             average_reprojection_error=avg_reproj_error,
             camera_pose=Pose3d(x=float(C[0]), y=float(C[1]), z=float(C[2]), rotation=Rwc),
             running_variables=[],
