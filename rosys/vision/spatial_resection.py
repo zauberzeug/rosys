@@ -135,7 +135,7 @@ class SpatialResection:
         proj_all, _ = cv2.projectPoints(object_points, rvec, tvec, K_undist, D_zeros)
         proj_all_np = np.asarray(proj_all, dtype=np.float64).reshape(-1, 2)
         img_all_np = image_points_undist.reshape(-1, 2)
-        residuals_all = (proj_all_np - img_all_np)
+        residuals_all = proj_all_np - img_all_np
         avg_reproj_error = float(np.mean(np.abs(residuals_all)))
 
         return SpatialResectionResult(
