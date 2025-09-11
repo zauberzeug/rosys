@@ -91,9 +91,9 @@ class SpatialResection:
 
         Rwc = Rotation.from_rvec(rvec).T
         # Ensure types are numpy arrays so the `@` operator is type-safe for static checkers
-        rmat = np.asarray(cv2.Rodrigues(rvec)[0])
-        tvec_arr = np.asarray(tvec).reshape(-1)
-        C = -1 * (rmat.T @ tvec_arr).reshape(3)
+        rmat = np.asarray(cv2.Rodrigues(rvec)[0], dtype=np.float64)
+        tvec_arr = np.asarray(tvec, dtype=np.float64).reshape(3)
+        C = (-rmat.T @ tvec_arr).reshape(3)
 
         # Compute reprojection error on all observations (undistorted domain)
         proj_all, _ = cv2.projectPoints(object_points, rvec, tvec, K_undist, D_zeros)
