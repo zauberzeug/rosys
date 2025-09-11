@@ -21,15 +21,29 @@ class EStop(Module, abc.ABC):
         """the e-stop was triggered"""
         self.ESTOP_RELEASED = Event[[]]()
         """the e-stop was released"""
-        self.active: bool = False
-        self.is_soft_estop_active: bool = False
+        self._soft_estop_active: bool = False
         self.pressed_estops: list[int] = []
 
-    @abc.abstractmethod
+    @property
+    def active(self) -> bool:
+        """Whether any hardware e-stop or the soft e-stop is active."""
+        return any(self.pressed_estops) or self._soft_estop_active
+
+    @property
+    def is_soft_estop_active(self) -> bool:
+        """Whether the soft e-stop is active."""
+        return self._soft_estop_active
+
     async def set_soft_estop(self, active: bool) -> None:
-        if active:
+        """Set the soft e-stop to the given state."""
+        self._emit_events(any(self.pressed_estops) or active)
+        self._soft_estop_active = active
+
+    def _emit_events(self, value: bool) -> None:
+        if value and not self.active:
             self.ESTOP_TRIGGERED.emit()
-        self.is_soft_estop_active = active
+        if not value and self.active:
+            self.ESTOP_RELEASED.emit()
 
 
 class EStopHardware(EStop, ModuleHardware):
@@ -54,28 +68,20 @@ class EStopHardware(EStop, ModuleHardware):
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         corelist = [words.pop(0) == 'true' for _ in self.pins]
-        active = any(corelist)
         pressed = [index for index, value in enumerate(corelist) if value]
         if pressed != self.pressed_estops:
             self.log.warning('E-Stop %s changed', pressed)
+        self._emit_events(any(pressed) or self.is_soft_estop_active)
         self.pressed_estops[:] = pressed
-        if active and not self.active:
-            self.ESTOP_TRIGGERED.emit()
-        if self.active and not active:
-            self.ESTOP_RELEASED.emit()
-        self.active = active
 
 
 class EStopSimulation(EStop, ModuleSimulation):
     """Simulation of the e-stop module."""
 
-    def activate(self) -> None:
-        if not self.active:
-            self.ESTOP_TRIGGERED.emit()
-        self.active = True
+    async def activate(self) -> None:
+        """Activate the soft e-stop."""
+        await self.set_soft_estop(True)
 
-    def deactivate(self) -> None:
-        self.active = False
-
-    async def set_soft_estop(self, active: bool) -> None:
-        await super().set_soft_estop(active)
+    async def deactivate(self) -> None:
+        """Deactivate the soft e-stop."""
+        await self.set_soft_estop(False)
