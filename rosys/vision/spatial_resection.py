@@ -96,6 +96,7 @@ class SpatialResection:
         # Run PnP on undistorted points with zero distortion and K_undist
         use_guess = p0 is not None and r0 is not None
         if use_guess:
+            assert p0 is not None and r0 is not None
             rvec_init = cv2.Rodrigues(r0.T.matrix)[0]
             tvec_init = -r0.T.matrix @ p0.array.reshape(3, 1)
         else:
