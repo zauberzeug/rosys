@@ -204,7 +204,7 @@ class SpatialResection:
         # => [x, y, z, q_w, q_x, q_y, q_z, s_0, s_1, ..., s_m]
         x_0 = np.concatenate([
             p0.array.ravel(),
-            r0.quaternion,
+            r0.T.quaternion,
             s0,
         ])
 
