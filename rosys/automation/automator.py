@@ -1,6 +1,7 @@
+import asyncio
 import logging
 from collections.abc import Callable, Coroutine
-from typing import Literal, cast
+from typing import Literal
 
 from .. import rosys
 from ..driving import Steerer
@@ -50,6 +51,7 @@ class Automator:
         self.log = logging.getLogger('rosys.automator')
 
         self.default_automation = default_automation
+        self._on_interrupt = on_interrupt
         self.notify = notify
 
         self.enabled: bool = True
@@ -58,9 +60,8 @@ class Automator:
         if steerer:
             steerer.STEERING_STARTED.register(lambda: self.pause(because='steering started'))
 
-        if on_interrupt:
-            self.AUTOMATION_PAUSED.register(lambda _: cast(Callable, on_interrupt)())
-            self.AUTOMATION_STOPPED.register(lambda _: cast(Callable, on_interrupt)())
+        self.AUTOMATION_PAUSED.register(lambda _: self._handle_interrupt())
+        self.AUTOMATION_STOPPED.register(lambda _: self._handle_interrupt(stop=True))
 
         rosys.on_shutdown(lambda: self.stop(because='automator is shutting down'))
 
@@ -69,12 +70,32 @@ class Automator:
         return self.automation is None or self.automation.is_stopped
 
     @property
+    def is_stopping(self) -> bool:
+        return self.automation is not None and self.automation.is_stopping
+
+    @property
     def is_running(self) -> bool:
         return self.automation is not None and self.automation.is_running
 
     @property
     def is_paused(self) -> bool:
         return self.automation is not None and self.automation.is_paused
+
+    @property
+    def is_pausing(self) -> bool:
+        return self.automation is not None and self.automation.is_pausing
+
+    async def _handle_interrupt(self, *, stop: bool = False) -> None:
+        assert self.automation is not None
+        while self.automation.is_running:
+            await rosys.sleep(0.1)
+        if self._on_interrupt:
+            if asyncio.iscoroutinefunction(self._on_interrupt):
+                await self._on_interrupt()
+            else:
+                self._on_interrupt()
+        if stop:
+            self.automation = None
 
     def start(self, coro: Coroutine | None = None, *, paused: bool = False) -> None:
         """Starts a new automation.
@@ -102,6 +123,8 @@ class Automator:
 
         You need to provide a cause which will be used as notification message.
         """
+        if self.is_pausing or self.is_stopping:
+            return
         if self.is_running:
             assert self.automation is not None
             self.automation.pause()
@@ -123,10 +146,11 @@ class Automator:
 
         You need to provide a cause which will be used as notification message.
         """
-        if not self.is_stopped:
+        if self.is_pausing or self.is_stopping:
+            return
+        if self.is_running or self.is_paused:
             assert self.automation is not None
             self.automation.stop()
-            self.automation = None
             self.AUTOMATION_STOPPED.emit(because)
             self._notify(f'automation stopped because {because}')
 
@@ -163,6 +187,7 @@ class Automator:
             self.log.exception('automation failed')
 
     def _on_complete(self) -> None:
+        self.automation = None
         self.AUTOMATION_COMPLETED.emit()
         self._notify('automation completed', 'positive')
 
