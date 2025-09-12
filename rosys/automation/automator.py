@@ -123,6 +123,8 @@ class Automator:
 
         You need to provide a cause which will be used as notification message.
         """
+        if self.is_pausing or self.is_stopping:
+            return
         if self.is_running:
             assert self.automation is not None
             self.automation.pause()
@@ -133,7 +135,7 @@ class Automator:
         """Resumes the current automation."""
         if not self.enabled:
             return
-        if self.is_paused or self.is_pausing:
+        if self.is_paused:
             assert self.automation is not None
             self.automation.resume()
             self.AUTOMATION_RESUMED.emit()
@@ -144,7 +146,9 @@ class Automator:
 
         You need to provide a cause which will be used as notification message.
         """
-        if not self.is_stopped:
+        if self.is_pausing or self.is_stopping:
+            return
+        if self.is_running or self.is_paused:
             assert self.automation is not None
             self.automation.stop()
             self.AUTOMATION_STOPPED.emit(because)
