@@ -29,7 +29,7 @@ class SpatialResection:
                      *,
                      world_points: np.ndarray,
                      image_points: np.ndarray,
-                     algorithm: int | None = None,
+                     algorithm: int | str | None = None,
                      p0: Point3d | None = None,
                      r0: Rotation | None = None) -> SpatialResectionResult:
         """Solve the spatial resection problem using OpenCV's PnP and finalize with a least-squares refinement.
