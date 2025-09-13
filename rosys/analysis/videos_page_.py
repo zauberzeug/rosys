@@ -10,49 +10,54 @@ VIDEO_FILES = Path('~/.rosys/timelapse/videos').expanduser()
 class VideosPage:
 
     def __init__(self) -> None:
-
         @ui.page('/video/{name:str}')
-        async def video_page(name: str) -> None:
-            ui.video(VIDEO_FILES / name)
+        def video_page(name: str) -> None:
+            self._video_page_content(name)
 
         @ui.page('/videos', title='Videos')
         async def page():
-            @ui.refreshable
-            def video_ui() -> None:
-                with ui.card().props('flat bordered'):
-                    if date.value not in all_videos:
-                        ui.label('No videos for this date')
-                        return
-                    with ui.list().classes('items-center'):
-                        for mp4 in all_videos[date.value]:
-                            video_date, video_duration = format_video_name(mp4)
-                            with ui.item().classes('p-0'):
-                                with ui.item_section().props('avatar'):
-                                    ui.button(icon='download', on_click=lambda mp4=mp4: ui.download(mp4)) \
-                                        .props('flat').tooltip('download')
-                                with ui.item_section().classes('min-w-24'):
-                                    with ui.link(target=f'video/{mp4.name}').classes('no-underline'):
-                                        ui.item_label(video_date)
-                                        ui.item_label(video_duration).props('caption')
-                                with ui.item_section().classes('pl-1'):
-                                    with ui.button(icon='more_vert').props('flat fab-mini'):
-                                        with ui.menu():
-                                            def delete_video(mp4: Path = mp4) -> None:
-                                                mp4.unlink()
-                                                all_videos[date.value].remove(mp4)
-                                                video_ui.refresh()
-                                            with ui.menu_item(on_click=delete_video):
-                                                with ui.item_section().props('side'):
-                                                    ui.icon('delete', color='negative')
-                                                ui.item_section('delete')
+            await self._content()
 
-            ui.label('Timelapse Videos').classes('text-2xl')
-            all_videos = await get_all_videos()
-            today = datetime.now().strftime(r'%Y%m%d')
-            with ui.row(wrap=False).classes('w-full'):
-                date = ui.date(value=today, mask='YYYYMMDD', on_change=video_ui.refresh).props('flat bordered')
-                date.props['options'] = [datetime.strptime(d, r'%Y%m%d').strftime(r'%Y/%m/%d') for d in all_videos]
-                video_ui()
+    async def _content(self) -> None:
+        @ui.refreshable
+        def video_ui() -> None:
+            with ui.card().props('flat bordered'):
+                if date.value not in all_videos:
+                    ui.label('No videos for this date')
+                    return
+                with ui.list().classes('items-center'):
+                    for mp4 in all_videos[date.value]:
+                        video_date, video_duration = format_video_name(mp4)
+                        with ui.item().classes('p-0'):
+                            with ui.item_section().props('avatar'):
+                                ui.button(icon='download', on_click=lambda mp4=mp4: ui.download(mp4)) \
+                                    .props('flat').tooltip('download')
+                            with ui.item_section().classes('min-w-24'):
+                                with ui.link(target=f'video/{mp4.name}').classes('no-underline'):
+                                    ui.item_label(video_date)
+                                    ui.item_label(video_duration).props('caption')
+                            with ui.item_section().classes('pl-1'):
+                                with ui.button(icon='more_vert').props('flat fab-mini'):
+                                    with ui.menu():
+                                        def delete_video(mp4: Path = mp4) -> None:
+                                            mp4.unlink()
+                                            all_videos[date.value].remove(mp4)
+                                            video_ui.refresh()
+                                        with ui.menu_item(on_click=delete_video):
+                                            with ui.item_section().props('side'):
+                                                ui.icon('delete', color='negative')
+                                            ui.item_section('delete')
+
+        ui.label('Timelapse Videos').classes('text-2xl')
+        all_videos = await get_all_videos()
+        today = datetime.now().strftime(r'%Y%m%d')
+        with ui.row(wrap=False).classes('w-full'):
+            date = ui.date(value=today, mask='YYYYMMDD', on_change=video_ui.refresh).props('flat bordered')
+            date.props['options'] = [datetime.strptime(d, r'%Y%m%d').strftime(r'%Y/%m/%d') for d in all_videos]
+            video_ui()
+
+    def _video_page_content(self, name: str) -> None:
+        ui.video(VIDEO_FILES / name)
 
 
 def format_video_name(video: Path) -> tuple[str, str]:
