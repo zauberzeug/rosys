@@ -21,11 +21,13 @@ class AutomationControls:
             .props('icon=stop outline').tooltip('stop automation')
 
         def refresh() -> None:
+            uninterruptible_is_running = automator.is_pausing or automator.is_stopping
             play_button.visible = automator.is_stopped
+            play_button.enabled = play_button.visible and automator.default_automation is not None and automator.enabled
             pause_button.visible = automator.is_running
+            pause_button.enabled = pause_button.visible and not uninterruptible_is_running
             resume_button.visible = automator.is_paused
-            play_button.enabled = automator.default_automation is not None and automator.enabled
-            resume_button.enabled = automator.enabled
-            stop_button.enabled = not automator.is_stopped
+            resume_button.enabled = resume_button.visible and automator.enabled and not uninterruptible_is_running
+            stop_button.enabled = not automator.is_stopped and not uninterruptible_is_running
 
         ui.timer(config.ui_update_interval, refresh)
