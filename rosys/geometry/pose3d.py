@@ -126,9 +126,11 @@ class AxesObject(ui.scene.group):
                     ui.scene.cylinder(0.00 * length, 0.05 * length, 0.2 * length).move(y=0.9 * length).material(color)
             if name:
                 ui.scene.text(name).move(z=-0.03)
-        rosys.on_repeat(self.update, rosys.config.ui_update_interval)
+        ui.timer(rosys.config.ui_update_interval, self.update)
+        # rosys.on_repeat(self.update, rosys.config.ui_update_interval)
 
     def update(self) -> None:
         resolved_pose = self.frame.resolve()
-        self.move(*resolved_pose.translation)
-        self.rotate(*resolved_pose.rotation.euler)
+        with self:
+            self.move(*resolved_pose.translation)
+            self.rotate(*resolved_pose.rotation.euler)
