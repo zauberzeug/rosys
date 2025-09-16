@@ -170,7 +170,7 @@ class DetectorHardware(Detector):
         try:
             response = await self.sio.call('detect', {
                 'image': image.data,
-                'camera-id': image.camera_id,
+                'camera_id': image.camera_id,
                 'tags': tags,
                 'source': source,
                 'autoupload': autoupload.value,
