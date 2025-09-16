@@ -119,6 +119,7 @@ class DetectorHardware(Detector):
                 metadata_dict['box_detections'] = _box_detections_to_int(detections_dict['boxes'])
                 metadata_dict['point_detections'] = detections_dict['points']
                 metadata_dict['segmentation_detections'] = detections_dict['segmentations']
+                metadata_dict['classification_detections'] = detections_dict['classifications']
 
             if annotations is not None:
                 annotations_dict = annotations.to_dict()
