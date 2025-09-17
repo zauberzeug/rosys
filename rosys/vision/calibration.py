@@ -212,6 +212,9 @@ class Calibration:
             image_array = self.project_to_image(world_array)
             return [Point(x=vector[0], y=vector[1]) if not np.isnan(vector).any() else None for vector in image_array]
 
+        if len(coordinates) == 0:
+            return np.empty((0, 2), dtype=np.float64)
+
         world_extrinsics = self.extrinsics.relative_to(frame)
         R = world_extrinsics.rotation.matrix.astype(np.float64)
         Rod = cv2.Rodrigues(R.T)[0]
@@ -293,6 +296,9 @@ class Calibration:
                                                   target_height=target_height,
                                                   reprojection_tolerance=reprojection_tolerance)
             return [Point3d(x=point[0], y=point[1], z=point[2]) if not np.isnan(point).any() else None for point in world_array]
+
+        if len(image_coordinates) == 0:
+            return np.empty((0, 3), dtype=np.float64)
 
         world_extrinsics = self.extrinsics.resolve()
         image_rays = self._points_to_rays(image_coordinates.astype(np.float64).reshape(-1, 1, 2))
