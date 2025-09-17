@@ -175,6 +175,12 @@ def test_projection():
                            atol=1e-6), f'world_point {i} did not reproject back to the original point'
 
 
+def test_projection_of_empty_array():
+    cam, _ = demo_data()
+    assert cam.calibration.project_to_image([]) == []
+    assert cam.calibration.project_from_image([]) == []
+
+
 def test_projection_with_custom_coordinate_frame():
     cam, world_points = demo_data()
     assert cam.calibration is not None
