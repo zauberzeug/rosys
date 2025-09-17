@@ -174,6 +174,7 @@ class SpatialResection:
         :param ls_args: Additional arguments for the least squares solver
 
         :return: The result of the spatial resection
+        :raises ValueError: If the Residuals are not finite in the initial state
         """
         # Prepare inputs
         if world_points is None:
