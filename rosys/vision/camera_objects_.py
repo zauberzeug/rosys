@@ -46,6 +46,8 @@ class CameraObjects(Group):
         }
 
     async def update(self) -> None:
+        if not self.visible_:
+            return
         await self.update_cameras()
         await self.update_images()
 
