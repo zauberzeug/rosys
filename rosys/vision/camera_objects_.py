@@ -1,3 +1,5 @@
+from typing import Self
+
 import numpy as np
 from nicegui import ui
 from nicegui.elements.scene_object3d import Object3D
@@ -32,7 +34,7 @@ class CameraObjects(Group):
         self.debug = debug
         self.textures: dict[str, Texture] = {}
         self.image_shrink_factor = 2
-        ui.timer(interval, self.update)
+        self.timer = ui.timer(interval, self.update)
 
     @property
     def calibrated_cameras(self) -> dict[str, CalibratableCamera]:
@@ -45,9 +47,17 @@ class CameraObjects(Group):
             if (obj.name or '').split('_', 1)[0] == type_
         }
 
+    def visible(self, value: bool = True) -> Self:
+        super().visible(value)
+        if value:
+            self.timer.activate()
+            self.camera_projector.activate()
+        else:
+            self.timer.deactivate()
+            self.camera_projector.deactivate()
+        return self
+
     async def update(self) -> None:
-        if not self.visible_:
-            return
         await self.update_cameras()
         await self.update_images()
 
