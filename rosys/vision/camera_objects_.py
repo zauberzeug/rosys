@@ -26,14 +26,12 @@ class CameraObjects(Group):
                  interval: float = 1.0
                  ) -> None:
         super().__init__()
-
         self.camera_provider = camera_provider
         self.camera_projector = camera_projector
         self.px_per_m = px_per_m
         self.debug = debug
         self.textures: dict[str, Texture] = {}
         self.image_shrink_factor = 2
-
         ui.timer(interval, self.update)
 
     @property
