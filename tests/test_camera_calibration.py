@@ -178,7 +178,9 @@ def test_projection():
 def test_projection_of_empty_array():
     cam, _ = demo_data()
     assert cam.calibration.project_to_image([]) == []
+    assert len(cam.calibration.project_to_image(np.empty((0, 3), dtype=np.float64))) == 0
     assert cam.calibration.project_from_image([]) == []
+    assert len(cam.calibration.project_from_image(np.empty((0, 2), dtype=np.float64))) == 0
 
 
 def test_projection_with_custom_coordinate_frame():
