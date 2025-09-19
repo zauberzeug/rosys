@@ -21,30 +21,27 @@ class LoggingPage:
     """
 
     def __init__(self, group_names: list[str] | None = None) -> None:
-        self.group_names = group_names or []
+        group_names = group_names or []
 
         @ui.page('/logging')
         def page():
-            self._content()
+            loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]  # pylint: disable=no-member
+            groups = {name: [l for l in loggers if l.name.startswith(name)] for name in group_names}
+            groups['others'] = [l for l in loggers if not l.name.startswith(tuple(group_names))]
 
-    def _content(self) -> None:
-        loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]  # pylint: disable=no-member
-        groups = {name: [l for l in loggers if l.name.startswith(name)] for name in self.group_names}
-        groups['others'] = [l for l in loggers if not l.name.startswith(tuple(self.group_names))]
+            @ui.refreshable
+            def _column(group_name: str, loggers: list[logging.Logger]) -> None:
+                with ui.column():
+                    ui.label(group_name).classes('text-xl')
+                    for logger in sorted(loggers, key=lambda logger: logger.name.lower()):
+                        ui.select(LEVELS, label=logger.name, value=logger.getEffectiveLevel(),
+                                  on_change=lambda e, logger=logger: _update_level(logger, e.value)) \
+                            .classes('w-64').props('dense outlined')
 
-        @ui.refreshable
-        def _column(group_name: str, loggers: list[logging.Logger]) -> None:
-            with ui.column():
-                ui.label(group_name).classes('text-xl')
-                for logger in sorted(loggers, key=lambda logger: logger.name.lower()):
-                    ui.select(LEVELS, label=logger.name, value=logger.getEffectiveLevel(),
-                              on_change=lambda e, logger=logger: _update_level(logger, e.value)) \
-                        .classes('w-64').props('dense outlined')
+            def _update_level(logger: logging.Logger, level: int) -> None:
+                logger.setLevel(level)
+                _column.refresh()
 
-        def _update_level(logger: logging.Logger, level: int) -> None:
-            logger.setLevel(level)
-            _column.refresh()
-
-        with ui.row():
-            for name, loggers in groups.items():
-                _column(name, loggers)
+            with ui.row():
+                for name, loggers in groups.items():
+                    _column(name, loggers)
