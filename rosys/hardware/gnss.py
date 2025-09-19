@@ -1,23 +1,26 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import math
+import re
 from abc import ABC
-from collections import deque
+from collections import defaultdict, deque
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import IntEnum
+from typing import ClassVar
 
 import numpy as np
 import serial
-from nicegui import ui
+from nicegui import background_tasks, ui
 from serial.tools import list_ports
 
 from .. import rosys
 from ..driving.driver import PoseProvider
 from ..event import Event
 from ..geometry import GeoPoint, GeoPose, Pose
-from ..run import io_bound
 
 SECONDS_DAY = 86400
 SECONDS_HALF_DAY = 43200
@@ -116,6 +119,9 @@ class GnssHardware(Gnss):
 
     # Maximum allowed timestamp difference in seconds (default is ok for Kalman Filter with about 1 km/h)
     MAX_TIMESTAMP_DIFF = 0.05
+    MAX_BUFFER_LENGTH = 2000
+    NMEA_TYPES: ClassVar[set[str]] = {'GPGGA', 'GPGST', 'PSSN,HRP'}
+    NMEA_PATTERN = re.compile(r'\$(?P<type>[A-Z,]+),(?P<ts>\d{6}(?:\.\d+)?)[^*]*\*[0-9A-Fa-f]{2}\r\n')
 
     def __init__(self, *, antenna_pose: Pose | None, reconnect_interval: float = 3.0) -> None:
         """
@@ -123,10 +129,12 @@ class GnssHardware(Gnss):
         :param reconnect_interval: the interval to wait before reconnecting to the device
         """
         super().__init__()
+        self.log.setLevel(logging.DEBUG)
         self.antenna_pose = antenna_pose or Pose(x=0.0, y=0.0, yaw=0.0)
         self._reconnect_interval = reconnect_interval
         self.serial_connection: serial.Serial | None = None
-        rosys.on_startup(self._run)
+        self._capture_task: asyncio.Task | None = None
+        rosys.on_startup(self._startup)
 
         # TODO: just for evaluation, remove later
         self.diffs: deque[float] = deque(maxlen=10 * 10)
@@ -139,96 +147,121 @@ class GnssHardware(Gnss):
         if not self.serial_connection.isOpen():
             self.log.debug('Device not open')
             return False
+        if not self._capture_task or self._capture_task.done():
+            self.log.debug('Capture task not running')
+            return False
         return True
 
+    async def _startup(self) -> None:
+        self.log.debug('Starting GNSS task')
+        if self._capture_task is not None and not self._capture_task.done():
+            self.log.warning('GNSS task already running')
+            return
+        self._capture_task = background_tasks.create(self._run(), name='GNSS')
+
     async def _run(self) -> None:
-        while True:
-            if not self.is_connected:
-                try:
-                    serial_device_path = self._find_device()
-                    self.serial_connection = self._connect_to_device(serial_device_path)
-                except RuntimeError:
-                    self.log.error('Could not connect to GNSS device: %s', serial_device_path)
-                    await rosys.sleep(self._reconnect_interval)
+        assert self._capture_task is not None and not self._capture_task.done()
+
+        async def stream() -> AsyncGenerator[GnssMeasurement | None, None]:
+            buffer = ''
+            while True:
+                if not self.is_connected and not await self._connect():
                     continue
-                self.log.info('Connected to GNSS device: %s', serial_device_path)
-                # NOTE: Allow time for the device to stabilize after connection
-                await rosys.sleep(0.1)
                 assert self.serial_connection is not None
-                self.serial_connection.reset_input_buffer()
-
-            assert self.serial_connection is not None
-            measurement: GnssMeasurement | None = await io_bound(self.read_message_block)
-            if measurement is None:
-                continue
-            diff = round(((measurement.gnss_time - rosys.time() + SECONDS_HALF_DAY) %
-                          SECONDS_DAY) - SECONDS_HALF_DAY, 3)
-            # TODO: just for evaluation, remove later
-            self.diffs.append(diff)
-            if abs(diff) > self.MAX_TIMESTAMP_DIFF:
-                self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
-                self.serial_connection.reset_input_buffer()
-                continue
-            self.log.debug('timestamp diff = %s', diff)
-            self.last_measurement = measurement
-            self.NEW_MEASUREMENT.emit(measurement)
-
-    def read_message_block(self) -> GnssMeasurement | None:
-        buffer = ''
-        last_gga: Gga | None = None
-        last_gst: Gst | None = None
-        last_pssn: Pssn | None = None
-        while True:
-            if not self.is_connected:
-                return None
-            assert self.serial_connection is not None
-            result = self.serial_connection.read_until(b'\r\n')
-            if not result:
-                self.log.debug('No data')
-                continue
-            line = result.decode('utf-8')
-            if line.endswith('\r\n'):
-                sentence = buffer + line.split('*')[0]
-                buffer = ''
-            else:
-                buffer += line
-                continue
-
-            self.log.debug(sentence)
-            try:
-                if sentence.startswith('$GPGGA'):
-                    last_gga = Gga.from_sentence(sentence)
-                    self.log.debug('GGA: %s', last_gga)
-                elif sentence.startswith('$GPGST'):
-                    last_gst = Gst.from_sentence(sentence)
-                    self.log.debug('GST: %s', last_gst)
-                elif sentence.startswith('$PSSN'):
-                    last_pssn = Pssn.from_sentence(sentence)
-                    self.log.debug('PSSN: %s', last_pssn)
-                else:
-                    self.log.warning('unknown sentence: %s', sentence)
+                if len(buffer) > self.MAX_BUFFER_LENGTH:
+                    buffer = ''
+                    self.log.debug('buffer pruned')
                     continue
-            except (KeyError, ValueError) as e:
-                self.log.exception('GNSS parse error: %s', e)
-                return None
+                await rosys.sleep(0.01)
+                result = self.serial_connection.read_until(b'\r\n')
+                if not result:
+                    self.log.debug('No data')
+                line = result.decode('utf-8')
+                buffer += line
+                # self.log.debug('line: %s', line)
+                # self.log.debug('buffer: %s', buffer)
+                # self.log.debug('repr(buffer): %s', repr(buffer))
 
-            if last_gga is None or last_gst is None or last_pssn is None:
-                continue
-            if last_gga.timestamp == last_gst.timestamp == last_pssn.timestamp:
-                last_heading = last_pssn.heading + self.antenna_pose.yaw_deg
-                antenna_pose = GeoPose.from_degrees(last_gga.latitude, last_gga.longitude, last_heading)
-                robot_pose = antenna_pose.relative_shift_by(x=-self.antenna_pose.x, y=-self.antenna_pose.y)
-                return GnssMeasurement(
-                    time=rosys.time(),
-                    gnss_time=last_gga.timestamp,
-                    pose=robot_pose,
-                    latitude_std_dev=last_gst.latitude_std_dev,
-                    longitude_std_dev=last_gst.longitude_std_dev,
-                    heading_std_dev=last_pssn.heading_std_dev,
-                    gps_quality=GpsQuality(last_gga.gps_quality),
-                    num_satellites=last_gga.num_satellites,
-                    hdop=last_gga.hdop,
-                    altitude=last_gga.altitude)
+                by_ts: dict[str, dict[str, str]] = defaultdict(dict)
+                matches = list(self.NMEA_PATTERN.finditer(buffer))
+                for match in reversed(matches):
+                    type_, nmea_timestamp = match['type'], match['ts']
+                    if type_ not in self.NMEA_TYPES:
+                        continue
+                    sentence = match.group(0)
+                    sentence = sentence[:sentence.find('*')]
+                    by_ts[nmea_timestamp][type_] = sentence
+                    if self.NMEA_TYPES.issubset(by_ts[nmea_timestamp]):
+                        measurement = self._parse_measurement(by_ts[nmea_timestamp]['GPGGA'],
+                                                              by_ts[nmea_timestamp]['GPGST'],
+                                                              by_ts[nmea_timestamp]['PSSN,HRP'])
+                        buffer = buffer[match.end():]
+                        if measurement is not None:
+                            yield measurement
+                        break
+                else:
+                    # self.log.debug('No complete trio found. length: %s', len(buffer))
+                    continue
+
+        while True:
+            try:
+                async for measurement in stream():
+                    assert measurement is not None
+                    diff = round(((measurement.gnss_time - rosys.time() + SECONDS_HALF_DAY) %
+                                  SECONDS_DAY) - SECONDS_HALF_DAY, 3)
+                    # TODO: just for evaluation, remove later
+                    self.diffs.append(diff)
+                    if abs(diff) > self.MAX_TIMESTAMP_DIFF:
+                        self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
+                        continue
+                    self.log.debug('dt: %s - %s', diff, measurement)
+                    self.last_measurement = measurement
+                    self.NEW_MEASUREMENT.emit(measurement)
+            except Exception as e:
+                self.log.exception('Error in GNSS stream: %s', e)
+            await rosys.sleep(self._reconnect_interval)
+
+    async def _connect(self) -> bool:
+        try:
+            serial_device_path = self._find_device()
+            self.serial_connection = self._connect_to_device(serial_device_path)
+        except RuntimeError:
+            self.log.error('Could not connect to GNSS device: %s', serial_device_path)
+            await rosys.sleep(self._reconnect_interval)
+            return False
+        self.log.info('Connected to GNSS device: %s', serial_device_path)
+        # NOTE: Allow time for the device to stabilize after connection
+        await rosys.sleep(0.1)
+        assert self.serial_connection is not None
+        self.serial_connection.reset_input_buffer()
+        return True
+
+    def _parse_measurement(self, gga_msg: str, gst_msg: str, pssn_msg: str) -> GnssMeasurement | None:
+        gga = Gga.from_sentence(gga_msg)
+        if gga is None:
+            self.log.debug('Failed to parse GGA: %s', gga_msg)
+            return None
+        gst = Gst.from_sentence(gst_msg)
+        if gst is None:
+            self.log.debug('Failed to parse GST: %s', gst_msg)
+            return None
+        pssn = Pssn.from_sentence(pssn_msg)
+        if pssn is None:
+            self.log.debug('Failed to parse PSSN: %s', pssn_msg)
+            return None
+        last_heading = pssn.heading + self.antenna_pose.yaw_deg
+        antenna_pose = GeoPose.from_degrees(gga.latitude, gga.longitude, last_heading)
+        robot_pose = antenna_pose.relative_shift_by(x=-self.antenna_pose.x, y=-self.antenna_pose.y)
+        return GnssMeasurement(time=rosys.time(),
+                               gnss_time=gga.timestamp,
+                               pose=robot_pose,
+                               latitude_std_dev=gst.latitude_std_dev,
+                               longitude_std_dev=gst.longitude_std_dev,
+                               heading_std_dev=pssn.heading_std_dev,
+                               gps_quality=GpsQuality(gga.gps_quality),
+                               num_satellites=gga.num_satellites,
+                               hdop=gga.hdop,
+                               altitude=gga.altitude)
 
     # TODO: move to helper and add search argument; for other serial devices
     def _find_device(self) -> str:
