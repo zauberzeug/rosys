@@ -129,7 +129,6 @@ class GnssHardware(Gnss):
         :param reconnect_interval: the interval to wait before reconnecting to the device
         """
         super().__init__()
-        self.log.setLevel(logging.DEBUG)
         self.antenna_pose = antenna_pose or Pose(x=0.0, y=0.0, yaw=0.0)
         self._reconnect_interval = reconnect_interval
         self.serial_connection: serial.Serial | None = None
