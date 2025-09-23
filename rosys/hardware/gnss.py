@@ -133,7 +133,9 @@ class GnssHardware(Gnss):
         self._reconnect_interval = reconnect_interval
         self.serial_connection: serial.Serial | None = None
         self._capture_task: asyncio.Task | None = None
+        self._clear_buffer: bool = False
         rosys.on_startup(self._startup)
+        # self.log.setLevel(logging.DEBUG)
 
         # TODO: just for evaluation, remove later
         self.diffs: deque[float] = deque(maxlen=10 * 10)
@@ -163,15 +165,20 @@ class GnssHardware(Gnss):
 
         async def stream() -> AsyncGenerator[GnssMeasurement | None, None]:
             buffer = ''
+            by_ts: dict[str, dict[str, str]] = defaultdict(dict)
             while True:
                 if not self.is_connected and not await self._connect():
                     continue
                 assert self.serial_connection is not None
+                if self._clear_buffer:
+                    buffer = ''
+                    self.serial_connection.reset_input_buffer()
+                    self._clear_buffer = False
                 if len(buffer) > self.MAX_BUFFER_LENGTH:
                     buffer = ''
                     self.log.debug('buffer pruned')
                     continue
-                await rosys.sleep(0.01)
+                await rosys.sleep(0.001)
                 result = self.serial_connection.read_until(b'\r\n')
                 if not result:
                     self.log.debug('No data')
@@ -181,20 +188,27 @@ class GnssHardware(Gnss):
                 # self.log.debug('buffer: %s', buffer)
                 # self.log.debug('repr(buffer): %s', repr(buffer))
 
-                by_ts: dict[str, dict[str, str]] = defaultdict(dict)
                 matches = list(self.NMEA_PATTERN.finditer(buffer))
+                self.log.debug('--------------------------------')
                 for match in reversed(matches):
+                    self.log.debug('match: %s', match)
                     type_, nmea_timestamp = match['type'], match['ts']
                     if type_ not in self.NMEA_TYPES:
                         continue
                     sentence = match.group(0)
                     sentence = sentence[:sentence.find('*')]
                     by_ts[nmea_timestamp][type_] = sentence
+                    # self.log.debug('buffer: %s', buffer)
+                    buffer = buffer[:match.start()]
+                    # self.log.warning('buffer(%s): %s', match.start(), buffer)
+                    # self.log.error('by_ts: %s', by_ts)
                     if self.NMEA_TYPES.issubset(by_ts[nmea_timestamp]):
+                        self.log.debug('found complete trio: %s by %s', by_ts[nmea_timestamp], nmea_timestamp)
                         measurement = self._parse_measurement(by_ts[nmea_timestamp]['GPGGA'],
                                                               by_ts[nmea_timestamp]['GPGST'],
                                                               by_ts[nmea_timestamp]['PSSN,HRP'])
-                        buffer = buffer[match.end():]
+                        buffer = ''
+                        by_ts.clear()
                         if measurement is not None:
                             yield measurement
                         break
@@ -212,6 +226,7 @@ class GnssHardware(Gnss):
                     self.diffs.append(diff)
                     if abs(diff) > self.MAX_TIMESTAMP_DIFF:
                         self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
+                        self._clear_buffer = True
                         continue
                     self.log.debug('dt: %s - %s', diff, measurement)
                     self.last_measurement = measurement
