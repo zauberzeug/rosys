@@ -21,16 +21,16 @@ class ImageRecorder:
         """
         self.camera_provider = camera_provider
         self.data_dir = data_dir.expanduser()
-        self._record = False
+        self._recording = False
 
     @property
-    def record(self) -> bool:
-        return self._record
+    def recording(self) -> bool:
+        return self._recording
 
-    def set_record(self, value: bool):
+    def set_recording(self, value: bool):
         """Enable or disable recording images from the camera provider."""
-        self._record = value
-        if self._record:
+        self._recording = value
+        if self._recording:
             self.camera_provider.NEW_IMAGE.register(self._save_image)
         else:
             self.camera_provider.NEW_IMAGE.unregister(self._save_image)
