@@ -24,7 +24,7 @@ class DriveParameters(ModificationContext):
     hook_offset: float = 0.5
     carrot_offset: float = 0.6
     carrot_distance: float = 0.1
-    hook_bending_factor: float = 0
+    hook_bending_factor: float = 0.0
     minimum_drive_distance: float = 0.01
     throttle_at_end_distance: float = 0.5
     throttle_at_end_min_speed: float = 0.01
@@ -256,7 +256,7 @@ class Driver:
 
     def developer_ui(self, *, columns: int = 2) -> None:
         ui.label('Driver').classes('text-center text-bold')
-        with ui.grid(columns=columns):
+        with ui.grid(columns=columns).classes('gap-1'):
             for name, value in self.parameters.__dict__.items():
                 display_name = name.replace('___', '')
                 if isinstance(value, float):
