@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 
+from ... import rosys
 from ...rosys import Repeater
 from ..camera_provider import CameraProvider
 from .replay_camera import ReplayCamera
@@ -19,6 +20,8 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         self._end_time: float = 0.0
 
         self._playback_speed = 1.0
+
+        self._last_update_time: float = rosys.time()
 
         self._find_cameras(replay_folder)
         self._set_time_interval()
@@ -72,13 +75,19 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
             self._current_time = self._start_time
 
     async def _step(self) -> None:
+        self._update_time()
+        self._update_camera_images()
+
+    def _update_time(self) -> None:
+        now = rosys.time()
+        self._current_time += (now - self._last_update_time) * self._playback_speed
         if self._current_time > self._end_time:
             self._current_time = self._start_time
+        self._last_update_time = now
 
+    def _update_camera_images(self) -> None:
         for camera in self.cameras.values():
             camera.step_to(self._current_time)
-
-        self._current_time += self._repeater.interval * self._playback_speed
 
     async def update_device_list(self) -> None:
         pass
