@@ -64,10 +64,10 @@ class SpatialResection:
         if algorithm is None:
             # Automatic selection
             num_points = object_points.shape[0]
-            if num_points >= 6 and not is_planar(object_points):
-                method_flag = cv2.SOLVEPNP_EPNP
-            elif num_points >= 4 and is_planar(object_points) and hasattr(cv2, 'SOLVEPNP_IPPE'):
+            if num_points >= 4 and is_planar(object_points) and hasattr(cv2, 'SOLVEPNP_IPPE'):
                 method_flag = cv2.SOLVEPNP_IPPE
+            elif num_points >= 6:
+                method_flag = cv2.SOLVEPNP_EPNP
             elif num_points == 3:
                 method_flag = cv2.SOLVEPNP_P3P
             elif num_points >= 4 and hasattr(cv2, 'SOLVEPNP_AP3P'):
