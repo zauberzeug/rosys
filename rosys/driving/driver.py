@@ -35,8 +35,7 @@ class DriveParameters(ModificationContext):
             'linear_speed_limit': self.linear_speed_limit,
             'angular_speed_limit': self.angular_speed_limit,
             'minimum_turning_radius': self.minimum_turning_radius,
-            # TODO: Backup failed: Object of type bool_ is not JSON serializable from /Users/pascal/.rosys/field_friend.driver.json
-            'can_drive_backwards': bool(self.can_drive_backwards),
+            'can_drive_backwards': self.can_drive_backwards,
             'max_detection_age_ramp': self.max_detection_age_ramp,
             'hook_offset': self.hook_offset,
             'carrot_offset': self.carrot_offset,
@@ -289,9 +288,9 @@ class Driver(Persistable):
         with ui.grid(columns=columns):
             for name, value in self.parameters.to_dict().items():
                 if isinstance(value, float):
-                    ui.number(name, value=value, on_change=self.request_backup).bind_value_to(self.parameters, name)
+                    ui.number(name, on_change=self.request_backup).bind_value(self.parameters, name)
                 elif isinstance(value, bool):
-                    ui.checkbox(name, value=value, on_change=self.request_backup).bind_value_to(self.parameters, name)
+                    ui.checkbox(name, on_change=self.request_backup).bind_value(self.parameters, name)
                 elif name == 'max_detection_age_ramp':
                     self.log.warning('max_detection_age_ramp is not supported in the UI')
                 else:
