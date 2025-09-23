@@ -1,5 +1,6 @@
+import logging
 from dataclasses import dataclass, field
-from typing import Any, Protocol, Self
+from typing import Protocol
 
 import numpy as np
 from nicegui import binding, ui
@@ -8,13 +9,11 @@ from .. import rosys
 from ..analysis import track
 from ..geometry import Point, Pose, Spline
 from ..helpers import ModificationContext, eliminate_2pi, eliminate_pi, ramp
-from ..persistence import Persistable
 from .drivable import Drivable
 from .odometer import Odometer
 from .path_segment import PathSegment
 
 
-# slots=True, kw_only=True
 @binding.bindable_dataclass
 class DriveParameters(ModificationContext):
     linear_speed_limit: float = 0.5
@@ -29,27 +28,6 @@ class DriveParameters(ModificationContext):
     minimum_drive_distance: float = 0.01
     throttle_at_end_distance: float = 0.5
     throttle_at_end_min_speed: float = 0.01
-
-    def to_dict(self) -> dict[str, Any]:
-        return {
-            'linear_speed_limit': self.linear_speed_limit,
-            'angular_speed_limit': self.angular_speed_limit,
-            'minimum_turning_radius': self.minimum_turning_radius,
-            # TODO: Backup failed: Object of type bool_ is not JSON serializable from /Users/pascal/.rosys/field_friend.driver.json
-            'can_drive_backwards': bool(self.can_drive_backwards),
-            'max_detection_age_ramp': self.max_detection_age_ramp,
-            'hook_offset': self.hook_offset,
-            'carrot_offset': self.carrot_offset,
-            'carrot_distance': self.carrot_distance,
-            'hook_bending_factor': self.hook_bending_factor,
-            'minimum_drive_distance': self.minimum_drive_distance,
-            'throttle_at_end_distance': self.throttle_at_end_distance,
-            'throttle_at_end_min_speed': self.throttle_at_end_min_speed,
-        }
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> Self:
-        return cls(**data)
 
 
 @dataclass(slots=True, kw_only=True)
@@ -71,7 +49,7 @@ class PoseProvider(Protocol):
         ...
 
 
-class Driver(Persistable):
+class Driver:
     """The driver module allows following a given path.
 
     It requires a wheels module (or any drivable hardware representation) to execute individual drive commands.
@@ -276,26 +254,19 @@ class Driver(Persistable):
         age = rosys.time() - self.odometer.detection.time
         return ramp(age, age_ramp[0], age_ramp[1], 1.0, 0.0, clip=True)
 
-    def backup_to_dict(self) -> dict[str, Any]:
-        return {
-            'parameters': self.parameters.to_dict(),
-        }
-
-    def restore_from_dict(self, data: dict[str, Any]) -> None:
-        self.parameters = DriveParameters.from_dict(data['parameters'])
-
     def developer_ui(self, *, columns: int = 2) -> None:
         ui.label('Driver').classes('text-center text-bold')
         with ui.grid(columns=columns):
-            for name, value in self.parameters.to_dict().items():
+            for name, value in self.parameters.__dict__.items():
+                display_name = name.replace('___', '')
                 if isinstance(value, float):
-                    ui.number(name, value=value, on_change=self.request_backup).bind_value_to(self.parameters, name)
+                    ui.number(display_name, value=value).bind_value_to(self.parameters, name)
                 elif isinstance(value, bool):
-                    ui.checkbox(name, value=value, on_change=self.request_backup).bind_value_to(self.parameters, name)
-                elif name == 'max_detection_age_ramp':
-                    self.log.warning('max_detection_age_ramp is not supported in the UI')
+                    ui.checkbox(display_name, value=value).bind_value_to(self.parameters, name)
+                elif display_name == 'max_detection_age_ramp':
+                    logging.debug('max_detection_age_ramp is not supported in the UI')
                 else:
-                    self.log.error('Unknown type %s of %s', type(value), name)
+                    logging.error('Unknown type %s of %s', type(value), name)
 
 
 @dataclass(slots=True, kw_only=True)
