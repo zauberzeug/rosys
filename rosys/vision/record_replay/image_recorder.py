@@ -6,6 +6,7 @@ import aiofiles
 
 from ..camera_provider import CameraProvider
 from ..image import Image
+from .constants import TIME_FORMAT
 
 log = logging.getLogger('rosys.image_recorder')
 
@@ -50,7 +51,7 @@ class ImageRecorder:
         path = self.data_dir / image.camera_id.replace(':', '-')
         path.mkdir(parents=True, exist_ok=True)
 
-        file_path = path / f'{datetime.fromtimestamp(image.time).strftime("%Y-%m-%d_%H-%M-%S.%f")}.jpg'
+        file_path = path / f'{datetime.fromtimestamp(image.time).strftime(TIME_FORMAT)}.jpg'
 
         async with aiofiles.open(file_path, 'wb') as f:
             await f.write(image.data)

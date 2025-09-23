@@ -10,6 +10,7 @@ from PIL import Image as PILImage
 
 from ..camera import Camera
 from ..image import Image, ImageSize
+from .constants import TIME_FORMAT
 
 log = logging.getLogger('rosys.replay_camera')
 
@@ -47,7 +48,7 @@ class ReplayCamera(Camera):
                 continue
 
             try:
-                timestamp = datetime.strptime(file.stem, '%Y-%m-%d_%H-%M-%S.%f').timestamp()
+                timestamp = datetime.strptime(file.stem, TIME_FORMAT).timestamp()
             except ValueError:
                 log.warning('Skipping file %s, invalid timestamp', file)
                 continue
