@@ -2,6 +2,8 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
+import aiofiles
+
 from ..camera_provider import CameraProvider
 from ..image import Image
 
@@ -36,8 +38,8 @@ class ImageRecorder:
     async def _save_image(self, image: Image):
         """Save the provided image to the data directory.
 
-        Images are saved to a subfolder that is named with the camera id,
-        with filenames <yyyy-mm-dd_hh-mm-ss.ffffff>.jpg
+        Images are saved to a subfolder named after the camera ID (with ':' replaced by '-'),
+        using filenames in the format YYYY-MM-DD_HH-MM-SS.ffffff.jpg based on the image timestamp.
 
         :param image: the image to save
         """
@@ -50,6 +52,6 @@ class ImageRecorder:
 
         file_path = path / f'{datetime.fromtimestamp(image.time).strftime("%Y-%m-%d_%H-%M-%S.%f")}.jpg'
 
-        with open(file_path, 'wb') as f:
-            f.write(image.data)
+        async with aiofiles.open(file_path, 'wb') as f:
+            await f.write(image.data)
             log.debug('Saved image from camera %s to %s', image.camera_id, file_path)
