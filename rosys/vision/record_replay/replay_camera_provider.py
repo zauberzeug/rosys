@@ -2,7 +2,6 @@ import logging
 from pathlib import Path
 
 from ... import rosys
-from ...rosys import Repeater
 from ..camera_provider import CameraProvider
 from .replay_camera import ReplayCamera
 
@@ -17,27 +16,30 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
 
         self._start_time: float = float('inf')
         self._current_time: float = 0.0
+        self._cameras_need_update = False
         self._end_time: float = 0.0
 
         self._playback_speed = 1.0
+
+        self._running = True
 
         self._last_update_time: float = rosys.time()
 
         self._find_cameras(replay_folder)
         self._set_time_interval()
 
-        self._repeater = Repeater(self._step, interval=replay_interval)
-        self._repeater.start()
+        self._repeater = rosys.on_repeat(self._step, interval=replay_interval)
 
     def pause(self) -> None:
-        self._repeater.stop()
+        self._update_time()
+        self._running = False
 
     def play(self) -> None:
-        self._repeater.start()
+        self._running = True
 
     def stop(self) -> None:
-        self._repeater.stop()
-        self._current_time = self._start_time
+        self._running = False
+        self.jump_to(0.0)
 
     def set_speed(self, speed: float) -> None:
         """Set the playback speed.
@@ -53,7 +55,11 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         :param percent: a value between 0.0 and 100.0, where 0.0 is the start and 100.0 is the end
         """
         assert 0.0 <= percent <= 100.0
-        self._current_time = self._start_time + (percent / 100.0) * (self._end_time - self._start_time)
+        self._set_replay_time(self._start_time + (percent / 100.0) * (self._end_time - self._start_time))
+
+    def _set_replay_time(self, time: float) -> None:
+        self._current_time = time
+        self._cameras_need_update = True
 
     def _find_cameras(self, replay_folder: Path) -> None:
         for file in replay_folder.iterdir():
@@ -80,13 +86,20 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         await self._update_camera_images()
 
     def _update_time(self) -> None:
+        if not self._running:
+            return
+
         now = rosys.time()
-        self._current_time += (now - self._last_update_time) * self._playback_speed
-        if self._current_time > self._end_time:
-            self._current_time = self._start_time
+        new_replay_time = self._current_time + (now - self._last_update_time) * self._playback_speed
+        self._set_replay_time(new_replay_time)
+        if new_replay_time > self._end_time:
+            new_replay_time = self._start_time + (new_replay_time - self._end_time)
+        self._set_replay_time(new_replay_time)
         self._last_update_time = now
 
     async def _update_camera_images(self) -> None:
+        if not self._cameras_need_update:
+            return
         for camera in self.cameras.values():
             await camera.load_image_at_time(self._current_time)
 
