@@ -18,7 +18,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         self._current_time: float = 0.0
         self._end_time: float = 0.0
 
-        self._play_backspeed = 1.0
+        self._playback_speed = 1.0
 
         self._find_cameras(replay_folder)
         self._set_time_interval()
@@ -41,7 +41,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         1.0 is real-time, 2.0 is double speed, 0.5 is half speed.
         You may use negative values to play backwards.
         """
-        self._play_backspeed = speed
+        self._playback_speed = speed
 
     def jump_to(self, percent: float) -> None:
         """Jump to a specific point in the replay.
@@ -78,7 +78,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         for camera in self.cameras.values():
             camera.step_to(self._current_time)
 
-        self._current_time += self._repeater.interval * self._play_backspeed
+        self._current_time += self._repeater.interval * self._playback_speed
 
     async def update_device_list(self) -> None:
         pass
