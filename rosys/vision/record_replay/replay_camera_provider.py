@@ -2,7 +2,7 @@ import logging
 from pathlib import Path
 
 from ...rosys import Repeater
-from .. import CameraProvider
+from ..camera_provider import CameraProvider
 from .replay_camera import ReplayCamera
 
 log = logging.getLogger('rosys.replay_camera_provider')

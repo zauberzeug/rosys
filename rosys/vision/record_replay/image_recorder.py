@@ -2,7 +2,8 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-from .. import CameraProvider, Image
+from ..camera_provider import CameraProvider
+from ..image import Image
 
 log = logging.getLogger('rosys.image_recorder')
 

@@ -6,7 +6,8 @@ from uuid import uuid4
 import numpy as np
 from PIL import Image as PILImage
 
-from .. import Camera, Image, ImageSize
+from ..camera import Camera
+from ..image import Image, ImageSize
 
 log = logging.getLogger('rosys.replay_camera')
 
