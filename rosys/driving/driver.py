@@ -1,9 +1,7 @@
-import logging
 from dataclasses import dataclass, field
 from typing import Protocol
 
 import numpy as np
-from nicegui import binding, ui
 
 from .. import rosys
 from ..analysis import track
@@ -14,7 +12,7 @@ from .odometer import Odometer
 from .path_segment import PathSegment
 
 
-@binding.bindable_dataclass
+@dataclass(slots=True, kw_only=True)
 class DriveParameters(ModificationContext):
     linear_speed_limit: float = 0.5
     angular_speed_limit: float = 0.5
@@ -58,7 +56,6 @@ class Driver:
     """
 
     def __init__(self, wheels: Drivable, odometer: Odometer | PoseProvider, *, parameters: DriveParameters | None = None) -> None:
-        super().__init__()
         self.wheels = wheels
         self.odometer = odometer
         self.parameters = parameters or DriveParameters()
@@ -253,20 +250,6 @@ class Driver:
         age_ramp = self.parameters.max_detection_age_ramp
         age = rosys.time() - self.odometer.detection.time
         return ramp(age, age_ramp[0], age_ramp[1], 1.0, 0.0, clip=True)
-
-    def developer_ui(self, *, columns: int = 2) -> None:
-        ui.label('Driver').classes('text-center text-bold')
-        with ui.grid(columns=columns).classes('gap-1'):
-            for name, value in self.parameters.__dict__.items():
-                display_name = name.replace('___', '')
-                if isinstance(value, float):
-                    ui.number(display_name, value=value).bind_value_to(self.parameters, name)
-                elif isinstance(value, bool):
-                    ui.checkbox(display_name, value=value).bind_value_to(self.parameters, name)
-                elif display_name == 'max_detection_age_ramp':
-                    logging.debug('max_detection_age_ramp is not supported in the UI')
-                else:
-                    logging.error('Unknown type %s of %s', type(value), name)
 
 
 @dataclass(slots=True, kw_only=True)
