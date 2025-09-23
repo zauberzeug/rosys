@@ -25,6 +25,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
 
         self._find_cameras(replay_folder)
         self._set_time_interval()
+
         self._repeater = Repeater(self._step, interval=replay_interval)
         self._repeater.start()
 
@@ -66,17 +67,17 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
 
     def _set_time_interval(self) -> None:
         for camera in self.cameras.values():
-            if not camera.images_by_timestamp:
+            if not camera.image_paths_by_filename:
                 continue
 
-            timestamps = sorted(camera.images_by_timestamp.keys())
+            timestamps = sorted(camera.image_paths_by_filename.keys())
             self._start_time = min(self._start_time, timestamps[0])
             self._end_time = max(self._end_time, timestamps[-1])
             self._current_time = self._start_time
 
     async def _step(self) -> None:
         self._update_time()
-        self._update_camera_images()
+        await self._update_camera_images()
 
     def _update_time(self) -> None:
         now = rosys.time()
@@ -85,9 +86,9 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
             self._current_time = self._start_time
         self._last_update_time = now
 
-    def _update_camera_images(self) -> None:
+    async def _update_camera_images(self) -> None:
         for camera in self.cameras.values():
-            camera.step_to(self._current_time)
+            await camera.load_image_at_time(self._current_time)
 
     async def update_device_list(self) -> None:
         pass
