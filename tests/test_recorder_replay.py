@@ -78,6 +78,6 @@ def test_find_closest_past_index_unit(tmp_path: Path):
     idx = cam._find_closest_past_index(2.3)
     assert idx == 1
     idx = cam._find_closest_past_index(0.5)
-    assert idx == 0
+    assert idx == -1
     idx = cam._find_closest_past_index(9.0)
     assert idx == len(times) - 1

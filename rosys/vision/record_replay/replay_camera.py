@@ -23,8 +23,7 @@ class ReplayCamera(Camera):
                  image_history_length=128) -> None:
 
         self.images_dir = images_dir
-        self.previous_emitted_timestamp = -1.0
-        self.image_paths_by_filename: dict[float, Path] = {}
+        self.previous_emitted_index = -1
         self.image_paths: list[Path] = []
         self.timestamp_array = np.array([], dtype=float)
 
@@ -59,7 +58,7 @@ class ReplayCamera(Camera):
         self.timestamp_array = np.array([pair[1] for pair in path_timestamp_pairs], dtype=float)
 
     def _find_closest_past_index(self, timestamp: float) -> int:
-        return max(0, int(np.searchsorted(self.timestamp_array, timestamp, side='right') - 1))
+        return int(np.searchsorted(self.timestamp_array, timestamp, side='right') - 1)
 
     async def load_image_at_time(self, timestamp: float) -> None:
         """Step to the image closest to the given timestamp."""
@@ -67,11 +66,10 @@ class ReplayCamera(Camera):
             return
 
         closest_past_index = self._find_closest_past_index(timestamp)
-        closest_past_timestamp = self.timestamp_array[closest_past_index]
-        if closest_past_timestamp == self.previous_emitted_timestamp:
+        if closest_past_index in [self.previous_emitted_index, -1]:
             return  # No new image to emit
 
-        self.previous_emitted_timestamp = closest_past_timestamp
+        self.previous_emitted_index = closest_past_index
         image_path = self.image_paths[closest_past_index]
 
         async with aiofiles.open(image_path, 'rb') as f:
@@ -83,7 +81,7 @@ class ReplayCamera(Camera):
         self._add_image(Image(
             camera_id=self.id,
             data=data,
-            time=closest_past_timestamp,
+            time=self.timestamp_array[closest_past_index],
             size=ImageSize(width=width, height=height)))
 
     @property
