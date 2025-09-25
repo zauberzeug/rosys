@@ -8,7 +8,7 @@ from rosys.testing.fixtures import *  # pylint: disable=wildcard-import,unused-w
 
 @pytest.fixture
 def recordings_dir():
-    with tempfile.TemporaryDirectory(prefix='rosys-test-', ignore_cleanup_errors=True, delete=False) as tmp_path:
+    with tempfile.TemporaryDirectory(prefix='rosys-test-', ignore_cleanup_errors=True) as tmp_path:
         d = Path(tmp_path) / 'recordings'
         d.mkdir()
         yield d
