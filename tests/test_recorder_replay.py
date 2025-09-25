@@ -55,8 +55,8 @@ async def test_playback_replays_images(recordings_dir: Path):
     assert rp.cameras, 'no cameras detected in replay folder'
 
     # ACT
-    await forward(seconds=1.5)
-    await asyncio.sleep(2.0)
+    await forward(seconds=0.1)
+    await asyncio.sleep(0.1)  # wait is needed to ensure the image is loaded
 
     # ASSERT
     replay_cam = next(iter(rp.cameras.values()))
