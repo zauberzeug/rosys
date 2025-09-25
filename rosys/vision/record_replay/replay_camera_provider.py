@@ -73,7 +73,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
 
     def _set_time_interval(self) -> None:
         for camera in self.cameras.values():
-            if not camera.timestamp_array:
+            if not camera.image_paths:
                 continue
 
             timestamps = camera.timestamp_array
