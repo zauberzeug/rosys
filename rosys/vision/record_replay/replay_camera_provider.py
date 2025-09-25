@@ -73,15 +73,16 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
 
     def _set_time_interval(self) -> None:
         for camera in self.cameras.values():
-            if not camera.image_paths_by_filename:
+            if not camera.timestamp_array:
                 continue
 
-            timestamps = sorted(camera.image_paths_by_filename.keys())
+            timestamps = camera.timestamp_array
             self._start_time = min(self._start_time, timestamps[0])
             self._end_time = max(self._end_time, timestamps[-1])
             self._current_time = self._start_time
 
     async def _step(self) -> None:
+        print('step', flush=True)
         self._update_time()
         await self._update_camera_images()
 
