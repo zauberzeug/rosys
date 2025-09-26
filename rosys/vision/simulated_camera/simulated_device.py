@@ -2,7 +2,8 @@ from collections.abc import Awaitable, Callable
 
 import cv2
 import numpy as np
-import PIL
+import PIL.Image
+import PIL.ImageDraw
 
 from ... import rosys
 from ...geometry import Point
@@ -34,7 +35,7 @@ class SimulatedDevice:
         timestamp = rosys.time()
         image_data: bytes | None
         if rosys.is_test:
-            image_data = b'test data'
+            image_data = _create_simple_image(self._size, self.color)
         else:
             image_data = await rosys.run.cpu_bound(_create_image_data, self._id, self._size, self.color, timestamp)
         if not image_data:
@@ -59,6 +60,12 @@ def _create_image_data(id: str, size: ImageSize, color: str, timestamp: float) -
     d.text((position.x, position.y), text, fill=(0, 0, 0))
     d.text((position.x + 1, position.y + 1), text, fill=(255, 255, 255))
 
+    _, encoded_image = cv2.imencode('.jpg', np.array(img)[:, :, ::-1])  # NOTE: cv2 expects BGR
+    return encoded_image.tobytes()
+
+
+def _create_simple_image(size: ImageSize, color: str) -> bytes:
+    img = PIL.Image.new('RGB', size=(size.width, size.height), color=color)
     _, encoded_image = cv2.imencode('.jpg', np.array(img)[:, :, ::-1])  # NOTE: cv2 expects BGR
     return encoded_image.tobytes()
 
