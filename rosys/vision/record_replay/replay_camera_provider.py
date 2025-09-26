@@ -82,7 +82,6 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
             self._current_time = self._start_time
 
     async def _step(self) -> None:
-        print('step', flush=True)
         self._update_time()
         await self._update_camera_images()
 
