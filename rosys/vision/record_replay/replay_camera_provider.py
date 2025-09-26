@@ -35,6 +35,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         self._running = False
 
     def play(self) -> None:
+        self._last_update_time = rosys.time()
         self._running = True
 
     def stop(self) -> None:
@@ -54,7 +55,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
 
         :param percent: a value between 0.0 and 100.0, where 0.0 is the start and 100.0 is the end
         """
-        assert 0.0 <= percent <= 100.0
+        assert 0.0 <= percent <= 100.0, 'Percent must be between 0.0 and 100.0'
         self._set_replay_time(self._start_time + (percent / 100.0) * (self._end_time - self._start_time))
 
     def _set_replay_time(self, time: float) -> None:
