@@ -65,7 +65,12 @@ class ReplayCamera(Camera):
         if not self.image_paths:
             return
 
-        closest_past_index = self._find_closest_past_index(timestamp)
+        if timestamp < self.timestamp_array[0]:
+            closest_past_index = 0
+        elif timestamp > self.timestamp_array[-1]:
+            closest_past_index = len(self.image_paths) - 1
+        else:
+            closest_past_index = self._find_closest_past_index(timestamp)
         if closest_past_index in [self.previous_emitted_index, -1]:
             return  # No new image to emit
 
