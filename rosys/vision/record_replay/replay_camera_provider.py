@@ -56,6 +56,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         :param percent: a value between 0.0 and 100.0, where 0.0 is the start and 100.0 is the end
         """
         assert 0.0 <= percent <= 100.0, 'Percent must be between 0.0 and 100.0'
+        self.clear_camera_images()
         self._set_replay_time(self._start_time + (percent / 100.0) * (self._end_time - self._start_time))
 
     def _set_replay_time(self, time: float) -> None:
@@ -103,6 +104,10 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
             return
         for camera in self.cameras.values():
             await camera.load_image_at_time(self._current_time)
+
+    def clear_camera_images(self) -> None:
+        for camera in self.cameras.values():
+            camera.images.clear()
 
     async def update_device_list(self) -> None:
         pass
