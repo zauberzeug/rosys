@@ -9,7 +9,14 @@ log = logging.getLogger('rosys.replay_camera_provider')
 
 
 class ReplayCameraProvider(CameraProvider[ReplayCamera]):
-    """This module collects and simulates cameras by looping over images in a drive."""
+    """This module collects and simulates cameras by looping over images in a drive.
+
+    NOTE: The first image of each camera will be emitted at any time before the timestamp of the second image.
+    Therefore, setting the time to 0.0 will cause all cameras to emit their first image.
+
+    :param replay_folder: path to the root replay folder containing the camera folders
+    :param replay_interval: the interval at which the provider checks for new images (in seconds)
+    """
 
     def __init__(self, replay_folder: Path, replay_interval: float = .01) -> None:
         super().__init__()
