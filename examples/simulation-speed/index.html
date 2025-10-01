@@ -339,6 +339,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../automations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Automations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../camera_arm/" class="md-nav__link">
         
   
@@ -938,6 +959,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../reference/rosys/vision/record_replay/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    record_replay
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../reference/rosys/vision/rtsp_camera/" class="md-nav__link">
         
   
@@ -1092,7 +1134,8 @@ With a simple slider the execution time is accelerated.
 Note how the time advances faster if the simulation speed is increased.
 The driving speed of the robot remains the same.</p>
 <p><img alt="Simulation Speed" src="screenshot.webp" style="width:60%" /></p>
-<p>This is achieved simply by placing <code>rosys.simulation_ui()</code> in your UI.
+<p>You can activate time simulation by calling <code>rosys.enter_simulation()</code>
+and adding the control UI to your page with <code>rosys.simulation_ui()</code>.
 The rest of the code is needed to define the boundary, draw it in the 3D scene and start the automation for random movement:</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
@@ -1105,6 +1148,7 @@ The rest of the code is needed to define the boundary, draw it in the 3D scene a
 <span class="kn">from</span><span class="w"> </span><span class="nn">rosys.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Point</span><span class="p">,</span> <span class="n">Prism</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">rosys.hardware</span><span class="w"> </span><span class="kn">import</span> <span class="n">RobotSimulation</span><span class="p">,</span> <span class="n">WheelsSimulation</span>
 
+<span class="n">rosys</span><span class="o">.</span><span class="n">enter_simulation</span><span class="p">()</span>
 <span class="n">wheels</span> <span class="o">=</span> <span class="n">WheelsSimulation</span><span class="p">()</span>
 <span class="n">robot</span> <span class="o">=</span> <span class="n">RobotSimulation</span><span class="p">([</span><span class="n">wheels</span><span class="p">])</span>
 <span class="n">odometer</span> <span class="o">=</span> <span class="n">Odometer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
@@ -1122,9 +1166,9 @@ The rest of the code is needed to define the boundary, draw it in the 3D scene a
         <span class="n">b</span> <span class="o">=</span> <span class="n">boundary</span><span class="p">[(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">boundary</span><span class="p">)]</span>
         <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="o">.</span><span class="n">line</span><span class="p">([</span><span class="o">*</span><span class="n">a</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span> <span class="p">[</span><span class="o">*</span><span class="n">b</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">])</span><span class="o">.</span><span class="n">material</span><span class="p">(</span><span class="s1">&#39;red&#39;</span><span class="p">)</span>
     <span class="n">scene</span><span class="o">.</span><span class="n">move_camera</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">8</span><span class="p">)</span>
-<span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">()</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">&#39;width: 400px&#39;</span><span class="p">):</span>
-<span class="hll">    <span class="n">rosys</span><span class="o">.</span><span class="n">simulation_ui</span><span class="p">()</span>
-</span>
+<span class="hll"><span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">column</span><span class="p">()</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">&#39;width: 400px&#39;</span><span class="p">):</span>
+</span>    <span class="n">rosys</span><span class="o">.</span><span class="n">simulation_ui</span><span class="p">()</span>
+
 
 <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">move_around</span><span class="p">():</span>
     <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>

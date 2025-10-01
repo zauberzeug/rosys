@@ -337,6 +337,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../examples/automations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Automations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../examples/camera_arm/" class="md-nav__link">
         
   
@@ -965,6 +986,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#rosys.automation.uninterruptible" class="md-nav__link">
+    <span class="md-ellipsis">
+      uninterruptible
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1155,6 +1185,27 @@
   
   <span class="md-ellipsis">
     camera
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../vision/record_replay/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    record_replay
   </span>
   
 
@@ -1510,6 +1561,15 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.automation.uninterruptible" class="md-nav__link">
+    <span class="md-ellipsis">
+      uninterruptible
+    </span>
+  </a>
   
 </li>
       
@@ -2100,6 +2160,7 @@ It displays buttons to control a given automator.</p>
 <p>This class allows to combine multiple coroutines into one that can be passed to the
 <code>automator &lt;https://rosys.io/reference/rosys/automation/#rosys.automation.Automator&gt;</code>__
 to run them in parallel.</p>
+<p>Note that <code>parallelize</code> will be uninterruptible if one of its coroutines is marked with <code>@rosys.automation.uninterruptible</code>.</p>
 
 
 
@@ -2132,6 +2193,27 @@ to run them in parallel.</p>
 
 
   </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h2 id="rosys.automation.uninterruptible" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">uninterruptible</span>
+
+
+<a href="#rosys.automation.uninterruptible" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">uninterruptible</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+        <p>Decorator to make an async function uninterruptible until it exits.</p>
+<p>Note that <code>rosys.automation.parallelize</code> will also be uninterruptible if one of its coroutines is marked with this decorator.</p>
+
 
     </div>
 

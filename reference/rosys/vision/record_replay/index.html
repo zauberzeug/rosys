@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://rosys.io/reference/rosys/vision/rtsp_camera/">
+        <link rel="canonical" href="https://rosys.io/reference/rosys/vision/record_replay/">
       
       
-        <link rel="prev" href="../record_replay/">
+        <link rel="prev" href="../camera/">
       
       
-        <link rel="next" href="../simulated_camera/">
+        <link rel="next" href="../rtsp_camera/">
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
@@ -22,7 +22,7 @@
     
     
       
-        <title>rtsp_camera - RoSys</title>
+        <title>record_replay - RoSys</title>
       
     
     
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#rosys.vision.rtsp_camera.RtspCameraProvider" class="md-skip">
+        <a href="#rosys.vision.record_replay.ImageRecorder" class="md-skip">
           Skip to content
         </a>
       
@@ -104,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              rtsp_camera
+              record_replay
             
           </span>
         </div>
@@ -948,27 +948,6 @@
                 
   
   
-  
-  
-    <li class="md-nav__item">
-      <a href="../record_replay/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    record_replay
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
     
   
   
@@ -983,7 +962,7 @@
           
   
   <span class="md-ellipsis">
-    rtsp_camera
+    record_replay
   </span>
   
 
@@ -994,7 +973,7 @@
         
   
   <span class="md-ellipsis">
-    rtsp_camera
+    record_replay
   </span>
   
 
@@ -1014,11 +993,59 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#rosys.vision.rtsp_camera.RtspCameraProvider" class="md-nav__link">
+  <a href="#rosys.vision.record_replay.ImageRecorder" class="md-nav__link">
     <span class="md-ellipsis">
-      RtspCameraProvider
+      ImageRecorder
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="ImageRecorder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.record_replay.ImageRecorder.set_recording" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_recording
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.record_replay.ReplayCameraProvider" class="md-nav__link">
+    <span class="md-ellipsis">
+      ReplayCameraProvider
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ReplayCameraProvider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.record_replay.ReplayCameraProvider.jump_to" class="md-nav__link">
+    <span class="md-ellipsis">
+      jump_to
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.record_replay.ReplayCameraProvider.set_speed" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_speed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1026,6 +1053,27 @@
   
 </nav>
       
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rtsp_camera/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    rtsp_camera
+  </span>
+  
+
+      </a>
     </li>
   
 
@@ -1153,11 +1201,59 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#rosys.vision.rtsp_camera.RtspCameraProvider" class="md-nav__link">
+  <a href="#rosys.vision.record_replay.ImageRecorder" class="md-nav__link">
     <span class="md-ellipsis">
-      RtspCameraProvider
+      ImageRecorder
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="ImageRecorder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.record_replay.ImageRecorder.set_recording" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_recording
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.record_replay.ReplayCameraProvider" class="md-nav__link">
+    <span class="md-ellipsis">
+      ReplayCameraProvider
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ReplayCameraProvider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.record_replay.ReplayCameraProvider.jump_to" class="md-nav__link">
+    <span class="md-ellipsis">
+      jump_to
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.record_replay.ReplayCameraProvider.set_speed" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_speed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1176,33 +1272,30 @@
                   
 
 
-  <h1>rtsp_camera</h1>
+  <h1>record_replay</h1>
 
 <div class="doc doc-object doc-class">
 
 
 
-<h2 id="rosys.vision.rtsp_camera.RtspCameraProvider" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">RtspCameraProvider</span>
+<h2 id="rosys.vision.record_replay.ImageRecorder" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">ImageRecorder</span>
 
 
-<a href="#rosys.vision.rtsp_camera.RtspCameraProvider" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">RtspCameraProvider</span><span class="p">(</span>
-    <span class="o">*</span><span class="p">,</span>
-    <span class="n">frame_rate</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
-    <span class="n">substream</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="n">avdec</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;h264&quot;</span><span class="p">,</span> <span class="s2">&quot;h265&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;h264&quot;</span><span class="p">,</span>
-    <span class="n">network_interface</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">auto_scan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+<a href="#rosys.vision.record_replay.ImageRecorder" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">ImageRecorder</span><span class="p">(</span>
+    <span class="n">camera_provider</span><span class="p">:</span> <span class="n">CameraProvider</span><span class="p">,</span> <span class="n">data_dir</span><span class="p">:</span> <span class="n">Path</span>
 <span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
-            <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="../#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.rtsp_camera.rtsp_camera.RtspCamera">RtspCamera</span>]</code></p>
 
 
-        <p>This module collects and provides real RTSP streaming cameras.</p>
+        <p>This module saves images from a CameraProvider to disk.</p>
+
+        <p>This module saves images from a CameraProvider to disk.</p>
+<p>:param camera_provider: the camera provider to record images from
+:param data_dir: the directory to save images to. Images are saved in subdirectories</p>
 
 
 
@@ -1222,6 +1315,121 @@
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.record_replay.ImageRecorder.set_recording" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">set_recording</span>
+
+
+<a href="#rosys.vision.record_replay.ImageRecorder.set_recording" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">set_recording</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Enable or disable recording images from the camera provider.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.record_replay.ReplayCameraProvider" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">ReplayCameraProvider</span>
+
+
+<a href="#rosys.vision.record_replay.ReplayCameraProvider" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">ReplayCameraProvider</span><span class="p">(</span>
+    <span class="n">replay_folder</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">replay_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="../#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.record_replay.replay_camera.ReplayCamera">ReplayCamera</span>]</code></p>
+
+
+        <p>This module collects and simulates cameras by looping over images in a drive.</p>
+<p>NOTE: The first image of each camera will be emitted at any time before the timestamp of the second image.
+Therefore, setting the time to 0.0 will cause all cameras to emit their first image.</p>
+<p>:param replay_folder: path to the root replay folder containing the camera folders
+:param replay_interval: the interval at which the provider checks for new images (in seconds)</p>
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.record_replay.ReplayCameraProvider.jump_to" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">jump_to</span>
+
+
+<a href="#rosys.vision.record_replay.ReplayCameraProvider.jump_to" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">jump_to</span><span class="p">(</span><span class="n">percent</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Jump to a specific point in the replay.</p>
+<p>:param percent: a value between 0.0 and 100.0, where 0.0 is the start and 100.0 is the end</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.record_replay.ReplayCameraProvider.set_speed" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">set_speed</span>
+
+
+<a href="#rosys.vision.record_replay.ReplayCameraProvider.set_speed" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">set_speed</span><span class="p">(</span><span class="n">speed</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Set the playback speed.</p>
+<p>1.0 is real-time, 2.0 is double speed, 0.5 is half speed.
+You may use negative values to play backwards.</p>
+
+
+    </div>
+
+</div>
 
 
 

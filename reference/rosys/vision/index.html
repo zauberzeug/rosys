@@ -337,6 +337,27 @@
   
   
     <li class="md-nav__item">
+      <a href="../../../examples/automations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Automations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../../examples/camera_arm/" class="md-nav__link">
         
   
@@ -930,6 +951,27 @@
   
   
     <li class="md-nav__item">
+      <a href="record_replay/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    record_replay
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="rtsp_camera/" class="md-nav__link">
         
   
@@ -1255,6 +1297,15 @@
   
 </li>
         
+          <li class="md-nav__item">
+  <a href="#rosys.vision.DetectorHardware.upload" class="md-nav__link">
+    <span class="md-ellipsis">
+      upload
+    </span>
+  </a>
+  
+</li>
+        
       </ul>
     </nav>
   
@@ -1270,11 +1321,68 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rosys.vision.ImageRecorder" class="md-nav__link">
+    <span class="md-ellipsis">
+      ImageRecorder
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ImageRecorder">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.ImageRecorder.set_recording" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_recording
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rosys.vision.MultiCameraProvider" class="md-nav__link">
     <span class="md-ellipsis">
       MultiCameraProvider
     </span>
   </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rosys.vision.ReplayCameraProvider" class="md-nav__link">
+    <span class="md-ellipsis">
+      ReplayCameraProvider
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ReplayCameraProvider">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.ReplayCameraProvider.jump_to" class="md-nav__link">
+    <span class="md-ellipsis">
+      jump_to
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.ReplayCameraProvider.set_speed" class="md-nav__link">
+    <span class="md-ellipsis">
+      set_speed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1985,6 +2093,38 @@ that should be uploaded to the <a href="https://zauberzeug.com/products/learning
 
 </div>
 
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.DetectorHardware.upload" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">upload</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.vision.DetectorHardware.upload" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">upload</span><span class="p">(</span>
+    <span class="n">image</span><span class="p">:</span> <span class="n">Image</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">creation_date</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">annotations</span><span class="p">:</span> <span class="n">Annotations</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Uploads the image to the Learning Loop.</p>
+<p>Detections stored in the image are also uploaded.</p>
+
+
+    </div>
+
+</div>
+
 
 
   </div>
@@ -2054,6 +2194,76 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
 
 
+<h2 id="rosys.vision.ImageRecorder" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">ImageRecorder</span>
+
+
+<a href="#rosys.vision.ImageRecorder" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">ImageRecorder</span><span class="p">(</span>
+    <span class="n">camera_provider</span><span class="p">:</span> <span class="n">CameraProvider</span><span class="p">,</span> <span class="n">data_dir</span><span class="p">:</span> <span class="n">Path</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+
+
+        <p>This module saves images from a CameraProvider to disk.</p>
+
+        <p>This module saves images from a CameraProvider to disk.</p>
+<p>:param camera_provider: the camera provider to record images from
+:param data_dir: the directory to save images to. Images are saved in subdirectories</p>
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.ImageRecorder.set_recording" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">set_recording</span>
+
+
+<a href="#rosys.vision.ImageRecorder.set_recording" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">set_recording</span><span class="p">(</span><span class="n">value</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Enable or disable recording images from the camera provider.</p>
+
+
+    </div>
+
+</div>
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
 <h2 id="rosys.vision.MultiCameraProvider" class="doc doc-heading">
             <span class="doc doc-object-name doc-class-name">MultiCameraProvider</span>
 
@@ -2088,6 +2298,101 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
 
 
 
+
+
+
+  </div>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.ReplayCameraProvider" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">ReplayCameraProvider</span>
+
+
+<a href="#rosys.vision.ReplayCameraProvider" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">ReplayCameraProvider</span><span class="p">(</span>
+    <span class="n">replay_folder</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">replay_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span>
+<span class="p">)</span>
+</code></pre></div>
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.record_replay.replay_camera.ReplayCamera">ReplayCamera</span>]</code></p>
+
+
+        <p>This module collects and simulates cameras by looping over images in a drive.</p>
+<p>NOTE: The first image of each camera will be emitted at any time before the timestamp of the second image.
+Therefore, setting the time to 0.0 will cause all cameras to emit their first image.</p>
+<p>:param replay_folder: path to the root replay folder containing the camera folders
+:param replay_interval: the interval at which the provider checks for new images (in seconds)</p>
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.ReplayCameraProvider.jump_to" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">jump_to</span>
+
+
+<a href="#rosys.vision.ReplayCameraProvider.jump_to" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">jump_to</span><span class="p">(</span><span class="n">percent</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Jump to a specific point in the replay.</p>
+<p>:param percent: a value between 0.0 and 100.0, where 0.0 is the start and 100.0 is the end</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.ReplayCameraProvider.set_speed" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">set_speed</span>
+
+
+<a href="#rosys.vision.ReplayCameraProvider.set_speed" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">set_speed</span><span class="p">(</span><span class="n">speed</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Set the playback speed.</p>
+<p>1.0 is real-time, 2.0 is double speed, 0.5 is half speed.
+You may use negative values to play backwards.</p>
+
+
+    </div>
+
+</div>
 
 
 

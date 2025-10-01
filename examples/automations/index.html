@@ -8,25 +8,25 @@
       
       
       
-        <link rel="canonical" href="https://rosys.io/reference/rosys/vision/rtsp_camera/">
+        <link rel="canonical" href="https://rosys.io/examples/automations/">
       
       
-        <link rel="prev" href="../record_replay/">
+        <link rel="prev" href="../areas/">
       
       
-        <link rel="next" href="../simulated_camera/">
+        <link rel="next" href="../camera_arm/">
       
       
-      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.18">
     
     
       
-        <title>rtsp_camera - RoSys</title>
+        <title>Automations - RoSys</title>
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.66ac8b77.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.66ac8b77.min.css">
       
       
 
@@ -45,11 +45,11 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#rosys.vision.rtsp_camera.RtspCameraProvider" class="md-skip">
+        <a href="#automations" class="md-skip">
           Skip to content
         </a>
       
@@ -84,7 +84,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../../../.." title="RoSys" class="md-header__button md-logo" aria-label="RoSys" data-md-component="logo">
+    <a href="../.." title="RoSys" class="md-header__button md-logo" aria-label="RoSys" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -104,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              rtsp_camera
+              Automations
             
           </span>
         </div>
@@ -191,7 +191,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../../../.." title="RoSys" class="md-nav__button md-logo" aria-label="RoSys" data-md-component="logo">
+    <a href="../.." title="RoSys" class="md-nav__button md-logo" aria-label="RoSys" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
@@ -221,7 +221,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../.." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -241,7 +241,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../installation/" class="md-nav__link">
+      <a href="../../installation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -261,7 +261,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../getting_started/" class="md-nav__link">
+      <a href="../../getting_started/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -278,17 +278,19 @@
       
   
   
+    
   
   
+  
     
     
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
           <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
@@ -302,7 +304,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Examples
@@ -316,7 +318,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/areas/" class="md-nav__link">
+      <a href="../areas/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -334,10 +336,19 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../../../../examples/automations/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   <span class="md-ellipsis">
@@ -346,6 +357,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -358,7 +370,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/camera_arm/" class="md-nav__link">
+      <a href="../camera_arm/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -379,7 +391,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/cameras/" class="md-nav__link">
+      <a href="../cameras/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -400,7 +412,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/click-and-drive/" class="md-nav__link">
+      <a href="../click-and-drive/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -421,7 +433,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/coordinate-frames/" class="md-nav__link">
+      <a href="../coordinate-frames/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -442,7 +454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/hardware/" class="md-nav__link">
+      <a href="../hardware/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -463,7 +475,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/hello_bot/" class="md-nav__link">
+      <a href="../hello_bot/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -484,7 +496,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/kpi/" class="md-nav__link">
+      <a href="../kpi/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -505,7 +517,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/navigation/" class="md-nav__link">
+      <a href="../navigation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -526,7 +538,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/obstacles/" class="md-nav__link">
+      <a href="../obstacles/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -547,7 +559,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/path_planning_analysis/" class="md-nav__link">
+      <a href="../path_planning_analysis/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -568,7 +580,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/persistence/" class="md-nav__link">
+      <a href="../persistence/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -589,7 +601,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/play-pause-stop/" class="md-nav__link">
+      <a href="../play-pause-stop/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -610,7 +622,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/schedule/" class="md-nav__link">
+      <a href="../schedule/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -631,7 +643,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/simulation-speed/" class="md-nav__link">
+      <a href="../simulation-speed/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -652,7 +664,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../examples/steering/" class="md-nav__link">
+      <a href="../steering/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -677,19 +689,17 @@
       
   
   
-    
   
   
-  
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
           <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
@@ -703,7 +713,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Module Reference
@@ -717,7 +727,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../analysis/" class="md-nav__link">
+      <a href="../../reference/rosys/analysis/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -738,7 +748,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../automation/" class="md-nav__link">
+      <a href="../../reference/rosys/automation/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -759,7 +769,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../driving/" class="md-nav__link">
+      <a href="../../reference/rosys/driving/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -780,7 +790,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../geometry/" class="md-nav__link">
+      <a href="../../reference/rosys/geometry/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -801,7 +811,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../hardware/" class="md-nav__link">
+      <a href="../../reference/rosys/hardware/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -822,7 +832,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../helpers/" class="md-nav__link">
+      <a href="../../reference/rosys/helpers/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -843,7 +853,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../pathplanning/" class="md-nav__link">
+      <a href="../../reference/rosys/pathplanning/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -864,7 +874,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../system/" class="md-nav__link">
+      <a href="../../reference/rosys/system/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -882,24 +892,22 @@
                 
   
   
-    
   
   
-  
     
     
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_9" >
         
           
           
           <div class="md-nav__link md-nav__container">
-            <a href="../" class="md-nav__link ">
+            <a href="../../reference/rosys/vision/" class="md-nav__link ">
               
   
   <span class="md-ellipsis">
@@ -916,7 +924,7 @@
             
           </div>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_9_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5_9">
             <span class="md-nav__icon md-icon"></span>
             vision
@@ -930,7 +938,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../camera/" class="md-nav__link">
+      <a href="../../reference/rosys/vision/camera/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -951,7 +959,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../record_replay/" class="md-nav__link">
+      <a href="../../reference/rosys/vision/record_replay/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -969,28 +977,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    rtsp_camera
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../reference/rosys/vision/rtsp_camera/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -999,33 +989,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#rosys.vision.rtsp_camera.RtspCameraProvider" class="md-nav__link">
-    <span class="md-ellipsis">
-      RtspCameraProvider
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1038,7 +1001,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../simulated_camera/" class="md-nav__link">
+      <a href="../../reference/rosys/vision/simulated_camera/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1059,7 +1022,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usb_camera/" class="md-nav__link">
+      <a href="../../reference/rosys/vision/usb_camera/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1095,7 +1058,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../development/" class="md-nav__link">
+      <a href="../../development/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1115,7 +1078,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../../../troubleshooting/" class="md-nav__link">
+      <a href="../../troubleshooting/" class="md-nav__link">
         
   
   <span class="md-ellipsis">
@@ -1145,23 +1108,8 @@
   
   
   
+    
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#rosys.vision.rtsp_camera.RtspCameraProvider" class="md-nav__link">
-    <span class="md-ellipsis">
-      RtspCameraProvider
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
   
 </nav>
                   </div>
@@ -1175,61 +1123,60 @@
                 
                   
 
-
-  <h1>rtsp_camera</h1>
-
-<div class="doc doc-object doc-class">
+  
+  
 
 
+<h1 id="automations">Automations<a class="headerlink" href="#automations" title="Permanent link">&para;</a></h1>
+<p>This example demonstrates how to start, pause, resume and stop automations.
+The robot will drive forward and then turn left in an endless loop.
+The <code>turn_left</code> function is marked with <code>@rosys.automation.uninterruptible</code> which means that it will continue to run even if the automation is interrupted by pausing or stopping it.</p>
+<div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">math</span>
 
-<h2 id="rosys.vision.rtsp_camera.RtspCameraProvider" class="doc doc-heading">
-            <span class="doc doc-object-name doc-class-name">RtspCameraProvider</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">nicegui</span><span class="w"> </span><span class="kn">import</span> <span class="n">ui</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">rosys</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">rosys.helpers</span>
 
 
-<a href="#rosys.vision.rtsp_camera.RtspCameraProvider" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">RtspCameraProvider</span><span class="p">(</span>
-    <span class="o">*</span><span class="p">,</span>
-    <span class="n">frame_rate</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span><span class="p">,</span>
-    <span class="n">substream</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="n">avdec</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;h264&quot;</span><span class="p">,</span> <span class="s2">&quot;h265&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;h264&quot;</span><span class="p">,</span>
-    <span class="n">network_interface</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">auto_scan</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
-<span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">forward</span><span class="p">()</span>
+        <span class="k">await</span> <span class="n">turn_left</span><span class="p">()</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">forward</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span>
+    <span class="k">while</span> <span class="n">start</span><span class="o">.</span><span class="n">distance</span><span class="p">(</span><span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1.0</span><span class="p">:</span>
+        <span class="k">await</span> <span class="n">wheels</span><span class="o">.</span><span class="n">drive</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">rosys</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">wheels</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+
+<span class="nd">@rosys</span><span class="o">.</span><span class="n">automation</span><span class="o">.</span><span class="n">uninterruptible</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">turn_left</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span>
+    <span class="k">while</span> <span class="n">rosys</span><span class="o">.</span><span class="n">helpers</span><span class="o">.</span><span class="n">angle</span><span class="p">(</span><span class="n">start</span><span class="o">.</span><span class="n">yaw</span><span class="p">,</span> <span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span><span class="o">.</span><span class="n">yaw</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">math</span><span class="o">.</span><span class="n">radians</span><span class="p">(</span><span class="mi">90</span><span class="p">):</span>
+        <span class="k">await</span> <span class="n">wheels</span><span class="o">.</span><span class="n">drive</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span>
+        <span class="k">await</span> <span class="n">rosys</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="k">await</span> <span class="n">wheels</span><span class="o">.</span><span class="n">stop</span><span class="p">()</span>
+
+
+<span class="n">shape</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">Prism</span><span class="o">.</span><span class="n">default_robot_shape</span><span class="p">()</span>
+<span class="n">wheels</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">WheelsSimulation</span><span class="p">()</span>
+<span class="n">robot</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">RobotSimulation</span><span class="p">([</span><span class="n">wheels</span><span class="p">])</span>
+<span class="n">odometer</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">Odometer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
+<span class="n">driver</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">Driver</span><span class="p">(</span><span class="n">wheels</span><span class="p">,</span> <span class="n">odometer</span><span class="p">)</span>
+<span class="n">automator</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">automation</span><span class="o">.</span><span class="n">Automator</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="n">default_automation</span><span class="o">=</span><span class="n">run</span><span class="p">,</span> <span class="n">on_interrupt</span><span class="o">=</span><span class="n">wheels</span><span class="o">.</span><span class="n">stop</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">():</span>
+    <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">robot_object</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">odometer</span><span class="p">)</span>
+<span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
+    <span class="n">rosys</span><span class="o">.</span><span class="n">automation</span><span class="o">.</span><span class="n">automation_controls</span><span class="p">(</span><span class="n">automator</span><span class="p">)</span>
+
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;Automations&#39;</span><span class="p">)</span>
 </code></pre></div>
-
-    <div class="doc doc-contents first">
-            <p class="doc doc-class-bases">
-              Bases: <code><a class="autorefs autorefs-internal" title="rosys.vision.camera_provider.CameraProvider" href="../#rosys.vision.CameraProvider">CameraProvider</a>[<span title="rosys.vision.rtsp_camera.rtsp_camera.RtspCamera">RtspCamera</span>]</code></p>
-
-
-        <p>This module collects and provides real RTSP streaming cameras.</p>
-
-
-
-
-
-
-
-
-
-
-  <div class="doc doc-children">
-
-
-
-
-
-
-
-
-
-
-
-  </div>
-
-    </div>
-
-</div>
 
 
 
@@ -1276,10 +1223,10 @@
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../../../..", "features": ["content.code.annotate"], "search": "../../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../..", "features": ["content.code.annotate"], "search": "../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.3220b9d7.min.js"></script>
+      <script src="../../assets/javascripts/bundle.3220b9d7.min.js"></script>
       
     
   </body>
