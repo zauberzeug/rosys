@@ -26,10 +26,14 @@ class CameraProjector:
 
     def __init__(self, camera_provider: CalibratableCameraProvider, *, interval: float = 1.0) -> None:
         self.camera_provider = camera_provider
-
         self.projections: dict[str, Projection] = {}
+        self._repeater = rosys.on_repeat(self.step, interval)
 
-        rosys.on_repeat(self.step, interval)
+    def activate(self) -> None:
+        self._repeater.start()
+
+    def deactivate(self) -> None:
+        self._repeater.stop()
 
     async def step(self) -> None:
         for id_ in list(self.projections):
