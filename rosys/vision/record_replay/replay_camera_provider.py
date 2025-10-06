@@ -1,5 +1,8 @@
 import logging
+from datetime import datetime
 from pathlib import Path
+
+from nicegui import ui
 
 from ... import rosys
 from ..camera_provider import CameraProvider
@@ -49,6 +52,26 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         self._running = False
         self.jump_to(0.0)
 
+    def toggle_running(self) -> None:
+        if self._running:
+            self.pause()
+        else:
+            self.play()
+
+    def create_ui(self) -> None:
+        ui.button(on_click=self.toggle_running, icon='play_arrow') \
+            .bind_icon_from(self, '_running', backward=lambda p: 'pause' if p else 'play_arrow') \
+            .props('dense color="secondary" size="md"') \
+            .tooltip('Play/Pause')
+        s = ui.slider(min=self._start_time,
+                      max=self._end_time,
+                      value=self._current_time) \
+            .bind_value(self, '_current_time') \
+            .on('change', lambda e: self.jump_to_time(e.args)) \
+            .props('label-always') \
+            .classes('w-full')
+        s.bind_value_to(s.props, 'label-value', lambda x: f'{datetime.fromtimestamp(x).strftime("%d.%m.%Y %H:%M:%S")}')
+
     def set_speed(self, speed: float) -> None:
         """Set the playback speed.
 
@@ -57,14 +80,22 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         """
         self._playback_speed = speed
 
+    def jump_to_time(self, time: float) -> None:
+        """Jump to a specific time in the replay.
+
+        :param time: time in seconds
+        """
+        assert self._start_time <= time <= self._end_time, f'Time must be between {self._start_time} & {self._end_time}'
+        self.clear_camera_images()
+        self._set_replay_time(time)
+
     def jump_to(self, percent: float) -> None:
         """Jump to a specific point in the replay.
 
         :param percent: a value between 0.0 and 100.0, where 0.0 is the start and 100.0 is the end
         """
         assert 0.0 <= percent <= 100.0, 'Percent must be between 0.0 and 100.0'
-        self.clear_camera_images()
-        self._set_replay_time(self._start_time + (percent / 100.0) * (self._end_time - self._start_time))
+        self.jump_to_time(self._start_time + (percent / 100.0) * (self._end_time - self._start_time))
 
     def _set_replay_time(self, time: float) -> None:
         self._current_time = time
@@ -100,7 +131,6 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
 
         now = rosys.time()
         new_replay_time = self._current_time + (now - self._last_update_time) * self._playback_speed
-        self._set_replay_time(new_replay_time)
         if new_replay_time > self._end_time:
             new_replay_time = self._start_time + (new_replay_time - self._end_time)
         self._set_replay_time(new_replay_time)
