@@ -1,6 +1,6 @@
 from contextlib import nullcontext
 
-from nicegui.elements.scene_objects import Extrusion, Group
+from nicegui.elements.scene.scene_objects import Extrusion, Group
 
 from .obstacle import Obstacle
 from .path_planner import PathPlanner

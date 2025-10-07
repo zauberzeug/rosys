@@ -43,8 +43,8 @@ def objgraph_page() -> None:
 
         class_search = ui.input('Search Class', value='Client')
         ui.button('Update Graph', on_click=update_graph)
-        class_search_result = ui.html()
-        most_common_search_result = ui.html()
+        class_search_result = ui.html(sanitize=False)
+        most_common_search_result = ui.html(sanitize=False)
 
 
 @run.awaitable

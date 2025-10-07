@@ -48,15 +48,15 @@ class Event(Generic[P]):
     def register_ui(self, callback: Callable[P, Any]) -> Event[P]:
         self.register(callback)
         client = context.client
-        if not client.shared:
-            async def register_disconnect():
-                try:
-                    await client.connected(timeout=10.0)
-                    client.on_disconnect(lambda: self.unregister(callback))
-                except TimeoutError:
-                    log.warning('could not register disconnect for callback=%s', callback)
-                    self.unregister(callback)
-            background_tasks.create(register_disconnect())
+
+        async def register_disconnect():
+            try:
+                await client.connected(timeout=10.0)
+                client.on_delete(lambda: self.unregister(callback))
+            except TimeoutError:
+                log.warning('could not register disconnect for callback=%s', callback)
+                self.unregister(callback)
+        background_tasks.create(register_disconnect())
         return self
 
     def unregister(self, callback: Callable[P, Any]) -> None:

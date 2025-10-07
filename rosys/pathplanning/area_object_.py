@@ -1,4 +1,4 @@
-from nicegui.elements.scene_objects import Group, Object3D
+from nicegui.elements.scene.scene_objects import Group, Object3D
 
 from .area import Area
 from .area_manipulation import AreaManipulation, AreaManipulationMode
