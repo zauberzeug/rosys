@@ -1030,6 +1030,21 @@ files = [
 ]
 
 [[package]]
+name = "dunamai"
+version = "1.25.0"
+description = "Dynamic version generation"
+optional = false
+python-versions = ">=3.5"
+groups = ["dev"]
+files = [
+    {file = "dunamai-1.25.0-py3-none-any.whl", hash = "sha256:7f9dc687dd3256e613b6cc978d9daabfd2bb5deb8adc541fc135ee423ffa98ab"},
+    {file = "dunamai-1.25.0.tar.gz", hash = "sha256:a7f8360ea286d3dbaf0b6a1473f9253280ac93d619836ad4514facb70c0719d1"},
+]
+
+[package.dependencies]
+packaging = ">=20.9"
+
+[[package]]
 name = "ecdsa"
 version = "0.19.1"
 description = "ECDSA cryptographic signature library (pure python)"
@@ -1579,7 +1594,7 @@ version = "3.1.6"
 description = "A very fast and expressive template engine."
 optional = false
 python-versions = ">=3.7"
-groups = ["main"]
+groups = ["main", "dev"]
 files = [
     {file = "jinja2-3.1.6-py3-none-any.whl", hash = "sha256:85ece4451f492d0c13c5dd7c13a64681a86afae63a5f347908daf103ce6d2f67"},
     {file = "jinja2-3.1.6.tar.gz", hash = "sha256:0137fb05990d35f1275a587e9aee6d56da821fc83491a0fb838183be43f66d6d"},
@@ -1786,7 +1801,7 @@ version = "3.0.2"
 description = "Safely add untrusted strings to HTML/XML markup."
 optional = false
 python-versions = ">=3.9"
-groups = ["main"]
+groups = ["main", "dev"]
 files = [
     {file = "MarkupSafe-3.0.2-cp310-cp310-macosx_10_9_universal2.whl", hash = "sha256:7e94c425039cde14257288fd61dcfb01963e658efbc0ff54f5306b06054700f8"},
     {file = "MarkupSafe-3.0.2-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:9e2d922824181480953426608b81967de705c3cef4d1af983af849d7bd619158"},
@@ -2547,6 +2562,26 @@ files = [
 [package.extras]
 dev = ["pre-commit", "tox"]
 testing = ["pytest", "pytest-benchmark"]
+
+[[package]]
+name = "poetry-dynamic-versioning"
+version = "1.9.1"
+description = "Plugin for Poetry to enable dynamic versioning based on VCS tags"
+optional = false
+python-versions = "<4.0,>=3.7"
+groups = ["dev"]
+files = [
+    {file = "poetry_dynamic_versioning-1.9.1-py3-none-any.whl", hash = "sha256:65a0c814e6d30d4807734a3c34edf261fd7cc3b340dbd23b6a33ee41f7d0b547"},
+    {file = "poetry_dynamic_versioning-1.9.1.tar.gz", hash = "sha256:d6e7b9df817aa2ca4946cd695c6c89e1379d2e6c640f008a9b6170d081a9da48"},
+]
+
+[package.dependencies]
+dunamai = ">=1.25.0,<2.0.0"
+jinja2 = ">=2.11.1,<4"
+tomlkit = ">=0.4"
+
+[package.extras]
+plugin = ["poetry (>=1.2.0)"]
 
 [[package]]
 name = "pre-commit"
@@ -4156,4 +4191,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11, <3.14"
-content-hash = "adec45f1d895c5dd58b290322213eadd5c622e5228504d62ef6d6b4975965ccb"
+content-hash = "cd78a00bd800080ff33ab6bd821c99ee46c1071024a2baec7c996f4129c19e5f"
