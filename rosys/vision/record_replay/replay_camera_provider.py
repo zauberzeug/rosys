@@ -73,7 +73,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
             new_time = min(self._current_time + skip_time, self._end_time)
             self.jump_to_time(new_time)
 
-        with ui.row().classes('w-full items-center'):
+        with ui.row().classes('w-full items-center gap-2'):
             ui.button(on_click=_skip_back, icon='sym_o_replay') \
                 .props('dense color="secondary" size="md"') \
                 .tooltip(f'<- {skip_time}s')
@@ -86,7 +86,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
             ui.slider(min=0.25, max=4, step=0.25, on_change=lambda e: self.set_speed(e.value)) \
                 .bind_value_from(self, '_playback_speed') \
                 .props('label snap') \
-                .classes('w-32')
+                .classes('w-32 ml-4')
         s = ui.slider(min=self._start_time,
                       max=self._end_time,
                       value=self._current_time) \
