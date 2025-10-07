@@ -69,6 +69,24 @@ build-backend = "poetry_dynamic_versioning.backend"
 [tool.poetry-dynamic-versioning]
 enable = true
 vcs = "git"
+style = "pep440"
+format-jinja = """
+    {%- if distance == 0 -%}
+        {{ serialize_pep440(base, stage, revision) }}{% if dirty %}+dirty{% endif %}
+    {%- elif revision is not none -%}
+        {%- if dirty -%}
+            {{ serialize_pep440(base, stage, revision + 1, dev=distance, metadata=[commit, "dirty"]) }}
+        {%- else -%}
+            {{ serialize_pep440(base, stage, revision + 1, dev=distance, metadata=[commit]) }}
+        {%- endif -%}
+    {%- else -%}
+        {%- if dirty -%}
+            {{ serialize_pep440(bump_version(base), stage, revision, dev=distance, metadata=[commit, "dirty"]) }}
+        {%- else -%}
+            {{ serialize_pep440(bump_version(base), stage, revision, dev=distance, metadata=[commit]) }}
+        {%- endif -%}
+    {%- endif -%}
+"""
 
 [tool.mypy]
 python_version = "3.11"
