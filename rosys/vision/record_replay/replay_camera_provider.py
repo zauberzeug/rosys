@@ -58,11 +58,35 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         else:
             self.play()
 
-    def create_ui(self) -> None:
-        ui.button(on_click=self.toggle_running, icon='play_arrow') \
-            .bind_icon_from(self, '_running', backward=lambda p: 'pause' if p else 'play_arrow') \
-            .props('dense color="secondary" size="md"') \
-            .tooltip('Play/Pause')
+    def create_ui(self, *, skip_time: float = 2.0, time_label_format: str = '%d.%m.%Y %H:%M:%S') -> None:
+        """
+        Create a simple UI for controlling the replay.
+
+        :param skip_time: the amount of time to skip when pressing the skip buttons (in seconds)
+        :param time_label_format: the format to be used for the current time label (used by `datetime.strftime`)
+        """
+        def _skip_back() -> None:
+            new_time = max(self._current_time - skip_time, self._start_time)
+            self.jump_to_time(new_time)
+
+        def _skip_forward() -> None:
+            new_time = min(self._current_time + skip_time, self._end_time)
+            self.jump_to_time(new_time)
+
+        with ui.row().classes('w-full items-center'):
+            ui.button(on_click=_skip_back, icon='sym_o_replay') \
+                .props('dense color="secondary" size="md"') \
+                .tooltip(f'<- {skip_time}s')
+            ui.button(on_click=self.toggle_running, icon='play_arrow') \
+                .bind_icon_from(self, '_running', backward=lambda p: 'pause' if p else 'play_arrow') \
+                .props('dense color="secondary" size="md"')
+            ui.button(on_click=_skip_forward, icon='sym_o_forward_media') \
+                .props('dense color="secondary" size="md"') \
+                .tooltip(f'-> {skip_time}s')
+            ui.slider(min=0.25, max=4, step=0.25, on_change=lambda e: self.set_speed(e.value)) \
+                .bind_value_from(self, '_playback_speed') \
+                .props('label snap') \
+                .classes('w-32')
         s = ui.slider(min=self._start_time,
                       max=self._end_time,
                       value=self._current_time) \
@@ -70,7 +94,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
             .on('change', lambda e: self.jump_to_time(e.args)) \
             .props('label-always') \
             .classes('w-full')
-        s.bind_value_to(s.props, 'label-value', lambda x: f'{datetime.fromtimestamp(x).strftime("%d.%m.%Y %H:%M:%S")}')
+        s.bind_value_to(s.props, 'label-value', lambda x: f'{datetime.fromtimestamp(x).strftime(time_label_format)}')
 
     def set_speed(self, speed: float) -> None:
         """Set the playback speed.
