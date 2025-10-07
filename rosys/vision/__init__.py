@@ -13,6 +13,7 @@ from .detector_simulation import DetectorSimulation, SimulatedObject
 from .image import Image, ImageSize
 from .mjpeg_camera import MjpegCamera, MjpegCameraProvider
 from .multi_camera_provider import MultiCameraProvider
+from .record_replay import ImageRecorder, ReplayCamera, ReplayCameraProvider
 from .rtsp_camera import RtspCamera, RtspCameraProvider
 from .simulated_camera import SimulatedCalibratableCamera, SimulatedCamera, SimulatedCameraProvider
 from .spatial_resection import SpatialResection, SpatialResectionResult
@@ -38,6 +39,7 @@ __all__ = [
     'DetectorHardware',
     'DetectorSimulation',
     'Image',
+    'ImageRecorder',
     'ImageSize',
     'Intrinsics',
     'MjpegCamera',
@@ -45,6 +47,8 @@ __all__ = [
     'MultiCameraProvider',
     'PointAnnotation',
     'PointDetection',
+    'ReplayCamera',
+    'ReplayCameraProvider',
     'RtspCamera',
     'RtspCameraProvider',
     'SimulatedCalibratableCamera',
