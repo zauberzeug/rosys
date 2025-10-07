@@ -75,13 +75,13 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
 
         with ui.row().classes('w-full items-center gap-2'):
             ui.button(on_click=_skip_back, icon='sym_o_replay') \
-                .props('dense color="secondary" size="md"') \
+                .props('dense size="md"') \
                 .tooltip(f'<- {skip_time}s')
             ui.button(on_click=self.toggle_running, icon='play_arrow') \
                 .bind_icon_from(self, '_running', backward=lambda p: 'pause' if p else 'play_arrow') \
-                .props('dense color="secondary" size="md"')
+                .props('dense size="md"')
             ui.button(on_click=_skip_forward, icon='sym_o_forward_media') \
-                .props('dense color="secondary" size="md"') \
+                .props('dense size="md"') \
                 .tooltip(f'-> {skip_time}s')
             ui.slider(min=0.25, max=4, step=0.25, on_change=lambda e: self.set_speed(e.value)) \
                 .bind_value_from(self, '_playback_speed') \
