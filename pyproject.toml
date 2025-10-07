@@ -75,9 +75,9 @@ format-jinja = """
         {{ serialize_pep440(base, stage, revision) }}{% if dirty %}+dirty{% endif %}
     {%- else -%}
         {%- if dirty -%}
-            {{ serialize_pep440(base, stage, revision, dev=distance, metadata=[commit, "dirty"]) }}
+            {{ serialize_pep440(base, stage, revision, post=distance, metadata=[commit, "dirty"]) }}
         {%- else -%}
-            {{ serialize_pep440(base, stage, revision, dev=distance, metadata=[commit]) }}
+            {{ serialize_pep440(base, stage, revision, post=distance, metadata=[commit]) }}
         {%- endif -%}
     {%- endif -%}
 """
