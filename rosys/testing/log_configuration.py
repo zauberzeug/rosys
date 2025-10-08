@@ -63,7 +63,12 @@ def setup() -> None:
                 'handlers': ['console'],
                 'level': 'WARN',
                 'propagate': False,
-            }
+            },
+            'nicegui': {
+                'handlers': ['console'],
+                'level': 'WARN',
+                'propagate': False,
+            },
         },
     }
 
