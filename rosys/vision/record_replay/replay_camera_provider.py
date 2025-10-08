@@ -59,37 +59,28 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
             self.play()
 
     def create_ui(self, *, skip_time: float = 2.0, time_label_format: str = '%d.%m.%Y %H:%M:%S') -> None:
-        """
-        Create a simple UI for controlling the replay.
+        """Create a simple UI for controlling the replay.
 
         :param skip_time: the amount of time to skip when pressing the skip buttons (in seconds)
-        :param time_label_format: the format to be used for the current time label (used by `datetime.strftime`)
+        :param time_label_format: the format to be used for the current time label (used by ``datetime.strftime``)
         """
-        def _skip_back() -> None:
-            new_time = max(self._current_time - skip_time, self._start_time)
-            self.jump_to_time(new_time)
-
-        def _skip_forward() -> None:
-            new_time = min(self._current_time + skip_time, self._end_time)
-            self.jump_to_time(new_time)
-
-        with ui.row().classes('w-full items-center gap-2'):
-            ui.button(on_click=_skip_back, icon='sym_o_replay') \
-                .props('dense size="md"') \
+        with ui.row(align_items='center').classes('w-full gap-2'):
+            ui.button(icon='sym_o_replay') \
+                .on_click(lambda: self.jump_to_time(max(self._current_time - skip_time, self._start_time))) \
+                .props('dense size=md') \
                 .tooltip(f'<- {skip_time}s')
-            ui.button(on_click=self.toggle_running, icon='play_arrow') \
+            ui.button(icon='play_arrow', on_click=self.toggle_running) \
                 .bind_icon_from(self, '_running', backward=lambda p: 'pause' if p else 'play_arrow') \
-                .props('dense size="md"')
-            ui.button(on_click=_skip_forward, icon='sym_o_forward_media') \
-                .props('dense size="md"') \
+                .props('dense size=md')
+            ui.button(icon='sym_o_forward_media') \
+                .on_click(lambda: self.jump_to_time(min(self._current_time + skip_time, self._end_time))) \
+                .props('dense size=md') \
                 .tooltip(f'-> {skip_time}s')
             ui.slider(min=0.25, max=4, step=0.25, on_change=lambda e: self.set_speed(e.value)) \
                 .bind_value_from(self, '_playback_speed') \
                 .props('label snap') \
                 .classes('w-32 ml-4')
-        s = ui.slider(min=self._start_time,
-                      max=self._end_time,
-                      value=self._current_time) \
+        s = ui.slider(min=self._start_time, max=self._end_time) \
             .bind_value(self, '_current_time') \
             .on('change', lambda e: self.jump_to_time(e.args)) \
             .props('label-always') \
@@ -104,6 +95,14 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         """
         self._playback_speed = speed
 
+    def jump_to(self, percent: float) -> None:
+        """Jump to a specific point in the replay.
+
+        :param percent: a value between 0.0 and 100.0, where 0.0 is the start and 100.0 is the end
+        """
+        assert 0.0 <= percent <= 100.0, 'Percent must be between 0.0 and 100.0'
+        self.jump_to_time(self._start_time + (percent / 100.0) * (self._end_time - self._start_time))
+
     def jump_to_time(self, time: float) -> None:
         """Jump to a specific time in the replay.
 
@@ -112,14 +111,6 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         assert self._start_time <= time <= self._end_time, f'Time must be between {self._start_time} & {self._end_time}'
         self.clear_camera_images()
         self._set_replay_time(time)
-
-    def jump_to(self, percent: float) -> None:
-        """Jump to a specific point in the replay.
-
-        :param percent: a value between 0.0 and 100.0, where 0.0 is the start and 100.0 is the end
-        """
-        assert 0.0 <= percent <= 100.0, 'Percent must be between 0.0 and 100.0'
-        self.jump_to_time(self._start_time + (percent / 100.0) * (self._end_time - self._start_time))
 
     def _set_replay_time(self, time: float) -> None:
         self._current_time = time
