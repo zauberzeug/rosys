@@ -38,7 +38,7 @@ async def test_registering_same_handler_multiple_times():
     TEST_EVENT.subscribe(handler)
     TEST_EVENT.subscribe(handler)
     await TEST_EVENT.call(42)
-    assert numbers == [42], 'the same handler should only be registered once'
+    assert numbers == [42, 42], 'the same handler can be registered multiple times'
 
 
 async def test_registering_lambdas():
