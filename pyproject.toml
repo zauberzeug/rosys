@@ -8,7 +8,6 @@ readme = "README.md"
 repository = "https://github.com/zauberzeug/rosys"
 keywords = ["robot", "framework", "automation", "control", "steer"]
 
-
 [tool.poetry.dependencies]
 python = ">=3.11, <3.14"
 nicegui = "^2.0.0"
@@ -63,7 +62,10 @@ pre-commit = "^4.0.1"
 poetry-dynamic-versioning = "^1.8.0"
 
 [build-system]
-requires = ["poetry-core>=1.0.0", "poetry-dynamic-versioning>=1.0.0,<2.0.0"]
+requires = [
+    "poetry-core>=1.0.0",
+    "poetry-dynamic-versioning>=1.0.0,<2.0.0",
+]
 build-backend = "poetry_dynamic_versioning.backend"
 
 [tool.poetry-dynamic-versioning]
