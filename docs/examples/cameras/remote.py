@@ -27,7 +27,7 @@ async def add_main_camera(camera: rosys.vision.Camera) -> None:
         main_cam = ui.interactive_image()
         ui.timer(0.1, lambda: main_cam.set_source(camera.get_latest_image_url()))
 
-camera_provider.CAMERA_ADDED.register_ui(add_main_camera)
+camera_provider.CAMERA_ADDED.subscribe(add_main_camera)
 
 with ui.card().tight().style('width:30em') as camera_card:
     ui.label('seeking main camera').classes('m-8 text-center')

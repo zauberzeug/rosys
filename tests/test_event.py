@@ -1,7 +1,7 @@
 import pytest
+from nicegui import Event
 
 import rosys
-from rosys.event import Event
 from rosys.testing import forward
 
 TEST_EVENT = Event[int]()
@@ -13,11 +13,11 @@ async def test_register_and_unregister():
     await TEST_EVENT.call(1)
     assert numbers == []
 
-    TEST_EVENT.register(handler)
+    TEST_EVENT.subscribe(handler)
     await TEST_EVENT.call(2)
     assert numbers == [2]
 
-    TEST_EVENT.unregister(handler)
+    TEST_EVENT.unsubscribe(handler)
     await TEST_EVENT.call(3)
     assert numbers == [2]
 
@@ -26,8 +26,8 @@ async def test_registering_multiple_handlers():
     def handler1(number: int) -> None: numbers.append(number)
     def handler2(number: int) -> None: numbers.append(number)
     numbers = []
-    TEST_EVENT.register(handler1)
-    TEST_EVENT.register(handler2)
+    TEST_EVENT.subscribe(handler1)
+    TEST_EVENT.subscribe(handler2)
     await TEST_EVENT.call(42)
     assert numbers == [42, 42], 'all registered handlers have been called'
 
@@ -35,15 +35,15 @@ async def test_registering_multiple_handlers():
 async def test_registering_same_handler_multiple_times():
     def handler(number: int) -> None: numbers.append(number)
     numbers = []
-    TEST_EVENT.register(handler)
-    TEST_EVENT.register(handler)
+    TEST_EVENT.subscribe(handler)
+    TEST_EVENT.subscribe(handler)
     await TEST_EVENT.call(42)
     assert numbers == [42], 'the same handler should only be registered once'
 
 
 async def test_registering_lambdas():
     numbers = []
-    TEST_EVENT.register(lambda number: numbers.append(number))
+    TEST_EVENT.subscribe(lambda number: numbers.append(number))
     await TEST_EVENT.call(42)
     assert numbers == [42]
 
@@ -58,7 +58,7 @@ async def test_fire_and_forget_with_emit():
         raise Exception('some failure which should be detected even when using "fire and forget"')
 
     numbers = []
-    TEST_EVENT.register(handle_event)
+    TEST_EVENT.subscribe(handle_event)
     TEST_EVENT.emit(42)
     await forward(0.5)
     assert numbers == []

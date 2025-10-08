@@ -13,9 +13,9 @@ from typing import Any, ClassVar, Literal
 
 import numpy as np
 import psutil
-from nicegui import Client, app, background_tasks, ui
+from nicegui import Client, Event, app, background_tasks, ui
 
-from . import core, event, helpers, run
+from . import core, helpers, run
 from .config import Config
 from .geometry.frame3d_registry import frame_registry
 from .helpers import invoke, is_stopping
@@ -40,7 +40,7 @@ class Notification:
     message: str
 
 
-NEW_NOTIFICATION = event.Event[str]()
+NEW_NOTIFICATION = Event[str]()
 """notify the user (string argument: message)"""
 
 
@@ -241,9 +241,6 @@ async def startup() -> None:
     for handler in startup_handlers:
         _run_handler(handler)
 
-    for coroutine in event.startup_coroutines:
-        await coroutine
-
 
 async def _garbage_collection() -> None:
     if psutil.virtual_memory().free < config.garbage_collection_mbyte_limit * 1_000_000:
@@ -252,17 +249,6 @@ async def _garbage_collection() -> None:
         gc.collect()
         await sleep(1)  # NOTE ensure all warnings appear before sending "finished" message
         log.warning('finished garbage collection')
-
-
-async def _watch_emitted_events() -> None:
-    try:
-        for task in event.tasks:
-            if task.done() and task.exception():
-                _state.exception = task.exception()
-                log.exception('task failed to execute', exc_info=task.exception())
-        event.tasks = [t for t in event.tasks if not t.done()]
-    except Exception:
-        log.exception('failed to watch emitted events')
 
 
 async def shutdown() -> None:
@@ -300,7 +286,6 @@ def reset_after_test() -> None:
     tasks.clear()
     _state.startup_finished = False
     shutdown_handlers.clear()
-    event.reset()
     frame_registry.clear()
 
     Persistable.instances.clear()
@@ -309,7 +294,6 @@ def reset_after_test() -> None:
 
 def register_base_startup_handlers() -> None:
     on_repeat(_garbage_collection, 60)
-    on_repeat(_watch_emitted_events, 0.1)
 
 
 gc.disable()  # NOTE disable automatic garbage collection to optimize performance

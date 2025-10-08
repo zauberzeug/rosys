@@ -6,7 +6,8 @@ from enum import Enum
 from typing import Literal
 from uuid import uuid4
 
-from ..event import Event
+from nicegui import Event
+
 from .detections import Category, Detections
 from .image import Image
 

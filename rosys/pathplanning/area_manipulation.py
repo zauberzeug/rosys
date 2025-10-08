@@ -2,11 +2,10 @@ import uuid
 from enum import Enum
 
 import numpy as np
-from nicegui import binding, ui
+from nicegui import Event, binding, ui
 from nicegui.events import SceneClickEventArguments, SceneDragEventArguments
 
 from .. import rosys
-from ..event import Event
 from ..geometry import Point
 from .area import Area
 from .path_planner import PathPlanner

@@ -1,6 +1,7 @@
 import abc
 
-from ..event import Event
+from nicegui import Event
+
 from .estop import EStop
 from .expander import ExpanderHardware
 from .module import Module, ModuleHardware, ModuleSimulation

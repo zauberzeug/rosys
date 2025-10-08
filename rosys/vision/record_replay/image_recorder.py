@@ -32,9 +32,9 @@ class ImageRecorder:
         """Enable or disable recording images from the camera provider."""
         self._recording = value
         if self._recording:
-            self.camera_provider.NEW_IMAGE.register(self._save_image)
+            self.camera_provider.NEW_IMAGE.subscribe(self._save_image)
         else:
-            self.camera_provider.NEW_IMAGE.unregister(self._save_image)
+            self.camera_provider.NEW_IMAGE.unsubscribe(self._save_image)
 
     async def _save_image(self, image: Image):
         """Save the provided image to the data directory.

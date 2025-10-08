@@ -16,9 +16,9 @@ class AreaObject(Group):
         self.path_planner = path_planner
         self.area_manipulation = area_manipulation
 
-        path_planner.AREAS_CHANGED.register_ui(self.update)
+        path_planner.AREAS_CHANGED.subscribe(self.update)
         if area_manipulation:
-            area_manipulation.MODE_CHANGED.register_ui(lambda _: self.update())
+            area_manipulation.MODE_CHANGED.subscribe(lambda _: self.update())
 
         self.update()
 
