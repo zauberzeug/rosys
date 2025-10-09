@@ -152,7 +152,7 @@ class GnssHardware(Gnss):
                 await rosys.sleep(0.1)
                 continue
             assert self.serial_connection is not None
-            # self.serial_connection.reset_input_buffer()
+            self.serial_connection.reset_input_buffer()
             measurement = await self._read()
             if measurement is not None:
                 self.last_measurement = measurement
