@@ -1,12 +1,10 @@
 from __future__ import annotations
 
-import asyncio
 import logging
 import math
 import re
 from abc import ABC
 from collections import defaultdict, deque
-from collections.abc import AsyncGenerator
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import IntEnum
@@ -14,7 +12,7 @@ from typing import ClassVar
 
 import numpy as np
 import serial
-from nicegui import background_tasks, ui
+from nicegui import ui
 from serial.tools import list_ports
 
 from .. import rosys
@@ -132,11 +130,8 @@ class GnssHardware(Gnss):
         self.antenna_pose = antenna_pose or Pose(x=0.0, y=0.0, yaw=0.0)
         self._reconnect_interval = reconnect_interval
         self.serial_connection: serial.Serial | None = None
-        self._capture_task: asyncio.Task | None = None
-        self._clear_buffer: bool = False
-        rosys.on_startup(self._startup)
-        # self.log.setLevel(logging.DEBUG)
-
+        rosys.on_startup(self._run)
+        self.log.setLevel(logging.DEBUG)
         # TODO: just for evaluation, remove later
         self.diffs: deque[float] = deque(maxlen=10 * 10)
 
@@ -148,92 +143,50 @@ class GnssHardware(Gnss):
         if not self.serial_connection.isOpen():
             self.log.debug('Device not open')
             return False
-        if not self._capture_task or self._capture_task.done():
-            self.log.debug('Capture task not running')
-            return False
         return True
 
-    async def _startup(self) -> None:
-        self.log.debug('Starting GNSS task')
-        if self._capture_task is not None and not self._capture_task.done():
-            self.log.warning('GNSS task already running')
-            return
-        self._capture_task = background_tasks.create(self._run(), name='GNSS')
-
     async def _run(self) -> None:
-        assert self._capture_task is not None and not self._capture_task.done()
-
-        async def stream() -> AsyncGenerator[GnssMeasurement | None, None]:
-            buffer = ''
-            by_ts: dict[str, dict[str, str]] = defaultdict(dict)
-            while True:
-                if not self.is_connected and not await self._connect():
-                    continue
-                assert self.serial_connection is not None
-                if self._clear_buffer:
-                    buffer = ''
-                    self.serial_connection.reset_input_buffer()
-                    self._clear_buffer = False
-                if len(buffer) > self.MAX_BUFFER_LENGTH:
-                    buffer = ''
-                    self.log.debug('buffer pruned')
-                    continue
-                await rosys.sleep(0.001)
-                result = self.serial_connection.read_until(b'\r\n')
-                if not result:
-                    self.log.debug('No data')
-                line = result.decode('utf-8')
-                buffer += line
-                # self.log.debug('line: %s', line)
-                # self.log.debug('buffer: %s', buffer)
-                # self.log.debug('repr(buffer): %s', repr(buffer))
-
-                matches = list(self.NMEA_PATTERN.finditer(buffer))
-                self.log.debug('--------------------------------')
-                for match in reversed(matches):
-                    self.log.debug('match: %s', match)
-                    type_, nmea_timestamp = match['type'], match['ts']
-                    if type_ not in self.NMEA_TYPES:
-                        continue
-                    sentence = match.group(0)
-                    sentence = sentence[:sentence.find('*')]
-                    by_ts[nmea_timestamp][type_] = sentence
-                    # self.log.debug('buffer: %s', buffer)
-                    buffer = buffer[:match.start()]
-                    # self.log.warning('buffer(%s): %s', match.start(), buffer)
-                    # self.log.error('by_ts: %s', by_ts)
-                    if self.NMEA_TYPES.issubset(by_ts[nmea_timestamp]):
-                        self.log.debug('found complete trio: %s by %s', by_ts[nmea_timestamp], nmea_timestamp)
-                        measurement = self._parse_measurement(by_ts[nmea_timestamp]['GPGGA'],
-                                                              by_ts[nmea_timestamp]['GPGST'],
-                                                              by_ts[nmea_timestamp]['PSSN,HRP'])
-                        buffer = ''
-                        by_ts.clear()
-                        if measurement is not None:
-                            yield measurement
-                        break
-                else:
-                    # self.log.debug('No complete trio found. length: %s', len(buffer))
-                    continue
-
+        buffer = ''
+        by_ts: dict[str, dict[str, str]] = defaultdict(dict)
         while True:
-            try:
-                async for measurement in stream():
-                    assert measurement is not None
+            await rosys.sleep(0)
+            if not self.is_connected and not await self._connect():
+                continue
+            assert self.serial_connection is not None
+            result = self.serial_connection.read_all().decode('utf-8', errors='replace')
+            if not result:
+                continue
+            buffer += result
+            matches = list(self.NMEA_PATTERN.finditer(buffer))
+            for match in reversed(matches):
+                self.log.debug('match: %s', match)
+                type_, nmea_timestamp = match['type'], match['ts']
+                if type_ not in self.NMEA_TYPES:
+                    continue
+                sentence = match.group(0)
+                sentence = sentence[:sentence.find('*')]
+                by_ts[nmea_timestamp][type_] = sentence
+                buffer = buffer[:match.start()]
+                if self.NMEA_TYPES.issubset(by_ts[nmea_timestamp]):
+                    self.log.debug('found complete trio: %s', nmea_timestamp)
+                    measurement = self._parse_measurement(by_ts[nmea_timestamp]['GPGGA'],
+                                                          by_ts[nmea_timestamp]['GPGST'],
+                                                          by_ts[nmea_timestamp]['PSSN,HRP'])
+                    if measurement is None:
+                        self.log.debug('Failed to parse measurement: %s', by_ts[nmea_timestamp])
+                        continue
+                    buffer = ''
+                    by_ts.clear()
                     diff = round(((measurement.gnss_time - rosys.time() + SECONDS_HALF_DAY) %
                                   SECONDS_DAY) - SECONDS_HALF_DAY, 3)
                     # TODO: just for evaluation, remove later
                     self.diffs.append(diff)
                     if abs(diff) > self.MAX_TIMESTAMP_DIFF:
                         self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
-                        self._clear_buffer = True
                         continue
                     self.log.debug('dt: %s - %s', diff, measurement)
                     self.last_measurement = measurement
                     self.NEW_MEASUREMENT.emit(measurement)
-            except Exception as e:
-                self.log.exception('Error in GNSS stream: %s', e)
-            await rosys.sleep(self._reconnect_interval)
 
     async def _connect(self) -> bool:
         try:
