@@ -1,5 +1,8 @@
 import logging
+from datetime import datetime
 from pathlib import Path
+
+from nicegui import ui
 
 from ... import rosys
 from ..camera_provider import CameraProvider
@@ -49,6 +52,41 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         self._running = False
         self.jump_to(0.0)
 
+    def toggle_running(self) -> None:
+        if self._running:
+            self.pause()
+        else:
+            self.play()
+
+    def create_ui(self, *, skip_time: float = 2.0, time_label_format: str = '%d.%m.%Y %H:%M:%S') -> None:
+        """Create a simple UI for controlling the replay.
+
+        :param skip_time: the amount of time to skip when pressing the skip buttons (in seconds)
+        :param time_label_format: the format to be used for the current time label (used by ``datetime.strftime``)
+        """
+        with ui.row(align_items='center').classes('w-full gap-2'):
+            ui.button(icon='sym_o_replay') \
+                .on_click(lambda: self.jump_to_time(max(self._current_time - skip_time, self._start_time))) \
+                .props('dense size=md') \
+                .tooltip(f'<- {skip_time}s')
+            ui.button(icon='play_arrow', on_click=self.toggle_running) \
+                .bind_icon_from(self, '_running', backward=lambda p: 'pause' if p else 'play_arrow') \
+                .props('dense size=md')
+            ui.button(icon='sym_o_forward_media') \
+                .on_click(lambda: self.jump_to_time(min(self._current_time + skip_time, self._end_time))) \
+                .props('dense size=md') \
+                .tooltip(f'-> {skip_time}s')
+            ui.slider(min=0.25, max=4, step=0.25, on_change=lambda e: self.set_speed(e.value)) \
+                .bind_value_from(self, '_playback_speed') \
+                .props('label snap') \
+                .classes('w-32 ml-4')
+        s = ui.slider(min=self._start_time, max=self._end_time) \
+            .bind_value(self, '_current_time') \
+            .on('change', lambda e: self.jump_to_time(e.args)) \
+            .props('label-always') \
+            .classes('w-full')
+        s.bind_value_to(s.props, 'label-value', lambda x: f'{datetime.fromtimestamp(x).strftime(time_label_format)}')
+
     def set_speed(self, speed: float) -> None:
         """Set the playback speed.
 
@@ -63,8 +101,16 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         :param percent: a value between 0.0 and 100.0, where 0.0 is the start and 100.0 is the end
         """
         assert 0.0 <= percent <= 100.0, 'Percent must be between 0.0 and 100.0'
+        self.jump_to_time(self._start_time + (percent / 100.0) * (self._end_time - self._start_time))
+
+    def jump_to_time(self, time: float) -> None:
+        """Jump to a specific time in the replay.
+
+        :param time: time in seconds
+        """
+        assert self._start_time <= time <= self._end_time, f'Time must be between {self._start_time} & {self._end_time}'
         self.clear_camera_images()
-        self._set_replay_time(self._start_time + (percent / 100.0) * (self._end_time - self._start_time))
+        self._set_replay_time(time)
 
     def _set_replay_time(self, time: float) -> None:
         self._current_time = time
@@ -100,7 +146,6 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
 
         now = rosys.time()
         new_replay_time = self._current_time + (now - self._last_update_time) * self._playback_speed
-        self._set_replay_time(new_replay_time)
         if new_replay_time > self._end_time:
             new_replay_time = self._start_time + (new_replay_time - self._end_time)
         self._set_replay_time(new_replay_time)
