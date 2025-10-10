@@ -1,4 +1,3 @@
-import logging
 import re
 from collections import deque
 from typing import ClassVar
@@ -14,8 +13,6 @@ from .nmea import Gga, GpsQuality, Gst, Pssn
 
 class GnssHardware(Gnss):
     """This hardware module connects to a Septentrio SimpleRTK3b (Mosaic-H) GNSS receiver."""
-
-    # Maximum allowed timestamp difference in seconds (default is ok for Kalman Filter with about 1 km/h)
     MAX_TIMESTAMP_DIFF = 0.05
     MAX_BUFFER_LENGTH = 2000
     NMEA_TYPES: ClassVar[set[str]] = {'GPGGA', 'GPGST', 'PSSN,HRP'}
@@ -31,7 +28,6 @@ class GnssHardware(Gnss):
         self._reconnect_interval = reconnect_interval
         self.serial_connection: serial.Serial | None = None
         rosys.on_startup(self._run)
-        self.log.setLevel(logging.DEBUG)
         # TODO: just for evaluation, remove later
         self.diffs: deque[float] = deque(maxlen=10 * 10)
 
@@ -86,8 +82,6 @@ class GnssHardware(Gnss):
                                                       latest_messages['PSSN,HRP'][1])
                 if measurement is None:
                     continue
-                buffer = ''
-                latest_messages.clear()
                 diff = measurement.age
                 # TODO: just for evaluation, remove later
                 self.diffs.append(diff)
@@ -97,6 +91,9 @@ class GnssHardware(Gnss):
                 self.log.debug('dt: %s - %s', diff, measurement)
                 self.last_measurement = measurement
                 self.NEW_MEASUREMENT.emit(measurement)
+                buffer = ''
+                latest_messages.clear()
+                break
 
     async def _connect(self) -> bool:
         try:
