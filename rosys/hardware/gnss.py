@@ -119,7 +119,7 @@ class GnssHardware(Gnss):
     MAX_TIMESTAMP_DIFF = 0.05
     MAX_BUFFER_LENGTH = 2000
     NMEA_TYPES: ClassVar[set[str]] = {'GPGGA', 'GPGST', 'PSSN,HRP'}
-    NMEA_PATTERN = re.compile(r'\$(?P<type>[A-Z,]+),(?P<timestamp>\d{6}(?:\.\d+)?)[^*]*\*[0-9A-Fa-f]{2}\r\n')
+    NMEA_PATTERN = re.compile(r'\$(?P<type>[A-Z,]+),(?P<ts>\d{6}(?:\.\d+)?)[^*]*\*[0-9A-Fa-f]{2}\r\n')
 
     def __init__(self, *, antenna_pose: Pose | None, reconnect_interval: float = 3.0) -> None:
         """
@@ -204,7 +204,7 @@ class GnssHardware(Gnss):
             # self.log.debug('--------------------------------')
             for match in reversed(matches):
                 self.log.debug('match: %s', match)
-                type_, nmea_timestamp = match['type'], match['timestamp']
+                type_, nmea_timestamp = match['type'], match['ts']
                 if type_ not in self.NMEA_TYPES:
                     continue
                 sentence = match.group(0)
