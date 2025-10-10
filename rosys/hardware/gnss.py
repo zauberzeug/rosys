@@ -4,7 +4,7 @@ import logging
 import math
 import re
 from abc import ABC
-from collections import defaultdict, deque
+from collections import deque
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import IntEnum
@@ -147,7 +147,7 @@ class GnssHardware(Gnss):
 
     async def _run(self) -> None:
         buffer = ''
-        by_ts: dict[str, dict[str, str]] = defaultdict(dict)
+        latest_messages: dict[str, tuple[str, str]] = {}  # type -> (timestamp, sentence)
         while True:
             await rosys.sleep(0)
             if not self.is_connected and not await self._connect():
@@ -165,28 +165,37 @@ class GnssHardware(Gnss):
                     continue
                 sentence = match.group(0)
                 sentence = sentence[:sentence.find('*')]
-                by_ts[nmea_timestamp][type_] = sentence
+                latest_messages[type_] = (nmea_timestamp, sentence)
                 buffer = buffer[:match.start()]
-                if self.NMEA_TYPES.issubset(by_ts[nmea_timestamp]):
-                    self.log.debug('found complete trio: %s', nmea_timestamp)
-                    measurement = self._parse_measurement(by_ts[nmea_timestamp]['GPGGA'],
-                                                          by_ts[nmea_timestamp]['GPGST'],
-                                                          by_ts[nmea_timestamp]['PSSN,HRP'])
-                    if measurement is None:
-                        self.log.debug('Failed to parse measurement: %s', by_ts[nmea_timestamp])
-                        continue
-                    buffer = ''
-                    by_ts.clear()
-                    diff = round(((measurement.gnss_time - rosys.time() + SECONDS_HALF_DAY) %
-                                  SECONDS_DAY) - SECONDS_HALF_DAY, 3)
-                    # TODO: just for evaluation, remove later
-                    self.diffs.append(diff)
-                    if abs(diff) > self.MAX_TIMESTAMP_DIFF:
-                        self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
-                        continue
-                    self.log.debug('dt: %s - %s', diff, measurement)
-                    self.last_measurement = measurement
-                    self.NEW_MEASUREMENT.emit(measurement)
+                if not self.NMEA_TYPES.issubset(latest_messages.keys()):
+                    continue
+                timestamps = {latest_messages[msg_type][0] for msg_type in self.NMEA_TYPES}
+                latest_timestamp = max(timestamps)
+                if len(timestamps) != 1:
+                    latest_messages = {msg_type: (timestamp, sentence)
+                                       for msg_type, (timestamp, sentence) in latest_messages.items()
+                                       if timestamp >= latest_timestamp}
+                    continue
+                if not self.NMEA_TYPES.issubset(latest_messages.keys()):
+                    continue
+                self.log.debug('found complete trio: %s', nmea_timestamp)
+                measurement = self._parse_measurement(latest_messages['GPGGA'][1],
+                                                      latest_messages['GPGST'][1],
+                                                      latest_messages['PSSN,HRP'][1])
+                if measurement is None:
+                    continue
+                buffer = ''
+                latest_messages.clear()
+                diff = round(((measurement.gnss_time - rosys.time() + SECONDS_HALF_DAY) %
+                              SECONDS_DAY) - SECONDS_HALF_DAY, 3)
+                # TODO: just for evaluation, remove later
+                self.diffs.append(diff)
+                if abs(diff) > self.MAX_TIMESTAMP_DIFF:
+                    self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
+                    continue
+                self.log.debug('dt: %s - %s', diff, measurement)
+                self.last_measurement = measurement
+                self.NEW_MEASUREMENT.emit(measurement)
 
     async def _connect(self) -> bool:
         try:
