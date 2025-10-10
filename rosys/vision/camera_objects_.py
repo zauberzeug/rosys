@@ -26,12 +26,14 @@ class CameraObjects(Group):
                  interval: float = 1.0
                  ) -> None:
         super().__init__()
+
         self.camera_provider = camera_provider
         self.camera_projector = camera_projector
         self.px_per_m = px_per_m
         self.debug = debug
         self.textures: dict[str, Texture] = {}
         self.image_shrink_factor = 2
+
         ui.timer(interval, self.update)
 
     @property
@@ -46,20 +48,18 @@ class CameraObjects(Group):
         }
 
     async def update(self) -> None:
-        if not self.visible_:
-            return
         await self.update_cameras()
         await self.update_images()
 
     async def update_cameras(self) -> None:
-        with self:
-            camera_groups = self.find_objects('camera')
-            for uid, camera_group in camera_groups.items():
-                if uid not in self.calibrated_cameras:
-                    camera_group.delete()
-            for uid, camera in self.calibrated_cameras.items():
-                assert camera.calibration is not None
-                if uid not in camera_groups:
+        camera_groups = self.find_objects('camera')
+        for uid, camera_group in camera_groups.items():
+            if uid not in self.calibrated_cameras:
+                camera_group.delete()
+        for uid, camera in self.calibrated_cameras.items():
+            assert camera.calibration is not None
+            if uid not in camera_groups:
+                with self:
                     with Group().with_name(f'camera_{uid}') as camera_groups[uid]:
                         with Group() as pyramid:
                             Cylinder(0, np.sqrt(0.5), 1, 4) \
@@ -73,36 +73,40 @@ class CameraObjects(Group):
                             camera.calibration.intrinsics.size.height / self.px_per_m,
                             camera.calibration.intrinsics.matrix[0][0] / self.px_per_m,
                         )
-                world_extrinsics = camera.calibration.extrinsics.resolve()
-                camera_groups[uid].move(*world_extrinsics.translation)
-                camera_groups[uid].rotate_R(world_extrinsics.rotation.R)
+            world_extrinsics = camera.calibration.extrinsics.resolve()
+            camera_groups[uid].move(*world_extrinsics.translation)
+            camera_groups[uid].rotate_R(world_extrinsics.rotation.R)
 
     async def update_images(self) -> None:
-        with self:
-            newest_images = [camera.latest_captured_image
-                             for camera in self.calibrated_cameras.values()
-                             if camera.latest_captured_image is not None]
-            current_uids = [image.camera_id for image in newest_images]
-            for uid, texture in list(self.textures.items()):
-                if uid not in current_uids:
-                    texture.delete()
-                    del self.textures[uid]
-            z = 0.0
-            for image in sorted(newest_images, key=lambda i: i.time):
-                camera = self.calibrated_cameras.get(image.camera_id)
-                if camera is None:
-                    continue
-                projection = self.camera_projector.projections.get(camera.id)
-                if projection is None:
-                    continue
-                coordinates = [[point and [point[0], point[1], 0] for point in row] for row in projection.coordinates]
-                url = f'{camera.get_image_url(image)}?shrink={self.image_shrink_factor}'
-                if image.camera_id not in self.textures:
+        newest_images = [camera.latest_captured_image
+                         for camera in self.calibrated_cameras.values()
+                         if camera.latest_captured_image is not None]
+
+        current_uids = [image.camera_id for image in newest_images]
+        for uid, texture in list(self.textures.items()):
+            if uid not in current_uids:
+                texture.delete()
+                del self.textures[uid]
+
+        z = 0.0
+        for image in sorted(newest_images, key=lambda i: i.time):
+            camera = self.calibrated_cameras.get(image.camera_id)
+            if camera is None:
+                continue
+            projection = self.camera_projector.projections.get(camera.id)
+            if projection is None:
+                continue
+            coordinates = [[point and [point[0], point[1], 0] for point in row] for row in projection.coordinates]
+
+            url = f'{camera.get_image_url(image)}?shrink={self.image_shrink_factor}'
+            if image.camera_id not in self.textures:
+                with self:
                     self.textures[image.camera_id] = Texture(url, coordinates).with_name(f'image_{image.id}')
-                texture = self.textures[image.camera_id]
-                z += 0.001
-                texture.move(z=z)
-                if texture.args[0] != url:
-                    texture.set_url(url)
-                if not await run.cpu_bound(CameraProjector.allclose, texture.args[1], coordinates):
-                    texture.set_coordinates(coordinates)
+            texture = self.textures[image.camera_id]
+
+            z += 0.001
+            texture.move(z=z)
+            if texture.args[0] != url:
+                texture.set_url(url)
+            if not await run.cpu_bound(CameraProjector.allclose, texture.args[1], coordinates):
+                texture.set_coordinates(coordinates)
