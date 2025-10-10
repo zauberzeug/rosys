@@ -4,7 +4,7 @@ import logging
 import math
 import re
 from abc import ABC
-from collections import deque
+from collections import defaultdict, deque
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import IntEnum
@@ -184,7 +184,7 @@ class GnssHardware(Gnss):
 
     async def _read(self) -> GnssMeasurement | None:
         buffer = ''
-        latest_messages: dict[str, tuple[str, str]] = {}  # type -> (timestamp, sentence)
+        by_ts: dict[str, dict[str, str]] = defaultdict(dict)
         while True:
             assert self.serial_connection is not None
             if len(buffer) > self.MAX_BUFFER_LENGTH:
@@ -209,51 +209,42 @@ class GnssHardware(Gnss):
                     continue
                 sentence = match.group(0)
                 sentence = sentence[:sentence.find('*')]
-                latest_messages[type_] = (nmea_timestamp, sentence)
+                by_ts[nmea_timestamp][type_] = sentence
                 self.log.debug('buffer: %s', buffer)
                 buffer = buffer[:match.start()]
                 # self.log.warning('buffer(%s): %s', match.start(), buffer)
-                # self.log.error('latest_messages: %s', latest_messages)
-
-                # Check if we have all required message types
-                if not self.NMEA_TYPES.issubset(latest_messages.keys()):
-                    continue
-                timestamps = {latest_messages[msg_type][0] for msg_type in self.NMEA_TYPES}
-                latest_timestamp = max(timestamps)
-                if len(timestamps) != 1:
-                    latest_messages = {msg_type: (timestamp, sentence)
-                                       for msg_type, (timestamp, sentence) in latest_messages.items()
-                                       if timestamp >= latest_timestamp}
-                    continue
-                self.log.debug('found complete set with timestamp: %s', latest_timestamp)
-                gga_msg = latest_messages['GPGGA'][1]
-                gga = Gga.from_sentence(gga_msg)
-                if gga is None:
-                    self.log.debug('Failed to parse GGA: %s', gga_msg)
-                    return None
-                gst_msg = latest_messages['GPGST'][1]
-                gst = Gst.from_sentence(gst_msg)
-                if gst is None:
-                    self.log.debug('Failed to parse GST: %s', gst_msg)
-                    return None
-                pssn_msg = latest_messages['PSSN,HRP'][1]
-                pssn = Pssn.from_sentence(pssn_msg)
-                if pssn is None:
-                    self.log.debug('Failed to parse PSSN: %s', pssn_msg)
-                    return None
-                last_heading = pssn.heading + self.antenna_pose.yaw_deg
-                antenna_pose = GeoPose.from_degrees(gga.latitude, gga.longitude, last_heading)
-                robot_pose = antenna_pose.relative_shift_by(x=-self.antenna_pose.x, y=-self.antenna_pose.y)
-                return GnssMeasurement(time=rosys.time(),
-                                       gnss_time=gga.timestamp,
-                                       pose=robot_pose,
-                                       latitude_std_dev=gst.latitude_std_dev,
-                                       longitude_std_dev=gst.longitude_std_dev,
-                                       heading_std_dev=pssn.heading_std_dev,
-                                       gps_quality=GpsQuality(gga.gps_quality),
-                                       num_satellites=gga.num_satellites,
-                                       hdop=gga.hdop,
-                                       altitude=gga.altitude)
+                # self.log.error('by_ts: %s', by_ts)
+                if self.NMEA_TYPES.issubset(by_ts[nmea_timestamp]):
+                    self.log.debug('found complete trio: %s by %s', by_ts[nmea_timestamp], nmea_timestamp)
+                    gga_msg = by_ts[nmea_timestamp]['GPGGA']
+                    gga = Gga.from_sentence(gga_msg)
+                    if gga is None:
+                        self.log.debug('Failed to parse GGA: %s', gga_msg)
+                        return None
+                    gst_msg = by_ts[nmea_timestamp]['GPGST']
+                    gst = Gst.from_sentence(gst_msg)
+                    if gst is None:
+                        self.log.debug('Failed to parse GST: %s', gst_msg)
+                        return None
+                    pssn_msg = by_ts[nmea_timestamp]['PSSN,HRP']
+                    pssn = Pssn.from_sentence(pssn_msg)
+                    if pssn is None:
+                        self.log.debug('Failed to parse PSSN: %s', pssn_msg)
+                        return None
+                    last_heading = pssn.heading + self.antenna_pose.yaw_deg
+                    antenna_pose = GeoPose.from_degrees(gga.latitude, gga.longitude, last_heading)
+                    robot_pose = antenna_pose.relative_shift_by(x=-self.antenna_pose.x, y=-self.antenna_pose.y)
+                    measurement = GnssMeasurement(time=rosys.time(),
+                                                  gnss_time=gga.timestamp,
+                                                  pose=robot_pose,
+                                                  latitude_std_dev=gst.latitude_std_dev,
+                                                  longitude_std_dev=gst.longitude_std_dev,
+                                                  heading_std_dev=pssn.heading_std_dev,
+                                                  gps_quality=GpsQuality(gga.gps_quality),
+                                                  num_satellites=gga.num_satellites,
+                                                  hdop=gga.hdop,
+                                                  altitude=gga.altitude)
+                    return measurement
 
     # TODO: move to helper and add search argument; for other serial devices
     def _find_device(self) -> str:
