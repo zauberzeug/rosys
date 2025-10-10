@@ -34,7 +34,7 @@ class LizardFirmware:
         self.core_checksum: str | None = None
 
         self._p0_flash_last_complete: float = 0.0
-        self.robot_brain.FLASH_P0_COMPLETE.register(lambda: setattr(self, '_p0_flash_last_complete', rosys.time()))
+        self.robot_brain.FLASH_P0_COMPLETE.subscribe(lambda: setattr(self, '_p0_flash_last_complete', rosys.time()))
 
     async def read_all(self) -> None:
         await self.read_online_version()

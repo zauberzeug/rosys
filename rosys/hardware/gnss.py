@@ -9,12 +9,11 @@ from enum import IntEnum
 
 import numpy as np
 import serial
-from nicegui import ui
+from nicegui import Event, ui
 from serial.tools import list_ports
 
 from .. import rosys
 from ..driving.driver import PoseProvider
-from ..event import Event
 from ..geometry import GeoPoint, GeoPose, Pose
 from ..run import io_bound
 

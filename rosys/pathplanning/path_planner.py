@@ -5,9 +5,10 @@ from copy import copy
 from multiprocessing import Pipe
 from typing import Any
 
+from nicegui import Event
+
 from .. import persistence, rosys, run
 from ..driving import PathSegment
-from ..event import Event
 from ..geometry import Point, Pose, Prism, Spline
 from .area import Area
 from .obstacle import Obstacle

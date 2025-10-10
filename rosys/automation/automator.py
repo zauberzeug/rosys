@@ -3,9 +3,10 @@ import logging
 from collections.abc import Callable, Coroutine
 from typing import Literal
 
+from nicegui import Event
+
 from .. import rosys
 from ..driving import Steerer
-from ..event import Event
 from .automation import Automation
 
 
@@ -58,10 +59,10 @@ class Automator:
         self.automation: Automation | None = None
 
         if steerer:
-            steerer.STEERING_STARTED.register(lambda: self.pause(because='steering started'))
+            steerer.STEERING_STARTED.subscribe(lambda: self.pause(because='steering started'))
 
-        self.AUTOMATION_PAUSED.register(lambda _: self._handle_interrupt())
-        self.AUTOMATION_STOPPED.register(lambda _: self._handle_interrupt(stop=True))
+        self.AUTOMATION_PAUSED.subscribe(lambda _: self._handle_interrupt())
+        self.AUTOMATION_STOPPED.subscribe(lambda _: self._handle_interrupt(stop=True))
 
         rosys.on_shutdown(lambda: self.stop(because='automator is shutting down'))
 

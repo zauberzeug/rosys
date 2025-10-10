@@ -41,7 +41,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
             camera = RtspCamera.from_dict(camera_data)
             self.add_camera(camera)
         for camera in self._cameras.values():
-            camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
+            camera.NEW_IMAGE.subscribe(self.NEW_IMAGE.emit)
 
     @staticmethod
     async def scan_for_cameras(network_interface: str | None = None) -> list[tuple[str, str]]:

@@ -8,8 +8,9 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from typing import Any, Self
 
+from nicegui import Event
+
 from ... import rosys
-from ...event import Event
 from ..image import Image
 from ..image_route import create_image_route
 

@@ -2,8 +2,9 @@ import logging
 from copy import deepcopy
 from typing import Protocol
 
+from nicegui import Event
+
 from .. import rosys
-from ..event import Event
 from ..geometry import Pose, Pose3d, PoseStep, Rotation, Velocity
 
 
@@ -29,7 +30,7 @@ class Odometer:
 
         self.log = logging.getLogger('rosys.odometer')
 
-        wheels.VELOCITY_MEASURED.register(self.handle_velocities)
+        wheels.VELOCITY_MEASURED.subscribe(self.handle_velocities)
         self.prediction: Pose = Pose()
         self.prediction_frame = Pose3d().as_frame('rosys.odometer.prediction')
         self.detection: Pose | None = None

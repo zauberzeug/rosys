@@ -1,6 +1,6 @@
 from contextlib import nullcontext
 
-from nicegui.elements.scene_objects import Extrusion, Group
+from nicegui.elements.scene.scene_objects import Extrusion, Group
 
 from .obstacle import Obstacle
 from .path_planner import PathPlanner
@@ -12,7 +12,7 @@ class ObstacleObject(Group):
         super().__init__()
 
         self.update(path_planner.obstacles)
-        path_planner.OBSTACLES_CHANGED.register_ui(self.update)
+        path_planner.OBSTACLES_CHANGED.subscribe(self.update)
 
     def update(self, obstacles: dict[str, Obstacle]) -> None:
         for obj in list(self.scene.objects.values()):

@@ -15,9 +15,9 @@ class MultiCameraProvider(CameraProvider):
         self.providers = camera_providers
         self.log = logging.getLogger('rosys.multi_camera_provider')
         for camera_provider in self.providers:
-            camera_provider.NEW_IMAGE.register(self.NEW_IMAGE.emit)
-            camera_provider.CAMERA_ADDED.register(self.CAMERA_ADDED.emit)
-            camera_provider.CAMERA_REMOVED.register(self.CAMERA_REMOVED.emit)
+            camera_provider.NEW_IMAGE.subscribe(self.NEW_IMAGE.emit)
+            camera_provider.CAMERA_ADDED.subscribe(self.CAMERA_ADDED.emit)
+            camera_provider.CAMERA_REMOVED.subscribe(self.CAMERA_REMOVED.emit)
 
     async def update_device_list(self) -> None:
         for provider in self.providers:

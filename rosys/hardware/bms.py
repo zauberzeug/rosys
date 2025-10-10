@@ -1,10 +1,9 @@
 import abc
 
 import numpy as np
-from nicegui import ui
+from nicegui import Event, ui
 
 from .. import helpers, rosys
-from ..event import Event
 from ..helpers import remove_indentation
 from .bms_message import BmsMessage
 from .bms_state import BmsState

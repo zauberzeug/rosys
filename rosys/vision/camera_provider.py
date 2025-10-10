@@ -2,8 +2,9 @@ import abc
 import warnings
 from typing import Generic, TypeVar
 
+from nicegui import Event
+
 from .. import persistence, rosys
-from ..event import Event
 from .camera.camera import Camera
 from .image import Image
 
@@ -41,7 +42,7 @@ class CameraProvider(Generic[T], persistence.Persistable, metaclass=abc.ABCMeta)
     def restore_from_dict(self, data: dict[str, dict]) -> None:
         persistence.replace_dict(self._cameras, Camera, data.get('cameras', {}))
         for camera in self._cameras.values():
-            camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
+            camera.NEW_IMAGE.subscribe(self.NEW_IMAGE.emit)
 
     @property
     def cameras(self) -> dict[str, T]:
@@ -54,7 +55,7 @@ class CameraProvider(Generic[T], persistence.Persistable, metaclass=abc.ABCMeta)
     def add_camera(self, camera: T) -> None:
         self._cameras[camera.id] = camera
         self.CAMERA_ADDED.emit(camera)
-        camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
+        camera.NEW_IMAGE.subscribe(self.NEW_IMAGE.emit)
         self.request_backup()
 
     def remove_camera(self, camera_id: str) -> None:
