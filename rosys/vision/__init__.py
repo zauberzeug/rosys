@@ -1,3 +1,4 @@
+from .annotations import Annotations, BoxAnnotation, ClassificationAnnotation, PointAnnotation
 from .calibratable_camera_provider import CalibratableCameraProvider
 from .calibration import Calibration, Intrinsics
 from .camera import CalibratableCamera, Camera, ConfigurableCamera, TransformableCamera
@@ -12,13 +13,16 @@ from .detector_simulation import DetectorSimulation, SimulatedObject
 from .image import Image, ImageSize
 from .mjpeg_camera import MjpegCamera, MjpegCameraProvider
 from .multi_camera_provider import MultiCameraProvider
+from .record_replay import ImageRecorder, ReplayCamera, ReplayCameraProvider
 from .rtsp_camera import RtspCamera, RtspCameraProvider
 from .simulated_camera import SimulatedCalibratableCamera, SimulatedCamera, SimulatedCameraProvider
 from .spatial_resection import SpatialResection, SpatialResectionResult
 from .usb_camera import UsbCamera, UsbCameraProvider
 
 __all__ = [
+    'Annotations',
     'Autoupload',
+    'BoxAnnotation',
     'BoxDetection',
     'CalibratableCamera',
     'CalibratableCameraProvider',
@@ -27,6 +31,7 @@ __all__ = [
     'CameraProjector',
     'CameraProvider',
     'CameraSceneObject',
+    'ClassificationAnnotation',
     'ConfigurableCamera',
     'Detection',
     'Detections',
@@ -34,12 +39,16 @@ __all__ = [
     'DetectorHardware',
     'DetectorSimulation',
     'Image',
+    'ImageRecorder',
     'ImageSize',
     'Intrinsics',
     'MjpegCamera',
     'MjpegCameraProvider',
     'MultiCameraProvider',
+    'PointAnnotation',
     'PointDetection',
+    'ReplayCamera',
+    'ReplayCameraProvider',
     'RtspCamera',
     'RtspCameraProvider',
     'SimulatedCalibratableCamera',
