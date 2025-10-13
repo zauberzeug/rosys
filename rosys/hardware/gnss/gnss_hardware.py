@@ -14,7 +14,6 @@ from .nmea import Gga, GpsQuality, Gst, Pssn
 class GnssHardware(Gnss):
     """This hardware module connects to a Septentrio SimpleRTK3b (Mosaic-H) GNSS receiver."""
     MAX_TIMESTAMP_DIFF = 0.05
-    MAX_BUFFER_LENGTH = 2000
     NMEA_TYPES: ClassVar[set[str]] = {'GPGGA', 'GPGST', 'PSSN,HRP'}
     NMEA_PATTERN = re.compile(r'\$(?P<type>[A-Z,]+),(?P<timestamp>\d{6}(?:\.\d+)?)[^*]*\*[0-9A-Fa-f]{2}\r\n')
 
@@ -54,14 +53,13 @@ class GnssHardware(Gnss):
                 continue
             buffer += result
             matches = list(self.NMEA_PATTERN.finditer(buffer))
-            if matches:
-                self.log.debug('Buffer: %s', buffer)
             for match in reversed(matches):
-                self.log.debug('match: %s', match)
                 type_, nmea_timestamp = match['type'], match['timestamp']
                 if type_ not in self.NMEA_TYPES:
+                    self.log.debug('Skipping unknown type: %s', type_)
                     continue
                 sentence = match.group(0)
+                self.log.debug('%s, %s: %s', type_, nmea_timestamp, sentence)
                 sentence = sentence[:sentence.find('*')]
                 latest_messages[type_] = (nmea_timestamp, sentence)
                 buffer = buffer[:match.start()]
@@ -76,7 +74,6 @@ class GnssHardware(Gnss):
                     continue
                 if not self.NMEA_TYPES.issubset(latest_messages.keys()):
                     continue
-                self.log.debug('found complete trio: %s', nmea_timestamp)
                 measurement = self._parse_measurement(latest_messages['GPGGA'][1],
                                                       latest_messages['GPGST'][1],
                                                       latest_messages['PSSN,HRP'][1])
