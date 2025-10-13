@@ -35,14 +35,13 @@ class Gga:
     correction_age: float
 
     @staticmethod
-    def from_sentence(sentence: str) -> Gga | None:
+    def from_sentence(sentence: str) -> Gga:
         parts = sentence.split(',')
-        if parts[2] == '' or parts[4] == '':  # latitude or longitude is missing
-            return None
-        nmea_timestamp = parts[1]
-        if not nmea_timestamp:
-            return None
-        return Gga(timestamp=timestamp_from_nmea(nmea_timestamp),
+        if not parts[1]:
+            raise ValueError(f'Missing timestamp in GGA: {sentence}')
+        if parts[2] == '' or parts[4] == '':
+            raise ValueError(f'Missing latitude or longitude in GGA: {sentence}')
+        return Gga(timestamp=timestamp_from_nmea(parts[1]),
                    latitude=convert_to_decimal(parts[2], parts[3]),
                    longitude=convert_to_decimal(parts[4], parts[5]),
                    gps_quality=GpsQuality(int(parts[6]) if parts[6] else 0),
@@ -69,10 +68,10 @@ class Gst:
     altitude_std_dev: float
 
     @staticmethod
-    def from_sentence(sentence: str) -> Gst | None:
+    def from_sentence(sentence: str) -> Gst:
         parts = sentence.split(',')
-        if parts[6] == '' or parts[7] == '':
-            return None
+        if any(part == '' for part in parts[1:9]):
+            raise ValueError(f'Missing data in GST: {sentence}')
         return Gst(timestamp=timestamp_from_nmea(parts[1]),
                    semimajor_axis_std_dev=float(parts[3]),
                    semiminor_axis_std_dev=float(parts[4]),
@@ -96,7 +95,7 @@ class Pssn:
     mode: int
 
     @staticmethod
-    def from_sentence(sentence: str) -> Pssn | None:
+    def from_sentence(sentence: str) -> Pssn:
         parts = sentence.split(',')
         return Pssn(timestamp=timestamp_from_nmea(parts[2]),
                     heading=float(parts[4] or 0.0),

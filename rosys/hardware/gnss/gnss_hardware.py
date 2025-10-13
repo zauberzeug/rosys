@@ -74,10 +74,12 @@ class GnssHardware(Gnss):
                     continue
                 if not self.NMEA_TYPES.issubset(latest_messages.keys()):
                     continue
-                measurement = self._parse_measurement(latest_messages['GPGGA'][1],
-                                                      latest_messages['GPGST'][1],
-                                                      latest_messages['PSSN,HRP'][1])
-                if measurement is None:
+                try:
+                    measurement = self._parse_measurement(latest_messages['GPGGA'][1],
+                                                          latest_messages['GPGST'][1],
+                                                          latest_messages['PSSN,HRP'][1])
+                except ValueError:
+                    self.log.exception('Failed to parse measurement')
                     continue
                 diff = measurement.age
                 # TODO: just for evaluation, remove later
@@ -107,19 +109,10 @@ class GnssHardware(Gnss):
         self.serial_connection.reset_input_buffer()
         return True
 
-    def _parse_measurement(self, gga_msg: str, gst_msg: str, pssn_msg: str) -> GnssMeasurement | None:
+    def _parse_measurement(self, gga_msg: str, gst_msg: str, pssn_msg: str) -> GnssMeasurement:
         gga = Gga.from_sentence(gga_msg)
-        if gga is None:
-            self.log.debug('Failed to parse GGA: %s', gga_msg)
-            return None
         gst = Gst.from_sentence(gst_msg)
-        if gst is None:
-            self.log.debug('Failed to parse GST: %s', gst_msg)
-            return None
         pssn = Pssn.from_sentence(pssn_msg)
-        if pssn is None:
-            self.log.debug('Failed to parse PSSN: %s', pssn_msg)
-            return None
         last_heading = pssn.heading + self.antenna_pose.yaw_deg
         antenna_pose = GeoPose.from_degrees(gga.latitude, gga.longitude, last_heading)
         robot_pose = antenna_pose.relative_shift_by(x=-self.antenna_pose.x, y=-self.antenna_pose.y)
