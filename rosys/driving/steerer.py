@@ -1,7 +1,7 @@
 import logging
 from enum import Enum
 
-from rosys.event import Event
+from nicegui import Event
 
 from .. import rosys
 from .drivable import Drivable

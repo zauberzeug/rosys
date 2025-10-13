@@ -1,7 +1,7 @@
 from contextlib import nullcontext
 
-from nicegui.elements.scene_object3d import Object3D
-from nicegui.elements.scene_objects import Curve
+from nicegui.elements.scene.scene_object3d import Object3D
+from nicegui.elements.scene.scene_objects import Curve
 
 from ..driving import PathSegment
 

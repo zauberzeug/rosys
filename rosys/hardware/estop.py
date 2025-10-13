@@ -1,6 +1,7 @@
 import abc
 
-from ..event import Event
+from nicegui import Event
+
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot_brain import RobotBrain
 

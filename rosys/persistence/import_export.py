@@ -46,7 +46,7 @@ def import_button(title: str = 'Import', *,
                   color: str | None = 'primary',
                   on_completion: Callable | None = None) -> ui.button:
     async def restore_from_file(e: events.UploadEventArguments) -> None:
-        import_all(json.load(e.content))
+        import_all(await e.file.json())
         dialog.close()
         if on_completion is not None:
             await helpers.invoke(on_completion)

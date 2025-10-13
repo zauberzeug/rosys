@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 from nicegui import ui
-from nicegui.elements.scene_objects import Group, Sphere
+from nicegui.elements.scene.scene_objects import Group, Sphere
 
 from ..rosys import config
 from .driver import Driver

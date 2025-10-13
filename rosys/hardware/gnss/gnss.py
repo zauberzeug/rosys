@@ -5,10 +5,9 @@ import math
 from abc import ABC
 from dataclasses import dataclass
 
-from nicegui import ui
+from nicegui import Event, ui
 
 from ... import rosys
-from ...event import Event
 from ...geometry import GeoPoint, GeoPose
 from .nmea import GpsQuality
 

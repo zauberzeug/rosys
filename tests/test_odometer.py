@@ -1,7 +1,7 @@
 import numpy as np
+from nicegui import Event
 
 from rosys.driving import Odometer
-from rosys.event import Event
 from rosys.geometry import Pose, Velocity
 from rosys.testing import approx
 

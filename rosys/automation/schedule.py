@@ -5,10 +5,9 @@ from datetime import datetime, timedelta
 from typing import Any, cast
 
 import suntime
-from nicegui import ui
+from nicegui import Event, ui
 
 from .. import persistence, rosys
-from ..event import Event
 from .automator import Automator
 
 
@@ -191,7 +190,7 @@ class Schedule(persistence.Persistable):
                             buttons.append((hour, first_half, second_half))
 
         ui.timer(60, update)  # NOTE: to update the "now" indicator
-        self.SCHEDULE_CHANGED.register_ui(update)
+        self.SCHEDULE_CHANGED.subscribe(update)
         return grid
 
     def set_location(self, location: tuple[float, float]) -> None:

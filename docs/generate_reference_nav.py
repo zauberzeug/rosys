@@ -2,6 +2,7 @@ import dataclasses
 import importlib
 import inspect
 import logging
+import re
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -16,7 +17,7 @@ def extract_events(filepath: str) -> dict[str, str]:
         lines = f.read().splitlines()
     events_: dict[str, str] = {}
     for l, line in enumerate(lines):
-        if line.endswith('= Event()'):
+        if re.search(r'= Event(\[.*?\])?\(\)$', line):
             event_name_ = line.strip().split()[0].removeprefix('self.')
             event_doc_ = lines[l+1].split('"""')[1]
             events_[event_name_] = event_doc_

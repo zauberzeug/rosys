@@ -2,10 +2,9 @@ import asyncio
 import logging
 from collections import deque
 
-from nicegui import ui
+from nicegui import Event, ui
 
 from .. import rosys
-from ..event import Event
 from .communication import Communication
 from .esp_pins import EspPins
 from .lizard_firmware import LizardFirmware

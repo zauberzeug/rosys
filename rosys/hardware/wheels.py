@@ -1,7 +1,8 @@
 import abc
 
+from nicegui import Event
+
 from .. import rosys
-from ..event import Event
 from ..geometry import Pose, PoseStep, Velocity
 from ..helpers import remove_indentation
 from .can import CanHardware

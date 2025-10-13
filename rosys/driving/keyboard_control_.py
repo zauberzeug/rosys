@@ -1,10 +1,9 @@
 import logging
 
 import numpy as np
-from nicegui import ui
+from nicegui import Event, ui
 from nicegui.events import KeyEventArguments
 
-from ..event import Event
 from ..geometry import Point
 from .steerer import State, Steerer
 

@@ -36,7 +36,7 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera]):
             self.add_camera(camera)
 
         for camera in self._cameras.values():
-            camera.NEW_IMAGE.register(self.NEW_IMAGE.emit)
+            camera.NEW_IMAGE.subscribe(self.NEW_IMAGE.emit)
 
     async def scan_for_cameras(self) -> AsyncGenerator[str, Any]:
         """Simulated device discovery by returning all camera's IDs.

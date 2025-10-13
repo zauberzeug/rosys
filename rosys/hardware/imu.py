@@ -3,11 +3,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-from nicegui import ui
+from nicegui import Event, ui
 
 from .. import rosys
 from ..driving.driver import PoseProvider
-from ..event import Event
 from ..geometry import Rotation
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot_brain import RobotBrain
