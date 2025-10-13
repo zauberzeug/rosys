@@ -83,9 +83,9 @@ class GnssHardware(Gnss):
                 # TODO: just for evaluation, remove later
                 self.diffs.append(diff)
                 if abs(diff) > self.MAX_TIMESTAMP_DIFF:
-                    self.log.warning('timestamp diff = %s (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
+                    self.log.warning('timestamp diff = %.3f (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
                     continue
-                self.log.debug('dt: %s - %s', diff, measurement)
+                self.log.debug('dt: %.3f - %s', diff, measurement)
                 self.last_measurement = measurement
                 self.NEW_MEASUREMENT.emit(measurement)
                 buffer = ''

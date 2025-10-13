@@ -38,7 +38,7 @@ class GnssMeasurement:
 
     @property
     def age(self) -> float:
-        return round(((self.gnss_time - rosys.time() + SECONDS_HALF_DAY) % SECONDS_DAY) - SECONDS_HALF_DAY, 3)
+        return ((self.gnss_time - rosys.time() + SECONDS_HALF_DAY) % SECONDS_DAY) - SECONDS_HALF_DAY
 
 
 class Gnss(ABC):
