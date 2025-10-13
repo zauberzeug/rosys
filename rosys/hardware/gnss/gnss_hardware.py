@@ -44,7 +44,7 @@ class GnssHardware(Gnss):
         buffer = ''
         latest_messages: dict[str, tuple[str, str]] = {}  # type -> (timestamp, sentence)
         while True:
-            await rosys.sleep(0)
+            await rosys.sleep(0.01)
             if not self.is_connected and not await self._connect():
                 continue
             assert self.serial_connection is not None
