@@ -12,7 +12,7 @@ from .nmea import Gga, GpsQuality, Gst, Pssn
 
 class GnssHardware(Gnss):
     """This hardware module connects to a Septentrio SimpleRTK3b (Mosaic-H) GNSS receiver."""
-    MAX_TIMESTAMP_DIFF = 0.05
+    MAX_MEASUREMENT_AGE = 0.05
     NMEA_TYPES: ClassVar[set[str]] = {'GPGGA', 'GPGST', 'PSSN,HRP'}
     NMEA_PATTERN = re.compile(r'\$(?P<type>[A-Z,]+),(?P<timestamp>\d{6}(?:\.\d+)?)[^*]*\*[0-9A-Fa-f]{2}\r\n')
 
@@ -78,11 +78,12 @@ class GnssHardware(Gnss):
                 except ValueError as e:
                     self.log.debug('Failed to parse measurement: %s', e)
                     continue
-                diff = measurement.age
-                if abs(diff) > self.MAX_TIMESTAMP_DIFF:
-                    self.log.warning('timestamp diff = %.3f (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
+                measurement_age = measurement.age
+                if abs(measurement_age) > self.MAX_MEASUREMENT_AGE:
+                    self.log.warning('timestamp diff = %.3f (exceeds threshold of %s)',
+                                     measurement_age, self.MAX_MEASUREMENT_AGE)
                     continue
-                self.log.debug('dt: %.3f - %s', diff, measurement)
+                self.log.debug('dt: %.3f - %s', measurement_age, measurement)
                 self.last_measurement = measurement
                 self.NEW_MEASUREMENT.emit(measurement)
                 buffer = ''
