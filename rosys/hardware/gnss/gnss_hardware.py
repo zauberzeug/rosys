@@ -1,5 +1,4 @@
 import re
-from collections import deque
 from typing import ClassVar
 
 import serial
@@ -27,8 +26,6 @@ class GnssHardware(Gnss):
         self._reconnect_interval = reconnect_interval
         self.serial_connection: serial.Serial | None = None
         rosys.on_startup(self._run)
-        # TODO: just for evaluation, remove later
-        self.diffs: deque[float] = deque(maxlen=10 * 10)
 
     @property
     def is_connected(self) -> bool:
@@ -82,8 +79,6 @@ class GnssHardware(Gnss):
                     self.log.debug('Failed to parse measurement: %s', e)
                     continue
                 diff = measurement.age
-                # TODO: just for evaluation, remove later
-                self.diffs.append(diff)
                 if abs(diff) > self.MAX_TIMESTAMP_DIFF:
                     self.log.warning('timestamp diff = %.3f (exceeds threshold of %s)', diff, self.MAX_TIMESTAMP_DIFF)
                     continue
