@@ -78,8 +78,8 @@ class GnssHardware(Gnss):
                     measurement = self._parse_measurement(latest_messages['GPGGA'][1],
                                                           latest_messages['GPGST'][1],
                                                           latest_messages['PSSN,HRP'][1])
-                except ValueError:
-                    self.log.exception('Failed to parse measurement')
+                except ValueError as e:
+                    self.log.debug('Failed to parse measurement: %s', e)
                     continue
                 diff = measurement.age
                 # TODO: just for evaluation, remove later
