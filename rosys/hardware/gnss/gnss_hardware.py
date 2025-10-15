@@ -123,7 +123,6 @@ class GnssHardware(Gnss):
                                hdop=gga.hdop,
                                altitude=gga.altitude)
 
-    # TODO: move to helper and add search argument; for other serial devices
     def _find_device(self) -> str:
         for port in list_ports.comports():
             self.log.debug('Found port: %s - %s', port.device, port.description)
