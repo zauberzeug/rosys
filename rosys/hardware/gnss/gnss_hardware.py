@@ -69,7 +69,7 @@ class GnssHardware(Gnss):
                                        for msg_type, (timestamp, sentence) in latest_messages.items()
                                        if timestamp >= latest_timestamp}
                     continue
-                if not self.NMEA_TYPES.issubset(latest_messages.keys()):
+                if not self.NMEA_TYPES.issubset(latest_messages):
                     continue
                 try:
                     measurement = self._parse_measurement(latest_messages['GPGGA'][1],
