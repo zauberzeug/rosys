@@ -63,8 +63,8 @@ class GnssHardware(Gnss):
                 if not self.NMEA_TYPES.issubset(latest_messages):
                     continue
                 timestamps = {latest_messages[msg_type][0] for msg_type in self.NMEA_TYPES}
-                latest_timestamp = max(timestamps)
                 if len(timestamps) != 1:
+                    latest_timestamp = max(timestamps)
                     latest_messages = {msg_type: (timestamp, sentence)
                                        for msg_type, (timestamp, sentence) in latest_messages.items()
                                        if timestamp >= latest_timestamp}
