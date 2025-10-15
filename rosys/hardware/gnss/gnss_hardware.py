@@ -60,7 +60,7 @@ class GnssHardware(Gnss):
                 sentence = sentence[:sentence.find('*')]
                 latest_messages[type_] = (nmea_timestamp, sentence)
                 buffer = buffer[:match.start()]
-                if not self.NMEA_TYPES.issubset(latest_messages.keys()):
+                if not self.NMEA_TYPES.issubset(latest_messages):
                     continue
                 timestamps = {latest_messages[msg_type][0] for msg_type in self.NMEA_TYPES}
                 latest_timestamp = max(timestamps)
