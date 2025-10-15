@@ -48,11 +48,11 @@ class DetectorHardware(Detector):
         self.auto_disconnect = auto_disconnect
         self.timeout_count = 0
 
-        @self.sio.on('disconnect')
+        @self.sio.on('disconnect')  # type: ignore
         def on_sio_disconnect() -> None:
             self.log.warning('sio disconnect on port %s', port)
 
-        @self.sio.on('connect_error')
+        @self.sio.on('connect_error')  # type: ignore
         def on_sio_connect_error(err) -> None:
             self.log.warning('sio connect error on %s: %s', port, err)
 
@@ -66,13 +66,14 @@ class DetectorHardware(Detector):
         if not self.is_connected:
             self.log.info('trying reconnect %s', self.name)
             if not await self.connect():
+                await self.sio.disconnect()
                 self.log.error('connection to %s at port %s failed; trying again', self.name, self.port)
 
     async def connect(self) -> bool:
         try:
             url = f'ws://{self.host}:{self.port}'
             self.log.info('connecting to detector at %s', url)
-            await self.sio.connect(url, socketio_path='/ws/socket.io', wait_timeout=3.0)
+            await self.sio.connect(url, socketio_path='/ws/socket.io', wait_timeout=3)
             self.log.info('connected successfully')
             return True
         except Exception:
@@ -137,6 +138,7 @@ class DetectorHardware(Detector):
     async def detect(self,
                      image: Image,
                      *,
+                     lazy: bool = True,
                      autoupload: Autoupload = Autoupload.FILTERED,
                      tags: list[str] | None = None,
                      source: str | None = None,
@@ -153,7 +155,10 @@ class DetectorHardware(Detector):
         assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
         tags = tags or []
         try:
-            detections = await self.lazy_worker.run(self._detect(image, autoupload, tags, source, creation_date))
+            if lazy:
+                detections = await self.lazy_worker.run(self._detect(image, autoupload, tags, source, creation_date))
+            else:
+                detections = await self._detect(image, autoupload, tags, source, creation_date)
             if detections is not None:
                 image.set_detections(self.name, detections)
                 self.NEW_DETECTIONS.emit(image)
