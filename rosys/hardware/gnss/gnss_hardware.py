@@ -80,7 +80,7 @@ class GnssHardware(Gnss):
                     continue
                 measurement_age = measurement.age
                 if abs(measurement_age) > self.MAX_MEASUREMENT_AGE:
-                    self.log.warning('timestamp diff = %.3f (exceeds threshold of %s)',
+                    self.log.warning('measurement age = %.3f (exceeds threshold of %s)',
                                      measurement_age, self.MAX_MEASUREMENT_AGE)
                     continue
                 self.log.debug('dt: %.3f - %s', measurement_age, measurement)
