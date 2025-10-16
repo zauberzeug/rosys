@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime
+from functools import partial
 from typing import Any, Literal
 
 import socketio
@@ -155,10 +156,11 @@ class DetectorHardware(Detector):
         assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
         tags = tags or []
         try:
+            detect_call = partial(self._detect, image, autoupload, tags, source, creation_date)
             if lazy:
-                detections = await self.lazy_worker.run(self._detect(image, autoupload, tags, source, creation_date))
+                detections = await self.lazy_worker.run(detect_call())
             else:
-                detections = await self._detect(image, autoupload, tags, source, creation_date)
+                detections = await detect_call()
             if detections is not None:
                 image.set_detections(self.name, detections)
                 self.NEW_DETECTIONS.emit(image)
