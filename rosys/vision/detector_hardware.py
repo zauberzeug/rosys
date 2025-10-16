@@ -1,6 +1,5 @@
 import asyncio
 from datetime import datetime
-from functools import partial
 from typing import Any, Literal
 
 import socketio
