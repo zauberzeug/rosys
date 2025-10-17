@@ -48,16 +48,10 @@ class DetectorHardware(Detector):
         self.auto_disconnect = auto_disconnect
         self.timeout_count = 0
 
-        self.sio.on('disconnect', self.on_sio_disconnect)
-        self.sio.on('connect_error', self.on_sio_connect_error)
+        self.sio.on('disconnect', lambda: self.log.warning('sio disconnect on port %s', self.port))
+        self.sio.on('connect_error', lambda err: self.log.warning('sio connect error on %s: %s', self.port, err))
 
         rosys.on_repeat(self._ensure_connection, 10.0)
-
-    def on_sio_disconnect(self) -> None:
-        self.log.warning('sio disconnect on port %s', self.port)
-
-    def on_sio_connect_error(self, err) -> None:
-        self.log.warning('sio connect error on %s: %s', self.port, err)
 
     @property
     def is_connected(self) -> bool:
