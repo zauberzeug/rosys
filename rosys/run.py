@@ -163,14 +163,20 @@ async def wait_for(func: Callable[..., Coroutine[Any, Any, R]], timeout: float) 
     :raises TimeoutError: If the function does not return within the given time period
     """
     assert timeout > 0, 'timeout must be greater than 0'
-    start_time = rosys.time()
-    task: asyncio.Task[R] = asyncio.create_task(func())
-    while not task.done():
-        if timeout is not None and rosys.time() > start_time + timeout:
-            task.cancel()
-            raise TimeoutError()
-        await rosys.sleep(0.1)
-    return await task
+
+    async def timeout_coro() -> None:
+        if rosys.is_test:
+            await asyncio.sleep(timeout)
+            return
+        await rosys.sleep(timeout)
+
+    timeout_task = asyncio.create_task(timeout_coro())
+    func_task: asyncio.Task[R] = asyncio.create_task(func())
+    done, pending = await asyncio.wait([func_task, timeout_task], return_when=asyncio.FIRST_COMPLETED)
+    if timeout_task in done and func_task in pending:
+        raise TimeoutError()
+    assert func_task in done
+    return func_task.result()
 
 
 async def retry(func: Callable, *,
