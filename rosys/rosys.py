@@ -305,5 +305,6 @@ app.on_shutdown(shutdown)
 core.on_repeat = on_repeat
 core.on_startup = on_startup
 core.on_shutdown = on_shutdown
+core.sleep = sleep
 
 config = Config().persistent()
