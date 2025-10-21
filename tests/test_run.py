@@ -55,7 +55,7 @@ async def test_retry_timeout():
         await asyncio.sleep(0.5)
         return 'success'
 
-    result = await run.retry(func, max_timeout=1.0)
+    result = await run.retry(func, max_attempts=1, max_timeout=1.0)
     assert result == 'success'
 
 
@@ -65,7 +65,7 @@ async def test_retry_timeout_failed():
         await asyncio.sleep(1.0)
 
     with pytest.raises(RuntimeError):
-        await run.retry(func, max_timeout=0.5)
+        await run.retry(func, max_attempts=1, max_timeout=0.5)
 
 
 @pytest.mark.asyncio
