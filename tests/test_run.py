@@ -1,6 +1,28 @@
+import asyncio
+
 import pytest
 
 from rosys import run
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('rosys_integration')
+async def test_wait_for_success():
+    async def func() -> str:
+        await asyncio.sleep(0.5)
+        return 'success'
+    result = await run.wait_for(func, timeout=1.0)
+    assert result == 'success'
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures('rosys_integration')
+async def test_wait_for_timeout():
+    async def func() -> None:
+        await asyncio.sleep(1.0)
+
+    with pytest.raises(TimeoutError):
+        await run.wait_for(func, timeout=0.5)
 
 
 @pytest.mark.asyncio
@@ -25,6 +47,25 @@ async def test_retry_failed():
     with pytest.raises(RuntimeError):
         await run.retry(func)
     assert events == ['call'] * 3
+
+
+@pytest.mark.asyncio
+async def test_retry_timeout():
+    async def func() -> str:
+        await asyncio.sleep(0.5)
+        return 'success'
+
+    result = await run.retry(func, max_timeout=1.0)
+    assert result == 'success'
+
+
+@pytest.mark.asyncio
+async def test_retry_timeout_failed():
+    async def func() -> None:
+        await asyncio.sleep(1.0)
+
+    with pytest.raises(RuntimeError):
+        await run.retry(func, max_timeout=0.5)
 
 
 @pytest.mark.asyncio
