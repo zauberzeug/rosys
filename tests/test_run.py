@@ -6,7 +6,6 @@ from rosys import run
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures('rosys_integration')
 async def test_wait_for_success():
     async def func() -> str:
         await asyncio.sleep(0.5)
@@ -16,7 +15,6 @@ async def test_wait_for_success():
 
 
 @pytest.mark.asyncio
-@pytest.mark.usefixtures('rosys_integration')
 async def test_wait_for_timeout():
     async def func() -> None:
         await asyncio.sleep(1.0)
