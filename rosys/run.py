@@ -5,7 +5,7 @@ import shlex
 import signal
 import subprocess
 import uuid
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Coroutine, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import wraps
@@ -15,6 +15,7 @@ from typing import Any, ParamSpec, TypeVar
 
 from nicegui import run
 
+from . import rosys
 from .helpers import is_stopping
 
 P = ParamSpec('P')
@@ -153,6 +154,25 @@ class OnFailedArguments:
     max_attempts: int
 
 
+async def wait_for(func: Callable[..., Coroutine[Any, Any, R]], timeout: float) -> R:
+    """Call a function with a timeout.
+
+    :param func: A function to call
+    :param timeout: Maximum time in seconds to wait for the function to return, or None to wait forever
+    :return: Result of the called function
+    :raises TimeoutError: If the function does not return within the given time period
+    """
+    assert timeout > 0, 'timeout must be greater than 0'
+    start_time = rosys.time()
+    task: asyncio.Task[R] = asyncio.create_task(func())
+    while not task.done():
+        if timeout is not None and rosys.time() > start_time + timeout:
+            task.cancel()
+            raise TimeoutError()
+        await rosys.sleep(0.1)
+    return await task
+
+
 async def retry(func: Callable, *,
                 max_attempts: int = 3,
                 max_timeout: float | None = None,
@@ -168,7 +188,10 @@ async def retry(func: Callable, *,
     """
     for attempt in range(max_attempts):
         try:
-            return await asyncio.wait_for(func(), timeout=max_timeout)
+            if max_timeout is not None:
+                return await wait_for(func, max_timeout)
+            else:
+                return await func()
         except Exception:
             if on_failed is None:
                 continue
