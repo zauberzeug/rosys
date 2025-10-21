@@ -8,7 +8,7 @@ import uuid
 from collections.abc import Callable, Coroutine, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from functools import wraps
+from functools import partial, wraps
 from inspect import signature
 from pathlib import Path
 from typing import Any, ParamSpec, TypeVar
@@ -207,4 +207,5 @@ async def retry(func: Callable, *,
                 result = on_failed()
             if asyncio.iscoroutinefunction(on_failed):
                 await result
-    raise RuntimeError(f'Running {func.__name__} failed.')
+    func_name = func.func.__name__ if isinstance(func, partial) else func.__name__
+    raise RuntimeError(f'Running {func_name} failed.')
