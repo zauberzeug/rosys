@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-from typing import TYPE_CHECKING
+from collections.abc import Callable, Coroutine
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from .rosys import Repeater
@@ -14,3 +14,4 @@ is_test: bool
 on_repeat: Callable[[Callable, float], Repeater]
 on_startup: Callable[[Callable], None]
 on_shutdown: Callable[[Callable], None]
+sleep: Callable[[float], Coroutine[Any, Any, None]]

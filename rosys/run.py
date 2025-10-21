@@ -15,7 +15,7 @@ from typing import Any, ParamSpec, TypeVar
 
 from nicegui import run
 
-from . import rosys
+from . import core
 from .helpers import is_stopping
 
 P = ParamSpec('P')
@@ -165,10 +165,10 @@ async def wait_for(func: Callable[..., Coroutine[Any, Any, R]], timeout: float) 
     assert timeout > 0, 'timeout must be greater than 0'
 
     async def timeout_coro() -> None:
-        if rosys.is_test:
+        if core.is_test:
             await asyncio.sleep(timeout)
             return
-        await rosys.sleep(timeout)
+        await core.sleep(timeout)
 
     timeout_task = asyncio.create_task(timeout_coro())
     func_task: asyncio.Task[R] = asyncio.create_task(func())
