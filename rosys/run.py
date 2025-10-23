@@ -158,21 +158,17 @@ async def wait_for(func: Callable[..., Coroutine[Any, Any, R]], timeout: float) 
     """Call a function with a timeout.
 
     :param func: A function to call
-    :param timeout: Maximum time in seconds to wait for the function to return, or None to wait forever
+    :param timeout: Maximum time in seconds to wait for the function to return
     :return: Result of the called function
     :raises TimeoutError: If the function does not return within the given time period
     """
     assert timeout > 0, 'timeout must be greater than 0'
 
-    async def timeout_coro() -> None:
-        if core.is_test:
-            await asyncio.sleep(timeout)
-            return
-        await core.sleep(timeout)
-
-    timeout_task = asyncio.create_task(timeout_coro())
+    timeout_task = asyncio.create_task(core.sleep(timeout))
     func_task: asyncio.Task[R] = asyncio.create_task(func())
     done, pending = await asyncio.wait([func_task, timeout_task], return_when=asyncio.FIRST_COMPLETED)
+    for task in pending:
+        task.cancel()
     if timeout_task in done and func_task in pending:
         raise TimeoutError()
     assert func_task in done

@@ -1,23 +1,38 @@
-import asyncio
-
 import pytest
 
-from rosys import run
+from rosys import run, sleep
+from rosys.automation import Automator
+from rosys.testing import forward
 
 
 @pytest.mark.asyncio
-async def test_timeouts():
+async def test_timeouts(automator: Automator):
     async def func() -> str:
-        await asyncio.sleep(0.5)
+        await sleep(0.5)
         return 'success'
 
-    assert await run.wait_for(func, timeout=1.0) == 'success'
-    with pytest.raises(TimeoutError):
-        await run.wait_for(func, timeout=0.25)
+    failures = []
+    automator.AUTOMATION_FAILED.subscribe(failures.append)
 
-    assert await run.retry(func, max_attempts=1, max_timeout=1.0) == 'success'
-    with pytest.raises(RuntimeError):
-        await run.retry(func, max_attempts=1, max_timeout=0.25)
+    automator.start(run.wait_for(func, timeout=1.0))
+    await forward(seconds=2.0)
+    assert automator.is_stopped
+    assert len(failures) == 0
+
+    automator.start(run.wait_for(func, timeout=0.25))
+    await forward(seconds=2.0)
+    assert automator.is_stopped
+    assert len(failures) == 1
+
+    automator.start(run.retry(func, max_attempts=1, max_timeout=1.0))
+    await forward(seconds=2.0)
+    assert automator.is_stopped
+    assert len(failures) == 1
+
+    automator.start(run.retry(func, max_attempts=1, max_timeout=0.25))
+    await forward(seconds=2.0)
+    assert automator.is_stopped
+    assert len(failures) == 2
 
 
 @pytest.mark.asyncio
