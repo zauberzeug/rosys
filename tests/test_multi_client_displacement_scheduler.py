@@ -16,7 +16,7 @@ class TestConfiguration:
 
 async def run_displacement_test(running_slots: int, configurations: list[TestConfiguration],
                                 expected: list[str | None]) -> None:
-    async def shared_ressource_access(identifier: str) -> str:
+    async def shared_resource_access(identifier: str) -> str:
         await rosys.sleep(1)
         return identifier
 
@@ -24,7 +24,7 @@ async def run_displacement_test(running_slots: int, configurations: list[TestCon
                               scheduler: MultiClientDisplacementScheduler) -> str | None:
         await rosys.sleep(configuration.delay)
 
-        return await scheduler.run(configuration.client_id, shared_ressource_access(configuration.task_id))
+        return await scheduler.run(configuration.client_id, shared_resource_access(configuration.task_id))
 
     async def advance_time(step: float, num_steps: int):
         for _ in range(num_steps):
