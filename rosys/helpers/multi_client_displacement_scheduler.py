@@ -94,23 +94,23 @@ class MultiClientDisplacementScheduler:
                 client.last_run_at = rosys.time()
                 res = await coro
 
-                # select next client to run
-                ready = ((k, v) for k, v in self.clients.items() if v.waiting_request is not None)
-                try:
-                    next_client_id = min(ready, key=lambda kv: kv[1].last_run_at)[0]
-                except ValueError:  # min() on empty generator raises ValueError
-                    next_client_id = None
+                next_client = min(
+                    ((k, v) for k, v in self.clients.items() if v.waiting_request is not None),
+                    key=lambda kv: kv[1].last_run_at,
+                    default=None,
+                )
 
-                if next_client_id is not None:
+                if next_client is None:
+                    # Make running slot available
+                    self.running_slots_available += 1
+                else:
                     # Pass this running slot to next request
+                    next_client_id, _ = next_client
                     next_request = self.clients[next_client_id].waiting_request
                     assert next_request is not None
                     next_request.state = MCDSSubmissionState.SCHEDULED
                     self.clients[next_client_id].waiting_request = None
                     next_request.can_progress.set()
-                else:
-                    # Make running slot available
-                    self.running_slots_available += 1
 
                 return res
 
