@@ -95,11 +95,9 @@ class MultiClientDisplacementScheduler:
                 try:
                     return await coro
                 finally:
-                    next_client = min(
-                        ((k, v) for k, v in self.clients.items() if v.waiting_request is not None),
-                        key=lambda kv: kv[1].last_run_at,
-                        default=None,
-                    )
+                    next_client = min(((k, v) for k, v in self.clients.items() if v.waiting_request is not None),
+                                      key=lambda kv: kv[1].last_run_at,
+                                      default=None, )
 
                     if next_client is None:
                         # Make running slot available
