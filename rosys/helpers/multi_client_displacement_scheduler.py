@@ -95,10 +95,10 @@ class MultiClientDisplacementScheduler:
                 res = await coro
 
                 # select next client to run
-                ready = [(k, v) for k, v in self.clients.items() if v.waiting_request is not None]
-                if len(ready) > 0:
+                ready = ((k, v) for k, v in self.clients.items() if v.waiting_request is not None)
+                try:
                     next_client_id = min(ready, key=lambda kv: kv[1].last_run_at)[0]
-                else:
+                except ValueError:  # min() on empty generator raises ValueError
                     next_client_id = None
 
                 if next_client_id is not None:
