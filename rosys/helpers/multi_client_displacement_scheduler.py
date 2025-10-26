@@ -1,6 +1,5 @@
 import asyncio
 from collections.abc import Coroutine
-from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, TypeVar
 
@@ -15,22 +14,22 @@ class MCDSSubmissionState(StrEnum):
     SCHEDULED = 'scheduled'
 
 
-@dataclass(slots=True)
 class MCDSSubmissionData:
-    can_progress: asyncio.Event
-    state: MCDSSubmissionState
+    def __init__(self, state: MCDSSubmissionState):
+        self.state = state
+        self.can_progress: asyncio.Event = asyncio.Event()
 
 
-@dataclass(slots=True)
 class MCDSClient:
-    last_run_at: float = -float('inf')
-    waiting_request: MCDSSubmissionData | None = None
+    def __init__(self):
+        self.last_run_at: float = -float('inf')
+        self.waiting_request: MCDSSubmissionData | None = None
 
 
 class MultiClientDisplacementScheduler:
-    """A scheduler that controls access to an (implicit) shared resource
+    """A scheduler that controls access to an (implicit) shared resource.
 
-    The protected resource is not managed by the scheduler itself, but assumed
+    The shared resource is not managed by the scheduler itself, but assumed
     to be accessed by the coroutine given to `run`. The maximum number of
     concurrent accesses is controlled by the `running_slots` parameter.
 
@@ -39,7 +38,8 @@ class MultiClientDisplacementScheduler:
     by all clients, this results in round-robin scheduling.
 
     For each client, there is one waiting slot for accesses, meaning that new
-    requests (by calls to `run`) displace old ones, similar to `LazyWorker`.
+    requests (by calls to `run`) displace old ones, similar to the mechanism
+    used by the `LazyWorker`.
 
     *Note*: The implementation is *not* threadsafe, so it should not be used to
     synchronize access from different threads (e.g., by using a multi threaded
@@ -65,7 +65,7 @@ class MultiClientDisplacementScheduler:
                  the coroutine otherwise
         """
 
-        data = MCDSSubmissionData(asyncio.Event(), MCDSSubmissionState.WAITING)
+        data = MCDSSubmissionData(state=MCDSSubmissionState.WAITING)
 
         # Make sure we have a client for our id
         if client_id not in self.clients:
