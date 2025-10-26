@@ -55,7 +55,7 @@ class MultiClientDisplacementScheduler:
         self.clients: dict[str, MCDSClient] = {}
         self.running_slots_available: int = running_slots
 
-    async def run(self, client_id: str, coro: Coroutine[Any, None, _T]) -> _T | None:
+    async def run(self, client_id: str, coro: Coroutine[Any, Any, _T]) -> _T | None:
         """Try to run the given coroutine. A later call with the same
         `client_id` will displace this one. In that case `None` is returned.
 
