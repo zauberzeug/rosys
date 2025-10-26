@@ -103,7 +103,10 @@ class DetectorHardware(Detector):
 
         try:
             self.log.info('Upload detections to port %s', self.port)
-            data_dict: dict[str, Any] = {'image': image.data}
+            np_image = image.to_array()
+            data_dict: dict[str, Any] = {'image': {'bytes': np_image.tobytes(order='C'),
+                                                   'dtype': str(np_image.dtype),
+                                                   'shape': np_image.shape, }}
 
             metadata_dict: dict[str, Any] = {}
             metadata_dict['source'] = source
@@ -170,8 +173,11 @@ class DetectorHardware(Detector):
                       creation_date: datetime | str | None = None,
                       ) -> Detections:
         try:
+            np_image = image.to_array()
             response = await self.sio.call('detect', {
-                'image': image.data,
+                'image': {'bytes': np_image.tobytes(order='C'),
+                          'dtype': str(np_image.dtype),
+                          'shape': np_image.shape, },
                 'camera_id': image.camera_id,
                 'tags': tags,
                 'source': source,
