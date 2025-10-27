@@ -5,16 +5,17 @@ import shlex
 import signal
 import subprocess
 import uuid
-from collections.abc import Callable, Generator
+from collections.abc import Callable, Coroutine, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
-from functools import wraps
+from functools import partial, wraps
 from inspect import signature
 from pathlib import Path
 from typing import Any, ParamSpec, TypeVar
 
 from nicegui import run
 
+from . import core
 from .helpers import is_stopping
 
 P = ParamSpec('P')
@@ -153,6 +154,27 @@ class OnFailedArguments:
     max_attempts: int
 
 
+async def wait_for(func: Callable[..., Coroutine[Any, Any, R]], timeout: float) -> R:
+    """Call a function with a timeout.
+
+    :param func: A function to call
+    :param timeout: Maximum time in seconds to wait for the function to return
+    :return: Result of the called function
+    :raises TimeoutError: If the function does not return within the given time period
+    """
+    assert timeout > 0, 'timeout must be greater than 0'
+
+    timeout_task = asyncio.create_task(core.sleep(timeout))
+    func_task: asyncio.Task[R] = asyncio.create_task(func())
+    done, pending = await asyncio.wait([func_task, timeout_task], return_when=asyncio.FIRST_COMPLETED)
+    for task in pending:
+        task.cancel()
+    if timeout_task in done and func_task in pending:
+        raise TimeoutError()
+    assert func_task in done
+    return func_task.result()
+
+
 async def retry(func: Callable, *,
                 max_attempts: int = 3,
                 max_timeout: float | None = None,
@@ -168,7 +190,10 @@ async def retry(func: Callable, *,
     """
     for attempt in range(max_attempts):
         try:
-            return await asyncio.wait_for(func(), timeout=max_timeout)
+            if max_timeout is not None:
+                return await wait_for(func, max_timeout)
+            else:
+                return await func()
         except Exception:
             if on_failed is None:
                 continue
@@ -178,4 +203,5 @@ async def retry(func: Callable, *,
                 result = on_failed()
             if asyncio.iscoroutinefunction(on_failed):
                 await result
-    raise RuntimeError(f'Running {func.__name__} failed.')
+    func_name = func.func.__name__ if isinstance(func, partial) else func.__name__
+    raise RuntimeError(f'Running {func_name} failed.')
