@@ -13,10 +13,12 @@ import numpy as np
 from nicegui import app
 
 from .lazy_worker import LazyWorker
+from .multi_client_displacement_scheduler import MultiClientDisplacementScheduler
 
 __all__ = [
     'LazyWorker',
     'ModificationContext',
+    'MultiClientDisplacementScheduler',
     'PackagePathFilter',
     'angle',
     'eliminate_2pi',

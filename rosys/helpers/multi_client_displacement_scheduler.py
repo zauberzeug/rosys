@@ -3,7 +3,7 @@ from collections.abc import Coroutine
 from enum import StrEnum
 from typing import Any, TypeVar
 
-import rosys
+from ..core import time
 
 _T = TypeVar('_T')
 
@@ -91,7 +91,7 @@ class MultiClientDisplacementScheduler:
                 return None
 
             if data.state == MCDSSubmissionState.SCHEDULED:
-                client.last_run_at = rosys.time()
+                client.last_run_at = time()
                 try:
                     return await coro
                 finally:
