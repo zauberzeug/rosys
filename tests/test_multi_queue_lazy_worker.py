@@ -3,7 +3,7 @@ import asyncio
 from attr import dataclass
 
 import rosys
-from rosys.helpers import MultiClientDisplacementScheduler
+from rosys.helpers import MultiQueueLazyWorker
 from rosys.testing import forward
 
 
@@ -21,7 +21,7 @@ async def run_displacement_test(running_slots: int, configurations: list[TestCon
         return identifier
 
     async def wait_and_append(configuration: TestConfiguration,
-                              scheduler: MultiClientDisplacementScheduler) -> str | None:
+                              scheduler: MultiQueueLazyWorker) -> str | None:
         await rosys.sleep(configuration.delay)
 
         return await scheduler.run(configuration.client_id, shared_resource_access(configuration.task_id))
@@ -30,7 +30,7 @@ async def run_displacement_test(running_slots: int, configurations: list[TestCon
         for _ in range(num_steps):
             await forward(step)
 
-    scheduler = MultiClientDisplacementScheduler(running_slots=running_slots)
+    scheduler = MultiQueueLazyWorker(running_slots=running_slots)
 
     tasks = [wait_and_append(config, scheduler) for config in configurations]
     tasks.append(advance_time(0.1, 30))
