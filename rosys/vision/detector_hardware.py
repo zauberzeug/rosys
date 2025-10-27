@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-from typing import Any, Literal
+from typing import Literal
 
 import socketio
 import socketio.exceptions
@@ -104,30 +104,36 @@ class DetectorHardware(Detector):
         try:
             self.log.info('Upload detections to port %s', self.port)
             np_image = image.to_array()
-            data_dict: dict[str, Any] = {'image': {'bytes': np_image.tobytes(order='C'),
-                                                   'dtype': str(np_image.dtype),
-                                                   'shape': np_image.shape, }}
 
-            metadata_dict: dict[str, Any] = {}
-            metadata_dict['source'] = source
-            metadata_dict['tags'] = tags or []
-            metadata_dict['creation_date'] = _creation_date_to_isoformat(creation_date)
+            metadata = {
+                'source': source,
+                'tags': tags or [],
+                'creation_date': _creation_date_to_isoformat(creation_date),
+            }
 
             if detections := image.get_detections(self.name):
-                detections_dict = detections.to_dict()
-                metadata_dict['box_detections'] = _box_detections_to_int(detections_dict['boxes'])
-                metadata_dict['point_detections'] = detections_dict['points']
-                metadata_dict['segmentation_detections'] = detections_dict['segmentations']
-                metadata_dict['classification_detections'] = detections_dict['classifications']
+                metadata.update({
+                    'box_detections': _box_detections_to_int(detections.boxes),
+                    'point_detections': detections.points,
+                    'segmentation_detections': detections.segmentations,
+                    'classification_detections': detections.classifications,
+                })
 
             if annotations is not None:
-                annotations_dict = annotations.to_dict()
-                metadata_dict['box_annotations'] = annotations_dict['box_annotations']
-                metadata_dict['point_annotations'] = annotations_dict['point_annotations']
-                metadata_dict['classification_annotation'] = annotations_dict['classification_annotation']
+                metadata.update({
+                    'box_annotations': annotations.box_annotations,
+                    'point_annotations': annotations.point_annotations,
+                    'classification_annotation': annotations.classification_annotation,
+                })
 
-            data_dict['metadata'] = metadata_dict
-            await self.sio.emit('upload', data_dict)
+            await self.sio.emit('upload', {
+                'image': {
+                    'bytes': np_image.tobytes(order='C'),
+                    'dtype': str(np_image.dtype),
+                    'shape': np_image.shape,
+                },
+                'metadata': metadata,
+            })
 
         except Exception as e:
             self.log.error('Upload failed with exception: %s', e)
@@ -175,9 +181,11 @@ class DetectorHardware(Detector):
         try:
             np_image = image.to_array()
             response = await self.sio.call('detect', {
-                'image': {'bytes': np_image.tobytes(order='C'),
-                          'dtype': str(np_image.dtype),
-                          'shape': np_image.shape, },
+                'image': {
+                    'bytes': np_image.tobytes(order='C'),
+                    'dtype': str(np_image.dtype),
+                    'shape': np_image.shape,
+                },
                 'camera_id': image.camera_id,
                 'tags': tags,
                 'source': source,
