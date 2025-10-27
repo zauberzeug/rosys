@@ -94,7 +94,8 @@ class Image:
         if self.data is None:
             raise ValueError('Cannot convert image to array because it has no data.')
 
-        return cv2.imdecode(np.frombuffer(self.data, dtype=np.uint8), cv2.IMREAD_COLOR)
+        image = PIL.Image.open(io.BytesIO(self.data))
+        return np.array(image)
 
     def to_pil(self) -> PIL.Image.Image:
         """Convert the image to a PIL image. This runs a JPEG decode."""
