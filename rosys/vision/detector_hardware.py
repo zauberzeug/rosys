@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 import socketio
 import socketio.exceptions
@@ -105,25 +105,27 @@ class DetectorHardware(Detector):
             self.log.info('Upload detections to port %s', self.port)
             np_image = image.to_array()
 
-            metadata = {
+            metadata: dict[str, Any] = {
                 'source': source,
                 'tags': tags or [],
                 'creation_date': _creation_date_to_isoformat(creation_date),
             }
 
             if detections := image.get_detections(self.name):
+                detections_dict = detections.to_dict()
                 metadata.update({
-                    'box_detections': _box_detections_to_int(detections.boxes),
-                    'point_detections': detections.points,
-                    'segmentation_detections': detections.segmentations,
-                    'classification_detections': detections.classifications,
+                    'box_detections': _box_detections_to_int(detections_dict['boxes']),
+                    'point_detections': detections_dict['points'],
+                    'segmentation_detections': detections_dict['segmentations'],
+                    'classification_detections': detections_dict['classifications'],
                 })
 
             if annotations is not None:
+                annotations_dict = annotations.to_dict()
                 metadata.update({
-                    'box_annotations': annotations.box_annotations,
-                    'point_annotations': annotations.point_annotations,
-                    'classification_annotation': annotations.classification_annotation,
+                    'box_annotations': annotations_dict['box_annotations'],
+                    'point_annotations': annotations_dict['point_annotations'],
+                    'classification_annotation': annotations_dict['classification_annotation'],
                 })
 
             await self.sio.emit('upload', {
