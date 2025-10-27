@@ -3,7 +3,7 @@ import asyncio
 from attr import dataclass
 
 import rosys
-from rosys.helpers.multi_client_displacement_scheduler import MultiClientDisplacementScheduler
+from rosys.helpers import MultiClientDisplacementScheduler
 from rosys.testing import forward
 
 

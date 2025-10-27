@@ -3,7 +3,7 @@ from collections.abc import Coroutine
 from enum import StrEnum
 from typing import Any, TypeVar
 
-from ..core import time
+from .. import core
 
 _T = TypeVar('_T')
 
@@ -91,7 +91,7 @@ class MultiClientDisplacementScheduler:
                 return None
 
             if data.state == SubmissionState.SCHEDULED:
-                client.last_run_at = time()
+                client.last_run_at = core.time()
                 try:
                     return await coro
                 finally:
