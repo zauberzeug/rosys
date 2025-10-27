@@ -306,5 +306,6 @@ core.on_repeat = on_repeat
 core.on_startup = on_startup
 core.on_shutdown = on_shutdown
 core.sleep = sleep
+core.time = time
 
 config = Config().persistent()

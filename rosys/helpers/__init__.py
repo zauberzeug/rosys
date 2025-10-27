@@ -13,10 +13,12 @@ import numpy as np
 from nicegui import app
 
 from .lazy_worker import LazyWorker
+from .multi_queue_lazy_worker import MultiQueueLazyWorker
 
 __all__ = [
     'LazyWorker',
     'ModificationContext',
+    'MultiQueueLazyWorker',
     'PackagePathFilter',
     'angle',
     'eliminate_2pi',
