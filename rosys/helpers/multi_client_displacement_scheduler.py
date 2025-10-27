@@ -8,22 +8,22 @@ from ..core import time
 _T = TypeVar('_T')
 
 
-class MCDSSubmissionState(StrEnum):
+class SubmissionState(StrEnum):
     CANCELED = 'canceled'
     WAITING = 'waiting'
     SCHEDULED = 'scheduled'
 
 
-class MCDSSubmissionData:
-    def __init__(self, state: MCDSSubmissionState):
+class SubmissionData:
+    def __init__(self, state: SubmissionState):
         self.state = state
         self.can_progress: asyncio.Event = asyncio.Event()
 
 
-class MCDSClient:
+class Client:
     def __init__(self):
         self.last_run_at: float = -float('inf')
-        self.waiting_request: MCDSSubmissionData | None = None
+        self.waiting_request: SubmissionData | None = None
 
 
 class MultiClientDisplacementScheduler:
@@ -52,7 +52,7 @@ class MultiClientDisplacementScheduler:
         :param running_slots: Maximum number coroutines running concurrently.
         """
 
-        self.clients: dict[str, MCDSClient] = {}
+        self.clients: dict[str, Client] = {}
         self.running_slots_available: int = running_slots
 
     async def run(self, client_id: str, coro: Coroutine[Any, Any, _T]) -> _T | None:
@@ -65,32 +65,32 @@ class MultiClientDisplacementScheduler:
                  the coroutine otherwise
         """
 
-        data = MCDSSubmissionData(state=MCDSSubmissionState.WAITING)
+        data = SubmissionData(state=SubmissionState.WAITING)
 
         # Make sure we have a client for our id
         if client_id not in self.clients:
-            self.clients[client_id] = MCDSClient()
+            self.clients[client_id] = Client()
         client = self.clients[client_id]
 
         # Displace waiting request by the current (more recent) one
         if client.waiting_request is not None:
             displaced = client.waiting_request
-            displaced.state = MCDSSubmissionState.CANCELED
+            displaced.state = SubmissionState.CANCELED
             displaced.can_progress.set()
         client.waiting_request = data
 
         # If there are running slots available, take one immediately
         if self.running_slots_available > 0:
             self.running_slots_available -= 1
-            data.state = MCDSSubmissionState.SCHEDULED
+            data.state = SubmissionState.SCHEDULED
             client.waiting_request = None
 
         while True:
-            if data.state == MCDSSubmissionState.CANCELED:
+            if data.state == SubmissionState.CANCELED:
                 coro.close()
                 return None
 
-            if data.state == MCDSSubmissionState.SCHEDULED:
+            if data.state == SubmissionState.SCHEDULED:
                 client.last_run_at = time()
                 try:
                     return await coro
@@ -107,7 +107,7 @@ class MultiClientDisplacementScheduler:
                         next_client_id, _ = next_client
                         next_request = self.clients[next_client_id].waiting_request
                         assert next_request is not None
-                        next_request.state = MCDSSubmissionState.SCHEDULED
+                        next_request.state = SubmissionState.SCHEDULED
                         self.clients[next_client_id].waiting_request = None
                         next_request.can_progress.set()
 
