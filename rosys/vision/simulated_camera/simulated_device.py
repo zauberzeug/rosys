@@ -34,7 +34,7 @@ class SimulatedDevice:
         timestamp = rosys.time()
         image_data: Image | None
         if rosys.is_test:
-            image_data = _create_simple_image(self._size, self.color, timestamp)
+            image_data = _create_simple_image(self._id, self._size, self.color, timestamp)
         else:
             image_data = await rosys.run.cpu_bound(_create_image_data, self._id, self._size, self.color, timestamp)
         if not image_data:
@@ -59,12 +59,12 @@ def _create_image_data(id: str, size: ImageSize, color: str, timestamp: float) -
     d.text((position.x, position.y), text, fill=(0, 0, 0))
     d.text((position.x + 1, position.y + 1), text, fill=(255, 255, 255))
 
-    return Image.from_pil(img, time=timestamp)
+    return Image.from_pil(img, time=timestamp, camera_id=id)
 
 
-def _create_simple_image(size: ImageSize, color: str, timestamp) -> Image:
+def _create_simple_image(camera_id: str, size: ImageSize, color: str, timestamp) -> Image:
     img = PIL.Image.new('RGB', size=(size.width, size.height), color=color)
-    return Image.from_pil(img, time=timestamp)
+    return Image.from_pil(img, time=timestamp, camera_id=camera_id)
 
 
 def _floating_text_position(box_width: int, box_height: int, timestamp: float, speed: float = 100, angle: float = np.deg2rad(45)) -> Point:
