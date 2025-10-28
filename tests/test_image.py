@@ -14,7 +14,7 @@ def test_image_array_conversion():
     original_array = np.zeros((480, 640, 3), dtype=np.uint8)
     img = Image.from_array(original_array)
 
-    converted_array = img.to_array()
+    converted_array = img.array
     assert isinstance(converted_array, np.ndarray)
     assert converted_array.shape == (480, 640, 3)
     assert np.allclose(converted_array, original_array, atol=1)

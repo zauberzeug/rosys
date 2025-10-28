@@ -99,10 +99,6 @@ class Image:
         size = ImageSize(width=array.shape[1], height=array.shape[0])
         return cls(camera_id=camera_id, size=size, time=time or rosys.time(), array=array)
 
-    def to_array(self) -> np.ndarray:
-        """Create a copy of the internal pixel data"""  # TODO: remove?
-        return np.copy(self.array)
-
     def to_pil(self) -> PIL.Image.Image:
         """Convert the image to a PIL image."""
         return PIL.Image.fromarray(self.array)
