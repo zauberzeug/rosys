@@ -127,11 +127,11 @@ class Camera(abc.ABC):
 
     @property
     def captured_images(self) -> list[Image]:
-        return [i for i in self.images if i.data]
+        return list(self.images)
 
     @property
     def latest_captured_image(self) -> Image | None:
-        return next((i for i in reversed(self.captured_images) if i.data), None)
+        return next((i for i in reversed(self.captured_images)), None)
 
     @property
     def latest_detected_image(self) -> Image | None:

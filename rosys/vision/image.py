@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-import io
 import warnings
 from dataclasses import dataclass, field
 from typing import ClassVar, Self
 
-import cv2
 import numpy as np
 import PIL.Image
 import PIL.ImageDraw
+
+from rosys.vision.image_processing import decode_jpeg_image, encode_image_as_jpeg
 
 from .. import rosys
 from .detections import Detections
@@ -29,12 +29,13 @@ class Image:
     camera_id: str
     size: ImageSize
     time: float  # time of recording
-    data: bytes | None = None
+    array: Image.array_type
     _detections: dict[str, Detections] = field(default_factory=dict)
     is_broken: bool | None = None
     tags: set[str] = field(default_factory=set)
 
     DEFAULT_PLACEHOLDER_SIZE: ClassVar[tuple[int, int]] = (320, 240)
+    array_type = np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]  # pixel data with shape (height, width, channels)
 
     def __post_init__(self) -> None:
         if self.tags:
@@ -66,40 +67,49 @@ class Image:
         img = PIL.Image.new('RGB', (h // shrink, w // shrink), color=(73, 109, 137))
         d = PIL.ImageDraw.Draw(img)
         d.text((img.width / 2 - len(text) * 3, img.height / 2 - 5), text, fill=(255, 255, 255))
-        _, encoded_image = cv2.imencode('.png', np.array(img)[:, :, ::-1])  # NOTE: cv2 expects BGR
+        array = np.array(d)
         return cls(
             camera_id=camera_id or 'no_cam_id',
             time=time or 0,
             size=ImageSize(width=img.width, height=img.height),
-            data=encoded_image.tobytes(),
+            array=array,
         )
 
     @classmethod
     def from_pil(cls, pil_image: PIL.Image.Image, *, camera_id: str = 'from_pil', time: float | None = None) -> Self:
-        """Create an image from a PIL image. This runs a JPEG encode."""
-        bytesio = io.BytesIO()
-        pil_image.save(bytesio, format='jpeg')
+        """Create an image from a PIL image."""
         size = ImageSize(width=pil_image.width, height=pil_image.height)
-        return cls(camera_id=camera_id, size=size, time=time or rosys.time(), data=bytesio.getvalue())
+        array = np.array(pil_image)
+        return cls(camera_id=camera_id, size=size, time=time or rosys.time(), array=array)
+
+    @classmethod
+    def from_jpeg_bytes(cls, jpeg_bytes: bytes, *, camera_id: str = 'from_jpeg_bytes', time: float | None = None) -> Self:
+        """Create an image from plain JPEG bytes. This runs a jpeg decode"""
+        # TODO: what if decoding fails?
+        array = decode_jpeg_image(jpeg_bytes)
+        size = ImageSize(width=array.shape[1], height=array.shape[0])
+        return cls(camera_id=camera_id, size=size, time=time or rosys.time(), array=array)
 
     @classmethod
     def from_array(cls, array: np.ndarray, *, camera_id: str = 'from_array', time: float | None = None) -> Self:
-        """Create an image from a NumPy array. This runs a JPEG encode."""
-        _, encoded_image = cv2.imencode('.jpg', array)
+        """Create an image from a NumPy array."""
+        assert array.dtype == np.uint8, "Array must have dtype np.uint8"
+        assert len(array.shape) == 3, "Array must have shape (height, width, channels)"
         size = ImageSize(width=array.shape[1], height=array.shape[0])
-        return cls(camera_id=camera_id, size=size, time=time or rosys.time(), data=encoded_image.tobytes())
+        return cls(camera_id=camera_id, size=size, time=time or rosys.time(), array=array)
 
     def to_array(self) -> np.ndarray:
-        """Convert the image to a NumPy array. This runs a JPEG decode."""
-        if self.data is None:
-            raise ValueError('Cannot convert image to array because it has no data.')
-
-        image = PIL.Image.open(io.BytesIO(self.data))
-        return np.array(image)
+        """Create a copy of the internal pixel data"""  # TODO: remove?
+        return np.copy(self.array)
 
     def to_pil(self) -> PIL.Image.Image:
-        """Convert the image to a PIL image. This runs a JPEG decode."""
-        if self.data is None:
-            raise ValueError('Cannot convert image to PIL image because it has no data.')
+        """Convert the image to a PIL image."""
+        return PIL.Image.fromarray(self.array)
 
-        return PIL.Image.open(io.BytesIO(self.data))
+    def to_jpeg_bytes(self) -> bytes:
+        """Convert the image to a JPEG image by encoding it."""
+        return encode_image_as_jpeg(self.array)
+
+    def byte_size(self) -> int:
+        """Compute the size of the stored image representation in bytes."""
+        return self.array.size
