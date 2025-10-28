@@ -27,3 +27,9 @@ def test_image_pil_conversion():
     assert isinstance(converted_pil, PIL.Image.Image)
     assert converted_pil.size == (640, 480)
     assert np.allclose(np.array(original_pil), np.array(converted_pil), atol=1)
+
+
+def test_image_placeholder():
+    img = Image.create_placeholder('hello')
+
+    assert img.size.tuple == Image.DEFAULT_PLACEHOLDER_SIZE

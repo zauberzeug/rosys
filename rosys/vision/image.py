@@ -70,7 +70,7 @@ class Image:
         img = PIL.Image.new('RGB', (h // shrink, w // shrink), color=(73, 109, 137))
         d = PIL.ImageDraw.Draw(img)
         d.text((img.width / 2 - len(text) * 3, img.height / 2 - 5), text, fill=(255, 255, 255))
-        array = np.array(d)
+        array = np.array(img)
         return cls(
             camera_id=camera_id or 'no_cam_id',
             time=time or 0,
