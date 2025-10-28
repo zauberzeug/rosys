@@ -8,19 +8,19 @@ from rosys.testing import forward
 
 
 @dataclass
-class TestConfiguration:
+class ConfigurationForTest:
     client_id: str
     delay: float
     task_id: str
 
 
-async def run_displacement_test(running_slots: int, configurations: list[TestConfiguration],
+async def run_displacement_test(running_slots: int, configurations: list[ConfigurationForTest],
                                 expected: list[str | None]) -> None:
     async def shared_resource_access(identifier: str) -> str:
         await rosys.sleep(1)
         return identifier
 
-    async def wait_and_append(configuration: TestConfiguration,
+    async def wait_and_append(configuration: ConfigurationForTest,
                               scheduler: MultiQueueLazyWorker) -> str | None:
         await rosys.sleep(configuration.delay)
 
@@ -43,60 +43,60 @@ async def run_displacement_test(running_slots: int, configurations: list[TestCon
 
 async def test_no_displacement() -> None:
     configs = [
-        TestConfiguration('client0', 0.0, 'first'),
-        TestConfiguration('client0', 0.2, 'final'),
+        ConfigurationForTest('client0', 0.0, 'first'),
+        ConfigurationForTest('client0', 0.2, 'final'),
     ]
     await run_displacement_test(1, configs, ['first', 'final'])
 
 
 async def test_single_displacement() -> None:
     configs = [
-        TestConfiguration('client0', 0.0, 'first'),
-        TestConfiguration('client0', 0.1, 'displaced'),
-        TestConfiguration('client0', 0.2, 'final'),
+        ConfigurationForTest('client0', 0.0, 'first'),
+        ConfigurationForTest('client0', 0.1, 'displaced'),
+        ConfigurationForTest('client0', 0.2, 'final'),
     ]
     await run_displacement_test(1, configs, ['first', None, 'final'])
 
 
 async def test_multiple_displacement() -> None:
     configs = [
-        TestConfiguration('client0', 0.0, 'first'),
-        TestConfiguration('client0', 0.1, 'displaced'),
-        TestConfiguration('client0', 0.2, 'displaced'),
-        TestConfiguration('client0', 0.3, 'final'),
+        ConfigurationForTest('client0', 0.0, 'first'),
+        ConfigurationForTest('client0', 0.1, 'displaced'),
+        ConfigurationForTest('client0', 0.2, 'displaced'),
+        ConfigurationForTest('client0', 0.3, 'final'),
     ]
     await run_displacement_test(1, configs, ['first', None, None, 'final'])
 
 
 async def test_multiple_displacement_two_slots() -> None:
     configs = [
-        TestConfiguration('client0', 0.0, 'first'),
-        TestConfiguration('client0', 0.1, 'second'),
-        TestConfiguration('client0', 0.2, 'displaced'),
-        TestConfiguration('client0', 0.3, 'final'),
+        ConfigurationForTest('client0', 0.0, 'first'),
+        ConfigurationForTest('client0', 0.1, 'second'),
+        ConfigurationForTest('client0', 0.2, 'displaced'),
+        ConfigurationForTest('client0', 0.3, 'final'),
     ]
     await run_displacement_test(2, configs, ['first', 'second', None, 'final'])
 
 
 async def test_two_clients_one_slot() -> None:
     configs = [
-        TestConfiguration('client0', 0.0, 'first0'),
-        TestConfiguration('client0', 0.1, 'displaced'),
-        TestConfiguration('client0', 0.2, 'final0'),
-        TestConfiguration('client1', 0.1, 'displaced'),
-        TestConfiguration('client1', 0.2, 'displaced'),
-        TestConfiguration('client1', 0.3, 'final1'),
+        ConfigurationForTest('client0', 0.0, 'first0'),
+        ConfigurationForTest('client0', 0.1, 'displaced'),
+        ConfigurationForTest('client0', 0.2, 'final0'),
+        ConfigurationForTest('client1', 0.1, 'displaced'),
+        ConfigurationForTest('client1', 0.2, 'displaced'),
+        ConfigurationForTest('client1', 0.3, 'final1'),
     ]
     await run_displacement_test(1, configs, ['first0', None, 'final0', None, None, 'final1'])
 
 
 async def test_two_clients_two_slots() -> None:
     configs = [
-        TestConfiguration('client0', 0.0, 'first0'),
-        TestConfiguration('client0', 0.2, 'displaced'),
-        TestConfiguration('client0', 0.3, 'final0'),
-        TestConfiguration('client1', 0.1, 'first1'),
-        TestConfiguration('client1', 0.2, 'displaced'),
-        TestConfiguration('client1', 0.3, 'final1'),
+        ConfigurationForTest('client0', 0.0, 'first0'),
+        ConfigurationForTest('client0', 0.2, 'displaced'),
+        ConfigurationForTest('client0', 0.3, 'final0'),
+        ConfigurationForTest('client1', 0.1, 'first1'),
+        ConfigurationForTest('client1', 0.2, 'displaced'),
+        ConfigurationForTest('client1', 0.3, 'final1'),
     ]
     await run_displacement_test(2, configs, ['first0', None, 'final0', 'first1', None, 'final1'])
