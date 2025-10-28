@@ -35,7 +35,7 @@ class Image:
     tags: set[str] = field(default_factory=set)
 
     DEFAULT_PLACEHOLDER_SIZE: ClassVar[tuple[int, int]] = (320, 240)
-    array_type = np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]  # pixel data with shape (height, width, channels)
+    array_type = np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]  # pixel data with shape (height, width, RGB)
 
     def __post_init__(self) -> None:
         if self.tags:
@@ -95,6 +95,7 @@ class Image:
         """Create an image from a NumPy array."""
         assert array.dtype == np.uint8, "Array must have dtype np.uint8"
         assert len(array.shape) == 3, "Array must have shape (height, width, channels)"
+        assert array.shape[2] == 3, "Image should have 3 channels"
         size = ImageSize(width=array.shape[1], height=array.shape[0])
         return cls(camera_id=camera_id, size=size, time=time or rosys.time(), array=array)
 
