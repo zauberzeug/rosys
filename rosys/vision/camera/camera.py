@@ -27,7 +27,7 @@ class Camera(abc.ABC):
                  streaming: bool | None = None,
                  polling_interval: float | None = None,
                  base_path_overwrite: str | None = None,
-                 image_history_length: int = 256,
+                 image_history_length: int = 16,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.id: str = id
