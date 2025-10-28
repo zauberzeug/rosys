@@ -132,7 +132,7 @@ async def test_parallelize_exception(automator: Automator):
         for i in range(5):
             print(f'slow {i}')
             if i == 3:
-                raise ValueError('i is 3')
+                raise ValueError()
             await rosys.sleep(0.5)
 
     async def fast():
@@ -145,7 +145,7 @@ async def test_parallelize_exception(automator: Automator):
 
     automator.start(run())
     await forward(seconds=10)
-    assert failures == ['automation aborted because i is 3']
+    assert failures == ['automation aborted because an exception occurred in an automation']
 
 
 @pytest.mark.parametrize('method', ['pause', 'stop'])
