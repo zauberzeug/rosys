@@ -155,6 +155,18 @@ class Automator:
             self.AUTOMATION_STOPPED.emit(because)
             self._notify(f'automation stopped because {because}')
 
+    def abort(self, because: str) -> None:
+        """Stops the current automation because of a failure.
+
+        You need to provide a cause which will be used as notification message.
+        """
+        if self.is_stopped:
+            return
+        assert self.automation is not None
+        self.automation.stop()
+        self.AUTOMATION_FAILED.emit(f'automation aborted because {because}')
+        self._notify(f'automation aborted because {because}')
+
     def enable(self) -> None:
         """Enables the automator.
 
@@ -181,9 +193,7 @@ class Automator:
         self.default_automation = default_automation
 
     def _handle_exception(self, e: Exception) -> None:
-        self.stop(because='an exception occurred in an automation')
-        self.AUTOMATION_FAILED.emit(f'automation aborted because of {e}')
-        self._notify('automation failed', 'negative')
+        self.abort(because='an exception occurred in an automation')
         if rosys.is_test:
             self.log.exception('automation failed')
 
