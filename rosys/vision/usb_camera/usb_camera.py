@@ -20,7 +20,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                  name: str | None = None,
                  connect_after_init: bool = True,
                  auto_exposure: bool = True,
-                 exposure: bool = False,
+                 exposure: float = False,
                  width: int = 800,
                  height: int = 600,
                  fps: int = 10,
