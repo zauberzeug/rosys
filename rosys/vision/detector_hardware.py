@@ -51,6 +51,7 @@ class DetectorHardware(Detector):
         self.sio.on('disconnect', lambda: self.log.warning('sio disconnect on port %s', self.port))
         self.sio.on('connect_error', lambda err: self.log.warning('sio connect error on %s: %s', self.port, err))
 
+        rosys.on_startup(self.connect)
         rosys.on_repeat(self._ensure_connection, 10.0)
 
     @property
