@@ -1,6 +1,5 @@
 import copy
 
-import cv2
 import numpy as np
 import pytest
 
@@ -404,7 +403,7 @@ def test_undistort_image_with_crop():
         camera_id='1',
         size=ImageSize(width=800, height=600),
         time=0.0,
-        data=cv2.imencode('.jpg', np.zeros((600, 800, 3), dtype=np.uint8))[1].tobytes(),
+        array=np.zeros((600, 800, 3), dtype=np.uint8),
         is_broken=False,
         tags=set()
     )
