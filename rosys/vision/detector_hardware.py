@@ -26,9 +26,9 @@ class DetectorHardware(Detector):
     It automatically connects and reconnects, submits and receives detections and sends images
     that should be uploaded to the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
 
-    Note: Images must be smaller than ``MAX_IMAGE_SIZE`` bytes (default: 10 MB).
+    Note: Images must be smaller than ``MAX_IMAGE_SIZE`` bytes (default: 64 MB).
     """
-    MAX_IMAGE_SIZE = 10 * 1024 * 1024
+    MAX_IMAGE_SIZE = 64 * 1024 * 1024
 
     def __init__(self,
                  *,
