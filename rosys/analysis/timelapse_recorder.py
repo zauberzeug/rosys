@@ -29,7 +29,6 @@ class RosysImage(Protocol):
     camera_id: str
     time: float
     array: Image.array_type
-    size: ImageSize
 
 
 class TimelapseRecorder:
@@ -166,12 +165,14 @@ def _save_image(image: RosysImage,
     x = y = 20
     frame_info = ', ' + frame_info if frame_info else ''
     _write(f'{datetime.fromtimestamp(image.time):%Y-%m-%d %H:%M:%S}' + frame_info, draw, x, y)
+
+    image_size = ImageSize(width=image.array.shape[1], height=image.array.shape[0])
     for message in notifications:
         y += 30
         _write(message, draw, x, y)
     if overlay:
         style = 'position:absolute;top:0;left:0;pointer-events:none'
-        viewbox = f'0 0 {image.size.width} {image.size.height}'
+        viewbox = f'0 0 {image_size.width} {image_size.height}'
         svg_image = svg2png(bytestring=f'<svg style="{style}" viewBox="{viewbox}">{overlay}</svg>')
         overlay_img = PILImage.open(io.BytesIO(svg_image))
         img.paste(overlay_img, (0, 0), overlay_img)

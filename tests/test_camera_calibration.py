@@ -6,7 +6,7 @@ import pytest
 from rosys.geometry import Point, Point3d, Pose3d
 from rosys.geometry.object3d import frame_registry
 from rosys.testing import approx
-from rosys.vision import CalibratableCamera, Calibration, Image, ImageSize
+from rosys.vision import CalibratableCamera, Calibration, Image
 from rosys.vision.calibration import CameraModel, OmnidirParameters
 
 
@@ -401,7 +401,6 @@ def test_undistort_image_with_crop():
     # Create a test image
     test_image = Image(
         camera_id='1',
-        size=ImageSize(width=800, height=600),
         time=0.0,
         array=np.zeros((600, 800, 3), dtype=np.uint8),
         is_broken=False,

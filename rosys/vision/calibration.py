@@ -528,7 +528,6 @@ class Calibration:
         if isinstance(image, Image):
             return Image(
                 camera_id=image.camera_id,
-                size=image.size,
                 time=image.time,
                 array=self.undistort_image(image.array, crop=crop),
                 is_broken=image.is_broken,

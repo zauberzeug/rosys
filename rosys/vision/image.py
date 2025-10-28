@@ -27,7 +27,6 @@ class ImageSize:
 @dataclass(slots=True, kw_only=True)
 class Image:
     camera_id: str
-    size: ImageSize
     time: float  # time of recording
     array: Image.array_type
     _detections: dict[str, Detections] = field(default_factory=dict)
@@ -51,6 +50,10 @@ class Image:
                 f'Image has multiple detection types ({", ".join(self._detections.keys())}). Use `get_detections(type)` instead.')
         return next(iter(self._detections.values()))
 
+    @property
+    def size(self) -> ImageSize:
+        return ImageSize(width=self.array.shape[1], height=self.array.shape[0])
+
     def get_detections(self, detector_id: str) -> Detections | None:
         return self._detections.get(detector_id)
 
@@ -71,24 +74,21 @@ class Image:
         return cls(
             camera_id=camera_id or 'no_cam_id',
             time=time or 0,
-            size=ImageSize(width=img.width, height=img.height),
             array=array,
         )
 
     @classmethod
     def from_pil(cls, pil_image: PIL.Image.Image, *, camera_id: str = 'from_pil', time: float | None = None) -> Self:
         """Create an image from a PIL image."""
-        size = ImageSize(width=pil_image.width, height=pil_image.height)
         array = np.array(pil_image)
-        return cls(camera_id=camera_id, size=size, time=time or rosys.time(), array=array)
+        return cls(camera_id=camera_id, time=time or rosys.time(), array=array)
 
     @classmethod
     def from_jpeg_bytes(cls, jpeg_bytes: bytes, *, camera_id: str = 'from_jpeg_bytes', time: float | None = None) -> Self:
         """Create an image from plain JPEG bytes. This runs a jpeg decode"""
         # TODO: what if decoding fails?
         array = decode_jpeg_image(jpeg_bytes)
-        size = ImageSize(width=array.shape[1], height=array.shape[0])
-        return cls(camera_id=camera_id, size=size, time=time or rosys.time(), array=array)
+        return cls(camera_id=camera_id, time=time or rosys.time(), array=array)
 
     @classmethod
     def from_array(cls, array: np.ndarray, *, camera_id: str = 'from_array', time: float | None = None) -> Self:
@@ -96,8 +96,7 @@ class Image:
         assert array.dtype == np.uint8, "Array must have dtype np.uint8"
         assert len(array.shape) == 3, "Array must have shape (height, width, channels)"
         assert array.shape[2] == 3, "Image should have 3 channels"
-        size = ImageSize(width=array.shape[1], height=array.shape[0])
-        return cls(camera_id=camera_id, size=size, time=time or rosys.time(), array=array)
+        return cls(camera_id=camera_id, time=time or rosys.time(), array=array)
 
     def to_pil(self) -> PIL.Image.Image:
         """Convert the image to a PIL image."""
