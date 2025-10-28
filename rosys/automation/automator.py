@@ -101,8 +101,8 @@ class Automator:
     def start(self, coro: Coroutine | None = None, *, paused: bool = False) -> None:
         """Starts a new automation.
 
-        You can pass any coroutine.
-        The automator will make sure it can be paused, resumed and stopped.
+        :param coro: the coroutine to start, if None the default automation will be used
+        :param paused: whether to start the automation paused
         """
         if coro is None:
             assert self.default_automation is not None
@@ -122,7 +122,7 @@ class Automator:
     def pause(self, because: str) -> None:
         """Pauses the current automation.
 
-        You need to provide a cause which will be used as notification message.
+        :param because: the reason for pausing the automation
         """
         if self.is_pausing or self.is_stopping:
             return
@@ -145,7 +145,7 @@ class Automator:
     def stop(self, because: str) -> None:
         """Stops the current automation.
 
-        You need to provide a cause which will be used as notification message.
+        :param because: the reason for stopping the automation
         """
         if self.is_pausing or self.is_stopping:
             return
@@ -158,7 +158,7 @@ class Automator:
     def abort(self, because: str) -> None:
         """Stops the current automation because of a failure.
 
-        You need to provide a cause which will be used as notification message.
+        :param because: the reason for aborting the automation
         """
         if self.is_stopped:
             return
@@ -180,7 +180,8 @@ class Automator:
 
         No automations can be started while the automator is disabled.
         If an automation is running or paused it will be stopped.
-        You need to provide a cause which will be used as notification message.
+
+        :param because: the reason for disabling the automator
         """
         self.stop(because)
         self.enabled = False
@@ -188,7 +189,7 @@ class Automator:
     def set_default_automation(self, default_automation: Callable | None) -> None:
         """Sets the default automation.
 
-        You can pass a function that returns a new coroutine on every call.
+        :param default_automation: the default automation to use
         """
         self.default_automation = default_automation
 
