@@ -8,12 +8,17 @@ from ..geometry import Rectangle
 from .image_rotation import ImageRotation
 
 
-def encode_image_as_jpeg(image: np.ndarray) -> bytes:
-    # TODO: see if we can use this in more places
-    return cv2.imencode('.png', image[:, :, ::-1])[1].tobytes()  # NOTE: cv2 expects BGR
+def encode_image_as_jpeg(image: np.ndarray, compression_level: int | None = None) -> bytes:
+    # TODO: Do we want to use turbojpeg directly?
+    if compression_level is not None:
+        params = [int(cv2.IMWRITE_JPEG_QUALITY), compression_level]
+    else:
+        params = []
+    return cv2.imencode('.jpg', image[:, :, ::-1], params)[1].tobytes()  # NOTE: cv2 expects BGR
 
 
 def decode_jpeg_image(jpeg_bytes: bytes) -> np.ndarray:
+    # TODO: Do we want to use turbojpeg directly?
     return np.array(PIL.Image.open(io.BytesIO(jpeg_bytes)))
 
 

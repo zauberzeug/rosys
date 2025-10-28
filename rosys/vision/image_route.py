@@ -10,6 +10,8 @@ import numpy as np
 from fastapi import Response
 from nicegui import app
 
+from rosys.vision.image_processing import encode_image_as_jpeg
+
 from .. import run
 from .calibration import Calibration
 from .image import Image
@@ -143,5 +145,5 @@ def _process(image: Image,
             # INTER_AREA is optimal for downsampling
             image_array = cv2.resize(image_array, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
-    _, encoded_image = cv2.imencode('.jpg', image_array, [int(cv2.IMWRITE_JPEG_QUALITY), compression])
-    return encoded_image.tobytes()
+    encoded_image = encode_image_as_jpeg(image_array, compression_level=compression)
+    return encoded_image
