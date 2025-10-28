@@ -94,17 +94,13 @@ class DetectorHardware(Detector):
             self.log.error('Upload failed: detector is not connected')
             raise DetectorException('detector is not connected')
 
-        if not image.data:
-            self.log.error('Upload failed: image data is empty')
-            raise DetectorException('image data is empty')
-
-        if len(image.data) > self.MAX_IMAGE_SIZE:
-            self.log.error('Upload failed: image too large: %s', len(image.data))
+        if image.byte_size() > self.MAX_IMAGE_SIZE:
+            self.log.error('Upload failed: image too large: %s', image.byte_size())
             raise DetectorException('image too large')
 
         try:
             self.log.info('Upload detections to port %s', self.port)
-            np_image = image.to_array()
+            np_image = image.array
 
             metadata: dict[str, Any] = {
                 'source': source,
@@ -159,7 +155,7 @@ class DetectorHardware(Detector):
             self.log.error('Detection failed: image is broken')
             raise DetectorException('image is broken')
 
-        assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
+        assert image.byte_size() < self.MAX_IMAGE_SIZE, f'image too large: {image.byte_size()}'
         tags = tags or []
         try:
             detect_call = self._detect(image, autoupload, tags, source, creation_date)
@@ -182,7 +178,7 @@ class DetectorHardware(Detector):
                       creation_date: datetime | str | None = None,
                       ) -> Detections:
         try:
-            np_image = image.to_array()
+            np_image = image.array
             response = await self.sio.call('detect', {
                 'image': {
                     'bytes': np_image.tobytes(order='C'),

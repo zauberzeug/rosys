@@ -530,7 +530,7 @@ class Calibration:
                 camera_id=image.camera_id,
                 size=image.size,
                 time=image.time,
-                data=cv2.imencode('.jpg', self.undistort_image(image.to_array(), crop=crop))[1].tobytes(),
+                array=self.undistort_image(image.array, crop=crop),
                 is_broken=image.is_broken,
                 tags=image.tags,
             )

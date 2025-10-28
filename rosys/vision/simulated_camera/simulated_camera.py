@@ -2,7 +2,7 @@ import random
 
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
-from ..image import Image, ImageSize
+from ..image import ImageSize
 from .simulated_device import SimulatedDevice
 
 
@@ -45,15 +45,11 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
     async def connect(self) -> None:
         if not self.is_connected:
             self.device = SimulatedDevice(id=self.id, size=self.resolution, fps=self.parameters['fps'],
-                                          on_new_image_data=self._handle_new_image_data)
+                                          on_new_image_data=self._add_image)
             await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
         self.device = None
-
-    async def _handle_new_image_data(self, image_data: bytes, timestamp: float) -> None:
-        image = Image(time=timestamp, camera_id=self.id, size=self.resolution, data=image_data)
-        self._add_image(image)
 
     def _set_color(self, value: str) -> None:
         assert self.device is not None
