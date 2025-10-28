@@ -6,6 +6,7 @@ from uuid import uuid4
 import aiofiles
 import numpy as np
 
+from ... import run
 from ..camera import Camera
 from ..image import Image
 from .constants import TIME_FORMAT
@@ -78,10 +79,11 @@ class ReplayCamera(Camera):
         async with aiofiles.open(image_path, 'rb') as f:
             data = await f.read()
 
-        self._add_image(Image.from_jpeg_bytes(
-            jpeg_bytes=data,
-            camera_id=self.id,
-            time=self.timestamp_array[closest_past_index]))
+        image = await run.cpu_bound(Image.from_jpeg_bytes, jpeg_bytes=data, camera_id=self.id, time=self.timestamp_array[closest_past_index])
+        if image is None:
+            return
+
+        self._add_image(image)
 
     @property
     def is_connected(self) -> bool:
