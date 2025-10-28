@@ -63,6 +63,7 @@ class Automator:
 
         self.AUTOMATION_PAUSED.subscribe(lambda _: self._handle_interrupt())
         self.AUTOMATION_STOPPED.subscribe(lambda _: self._handle_interrupt(stop=True))
+        self.AUTOMATION_FAILED.subscribe(lambda _: self._handle_interrupt(stop=True))
 
         rosys.on_shutdown(lambda: self.stop(because='automator is shutting down'))
 
@@ -164,7 +165,7 @@ class Automator:
             return
         assert self.automation is not None
         self.automation.stop()
-        self.AUTOMATION_FAILED.emit(f'automation aborted because {because}')
+        self.AUTOMATION_FAILED.emit(because)
         self._notify(f'automation aborted because {because}')
 
     def enable(self) -> None:
