@@ -1,31 +1,11 @@
 import io
 
 import cv2
-import imgsize
 import numpy as np
 import PIL.Image
 
 from ..geometry import Rectangle
-from .image import ImageSize
 from .image_rotation import ImageRotation
-
-
-class PeekableBytesIO(io.BytesIO):
-
-    def peek(self, n=-1):
-        position = self.tell()
-        data = self.read(n)
-        self.seek(position)
-        return data
-
-
-def get_image_size_from_bytes(image: bytes) -> ImageSize:
-    try:
-        with PeekableBytesIO(image) as f:
-            width, height = imgsize.get_size(f)
-    except imgsize.UnknownSize as e:
-        raise ValueError('Could not determine image size') from e
-    return ImageSize(width=width, height=height)
 
 
 def encode_image_as_jpeg(image: np.ndarray) -> bytes:
