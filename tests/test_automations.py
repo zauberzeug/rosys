@@ -38,7 +38,7 @@ async def test_aborting_a_drive(driver: Driver, automator: Automator, robot: Rob
     assert_pose(0, 0, deg=0)
     automator.start(driver.drive_spline(Spline.from_poses(Pose(x=0), Pose(x=2))))
     cause: list[str] = []
-    automator.AUTOMATION_STOPPED.subscribe(cause.append)
+    automator.AUTOMATION_FAILED.subscribe(cause.append)
     await forward(x=1)
     assert_pose(1, 0, deg=0)
     driver.abort()
@@ -145,7 +145,7 @@ async def test_parallelize_exception(automator: Automator):
 
     automator.start(run())
     await forward(seconds=10)
-    assert failures == ['automation aborted because of i is 3']
+    assert failures == ['an exception occurred in an automation: i is 3']
 
 
 @pytest.mark.parametrize('method', ['pause', 'stop'])
