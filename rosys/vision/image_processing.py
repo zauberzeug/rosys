@@ -1,4 +1,5 @@
 import io
+import logging
 
 import cv2
 import numpy as np
@@ -17,14 +18,20 @@ def encode_image_as_jpeg(image: np.ndarray, compression_level: int | None = None
     return cv2.imencode('.jpg', image[:, :, ::-1], params)[1].tobytes()  # NOTE: cv2 expects BGR
 
 
-def decode_jpeg_image(jpeg_bytes: bytes) -> np.ndarray:
+def decode_jpeg_image(jpeg_bytes: bytes) -> np.ndarray | None:
     # TODO: Do we want to use turbojpeg directly?
-    return np.array(PIL.Image.open(io.BytesIO(jpeg_bytes)))
+    try:
+        return np.array(PIL.Image.open(io.BytesIO(jpeg_bytes)))
+    except (PIL.UnidentifiedImageError, OSError) as e:
+        logging.warning("Failed to decode JPEG image %s", e)
+        return None
 
 
-def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Rectangle | None = None) -> np.ndarray:
-    """Rotate and crop a JPEG image and return it as a NumPy pixel array"""
+def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Rectangle | None = None) -> np.ndarray | None:
+    """Rotate and crop a JPEG image and return it as a NumPy pixel array. Returns None if decoding failed."""
     array = decode_jpeg_image(data)
+    if array is None:
+        return None
     return process_ndarray_image(array, rotation, crop)
 
 
