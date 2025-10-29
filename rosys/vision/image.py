@@ -94,9 +94,9 @@ class Image:
     @classmethod
     def from_array(cls, array: np.ndarray, *, camera_id: str = 'from_array', time: float | None = None) -> Self:
         """Create an image from a NumPy array."""
-        assert array.dtype == np.uint8, "Array must have dtype np.uint8"
-        assert len(array.shape) == 3, "Array must have shape (height, width, channels)"
-        assert array.shape[2] == 3, "Image should have 3 channels"
+        assert array.dtype == np.uint8, 'Array must have dtype np.uint8'
+        assert len(array.shape) == 3, 'Array must have shape (height, width, channels)'
+        assert array.shape[2] == 3, 'Image should have 3 channels'
         return cls(camera_id=camera_id, time=time or rosys.time(), array=array)
 
     def to_pil(self) -> PIL.Image.Image:
