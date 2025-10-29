@@ -81,7 +81,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         image_array: np.ndarray | None
         if isinstance(image_data, np.ndarray):
             if self.crop or self.rotation != ImageRotation.NONE:
-                image_array = await rosys.run.cpu_bound(process_ndarray_image, image_data, self.rotation, self.crop)
+                image_array = process_ndarray_image(image_data, self.rotation, self.crop)
             else:
                 image_array = image_data
         else:
