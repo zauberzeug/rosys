@@ -23,7 +23,7 @@ def decode_jpeg_image(jpeg_bytes: bytes) -> np.ndarray | None:
     try:
         return np.array(PIL.Image.open(io.BytesIO(jpeg_bytes)))
     except (PIL.UnidentifiedImageError, OSError) as e:
-        logging.warning("Failed to decode JPEG image %s", e)
+        logging.warning('Failed to decode JPEG image %s', e)
         return None
 
 
