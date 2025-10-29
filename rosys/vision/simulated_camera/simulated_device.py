@@ -32,13 +32,11 @@ class SimulatedDevice:
 
     async def _create_image(self) -> None:
         timestamp = rosys.time()
-        image_data: Image | None
+        image_data: Image
         if rosys.is_test:
             image_data = _create_simple_image(self._id, self._size, self.color, timestamp)
         else:
-            image_data = await rosys.run.cpu_bound(_create_image_data, self._id, self._size, self.color, timestamp)
-        if not image_data:
-            return
+            image_data = _create_image_data(self._id, self._size, self.color, timestamp)
         result = self._on_new_image_data(image_data)
         if isinstance(result, Awaitable):
             await result
