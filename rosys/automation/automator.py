@@ -194,8 +194,8 @@ class Automator:
         """
         self.default_automation = default_automation
 
-    def _handle_exception(self, _: Exception) -> None:
-        self.abort(because='an exception occurred in an automation')
+    def _handle_exception(self, e: Exception) -> None:
+        self.abort(because=f'an exception occurred in an automation{f": {e}" if str(e) else ""}')
         if rosys.is_test:
             self.log.exception('automation failed')
 
