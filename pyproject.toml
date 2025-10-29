@@ -47,11 +47,11 @@ optional = true
 
 [tool.poetry.group.dev.dependencies]
 autopep8 = "^1.5.5"
-pytest = "^6.2.1"
+pytest = "^8.2.2"
 pytest-watch = "^4.2.0"
 pytest-flakefinder = "^1.0.0"
 pytest-profiling = "^1.7.0"
-pytest-asyncio = "0.19.0"
+pytest-asyncio = "^1.2.0"
 debugpy = "^1.2.1"
 py-spy = "^0.3.10"
 cryptography = ">=44.0.1" # https://github.com/zauberzeug/rosys/security/dependabot/61
