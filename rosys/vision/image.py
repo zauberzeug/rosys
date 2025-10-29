@@ -84,10 +84,11 @@ class Image:
         return cls(camera_id=camera_id, time=time or rosys.time(), array=array)
 
     @classmethod
-    def from_jpeg_bytes(cls, jpeg_bytes: bytes, *, camera_id: str = 'from_jpeg_bytes', time: float | None = None) -> Self:
-        """Create an image from plain JPEG bytes. This runs a jpeg decode"""
-        # TODO: what if decoding fails?
+    def from_jpeg_bytes(cls, jpeg_bytes: bytes, *, camera_id: str = 'from_jpeg_bytes', time: float | None = None) -> Self | None:
+        """Create an image from plain JPEG bytes. This runs a jpeg decode. Returns None if decoding fails."""
         array = decode_jpeg_image(jpeg_bytes)
+        if array is None:
+            return None
         return cls(camera_id=camera_id, time=time or rosys.time(), array=array)
 
     @classmethod
