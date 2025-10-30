@@ -54,8 +54,7 @@ class Bms(Module, abc.ABC):
             self.CHARGING_STOPPED.emit()
 
     def _send_battery_low_event(self, current_percentage: float, previous_percentage: float) -> None:
-        if self.battery_low_threshold is None:
-            return
+        assert self.battery_low_threshold is not None
         if current_percentage < self.battery_low_threshold and previous_percentage >= self.battery_low_threshold:
             self.BATTERY_LOW.emit()
 
@@ -111,7 +110,7 @@ class BmsHardware(Bms, ModuleHardware):
         msg.check()
         result = msg.interpret()
         percentage = result.get('capacity percent')
-        if percentage is not None and self.state.percentage is not None:
+        if self.battery_low_threshold is not None and percentage is not None and self.state.percentage is not None:
             self._send_battery_low_event(percentage, self.state.percentage)
         self.state.percentage = percentage
         self.state.voltage = result.get('total voltage')
@@ -149,7 +148,7 @@ class BmsSimulation(Bms, ModuleSimulation):
         self._send_charging_events(is_charging)
         self.state.is_charging = is_charging
         percentage = helpers.ramp(self.state.voltage, self.MIN_VOLTAGE, self.MAX_VOLTAGE, 0.0, 100.0)
-        if self.state.percentage is not None:
+        if self.battery_low_threshold is not None and self.state.percentage is not None:
             self._send_battery_low_event(percentage, self.state.percentage)
         self.state.percentage = percentage
         self.state.current = self.CHARGING_CURRENT if self.state.is_charging else self.DISCHARGING_CURRENT
