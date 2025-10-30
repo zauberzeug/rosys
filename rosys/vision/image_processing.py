@@ -2,50 +2,41 @@ import io
 import logging
 
 import cv2
-import imgsize
 import numpy as np
+import PIL.Image
 
 from ..geometry import Rectangle
-from .image import ImageSize
 from .image_rotation import ImageRotation
 
 
-class PeekableBytesIO(io.BytesIO):
+def encode_image_as_jpeg(image: np.ndarray, compression_level: int | None = None) -> bytes:
+    # TODO: Do we want to use turbojpeg directly?
+    if compression_level is not None:
+        params = [int(cv2.IMWRITE_JPEG_QUALITY), compression_level]
+    else:
+        params = []
+    return cv2.imencode('.jpg', image[:, :, ::-1], params)[1].tobytes()  # NOTE: cv2 expects BGR
 
-    def peek(self, n=-1):
-        position = self.tell()
-        data = self.read(n)
-        self.seek(position)
-        return data
 
-
-def get_image_size_from_bytes(image: bytes) -> ImageSize:
+def decode_jpeg_image(jpeg_bytes: bytes) -> np.ndarray | None:
+    # TODO: Do we want to use turbojpeg directly?
     try:
-        with PeekableBytesIO(image) as f:
-            width, height = imgsize.get_size(f)
-    except imgsize.UnknownSize as e:
-        raise ValueError('Could not determine image size') from e
-    return ImageSize(width=width, height=height)
-
-
-def encode_image_as_jpeg(image: np.ndarray) -> bytes:
-    return cv2.imencode('.jpg', image)[1].tobytes()
-
-
-def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Rectangle | None = None) -> bytes | None:
-    """Rotate and crop a JPEG image."""
-    if crop is None and rotation == ImageRotation.NONE:
-        return data
-    array = np.frombuffer(data, dtype=np.uint8)
-    decoded = cv2.imdecode(array, cv2.IMREAD_COLOR)
-    if decoded is None:
-        logging.warning('could not decode image buffer')
+        return np.array(PIL.Image.open(io.BytesIO(jpeg_bytes)))
+    except (PIL.UnidentifiedImageError, OSError) as e:
+        logging.warning('Failed to decode JPEG image %s', e)
         return None
-    return process_ndarray_image(decoded, rotation, crop)
 
 
-def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Rectangle | None = None) -> bytes:
-    """Rotate and crop a NumPy image and encode it as JPEG."""
+def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Rectangle | None = None) -> np.ndarray | None:
+    """Rotate and crop a JPEG image and return it as a NumPy pixel array. Returns None if decoding failed."""
+    array = decode_jpeg_image(data)
+    if array is None:
+        return None
+    return process_ndarray_image(array, rotation, crop)
+
+
+def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Rectangle | None = None) -> np.ndarray:
+    """Rotate and crop a NumPy image."""
     if crop is not None:
         image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]
     if rotation == ImageRotation.LEFT:
@@ -54,7 +45,7 @@ def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Rect
         image = cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE)
     elif rotation == ImageRotation.UPSIDE_DOWN:
         image = cv2.rotate(image, cv2.ROTATE_180)
-    return encode_image_as_jpeg(image)
+    return image
 
 
 def remove_exif(image_data: bytes | bytearray) -> bytes:

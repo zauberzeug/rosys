@@ -44,15 +44,11 @@ class ImageRecorder:
 
         :param image: the image to save
         """
-        if not image.data:
-            log.debug('No image data to save')
-            return
-
         path = self.data_dir / image.camera_id.replace(':', '-')
         path.mkdir(parents=True, exist_ok=True)
 
         file_path = path / f'{datetime.fromtimestamp(image.time).strftime(TIME_FORMAT)}.jpg'
 
         async with aiofiles.open(file_path, 'wb') as f:
-            await f.write(image.data)
+            await f.write(image.to_jpeg_bytes())
             log.debug('Saved image from camera %s to %s', image.camera_id, file_path)
