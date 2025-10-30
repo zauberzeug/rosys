@@ -2741,6 +2741,34 @@ files = [
 ]
 
 [[package]]
+name = "pycairo"
+version = "1.28.0"
+description = "Python interface for cairo"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "pycairo-1.28.0-cp310-cp310-win32.whl", hash = "sha256:53e6dbc98456f789965dad49ef89ce2c62f9a10fc96c8d084e14da0ffb73d8a6"},
+    {file = "pycairo-1.28.0-cp310-cp310-win_amd64.whl", hash = "sha256:c8ab91a75025f984bc327ada335c787efb61c929ea0512063793cb36cee503d4"},
+    {file = "pycairo-1.28.0-cp310-cp310-win_arm64.whl", hash = "sha256:e955328c1a5147bf71ee94e206413ce15e12630296a79788fcd246c80e5337b8"},
+    {file = "pycairo-1.28.0-cp311-cp311-win32.whl", hash = "sha256:0fee15f5d72b13ba5fd065860312493dc1bca6ff2dce200ee9d704e11c94e60a"},
+    {file = "pycairo-1.28.0-cp311-cp311-win_amd64.whl", hash = "sha256:6339979bfec8b58a06476094a9a5c104bd5a99932ddaff16ca0d9203d2f4482c"},
+    {file = "pycairo-1.28.0-cp311-cp311-win_arm64.whl", hash = "sha256:c6ae15392e28ebfc0b35d8dc05d395d3b6be4bad9ad4caecf0fa12c8e7150225"},
+    {file = "pycairo-1.28.0-cp312-cp312-win32.whl", hash = "sha256:c00cfbb7f30eb7ca1d48886712932e2d91e8835a8496f4e423878296ceba573e"},
+    {file = "pycairo-1.28.0-cp312-cp312-win_amd64.whl", hash = "sha256:d50d190f5033992b55050b9f337ee42a45c3568445d5e5d7987bab96c278d8a6"},
+    {file = "pycairo-1.28.0-cp312-cp312-win_arm64.whl", hash = "sha256:957e0340ee1c279d197d4f7cfa96f6d8b48e453eec711fca999748d752468ff4"},
+    {file = "pycairo-1.28.0-cp313-cp313-win32.whl", hash = "sha256:d13352429d8a08a1cb3607767d23d2fb32e4c4f9faa642155383980ec1478c24"},
+    {file = "pycairo-1.28.0-cp313-cp313-win_amd64.whl", hash = "sha256:082aef6b3a9dcc328fa648d38ed6b0a31c863e903ead57dd184b2e5f86790140"},
+    {file = "pycairo-1.28.0-cp313-cp313-win_arm64.whl", hash = "sha256:026afd53b75291917a7412d9fe46dcfbaa0c028febd46ff1132d44a53ac2c8b6"},
+    {file = "pycairo-1.28.0-cp314-cp314-win32.whl", hash = "sha256:d0ab30585f536101ad6f09052fc3895e2a437ba57531ea07223d0e076248025d"},
+    {file = "pycairo-1.28.0-cp314-cp314-win_amd64.whl", hash = "sha256:94f2ed204999ab95a0671a0fa948ffbb9f3d6fb8731fe787917f6d022d9c1c0f"},
+    {file = "pycairo-1.28.0-cp39-cp39-win32.whl", hash = "sha256:3ed16d48b8a79cc584cb1cb0ad62dfb265f2dda6d6a19ef5aab181693e19c83c"},
+    {file = "pycairo-1.28.0-cp39-cp39-win_amd64.whl", hash = "sha256:da0d1e6d4842eed4d52779222c6e43d254244a486ca9fdab14e30042fd5bdf28"},
+    {file = "pycairo-1.28.0-cp39-cp39-win_arm64.whl", hash = "sha256:458877513eb2125513122e8aa9c938630e94bb0574f94f4fb5ab55eb23d6e9ac"},
+    {file = "pycairo-1.28.0.tar.gz", hash = "sha256:26ec5c6126781eb167089a123919f87baa2740da2cca9098be8b3a6b91cc5fbc"},
+]
+
+[[package]]
 name = "pycodestyle"
 version = "2.13.0"
 description = "Python style guide checker"
@@ -2913,6 +2941,20 @@ files = [
 
 [package.extras]
 windows-terminal = ["colorama (>=0.4.6)"]
+
+[[package]]
+name = "pygobject"
+version = "3.54.5"
+description = "Python bindings for GObject Introspection"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "pygobject-3.54.5.tar.gz", hash = "sha256:b6656f6348f5245606cf15ea48c384c7f05156c75ead206c1b246c80a22fb585"},
+]
+
+[package.dependencies]
+pycairo = ">=1.16"
 
 [[package]]
 name = "pylint"
@@ -4124,4 +4166,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11, <3.14"
-content-hash = "8d04c46f8055523bd66ba1193284b6b61372b2a915b183dd73e5e36519ddcaba"
+content-hash = "1b2f1d41e03eb728cea2b633fbb5e8c643ee23315691316c969808215f8e4f7e"

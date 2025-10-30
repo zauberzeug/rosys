@@ -1,11 +1,12 @@
 import logging
 from typing import Any, Literal, Self
 
-from ... import rosys
+import numpy as np
+
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image
-from ..image_processing import process_jpeg_image
+from ..image_processing import process_ndarray_image
 from .rtsp_device import RtspDevice
 
 
@@ -89,12 +90,8 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         await self.device.shutdown()
         self.device = None
 
-    async def _handle_new_image_data(self, image_bytes: bytes, timestamp: float) -> None:
-        if not image_bytes:
-            return
-        transformed_image_array = await rosys.run.cpu_bound(process_jpeg_image, image_bytes, self.rotation, self.crop)
-        if transformed_image_array is None:
-            return
+    async def _handle_new_image_data(self, pixel_array: np.ndarray, timestamp: float) -> None:
+        transformed_image_array = process_ndarray_image(pixel_array, self.rotation, self.crop)
 
         image = Image.from_array(time=timestamp, camera_id=self.id, array=transformed_image_array)
         self._add_image(image)
