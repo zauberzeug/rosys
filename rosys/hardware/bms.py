@@ -18,15 +18,18 @@ class Bms(Module, abc.ABC):
     The BMS module provides measured voltages as an event.
     """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, *, battery_low_threshold: float | None = None, **kwargs) -> None:
         super().__init__(**kwargs)
         self.CHARGING_STARTED = Event[[]]()
         """The battery started charging"""
         self.CHARGING_STOPPED = Event[[]]()
         """The battery stopped charging"""
+        self.BATTERY_LOW = Event[[]]()
+        """The battery percentage is below the threshold"""
 
         self.state = BmsState()
         self.raw_data: dict = {}
+        self.battery_low_threshold = battery_low_threshold
 
     def is_above_percent(self, value: float) -> bool:
         """Returns whether the battery is charged above the given percentage."""
@@ -49,6 +52,12 @@ class Bms(Module, abc.ABC):
             self.CHARGING_STARTED.emit()
         elif not is_charging and self.state.is_charging:
             self.CHARGING_STOPPED.emit()
+
+    def _send_battery_low_event(self, percentage: float) -> None:
+        if self.battery_low_threshold is None or self.state.percentage is None:
+            return
+        if percentage < self.battery_low_threshold and self.state.percentage >= self.battery_low_threshold:
+            self.BATTERY_LOW.emit()
 
     def developer_ui(self) -> None:
         ui.label('Battery Management System').classes('text-center text-bold')
@@ -78,6 +87,7 @@ class BmsHardware(Bms, ModuleHardware):
                  baud: int = 9600,
                  num: int = 1,
                  charge_detect_threshold: float = -0.4,
+                 **kwargs
                  ) -> None:
         self.name = name
         self.expander = expander
@@ -86,7 +96,7 @@ class BmsHardware(Bms, ModuleHardware):
             {name} = {expander.name + "." if expander else ""}Serial({rx_pin}, {tx_pin}, {baud}, {num})
             {name}.unmute()
         ''')
-        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code)
+        super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, **kwargs)
         rosys.on_repeat(self._request, 1.0)
         self.message_hooks[name] = self._handle_bms
 
@@ -100,7 +110,10 @@ class BmsHardware(Bms, ModuleHardware):
         msg = BmsMessage([int(w, 16) for w in words])
         msg.check()
         result = msg.interpret()
-        self.state.percentage = result.get('capacity percent')
+        percentage = result.get('capacity percent')
+        if percentage is not None:
+            self._send_battery_low_event(percentage)
+        self.state.percentage = percentage
         self.state.voltage = result.get('total voltage')
         self.state.current = result.get('current')
         self.state.temperature = np.mean(result['temperatures']) if 'temperatures' in result else None
@@ -123,8 +136,8 @@ class BmsSimulation(Bms, ModuleSimulation):
     TEMPERATURE_AMPLITUDE = 1.0
     TEMPERATURE_FREQUENCY = 0.01
 
-    def __init__(self, *, voltage_per_second: float = 0.0) -> None:
-        super().__init__()
+    def __init__(self, *, voltage_per_second: float = 0.0, **kwargs) -> None:
+        super().__init__(**kwargs)
         self.voltage_per_second = voltage_per_second
         self.state.voltage = self.AVERAGE_VOLTAGE
 
@@ -135,7 +148,9 @@ class BmsSimulation(Bms, ModuleSimulation):
         is_charging = self.voltage_per_second > 0
         self._send_charging_events(is_charging)
         self.state.is_charging = is_charging
-        self.state.percentage = helpers.ramp(self.state.voltage, self.MIN_VOLTAGE, self.MAX_VOLTAGE, 0.0, 100.0)
+        percentage = helpers.ramp(self.state.voltage, self.MIN_VOLTAGE, self.MAX_VOLTAGE, 0.0, 100.0)
+        self._send_battery_low_event(percentage)
+        self.state.percentage = percentage
         self.state.current = self.CHARGING_CURRENT if self.state.is_charging else self.DISCHARGING_CURRENT
         self.state.temperature = self.AVERAGE_TEMPERATURE + \
             self.TEMPERATURE_AMPLITUDE * np.sin(self.TEMPERATURE_FREQUENCY * rosys.time())
