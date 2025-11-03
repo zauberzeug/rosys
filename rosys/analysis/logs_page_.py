@@ -3,8 +3,6 @@ from pathlib import Path
 
 from nicegui import run, ui
 
-LOG_FILES = Path('~/.rosys').expanduser()
-
 
 class LogsPage:
     """Logs Page
@@ -13,7 +11,8 @@ class LogsPage:
     It is mounted at /logs.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *, logs_dir: Path | None = None) -> None:
+        self.logs_dir = logs_dir or Path('~/.rosys').expanduser()
 
         @ui.page('/log/{name:str}')
         async def log_page(name: str) -> None:
@@ -43,11 +42,11 @@ class LogsPage:
                                     ui.item_label(caption).props('caption')
 
         ui.label('Device Logs').classes('text-2xl')
-        logs = await _list_log_files()
+        logs = await _list_log_files(self.logs_dir)
         list_ui()
 
     async def _log_page_content(self, name: str) -> None:
-        path = LOG_FILES / name
+        path = self.logs_dir / name
         try:
             content = await run.io_bound(path.read_text, errors='ignore')
         except Exception:
@@ -65,9 +64,9 @@ def _human_size(num_bytes: int) -> str:
     return f'{size:.1f} {units[unit]}'
 
 
-async def _list_log_files() -> list[Path]:
-    logs = await run.io_bound(LOG_FILES.glob, '*.log')
-    rotated = await run.io_bound(LOG_FILES.glob, '*.log.*')
+async def _list_log_files(logs_dir: Path) -> list[Path]:
+    logs = await run.io_bound(logs_dir.glob, '*.log')
+    rotated = await run.io_bound(logs_dir.glob, '*.log.*')
     paths = list({p.resolve(): p for p in [*logs, *rotated]}.values())
 
     def mtime(p: Path) -> float:
