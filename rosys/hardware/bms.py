@@ -19,6 +19,9 @@ class Bms(Module, abc.ABC):
     """
 
     def __init__(self, *, battery_low_threshold: float | None = None, **kwargs) -> None:
+        """
+        :param battery_low_threshold: If provided, the BATTERY_LOW event will be emitted when the battery percentage gets below this threshold.
+        """
         super().__init__(**kwargs)
         self.CHARGING_STARTED = Event[[]]()
         """The battery started charging"""
@@ -87,8 +90,17 @@ class BmsHardware(Bms, ModuleHardware):
                  baud: int = 9600,
                  num: int = 1,
                  charge_detect_threshold: float = -0.4,
-                 **kwargs
+                 **kwargs,
                  ) -> None:
+        """
+        :param expander: If provided, the BMS module will use the expander module to create the serial connection.
+        :param name: The name of the BMS module.
+        :param rx_pin: The GPIO pin number to use for the RX line.
+        :param tx_pin: The GPIO pin number to use for the TX line.
+        :param baud: The baud rate to use for the serial communication.
+        :param num: The serial port index to use for creating the serial connection.
+        :param charge_detect_threshold: The threshold current to use for charging detection.
+        """
         self.name = name
         self.expander = expander
         self.charge_detect_threshold = charge_detect_threshold
@@ -137,6 +149,9 @@ class BmsSimulation(Bms, ModuleSimulation):
     TEMPERATURE_FREQUENCY = 0.01
 
     def __init__(self, *, voltage_per_second: float = 0.0, **kwargs) -> None:
+        """
+        :param voltage_per_second: The voltage change per second. Positive for charging, negative for discharging.
+        """
         super().__init__(**kwargs)
         self.voltage_per_second = voltage_per_second
         self.state.voltage = self.AVERAGE_VOLTAGE
