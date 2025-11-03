@@ -1,120 +1,24 @@
-# GStreamer initialization wrapper
-from .vendors import VendorType, mac_to_url, mac_to_vendor
-from .jovision_rtsp_interface import JovisionInterface
-from ... import rosys
-from nicegui import background_tasks, core
-import sys
-
-import gi as _gi  # underscore prefix prevents import sorting
-
-# If gi.repository has not been imported yet, configure versions
-if 'gi.repository' not in sys.modules:
-    _gi.require_version('Gst', '1.0')
-    _gi.require_version('GstApp', '1.0')
-
 import asyncio
 import logging
-from collections.abc import Awaitable, Callable
-from threading import Lock
+import shlex
+import signal
+import subprocess
+from asyncio.subprocess import Process
+from collections.abc import AsyncGenerator, Awaitable, Callable
+from io import BytesIO
 from typing import Literal
 
-import numpy as np
-from gi.repository import Gst
-print("gi import")
+from nicegui import background_tasks
 
-
-class AsyncRTPFrameReader:
-    def __init__(self, url: str, avdec: str):
-        print("before gst init")
-        Gst.init(None)
-        print(url)
-
-        # Create pipeline
-        pipeline_str = (
-            f'rtspsrc location="{url}" latency=0 protocols=tcp ! '
-            f'rtp{avdec}depay ! avdec_{avdec} ! videoconvert ! '
-            'video/x-raw,format=RGB ! appsink name=sink sync=false'
-        )
-        print(pipeline_str)
-        self.pipeline = Gst.parse_launch(pipeline_str)
-
-        # Setup appsink
-        sink_element = self.pipeline.get_by_name('sink')
-        self.sink = sink_element.props
-        self.sink.emit_signals = True
-        self.sink.drop = True
-        self.sink.max_buffers = 1
-
-        # Setup synchronization primitives
-        self._frame_ready = asyncio.Event()
-        self._frame_lock = Lock()
-        self._current_frame = None
-        self._loop = core.loop
-
-        # Setup callback
-        sink_element.connect('new-sample', self._on_new_sample)
-
-        # Start pipeline
-        self.pipeline.set_state(Gst.State.PLAYING)
-
-        print("pipeline started")
-
-    def _on_new_sample(self, sink):
-        try:
-            sample = sink.emit('pull-sample')
-            if not sample:
-                return Gst.FlowReturn.ERROR
-
-            buffer = sample.get_buffer()
-            caps = sample.get_caps()
-
-            structure = caps.get_structure(0)
-            width = structure.get_value('width')
-            height = structure.get_value('height')
-
-            success, map_info = buffer.map(Gst.MapFlags.READ)
-            if not success:
-                return Gst.FlowReturn.ERROR
-
-            try:
-                frame = np.ndarray(
-                    shape=(height, width, 3),
-                    dtype=np.uint8,
-                    buffer=map_info.data
-                ).copy()
-
-                # Update frame with proper synchronization
-                with self._frame_lock:
-                    self._current_frame = frame
-                    self._loop.call_soon_threadsafe(self._frame_ready.set)
-
-            finally:
-                buffer.unmap(map_info)
-
-            return Gst.FlowReturn.OK
-        except Exception as e:
-            print(f"Error in _on_new_sample: {e}")
-            return Gst.FlowReturn.ERROR
-
-    async def get_frame(self):
-        """Get the next frame asynchronously"""
-        await self._frame_ready.wait()
-        print("waiting for frame done")
-        self._frame_ready.clear()
-
-        with self._frame_lock:
-            assert self._current_frame is not None
-            # TODO: Do we actually need to copy?
-            return self._current_frame.copy()
-
-    def __del__(self):
-        if hasattr(self, 'pipeline'):
-            self.pipeline.set_state(Gst.State.NULL)
+from ... import rosys
+from .jovision_rtsp_interface import JovisionInterface
+from .vendors import VendorType, mac_to_url, mac_to_vendor
 
 
 class RtspDevice:
+
     def __init__(self, mac: str, ip: str, *,
-                 substream: int, fps: int, on_new_image_data: Callable[[np.ndarray, float], Awaitable | None],
+                 substream: int, fps: int, on_new_image_data: Callable[[bytes, float], Awaitable | None],
                  avdec: Literal['h264', 'h265'] = 'h264') -> None:
         self._mac = mac
         self._ip = ip
@@ -125,8 +29,8 @@ class RtspDevice:
         self._on_new_image_data = on_new_image_data
         self._avdec = avdec
 
-        self._frame_reader: AsyncRTPFrameReader | None = None
         self._capture_task: asyncio.Task | None = None
+        self._capture_process: Process | None = None
         self._authorized: bool = True
 
         vendor_type = mac_to_vendor(mac)
@@ -157,10 +61,17 @@ class RtspDevice:
         return url
 
     async def shutdown(self) -> None:
-        if self._frame_reader is not None:
-            del self._frame_reader
-            self._frame_reader = None
-
+        if self._capture_process is not None:
+            self.log.debug('[%s] Terminating gstreamer process', self._mac)
+            self._capture_process.terminate()
+            try:
+                await asyncio.wait_for(self._capture_process.wait(), timeout=5)
+            except TimeoutError:
+                self.log.warning('[%s] Timeout while waiting for gstreamer process to terminate', self._mac)
+            else:
+                self.log.debug('[%s] Successfully shut down process (code %s)',
+                               self._mac, self._capture_process.returncode if self._capture_process.returncode is not None else 'None')
+                self._capture_process = None
         if self._capture_task is not None and not self._capture_task.done():
             self.log.debug('[%s] Cancelling gstreamer task', self._mac)
             self._capture_task.cancel()
@@ -180,7 +91,6 @@ class RtspDevice:
         if self._capture_task is not None and not self._capture_task.done():
             self.log.warning('[%s] capture task already running', self._mac)
             return
-        print("start gstreamer task")
         self._capture_task = background_tasks.create(self._run_gstreamer(), name=f'capture {self._mac}')
 
     async def restart_gstreamer(self) -> None:
@@ -188,21 +98,88 @@ class RtspDevice:
         self._start_gstreamer_task()
 
     async def _run_gstreamer(self) -> None:
-        self._frame_reader = AsyncRTPFrameReader(self.url, self._avdec)
+        if self._capture_process is not None and self._capture_process.returncode is None:
+            self.log.warning('[%s] capture process already running', self._mac)
+            return
 
-        try:
-            while True:
-                frame = await self._frame_reader.get_frame()
-                timestamp = rosys.time()
+        async def stream() -> AsyncGenerator[bytes, None]:
+            url = self.url
+            self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
+            # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
+            command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtp{self._avdec}depay ! avdec_{self._avdec} ! videoconvert ! jpegenc ! fdsink'
+            self.log.debug('[%s] Running command: %s', self._mac, command)
+            process = await asyncio.create_subprocess_exec(
+                *shlex.split(command),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                limit=1024*1024*1024,
+            )
+            assert process.stdout is not None
+            assert process.stderr is not None
+            self._capture_process = process
 
-                result = self._on_new_image_data(frame, timestamp)
-                if isinstance(result, Awaitable):
-                    await result
+            buffer = BytesIO()
+            chunk_size = 1024*1024
 
-        except asyncio.CancelledError as e:
-            self.log.info('[%s] stream ended', self._mac)
-            print(e)
-            raise
+            while process.returncode is None:
+                assert process.stdout is not None
+
+                eof = False
+                while True:
+                    new = await process.stdout.read(chunk_size)
+                    eof = not new
+                    buffer.write(new)
+                    if len(new) < chunk_size:
+                        break
+
+                if eof:
+                    break
+
+                data = buffer.getvalue()
+                end = data.rfind(b'\xff\xd9')
+                if end == -1:
+                    continue
+
+                start = data.rfind(b'\xff\xd8', 0, end)
+                if start == -1:
+                    continue
+
+                end += 2
+
+                yield data[start:end]
+                rest = data[end:]
+                buffer.seek(0)
+                buffer.truncate()
+                buffer.write(rest)
+
+            try:
+                await asyncio.wait_for(process.wait(), timeout=5)
+            except TimeoutError:
+                self.log.warning(
+                    '[%s] Stream ended. Timeout while waiting for gstreamer process to terminate', self._mac)
+                return
+
+            return_code = process.returncode
+            if return_code == -1 * signal.SIGTERM:
+                self.log.debug('gstreamer process %s was terminated using SIGTERM', process.pid)
+            else:
+                error = await process.stderr.read()
+                error_message = error.decode()
+                self.log.error('gstreamer process %s exited with code %s.\nstderr: %s',
+                               process.pid, return_code, error_message)
+
+                if 'Unauthorized' in error_message:
+                    self._authorized = False
+
+        async for image in stream():
+            timestamp = rosys.time()
+            result = self._on_new_image_data(image, timestamp)
+            if isinstance(result, Awaitable):
+                await result
+
+        self.log.info('[%s] stream ended', self._mac)
+
+        self._capture_task = None
 
     async def set_fps(self, fps: int) -> None:
         self._fps = fps
