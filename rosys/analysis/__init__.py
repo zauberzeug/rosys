@@ -31,7 +31,6 @@ __all__ = [
     'kpi_page',
     'logging_page',
     'logs_page',
-    'logs_page',
     'objgraph_page',
     'profile_button',
     'str_to_date',
