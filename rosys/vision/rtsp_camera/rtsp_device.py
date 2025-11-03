@@ -134,9 +134,8 @@ class RtspDevice:
                     break
 
                 if packet.type == GDPPayloadType.CAPS:
-                    cap_text = packet.payload.decode("utf-8", "ignore")
-
                     print(cap_text)
+                    cap_text = packet.payload.decode('utf-8', 'ignore')
 
                     w = GDP_CAPS_WIDTH_REGEX.search(cap_text)
                     h = GDP_CAPS_HEIGHT_REGEX.search(cap_text)
