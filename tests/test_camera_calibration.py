@@ -403,8 +403,6 @@ def test_undistort_image_with_crop():
         camera_id='1',
         time=0.0,
         array=np.zeros((600, 800, 3), dtype=np.uint8),
-        is_broken=False,
-        tags=set()
     )
 
     # Test without crop

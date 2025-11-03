@@ -151,10 +151,6 @@ class DetectorHardware(Detector):
             self.log.error('Detection failed: detector is not connected')
             raise DetectorException('detector is not connected')
 
-        if image.is_broken:
-            self.log.error('Detection failed: image is broken')
-            raise DetectorException('image is broken')
-
         assert image.byte_size() < self.MAX_IMAGE_SIZE, f'image too large: {image.byte_size()}'
         tags = tags or []
         try:
@@ -215,8 +211,6 @@ class DetectorHardware(Detector):
             raise DetectorException('Failed to parse detections') from e
 
         self.timeout_count = 0
-        if image.is_broken:  # NOTE: image can be marked broken while detection is underway
-            raise DetectorException('Image is broken')
 
         return detections
 

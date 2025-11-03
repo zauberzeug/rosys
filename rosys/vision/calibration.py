@@ -530,8 +530,7 @@ class Calibration:
                 camera_id=image.camera_id,
                 time=image.time,
                 array=self.undistort_image(image.array, crop=crop),
-                is_broken=image.is_broken,
-                tags=image.tags,
+                metadata=image.metadata,
             )
 
         if image.shape[0] != self.intrinsics.size.height or image.shape[1] != self.intrinsics.size.width:
