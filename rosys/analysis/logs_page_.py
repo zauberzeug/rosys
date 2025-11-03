@@ -7,6 +7,11 @@ LOG_FILES = Path('~/.rosys').expanduser()
 
 
 class LogsPage:
+    """Logs Page
+
+    This module creates a page to list and download log files.
+    It is mounted at /logs.
+    """
 
     def __init__(self) -> None:
 
