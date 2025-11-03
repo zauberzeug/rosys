@@ -30,7 +30,17 @@ async def run_arp_scan(interface: str | None = None) -> str:
     if os.getuid() != 0:
         arpscan_cmd = f'sudo {arpscan_cmd}'
 
-    cmd = f'{arpscan_cmd} --localnet'
+    # NOTE: -R randomizes the order in which the mac addresses for the given
+    # localnet IP address range are requested. That means:
+    # Without -R: 192.168.7.1, 192.168.7.2, 192.168.7.3, ...
+    # With -R (e.g.): 192.168.7.193, 192.168.7.12, 192.168.7.7, ...
+    # If a device (camera) we are interested in has a "high" IP address in our
+    # range (and thus at the end of our list) and if it is unable to cope with
+    # the flood of ARP-requests (e.g. due to underpowered hardware) it may
+    # never respond.
+    # To avoid such a scenario, we add -R so that any device will eventually be
+    # at the start of the list and thus be able to respond.
+    cmd = f'{arpscan_cmd} --localnet -R'
     if not interface:
         interface = get_network_interface()
     if interface:
