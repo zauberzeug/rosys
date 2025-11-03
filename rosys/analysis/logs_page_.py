@@ -1,0 +1,83 @@
+from datetime import datetime
+from pathlib import Path
+
+from nicegui import run, ui
+
+LOG_FILES = Path('~/.rosys').expanduser()
+
+
+class LogsPage:
+
+    def __init__(self) -> None:
+
+        @ui.page('/log/{name:str}')
+        async def log_page(name: str) -> None:
+            await self._log_page_content(name)
+
+        @ui.page('/logs', title='Logs')
+        async def page():
+            await self._content()
+
+    async def _content(self) -> None:
+        @ui.refreshable
+        def list_ui() -> None:
+            with ui.card().props('flat bordered'):
+                if not logs:
+                    ui.label('No logs found')
+                    return
+                with ui.list().classes('items-center'):
+                    for p in logs:
+                        title, caption = _format_log_entry(p)
+                        with ui.item().classes('p-0'):
+                            with ui.item_section().props('avatar'):
+                                ui.button(icon='download', on_click=lambda p=p: ui.download(p)) \
+                                    .props('flat').tooltip('download')
+                            with ui.item_section().classes('min-w-24'):
+                                with ui.link(target=f'log/{p.name}').classes('no-underline'):
+                                    ui.item_label(title)
+                                    ui.item_label(caption).props('caption')
+
+        ui.label('Device Logs').classes('text-2xl')
+        logs = await _list_log_files()
+        list_ui()
+
+    async def _log_page_content(self, name: str) -> None:
+        path = LOG_FILES / name
+        try:
+            content = await run.io_bound(path.read_text, errors='ignore')
+        except Exception:
+            content = ''
+        ui.code(content).classes('w-full').props('language=""')
+
+
+def _human_size(num_bytes: int) -> str:
+    units = ['B', 'KB', 'MB', 'GB', 'TB']
+    size = float(num_bytes)
+    unit = 0
+    while size >= 1024 and unit < len(units) - 1:
+        size /= 1024.0
+        unit += 1
+    return f'{size:.1f} {units[unit]}'
+
+
+async def _list_log_files() -> list[Path]:
+    logs = await run.io_bound(LOG_FILES.glob, '*.log')
+    rotated = await run.io_bound(LOG_FILES.glob, '*.log.*')
+    paths = list({p.resolve(): p for p in [*logs, *rotated]}.values())
+
+    def mtime(p: Path) -> float:
+        try:
+            return p.stat().st_mtime
+        except FileNotFoundError:
+            return 0.0
+    return sorted(paths, key=mtime, reverse=True)
+
+
+def _format_log_entry(path: Path) -> tuple[str, str]:
+    try:
+        size = _human_size(path.stat().st_size)
+        mtime = datetime.fromtimestamp(path.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+    except FileNotFoundError:
+        size = 'n/a'
+        mtime = 'n/a'
+    return path.name, f'{size} • {mtime}'
