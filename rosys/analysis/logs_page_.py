@@ -14,10 +14,6 @@ class LogsPage:
     def __init__(self, *, logs_dir: Path | None = None) -> None:
         self.logs_dir = logs_dir or Path('~/.rosys').expanduser()
 
-        @ui.page('/log/{name:str}')
-        async def log_page(name: str) -> None:
-            await self._log_page_content(name)
-
         @ui.page('/logs', title='Logs')
         async def page():
             await self._content()
@@ -37,21 +33,12 @@ class LogsPage:
                                 ui.button(icon='download', on_click=lambda p=p: ui.download(p)) \
                                     .props('flat').tooltip('download')
                             with ui.item_section().classes('min-w-24'):
-                                with ui.link(target=f'log/{p.name}').classes('no-underline'):
-                                    ui.item_label(title)
-                                    ui.item_label(caption).props('caption')
+                                ui.item_label(title)
+                                ui.item_label(caption).props('caption')
 
         ui.label('Device Logs').classes('text-2xl')
         logs = await _list_log_files(self.logs_dir)
         list_ui()
-
-    async def _log_page_content(self, name: str) -> None:
-        path = self.logs_dir / name
-        try:
-            content = await run.io_bound(path.read_text, errors='ignore')
-        except Exception:
-            content = ''
-        ui.code(content).classes('w-full').props('language=""')
 
 
 def _human_size(num_bytes: int) -> str:
