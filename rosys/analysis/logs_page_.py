@@ -56,12 +56,7 @@ async def _list_log_files(logs_dir: Path) -> list[Path]:
     rotated = await run.io_bound(logs_dir.glob, '*.log.*')
     paths = list({p.resolve(): p for p in [*logs, *rotated]}.values())
 
-    def mtime(p: Path) -> float:
-        try:
-            return p.stat().st_mtime
-        except FileNotFoundError:
-            return 0.0
-    return sorted(paths, key=mtime, reverse=True)
+    return sorted(paths, key=lambda p: p.stat().st_mtime, reverse=True)
 
 
 def _format_log_entry(path: Path) -> tuple[str, str]:
