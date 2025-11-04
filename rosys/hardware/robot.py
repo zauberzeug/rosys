@@ -89,6 +89,18 @@ class RobotHardware(Robot):
                     if words[0] in cast(ModuleHardware, module).message_hooks:
                         cast(ModuleHardware, module).message_hooks[words[0]](line)
 
+    async def en3_on(self) -> None:
+        await self.robot_brain.send('en3.on()')
+
+    async def en3_off(self) -> None:
+        await self.robot_brain.send('en3.off()')
+
+    async def rdyp_on(self) -> None:
+        await self.robot_brain.send('rdyp.on()')
+
+    async def rdyp_off(self) -> None:
+        await self.robot_brain.send('rdyp.off()')
+
 
 class RobotSimulation(Robot):
     """A robot that consists of simulated modules.
