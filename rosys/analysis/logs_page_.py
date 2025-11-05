@@ -1,7 +1,9 @@
 from datetime import datetime
 from pathlib import Path
 
-from nicegui import run, ui
+from fastapi import HTTPException
+from fastapi.responses import FileResponse
+from nicegui import app, run, ui
 
 
 class LogsPage:
@@ -18,27 +20,50 @@ class LogsPage:
         async def page():
             await self._content()
 
+        @app.get('/logs/{name:str}')
+        async def download_log(name: str):
+            path = self.logs_dir / name
+            if not path.exists():
+                raise HTTPException(status_code=404, detail=f'Log file {name} not found')
+            return FileResponse(path)
+
     async def _content(self) -> None:
         @ui.refreshable
         def list_ui() -> None:
-            with ui.card().props('flat bordered'):
-                if not logs:
+            with ui.card().tight().props('flat bordered'):
+                if logs:
+                    with ui.list():
+                        for path in logs:
+                            with ui.item(on_click=lambda path=path: ui.navigate.to(f'/logs/{path.name}', new_tab=True)):
+                                with ui.item_section():
+                                    ui.item_label(path.name)
+                                    ui.item_label(_file_info(path)).props('caption')
+                                with ui.item_section().props('side'):
+                                    ui.button(icon='download').on('click.stop', lambda path=path: ui.download(path)) \
+                                        .props('flat fab-mini').tooltip('download')
+                else:
                     ui.label('No logs found')
-                    return
-                with ui.list().classes('items-center'):
-                    for p in logs:
-                        title, caption = _format_log_entry(p)
-                        with ui.item().classes('p-0'):
-                            with ui.item_section().props('avatar'):
-                                ui.button(icon='download', on_click=lambda p=p: ui.download(p)) \
-                                    .props('flat').tooltip('download')
-                            with ui.item_section().classes('min-w-24'):
-                                ui.item_label(title)
-                                ui.item_label(caption).props('caption')
 
         ui.label('Device Logs').classes('text-2xl')
-        logs = await _list_log_files(self.logs_dir)
+        logs = await _find_log_files(self.logs_dir)
         list_ui()
+
+
+async def _find_log_files(logs_dir: Path) -> list[Path]:
+    logs = await run.io_bound(logs_dir.glob, '*.log')
+    rotated = await run.io_bound(logs_dir.glob, '*.log.*')
+    paths = list({p.resolve(): p for p in [*logs, *rotated]}.values())
+    return sorted(paths, key=lambda p: p.stat().st_mtime, reverse=True)
+
+
+def _file_info(path: Path) -> str:
+    try:
+        mtime = datetime.fromtimestamp(path.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+        size = _human_size(path.stat().st_size)
+    except FileNotFoundError:
+        mtime = 'n/a'
+        size = 'n/a'
+    return f'{mtime} • {size}'
 
 
 def _human_size(num_bytes: int) -> str:
@@ -49,21 +74,3 @@ def _human_size(num_bytes: int) -> str:
         size /= 1024.0
         unit += 1
     return f'{size:.1f} {units[unit]}'
-
-
-async def _list_log_files(logs_dir: Path) -> list[Path]:
-    logs = await run.io_bound(logs_dir.glob, '*.log')
-    rotated = await run.io_bound(logs_dir.glob, '*.log.*')
-    paths = list({p.resolve(): p for p in [*logs, *rotated]}.values())
-
-    return sorted(paths, key=lambda p: p.stat().st_mtime, reverse=True)
-
-
-def _format_log_entry(path: Path) -> tuple[str, str]:
-    try:
-        size = _human_size(path.stat().st_size)
-        mtime = datetime.fromtimestamp(path.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
-    except FileNotFoundError:
-        size = 'n/a'
-        mtime = 'n/a'
-    return path.name, f'{size} • {mtime}'
