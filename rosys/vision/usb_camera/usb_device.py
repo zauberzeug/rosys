@@ -98,6 +98,8 @@ class UsbDevice:
                     return
                 result = self._on_new_image_data(bytes_, timestamp)
             else:
+                # convert bgr to rgb
+                frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 result = self._on_new_image_data(frame, timestamp)
             if isinstance(result, Awaitable):
                 await result
