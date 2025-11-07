@@ -1,5 +1,6 @@
 import io
 import logging
+from io import BytesIO
 
 import cv2
 import numpy as np
@@ -11,11 +12,15 @@ from .image_rotation import ImageRotation
 
 def encode_image_as_jpeg(image: np.ndarray, compression_level: int | None = None) -> bytes:
     # TODO: Do we want to use turbojpeg directly?
+    pil_image = PIL.Image.fromarray(image.astype(np.uint8))
+
+    buffer = BytesIO()
+    save_kwargs = {}
     if compression_level is not None:
-        params = [int(cv2.IMWRITE_JPEG_QUALITY), compression_level]
-    else:
-        params = []
-    return cv2.imencode('.jpg', image[:, :, ::-1], params)[1].tobytes()  # NOTE: cv2 expects BGR
+        save_kwargs['quality'] = compression_level
+
+    pil_image.save(buffer, format='JPEG', **save_kwargs)
+    return buffer.getvalue()
 
 
 def decode_jpeg_image(jpeg_bytes: bytes) -> np.ndarray | None:
