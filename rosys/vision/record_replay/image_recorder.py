@@ -39,7 +39,7 @@ class ImageRecorder:
     async def _save_image(self, image: Image):
         """Save the provided image to the data directory.
 
-        Images are saved to a subfolder named after the camera ID (with ':' replaced by '-'),
+        Images are saved to a subfolder named after the camera ID (with ':' replaced by '--'),
         using filenames in the format YYYY-MM-DD_HH-MM-SS.ffffff.jpg based on the image timestamp.
 
         :param image: the image to save
@@ -48,7 +48,7 @@ class ImageRecorder:
             log.debug('No image data to save')
             return
 
-        path = self.data_dir / image.camera_id.replace(':', '-')
+        path = self.data_dir / image.camera_id.replace(':', '--')
         path.mkdir(parents=True, exist_ok=True)
 
         file_path = path / f'{datetime.fromtimestamp(image.time).strftime(TIME_FORMAT)}.jpg'
