@@ -41,6 +41,7 @@ idna = ">=3.7" # https://github.com/zauberzeug/rosys/security/dependabot/45
 uvicorn = "!=0.29.0" # test_examples.py fails with 0.29.0 due to persistency not correctly writing during teardown
 requests = ">=2.32.4" # https://github.com/zauberzeug/rosys/security/dependabot/64
 urllib3 = ">=2.5.0" # https://github.com/zauberzeug/rosys/security/dependabot/66
+pyturbojpeg = "^1.8.2"
 
 [tool.poetry.group.dev]
 optional = true

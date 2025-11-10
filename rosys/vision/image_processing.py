@@ -8,10 +8,18 @@ import PIL.Image
 
 from ..geometry import Rectangle
 from .image_rotation import ImageRotation
+from .turbojpeg_wrapper import TURBOJPEG_AVAILABLE, TurboJpegWrapper
+
+TURBO_JPEG = TurboJpegWrapper() if TURBOJPEG_AVAILABLE else None
+if not TURBO_JPEG:
+    logging.getLogger('rosys').warning('TurboJPEG is not available. Using PIL for JPEG decoding and encoding.')
 
 
-def encode_image_as_jpeg(image: np.ndarray, compression_level: int | None = None) -> bytes:
-    # TODO: Do we want to use turbojpeg directly?
+def encode_image_as_jpeg(image: np.ndarray, compression_level: int = 90) -> bytes:
+    """Encode image as JPEG using TurboJPEG if available, otherwise PIL."""
+    if TURBO_JPEG:
+        return TURBO_JPEG.encode(image, quality=compression_level)
+
     pil_image = PIL.Image.fromarray(image.astype(np.uint8))
 
     buffer = BytesIO()
@@ -24,8 +32,12 @@ def encode_image_as_jpeg(image: np.ndarray, compression_level: int | None = None
 
 
 def decode_jpeg_image(jpeg_bytes: bytes) -> np.ndarray | None:
-    # TODO: Do we want to use turbojpeg directly?
+    """Decode JPEG bytes to numpy array using TurboJPEG if available, otherwise PIL.
+    Returns None if decoding fails.
+    """
     try:
+        if TURBO_JPEG is not None:
+            return TURBO_JPEG.decode(jpeg_bytes)
         return np.array(PIL.Image.open(io.BytesIO(jpeg_bytes)))
     except (PIL.UnidentifiedImageError, OSError) as e:
         logging.warning('Failed to decode JPEG image %s', e)
