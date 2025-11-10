@@ -26,7 +26,7 @@ async def test_record_images(recordings_dir: Path):
     await forward(seconds=1.1)
 
     # ASSERT
-    cam_dir = recordings_dir / 'cam-0'
+    cam_dir = recordings_dir / 'cam--0'
     assert cam_dir.exists()
     files = sorted(p for p in cam_dir.iterdir() if p.suffix == '.jpg')
     assert len(files) == 1
