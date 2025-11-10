@@ -119,12 +119,13 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
     def _find_cameras(self, replay_folder: Path) -> None:
         for file in replay_folder.iterdir():
             if file.is_dir():
-                camera = ReplayCamera(camera_id=file.name,
+                cam_name = file.name.replace('--', ':')
+                camera = ReplayCamera(camera_id=cam_name,
                                       images_dir=file,
-                                      camera_name=file.name,
+                                      camera_name=cam_name,
                                       image_history_length=128)
                 self.add_camera(camera)
-                self.log.info('Added replay camera "%s" from folder "%s"', file.name, file)
+                self.log.info('Added replay camera "%s" from folder "%s"', cam_name, file)
 
     def _set_time_interval(self) -> None:
         for camera in self.cameras.values():
