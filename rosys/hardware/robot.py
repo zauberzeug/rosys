@@ -89,6 +89,25 @@ class RobotHardware(Robot):
                     if words[0] in cast(ModuleHardware, module).message_hooks:
                         cast(ModuleHardware, module).message_hooks[words[0]](line)
 
+    async def en3_on(self) -> None:
+        """Release the EN3 software emergency stop to provide power to the robot."""
+        await self.robot_brain.send('en3.on()')
+
+    async def en3_off(self) -> None:
+        """Activate the EN3 software emergency stop to cut power to the robot."""
+        await self.robot_brain.send('en3.off()')
+
+    async def rdyp_on(self) -> None:
+        """Activate RDYP to provide power to the robot's hardware.
+
+        Power will only be available if EN1, EN2 or EN3 are active.
+        """
+        await self.robot_brain.send('rdyp.on()')
+
+    async def rdyp_off(self) -> None:
+        """Deactivate RDYP to cut power to the robot's hardware."""
+        await self.robot_brain.send('rdyp.off()')
+
 
 class RobotSimulation(Robot):
     """A robot that consists of simulated modules.
