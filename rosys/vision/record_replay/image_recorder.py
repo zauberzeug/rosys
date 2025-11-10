@@ -4,6 +4,7 @@ from pathlib import Path
 
 import aiofiles
 
+from ... import run
 from ..camera_provider import CameraProvider
 from ..image import Image
 from .constants import TIME_FORMAT
@@ -50,5 +51,9 @@ class ImageRecorder:
         file_path = path / f'{datetime.fromtimestamp(image.time).strftime(TIME_FORMAT)}.jpg'
 
         async with aiofiles.open(file_path, 'wb') as f:
-            await f.write(image.to_jpeg_bytes())
+            jpeg_bytes = await run.cpu_bound(Image.to_jpeg_bytes, image)
+            if jpeg_bytes is None:
+                # Note: This only happens when stopping
+                return
+            await f.write(jpeg_bytes)
             log.debug('Saved image from camera %s to %s', image.camera_id, file_path)

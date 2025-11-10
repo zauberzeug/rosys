@@ -70,7 +70,14 @@ def create_image_route(camera: Camera) -> None:
 
 
 async def _get_placeholder(shrink: int = 1) -> Response:
-    return Response(content=Image.create_placeholder('no image', shrink=shrink).to_jpeg_bytes(), media_type='image/jpeg')
+    def _create_placeholder() -> bytes:
+        image = Image.create_placeholder('no image', shrink=shrink)
+        return image.to_jpeg_bytes()
+
+    placeholder_jpeg = await run.cpu_bound(_create_placeholder)
+    if placeholder_jpeg is None:
+        return Response(content='Server is stopping', status_code=500)
+    return Response(content=placeholder_jpeg, media_type='image/jpeg')
 
 
 async def _get_image(camera: Camera,
@@ -112,7 +119,7 @@ async def _try_get_jpeg(camera: Camera,
             shrink = max(1, shrink, shrink_from_max)
 
             if shrink == 1 and not undistort and compression == 60:
-                return bytes(image.to_jpeg_bytes())
+                return await run.cpu_bound(Image.to_jpeg_bytes, image)
 
             calibration = camera.calibration if undistort else None  # type: ignore
             return await run.cpu_bound(_process, image, calibration, shrink, undistort, fast, compression)

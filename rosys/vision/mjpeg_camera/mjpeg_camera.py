@@ -90,7 +90,12 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
                 return
             image = Image.from_array(camera_id=self.id, time=timestamp, array=image_array)
         else:
-            maybe_image = Image.from_jpeg_bytes(camera_id=self.id, time=timestamp, jpeg_bytes=image_bytes)
+            maybe_image = await rosys.run.cpu_bound(
+                Image.from_jpeg_bytes,
+                jpeg_bytes=image_bytes,
+                camera_id=self.id,
+                time=timestamp,
+            )
             if maybe_image is None:
                 return None
             image = maybe_image
