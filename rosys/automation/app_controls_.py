@@ -46,7 +46,6 @@ class AppControls:
 
         self.log = logging.getLogger('rosys.app_controls')
 
-        self.robot_brain = robot_brain
         self.automator = automator
         self.bluetooth = bluetooth
 
