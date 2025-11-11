@@ -57,5 +57,5 @@ class BluetoothHardware(ModuleHardware):
         """
         if len(pin_code) != 6:
             raise ValueError('Pin code must be 6 digits long')
-        if not (0 <= int(pin_code) <= 999999):
+        if not 0 <= int(pin_code) <= 999999:
             raise ValueError('Pin code must be between 000000 and 999999')
