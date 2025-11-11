@@ -2,7 +2,7 @@
 import numpy as np
 
 try:
-    from turbojpeg import TJPF_RGB, TurboJPEG
+    from turbojpeg import TJPF_RGB, TurboJPEG  # type: ignore[import-untyped]
     PY_TURBOJPEG_AVAILABLE = True
 except (ModuleNotFoundError, ImportError):
     PY_TURBOJPEG_AVAILABLE = False
@@ -63,6 +63,7 @@ class TurboJpegWrapper:
         return result
 
 
+TURBO_JPEG: TurboJpegWrapper | None
 if PY_TURBOJPEG_AVAILABLE:
     try:
         TURBO_JPEG = TurboJpegWrapper()
