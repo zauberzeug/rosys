@@ -82,7 +82,9 @@ class Image:
         array = decode_jpeg_image(jpeg_bytes)
         if array is None:
             return None
-        return cls(camera_id=camera_id, time=time or rosys.time(), array=array)
+        if len(array.shape) == 2:
+            array = np.repeat(np.expand_dims(array, -1), repeats=3, axis=2)
+        return cls.from_array(camera_id=camera_id, time=time or rosys.time(), array=array)
 
     @classmethod
     def from_array(cls, array: np.ndarray, *, camera_id: str = 'from_array', time: float | None = None) -> Self:
