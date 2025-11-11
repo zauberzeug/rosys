@@ -3,9 +3,9 @@ import numpy as np
 
 try:
     from turbojpeg import TJPF_RGB, TurboJPEG
-    TURBOJPEG_AVAILABLE = True
-except (ImportError, RuntimeError, OSError):
-    TURBOJPEG_AVAILABLE = False
+    PY_TURBOJPEG_AVAILABLE = True
+except (ModuleNotFoundError, ImportError):
+    PY_TURBOJPEG_AVAILABLE = False
     TurboJPEG = None  # type: ignore[assignment, misc]
     TJPF_RGB = 0
 
@@ -61,3 +61,14 @@ class TurboJpegWrapper:
             raise RuntimeError(f'Unexpected return type from TurboJPEG.decode: {type(result)}')
 
         return result
+
+
+if PY_TURBOJPEG_AVAILABLE:
+    try:
+        TURBO_JPEG = TurboJpegWrapper()
+    except (RuntimeError, OSError):
+        # native library is not available
+        TURBO_JPEG = None
+else:
+    # python wrapper library is not available
+    TURBO_JPEG = None

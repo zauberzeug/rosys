@@ -8,16 +8,15 @@ import PIL.Image
 
 from ..geometry import Rectangle
 from .image_rotation import ImageRotation
-from .turbojpeg_wrapper import TURBOJPEG_AVAILABLE, TurboJpegWrapper
+from .turbojpeg_wrapper import TURBO_JPEG
 
-TURBO_JPEG = TurboJpegWrapper() if TURBOJPEG_AVAILABLE else None
 if not TURBO_JPEG:
     logging.getLogger('rosys').warning('TurboJPEG is not available. Using PIL for JPEG decoding and encoding.')
 
 
 def encode_image_as_jpeg(image: np.ndarray, compression_level: int = 90) -> bytes:
     """Encode image as JPEG using TurboJPEG if available, otherwise PIL."""
-    if TURBO_JPEG:
+    if TURBO_JPEG is not None:
         return TURBO_JPEG.encode(image, quality=compression_level)
 
     pil_image = PIL.Image.fromarray(image.astype(np.uint8))
