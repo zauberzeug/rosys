@@ -119,7 +119,7 @@ async def _try_get_jpeg(camera: Camera,
             shrink = max(1, shrink, shrink_from_max)
 
             if shrink == 1 and not undistort and compression == 60:
-                return await run.cpu_bound(Image.to_jpeg_bytes, image)
+                return await run.cpu_bound(encode_image_as_jpeg, image.array)
 
             calibration = camera.calibration if undistort else None  # type: ignore
             return await run.cpu_bound(_process, image, calibration, shrink, undistort, fast, compression)
