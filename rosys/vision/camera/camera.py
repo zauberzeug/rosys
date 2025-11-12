@@ -16,6 +16,8 @@ from ..image_route import create_image_route
 
 logger = logging.getLogger('rosys.vision.camera')
 
+DEFAULT_IMAGE_HISTORY_LENGTH: int = 16
+
 
 class Camera(abc.ABC):
 
@@ -27,7 +29,7 @@ class Camera(abc.ABC):
                  streaming: bool | None = None,
                  polling_interval: float | None = None,
                  base_path_overwrite: str | None = None,
-                 image_history_length: int = 16,
+                 image_history_length: int = DEFAULT_IMAGE_HISTORY_LENGTH,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.id: str = id
