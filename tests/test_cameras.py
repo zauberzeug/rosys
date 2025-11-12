@@ -25,7 +25,9 @@ async def test_usb_camera(rosys_integration):
         pytest.skip('No USB camera detected. This test requires a physical USB camera to be connected.')
     camera = UsbCamera(id=connected_uids[0])
     await camera.connect()
-    await asyncio.sleep(0.5)
+    for _ in range(5):
+        await forward(0.1)
+        await asyncio.sleep(0.2)
     assert camera.is_connected
     assert len(camera.images) >= 1
 
@@ -42,7 +44,8 @@ async def test_rtsp_camera(rosys_integration):
     mac, ip = connected_uids[0]
     camera = RtspCamera(id=mac, ip=ip)
     await camera.connect()
-    await asyncio.sleep(0.5)
+    for _ in range(5):
+        await forward(0.1)
+        await asyncio.sleep(0.2)
     assert camera.is_connected
-    await asyncio.sleep(1)
     assert len(camera.images) >= 1
