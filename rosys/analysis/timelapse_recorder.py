@@ -170,6 +170,7 @@ def _save_image(image: RosysImage,
         style = 'position:absolute;top:0;left:0;pointer-events:none'
         viewbox = f'0 0 {image.array.shape[1]} {image.array.shape[0]}'
         svg_image = svg2png(bytestring=f'<svg style="{style}" viewBox="{viewbox}">{overlay}</svg>')
+        assert svg_image is not None
         overlay_img = PILImage.open(io.BytesIO(svg_image))
         img.paste(overlay_img, (0, 0), overlay_img)
     img.resize(size).save(path / f'{image.time:.3f}_{image.camera_id.replace(":", "-").upper()}.jpg', 'JPEG')
