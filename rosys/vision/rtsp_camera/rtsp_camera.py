@@ -88,7 +88,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         await self.device.shutdown()
         self.device = None
 
-    async def _handle_new_image_data(self, image_array: Image.array_type, timestamp: float) -> None:
+    async def _handle_new_image_data(self, image_array: Image.ArrayType, timestamp: float) -> None:
         transformed_image_array = process_ndarray_image(image_array, self.rotation, self.crop)
 
         image = Image.from_array(time=timestamp, camera_id=self.id, array=transformed_image_array)
