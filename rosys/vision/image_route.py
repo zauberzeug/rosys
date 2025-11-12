@@ -6,6 +6,7 @@ import weakref
 from typing import TYPE_CHECKING
 
 import cv2
+import numpy as np
 from fastapi import Response
 from nicegui import app
 
@@ -132,7 +133,7 @@ def _process(image: Image,
              undistort: bool,
              fast: bool,
              compression: int) -> bytes | None:
-    image_array = image.array
+    image_array: np.ndarray = image.array
 
     if undistort:
         assert calibration is not None
