@@ -133,7 +133,7 @@ class RtspDevice:
                 except asyncio.exceptions.IncompleteReadError:
                     break
 
-                if packet.type == GDPPayloadType.CAPS:
+                if packet.payload_type == GDPPayloadType.CAPS:
                     cap_text = packet.payload.decode('utf-8', 'ignore')
 
                     w = GDP_CAPS_WIDTH_REGEX.search(cap_text)
@@ -146,7 +146,7 @@ class RtspDevice:
                     width = int(w.group(1))
                     height = int(h.group(1))
 
-                elif packet.type == GDPPayloadType.BUFFER:
+                elif packet.payload_type == GDPPayloadType.BUFFER:
                     assert width is not None and height is not None
 
                     assert width * height * 3 == len(packet.payload)
@@ -231,7 +231,7 @@ GDP_CAPS_HEIGHT_REGEX = re.compile(r'height=\(int\)\s*(\d+)')
 
 @dataclass(slots=True, kw_only=True)
 class GDPPacket:
-    type: GDPPayloadType
+    payload_type: GDPPayloadType
     payload: bytes
 
     @staticmethod
@@ -247,4 +247,4 @@ class GDPPacket:
             payload_type = GDPPayloadType.EVENT_NONE
         cap_bytes = await stream.readexactly(length)
 
-        return GDPPacket(type=payload_type, payload=cap_bytes)
+        return GDPPacket(payload_type=payload_type, payload=cap_bytes)
