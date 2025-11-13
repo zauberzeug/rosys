@@ -4,8 +4,10 @@ from pathlib import Path
 
 import aiofiles
 
+from ... import run
 from ..camera_provider import CameraProvider
 from ..image import Image
+from ..image_processing import encode_image_as_jpeg
 from .constants import TIME_FORMAT
 
 log = logging.getLogger('rosys.image_recorder')
@@ -44,15 +46,15 @@ class ImageRecorder:
 
         :param image: the image to save
         """
-        if not image.data:
-            log.debug('No image data to save')
-            return
-
         path = self.data_dir / image.camera_id.replace(':', '--')
         path.mkdir(parents=True, exist_ok=True)
 
         file_path = path / f'{datetime.fromtimestamp(image.time).strftime(TIME_FORMAT)}.jpg'
 
         async with aiofiles.open(file_path, 'wb') as f:
-            await f.write(image.data)
+            jpeg_bytes = await run.cpu_bound(encode_image_as_jpeg, image.array)
+            if jpeg_bytes is None:
+                # Note: This only happens when stopping
+                return
+            await f.write(jpeg_bytes)
             log.debug('Saved image from camera %s to %s', image.camera_id, file_path)

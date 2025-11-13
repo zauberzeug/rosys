@@ -2,6 +2,7 @@ import logging
 import shutil
 
 from ... import rosys
+from ..camera import DEFAULT_IMAGE_HISTORY_LENGTH
 from ..camera_provider import CameraProvider
 from .usb_camera import UsbCamera
 from .usb_camera_scanner import scan_for_connected_devices
@@ -15,10 +16,11 @@ class UsbCameraProvider(CameraProvider[UsbCamera]):
     """
     SCAN_INTERVAL = 10
 
-    def __init__(self, *, auto_scan: bool = True) -> None:
+    def __init__(self, *, auto_scan: bool = True, image_history_length: int = DEFAULT_IMAGE_HISTORY_LENGTH) -> None:
         super().__init__()
 
         self.log = logging.getLogger('rosys.usb_camera_provider')
+        self.image_history_length = image_history_length
 
         rosys.on_shutdown(self.shutdown)
         if auto_scan:
@@ -41,7 +43,7 @@ class UsbCameraProvider(CameraProvider[UsbCamera]):
         camera_uids = await self.scan_for_cameras()
         for uid in camera_uids:
             if uid not in self._cameras:
-                self.add_camera(UsbCamera(id=uid))
+                self.add_camera(UsbCamera(id=uid, image_history_length=self.image_history_length))
             await self._cameras[uid].connect()
 
     async def shutdown(self) -> None:

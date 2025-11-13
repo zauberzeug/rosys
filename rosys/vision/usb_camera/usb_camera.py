@@ -7,7 +7,7 @@ from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image
-from ..image_processing import get_image_size_from_bytes, process_jpeg_image, process_ndarray_image
+from ..image_processing import process_jpeg_image, process_ndarray_image
 from ..image_rotation import ImageRotation
 from .usb_device import UsbDevice
 
@@ -20,7 +20,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                  name: str | None = None,
                  connect_after_init: bool = True,
                  auto_exposure: bool = True,
-                 exposure: bool = False,
+                 exposure: float = 0.01,
                  width: int = 800,
                  height: int = 600,
                  fps: int = 10,
@@ -78,19 +78,19 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
         assert self.device is not None
 
-        bytes_: bytes | None
+        image_array: np.ndarray | None
         if isinstance(image_data, np.ndarray):
-            bytes_ = await rosys.run.cpu_bound(process_ndarray_image, image_data, self.rotation, self.crop)
-        else:
-            bytes_ = image_data
             if self.crop or self.rotation != ImageRotation.NONE:
-                bytes_ = await rosys.run.cpu_bound(process_jpeg_image, bytes_, self.rotation, self.crop)
-        if bytes_ is None:
+                image_array = process_ndarray_image(image_data, self.rotation, self.crop)
+            else:
+                image_array = image_data
+        else:
+            image_array = await rosys.run.cpu_bound(process_jpeg_image, image_data, self.rotation, self.crop)
+
+        if image_array is None:
             return
 
-        final_image_resolution = get_image_size_from_bytes(bytes_)
-
-        image = Image(time=timestamp, camera_id=self.id, size=final_image_resolution, data=bytes_)
+        image = Image.from_array(time=timestamp, camera_id=self.id, array=image_array)
         self._add_image(image)
 
     def set_auto_exposure(self, auto: bool) -> None:

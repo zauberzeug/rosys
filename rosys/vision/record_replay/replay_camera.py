@@ -1,4 +1,3 @@
-import io
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -6,10 +5,10 @@ from uuid import uuid4
 
 import aiofiles
 import numpy as np
-from PIL import Image as PILImage
 
-from ..camera import Camera
-from ..image import Image, ImageSize
+from ... import run
+from ..camera import DEFAULT_IMAGE_HISTORY_LENGTH, Camera
+from ..image import Image
 from .constants import TIME_FORMAT
 
 log = logging.getLogger('rosys.replay_camera')
@@ -20,7 +19,7 @@ class ReplayCamera(Camera):
                  camera_id: str,
                  images_dir: Path,
                  camera_name: str | None = None,
-                 image_history_length=128) -> None:
+                 image_history_length: int = DEFAULT_IMAGE_HISTORY_LENGTH) -> None:
 
         self.images_dir = images_dir
         self.previous_emitted_index = -1
@@ -79,15 +78,12 @@ class ReplayCamera(Camera):
 
         async with aiofiles.open(image_path, 'rb') as f:
             data = await f.read()
-        pil_image = PILImage.open(io.BytesIO(data))
-        width, height = pil_image.size
-        pil_image.close()
 
-        self._add_image(Image(
-            camera_id=self.id,
-            data=data,
-            time=self.timestamp_array[closest_past_index],
-            size=ImageSize(width=width, height=height)))
+        image = await run.cpu_bound(Image.from_jpeg_bytes, jpeg_bytes=data, camera_id=self.id, time=self.timestamp_array[closest_past_index])
+        if image is None:
+            return
+
+        self._add_image(image)
 
     @property
     def is_connected(self) -> bool:

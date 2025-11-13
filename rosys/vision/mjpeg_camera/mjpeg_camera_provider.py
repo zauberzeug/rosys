@@ -3,6 +3,7 @@ import logging
 import httpx
 
 from ... import rosys
+from ..camera import DEFAULT_IMAGE_HISTORY_LENGTH
 from ..camera_provider import CameraProvider
 from ..rtsp_camera.arp_scan import find_cameras
 from .mjpeg_camera import MjpegCamera
@@ -16,7 +17,8 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera]):
                  username: str | None = None,
                  password: str | None = None,
                  network_interface: str | None = None,
-                 auto_scan: bool = True) -> None:
+                 auto_scan: bool = True,
+                 image_history_length: int = DEFAULT_IMAGE_HISTORY_LENGTH) -> None:
         """CameraProvider for MJpegCamera
 
         :param username: username to assign for new cameras
@@ -28,6 +30,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera]):
         self.username = username
         self.password = password
         self.network_interface = network_interface
+        self.image_history_length = image_history_length
 
         self.log = logging.getLogger('rosys.mjpeg_camera_provider')
         rosys.on_shutdown(self.shutdown)
@@ -81,7 +84,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera]):
             if camera_id not in self._cameras:
                 self.log.info('found new camera "%s" at ip "%s"', camera_id, ip)
                 self.add_camera(MjpegCamera(id=camera_id, username=self.username,
-                                password=self.password, ip=ip))
+                                password=self.password, ip=ip, image_history_length=self.image_history_length))
             camera = self._cameras[camera_id]
             if not camera.is_connected:
                 self.log.info('activating camera "%s" at ip "%s" ...', camera.id, ip)
