@@ -4,7 +4,7 @@ from typing import Any
 from ... import rosys
 from ..camera import ConfigurableCamera, TransformableCamera
 from ..image import Image
-from ..image_processing import get_image_size_from_bytes, process_jpeg_image
+from ..image_processing import process_jpeg_image
 from ..image_rotation import ImageRotation
 from .mjpeg_device import MjpegDevice
 from .mjpeg_device_factory import MjpegDeviceFactory
@@ -83,18 +83,18 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         self.device.shutdown()
         self.device = None
 
-    async def _handle_new_image_data(self, image: bytes, timestamp: float) -> None:
+    async def _handle_new_image_data(self, image_bytes: bytes, timestamp: float) -> None:
+        image: Image | None = None
         if self.crop or self.rotation != ImageRotation.NONE:
-            image_ = await rosys.run.cpu_bound(process_jpeg_image, image, self.rotation, self.crop)
-            if image_ is None:
-                return
-            image = image_
-        try:
-            final_image_resolution = get_image_size_from_bytes(image)
-        except ValueError:
-            return
+            image_array = await rosys.run.cpu_bound(process_jpeg_image, image_bytes, self.rotation, self.crop)
+            if image_array is not None:
+                image = Image.from_array(camera_id=self.id, time=timestamp, array=image_array)
+        else:
+            image = await rosys.run.cpu_bound(
+                Image.from_jpeg_bytes, jpeg_bytes=image_bytes, camera_id=self.id, time=timestamp)
 
-        self._add_image(Image(camera_id=self.id, data=image, time=timestamp, size=final_image_resolution))
+        if image is not None:
+            self._add_image(image)
 
     async def _set_fps(self, fps: int) -> None:
         assert self.device is not None

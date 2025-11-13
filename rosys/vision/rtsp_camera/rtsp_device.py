@@ -1,16 +1,21 @@
 import asyncio
 import logging
+import re
 import shlex
 import signal
+import struct
 import subprocess
 from asyncio.subprocess import Process
 from collections.abc import AsyncGenerator, Awaitable, Callable
-from io import BytesIO
+from dataclasses import dataclass
+from enum import Enum
 from typing import Literal
 
+import numpy as np
 from nicegui import background_tasks
 
 from ... import rosys
+from ...vision.image import Image
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
 
@@ -18,7 +23,7 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 class RtspDevice:
 
     def __init__(self, mac: str, ip: str, *,
-                 substream: int, fps: int, on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 substream: int, fps: int, on_new_image_data: Callable[[Image.ArrayType, float], Awaitable | None],
                  avdec: Literal['h264', 'h265'] = 'h264') -> None:
         self._mac = mac
         self._ip = ip
@@ -102,11 +107,11 @@ class RtspDevice:
             self.log.warning('[%s] capture process already running', self._mac)
             return
 
-        async def stream() -> AsyncGenerator[bytes, None]:
+        async def stream() -> AsyncGenerator[Image.ArrayType, None]:
             url = self.url
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
-            command = f'gst-launch-1.0 rtspsrc location="{url}" latency=0 protocols=tcp ! rtp{self._avdec}depay ! avdec_{self._avdec} ! videoconvert ! jpegenc ! fdsink'
+            command = f'gst-launch-1.0 --quiet rtspsrc location="{url}" latency=0 protocols=tcp ! rtp{self._avdec}depay ! avdec_{self._avdec} ! videoconvert ! video/x-raw,format=RGB ! queue max-size-buffers=1 leaky=downstream ! gdppay ! fdsink sync=false'
             self.log.debug('[%s] Running command: %s', self._mac, command)
             process = await asyncio.create_subprocess_exec(
                 *shlex.split(command),
@@ -118,39 +123,36 @@ class RtspDevice:
             assert process.stderr is not None
             self._capture_process = process
 
-            buffer = BytesIO()
-            chunk_size = 1024*1024
-
+            width = None
+            height = None
             while process.returncode is None:
                 assert process.stdout is not None
 
-                eof = False
-                while True:
-                    new = await process.stdout.read(chunk_size)
-                    eof = not new
-                    buffer.write(new)
-                    if len(new) < chunk_size:
-                        break
-
-                if eof:
+                try:
+                    packet = await GDPPacket.read(process.stdout)
+                except asyncio.exceptions.IncompleteReadError:
                     break
 
-                data = buffer.getvalue()
-                end = data.rfind(b'\xff\xd9')
-                if end == -1:
-                    continue
+                if packet.payload_type == GDPPayloadType.CAPS:
+                    cap_text = packet.payload.decode('utf-8', 'ignore')
 
-                start = data.rfind(b'\xff\xd8', 0, end)
-                if start == -1:
-                    continue
+                    w = GDP_CAPS_WIDTH_REGEX.search(cap_text)
+                    h = GDP_CAPS_HEIGHT_REGEX.search(cap_text)
 
-                end += 2
+                    assert w is not None and h is not None
+                    assert len(w.groups()) == 1
+                    assert len(h.groups()) == 1
 
-                yield data[start:end]
-                rest = data[end:]
-                buffer.seek(0)
-                buffer.truncate()
-                buffer.write(rest)
+                    width = int(w.group(1))
+                    height = int(h.group(1))
+
+                elif packet.payload_type == GDPPayloadType.BUFFER:
+                    assert width is not None and height is not None
+
+                    assert width * height * 3 == len(packet.payload)
+                    frame = np.frombuffer(packet.payload, dtype=np.uint8).reshape(height, width, 3)
+
+                    yield frame
 
             try:
                 await asyncio.wait_for(process.wait(), timeout=5)
@@ -212,3 +214,37 @@ class RtspDevice:
 
     def set_avdec(self, avdec: Literal['h264', 'h265']) -> None:
         self._avdec = avdec
+
+
+class GDPPayloadType(Enum):
+    NONE = 0
+    BUFFER = 1
+    CAPS = 2
+    EVENT_NONE = 3
+
+
+# See https://maemo.org/api_refs/5.0/5.0-final/gstreamer-libs-0.10/gstreamer-libs-gstdataprotocol.html for header format
+GDPPACKET_FORMAT = struct.Struct('>HcxHIQQQQH14sHH')
+GDP_CAPS_WIDTH_REGEX = re.compile(r'width=\(int\)\s*(\d+)')
+GDP_CAPS_HEIGHT_REGEX = re.compile(r'height=\(int\)\s*(\d+)')
+
+
+@dataclass(slots=True, kw_only=True)
+class GDPPacket:
+    payload_type: GDPPayloadType
+    payload: bytes
+
+    @staticmethod
+    async def read(stream: asyncio.StreamReader) -> 'GDPPacket':
+        gdp_header_size = 62
+        header_bytes = await stream.readexactly(gdp_header_size)
+        _version, _flags, gdp_type, length, _timestamp, _duration, _offset, _offset_end, _buffer_flags, \
+            _abi, _crc_header, _crc_payload = GDPPACKET_FORMAT.unpack(header_bytes)
+
+        if gdp_type < 3:
+            payload_type = GDPPayloadType(gdp_type)
+        else:
+            payload_type = GDPPayloadType.EVENT_NONE
+        cap_bytes = await stream.readexactly(length)
+
+        return GDPPacket(payload_type=payload_type, payload=cap_bytes)

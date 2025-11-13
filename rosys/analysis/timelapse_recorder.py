@@ -10,11 +10,12 @@ from pathlib import Path
 from typing import Protocol
 
 import humanize
+import PIL.Image as PILImage
 from cairosvg import svg2png
-from PIL import Image, ImageDraw, ImageFont
+from PIL import ImageDraw, ImageFont
 
 from .. import rosys
-from ..vision import Camera, ImageSize
+from ..vision import Camera, Image
 
 STORAGE_PATH = Path('~/.rosys/timelapse').expanduser()
 VIDEO_PATH = STORAGE_PATH / 'videos'
@@ -27,8 +28,7 @@ SMALL_COVER_FONT = ImageFont.truetype(FONT, 30)
 class RosysImage(Protocol):
     camera_id: str
     time: float
-    data: bytes | None
-    size: ImageSize
+    array: Image.ArrayType
 
 
 class TimelapseRecorder:
@@ -50,7 +50,6 @@ class TimelapseRecorder:
         self.log = logging.getLogger('rosys.timelapse_recorder')
         self.width = width
         self.height = height
-        self.avoid_broken_images = True
         self.capture_rate = capture_rate
         self.last_capture_time = rosys.time()
         self._notifications: list[list[str]] = []
@@ -70,8 +69,6 @@ class TimelapseRecorder:
         if rosys.time() - self.last_capture_time < 1 / self.capture_rate:
             return
         images = self.camera.get_recent_images(timespan=2)
-        if self.avoid_broken_images:
-            images = [i for i in images if not i.is_broken and i.time < rosys.time() - 0.1]
         if images:
             self.last_capture_time = rosys.time()
             await self.save(images[-1])
@@ -160,20 +157,21 @@ def _save_image(image: RosysImage,
                 notifications: list[str],
                 frame_info: str | None = None,
                 overlay: str | None = None) -> None:
-    assert image.data is not None
-    img = Image.open(io.BytesIO(image.data))
+    img = PILImage.fromarray(image.array)
     draw = ImageDraw.Draw(img)
     x = y = 20
     frame_info = ', ' + frame_info if frame_info else ''
     _write(f'{datetime.fromtimestamp(image.time):%Y-%m-%d %H:%M:%S}' + frame_info, draw, x, y)
+
     for message in notifications:
         y += 30
         _write(message, draw, x, y)
     if overlay:
         style = 'position:absolute;top:0;left:0;pointer-events:none'
-        viewbox = f'0 0 {image.size.width} {image.size.height}'
+        viewbox = f'0 0 {image.array.shape[1]} {image.array.shape[0]}'
         svg_image = svg2png(bytestring=f'<svg style="{style}" viewBox="{viewbox}">{overlay}</svg>')
-        overlay_img = Image.open(io.BytesIO(svg_image))
+        assert svg_image is not None
+        overlay_img = PILImage.open(io.BytesIO(svg_image))
         img.paste(overlay_img, (0, 0), overlay_img)
     img.resize(size).save(path / f'{image.time:.3f}_{image.camera_id.replace(":", "-").upper()}.jpg', 'JPEG')
 
@@ -190,7 +188,7 @@ def _write(text: str, draw: ImageDraw.ImageDraw, x: int, y: int) -> None:
 
 def _save_info(title: str, subtitle: str, time: float, frames: int) -> None:
     for i in range(frames):
-        img = Image.new('RGB', (1600, 1200), 'black')
+        img = PILImage.new('RGB', (1600, 1200), 'black')
         draw = ImageDraw.Draw(img)
         font = BIG_COVER_FONT if len(subtitle) < 25 and len(title) < 25 else SMALL_COVER_FONT
 

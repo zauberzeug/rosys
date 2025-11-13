@@ -43,6 +43,7 @@ requests = ">=2.32.4" # https://github.com/zauberzeug/rosys/security/dependabot/
 urllib3 = ">=2.5.0" # https://github.com/zauberzeug/rosys/security/dependabot/66
 starlette = ">=0.49.1" # https://github.com/zauberzeug/rosys/security/dependabot/73
 aiohttp = ">=3.12.14" # https://github.com/zauberzeug/rosys/security/dependabot/69
+pyturbojpeg = "^1.8.2"
 
 [tool.poetry.group.dev]
 optional = true
