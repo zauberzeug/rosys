@@ -69,12 +69,13 @@ def create_image_route(camera: Camera) -> None:
     app.add_api_route(undistorted_url, get_camera_image_undistorted)
 
 
-async def _get_placeholder(shrink: int = 1) -> Response:
-    def _create_placeholder() -> bytes:
-        image = Image.create_placeholder('no image', shrink=shrink)
-        return image.to_jpeg_bytes()
+def _create_placeholder(shrink: int) -> bytes:
+    image = Image.create_placeholder('no image', shrink=shrink)
+    return image.to_jpeg_bytes()
 
-    placeholder_jpeg = await run.cpu_bound(_create_placeholder)
+
+async def _get_placeholder(shrink: int = 1) -> Response:
+    placeholder_jpeg = await run.cpu_bound(_create_placeholder, shrink)
     if placeholder_jpeg is None:
         return Response(content='Server is stopping', status_code=500)
     return Response(content=placeholder_jpeg, media_type='image/jpeg')
