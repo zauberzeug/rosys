@@ -18,8 +18,7 @@ class ReplayCamera(Camera):
     def __init__(self, *,
                  camera_id: str,
                  images_dir: Path,
-                 camera_name: str | None = None,
-                 image_history_length=128) -> None:
+                 camera_name: str | None = None) -> None:
 
         self.images_dir = images_dir
         self.previous_emitted_index = -1
@@ -29,8 +28,7 @@ class ReplayCamera(Camera):
         super().__init__(id=camera_id,
                          name=camera_name,
                          connect_after_init=False,
-                         base_path_overwrite=str(uuid4()),
-                         image_history_length=image_history_length)
+                         base_path_overwrite=str(uuid4()))
 
         self._load_image_paths(images_dir)
 

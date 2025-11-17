@@ -122,8 +122,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
                 cam_name = file.name.replace('--', ':')
                 camera = ReplayCamera(camera_id=cam_name,
                                       images_dir=file,
-                                      camera_name=cam_name,
-                                      image_history_length=128)
+                                      camera_name=cam_name)
                 self.add_camera(camera)
                 self.log.info('Added replay camera "%s" from folder "%s"', cam_name, file)
 
