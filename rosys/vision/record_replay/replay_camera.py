@@ -7,7 +7,7 @@ import aiofiles
 import numpy as np
 
 from ... import run
-from ..camera import DEFAULT_IMAGE_HISTORY_LENGTH, Camera
+from ..camera import Camera
 from ..image import Image
 from .constants import TIME_FORMAT
 
@@ -19,7 +19,7 @@ class ReplayCamera(Camera):
                  camera_id: str,
                  images_dir: Path,
                  camera_name: str | None = None,
-                 image_history_length: int = DEFAULT_IMAGE_HISTORY_LENGTH) -> None:
+                 image_history_length=128) -> None:
 
         self.images_dir = images_dir
         self.previous_emitted_index = -1

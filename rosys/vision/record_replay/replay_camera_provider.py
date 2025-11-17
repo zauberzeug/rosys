@@ -5,7 +5,6 @@ from pathlib import Path
 from nicegui import ui
 
 from ... import rosys
-from ..camera import DEFAULT_IMAGE_HISTORY_LENGTH
 from ..camera_provider import CameraProvider
 from .replay_camera import ReplayCamera
 
@@ -22,14 +21,13 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
     :param replay_interval: the interval at which the provider checks for new images (in seconds)
     """
 
-    def __init__(self, replay_folder: Path, replay_interval: float = .01, image_history_length: int = DEFAULT_IMAGE_HISTORY_LENGTH) -> None:
+    def __init__(self, replay_folder: Path, replay_interval: float = .01) -> None:
         super().__init__()
 
         self._start_time: float = float('inf')
         self._current_time: float = 0.0
         self._cameras_need_update = False
         self._end_time: float = 0.0
-        self.image_history_length = image_history_length
 
         self._playback_speed = 1.0
 
@@ -125,7 +123,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
                 camera = ReplayCamera(camera_id=cam_name,
                                       images_dir=file,
                                       camera_name=cam_name,
-                                      image_history_length=self.image_history_length)
+                                      image_history_length=128)
                 self.add_camera(camera)
                 self.log.info('Added replay camera "%s" from folder "%s"', cam_name, file)
 

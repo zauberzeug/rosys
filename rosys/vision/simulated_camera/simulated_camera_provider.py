@@ -3,7 +3,6 @@ from collections.abc import AsyncGenerator
 from typing import Any
 
 from ... import rosys
-from ..camera import DEFAULT_IMAGE_HISTORY_LENGTH
 from ..camera_provider import CameraProvider
 from .simulated_camera import SimulatedCamera
 
@@ -17,12 +16,10 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera]):
 
     def __init__(self, *,
                  simulate_failing: bool = False,
-                 auto_scan: bool = True,
-                 image_history_length: int = DEFAULT_IMAGE_HISTORY_LENGTH) -> None:
+                 auto_scan: bool = True) -> None:
         super().__init__()
 
         self.simulate_device_failure = simulate_failing
-        self.image_history_length = image_history_length
 
         if auto_scan:
             rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
@@ -55,8 +52,7 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera]):
         async for camera_id in self.scan_for_cameras():
             camera = self._cameras.get(camera_id)
             if not camera:
-                camera = SimulatedCamera(id=camera_id, width=640, height=480,
-                                         image_history_length=self.image_history_length)
+                camera = SimulatedCamera(id=camera_id, width=640, height=480)
                 self.add_camera(camera)
 
             if not camera.is_connected:
@@ -73,5 +69,4 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera]):
     def add_cameras(self, num_cameras: int) -> None:
         for _ in range(num_cameras):
             new_id = f'cam{len(self._cameras)}'
-            self.add_camera(SimulatedCamera(id=new_id, width=640, height=480,
-                                            image_history_length=self.image_history_length))
+            self.add_camera(SimulatedCamera(id=new_id, width=640, height=480))
