@@ -95,6 +95,11 @@ class Image:
     @classmethod
     def from_array(cls, array: np.ndarray, *, camera_id: str = 'from_array', time: float | None = None) -> Self:
         """Create an image from a NumPy array."""
+
+        # Convert array to a c-contiguous representation (or do nothing if that
+        # is already the case). This ensures fast pickling.
+        array = np.ascontiguousarray(array)
+
         assert array.dtype == np.uint8, 'Array must have dtype np.uint8'
         assert len(array.shape) == 3, 'Array must have shape (height, width, channels)'
         assert array.shape[2] == 3, 'Image should have 3 channels'
