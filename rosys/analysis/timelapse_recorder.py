@@ -28,7 +28,8 @@ SMALL_COVER_FONT = ImageFont.truetype(FONT, 30)
 class RosysImage(Protocol):
     camera_id: str
     time: float
-    array: ImageArray
+    @property
+    def array(self) -> ImageArray: ...
 
 
 class TimelapseRecorder:
