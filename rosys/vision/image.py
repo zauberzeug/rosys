@@ -23,16 +23,18 @@ class ImageSize:
         return (self.width, self.height)
 
 
+ImageArray = np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]  # image pixel data has shape (height, width, RGB)
+
+
 @dataclass(slots=True, kw_only=True)
 class Image:
     camera_id: str
     time: float  # time of recording
-    array: Image.ArrayType
+    _array: ImageArray
     _detections: dict[str, Detections] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     DEFAULT_PLACEHOLDER_SIZE: ClassVar[tuple[int, int]] = (320, 240)
-    ArrayType = np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]  # pixel data has shape (height, width, RGB)
 
     @property
     def detections(self) -> Detections | None:

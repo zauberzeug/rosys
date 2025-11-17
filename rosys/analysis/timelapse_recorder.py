@@ -15,7 +15,7 @@ from cairosvg import svg2png
 from PIL import ImageDraw, ImageFont
 
 from .. import rosys
-from ..vision import Camera, Image
+from ..vision import Camera, ImageArray
 
 STORAGE_PATH = Path('~/.rosys/timelapse').expanduser()
 VIDEO_PATH = STORAGE_PATH / 'videos'
@@ -28,7 +28,7 @@ SMALL_COVER_FONT = ImageFont.truetype(FONT, 30)
 class RosysImage(Protocol):
     camera_id: str
     time: float
-    array: Image.ArrayType
+    array: ImageArray
 
 
 class TimelapseRecorder:

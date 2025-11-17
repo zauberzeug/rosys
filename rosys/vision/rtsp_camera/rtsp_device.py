@@ -15,7 +15,7 @@ import numpy as np
 from nicegui import background_tasks
 
 from ... import rosys
-from ...vision.image import Image
+from ...vision.image import ImageArray
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
 
@@ -23,7 +23,7 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 class RtspDevice:
 
     def __init__(self, mac: str, ip: str, *,
-                 substream: int, fps: int, on_new_image_data: Callable[[Image.ArrayType, float], Awaitable | None],
+                 substream: int, fps: int, on_new_image_data: Callable[[ImageArray, float], Awaitable | None],
                  avdec: Literal['h264', 'h265'] = 'h264') -> None:
         self._mac = mac
         self._ip = ip
@@ -107,7 +107,7 @@ class RtspDevice:
             self.log.warning('[%s] capture process already running', self._mac)
             return
 
-        async def stream() -> AsyncGenerator[Image.ArrayType, None]:
+        async def stream() -> AsyncGenerator[ImageArray, None]:
             url = self.url
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
