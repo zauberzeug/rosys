@@ -46,8 +46,12 @@ class Image:
         return next(iter(self._detections.values()))
 
     @property
+    def array(self) -> ImageArray:
+        return self._array
+
+    @property
     def size(self) -> ImageSize:
-        return ImageSize(width=self.array.shape[1], height=self.array.shape[0])
+        return ImageSize(width=self._array.shape[1], height=self._array.shape[0])
 
     def get_detections(self, detector_id: str) -> Detections | None:
         return self._detections.get(detector_id)
@@ -66,7 +70,7 @@ class Image:
         d = PIL.ImageDraw.Draw(img)
         d.text((img.width / 2 - len(text) * 3, img.height / 2 - 5), text, fill=(255, 255, 255))
         array = np.array(img)
-        return cls(
+        return cls.from_array(
             camera_id=camera_id or 'no_cam_id',
             time=time or 0,
             array=array,
@@ -76,7 +80,7 @@ class Image:
     def from_pil(cls, pil_image: PIL.Image.Image, *, camera_id: str = 'from_pil', time: float | None = None) -> Self:
         """Create an image from a PIL image."""
         array = np.array(pil_image)
-        return cls(camera_id=camera_id, time=time or rosys.time(), array=array)
+        return cls.from_array(camera_id=camera_id, time=time or rosys.time(), array=array)
 
     @classmethod
     def from_jpeg_bytes(cls, jpeg_bytes: bytes, *, camera_id: str = 'from_jpeg_bytes', time: float | None = None) -> Self | None:
@@ -94,7 +98,7 @@ class Image:
         assert array.dtype == np.uint8, 'Array must have dtype np.uint8'
         assert len(array.shape) == 3, 'Array must have shape (height, width, channels)'
         assert array.shape[2] == 3, 'Image should have 3 channels'
-        return cls(camera_id=camera_id, time=time or rosys.time(), array=array)
+        return cls(camera_id=camera_id, time=time or rosys.time(), _array=array)
 
     def to_pil(self) -> PIL.Image.Image:
         """Convert the image to a PIL image."""

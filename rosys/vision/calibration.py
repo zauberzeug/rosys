@@ -526,12 +526,13 @@ class Calibration:
     def undistort_image(self, image: Image | NDArray, *, crop: bool = False) -> Image | NDArray:
 
         if isinstance(image, Image):
-            return Image(
+            img = Image.from_array(
                 camera_id=image.camera_id,
                 time=image.time,
                 array=self.undistort_image(image.array, crop=crop),
-                metadata=image.metadata,
             )
+            img.metadata = image.metadata
+            return img
 
         if image.shape[0] != self.intrinsics.size.height or image.shape[1] != self.intrinsics.size.width:
             log.warning('Image size does not match calibration size (image: %s, calibration: %s)',
