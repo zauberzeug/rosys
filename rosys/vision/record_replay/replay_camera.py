@@ -1,4 +1,3 @@
-import io
 import logging
 from datetime import datetime
 from pathlib import Path
@@ -6,32 +5,24 @@ from uuid import uuid4
 
 import aiofiles
 import numpy as np
-from PIL import Image as PILImage
 
+from ... import run
 from ..camera import Camera
-from ..image import Image, ImageSize
+from ..image import Image
 from .constants import TIME_FORMAT
 
 log = logging.getLogger('rosys.replay_camera')
 
 
 class ReplayCamera(Camera):
-    def __init__(self, *,
-                 camera_id: str,
-                 images_dir: Path,
-                 camera_name: str | None = None,
-                 image_history_length=128) -> None:
 
+    def __init__(self, *, camera_id: str, images_dir: Path, camera_name: str | None = None) -> None:
         self.images_dir = images_dir
         self.previous_emitted_index = -1
         self.image_paths: list[Path] = []
         self.timestamp_array = np.array([], dtype=float)
 
-        super().__init__(id=camera_id,
-                         name=camera_name,
-                         connect_after_init=False,
-                         base_path_overwrite=str(uuid4()),
-                         image_history_length=image_history_length)
+        super().__init__(id=camera_id, name=camera_name, connect_after_init=False, base_path_overwrite=str(uuid4()))
 
         self._load_image_paths(images_dir)
 
@@ -40,7 +31,6 @@ class ReplayCamera(Camera):
 
         The images should be named with their timestamp using to the format <yyyy-mm-dd_hh-mm-ss.ffffff>.jpg
         """
-
         path_timestamp_pairs = []
         for file in images_dir.iterdir():
             if file.suffix.lower() not in ['.jpg', '.jpeg', '.png']:
@@ -79,15 +69,12 @@ class ReplayCamera(Camera):
 
         async with aiofiles.open(image_path, 'rb') as f:
             data = await f.read()
-        pil_image = PILImage.open(io.BytesIO(data))
-        width, height = pil_image.size
-        pil_image.close()
 
-        self._add_image(Image(
-            camera_id=self.id,
-            data=data,
-            time=self.timestamp_array[closest_past_index],
-            size=ImageSize(width=width, height=height)))
+        time = self.timestamp_array[closest_past_index]
+        image = await run.cpu_bound(Image.from_jpeg_bytes, data, camera_id=self.id, time=time)
+        if image is None:
+            return
+        self._add_image(image)
 
     @property
     def is_connected(self) -> bool:

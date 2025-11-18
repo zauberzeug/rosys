@@ -1,13 +1,12 @@
 import copy
 
-import cv2
 import numpy as np
 import pytest
 
 from rosys.geometry import Point, Point3d, Pose3d
 from rosys.geometry.object3d import frame_registry
 from rosys.testing import approx
-from rosys.vision import CalibratableCamera, Calibration, Image, ImageSize
+from rosys.vision import CalibratableCamera, Calibration, Image
 from rosys.vision.calibration import CameraModel, OmnidirParameters
 
 
@@ -400,14 +399,7 @@ def test_undistort_image_with_crop():
     assert cam.calibration is not None
 
     # Create a test image
-    test_image = Image(
-        camera_id='1',
-        size=ImageSize(width=800, height=600),
-        time=0.0,
-        data=cv2.imencode('.jpg', np.zeros((600, 800, 3), dtype=np.uint8))[1].tobytes(),
-        is_broken=False,
-        tags=set()
-    )
+    test_image = Image.from_array(np.zeros((600, 800, 3), dtype=np.uint8), camera_id='1', time=0.0)
 
     # Test without crop
     undistorted = cam.calibration.undistort_image(test_image, crop=False)

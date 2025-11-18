@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-import io
-import warnings
 from dataclasses import dataclass, field
-from typing import ClassVar, Self
+from typing import Any, ClassVar, Self
 
-import cv2
 import numpy as np
 import PIL.Image
 import PIL.ImageDraw
 
 from .. import rosys
 from .detections import Detections
+from .image_processing import decode_jpeg_image, encode_image_as_jpeg
 
 
 @dataclass(slots=True, kw_only=True)
@@ -24,22 +22,19 @@ class ImageSize:
         return (self.width, self.height)
 
 
+ImageArray = np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]
+'''An RGB NumPy array with shape (height, width, 3) and dtype np.uint8.'''
+
+
 @dataclass(slots=True, kw_only=True)
 class Image:
     camera_id: str
-    size: ImageSize
     time: float  # time of recording
-    data: bytes | None = None
+    _array: ImageArray
     _detections: dict[str, Detections] = field(default_factory=dict)
-    is_broken: bool | None = None
-    tags: set[str] = field(default_factory=set)
+    metadata: dict[str, Any]
 
     DEFAULT_PLACEHOLDER_SIZE: ClassVar[tuple[int, int]] = (320, 240)
-
-    def __post_init__(self) -> None:
-        if self.tags:
-            warnings.warn('The "tags" field is deprecated and will be removed in a future version.',
-                          DeprecationWarning, stacklevel=2)
 
     @property
     def detections(self) -> Detections | None:
@@ -49,6 +44,14 @@ class Image:
             raise RuntimeError(
                 f'Image has multiple detection types ({", ".join(self._detections.keys())}). Use `get_detections(type)` instead.')
         return next(iter(self._detections.values()))
+
+    @property
+    def array(self) -> ImageArray:
+        return self._array
+
+    @property
+    def size(self) -> ImageSize:
+        return ImageSize(width=self._array.shape[1], height=self._array.shape[0])
 
     def get_detections(self, detector_id: str) -> Detections | None:
         return self._detections.get(detector_id)
@@ -61,45 +64,62 @@ class Image:
         return f'{self.camera_id}/{self.time}'
 
     @classmethod
-    def create_placeholder(cls, text: str, time: float | None = None, camera_id: str | None = None, shrink: int = 1) -> Self:
+    def create_placeholder(cls, text: str, *,
+                           camera_id: str = 'from_placeholder',
+                           time: float | None = None,
+                           metadata: dict[str, Any] | None = None,
+                           shrink: int = 1) -> Self:
         h, w = cls.DEFAULT_PLACEHOLDER_SIZE
         img = PIL.Image.new('RGB', (h // shrink, w // shrink), color=(73, 109, 137))
         d = PIL.ImageDraw.Draw(img)
         d.text((img.width / 2 - len(text) * 3, img.height / 2 - 5), text, fill=(255, 255, 255))
-        _, encoded_image = cv2.imencode('.png', np.array(img)[:, :, ::-1])  # NOTE: cv2 expects BGR
-        return cls(
-            camera_id=camera_id or 'no_cam_id',
-            time=time or 0,
-            size=ImageSize(width=img.width, height=img.height),
-            data=encoded_image.tobytes(),
-        )
+        return cls.from_array(np.array(img), camera_id=camera_id, time=time, metadata=metadata)
 
     @classmethod
-    def from_pil(cls, pil_image: PIL.Image.Image, *, camera_id: str = 'from_pil', time: float | None = None) -> Self:
-        """Create an image from a PIL image. This runs a JPEG encode."""
-        bytesio = io.BytesIO()
-        pil_image.save(bytesio, format='jpeg')
-        size = ImageSize(width=pil_image.width, height=pil_image.height)
-        return cls(camera_id=camera_id, size=size, time=time or rosys.time(), data=bytesio.getvalue())
+    def from_pil(cls, pil_image: PIL.Image.Image, *,
+                 camera_id: str = 'from_pil',
+                 time: float | None = None,
+                 metadata: dict[str, Any] | None = None) -> Self:
+        """Create an image from a PIL image."""
+        return cls.from_array(np.array(pil_image), camera_id=camera_id, time=time, metadata=metadata)
 
     @classmethod
-    def from_array(cls, array: np.ndarray, *, camera_id: str = 'from_array', time: float | None = None) -> Self:
-        """Create an image from a NumPy array. This runs a JPEG encode."""
-        _, encoded_image = cv2.imencode('.jpg', array)
-        size = ImageSize(width=array.shape[1], height=array.shape[0])
-        return cls(camera_id=camera_id, size=size, time=time or rosys.time(), data=encoded_image.tobytes())
+    def from_jpeg_bytes(cls, jpeg_bytes: bytes, *,
+                        camera_id: str = 'from_jpeg_bytes',
+                        time: float | None = None,
+                        metadata: dict[str, Any] | None = None) -> Self | None:
+        """Create an image from plain JPEG bytes. This runs a jpeg decode. Returns None if decoding fails."""
+        array = decode_jpeg_image(jpeg_bytes)
+        if array is None:
+            return None
+        if len(array.shape) == 2:
+            array = np.repeat(np.expand_dims(array, -1), repeats=3, axis=2)
+        return cls.from_array(array, camera_id=camera_id, time=time, metadata=metadata)
 
-    def to_array(self) -> np.ndarray:
-        """Convert the image to a NumPy array. This runs a JPEG decode."""
-        if self.data is None:
-            raise ValueError('Cannot convert image to array because it has no data.')
+    @classmethod
+    def from_array(cls, array: np.ndarray, *,
+                   camera_id: str = 'from_array',
+                   time: float | None = None,
+                   metadata: dict[str, Any] | None = None) -> Self:
+        """Create an image from a NumPy array."""
 
-        image = PIL.Image.open(io.BytesIO(self.data))
-        return np.array(image)
+        # Convert array to a c-contiguous representation (or do nothing if that
+        # is already the case). This ensures fast pickling.
+        array = np.ascontiguousarray(array)
+
+        assert array.dtype == np.uint8, 'Array must have dtype np.uint8'
+        assert len(array.shape) == 3, 'Array must have shape (height, width, channels)'
+        assert array.shape[2] == 3, 'Image should have 3 channels'
+        return cls(camera_id=camera_id, time=time or rosys.time(), _array=array, metadata=metadata or {})
 
     def to_pil(self) -> PIL.Image.Image:
-        """Convert the image to a PIL image. This runs a JPEG decode."""
-        if self.data is None:
-            raise ValueError('Cannot convert image to PIL image because it has no data.')
+        """Convert the image to a PIL image."""
+        return PIL.Image.fromarray(self.array)
 
-        return PIL.Image.open(io.BytesIO(self.data))
+    def to_jpeg_bytes(self) -> bytes:
+        """Convert the image to a JPEG image by encoding it."""
+        return encode_image_as_jpeg(self.array)
+
+    def byte_size(self) -> int:
+        """Compute the size of the stored image representation in bytes."""
+        return self.array.size

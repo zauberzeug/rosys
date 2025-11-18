@@ -3266,6 +3266,20 @@ client = ["requests (>=2.21.0)", "websocket-client (>=0.54.0)"]
 docs = ["sphinx"]
 
 [[package]]
+name = "pyturbojpeg"
+version = "1.8.2"
+description = "A Python wrapper of libjpeg-turbo for decoding and encoding JPEG image."
+optional = false
+python-versions = "*"
+groups = ["main"]
+files = [
+    {file = "PyTurboJPEG-1.8.2.tar.gz", hash = "sha256:b7d9625bbb2121b923228fc70d0c2b010b386687501f5b50acec4501222e152b"},
+]
+
+[package.dependencies]
+numpy = "*"
+
+[[package]]
 name = "pyudev"
 version = "0.24.3"
 description = "A libudev binding"
@@ -4188,4 +4202,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11, <3.14"
-content-hash = "2b349d1d54ed84018337fee455668e90c924d719233b853d4d66bf31d6c61f83"
+content-hash = "c7d0322f790c218336a1d7de31b6f438cf81242b2f793e5208afa8f7d105e799"

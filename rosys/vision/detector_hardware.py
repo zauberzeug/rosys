@@ -26,9 +26,9 @@ class DetectorHardware(Detector):
     It automatically connects and reconnects, submits and receives detections and sends images
     that should be uploaded to the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
 
-    Note: Images must be smaller than ``MAX_IMAGE_SIZE`` bytes (default: 10 MB).
+    Note: Images must be smaller than ``MAX_IMAGE_SIZE`` bytes (default: 64 MB).
     """
-    MAX_IMAGE_SIZE = 10 * 1024 * 1024
+    MAX_IMAGE_SIZE = 64 * 1024 * 1024
 
     def __init__(self,
                  *,
@@ -94,17 +94,12 @@ class DetectorHardware(Detector):
             self.log.error('Upload failed: detector is not connected')
             raise DetectorException('detector is not connected')
 
-        if not image.data:
-            self.log.error('Upload failed: image data is empty')
-            raise DetectorException('image data is empty')
-
-        if len(image.data) > self.MAX_IMAGE_SIZE:
-            self.log.error('Upload failed: image too large: %s', len(image.data))
+        if image.byte_size() > self.MAX_IMAGE_SIZE:
+            self.log.error('Upload failed: image too large: %s', image.byte_size())
             raise DetectorException('image too large')
 
         try:
             self.log.info('Upload detections to port %s', self.port)
-            np_image = image.to_array()
 
             metadata: dict[str, Any] = {
                 'source': source,
@@ -131,9 +126,9 @@ class DetectorHardware(Detector):
 
             await self.sio.emit('upload', {
                 'image': {
-                    'bytes': np_image.tobytes(order='C'),
-                    'dtype': str(np_image.dtype),
-                    'shape': np_image.shape,
+                    'bytes': image.array.tobytes(order='C'),
+                    'dtype': str(image.array.dtype),
+                    'shape': image.array.shape,
                 },
                 'metadata': metadata,
             })
@@ -155,11 +150,7 @@ class DetectorHardware(Detector):
             self.log.error('Detection failed: detector is not connected')
             raise DetectorException('detector is not connected')
 
-        if image.is_broken:
-            self.log.error('Detection failed: image is broken')
-            raise DetectorException('image is broken')
-
-        assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
+        assert image.byte_size() <= self.MAX_IMAGE_SIZE, f'image too large: {image.byte_size()} bytes'
         tags = tags or []
         try:
             detect_call = self._detect(image, autoupload, tags, source, creation_date)
@@ -182,12 +173,11 @@ class DetectorHardware(Detector):
                       creation_date: datetime | str | None = None,
                       ) -> Detections:
         try:
-            np_image = image.to_array()
             response = await self.sio.call('detect', {
                 'image': {
-                    'bytes': np_image.tobytes(order='C'),
-                    'dtype': str(np_image.dtype),
-                    'shape': np_image.shape,
+                    'bytes': image.array.tobytes(order='C'),
+                    'dtype': str(image.array.dtype),
+                    'shape': image.array.shape,
                 },
                 'camera_id': image.camera_id,
                 'tags': tags,
@@ -219,8 +209,6 @@ class DetectorHardware(Detector):
             raise DetectorException('Failed to parse detections') from e
 
         self.timeout_count = 0
-        if image.is_broken:  # NOTE: image can be marked broken while detection is underway
-            raise DetectorException('Image is broken')
 
         return detections
 
