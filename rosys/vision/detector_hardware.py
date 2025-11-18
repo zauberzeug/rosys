@@ -23,7 +23,7 @@ from .image import Image
 
 
 class DetectorHardware(Detector):
-    """This detector communicates with a [YOLO detector](https://hub.docker.com/r/zauberzeug/yolov5-detector) via Socket.IO.
+    """This detector communicates with a zauberzeug detector node via SocketIO.
 
     It automatically connects and reconnects, submits and receives detections and sends images
     that should be uploaded to the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
