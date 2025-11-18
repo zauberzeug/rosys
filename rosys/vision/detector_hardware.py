@@ -88,7 +88,8 @@ class DetectorHardware(Detector):
                      ) -> None:
         """Uploads the image to the Learning Loop.
 
-        Detections stored in the image are also uploaded."""
+        Detections stored in the image are also uploaded.
+        """
 
         if not self.is_connected:
             self.log.error('Upload failed: detector is not connected')
@@ -197,14 +198,7 @@ class DetectorHardware(Detector):
         if not isinstance(response, dict):
             raise DetectorException('Invalid response from detector')
         try:
-            detections = Detections(
-                boxes=[persistence.from_dict(BoxDetection, d) for d in response.get('box_detections', [])],
-                points=[persistence.from_dict(PointDetection, d) for d in response.get('point_detections', [])],
-                segmentations=[persistence.from_dict(SegmentationDetection, d)
-                               for d in response.get('segmentation_detections', [])],
-                classifications=[persistence.from_dict(ClassificationDetection, d)
-                                 for d in response.get('classification_detections', [])],
-            )
+            detections = _detections_from_dict(response)
         except Exception as e:
             raise DetectorException('Failed to parse detections') from e
 
@@ -279,19 +273,7 @@ class DetectorHardware(Detector):
         if not isinstance(response, dict):
             raise DetectorException('Invalid response from detector')
         try:
-            all_detections: list[Detections] = []
-            for detection_response in response.get('items', []):
-                detections = Detections(
-                    boxes=[persistence.from_dict(BoxDetection, d)
-                           for d in detection_response.get('box_detections', [])],
-                    points=[persistence.from_dict(PointDetection, d)
-                            for d in detection_response.get('point_detections', [])],
-                    segmentations=[persistence.from_dict(SegmentationDetection, d)
-                                   for d in detection_response.get('segmentation_detections', [])],
-                    classifications=[persistence.from_dict(ClassificationDetection, d)
-                                     for d in detection_response.get('classification_detections', [])],
-                )
-                all_detections.append(detections)
+            all_detections = [_detections_from_dict(d) for d in response.get('items', [])]
         except Exception as e:
             raise DetectorException('Failed to parse detections') from e
 
@@ -453,3 +435,16 @@ def _creation_date_to_isoformat(creation_date: datetime | str | None) -> str | N
     elif isinstance(creation_date, datetime):
         return creation_date.isoformat()
     return None
+
+
+def _detections_from_dict(data: dict[str, Any]) -> Detections:
+    return Detections(
+        boxes=[persistence.from_dict(BoxDetection, d)
+               for d in data.get('box_detections', [])],
+        points=[persistence.from_dict(PointDetection, d)
+                for d in data.get('point_detections', [])],
+        segmentations=[persistence.from_dict(SegmentationDetection, d)
+                       for d in data.get('segmentation_detections', [])],
+        classifications=[persistence.from_dict(ClassificationDetection, d)
+                         for d in data.get('classification_detections', [])],
+    )
