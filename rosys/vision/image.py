@@ -32,7 +32,7 @@ class Image:
     time: float  # time of recording
     _array: ImageArray
     _detections: dict[str, Detections] = field(default_factory=dict)
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any]
 
     DEFAULT_PLACEHOLDER_SIZE: ClassVar[tuple[int, int]] = (320, 240)
 
@@ -64,30 +64,43 @@ class Image:
         return f'{self.camera_id}/{self.time}'
 
     @classmethod
-    def create_placeholder(cls, text: str, *, camera_id: str = 'from_placeholder', time: float | None = None, shrink: int = 1) -> Self:
+    def create_placeholder(cls, text: str, *,
+                           camera_id: str = 'from_placeholder',
+                           time: float | None = None,
+                           metadata: dict[str, Any] | None = None,
+                           shrink: int = 1) -> Self:
         h, w = cls.DEFAULT_PLACEHOLDER_SIZE
         img = PIL.Image.new('RGB', (h // shrink, w // shrink), color=(73, 109, 137))
         d = PIL.ImageDraw.Draw(img)
         d.text((img.width / 2 - len(text) * 3, img.height / 2 - 5), text, fill=(255, 255, 255))
-        return cls.from_array(np.array(img), camera_id=camera_id, time=time)
+        return cls.from_array(np.array(img), camera_id=camera_id, time=time, metadata=metadata)
 
     @classmethod
-    def from_pil(cls, pil_image: PIL.Image.Image, *, camera_id: str = 'from_pil', time: float | None = None) -> Self:
+    def from_pil(cls, pil_image: PIL.Image.Image, *,
+                 camera_id: str = 'from_pil',
+                 time: float | None = None,
+                 metadata: dict[str, Any] | None = None) -> Self:
         """Create an image from a PIL image."""
-        return cls.from_array(np.array(pil_image), camera_id=camera_id, time=time)
+        return cls.from_array(np.array(pil_image), camera_id=camera_id, time=time, metadata=metadata)
 
     @classmethod
-    def from_jpeg_bytes(cls, jpeg_bytes: bytes, *, camera_id: str = 'from_jpeg_bytes', time: float | None = None) -> Self | None:
+    def from_jpeg_bytes(cls, jpeg_bytes: bytes, *,
+                        camera_id: str = 'from_jpeg_bytes',
+                        time: float | None = None,
+                        metadata: dict[str, Any] | None = None) -> Self | None:
         """Create an image from plain JPEG bytes. This runs a jpeg decode. Returns None if decoding fails."""
         array = decode_jpeg_image(jpeg_bytes)
         if array is None:
             return None
         if len(array.shape) == 2:
             array = np.repeat(np.expand_dims(array, -1), repeats=3, axis=2)
-        return cls.from_array(array, camera_id=camera_id, time=time)
+        return cls.from_array(array, camera_id=camera_id, time=time, metadata=metadata)
 
     @classmethod
-    def from_array(cls, array: np.ndarray, *, camera_id: str = 'from_array', time: float | None = None) -> Self:
+    def from_array(cls, array: np.ndarray, *,
+                   camera_id: str = 'from_array',
+                   time: float | None = None,
+                   metadata: dict[str, Any] | None = None) -> Self:
         """Create an image from a NumPy array."""
 
         # Convert array to a c-contiguous representation (or do nothing if that
@@ -97,7 +110,7 @@ class Image:
         assert array.dtype == np.uint8, 'Array must have dtype np.uint8'
         assert len(array.shape) == 3, 'Array must have shape (height, width, channels)'
         assert array.shape[2] == 3, 'Image should have 3 channels'
-        return cls(camera_id=camera_id, time=time or rosys.time(), _array=array)
+        return cls(camera_id=camera_id, time=time or rosys.time(), _array=array, metadata=metadata or {})
 
     def to_pil(self) -> PIL.Image.Image:
         """Convert the image to a PIL image."""

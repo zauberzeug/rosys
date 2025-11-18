@@ -527,9 +527,7 @@ class Calibration:
 
         if isinstance(image, Image):
             image_array = self.undistort_image(image.array, crop=crop)
-            img = Image.from_array(image_array, camera_id=image.camera_id, time=image.time)
-            img.metadata = image.metadata
-            return img
+            return Image.from_array(image_array, camera_id=image.camera_id, time=image.time, metadata=image.metadata)
 
         if image.shape[0] != self.intrinsics.size.height or image.shape[1] != self.intrinsics.size.width:
             log.warning('Image size does not match calibration size (image: %s, calibration: %s)',
