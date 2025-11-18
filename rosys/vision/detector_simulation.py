@@ -7,6 +7,7 @@ import numpy as np
 
 from .. import rosys
 from ..geometry import Point3d
+from .annotations import Annotations
 from .calibratable_camera_provider import CalibratableCameraProvider
 from .camera import CalibratableCamera
 from .detections import BoxDetection, Detections, PointDetection
@@ -74,6 +75,7 @@ class DetectorSimulation(Detector):
                      tags: list[str] | None = None,
                      source: str | None = None,
                      creation_date: datetime | str | None = None,
+                     annotations: Annotations | None = None,
                      ) -> None:
         self.log.info('Uploading %s', image.id)
 

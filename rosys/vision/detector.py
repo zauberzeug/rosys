@@ -8,6 +8,7 @@ from uuid import uuid4
 
 from nicegui import Event
 
+from .annotations import Annotations
 from .detections import Category, Detections
 from .image import Image
 
@@ -124,8 +125,9 @@ class Detector(abc.ABC):
                      tags: list[str] | None = None,
                      source: str | None = None,
                      creation_date: datetime | str | None = None,
+                     annotations: Annotations | None = None,
                      ) -> None:
-        """Uploads the image to the Learning Loop.
+        """Uploads an image (and its annotations) to the Learning Loop.
 
         The parameters `tags`, `source`, and `creation_date` are added as metadata.
         If the image has detections, they are also uploaded.
