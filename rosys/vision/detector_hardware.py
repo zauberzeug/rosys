@@ -31,6 +31,7 @@ class DetectorHardware(Detector):
     Note: Images must be smaller than ``MAX_IMAGE_SIZE`` bytes (default: 64 MB).
     """
     MAX_IMAGE_SIZE = 64 * 1024 * 1024
+    MAX_TIMEOUTS_BEFORE_DISCONNECT = 5
 
     def __init__(self,
                  *,
@@ -179,8 +180,9 @@ class DetectorHardware(Detector):
             self.timeout_count = 0
         except socketio.exceptions.TimeoutError:
             self.timeout_count += 1
-            if self.timeout_count > 5 and self.auto_disconnect:
-                self.log.error('Detection timed out 5 times in a row. Disconnecting from detector %s', self.name)
+            if self.timeout_count > self.MAX_TIMEOUTS_BEFORE_DISCONNECT and self.auto_disconnect:
+                self.log.error('Detection timed out %d times in a row. Disconnecting from detector %s',
+                               self.timeout_count, self.name)
                 await self.disconnect()
             raise DetectorException('Detection timeout') from None
         except Exception as e:
@@ -252,8 +254,9 @@ class DetectorHardware(Detector):
             self.timeout_count = 0
         except socketio.exceptions.TimeoutError:
             self.timeout_count += 1
-            if self.timeout_count > 5 and self.auto_disconnect:
-                self.log.error('Detection timed out 5 times in a row. Disconnecting from detector %s', self.name)
+            if self.timeout_count > self.MAX_TIMEOUTS_BEFORE_DISCONNECT and self.auto_disconnect:
+                self.log.error('Detection timed out %d times in a row. Disconnecting from detector %s',
+                               self.timeout_count, self.name)
                 await self.disconnect()
             raise DetectorException('Detection timeout') from None
         except Exception as e:
