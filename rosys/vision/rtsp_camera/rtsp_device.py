@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import asyncio
 import logging
 import re
@@ -227,6 +229,7 @@ class GDPPayloadType(Enum):
 GDPPACKET_FORMAT = struct.Struct('>HcxHIQQQQH14sHH')
 GDP_CAPS_WIDTH_REGEX = re.compile(r'width=\(int\)\s*(\d+)')
 GDP_CAPS_HEIGHT_REGEX = re.compile(r'height=\(int\)\s*(\d+)')
+GDP_HEADER_SIZE = 62
 
 
 @dataclass(slots=True, kw_only=True)
@@ -235,16 +238,10 @@ class GDPPacket:
     payload: bytes
 
     @staticmethod
-    async def read(stream: asyncio.StreamReader) -> 'GDPPacket':
-        gdp_header_size = 62
-        header_bytes = await stream.readexactly(gdp_header_size)
-        _version, _flags, gdp_type, length, _timestamp, _duration, _offset, _offset_end, _buffer_flags, \
-            _abi, _crc_header, _crc_payload = GDPPACKET_FORMAT.unpack(header_bytes)
-
-        if gdp_type < 3:
-            payload_type = GDPPayloadType(gdp_type)
-        else:
-            payload_type = GDPPayloadType.EVENT_NONE
-        cap_bytes = await stream.readexactly(length)
-
-        return GDPPacket(payload_type=payload_type, payload=cap_bytes)
+    async def read(stream: asyncio.StreamReader) -> GDPPacket:
+        header_bytes = await stream.readexactly(GDP_HEADER_SIZE)
+        _version, _flags, gdp_type, length, *_ = GDPPACKET_FORMAT.unpack(header_bytes)
+        return GDPPacket(
+            payload_type=GDPPayloadType(gdp_type) if gdp_type < 3 else GDPPayloadType.EVENT_NONE,
+            payload=await stream.readexactly(length),
+        )

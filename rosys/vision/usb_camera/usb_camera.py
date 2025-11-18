@@ -90,7 +90,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         if image_array is None:
             return
 
-        image = Image.from_array(time=timestamp, camera_id=self.id, array=image_array)
+        image = Image.from_array(image_array, camera_id=self.id, time=timestamp)
         self._add_image(image)
 
     def set_auto_exposure(self, auto: bool) -> None:

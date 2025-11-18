@@ -90,8 +90,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     async def _handle_new_image_data(self, image_array: ImageArray, timestamp: float) -> None:
         transformed_image_array = process_ndarray_image(image_array, self.rotation, self.crop)
-
-        image = Image.from_array(time=timestamp, camera_id=self.id, array=transformed_image_array)
+        image = Image.from_array(transformed_image_array, camera_id=self.id, time=timestamp)
         self._add_image(image)
 
     async def set_fps(self, fps: int) -> None:

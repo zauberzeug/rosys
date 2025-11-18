@@ -88,10 +88,9 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         if self.crop or self.rotation != ImageRotation.NONE:
             image_array = await rosys.run.cpu_bound(process_jpeg_image, image_bytes, self.rotation, self.crop)
             if image_array is not None:
-                image = Image.from_array(camera_id=self.id, time=timestamp, array=image_array)
+                image = Image.from_array(image_array, camera_id=self.id, time=timestamp)
         else:
-            image = await rosys.run.cpu_bound(
-                Image.from_jpeg_bytes, jpeg_bytes=image_bytes, camera_id=self.id, time=timestamp)
+            image = await rosys.run.cpu_bound(Image.from_jpeg_bytes, image_bytes, camera_id=self.id, time=timestamp)
 
         if image is not None:
             self._add_image(image)

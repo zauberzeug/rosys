@@ -18,11 +18,11 @@ logger = logging.getLogger('rosys.vision.camera')
 
 
 class Camera(abc.ABC):
-
-    # How many images are stored in the queue for retrieval via
-    # `captured_images` or `get_recent_images`. Changing this value only
-    # affects cameras created afterwards!
     IMAGE_HISTORY_LENGTH: ClassVar[int] = 16
+    '''How many images are stored in the queue for retrieval via `captured_images` or `get_recent_images`.
+
+    Changing this value only affects cameras created afterwards!
+    '''
 
     def __init__(self,
                  *,

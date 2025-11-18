@@ -54,7 +54,6 @@ class ImageRecorder:
         async with aiofiles.open(file_path, 'wb') as f:
             jpeg_bytes = await run.cpu_bound(encode_image_as_jpeg, image.array)
             if jpeg_bytes is None:
-                # Note: This only happens when stopping
-                return
+                return  # NOTE: This only happens when stopping
             await f.write(jpeg_bytes)
             log.debug('Saved image from camera %s to %s', image.camera_id, file_path)

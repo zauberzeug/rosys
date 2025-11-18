@@ -120,9 +120,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         for file in replay_folder.iterdir():
             if file.is_dir():
                 cam_name = file.name.replace('--', ':')
-                camera = ReplayCamera(camera_id=cam_name,
-                                      images_dir=file,
-                                      camera_name=cam_name)
+                camera = ReplayCamera(camera_id=cam_name, images_dir=file, camera_name=cam_name)
                 self.add_camera(camera)
                 self.log.info('Added replay camera "%s" from folder "%s"', cam_name, file)
 

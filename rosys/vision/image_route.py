@@ -6,15 +6,13 @@ import weakref
 from typing import TYPE_CHECKING
 
 import cv2
-import numpy as np
 from fastapi import Response
 from nicegui import app
-
-from rosys.vision.image_processing import encode_image_as_jpeg
 
 from .. import run
 from .calibration import Calibration
 from .image import Image
+from .image_processing import encode_image_as_jpeg
 
 if TYPE_CHECKING:
     from .camera import Camera
@@ -77,8 +75,8 @@ def _create_placeholder(shrink: int) -> bytes:
 async def _get_placeholder(shrink: int = 1) -> Response:
     placeholder_jpeg = await run.cpu_bound(_create_placeholder, shrink)
     if placeholder_jpeg is None:
-        return Response(content='Server is stopping', status_code=500)
-    return Response(content=placeholder_jpeg, media_type='image/jpeg')
+        return Response('Server is stopping', 500)
+    return Response(placeholder_jpeg, media_type='image/jpeg')
 
 
 async def _get_image(camera: Camera,
@@ -134,7 +132,7 @@ def _process(image: Image,
              undistort: bool,
              fast: bool,
              compression: int) -> bytes | None:
-    image_array: np.ndarray = image.array
+    image_array = image.array
 
     if undistort:
         assert calibration is not None
@@ -153,5 +151,4 @@ def _process(image: Image,
             # INTER_AREA is optimal for downsampling
             image_array = cv2.resize(image_array, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
-    encoded_image = encode_image_as_jpeg(image_array, compression_level=compression)
-    return encoded_image
+    return encode_image_as_jpeg(image_array, compression_level=compression)

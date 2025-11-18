@@ -74,7 +74,7 @@ async def kpi_logger(rosys_integration: None) -> KpiLogger:
 def enforce_spawn_process() -> None:
     if multiprocessing.get_start_method() != 'spawn':
         multiprocessing.set_start_method('spawn', force=True)
-    run.setup()  # Some tests need the cpu pool
+    run.setup()  # Some tests need the CPU pool
 
 
 @pytest.fixture

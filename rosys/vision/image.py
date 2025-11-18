@@ -7,10 +7,9 @@ import numpy as np
 import PIL.Image
 import PIL.ImageDraw
 
-from rosys.vision.image_processing import decode_jpeg_image, encode_image_as_jpeg
-
 from .. import rosys
 from .detections import Detections
+from .image_processing import decode_jpeg_image, encode_image_as_jpeg
 
 
 @dataclass(slots=True, kw_only=True)
@@ -23,7 +22,8 @@ class ImageSize:
         return (self.width, self.height)
 
 
-ImageArray = np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]  # image pixel data has shape (height, width, RGB)
+ImageArray = np.ndarray[tuple[int, int, int], np.dtype[np.uint8]]
+'''An RGB NumPy array with shape (height, width, 3) and dtype np.uint8.'''
 
 
 @dataclass(slots=True, kw_only=True)
@@ -69,18 +69,12 @@ class Image:
         img = PIL.Image.new('RGB', (h // shrink, w // shrink), color=(73, 109, 137))
         d = PIL.ImageDraw.Draw(img)
         d.text((img.width / 2 - len(text) * 3, img.height / 2 - 5), text, fill=(255, 255, 255))
-        array = np.array(img)
-        return cls.from_array(
-            camera_id=camera_id or 'no_cam_id',
-            time=time or 0,
-            array=array,
-        )
+        return cls.from_array(np.array(img), camera_id=camera_id or 'no_cam_id', time=time or 0)
 
     @classmethod
     def from_pil(cls, pil_image: PIL.Image.Image, *, camera_id: str = 'from_pil', time: float | None = None) -> Self:
         """Create an image from a PIL image."""
-        array = np.array(pil_image)
-        return cls.from_array(camera_id=camera_id, time=time or rosys.time(), array=array)
+        return cls.from_array(np.array(pil_image), camera_id=camera_id, time=time or rosys.time())
 
     @classmethod
     def from_jpeg_bytes(cls, jpeg_bytes: bytes, *, camera_id: str = 'from_jpeg_bytes', time: float | None = None) -> Self | None:
@@ -90,7 +84,7 @@ class Image:
             return None
         if len(array.shape) == 2:
             array = np.repeat(np.expand_dims(array, -1), repeats=3, axis=2)
-        return cls.from_array(camera_id=camera_id, time=time or rosys.time(), array=array)
+        return cls.from_array(array, camera_id=camera_id, time=time or rosys.time())
 
     @classmethod
     def from_array(cls, array: np.ndarray, *, camera_id: str = 'from_array', time: float | None = None) -> Self:

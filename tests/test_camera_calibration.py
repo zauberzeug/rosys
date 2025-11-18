@@ -399,11 +399,7 @@ def test_undistort_image_with_crop():
     assert cam.calibration is not None
 
     # Create a test image
-    test_image = Image.from_array(
-        camera_id='1',
-        time=0.0,
-        array=np.zeros((600, 800, 3), dtype=np.uint8),
-    )
+    test_image = Image.from_array(np.zeros((600, 800, 3), dtype=np.uint8), camera_id='1', time=0.0)
 
     # Test without crop
     undistorted = cam.calibration.undistort_image(test_image, crop=False)

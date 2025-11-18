@@ -57,7 +57,7 @@ async def test_playback_replays_images(recordings_dir: Path):
     # ACT
     await forward(seconds=0.1)
     await asyncio.sleep(0.1)  # wait is needed to ensure the image is loaded
-    await forward(seconds=0.1)  # second forward to retrieve image from cpu pool
+    await forward(seconds=0.1)  # second forward to retrieve image from CPU pool
 
     # ASSERT
     replay_cam = next(iter(rp.cameras.values()))

@@ -1,6 +1,7 @@
 import io
 import logging
 from io import BytesIO
+from typing import Any
 
 import cv2
 import numpy as np
@@ -22,7 +23,7 @@ def encode_image_as_jpeg(image: np.ndarray, compression_level: int = 90) -> byte
     pil_image = PIL.Image.fromarray(image.astype(np.uint8))
 
     buffer = BytesIO()
-    save_kwargs = {}
+    save_kwargs: dict[str, Any] = {}
     if compression_level is not None:
         save_kwargs['quality'] = compression_level
 
@@ -31,9 +32,7 @@ def encode_image_as_jpeg(image: np.ndarray, compression_level: int = 90) -> byte
 
 
 def decode_jpeg_image(jpeg_bytes: bytes) -> np.ndarray | None:
-    """Decode JPEG bytes to numpy array using TurboJPEG if available, otherwise PIL.
-    Returns None if decoding fails.
-    """
+    """Decode JPEG bytes to NumPy array using TurboJPEG if available, otherwise PIL. Returns None if decoding failed."""
     try:
         if TURBO_JPEG is not None:
             return TURBO_JPEG.decode(jpeg_bytes)

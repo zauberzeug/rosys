@@ -526,11 +526,8 @@ class Calibration:
     def undistort_image(self, image: Image | NDArray, *, crop: bool = False) -> Image | NDArray:
 
         if isinstance(image, Image):
-            img = Image.from_array(
-                camera_id=image.camera_id,
-                time=image.time,
-                array=self.undistort_image(image.array, crop=crop),
-            )
+            image_array = self.undistort_image(image.array, crop=crop)
+            img = Image.from_array(image_array, camera_id=image.camera_id, time=image.time)
             img.metadata = image.metadata
             return img
 

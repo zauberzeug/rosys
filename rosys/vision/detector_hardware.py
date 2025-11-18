@@ -100,7 +100,6 @@ class DetectorHardware(Detector):
 
         try:
             self.log.info('Upload detections to port %s', self.port)
-            np_image = image.array
 
             metadata: dict[str, Any] = {
                 'source': source,
@@ -127,9 +126,9 @@ class DetectorHardware(Detector):
 
             await self.sio.emit('upload', {
                 'image': {
-                    'bytes': np_image.tobytes(order='C'),
-                    'dtype': str(np_image.dtype),
-                    'shape': np_image.shape,
+                    'bytes': image.array.tobytes(order='C'),
+                    'dtype': str(image.array.dtype),
+                    'shape': image.array.shape,
                 },
                 'metadata': metadata,
             })
@@ -151,7 +150,7 @@ class DetectorHardware(Detector):
             self.log.error('Detection failed: detector is not connected')
             raise DetectorException('detector is not connected')
 
-        assert image.byte_size() < self.MAX_IMAGE_SIZE, f'image too large: {image.byte_size()}'
+        assert image.byte_size() <= self.MAX_IMAGE_SIZE, f'image too large: {image.byte_size()} bytes'
         tags = tags or []
         try:
             detect_call = self._detect(image, autoupload, tags, source, creation_date)
@@ -174,12 +173,11 @@ class DetectorHardware(Detector):
                       creation_date: datetime | str | None = None,
                       ) -> Detections:
         try:
-            np_image = image.array
             response = await self.sio.call('detect', {
                 'image': {
-                    'bytes': np_image.tobytes(order='C'),
-                    'dtype': str(np_image.dtype),
-                    'shape': np_image.shape,
+                    'bytes': image.array.tobytes(order='C'),
+                    'dtype': str(image.array.dtype),
+                    'shape': image.array.shape,
                 },
                 'camera_id': image.camera_id,
                 'tags': tags,

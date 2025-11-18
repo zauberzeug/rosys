@@ -28,6 +28,7 @@ SMALL_COVER_FONT = ImageFont.truetype(FONT, 30)
 class RosysImage(Protocol):
     camera_id: str
     time: float
+
     @property
     def array(self) -> ImageArray: ...
 
@@ -163,7 +164,6 @@ def _save_image(image: RosysImage,
     x = y = 20
     frame_info = ', ' + frame_info if frame_info else ''
     _write(f'{datetime.fromtimestamp(image.time):%Y-%m-%d %H:%M:%S}' + frame_info, draw, x, y)
-
     for message in notifications:
         y += 30
         _write(message, draw, x, y)

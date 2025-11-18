@@ -17,10 +17,10 @@ class TurboJpegWrapper:
     This wrapper ensures consistent bytes return type and proper exception handling.
     """
 
-    def __init__(self):
-        self.turbojpeg = TurboJPEG()  # type: ignore[misc]
+    def __init__(self) -> None:
+        self._turbo_jpeg = TurboJPEG()  # type: ignore[misc]
 
-    def encode(self, image: np.ndarray, quality: int, pixel_format: int = TJPF_RGB) -> bytes:
+    def encode(self, image_array: np.ndarray, quality: int, pixel_format: int = TJPF_RGB) -> bytes:
         """Encode image to JPEG bytes.
 
         :param image: Image array to encode.
@@ -30,7 +30,7 @@ class TurboJpegWrapper:
         :raises RuntimeError: If encoding fails.
         """
         try:
-            result = self.turbojpeg.encode(image, quality=quality, pixel_format=pixel_format)
+            result = self._turbo_jpeg.encode(image_array, quality=quality, pixel_format=pixel_format)
         except (ValueError, OSError, TypeError) as e:
             raise RuntimeError(f'TurboJPEG encoding failed: {e}') from e
 
@@ -53,7 +53,7 @@ class TurboJpegWrapper:
         :raises OSError: If decoding fails.
         """
         try:
-            result = self.turbojpeg.decode(jpeg_bytes, pixel_format=pixel_format)
+            result = self._turbo_jpeg.decode(jpeg_bytes, pixel_format=pixel_format)
         except (ValueError, OSError, TypeError) as e:
             raise OSError(f'TurboJPEG decoding failed: {e}') from e
 
