@@ -15,7 +15,7 @@ from cairosvg import svg2png
 from PIL import ImageDraw, ImageFont
 
 from .. import rosys
-from ..vision import Camera, ImageArray
+from ..vision import Camera, ImageArray, ImageSize
 
 STORAGE_PATH = Path('~/.rosys/timelapse').expanduser()
 VIDEO_PATH = STORAGE_PATH / 'videos'
@@ -31,6 +31,9 @@ class RosysImage(Protocol):
 
     @property
     def array(self) -> ImageArray: ...
+
+    @property
+    def size(self) -> ImageSize: ...
 
 
 class TimelapseRecorder:
@@ -169,7 +172,7 @@ def _save_image(image: RosysImage,
         _write(message, draw, x, y)
     if overlay:
         style = 'position:absolute;top:0;left:0;pointer-events:none'
-        viewbox = f'0 0 {image.array.shape[1]} {image.array.shape[0]}'
+        viewbox = f'0 0 {image.size.width} {image.size.width}'
         svg_image = svg2png(bytestring=f'<svg style="{style}" viewBox="{viewbox}">{overlay}</svg>')
         assert svg_image is not None
         overlay_img = PILImage.open(io.BytesIO(svg_image))
