@@ -212,6 +212,93 @@ class DetectorHardware(Detector):
 
         return detections
 
+    async def batch_detect(self,
+                           images: list[Image],
+                           *,
+                           lazy: bool = True,
+                           autoupload: Autoupload = Autoupload.FILTERED,
+                           tags: list[str] | None = None,
+                           source: str | None = None,
+                           creation_date: datetime | str | None = None,
+                           ) -> list[Detections] | None:
+        if not self.is_connected:
+            self.log.error('Detection failed: detector is not connected')
+            raise DetectorException('detector is not connected')
+
+        total_size = sum(image.byte_size() for image in images)
+        assert total_size < self.MAX_IMAGE_SIZE, f'total image size too large: {total_size}'
+        tags = tags or []
+        try:
+            detect_call = self._batch_detect(images, autoupload, tags, source, creation_date)
+            if lazy:
+                detections = await self.lazy_worker.run(detect_call)
+            else:
+                detections = await detect_call
+            if detections is not None and len(images) == len(detections):
+                for image, detection in zip(images, detections, strict=True):
+                    image.set_detections(self.name, detection)
+                    self.NEW_DETECTIONS.emit(image)
+            return detections
+        except asyncio.exceptions.CancelledError:
+            raise DetectorException('Detection cancelled') from None
+
+    async def _batch_detect(self,
+                            images: list[Image],
+                            autoupload: Autoupload,
+                            tags: list[str],
+                            source: str | None = None,
+                            creation_date: datetime | str | None = None,
+                            ) -> list[Detections]:
+        try:
+            images_data = []  # List of image data dictionaries, each with the same structure as the `image` entry in the `detect` endpoint
+            for image in images:
+                np_image = image.array
+                images_data.append({
+                    'bytes': np_image.tobytes(order='C'),
+                    'dtype': str(np_image.dtype),
+                    'shape': np_image.shape,
+                })
+
+            response = await self.sio.call('batch_detect', {
+                'images': images_data,
+                'camera_id': images[0].camera_id if images else None,
+                'tags': tags,
+                'source': source,
+                'autoupload': autoupload.value,
+                'creation_date': _creation_date_to_isoformat(creation_date),
+            }, timeout=3)
+        except socketio.exceptions.TimeoutError:
+            self.timeout_count += 1
+            if self.timeout_count > 5 and self.auto_disconnect:
+                self.log.error('Detection timed out 5 times in a row. Disconnecting from detector %s', self.name)
+                await self.disconnect()
+            raise DetectorException('Detection timeout') from None
+        except Exception as e:
+            raise DetectorException('Detection failed') from e
+
+        if not isinstance(response, dict):
+            raise DetectorException('Invalid response from detector')
+        try:
+            all_detections: list[Detections] = []
+            for detection_response in response.get('items', []):
+                detections = Detections(
+                    boxes=[persistence.from_dict(BoxDetection, d)
+                           for d in detection_response.get('box_detections', [])],
+                    points=[persistence.from_dict(PointDetection, d)
+                            for d in detection_response.get('point_detections', [])],
+                    segmentations=[persistence.from_dict(SegmentationDetection, d)
+                                   for d in detection_response.get('segmentation_detections', [])],
+                    classifications=[persistence.from_dict(ClassificationDetection, d)
+                                     for d in detection_response.get('classification_detections', [])],
+                )
+                all_detections.append(detections)
+        except Exception as e:
+            raise DetectorException('Failed to parse detections') from e
+
+        self.timeout_count = 0
+
+        return all_detections
+
     def __str__(self) -> str:
         return f'{type(self).__name__} ({"connected" if self.is_connected else "disconnected"})'
 
