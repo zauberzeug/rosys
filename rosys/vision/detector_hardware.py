@@ -240,6 +240,10 @@ class DetectorHardware(Detector):
                             tags: list[str],
                             source: str | None = None,
                             creation_date: datetime | str | None = None) -> list[Detections]:
+
+        if len(images) == 0:
+            return []
+
         try:
             # List of image data dictionaries, each with the same structure as the `image` entry in the `detect` endpoint
             images_dict = [_array_to_dict(image.array) for image in images]
