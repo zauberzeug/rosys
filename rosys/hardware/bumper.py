@@ -54,9 +54,10 @@ class BumperHardware(Bumper, ModuleHardware):
         for pin, active in bumpers.items():
             if self.estop and self.estop.active:
                 continue
-            if active and pin not in self.active_bumpers:
+            was_active = pin in self.active_bumpers
+            if active and not was_active:
                 self.BUMPER_TRIGGERED.emit(pin)
-            elif not active and pin in self.active_bumpers:
+            elif not active and was_active:
                 self.BUMPER_RELEASED.emit(pin)
         self.active_bumpers[:] = [pin for pin, active in bumpers.items() if active]
 
