@@ -17,7 +17,8 @@ class Bumper(Module, abc.ABC):
 
         self.BUMPER_TRIGGERED = Event[str]()
         """a bumper was triggered (argument: the bumper name)"""
-
+        self.BUMPER_RELEASED = Event[str]()
+        """a bumper was released (argument: the bumper name)"""
         self.active_bumpers: list[str] = []
 
 
@@ -49,11 +50,15 @@ class BumperHardware(Bumper, ModuleHardware):
                          estop=estop)
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        active_bumpers = [pin for pin in self.pins if words.pop(0) == 'true']
-        for pin in active_bumpers:
-            if pin not in self.active_bumpers and not (self.estop and self.estop.active):
+        bumpers: dict[str, bool] = {pin: words.pop(0) == 'true' for pin in self.pins}
+        for pin, active in bumpers.items():
+            if self.estop and self.estop.active:
+                continue
+            if active and pin not in self.active_bumpers:
                 self.BUMPER_TRIGGERED.emit(pin)
-        self.active_bumpers[:] = active_bumpers
+            elif not active and pin in self.active_bumpers:
+                self.BUMPER_RELEASED.emit(pin)
+        self.active_bumpers[:] = [pin for pin, active in bumpers.items() if active]
 
 
 class BumperSimulation(Bumper, ModuleSimulation):
