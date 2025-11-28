@@ -23,6 +23,8 @@ class Bms(Module, abc.ABC):
         :param battery_low_threshold: If provided, the BATTERY_LOW event will be emitted when the battery percentage gets below this threshold.
         """
         super().__init__(**kwargs)
+        self.NEW_STATE = Event[BmsState]()
+        """a new state has been received (argument: ``BmsState``)"""
         self.CHARGING_STARTED = Event[[]]()
         """The battery started charging"""
         self.CHARGING_STOPPED = Event[[]]()
@@ -134,6 +136,7 @@ class BmsHardware(Bms, ModuleHardware):
         self.state.is_charging = is_charging
         self.state.last_update = rosys.time()
         self.raw_data = result
+        self.NEW_STATE.emit(self.state)
 
 
 class BmsSimulation(Bms, ModuleSimulation):
@@ -170,6 +173,7 @@ class BmsSimulation(Bms, ModuleSimulation):
         self.state.temperature = self.AVERAGE_TEMPERATURE + \
             self.TEMPERATURE_AMPLITUDE * np.sin(self.TEMPERATURE_FREQUENCY * rosys.time())
         self.state.last_update = rosys.time()
+        self.NEW_STATE.emit(self.state)
 
     def developer_ui(self) -> None:
         super().developer_ui()
