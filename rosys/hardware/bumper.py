@@ -50,16 +50,16 @@ class BumperHardware(Bumper, ModuleHardware):
                          estop=estop)
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        bumpers: dict[str, bool] = {pin: words.pop(0) == 'true' for pin in self.pins}
-        for pin, active in bumpers.items():
+        states: dict[str, bool] = {name: words.pop(0) == 'true' for name in self.pins}
+        for name, active in states.items():
             if self.estop and self.estop.active:
                 continue
-            was_active = pin in self.active_bumpers
+            was_active = name in self.active_bumpers
             if active and not was_active:
-                self.BUMPER_TRIGGERED.emit(pin)
+                self.BUMPER_TRIGGERED.emit(name)
             elif not active and was_active:
-                self.BUMPER_RELEASED.emit(pin)
-        self.active_bumpers[:] = [pin for pin, active in bumpers.items() if active]
+                self.BUMPER_RELEASED.emit(name)
+        self.active_bumpers[:] = [name for name, active in states.items() if active]
 
 
 class BumperSimulation(Bumper, ModuleSimulation):
