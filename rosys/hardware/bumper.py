@@ -52,9 +52,9 @@ class BumperHardware(Bumper, ModuleHardware):
     def handle_core_output(self, time: float, words: list[str]) -> None:
         active_bumpers = list(self.active_bumpers)
         states: dict[str, bool] = {name: words.pop(0) == 'true' for name in self.pins}
-        self.active_bumpers[:] = [name for name, active in states.items() if active]
         if self.estop and self.estop.active:
             return
+        self.active_bumpers[:] = [name for name, active in states.items() if active]
         for name, active in states.items():
             was_active = name in active_bumpers
             if active and not was_active:
