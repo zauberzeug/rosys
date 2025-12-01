@@ -18,33 +18,30 @@ class EStop(Module, abc.ABC):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
-        self.ESTOP_TRIGGERED = Event[[]]()
-        """the e-stop was triggered"""
-        self.ESTOP_RELEASED = Event[[]]()
-        """the e-stop was released"""
-        self._soft_estop_active: bool = False
-        self.pressed_estops: list[int] = []
+        self.ESTOP_TRIGGERED = Event[str]()
+        """the e-stop was triggered (argument: the e-stop name)"""
+        self.ESTOP_RELEASED = Event[str]()
+        """the e-stop was released (argument: the e-stop name)"""
+        self.active_estops: list[str] = []
 
     @property
     def active(self) -> bool:
         """Whether any hardware e-stop or the soft e-stop is active."""
-        return any(self.pressed_estops) or self._soft_estop_active
+        return len(self.active_estops) > 0
 
     @property
     def is_soft_estop_active(self) -> bool:
         """Whether the soft e-stop is active."""
-        return self._soft_estop_active
+        return 'soft' in self.active_estops
 
     async def set_soft_estop(self, active: bool) -> None:
         """Set the soft e-stop to the given state."""
-        self._emit_events(any(self.pressed_estops) or active)
-        self._soft_estop_active = active
-
-    def _emit_events(self, value: bool) -> None:
-        if value and not self.active:
-            self.ESTOP_TRIGGERED.emit()
-        if not value and self.active:
-            self.ESTOP_RELEASED.emit()
+        if active and not self.is_soft_estop_active:
+            self.active_estops.append('soft')
+            self.ESTOP_TRIGGERED.emit('soft')
+        elif not active and self.is_soft_estop_active:
+            self.active_estops.remove('soft')
+            self.ESTOP_RELEASED.emit('soft')
 
 
 class EStopHardware(EStop, ModuleHardware):
@@ -68,12 +65,15 @@ class EStopHardware(EStop, ModuleHardware):
         await self.robot_brain.send(f'en3.level({"false" if active else "true"})')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        corelist = [words.pop(0) == 'true' for _ in self.pins]
-        pressed = [index for index, value in enumerate(corelist) if value]
-        if pressed != self.pressed_estops:
-            self.log.warning('E-Stop %s changed', pressed)
-        self._emit_events(any(pressed) or self.is_soft_estop_active)
-        self.pressed_estops[:] = pressed
+        active_estops = list(self.active_estops)
+        states = {name: words.pop(0) == 'true' for name in self.pins}
+        self.active_estops[:] = [name for name, active in states.items() if active]
+        for name, active in states.items():
+            was_active = name in active_estops
+            if active and not was_active:
+                self.ESTOP_TRIGGERED.emit(name)
+            elif not active and was_active:
+                self.ESTOP_RELEASED.emit(name)
 
 
 class EStopSimulation(EStop, ModuleSimulation):
