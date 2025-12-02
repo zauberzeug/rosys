@@ -66,14 +66,14 @@ class EStopHardware(EStop, ModuleHardware):
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         previous_active_estops = self.active_estops.copy()
-        states = {name: words.pop(0) == 'true' for name in self.pins}
         self.active_estops.clear()
-        self.active_estops.update(name for name, active in states.items() if active)
-        for name, active in states.items():
+        self.active_estops.update(name for name in self.pins if words.pop(0) == 'true')
+        for name in self.pins:
+            is_active = name in self.active_estops
             was_active = name in previous_active_estops
-            if active and not was_active:
+            if is_active and not was_active:
                 self.ESTOP_TRIGGERED.emit(name)
-            elif not active and was_active:
+            elif not is_active and was_active:
                 self.ESTOP_RELEASED.emit(name)
 
 

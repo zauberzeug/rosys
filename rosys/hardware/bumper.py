@@ -51,16 +51,16 @@ class BumperHardware(Bumper, ModuleHardware):
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         previous_active_bumpers = self.active_bumpers.copy()
-        states: dict[str, bool] = {name: words.pop(0) == 'true' for name in self.pins}
         self.active_bumpers.clear()
-        self.active_bumpers.update(name for name, active in states.items() if active)
+        self.active_bumpers.update(name for name in self.pins if words.pop(0) == 'true')
         if self.estop and self.estop.active:
             return
-        for name, active in states.items():
+        for name in self.pins:
+            is_active = name in self.active_bumpers
             was_active = name in previous_active_bumpers
-            if active and not was_active:
+            if is_active and not was_active:
                 self.BUMPER_TRIGGERED.emit(name)
-            elif not active and was_active:
+            elif not is_active and was_active:
                 self.BUMPER_RELEASED.emit(name)
 
 
