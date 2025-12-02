@@ -27,7 +27,7 @@ class EStop(Module, abc.ABC):
     @property
     def active(self) -> bool:
         """Whether any hardware e-stop or the soft e-stop is active."""
-        return len(self.active_estops) > 0
+        return any(self.active_estops)
 
     @property
     def is_soft_estop_active(self) -> bool:
