@@ -22,7 +22,7 @@ class EStop(Module, abc.ABC):
         """the e-stop was triggered (argument: the e-stop name)"""
         self.ESTOP_RELEASED = Event[str]()
         """the e-stop was released (argument: the e-stop name)"""
-        self.active_estops: list[str] = []
+        self.active_estops: set[str] = set()
 
     @property
     def active(self) -> bool:
@@ -37,10 +37,10 @@ class EStop(Module, abc.ABC):
     async def set_soft_estop(self, active: bool) -> None:
         """Set the soft e-stop to the given state."""
         if active and not self.is_soft_estop_active:
-            self.active_estops.append('soft')
+            self.active_estops.add('soft')
             self.ESTOP_TRIGGERED.emit('soft')
         elif not active and self.is_soft_estop_active:
-            self.active_estops.remove('soft')
+            self.active_estops.discard('soft')
             self.ESTOP_RELEASED.emit('soft')
 
 
@@ -65,11 +65,12 @@ class EStopHardware(EStop, ModuleHardware):
         await self.robot_brain.send(f'en3.level({"false" if active else "true"})')
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        active_estops = list(self.active_estops)
+        previous_active_estops = self.active_estops.copy()
         states = {name: words.pop(0) == 'true' for name in self.pins}
-        self.active_estops[:] = [name for name, active in states.items() if active]
+        self.active_estops.clear()
+        self.active_estops.update(name for name, active in states.items() if active)
         for name, active in states.items():
-            was_active = name in active_estops
+            was_active = name in previous_active_estops
             if active and not was_active:
                 self.ESTOP_TRIGGERED.emit(name)
             elif not active and was_active:
