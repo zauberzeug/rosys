@@ -66,7 +66,7 @@ class EStopHardware(EStop, ModuleHardware):
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
         previous_active_estops = self.active_estops.copy()
-        self.active_estops.clear()
+        self.active_estops.difference_update(self.pins)
         self.active_estops.update(name for name in self.pins if words.pop(0) == 'true')
         for name in self.pins:
             is_active = name in self.active_estops
