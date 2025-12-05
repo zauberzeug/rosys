@@ -39,8 +39,6 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera]):
             self.log.debug('restoring camera: %s', camera_data)
             camera = MjpegCamera.from_dict(camera_data)
             self.add_camera(camera)
-        for camera in self._cameras.values():
-            camera.NEW_IMAGE.subscribe(self.NEW_IMAGE.emit)
 
     async def scan_for_cameras(self) -> list[tuple[str, str]]:
         self.log.debug('scanning for cameras...')

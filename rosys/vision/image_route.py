@@ -13,6 +13,7 @@ from nicegui import app
 from .. import run
 from .calibration import Calibration
 from .image import Image
+from .image_processing import encode_image_as_jpeg
 
 if TYPE_CHECKING:
     from .camera import Camera
@@ -67,8 +68,16 @@ def create_image_route(camera: Camera) -> None:
     app.add_api_route(undistorted_url, get_camera_image_undistorted)
 
 
+def _create_placeholder(shrink: int) -> bytes:
+    image = Image.create_placeholder('no image', shrink=shrink)
+    return image.to_jpeg_bytes()
+
+
 async def _get_placeholder(shrink: int = 1) -> Response:
-    return Response(content=Image.create_placeholder('no image', shrink=shrink).data, media_type='image/jpeg')
+    placeholder_jpeg = await run.cpu_bound(_create_placeholder, shrink)
+    if placeholder_jpeg is None:
+        return Response('Server is stopping', 500)
+    return Response(placeholder_jpeg, media_type='image/jpeg')
 
 
 async def _get_image(camera: Camera,
@@ -104,30 +113,27 @@ async def _try_get_jpeg(camera: Camera,
                         fast: bool,
                         compression: int) -> bytes | None:
     for image in reversed(camera.images):
-        if str(image.time) == timestamp and image.data is not None:
+        if str(image.time) == timestamp:
             shrink_from_max = max(image.size.width, image.size.height) / max_dimension if max_dimension else shrink
 
             shrink = max(1, shrink, shrink_from_max)
 
             if shrink == 1 and not undistort and compression == 60:
-                return image.data
+                return await run.cpu_bound(encode_image_as_jpeg, image.array)
 
             calibration = camera.calibration if undistort else None  # type: ignore
-            return await run.cpu_bound(_process, image.data, calibration, shrink, undistort, fast, compression)
+            return await run.cpu_bound(_process, image, calibration, shrink, undistort, fast, compression)
 
     return None
 
 
-def _process(data: bytes,
+def _process(image: Image,
              calibration: Calibration | None,
              shrink: float,
              undistort: bool,
              fast: bool,
              compression: int) -> bytes | None:
-    array = np.frombuffer(data, dtype=np.uint8)
-    if array is None:
-        return None
-    image_array = cv2.imdecode(array, cv2.IMREAD_COLOR)
+    image_array: np.ndarray = image.array
 
     if undistort:
         assert calibration is not None
@@ -146,5 +152,4 @@ def _process(data: bytes,
             # INTER_AREA is optimal for downsampling
             image_array = cv2.resize(image_array, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
-    _, encoded_image = cv2.imencode('.jpg', image_array, [int(cv2.IMWRITE_JPEG_QUALITY), compression])
-    return encoded_image.tobytes()
+    return encode_image_as_jpeg(image_array, compression_level=compression)

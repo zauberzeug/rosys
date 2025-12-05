@@ -2,11 +2,13 @@ import asyncio
 from datetime import datetime
 from typing import Any, Literal
 
+import numpy as np
 import socketio
 import socketio.exceptions
 
-from .. import persistence, rosys
+from .. import rosys
 from ..helpers import LazyWorker
+from ..persistence import from_dict
 from .annotations import Annotations
 from .detections import (
     BoxDetection,
@@ -21,35 +23,36 @@ from .image import Image
 
 
 class DetectorHardware(Detector):
-    """This detector communicates with a [YOLO detector](https://hub.docker.com/r/zauberzeug/yolov5-detector) via Socket.IO.
+    """This detector communicates with a zauberzeug detector node via SocketIO.
 
     It automatically connects and reconnects, submits and receives detections and sends images
     that should be uploaded to the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
 
-    Note: Images must be smaller than ``MAX_IMAGE_SIZE`` bytes (default: 10 MB).
+    Note: Images must be smaller than ``MAX_IMAGE_SIZE`` bytes (default: 64 MB).
     """
-    MAX_IMAGE_SIZE = 10 * 1024 * 1024
+    MAX_IMAGE_SIZE = 64 * 1024 * 1024
+    MAX_TIMEOUTS_BEFORE_DISCONNECT = 5
 
     def __init__(self,
                  *,
                  host: str = 'localhost',
                  port: int = 8004,
                  name: str | None = None,
-                 auto_disconnect: bool = True) -> None:
+                 auto_disconnect: bool = True,
+                 sio_timeout: int = 5) -> None:
         super().__init__(name=name)
 
-        websocket_options = {
-            'max_msg_size': self.MAX_IMAGE_SIZE + 1000,
-        }
-        self.sio = socketio.AsyncClient(websocket_extra_options=websocket_options)
         self.lazy_worker = LazyWorker()
         self.host = host
         self.port = port
         self.auto_disconnect = auto_disconnect
+
+        self.sio_timeout = sio_timeout
         self.timeout_count = 0
 
-        self.sio.on('disconnect', lambda: self.log.warning('sio disconnect on port %s', self.port))
-        self.sio.on('connect_error', lambda err: self.log.warning('sio connect error on %s: %s', self.port, err))
+        self.sio = socketio.AsyncClient(websocket_extra_options={'max_msg_size': self.MAX_IMAGE_SIZE + 1000})
+        self.sio.on('disconnect', lambda: self.log.warning('disconnect on %s:%s', self.host, self.port))
+        self.sio.on('connect_error', lambda e: self.log.warning('connect error on %s:%s %s', self.host, self.port, e))
 
         rosys.on_startup(self.connect)
         rosys.on_repeat(self._ensure_connection, 10.0)
@@ -84,27 +87,18 @@ class DetectorHardware(Detector):
                      tags: list[str] | None = None,
                      source: str | None = None,
                      creation_date: datetime | str | None = None,
-                     annotations: Annotations | None = None,
-                     ) -> None:
-        """Uploads the image to the Learning Loop.
-
-        Detections stored in the image are also uploaded."""
+                     annotations: Annotations | None = None) -> None:
 
         if not self.is_connected:
             self.log.error('Upload failed: detector is not connected')
             raise DetectorException('detector is not connected')
 
-        if not image.data:
-            self.log.error('Upload failed: image data is empty')
-            raise DetectorException('image data is empty')
-
-        if len(image.data) > self.MAX_IMAGE_SIZE:
-            self.log.error('Upload failed: image too large: %s', len(image.data))
+        if image.byte_size() > self.MAX_IMAGE_SIZE:
+            self.log.error('Upload failed: image too large: %s', image.byte_size())
             raise DetectorException('image too large')
 
         try:
             self.log.info('Upload detections to port %s', self.port)
-            np_image = image.to_array()
 
             metadata: dict[str, Any] = {
                 'source': source,
@@ -130,11 +124,7 @@ class DetectorHardware(Detector):
                 })
 
             await self.sio.emit('upload', {
-                'image': {
-                    'bytes': np_image.tobytes(order='C'),
-                    'dtype': str(np_image.dtype),
-                    'shape': np_image.shape,
-                },
+                'image': _array_to_dict(image.array),
                 'metadata': metadata,
             })
 
@@ -149,20 +139,18 @@ class DetectorHardware(Detector):
                      autoupload: Autoupload = Autoupload.FILTERED,
                      tags: list[str] | None = None,
                      source: str | None = None,
-                     creation_date: datetime | str | None = None,
-                     ) -> Detections | None:
+                     creation_date: datetime | str | None = None) -> Detections | None:
+
         if not self.is_connected:
             self.log.error('Detection failed: detector is not connected')
             raise DetectorException('detector is not connected')
 
-        if image.is_broken:
-            self.log.error('Detection failed: image is broken')
-            raise DetectorException('image is broken')
+        if image.byte_size() > self.MAX_IMAGE_SIZE:
+            self.log.error('Detection failed: image too large: %s bytes', image.byte_size())
+            raise DetectorException('image too large')
 
-        assert len(image.data or []) < self.MAX_IMAGE_SIZE, f'image too large: {len(image.data or [])}'
-        tags = tags or []
         try:
-            detect_call = self._detect(image, autoupload, tags, source, creation_date)
+            detect_call = self._detect(image, autoupload, tags or [], source, creation_date)
             if lazy:
                 detections = await self.lazy_worker.run(detect_call)
             else:
@@ -179,26 +167,22 @@ class DetectorHardware(Detector):
                       autoupload: Autoupload,
                       tags: list[str],
                       source: str | None = None,
-                      creation_date: datetime | str | None = None,
-                      ) -> Detections:
+                      creation_date: datetime | str | None = None) -> Detections:
         try:
-            np_image = image.to_array()
             response = await self.sio.call('detect', {
-                'image': {
-                    'bytes': np_image.tobytes(order='C'),
-                    'dtype': str(np_image.dtype),
-                    'shape': np_image.shape,
-                },
+                'image': _array_to_dict(image.array),
                 'camera_id': image.camera_id,
                 'tags': tags,
                 'source': source,
                 'autoupload': autoupload.value,
                 'creation_date': _creation_date_to_isoformat(creation_date),
-            }, timeout=3)
+            }, timeout=self.sio_timeout)
+            self.timeout_count = 0
         except socketio.exceptions.TimeoutError:
             self.timeout_count += 1
-            if self.timeout_count > 5 and self.auto_disconnect:
-                self.log.error('Detection timed out 5 times in a row. Disconnecting from detector %s', self.name)
+            if self.timeout_count > self.MAX_TIMEOUTS_BEFORE_DISCONNECT and self.auto_disconnect:
+                self.log.error('Detection timed out %d times in a row. Disconnecting from detector %s',
+                               self.timeout_count, self.name)
                 await self.disconnect()
             raise DetectorException('Detection timeout') from None
         except Exception as e:
@@ -207,22 +191,89 @@ class DetectorHardware(Detector):
         if not isinstance(response, dict):
             raise DetectorException('Invalid response from detector')
         try:
-            detections = Detections(
-                boxes=[persistence.from_dict(BoxDetection, d) for d in response.get('box_detections', [])],
-                points=[persistence.from_dict(PointDetection, d) for d in response.get('point_detections', [])],
-                segmentations=[persistence.from_dict(SegmentationDetection, d)
-                               for d in response.get('segmentation_detections', [])],
-                classifications=[persistence.from_dict(ClassificationDetection, d)
-                                 for d in response.get('classification_detections', [])],
-            )
+            detections = _detections_from_dict(response)
         except Exception as e:
             raise DetectorException('Failed to parse detections') from e
 
-        self.timeout_count = 0
-        if image.is_broken:  # NOTE: image can be marked broken while detection is underway
-            raise DetectorException('Image is broken')
-
         return detections
+
+    async def batch_detect(self,
+                           images: list[Image],
+                           *,
+                           lazy: bool = True,
+                           autoupload: Autoupload = Autoupload.FILTERED,
+                           tags: list[str] | None = None,
+                           source: str | None = None,
+                           creation_date: datetime | str | None = None) -> list[Detections] | None:
+
+        if not self.is_connected:
+            self.log.error('Detection failed: detector is not connected')
+            raise DetectorException('detector is not connected')
+
+        total_size = sum(image.byte_size() for image in images)
+        if total_size > self.MAX_IMAGE_SIZE:
+            self.log.error('Detection failed: total image size too large: %s bytes', total_size)
+            raise DetectorException('total image size too large')
+
+        try:
+            detect_call = self._batch_detect(images, autoupload, tags or [], source, creation_date)
+            if lazy:
+                batch_detections = await self.lazy_worker.run(detect_call)
+            else:
+                batch_detections = await detect_call
+
+            if batch_detections is not None:
+                if len(images) != len(batch_detections):
+                    self.log.error('Batch detection failed: number of detections does not match number of images')
+                    raise DetectorException('number of detections does not match number of images')
+
+                for image, detections in zip(images, batch_detections, strict=True):
+                    image.set_detections(self.name, detections)
+                    self.NEW_DETECTIONS.emit(image)
+            return batch_detections
+        except asyncio.exceptions.CancelledError:
+            raise DetectorException('Detection cancelled') from None
+
+    async def _batch_detect(self,
+                            images: list[Image],
+                            autoupload: Autoupload,
+                            tags: list[str],
+                            source: str | None = None,
+                            creation_date: datetime | str | None = None) -> list[Detections]:
+
+        if len(images) == 0:
+            return []
+
+        try:
+            # List of image data dictionaries, each with the same structure as the `image` entry in the `detect` endpoint
+            images_dict = [_array_to_dict(image.array) for image in images]
+            response = await self.sio.call('batch_detect', {
+                'images': images_dict,
+                'camera_id': images[0].camera_id if images else None,
+                'tags': tags,
+                'source': source,
+                'autoupload': autoupload.value,
+                'creation_date': _creation_date_to_isoformat(creation_date),
+            }, timeout=self.sio_timeout)
+            self.timeout_count = 0
+        except socketio.exceptions.TimeoutError:
+            self.timeout_count += 1
+            if self.timeout_count > self.MAX_TIMEOUTS_BEFORE_DISCONNECT and self.auto_disconnect:
+                self.log.error('Detection timed out %d times in a row. Disconnecting from detector %s',
+                               self.timeout_count, self.name)
+                await self.disconnect()
+            raise DetectorException('Detection timeout') from None
+        except Exception as e:
+            raise DetectorException('Detection failed') from e
+
+        if not isinstance(response, dict):
+            raise DetectorException('Invalid response from detector')
+        try:
+            all_detections = [_detections_from_dict(d) for d in response.get('items', [])]
+        except Exception as e:
+            raise DetectorException('Failed to parse detections') from e
+
+        return all_detections
 
     def __str__(self) -> str:
         return f'{type(self).__name__} ({"connected" if self.is_connected else "disconnected"})'
@@ -232,7 +283,7 @@ class DetectorHardware(Detector):
             raise DetectorException('detector is not connected')
 
         try:
-            response = await self.sio.call('about', timeout=5)
+            response = await self.sio.call('about', timeout=self.sio_timeout)
         except socketio.exceptions.TimeoutError:
             self.log.error('Communication timeout for detector %s', self.name)
             raise DetectorException('Communication timeout') from None
@@ -266,7 +317,7 @@ class DetectorHardware(Detector):
 
     async def fetch_model_version_info(self) -> ModelVersioningInfo:
         try:
-            response = await self.sio.call('get_model_version', timeout=5)
+            response = await self.sio.call('get_model_version', timeout=self.sio_timeout)
         except socketio.exceptions.TimeoutError:
             self.log.error('Communication timeout for detector %s', self.name)
             raise DetectorException('Communication timed out') from None
@@ -293,7 +344,7 @@ class DetectorHardware(Detector):
                                     f'(allowed: "follow_loop", "pause" or a version number like "1.2")')
 
         try:
-            response = await self.sio.call('set_model_version_mode', version, timeout=5)
+            response = await self.sio.call('set_model_version_mode', version, timeout=self.sio_timeout)
         except socketio.exceptions.TimeoutError:
             self.log.error('Communication timeout for detector %s', self.name)
             raise DetectorException('Communication timeout') from None
@@ -310,7 +361,7 @@ class DetectorHardware(Detector):
 
     async def fetch_outbox_mode(self) -> Literal['continuous_upload', 'stopped']:
         try:
-            response = await self.sio.call('get_outbox_mode', timeout=5)
+            response = await self.sio.call('get_outbox_mode', timeout=self.sio_timeout)
         except socketio.exceptions.TimeoutError:
             self.log.error('Communication timeout for detector %s', self.name)
             raise DetectorException('Communication timeout') from None
@@ -329,7 +380,7 @@ class DetectorHardware(Detector):
 
     async def set_outbox_mode(self, mode: Literal['continuous_upload', 'stopped']) -> None:
         try:
-            response = await self.sio.call('set_outbox_mode', mode, timeout=5)
+            response = await self.sio.call('set_outbox_mode', mode, timeout=self.sio_timeout)
         except socketio.exceptions.TimeoutError:
             self.log.error('Communication timeout for detector %s', self.name)
             raise DetectorException('Communication timeout') from None
@@ -350,7 +401,7 @@ class DetectorHardware(Detector):
         :raises DetectorException: if the communication fails.
         """
         try:
-            await self.sio.call('soft_reload', timeout=5)
+            await self.sio.call('soft_reload', timeout=self.sio_timeout)
         except socketio.exceptions.TimeoutError:
             self.log.error('Communication timeout for detector %s', self.name)
             raise DetectorException('Communication timeout') from None
@@ -378,3 +429,20 @@ def _creation_date_to_isoformat(creation_date: datetime | str | None) -> str | N
     elif isinstance(creation_date, datetime):
         return creation_date.isoformat()
     return None
+
+
+def _detections_from_dict(data: dict[str, Any]) -> Detections:
+    return Detections(
+        boxes=[from_dict(BoxDetection, d) for d in data.get('box_detections', [])],
+        points=[from_dict(PointDetection, d) for d in data.get('point_detections', [])],
+        segmentations=[from_dict(SegmentationDetection, d) for d in data.get('segmentation_detections', [])],
+        classifications=[from_dict(ClassificationDetection, d) for d in data.get('classification_detections', [])],
+    )
+
+
+def _array_to_dict(array: np.ndarray) -> dict[str, bytes | str | tuple[int, ...]]:
+    return {
+        'bytes': array.tobytes(order='C'),
+        'dtype': str(array.dtype),
+        'shape': array.shape,
+    }

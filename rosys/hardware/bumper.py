@@ -17,8 +17,9 @@ class Bumper(Module, abc.ABC):
 
         self.BUMPER_TRIGGERED = Event[str]()
         """a bumper was triggered (argument: the bumper name)"""
-
-        self.active_bumpers: list[str] = []
+        self.BUMPER_RELEASED = Event[str]()
+        """a bumper was released (argument: the bumper name)"""
+        self.active_bumpers: set[str] = set()
 
 
 class BumperHardware(Bumper, ModuleHardware):
@@ -49,11 +50,18 @@ class BumperHardware(Bumper, ModuleHardware):
                          estop=estop)
 
     def handle_core_output(self, time: float, words: list[str]) -> None:
-        active_bumpers = [pin for pin in self.pins if words.pop(0) == 'true']
-        for pin in active_bumpers:
-            if pin not in self.active_bumpers and not (self.estop and self.estop.active):
-                self.BUMPER_TRIGGERED.emit(pin)
-        self.active_bumpers[:] = active_bumpers
+        previous_active_bumpers = self.active_bumpers.copy()
+        self.active_bumpers.clear()
+        self.active_bumpers.update(name for name in self.pins if words.pop(0) == 'true')
+        if self.estop and self.estop.active:
+            return
+        for name in self.pins:
+            is_active = name in self.active_bumpers
+            was_active = name in previous_active_bumpers
+            if is_active and not was_active:
+                self.BUMPER_TRIGGERED.emit(name)
+            elif not is_active and was_active:
+                self.BUMPER_RELEASED.emit(name)
 
 
 class BumperSimulation(Bumper, ModuleSimulation):
@@ -61,7 +69,8 @@ class BumperSimulation(Bumper, ModuleSimulation):
 
     def set_active(self, pin: str, active: bool) -> None:
         if active and pin not in self.active_bumpers:
+            self.active_bumpers.add(pin)
             self.BUMPER_TRIGGERED.emit(pin)
-            self.active_bumpers.append(pin)
         if not active and pin in self.active_bumpers:
-            self.active_bumpers.remove(pin)
+            self.active_bumpers.discard(pin)
+            self.BUMPER_RELEASED.emit(pin)

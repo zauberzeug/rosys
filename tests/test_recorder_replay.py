@@ -26,7 +26,7 @@ async def test_record_images(recordings_dir: Path):
     await forward(seconds=1.1)
 
     # ASSERT
-    cam_dir = recordings_dir / 'cam-0'
+    cam_dir = recordings_dir / 'cam--0'
     assert cam_dir.exists()
     files = sorted(p for p in cam_dir.iterdir() if p.suffix == '.jpg')
     assert len(files) == 1
@@ -57,6 +57,7 @@ async def test_playback_replays_images(recordings_dir: Path):
     # ACT
     await forward(seconds=0.1)
     await asyncio.sleep(0.1)  # wait is needed to ensure the image is loaded
+    await forward(seconds=0.1)  # second forward to retrieve image from CPU pool
 
     # ASSERT
     replay_cam = next(iter(rp.cameras.values()))

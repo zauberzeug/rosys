@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from nicegui import Event
 
 from .. import rosys
-from ..hardware import EspNotReadyException, RobotBrain
+from ..hardware import BluetoothHardware, EspNotReadyException, RobotBrain
 from .automator import Automator
 
 
@@ -40,14 +40,14 @@ class AppControls:
     It displays buttons to control a given automator.
     """
 
-    def __init__(self, robot_brain: RobotBrain, automator: Automator) -> None:
+    def __init__(self, robot_brain: RobotBrain, automator: Automator, bluetooth: BluetoothHardware) -> None:
         self.APP_CONNECTED = Event[[]]()
         """an app connected via bluetooth (used to refresh information or similar)"""
 
         self.log = logging.getLogger('rosys.app_controls')
 
-        self.robot_brain = robot_brain
         self.automator = automator
+        self.bluetooth = bluetooth
 
         self.main_buttons: dict[str, AppButton] = {
             'play': AppButton('play_arrow', released=automator.start),
@@ -83,14 +83,14 @@ class AppControls:
     async def set_info(self, msg: str) -> None:
         """replace constantly shown info text on mobile device"""
         try:
-            await self.robot_brain.send(f'bluetooth.send("PUT /info {msg}")')
+            await self.bluetooth.send(f'PUT /info {msg}')
         except EspNotReadyException:
             self.log.error('Failed to set info: ESP not ready')
 
     async def notify(self, msg: str) -> None:
         """show notification as Snackbar message on mobile device"""
         try:
-            await self.robot_brain.send(f'bluetooth.send("POST /notification {msg}")')
+            await self.bluetooth.send(f'POST /notification {msg}')
         except EspNotReadyException:
             self.log.error('Failed to notify: ESP not ready')
 
@@ -125,8 +125,7 @@ class AppControls:
         async def run(group: str, buttons: dict[str, AppButton]) -> None:
             for name, button in buttons.items():
                 for prop in get_properties(button):
-                    cmd = f'bluetooth.send("{method} /button/{group}/{name}{prop}")'
-                    await self.robot_brain.send(cmd)
+                    await self.bluetooth.send(f'{method} /button/{group}/{name}{prop}')
         try:
             await run('main', self.main_buttons)
             await run('extra', self.extra_buttons)

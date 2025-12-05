@@ -6,7 +6,7 @@ import logging
 from collections import deque
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import Any, Self
+from typing import Any, ClassVar, Self
 
 from nicegui import Event
 
@@ -18,6 +18,11 @@ logger = logging.getLogger('rosys.vision.camera')
 
 
 class Camera(abc.ABC):
+    IMAGE_HISTORY_LENGTH: ClassVar[int] = 16
+    '''How many images are stored in the queue for retrieval via `captured_images` or `get_recent_images`.
+
+    Changing this value only affects cameras created afterwards!
+    '''
 
     def __init__(self,
                  *,
@@ -27,13 +32,12 @@ class Camera(abc.ABC):
                  streaming: bool | None = None,
                  polling_interval: float | None = None,
                  base_path_overwrite: str | None = None,
-                 image_history_length: int = 256,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.id: str = id
         self.name = name or self.id
         self.connect_after_init = connect_after_init
-        self.images: deque[Image] = deque(maxlen=image_history_length)
+        self.images: deque[Image] = deque(maxlen=Camera.IMAGE_HISTORY_LENGTH)
         self.base_path: str = f'images/{base_path_overwrite or id}'
 
         if streaming is not None:
@@ -90,7 +94,6 @@ class Camera(abc.ABC):
             'id': self.id,
             'name': self.name,
             'connect_after_init': self.connect_after_init,
-            'image_history_length': self.images.maxlen,
             'base_path_overwrite': base_path_id if base_path_id != self.id else None,
         }
 
@@ -127,11 +130,11 @@ class Camera(abc.ABC):
 
     @property
     def captured_images(self) -> list[Image]:
-        return [i for i in self.images if i.data]
+        return list(self.images)
 
     @property
     def latest_captured_image(self) -> Image | None:
-        return next((i for i in reversed(self.captured_images) if i.data), None)
+        return next((i for i in reversed(self.captured_images)), None)
 
     @property
     def latest_detected_image(self) -> Image | None:

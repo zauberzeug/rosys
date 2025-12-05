@@ -20,7 +20,6 @@ def base_camera_parameters() -> dict:
         'name': 'T3:5T',
         'connect_after_init': False,
         'base_path_overwrite': 'new_base_path',
-        'image_history_length': 10
     }
 
 
