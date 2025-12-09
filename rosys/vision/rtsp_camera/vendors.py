@@ -7,6 +7,7 @@ class VendorType(Enum):
     AXIS = 3
     REOLINK = 4
     UNIARCH = 5
+    ANJOY = 6
     OTHER = -1
 
 
@@ -19,6 +20,8 @@ def mac_to_vendor(mac: str) -> VendorType:
         return VendorType.REOLINK
     if mac.startswith('6c:f1:7e'):
         return VendorType.UNIARCH
+    if mac.startswith('f0:00:06'):
+        return VendorType.ANJOY
     return VendorType.OTHER
 
 
@@ -32,4 +35,6 @@ def mac_to_url(mac: str, ip: str, substream: int = 0) -> str | None:
         return f'rtsp://admin:Adminadmin@{ip}/Preview_01_{"sub" if substream else "main"}'
     if vendor == VendorType.UNIARCH:
         return f'rtsp://admin:Admin_adm1n@{ip}/media/video{2 if substream else 1}'
+    if vendor == VendorType.ANJOY:
+        return f'rtsp://admin:123456@{ip}/h264/ch{2 if substream else 1}'
     return None
