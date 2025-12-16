@@ -8,7 +8,7 @@ class VendorType(Enum):
     REOLINK = 4
     UNIARCH = 5
     ANJOY = 6
-    ZAUBERZEUG = 7
+    OPENIPC = 7
     OTHER = -1
 
 
@@ -24,7 +24,7 @@ def mac_to_vendor(mac: str) -> VendorType:
     if mac.startswith('f0:00:06'):
         return VendorType.ANJOY
     if mac.startswith('7a:7a:21'):
-        return VendorType.ZAUBERZEUG
+        return VendorType.OPENIPC
     return VendorType.OTHER
 
 
@@ -40,6 +40,6 @@ def mac_to_url(mac: str, ip: str, substream: int = 0) -> str | None:
         return f'rtsp://admin:Admin_adm1n@{ip}/media/video{2 if substream else 1}'
     if vendor == VendorType.ANJOY:
         return f'rtsp://admin:123456@{ip}/h264/ch{2 if substream else 1}'
-    if vendor == VendorType.ZAUBERZEUG:
+    if vendor == VendorType.OPENIPC:
         return f'rtsp://root:Adminadmin@{ip}/stream={substream}'
     return None
