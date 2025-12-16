@@ -84,6 +84,7 @@ check_untyped_defs = true
 module = [
     "cairosvg",
     "coloredlogs",
+    "cv2",
     "imgsize",
     "networkx",
     "objgraph",
