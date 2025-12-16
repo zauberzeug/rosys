@@ -10,7 +10,7 @@ keywords = ["robot", "framework", "automation", "control", "steer"]
 
 [tool.poetry.dependencies]
 python = ">=3.11, <3.14"
-nicegui = "^3.0.4"
+nicegui = "^3.4.0" # https://github.com/zauberzeug/rosys/security/dependabot/79
 pyserial = "^3.5"
 numpy = "<3.0.0"
 scipy = "^1.7.2"
@@ -33,16 +33,16 @@ ifaddr = "^0.2.0"
 httpx = ">=0.25.0"
 matplotlib = "^3.7.2"
 pyudev = ">=0.21.0"
-esptool = "^4.3"
 pyquaternion = "^0.9.9"
 cairosvg = "^2.7.0"
 pillow = ">=11.3.0" # https://github.com/zauberzeug/rosys/security/dependabot/68
 idna = ">=3.7" # https://github.com/zauberzeug/rosys/security/dependabot/45
 uvicorn = "!=0.29.0" # test_examples.py fails with 0.29.0 due to persistency not correctly writing during teardown
 requests = ">=2.32.4" # https://github.com/zauberzeug/rosys/security/dependabot/64
-urllib3 = ">=2.5.0" # https://github.com/zauberzeug/rosys/security/dependabot/66
+urllib3 = ">=2.6.0" # https://github.com/zauberzeug/rosys/security/dependabot/76
 starlette = ">=0.49.1" # https://github.com/zauberzeug/rosys/security/dependabot/73
 aiohttp = ">=3.12.14" # https://github.com/zauberzeug/rosys/security/dependabot/69
+fonttools = "^4.60.2" # https://github.com/zauberzeug/rosys/security/dependabot/74
 pyturbojpeg = "^1.8.2"
 
 [tool.poetry.group.dev]
