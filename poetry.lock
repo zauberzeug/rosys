@@ -1936,6 +1936,7 @@ files = [
 
 [package.dependencies]
 mypy_extensions = ">=1.0.0"
+orjson = {version = "*", optional = true, markers = "extra == \"faster-cache\""}
 typing_extensions = ">=4.6.0"
 
 [package.extras]
@@ -2136,8 +2137,7 @@ version = "3.10.18"
 description = "Fast, correct Python JSON library supporting dataclasses, datetimes, and numpy"
 optional = false
 python-versions = ">=3.9"
-groups = ["main"]
-markers = "platform_machine != \"i386\" and platform_machine != \"i686\" and platform_python_implementation != \"PyPy\""
+groups = ["main", "dev"]
 files = [
     {file = "orjson-3.10.18-cp310-cp310-macosx_10_15_x86_64.macosx_11_0_arm64.macosx_10_15_universal2.whl", hash = "sha256:a45e5d68066b408e4bc383b6e4ef05e717c65219a9e1390abc6155a520cac402"},
     {file = "orjson-3.10.18-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:be3b9b143e8b9db05368b13b04c84d37544ec85bb97237b3a923f076265ec89c"},
@@ -2212,6 +2212,7 @@ files = [
     {file = "orjson-3.10.18-cp39-cp39-win_amd64.whl", hash = "sha256:fdd9d68f83f0bc4406610b1ac68bdcded8c5ee58605cc69e643a06f4d075f429"},
     {file = "orjson-3.10.18.tar.gz", hash = "sha256:e8da3947d92123eda795b68228cafe2724815621fe35e8e320a9e9593a4bcd53"},
 ]
+markers = {main = "platform_machine != \"i386\" and platform_machine != \"i686\" and platform_python_implementation != \"PyPy\""}
 
 [[package]]
 name = "packaging"
@@ -3985,4 +3986,4 @@ propcache = ">=0.2.1"
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11, <3.14"
-content-hash = "2266e8c4f0b42860ee6f6b63573aa8c382fab136990cbac10ff1fbc2edb3b86a"
+content-hash = "f69a155e23135d2164423691e1d2560940b2e7442f24a89095df305867d5559a"

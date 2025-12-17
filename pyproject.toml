@@ -58,7 +58,7 @@ debugpy = "^1.2.1"
 py-spy = "^0.3.10"
 cryptography = ">=44.0.1" # https://github.com/zauberzeug/rosys/security/dependabot/61
 sh = "^1.14.2"
-mypy = "^1.10.1"
+mypy = {version = ">=1.15.0, <2.0.0", extras = ["faster-cache"]}
 pylint = "^3.2.5"
 pre-commit = "^4.0.1"
 poetry-dynamic-versioning = "^1.8.0"
@@ -80,11 +80,16 @@ python_version = "3.11"
 install_types = true
 check_untyped_defs = true
 
+# pyproject.toml
+[[tool.mypy.overrides]]
+module = ["cv2.*", "numpy.*"]
+follow_imports = "skip"
+ignore_missing_imports = true
+
 [[tool.mypy.overrides]]
 module = [
     "cairosvg",
     "coloredlogs",
-    "cv2",
     "imgsize",
     "networkx",
     "objgraph",
