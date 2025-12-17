@@ -163,11 +163,10 @@ class Calibration:
         else:
             raise ValueError(f'Unknown camera model "{camera_model}"')
 
-        intrinsics = Intrinsics(matrix=K.tolist(),
-                                distortion=D.tolist()[0],
-                                size=image_size,
-                                model=camera_model,
-                                omnidir_params=OmnidirParameters(xi=xi))
+        camera_matrix: list[list[float]] = K.tolist()  # type: ignore
+        distortion: list[float] = D.tolist()[0]  # type: ignore
+        intrinsics = Intrinsics(matrix=camera_matrix, distortion=distortion, size=image_size,
+                                model=camera_model, omnidir_params=OmnidirParameters(xi=xi))
 
         rotation = Rotation.from_rvec(rvecs[0]).T
         translation = -np.array(rotation.R).dot(tvecs[0])
