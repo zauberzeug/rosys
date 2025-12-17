@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, TypeAlias, cast, overload
+from typing import TypeAlias, cast, overload
 
 import cv2
 import numpy as np
@@ -436,7 +436,7 @@ class Calibration:
 
         if not isinstance(image_points, np.ndarray):
             image_points_array = np.array([p.tuple for p in image_points], dtype=np.float32)
-            distorted = cast(Any, self.distort_points(image_points_array, crop=crop))
+            distorted = self.distort_points(image_points_array, crop=crop)
             return [Point(x=p[0], y=p[1]) for p in distorted]
 
         if image_points.dtype not in [np.float32, np.float64]:
