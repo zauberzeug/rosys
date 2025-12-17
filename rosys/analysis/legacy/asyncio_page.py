@@ -14,11 +14,11 @@ log = logging.getLogger('rosys.asyncio_page')
 def prepare_data(timings) -> tuple[list[str], list[dict[str, float]]]:
     def calc_box(data: list) -> dict[str, float]:
         return {
-            'low': min(data),
-            'q1': np.percentile(data, 25),
-            'median': np.percentile(data, 50),
-            'q3': np.percentile(data, 75),
-            'high': max(data),
+            'low': float(min(data)),
+            'q1': float(np.percentile(data, 25)),
+            'median': float(np.percentile(data, 50)),
+            'q3': float(np.percentile(data, 75)),
+            'high': float(max(data)),
         }
     timings = dict(sorted(timings.items(), key=lambda i: len(i[1]), reverse=True))
     names = [f'{html.escape(n)} ({len(w)} warnings):<br>{html.escape(w[0].details)}' for n, w in timings.items()]
