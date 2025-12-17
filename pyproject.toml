@@ -82,9 +82,8 @@ check_untyped_defs = true
 
 # pyproject.toml
 [[tool.mypy.overrides]]
-module = ["cv2.*", "numpy.*"]
+module = ["numpy.*"]
 follow_imports = "skip"
-ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
