@@ -163,10 +163,11 @@ class Calibration:
         else:
             raise ValueError(f'Unknown camera model "{camera_model}"')
 
-        camera_matrix: list[list[float]] = K.tolist()  # type: ignore
-        distortion: list[float] = D.tolist()[0]  # type: ignore
-        intrinsics = Intrinsics(matrix=camera_matrix, distortion=distortion, size=image_size,
-                                model=camera_model, omnidir_params=OmnidirParameters(xi=xi))
+        intrinsics = Intrinsics(matrix=cast(np.ndarray, K).tolist(),
+                                distortion=cast(np.ndarray, D).tolist()[0],
+                                size=image_size,
+                                model=camera_model,
+                                omnidir_params=OmnidirParameters(xi=xi))
 
         rotation = Rotation.from_rvec(rvecs[0]).T
         translation = -np.array(rotation.R).dot(tvecs[0])
@@ -202,7 +203,8 @@ class Calibration:
         :return: (Nx2) The image coordinates of the projected points.
         """
 
-    def project_to_image(self, coordinates: Point3d | list[Point3d] | FloatArray, *, frame: Frame3d | None = None) -> Point | None | list[Point | None] | FloatArray:
+    def project_to_image(self, coordinates: Point3d | list[Point3d] | FloatArray, *,
+                         frame: Frame3d | None = None) -> Point | None | list[Point | None] | FloatArray:
 
         if isinstance(coordinates, Point3d):
             return self.project_to_image([coordinates])[0]

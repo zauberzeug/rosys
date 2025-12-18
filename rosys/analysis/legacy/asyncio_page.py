@@ -2,6 +2,7 @@ import html
 import logging
 
 import numpy as np
+import numpy.typing as npt
 from nicegui import ui
 
 from rosys import run
@@ -13,12 +14,13 @@ log = logging.getLogger('rosys.asyncio_page')
 
 def prepare_data(timings) -> tuple[list[str], list[dict[str, float]]]:
     def calc_box(data: list) -> dict[str, float]:
+        percentiles: npt.NDArray[np.floating] = np.percentile(data, [0, 25, 50, 75, 100])
         return {
-            'low': float(min(data)),
-            'q1': float(np.percentile(data, 25)),
-            'median': float(np.percentile(data, 50)),
-            'q3': float(np.percentile(data, 75)),
-            'high': float(max(data)),
+            'low': percentiles[0],
+            'q1': percentiles[1],
+            'median': percentiles[2],
+            'q3': percentiles[3],
+            'high': percentiles[4],
         }
     timings = dict(sorted(timings.items(), key=lambda i: len(i[1]), reverse=True))
     names = [f'{html.escape(n)} ({len(w)} warnings):<br>{html.escape(w[0].details)}' for n, w in timings.items()]

@@ -8,6 +8,7 @@ import numpy as np
 import PIL.Image
 
 from ..geometry import Rectangle
+from .image import ImageArray
 from .image_rotation import ImageRotation
 from .turbojpeg_wrapper import TURBO_JPEG
 
@@ -31,7 +32,7 @@ def encode_image_as_jpeg(image: np.ndarray, compression_level: int = 90) -> byte
     return buffer.getvalue()
 
 
-def decode_jpeg_image(jpeg_bytes: bytes) -> np.ndarray | None:
+def decode_jpeg_image(jpeg_bytes: bytes) -> ImageArray | None:
     """Decode JPEG bytes to NumPy array using TurboJPEG if available, otherwise PIL. Returns None if decoding failed."""
     try:
         if TURBO_JPEG is not None:

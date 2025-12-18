@@ -89,16 +89,15 @@ class Image:
                         time: float | None = None,
                         metadata: dict[str, Any] | None = None) -> Self | None:
         """Create an image from plain JPEG bytes. This runs a jpeg decode. Returns None if decoding fails."""
-        decoded = decode_jpeg_image(jpeg_bytes)
-        if decoded is None:
+        array = decode_jpeg_image(jpeg_bytes)
+        if array is None:
             return None
-        array = decoded
         if len(array.shape) == 2:
             array = np.repeat(np.expand_dims(array, -1), repeats=3, axis=2)
         return cls.from_array(array, camera_id=camera_id, time=time, metadata=metadata)
 
     @classmethod
-    def from_array(cls, array: np.ndarray[Any, np.dtype[np.uint8]], *,
+    def from_array(cls, array: ImageArray, *,
                    camera_id: str = 'from_array',
                    time: float | None = None,
                    metadata: dict[str, Any] | None = None) -> Self:
