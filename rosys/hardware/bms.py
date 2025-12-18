@@ -130,7 +130,7 @@ class BmsHardware(Bms, ModuleHardware):
         self.state.percentage = percentage
         self.state.voltage = result.get('total voltage')
         self.state.current = result.get('current')
-        self.state.temperature = np.mean(result['temperatures']) if 'temperatures' in result else None
+        self.state.temperature = float(np.mean(result['temperatures'])) if 'temperatures' in result else None
         is_charging = (self.state.current or 0) > self.charge_detect_threshold
         self._send_charging_events(is_charging)
         self.state.is_charging = is_charging

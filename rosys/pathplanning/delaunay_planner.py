@@ -106,7 +106,7 @@ class DelaunayPlanner:
         self.pose_groups = [
             DelaunayPoseGroup(
                 index=i,
-                point=Point(x=self.tri_points[i, 0], y=self.tri_points[i, 1]),
+                point=Point(x=float(self.tri_points[i, 0]), y=float(self.tri_points[i, 1])),
                 neighbor_indices=_tri_neighbors(self.tri_mesh, i).tolist(),
                 poses=[
                     Pose(x=point[0], y=point[1], yaw=np.arctan2(neighbor[1] - point[1], neighbor[0] - point[0]))
@@ -127,7 +127,7 @@ class DelaunayPlanner:
                         continue  # NOTE: avoid 180-degree turns
                     x, y, yaw = _generate_poses(self.obstacle_map.grid, pose, pose_)
                     if not self.obstacle_map.test(x, y, yaw).any():
-                        length = np.sum(np.sqrt(np.diff(x)**2 + np.diff(y)**2))
+                        length: float = np.sum(np.sqrt(np.diff(x)**2 + np.diff(y)**2))
                         self.graph.add_edge((g, p), (g_, p_), backward=False, weight=length)
                         if ((g_, p_), (g, p)) not in self.graph.edges:
                             self.graph.add_edge((g_, p_), (g, p), backward=True, weight=1.2*length)

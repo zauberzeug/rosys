@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 import io
 import logging
 from io import BytesIO
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import cv2
 import numpy as np
@@ -10,6 +12,9 @@ import PIL.Image
 from ..geometry import Rectangle
 from .image_rotation import ImageRotation
 from .turbojpeg_wrapper import TURBO_JPEG
+
+if TYPE_CHECKING:
+    from .image import ImageArray
 
 if not TURBO_JPEG:
     logging.getLogger('rosys').warning('TurboJPEG is not available. Using PIL for JPEG decoding and encoding.')
@@ -31,7 +36,7 @@ def encode_image_as_jpeg(image: np.ndarray, compression_level: int = 90) -> byte
     return buffer.getvalue()
 
 
-def decode_jpeg_image(jpeg_bytes: bytes) -> np.ndarray | None:
+def decode_jpeg_image(jpeg_bytes: bytes) -> ImageArray | None:
     """Decode JPEG bytes to NumPy array using TurboJPEG if available, otherwise PIL. Returns None if decoding failed."""
     try:
         if TURBO_JPEG is not None:

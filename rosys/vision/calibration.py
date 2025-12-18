@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import cast, overload
+from typing import TypeAlias, cast, overload
 
 import cv2
 import numpy as np
@@ -12,7 +12,7 @@ from numpy.typing import NDArray
 from ..geometry import Frame3d, Point, Point3d, Pose3d, Rotation
 from .image import Image, ImageSize
 
-FloatArray = NDArray[np.float32] | NDArray[np.float64]
+FloatArray: TypeAlias = NDArray[np.float32] | NDArray[np.float64]
 
 
 class CameraModel(str, Enum):
@@ -163,8 +163,8 @@ class Calibration:
         else:
             raise ValueError(f'Unknown camera model "{camera_model}"')
 
-        intrinsics = Intrinsics(matrix=K.tolist(),
-                                distortion=D.tolist()[0],
+        intrinsics = Intrinsics(matrix=cast(np.ndarray, K).tolist(),
+                                distortion=cast(np.ndarray, D).tolist()[0],
                                 size=image_size,
                                 model=camera_model,
                                 omnidir_params=OmnidirParameters(xi=xi))
@@ -203,7 +203,8 @@ class Calibration:
         :return: (Nx2) The image coordinates of the projected points.
         """
 
-    def project_to_image(self, coordinates: Point3d | list[Point3d] | FloatArray, *, frame: Frame3d | None = None) -> Point | None | list[Point | None] | FloatArray:
+    def project_to_image(self, coordinates: Point3d | list[Point3d] | FloatArray, *,
+                         frame: Frame3d | None = None) -> Point | None | list[Point | None] | FloatArray:
 
         if isinstance(coordinates, Point3d):
             return self.project_to_image([coordinates])[0]
@@ -216,7 +217,7 @@ class Calibration:
             return np.empty((0, 2), dtype=np.float64)
 
         world_extrinsics = self.extrinsics.relative_to(frame)
-        R = world_extrinsics.rotation.matrix.astype(np.float64)
+        R: FloatArray = world_extrinsics.rotation.matrix.astype(np.float64)
         Rod = cv2.Rodrigues(R.T)[0]
         t = -R.T @ world_extrinsics.translation
         K = np.array(self.intrinsics.matrix)
@@ -237,8 +238,8 @@ class Calibration:
         # pylint: enable=unpacking-non-sequence
 
         if self.intrinsics.model != CameraModel.OMNIDIRECTIONAL:
-            coordinates = coordinates.reshape(-1, 3)
-            local_coordinates = (coordinates - world_extrinsics.translation) @ R
+            coordinates_array = coordinates.reshape(-1, 3)
+            local_coordinates = (coordinates_array - world_extrinsics.translation) @ R
             image_array[local_coordinates[:, 2] < 0, :] = np.nan
 
         return image_array.reshape(-1, 2)
@@ -330,7 +331,7 @@ class Calibration:
             undistorted = cv2.fisheye.undistortPoints(image_points, K, D)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
-            R = self.intrinsics.omnidir_params.rotation.matrix.astype(np.float32)
+            R: FloatArray = self.intrinsics.omnidir_params.rotation.matrix.astype(np.float32)
             xi = np.array(self.intrinsics.omnidir_params.xi, dtype=np.float32)
             undistorted = cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R)
         else:
@@ -373,9 +374,9 @@ class Calibration:
             return image_points
 
         if not isinstance(image_points, np.ndarray):
-            image_points = np.array([p.tuple for p in image_points], dtype=np.float32)
-            image_points = self.undistort_points(image_points, crop=crop)
-            return [Point(x=p[0], y=p[1]) for p in image_points]
+            image_points_array = np.array([p.tuple for p in image_points], dtype=np.float32)
+            undistorted = self.undistort_points(image_points_array, crop=crop)
+            return [Point(x=p[0], y=p[1]) for p in undistorted]
 
         image_points = image_points.reshape(-1, 1, 2)
 
@@ -397,8 +398,6 @@ class Calibration:
             return cast(FloatArray, cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R).reshape(-1, 2))
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
-
-    FloatArray = NDArray[np.float32] | NDArray[np.float64]
 
     @overload
     def distort_points(self, image_points: Point, *, crop: bool = False) -> Point:
@@ -437,9 +436,9 @@ class Calibration:
             return image_points
 
         if not isinstance(image_points, np.ndarray):
-            image_points = np.array([p.tuple for p in image_points], dtype=np.float32)
-            image_points = self.distort_points(image_points, crop=crop)
-            return [Point(x=p[0], y=p[1]) for p in image_points]
+            image_points_array = np.array([p.tuple for p in image_points], dtype=np.float32)
+            distorted = self.distort_points(image_points_array, crop=crop)
+            return [Point(x=p[0], y=p[1]) for p in distorted]
 
         if image_points.dtype not in [np.float32, np.float64]:
             raise ValueError('Image point array must be of type float32 or float64')

@@ -97,7 +97,7 @@ class Image:
         return cls.from_array(array, camera_id=camera_id, time=time, metadata=metadata)
 
     @classmethod
-    def from_array(cls, array: np.ndarray, *,
+    def from_array(cls, array: ImageArray, *,
                    camera_id: str = 'from_array',
                    time: float | None = None,
                    metadata: dict[str, Any] | None = None) -> Self:

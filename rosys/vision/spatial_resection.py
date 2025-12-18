@@ -51,9 +51,9 @@ class SpatialResection:
         calibration = Calibration(intrinsics=self.intrinsics)
         K_undist = calibration.get_undistorted_camera_matrix()
 
-        object_points = world_points.astype(np.float64).reshape(-1, 1, 3)
+        object_points: np.ndarray = world_points.astype(np.float64).reshape(-1, 1, 3)
         image_points_undist = calibration.undistort_points(image_points.astype(np.float64).reshape(-1, 1, 2))
-        D_zeros = np.zeros((1, 5), dtype=np.float64)
+        D_zeros: np.ndarray = np.zeros((1, 5), dtype=np.float64)
 
         # Decide on algorithm
         def is_planar(points: np.ndarray) -> bool:
@@ -264,7 +264,7 @@ class SpatialResection:
         return SpatialResectionResult(
             success=res.success,
             iterations=res.nfev,
-            average_reprojection_error=np.mean(np.abs(res.fun)),
+            average_reprojection_error=float(np.mean(np.abs(res.fun))),
             camera_pose=Pose3d(x=res.x[0], y=res.x[1], z=res.x[2], rotation=Rotation.from_quaternion(*res.x[3:7]).T),
             running_variables=res.x[7:].tolist(),
             estimated_points_on_lines=[
