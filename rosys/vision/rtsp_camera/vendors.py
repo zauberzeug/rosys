@@ -27,6 +27,7 @@ mac_prefix_to_vendor: dict[str, VendorType] = {
 
 
 def _vendor_to_url(vendor_type: VendorType, ip: str, substream: int) -> str | None:
+    # pylint: disable=too-many-return-statements
     match vendor_type:
         case VendorType.JOVISION:
             return f'rtsp://admin:admin@{ip}/profile{substream}'
