@@ -119,7 +119,6 @@ class RtspDevice:
                 *shlex.split(command),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
-                limit=1024*1024*1024,
             )
             assert process.stdout is not None
             assert process.stderr is not None
