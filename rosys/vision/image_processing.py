@@ -1,16 +1,20 @@
+from __future__ import annotations
+
 import io
 import logging
 from io import BytesIO
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import cv2
 import numpy as np
 import PIL.Image
 
 from ..geometry import Rectangle
-from .image import ImageArray
 from .image_rotation import ImageRotation
 from .turbojpeg_wrapper import TURBO_JPEG
+
+if TYPE_CHECKING:
+    from .image import ImageArray
 
 if not TURBO_JPEG:
     logging.getLogger('rosys').warning('TurboJPEG is not available. Using PIL for JPEG decoding and encoding.')
