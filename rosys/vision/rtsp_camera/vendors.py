@@ -42,6 +42,7 @@ def _vendor_to_url(vendor_type: VendorType, ip: str, substream: int) -> str | No
             return f'rtsp://root:Adminadmin@{ip}/stream={substream}'
         case VendorType.OTHER:
             return None
+    raise AssertionError('unreachable')  # Just for mypy
 
 
 def mac_to_vendor(mac: str) -> VendorType:
