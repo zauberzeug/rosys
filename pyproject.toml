@@ -40,7 +40,7 @@ uvicorn = "!=0.29.0" # test_examples.py fails with 0.29.0 due to persistency not
 requests = ">=2.32.4" # https://github.com/zauberzeug/rosys/security/dependabot/64
 urllib3 = ">=2.6.0" # https://github.com/zauberzeug/rosys/security/dependabot/76
 starlette = ">=0.49.1" # https://github.com/zauberzeug/rosys/security/dependabot/73
-aiohttp = ">=3.12.14" # https://github.com/zauberzeug/rosys/security/dependabot/69
+aiohttp = ">=3.13.3" # https://github.com/zauberzeug/rosys/security/dependabot/89
 fonttools = "^4.60.2" # https://github.com/zauberzeug/rosys/security/dependabot/74
 marshmallow = "^3.26.2" # https://github.com/zauberzeug/rosys/security/dependabot/81
 pyturbojpeg = "^1.8.2"
