@@ -18,7 +18,7 @@ class BluetoothHardware(ModuleHardware):
         self.name = name
         lizard_code = f'bluetooth = Bluetooth("{name}")'
         if pin_code != 'default':
-            lizard_code += self._create_pin_command(pin_code)
+            lizard_code += f'\n{self._create_pin_command(pin_code)}'
         super().__init__(robot_brain, lizard_code=lizard_code)
 
     async def send(self, message: str) -> None:
