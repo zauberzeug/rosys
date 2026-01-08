@@ -20,6 +20,7 @@ class Wheels(Module, abc.ABC):
         super().__init__(**kwargs)
 
         self.VELOCITY_MEASURED = Event[list[Velocity]]()
+        """the wheel velocities have been measured (argument: list of ``Velocity`` objects)"""
 
         self.linear_target_speed: float = 0.0
         self.angular_target_speed: float = 0.0

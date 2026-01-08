@@ -159,7 +159,7 @@ class GeoReference:
 
         :param A: The first fixpoint.
         :param B: The second fixpoint.
-        :raises: AssertionError: If either fixpoint does not have a geo_point.
+        :raises AssertionError: If either fixpoint does not have a geo_point.
         """
         assert A.geo_point is not None, 'Fixpoint "A" must have a geo_point'
         assert B.geo_point is not None, 'Fixpoint "B" must have a geo_point'

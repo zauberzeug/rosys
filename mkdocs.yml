@@ -52,6 +52,7 @@ plugins:
             show_signature_annotations: true
             merge_init_into_class: true
             separate_signature: true
+            docstring_style: sphinx
 watch:
   - rosys
   - README.md

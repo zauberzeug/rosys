@@ -81,7 +81,7 @@ class Driver:
         :param path: The path to drive along, composed of PathSegments.
         :param throttle_at_end: Whether to throttle down when approaching the end of the path (default: ``True``).
         :param stop_at_end: Whether to stop at the end of the path (default: ``True``).
-        :raises: DrivingAbortedException: If the driving process is aborted.
+        :raises DrivingAbortedException: If the driving process is aborted.
         """
         for segment in path:
             await self.drive_spline(segment.spline,
@@ -101,7 +101,7 @@ class Driver:
         :param backward: Whether to drive backwards (default: ``False``).
         :param throttle_at_end: Whether to throttle down when approaching the target point (default: ``True``).
         :param stop_at_end: Whether to stop at the target point (default: ``True``).
-        :raises: DrivingAbortedException: If the driving process is aborted.
+        :raises DrivingAbortedException: If the driving process is aborted.
         """
         if self.parameters.minimum_turning_radius:
             await self.drive_circle(target, backward=backward, stop_at_end=False)
@@ -130,7 +130,7 @@ class Driver:
         :param angle_threshold: The angle threshold to stop driving (radians, default: 5°).
         :param backward: Whether to drive backwards (default: ``False``).
         :param stop_at_end: Whether to stop the robot at the end of the circular path (default: ``False``).
-        :raises: DrivingAbortedException: If the driving process is aborted.
+        :raises DrivingAbortedException: If the driving process is aborted.
         """
         while True:
             if self._abort:

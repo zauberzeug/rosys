@@ -43,6 +43,8 @@ for path in sorted(Path('rosys').rglob('__init__.py')):
         cls = getattr(module, name)
         if isinstance(cls, ModuleType):
             continue  # skip sub-modules
+        if not inspect.isclass(cls):
+            continue  # skip non-classes (e.g., GenericAlias)
         if dataclasses.is_dataclass(cls):
             continue  # skip dataclasses
         if not cls.__doc__:
