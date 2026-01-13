@@ -1,6 +1,18 @@
 from nicegui import background_tasks
 
-from . import analysis, automation, driving, geometry, hardware, pathplanning, persistence, run, system, vision
+from . import (
+    analysis,
+    automation,
+    driving,
+    geometry,
+    hardware,
+    pathplanning,
+    persistence,
+    run,
+    system,
+    vision,
+    visualization,
+)
 from .config import Config
 from .rosys import (
     NEW_NOTIFICATION,
@@ -60,4 +72,5 @@ __all__ = [
     'translator',
     'uptime',
     'vision',
+    'visualization',
 ]

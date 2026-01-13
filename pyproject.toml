@@ -43,6 +43,7 @@ starlette = ">=0.49.1" # https://github.com/zauberzeug/rosys/security/dependabot
 aiohttp = ">=3.12.14" # https://github.com/zauberzeug/rosys/security/dependabot/69
 fonttools = "^4.60.2" # https://github.com/zauberzeug/rosys/security/dependabot/74
 pyturbojpeg = "^1.8.2"
+rerun-sdk = "^0.27"
 
 [tool.poetry.group.dev]
 optional = true
@@ -80,10 +81,7 @@ python_version = "3.11"
 install_types = true
 check_untyped_defs = true
 
-# pyproject.toml
-[[tool.mypy.overrides]]
-module = ["numpy.*"]
-follow_imports = "skip"
+
 
 [[tool.mypy.overrides]]
 module = [
@@ -96,6 +94,7 @@ module = [
     "pyloot.*",
     "pyquaternion",
     "pyudev",
+    "rerun",
     "scipy.*",
     "serial.*",
     "socketio.*",
