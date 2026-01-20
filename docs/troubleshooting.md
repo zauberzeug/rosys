@@ -16,3 +16,19 @@ The warning also provides a (not so readable) hint where the time is consumed.
 The example above is one of the more frequent scenarios.
 It means some code inside a user interaction event handler (e.g. `handle_event()` in `justpy.py`) is blocking.
 Try to figure out which UI event code is responsible by commenting out parts of your logic and try to reproduce the warning systematically.
+
+### macOS Cairo Library Issues
+
+Install system dependencies using Homebrew (Cairo is a 2D graphics library with support for multiple output devices):
+
+```bash
+brew install cairo pkg-config
+```
+
+If you encounter issues with Python not finding the Cairo library, you may need to set the library path:
+
+```bash
+export DYLD_LIBRARY_PATH="/opt/homebrew/lib:$DYLD_LIBRARY_PATH"
+```
+
+Or add it to your shell profile (`~/.zshrc` or `~/.bash_profile`).
