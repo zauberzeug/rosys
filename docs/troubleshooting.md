@@ -17,9 +17,9 @@ The example above is one of the more frequent scenarios.
 It means some code inside a user interaction event handler (e.g. `handle_event()` in `justpy.py`) is blocking.
 Try to figure out which UI event code is responsible by commenting out parts of your logic and try to reproduce the warning systematically.
 
-### macOS Cairo Library Issues
+## macOS Cairo Library Issues
 
-Install system dependencies using Homebrew (Cairo is a 2D graphics library with support for multiple output devices):
+RoSys depends on the 2D graphics library [Cairo](https://cairographics.org/) which needs to be installed via brew on macOS.
 
 ```bash
 brew install cairo pkg-config
