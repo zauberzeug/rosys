@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Protocol
 
 import numpy as np
 
@@ -10,6 +9,7 @@ from ..helpers import ModificationContext, eliminate_2pi, eliminate_pi, ramp
 from .drivable import Drivable
 from .odometer import Odometer
 from .path_segment import PathSegment
+from .pose_provider import PoseProvider
 
 
 @dataclass(slots=True, kw_only=True)
@@ -40,13 +40,6 @@ class DrivingAbortedException(Exception):
     pass
 
 
-class PoseProvider(Protocol):
-
-    @property
-    def pose(self) -> Pose:
-        ...
-
-
 class Driver:
     """The driver module allows following a given path.
 
@@ -55,7 +48,7 @@ class Driver:
     Its `parameters` allow controlling the specific drive behavior.
     """
 
-    def __init__(self, wheels: Drivable, odometer: Odometer | PoseProvider, *, parameters: DriveParameters | None = None) -> None:
+    def __init__(self, wheels: Drivable, odometer: PoseProvider, *, parameters: DriveParameters | None = None) -> None:
         self.wheels = wheels
         self.odometer = odometer
         self.parameters = parameters or DriveParameters()
@@ -65,7 +58,7 @@ class Driver:
     @property
     def prediction(self) -> Pose:
         """The current prediction of the robot's pose based on the odometer."""
-        return self.odometer.prediction if isinstance(self.odometer, Odometer) else self.odometer.pose
+        return self.odometer.pose
 
     def abort(self) -> None:
         """Abort the current drive routine."""
