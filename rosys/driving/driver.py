@@ -172,7 +172,6 @@ class Driver:
             if self._abort:
                 self._abort = False
                 raise DrivingAbortedException()
-            # TODO: should a pose provider also provide a velocity?
             velocity = self.pose_provider.current_velocity if isinstance(self.pose_provider, Odometer) else None
             dYaw = self.parameters.hook_bending_factor * velocity.angular if velocity else 0
             hook = self.pose.transform_pose(Pose(yaw=dYaw)).transform(hook_offset)
@@ -235,7 +234,6 @@ class Driver:
         return linear, angular
 
     def throttle_factor(self) -> float:
-        # TODO: can we rewrite that logic to avoid needing Odometer.detection? I would like to avoid needing the pose provider to have a detection attribute.
         if self.parameters.max_detection_age_ramp is None:
             return 1
         if not isinstance(self.pose_provider, Odometer):
