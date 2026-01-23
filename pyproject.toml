@@ -10,7 +10,7 @@ keywords = ["robot", "framework", "automation", "control", "steer"]
 
 [tool.poetry.dependencies]
 python = ">=3.11, <3.14"
-nicegui = "^3.5.0" # https://github.com/zauberzeug/rosys/security/dependabot/94
+nicegui = "^3.6.1"
 pyserial = "^3.5"
 numpy = "<3.0.0"
 scipy = "^1.7.2"
