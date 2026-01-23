@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Protocol
 
 import numpy as np
 
@@ -10,6 +9,7 @@ from ..helpers import ModificationContext, eliminate_2pi, eliminate_pi, ramp
 from .drivable import Drivable
 from .odometer import Odometer
 from .path_segment import PathSegment
+from .pose_provider import PoseProvider
 
 
 @dataclass(slots=True, kw_only=True)
@@ -40,32 +40,25 @@ class DrivingAbortedException(Exception):
     pass
 
 
-class PoseProvider(Protocol):
-
-    @property
-    def pose(self) -> Pose:
-        ...
-
-
 class Driver:
     """The driver module allows following a given path.
 
     It requires a wheels module (or any drivable hardware representation) to execute individual drive commands.
-    It also requires an odometer to get a current prediction of the robot's pose.
+    It also requires a pose_provider to get a current prediction of the robot's pose.
     Its `parameters` allow controlling the specific drive behavior.
     """
 
-    def __init__(self, wheels: Drivable, odometer: Odometer | PoseProvider, *, parameters: DriveParameters | None = None) -> None:
+    def __init__(self, wheels: Drivable, pose_provider: PoseProvider, *, parameters: DriveParameters | None = None) -> None:
         self.wheels = wheels
-        self.odometer = odometer
+        self.pose_provider = pose_provider
         self.parameters = parameters or DriveParameters()
         self.state: DriveState | None = None
         self._abort = False
 
     @property
-    def prediction(self) -> Pose:
-        """The current prediction of the robot's pose based on the odometer."""
-        return self.odometer.prediction if isinstance(self.odometer, Odometer) else self.odometer.pose
+    def pose(self) -> Pose:
+        """The current pose of the robot based on the pose_provider."""
+        return self.pose_provider.pose
 
     def abort(self) -> None:
         """Abort the current drive routine."""
@@ -106,7 +99,7 @@ class Driver:
         if self.parameters.minimum_turning_radius:
             await self.drive_circle(target, backward=backward, stop_at_end=False)
 
-        robot_position = self.prediction.point
+        robot_position = self.pose.point
         approach_spline = Spline(
             start=robot_position,
             control1=robot_position.interpolate(target, 1/3),
@@ -136,10 +129,10 @@ class Driver:
             if self._abort:
                 self._abort = False
                 raise DrivingAbortedException()
-            target_yaw = self.prediction.direction(target)
+            target_yaw = self.pose.direction(target)
             if backward:
                 target_yaw += np.pi
-            angle = eliminate_2pi(target_yaw - self.prediction.yaw)
+            angle = eliminate_2pi(target_yaw - self.pose.yaw)
             if abs(angle) < angle_threshold:
                 break
             linear = 0.5 if not backward else -0.5
@@ -179,29 +172,29 @@ class Driver:
             if self._abort:
                 self._abort = False
                 raise DrivingAbortedException()
-            velocity = self.odometer.current_velocity if isinstance(self.odometer, Odometer) else None
+            velocity = self.pose_provider.current_velocity if isinstance(self.pose_provider, Odometer) else None
             dYaw = self.parameters.hook_bending_factor * velocity.angular if velocity else 0
-            hook = self.prediction.transform_pose(Pose(yaw=dYaw)).transform(hook_offset)
+            hook = self.pose.transform_pose(Pose(yaw=dYaw)).transform(hook_offset)
             if self.parameters.can_drive_backwards:
                 can_move = carrot.move(hook, distance=self.parameters.carrot_distance)
             else:
-                can_move = carrot.move_by_foot(self.prediction)
+                can_move = carrot.move_by_foot(self.pose)
             if not can_move:
                 break
 
-            turn_angle = eliminate_pi(hook.direction(carrot.offset_point) - self.prediction.yaw)
+            turn_angle = eliminate_pi(hook.direction(carrot.offset_point) - self.pose.yaw)
             curvature = np.tan(turn_angle) / hook_offset.x
             if curvature != 0 and abs(1 / curvature) < self.parameters.minimum_turning_radius:
                 curvature = (-1 if curvature < 0 else 1) / self.parameters.minimum_turning_radius
 
-            drive_backward = hook.projected_distance(carrot.offset_point, self.prediction.yaw) < 0
+            drive_backward = hook.projected_distance(carrot.offset_point, self.pose.yaw) < 0
             if drive_backward and not self.parameters.can_drive_backwards:
                 drive_backward = False
                 curvature = (-1 if curvature > 0 else 1) / max(self.parameters.minimum_turning_radius, 0.001)
             linear: float = self.parameters.linear_speed_limit * (-1 if drive_backward else 1)
             t = spline.closest_point(hook.x, hook.y)
             if t >= 1.0 and throttle_at_end:
-                target_distance = self.prediction.projected_distance(spline.pose(1.0))
+                target_distance = self.pose.projected_distance(spline.pose(1.0))
                 throttle_distance = self.parameters.throttle_at_end_distance
                 min_linear_speed = self.parameters.throttle_at_end_min_speed
                 linear *= ramp(target_distance, throttle_distance, 0.0, 1.0, min_linear_speed, clip=True)
@@ -243,12 +236,12 @@ class Driver:
     def throttle_factor(self) -> float:
         if self.parameters.max_detection_age_ramp is None:
             return 1
-        if not isinstance(self.odometer, Odometer):
+        if not isinstance(self.pose_provider, Odometer):
             raise ValueError('max_detection_age_ramp requires an odometer')
-        if self.odometer.detection is None:
+        if self.pose_provider.detection is None:
             return 0
         age_ramp = self.parameters.max_detection_age_ramp
-        age = rosys.time() - self.odometer.detection.time
+        age = rosys.time() - self.pose_provider.detection.time
         return ramp(age, age_ramp[0], age_ramp[1], 1.0, 0.0, clip=True)
 
 

@@ -1,18 +1,15 @@
 import logging
 from copy import deepcopy
-from typing import Protocol
 
 from nicegui import Event
 
 from .. import rosys
 from ..geometry import Pose, Pose3d, PoseStep, Rotation, Velocity
+from .pose_provider import PoseProvider
+from .velocity_provider import VelocityProvider
 
 
-class VelocityProvider(Protocol):
-    VELOCITY_MEASURED: Event
-
-
-class Odometer:
+class Odometer(PoseProvider):
     """An odometer collects velocity information from a given wheels module (or any velocity-providing hardware representation).
 
     It can also handle "detections", i.e. absolute pose information with timestamps.
@@ -40,6 +37,10 @@ class Odometer:
         self.odometry_frame: Pose = Pose()
 
         rosys.on_repeat(self.prune_history, 1.0)
+
+    @property
+    def pose(self) -> Pose:
+        return self.prediction
 
     def handle_velocities(self, velocities: list[Velocity]) -> None:
         robot_moved: bool = False
