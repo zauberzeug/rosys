@@ -269,8 +269,7 @@ class RobotBrain:
         async with self._esp_lock:
             self._hardware_time = None
             rosys.notify('Enabling ESP...')
-            command = ['sudo', './espresso.py', 'enable',
-                       *self._convert_flash_params(self.lizard_firmware.flash_params)]
+            command = ['sudo', './espresso.py', 'enable', *self.lizard_firmware.flash_params]
             self.log.debug('enable: %s', command)
             output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
             if 'Finished.' in output:
@@ -286,8 +285,7 @@ class RobotBrain:
         async with self._esp_lock:
             self._hardware_time = None
             rosys.notify('Disabling ESP...')
-            command = ['sudo', './espresso.py', 'disable', *
-                       self._convert_flash_params(self.lizard_firmware.flash_params)]
+            command = ['sudo', './espresso.py', 'disable', *self.lizard_firmware.flash_params]
             self.log.debug('disable: %s', command)
             output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
             if 'Finished.' in output:
@@ -319,7 +317,7 @@ class RobotBrain:
         async with self._esp_lock:
             self._hardware_time = None
             rosys.notify('Resetting ESP...')
-            command = ['sudo', './espresso.py', 'reset', *self._convert_flash_params(self.lizard_firmware.flash_params)]
+            command = ['sudo', './espresso.py', 'reset', *self.lizard_firmware.flash_params]
             self.log.debug('reset: %s', command)
             output = await rosys.run.sh(command, timeout=None, working_dir=self.lizard_firmware.PATH)
             if 'Finished.' in output:
@@ -328,17 +326,6 @@ class RobotBrain:
             else:
                 self.log.error(output)
                 rosys.notify('Resetting ESP: failed', 'negative')
-
-    def _convert_flash_params(self, flash_params: list[str]) -> list[str]:
-        """Until the deprecation of the flash.py script, we need to convert the flash_params to espresso parameters."""
-        espresso_parameters = []
-        self.log.debug('flash_params: %s', flash_params)
-        if 'nand' in flash_params:
-            espresso_parameters.append('--nand')
-        if 'swap' in flash_params:
-            espresso_parameters.append('--swap')
-        self.log.debug('espresso_parameters: %s', espresso_parameters)
-        return espresso_parameters
 
     def __del__(self) -> None:
         self.communication.disconnect()
