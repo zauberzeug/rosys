@@ -333,16 +333,10 @@ class RobotBrain:
         """Until the deprecation of the flash.py script, we need to convert the flash_params to espresso parameters."""
         espresso_parameters = []
         self.log.debug('flash_params: %s', flash_params)
-        if 'orin' in flash_params:
-            espresso_parameters.extend(['--jetson', 'orin'])
-        elif 'xavier' in flash_params:
-            espresso_parameters.extend(['--jetson', 'xavier'])
-        elif 'nano' in flash_params:
-            espresso_parameters.extend(['--jetson', 'nano'])
         if 'nand' in flash_params:
             espresso_parameters.append('--nand')
-        if 'orin' in flash_params and 'v05' not in flash_params:
-            espresso_parameters.append('--swap_pins')
+        if 'swap' in flash_params:
+            espresso_parameters.append('--swap')
         self.log.debug('espresso_parameters: %s', espresso_parameters)
         return espresso_parameters
 
