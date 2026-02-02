@@ -45,6 +45,7 @@ class ReconnectingCamera(Camera):
     async def disconnect(self) -> None:
         if self._reconnect_task:
             self._reconnect_task.stop()
+            self._reconnect_task = None
         try:
             await super().disconnect()
         except Exception as e:
