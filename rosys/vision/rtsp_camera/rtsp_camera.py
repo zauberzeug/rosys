@@ -53,6 +53,13 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         }
 
     @classmethod
+    def args_from_dict(cls, data: dict[str, Any]) -> dict:
+        data = super().args_from_dict(data)
+        if 'mac' not in data:
+            data['mac'] = data['id']
+        return data
+
+    @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Self:
         return cls(**cls.args_from_dict(data))
 
