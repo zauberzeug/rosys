@@ -48,14 +48,15 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
     async def update_device_list(self) -> None:
         self.log.debug('scanning for cameras...')
         for mac, ip in await find_known_cameras(network_interface=self.network_interface):
-            if mac not in self._cameras:
+            camera = next((c for c in self._cameras.values() if c.mac == mac), None)
+            if camera is None:
                 self.log.debug('found new camera %s', mac)
-                self.add_camera(RtspCamera(id=mac,
+                self.add_camera(RtspCamera(mac=mac,
                                            fps=self.frame_rate,
                                            substream=self.substream,
                                            avdec=self.avdec,
                                            ip=ip))
-            camera = self._cameras[mac]
+                camera = next(c for c in self._cameras.values() if c.mac == mac)
             if not camera.is_connected:
                 self.log.info('activating authorized camera %s...', camera.id)
                 camera.ip = ip

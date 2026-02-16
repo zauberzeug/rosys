@@ -12,7 +12,8 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     def __init__(self,
                  *,
-                 id: str,  # pylint: disable=redefined-builtin
+                 mac: str,
+                 id: str | None = None,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
                  fps: int = 5,
@@ -21,6 +22,9 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                  avdec: Literal['h264', 'h265'] = 'h264',
                  ip: str | None = None,
                  **kwargs) -> None:
+        self.mac = mac
+        if id is None:
+            id = f'{mac}-{substream}'
         super().__init__(id=id,
                          name=name,
                          connect_after_init=connect_after_init,
@@ -44,6 +48,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             name: param.value for name, param in self._parameters.items()
         }
         return super().to_dict() | parameters | {
+            'mac': self.mac,
             'ip': self.ip,
         }
 
@@ -71,7 +76,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
             self.log.error('no IP address provided for camera %s', self.id)
             return
 
-        self.device = RtspDevice(mac=self.id, ip=self.ip,
+        self.device = RtspDevice(mac=self.mac, ip=self.ip,
                                  substream=self.parameters['substream'],
                                  fps=self.parameters['fps'],
                                  on_new_image_data=self._handle_new_image_data,
