@@ -33,16 +33,16 @@ class _GoodCamMjpegSettings:
         await self._interface.set_resolution(self.STREAM_ID, width, height)
 
     async def get_bitrate(self) -> int | None:
-        return await self._interface.get_bitrate(self.STREAM_ID)
+        return None
 
     async def set_bitrate(self, bitrate: int) -> None:
-        await self._interface.set_bitrate(self.STREAM_ID, bitrate)
+        pass
 
     async def get_stream_compression(self) -> int:
-        return 0
+        return await self._interface.get_quality(self.STREAM_ID) or 0
 
     async def set_stream_compression(self, level: int) -> None:
-        pass
+        await self._interface.set_quality(self.STREAM_ID, level)
 
     async def get_stream_port(self) -> int:
         return 0

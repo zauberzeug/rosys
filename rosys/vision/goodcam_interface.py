@@ -59,6 +59,25 @@ class GoodCamInterface:
         """Set frames per second for the given stream."""
         await self._update_stream_video(stream_id, fps=fps)
 
+    async def get_quality(self, stream_id: int) -> int | None:
+        """Get compression quality (0-100) for the given stream."""
+        settings = await self.get_stream_settings(stream_id)
+        video = settings.get('video')
+        if video is None:
+            return None
+        bitrate_config = video.get('bitrate')
+        if bitrate_config is None:
+            return None
+        return bitrate_config.get('quality')
+
+    async def set_quality(self, stream_id: int, quality: int) -> None:
+        """Set compression quality (0-100) for the given stream."""
+        settings = await self.get_stream_settings(stream_id)
+        video = settings.get('video', {})
+        bitrate_config = dict(video.get('bitrate', {}))
+        bitrate_config['quality'] = quality
+        await self._update_stream_video(stream_id, bitrate=bitrate_config)
+
     async def get_bitrate(self, stream_id: int) -> int | None:
         """Get bitrate in kbps for the given stream."""
         settings = await self.get_stream_settings(stream_id)
@@ -68,11 +87,10 @@ class GoodCamInterface:
         bitrate_config = video.get('bitrate')
         if bitrate_config is None:
             return None
-        if 'bitrate' in bitrate_config:
-            return bitrate_config['bitrate']
-        if 'max_bitrate' in bitrate_config:
-            return bitrate_config['max_bitrate']
-        return None
+        mode = bitrate_config.get('mode')
+        if mode == 'cbr':
+            return bitrate_config.get('bitrate')
+        return bitrate_config.get('max_bitrate')
 
     async def set_bitrate(self, stream_id: int, bitrate: int) -> None:
         """Set bitrate in kbps for the given stream."""

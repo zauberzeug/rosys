@@ -3,7 +3,8 @@ from nicegui import ui
 
 import rosys
 
-camera_provider = rosys.vision.RtspCameraProvider()
+camera_provider = rosys.vision.MjpegCameraProvider(
+    network_interface='enp193s0f3u2', username='root', password='Adminadmin')
 
 
 def refresh() -> None:
