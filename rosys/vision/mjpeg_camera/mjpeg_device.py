@@ -7,8 +7,85 @@ import httpx
 
 from ... import rosys
 from ...rosys import on_startup
+from ..goodcam_interface import GoodCamInterface
 from ..image_processing import remove_exif
-from .vendors import mac_to_url
+from .motec_settings_interface import MotecSettingsInterface
+from .vendors import VendorType, mac_to_url, mac_to_vendor
+
+
+class _GoodCamMjpegSettings:
+    """Adapts GoodCamInterface for MJPEG use with a fixed stream ID."""
+    STREAM_ID = 1
+
+    def __init__(self, interface: GoodCamInterface) -> None:
+        self._interface = interface
+
+    async def get_fps(self) -> int | None:
+        return await self._interface.get_fps(self.STREAM_ID)
+
+    async def set_fps(self, fps: int) -> None:
+        await self._interface.set_fps(self.STREAM_ID, fps)
+
+    async def get_resolution(self) -> tuple[int, int] | None:
+        return await self._interface.get_resolution(self.STREAM_ID)
+
+    async def set_resolution(self, width: int, height: int) -> None:
+        await self._interface.set_resolution(self.STREAM_ID, width, height)
+
+    async def get_bitrate(self) -> int | None:
+        return await self._interface.get_bitrate(self.STREAM_ID)
+
+    async def set_bitrate(self, bitrate: int) -> None:
+        await self._interface.set_bitrate(self.STREAM_ID, bitrate)
+
+    async def get_stream_compression(self) -> int:
+        return 0
+
+    async def set_stream_compression(self, level: int) -> None:
+        pass
+
+    async def get_stream_port(self) -> int:
+        return 0
+
+    async def set_stream_port(self, port: int) -> None:
+        pass
+
+
+class _MotecMjpegSettings:
+    """Adapts MotecSettingsInterface to the same interface as _GoodCamMjpegSettings."""
+
+    def __init__(self, interface: MotecSettingsInterface) -> None:
+        self._interface = interface
+
+    async def get_fps(self) -> int | None:
+        return await self._interface.get_fps()
+
+    async def set_fps(self, fps: int) -> None:
+        await self._interface.set_fps(fps)
+
+    async def get_resolution(self) -> tuple[int, int] | None:
+        return await self._interface.get_stream_resolution()
+
+    async def set_resolution(self, width: int, height: int) -> None:
+        await self._interface.set_stream_resolution(width, height)
+
+    async def get_bitrate(self) -> int | None:
+        return None
+
+    async def set_bitrate(self, bitrate: int) -> None:
+        pass
+
+    async def get_stream_compression(self) -> int:
+        return await self._interface.get_stream_compression()
+
+    async def set_stream_compression(self, level: int) -> None:
+        await self._interface.set_stream_compression(level)
+
+    async def get_stream_port(self) -> int:
+        return await self._interface.get_stream_port()
+
+    async def set_stream_port(self, port: int) -> None:
+        await self._interface.set_stream_port(port)
 
 
 class MjpegDevice:
@@ -17,6 +94,7 @@ class MjpegDevice:
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
+                 control_port: int | None = None,
                  on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
         self._mac = mac
         self._ip = ip
@@ -29,6 +107,15 @@ class MjpegDevice:
         if url is None:
             raise ValueError(f'could not determine URL for {mac}')
         self._url = url
+
+        vendor_type = mac_to_vendor(mac)
+        self._settings: _GoodCamMjpegSettings | _MotecMjpegSettings | None = None
+        if vendor_type == VendorType.GOODCAM:
+            goodcam = GoodCamInterface(ip, username=username or 'root', password=password or 'Adminadmin')
+            self._settings = _GoodCamMjpegSettings(goodcam)
+        elif vendor_type == VendorType.MOTEC:
+            motec = MotecSettingsInterface(ip, port=control_port or 8885)
+            self._settings = _MotecMjpegSettings(motec)
 
         self.start_capture_task()
 
@@ -117,16 +204,53 @@ class MjpegDevice:
             self._capture_task = None
 
     async def get_fps(self) -> int:
-        return 0
+        if self._settings is None:
+            return 0
+        return await self._settings.get_fps() or 0
 
     async def set_fps(self, fps: int) -> None:
-        pass
+        if self._settings is not None:
+            await self._settings.set_fps(fps)
 
     async def get_resolution(self) -> tuple[int, int]:
-        return 0, 0
+        if self._settings is None:
+            return (0, 0)
+        return await self._settings.get_resolution() or (0, 0)
 
     async def set_resolution(self, width: int, height: int) -> None:
-        pass
+        if self._settings is not None:
+            await self._settings.set_resolution(width, height)
+
+    async def get_bitrate(self) -> int | None:
+        if self._settings is None:
+            return None
+        return await self._settings.get_bitrate()
+
+    async def set_bitrate(self, bitrate: int) -> None:
+        if self._settings is not None:
+            await self._settings.set_bitrate(bitrate)
+
+    async def get_stream_compression(self) -> int:
+        if self._settings is None:
+            return 0
+        return await self._settings.get_stream_compression()
+
+    async def set_stream_compression(self, level: int) -> None:
+        if self._settings is not None:
+            await self._settings.set_stream_compression(level)
+
+    async def get_stream_port(self) -> int:
+        if self._settings is None:
+            return 0
+        return await self._settings.get_stream_port()
+
+    async def set_stream_port(self, port: int) -> None:
+        if self._settings is not None:
+            await self._settings.set_stream_port(port)
+
+    @property
+    def settings_interface(self) -> _GoodCamMjpegSettings | _MotecMjpegSettings | None:
+        return self._settings
 
     async def get_mirrored(self) -> bool:
         return False

@@ -20,6 +20,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                  bitrate: int = 4096,
                  avdec: Literal['h264', 'h265'] = 'h264',
                  ip: str | None = None,
+                 use_hardware_acceleration: bool = True,
                  **kwargs) -> None:
         super().__init__(id=id,
                          name=name,
@@ -30,6 +31,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         self.device: RtspDevice | None = None
         self.ip: str | None = ip
+        self.use_hardware_acceleration: bool = use_hardware_acceleration
 
         self._register_parameter('substream', self.get_substream, self.set_substream,
                                  min_value=0, max_value=1, step=1, default_value=substream)
@@ -45,6 +47,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         }
         return super().to_dict() | parameters | {
             'ip': self.ip,
+            'use_hardware_acceleration': self.use_hardware_acceleration,
         }
 
     @classmethod
@@ -75,7 +78,8 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                                  substream=self.parameters['substream'],
                                  fps=self.parameters['fps'],
                                  on_new_image_data=self._handle_new_image_data,
-                                 avdec=self.parameters['avdec'])
+                                 avdec=self.parameters['avdec'],
+                                 use_hardware_acceleration=self.use_hardware_acceleration)
 
         await self._apply_all_parameters()
 

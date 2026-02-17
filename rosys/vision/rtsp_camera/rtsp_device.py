@@ -18,6 +18,7 @@ from nicegui import background_tasks
 
 from ... import rosys
 from ...vision.image import ImageArray
+from ..goodcam_interface import GoodCamInterface
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
 
@@ -42,9 +43,11 @@ class RtspDevice:
 
         vendor_type = mac_to_vendor(mac)
 
-        self._settings_interface: JovisionInterface | None = None
+        self._settings_interface: JovisionInterface | GoodCamInterface | None = None
         if vendor_type == VendorType.JOVISION:
             self._settings_interface = JovisionInterface(ip)
+        elif vendor_type == VendorType.GOODCAM:
+            self._settings_interface = GoodCamInterface(ip, username='root', password='Adminadmin')
         else:
             self.log.warning('[%s] No settings interface for vendor type %s', self._mac, vendor_type)
             self.log.warning('[%s] Using default fps of 10', self._mac)

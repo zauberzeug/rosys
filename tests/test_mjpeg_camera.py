@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 
 from rosys.vision import MjpegCamera, MjpegCameraProvider
-from rosys.vision.mjpeg_camera.motec_mjpeg_device import MotecMjpegDevice
+from rosys.vision.mjpeg_camera.mjpeg_device import MjpegDevice
 from rosys.vision.mjpeg_camera.vendors import VendorType, mac_to_vendor
 
 
@@ -45,7 +45,7 @@ async def motec_settings_interface(rosys_integration):
         pytest.skip('No MOTEC camera detected. This test requires a physical MOTEC camera on the local network.')
 
     assert camera.device is not None
-    assert isinstance(camera.device, MotecMjpegDevice)
+    assert isinstance(camera.device, MjpegDevice)
     assert camera.device.settings_interface is not None
     yield camera.device
 
@@ -73,15 +73,15 @@ async def test_stream_compression(motec_settings_interface):
 
 
 async def test_stream_resolution(motec_settings_interface):
-    resolution = await motec_settings_interface.get_stream_resolution()
+    resolution = await motec_settings_interface.get_resolution()
     try:
-        await motec_settings_interface.set_stream_resolution(1920, 1080)
-        val = await motec_settings_interface.get_stream_resolution()
+        await motec_settings_interface.set_resolution(1920, 1080)
+        val = await motec_settings_interface.get_resolution()
         assert val == (1920, 1080)
-        await motec_settings_interface.set_stream_resolution(480, 360)
-        assert await motec_settings_interface.get_stream_resolution() == (480, 360)
+        await motec_settings_interface.set_resolution(480, 360)
+        assert await motec_settings_interface.get_resolution() == (480, 360)
     finally:
-        await motec_settings_interface.set_stream_resolution(*resolution)
+        await motec_settings_interface.set_resolution(*resolution)
 
 
 async def test_stream_port(motec_settings_interface):

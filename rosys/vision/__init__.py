@@ -10,10 +10,19 @@ from .detections import BoxDetection, Detection, Detections, PointDetection
 from .detector import Autoupload, Detector
 from .detector_hardware import DetectorHardware
 from .detector_simulation import DetectorSimulation, SimulatedObject
+from .goodcam_interface import GoodCamInterface
 from .image import Image, ImageArray, ImageSize
 from .mjpeg_camera import MjpegCamera, MjpegCameraProvider
 from .multi_camera_provider import MultiCameraProvider
-from .record_replay import ImageRecorder, ReplayCamera, ReplayCameraProvider
+from .record_replay import (
+    FrameMetadata,
+    ImageRecorder,
+    ImageSequenceRecorder,
+    RecordingSession,
+    ReplayCamera,
+    ReplayCameraProvider,
+    TimestampIndex,
+)
 from .rtsp_camera import RtspCamera, RtspCameraProvider
 from .simulated_camera import SimulatedCalibratableCamera, SimulatedCamera, SimulatedCameraProvider
 from .spatial_resection import SpatialResection, SpatialResectionResult
@@ -38,9 +47,12 @@ __all__ = [
     'Detector',
     'DetectorHardware',
     'DetectorSimulation',
+    'FrameMetadata',
+    'GoodCamInterface',
     'Image',
     'ImageArray',
     'ImageRecorder',
+    'ImageSequenceRecorder',
     'ImageSize',
     'Intrinsics',
     'MjpegCamera',
@@ -48,6 +60,7 @@ __all__ = [
     'MultiCameraProvider',
     'PointAnnotation',
     'PointDetection',
+    'RecordingSession',
     'ReplayCamera',
     'ReplayCameraProvider',
     'RtspCamera',
@@ -58,6 +71,7 @@ __all__ = [
     'SimulatedObject',
     'SpatialResection',
     'SpatialResectionResult',
+    'TimestampIndex',
     'TransformableCamera',
     'UsbCamera',
     'UsbCameraProvider',
