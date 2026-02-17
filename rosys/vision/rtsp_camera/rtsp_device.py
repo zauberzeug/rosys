@@ -18,6 +18,7 @@ from nicegui import background_tasks
 
 from ... import rosys
 from ...vision.image import ImageArray
+from .hardware_acceleration import build_decoder_pipeline, detect_jetson_hardware
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
 
@@ -26,7 +27,8 @@ class RtspDevice:
 
     def __init__(self, mac: str, ip: str, *,
                  substream: int, fps: int, on_new_image_data: Callable[[ImageArray, float], Awaitable | None],
-                 avdec: Literal['h264', 'h265'] = 'h264') -> None:
+                 avdec: Literal['h264', 'h265'] = 'h264',
+                 use_hardware_acceleration: bool = True) -> None:
         self._mac = mac
         self._ip = ip
         self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device.' + self._mac)
@@ -35,10 +37,14 @@ class RtspDevice:
         self._substream = substream
         self._on_new_image_data = on_new_image_data
         self._avdec = avdec
+        self._use_hardware_acceleration = use_hardware_acceleration
 
         self._capture_task: asyncio.Task | None = None
         self._capture_process: Process | None = None
         self._authorized: bool = True
+
+        # Track timestamp synchronization between GStreamer PTS and system time
+        self._pts_offset: float | None = None
 
         vendor_type = mac_to_vendor(mac)
 
@@ -48,6 +54,13 @@ class RtspDevice:
         else:
             self.log.warning('[%s] No settings interface for vendor type %s', self._mac, vendor_type)
             self.log.warning('[%s] Using default fps of 10', self._mac)
+
+        # Log hardware acceleration status
+        caps = detect_jetson_hardware()
+        if caps.is_jetson and use_hardware_acceleration:
+            self.log.info('[%s] NVIDIA Jetson detected, hardware decoding enabled', self._mac)
+        elif use_hardware_acceleration and not caps.is_jetson:
+            self.log.info('[%s] Non-Jetson hardware, using software decoding', self._mac)
 
         self.log.info('[%s] Starting VideoStream for %s', self._mac, self.url)
         self._start_gstreamer_task()
@@ -109,11 +122,24 @@ class RtspDevice:
             self.log.warning('[%s] capture process already running', self._mac)
             return
 
-        async def stream() -> AsyncGenerator[ImageArray, None]:
+        async def stream() -> AsyncGenerator[tuple[ImageArray, float | None], None]:
             url = self.url
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
-            # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
-            command = f'gst-launch-1.0 --quiet rtspsrc location="{url}" latency=0 protocols=tcp ! rtp{self._avdec}depay ! avdec_{self._avdec} ! videoconvert ! video/x-raw,format=RGB ! queue max-size-buffers=1 leaky=downstream ! gdppay ! fdsink sync=false'
+
+            # Build decoder pipeline (hardware or software based on detection)
+            decoder_pipeline = build_decoder_pipeline(
+                self._avdec,
+                use_hardware=self._use_hardware_acceleration,
+                output_format='RGB',
+            )
+
+            command = (
+                f'gst-launch-1.0 --quiet '
+                f'rtspsrc location="{url}" latency=0 protocols=tcp ! '
+                f'{decoder_pipeline} ! '
+                f'queue max-size-buffers=1 leaky=downstream ! '
+                f'gdppay ! fdsink sync=false'
+            )
             self.log.debug('[%s] Running command: %s', self._mac, command)
             process = await asyncio.create_subprocess_exec(
                 *shlex.split(command),
@@ -153,7 +179,8 @@ class RtspDevice:
                     assert width * height * 3 == len(packet.payload)
                     frame = np.frombuffer(packet.payload, dtype=np.uint8).reshape(height, width, 3)
 
-                    yield frame
+                    # Pass the GStreamer PTS (presentation timestamp) if available
+                    yield frame, packet.timestamp_ns
 
             try:
                 await asyncio.wait_for(process.wait(), timeout=5)
@@ -174,15 +201,44 @@ class RtspDevice:
                 if 'Unauthorized' in error_message:
                     self._authorized = False
 
-        async for image in stream():
-            timestamp = rosys.time()
+        async for image, pts_ns in stream():
+            timestamp = self._compute_timestamp(pts_ns)
             result = self._on_new_image_data(image, timestamp)
             if isinstance(result, Awaitable):
                 await result
 
         self.log.info('[%s] stream ended', self._mac)
-
+        self._pts_offset = None  # Reset PTS synchronization on stream end
         self._capture_task = None
+
+    def _compute_timestamp(self, pts_ns: float | None) -> float:
+        """Compute the image timestamp using GStreamer PTS when available.
+
+        The PTS (Presentation Timestamp) from GStreamer is in nanoseconds and represents
+        the time when the frame was captured relative to the stream start. We synchronize
+        this with system time to get accurate wall-clock timestamps.
+
+        Args:
+            pts_ns: GStreamer presentation timestamp in nanoseconds, or None if unavailable
+
+        Returns:
+            Wall-clock timestamp in seconds (same format as rosys.time())
+        """
+        current_time = rosys.time()
+
+        if pts_ns is None or pts_ns == GST_CLOCK_TIME_NONE:
+            # No PTS available, fall back to current system time
+            return current_time
+
+        pts_seconds = pts_ns / 1_000_000_000.0
+
+        if self._pts_offset is None:
+            # First frame: establish the mapping between PTS and system time
+            self._pts_offset = current_time - pts_seconds
+            self.log.debug('[%s] PTS synchronization established: offset=%.6f', self._mac, self._pts_offset)
+
+        # Convert PTS to wall-clock time
+        return pts_seconds + self._pts_offset
 
     async def set_fps(self, fps: int) -> None:
         self._fps = fps
@@ -225,22 +281,36 @@ class GDPPayloadType(Enum):
 
 
 # See https://maemo.org/api_refs/5.0/5.0-final/gstreamer-libs-0.10/gstreamer-libs-gstdataprotocol.html for header format
+# Header format: version(2) + flags(1) + padding(1) + type(2) + length(4) + timestamp(8) + duration(8) + offset(8) + offset_end(8) + buffer_flags(2) + reserved(14) + crc_header(2) + crc_payload(2) = 62 bytes
 GDPPACKET_FORMAT = struct.Struct('>HcxHIQQQQH14sHH')
 GDP_CAPS_WIDTH_REGEX = re.compile(r'width=\(int\)\s*(\d+)')
 GDP_CAPS_HEIGHT_REGEX = re.compile(r'height=\(int\)\s*(\d+)')
 GDP_HEADER_SIZE = 62
+
+# GStreamer uses this value to indicate "no timestamp"
+GST_CLOCK_TIME_NONE = 0xFFFFFFFFFFFFFFFF
 
 
 @dataclass(slots=True, kw_only=True)
 class GDPPacket:
     payload_type: GDPPayloadType
     payload: bytes
+    timestamp_ns: float | None  # GStreamer PTS in nanoseconds
 
     @staticmethod
     async def read(stream: asyncio.StreamReader) -> GDPPacket:
         header_bytes = await stream.readexactly(GDP_HEADER_SIZE)
-        _version, _flags, gdp_type, length, *_ = GDPPACKET_FORMAT.unpack(header_bytes)
+        _version, _flags, gdp_type, length, timestamp, _duration, _offset, _offset_end, * \
+            _ = GDPPACKET_FORMAT.unpack(header_bytes)
+
+        # Extract timestamp (PTS) from header - it's in nanoseconds
+        # GST_CLOCK_TIME_NONE means no timestamp is set
+        pts_ns: float | None = None
+        if timestamp != GST_CLOCK_TIME_NONE:
+            pts_ns = float(timestamp)
+
         return GDPPacket(
             payload_type=GDPPayloadType(gdp_type) if gdp_type < 3 else GDPPayloadType.EVENT_NONE,
             payload=await stream.readexactly(length),
+            timestamp_ns=pts_ns,
         )
