@@ -9,6 +9,7 @@ class VendorType(Enum):
     UNIARCH = 5
     ANJOY = 6
     OPENIPC = 7
+    GOODCAM = 8
     OTHER = -1
 
 
@@ -23,6 +24,7 @@ mac_prefix_to_vendor: dict[str, VendorType] = {
     '6c:f1:7e': VendorType.UNIARCH,
     'f0:00:06': VendorType.ANJOY,
     '7a:7a:21': VendorType.OPENIPC,
+    '2c:6f:51': VendorType.GOODCAM,
 }
 
 
@@ -41,6 +43,9 @@ def _vendor_to_url(vendor_type: VendorType, ip: str, substream: int) -> str | No
             return f'rtsp://admin:123456@{ip}/h264/ch{2 if substream else 1}'
         case VendorType.OPENIPC:
             return f'rtsp://root:Adminadmin@{ip}/stream={substream}'
+        case VendorType.GOODCAM:
+            path = '/videoSub' if substream else '/videoMain'
+            return f'rtsp://root:Adminadmin@{ip}{path}'
         case VendorType.OTHER:
             return None
     raise AssertionError('unreachable')  # Just for mypy
