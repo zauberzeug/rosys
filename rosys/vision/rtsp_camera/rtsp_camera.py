@@ -31,7 +31,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         self.device: RtspDevice | None = None
         self.ip: str | None = ip
-        self.use_hardware_acceleration: bool = use_hardware_acceleration
 
         self._register_parameter('substream', self.get_substream, self.set_substream,
                                  min_value=0, max_value=1, step=1, default_value=substream)
@@ -47,7 +46,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         }
         return super().to_dict() | parameters | {
             'ip': self.ip,
-            'use_hardware_acceleration': self.use_hardware_acceleration,
         }
 
     @classmethod
