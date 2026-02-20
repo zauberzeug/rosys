@@ -23,9 +23,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                  ip: str | None = None,
                  **kwargs) -> None:
         self.mac = mac
-        if id is None:
-            id = f'{mac}-{substream}'
-        super().__init__(id=id,
+        super().__init__(id=id or f'{mac}-{substream}',
                          name=name,
                          connect_after_init=connect_after_init,
                          **kwargs)
