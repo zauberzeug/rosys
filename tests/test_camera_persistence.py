@@ -112,10 +112,15 @@ def test_rtsp_camera_explicit_id(rosys_integration):
 
 
 def test_rtsp_camera_backward_compat(rosys_integration):
-    old_data = {'id': 'aa:bb:cc:dd:ee:ff', 'substream': 1, 'fps': 5,
-                'bitrate': 4096, 'avdec': 'h264', 'ip': '192.168.1.1',
-                'connect_after_init': False}
-    camera = RtspCamera.from_dict(old_data)
+    camera = RtspCamera.from_dict({
+        'id': 'aa:bb:cc:dd:ee:ff',
+        'substream': 1,
+        'fps': 5,
+        'bitrate': 4096,
+        'avdec': 'h264',
+        'ip': '192.168.1.1',
+        'connect_after_init': False,
+    })
     assert camera.mac == 'aa:bb:cc:dd:ee:ff'
     assert camera.id == 'aa:bb:cc:dd:ee:ff'
 
