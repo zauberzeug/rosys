@@ -25,6 +25,9 @@ class ReconnectingCamera(Camera):
         self.reconnect_interval = reconnect_interval
         self._reconnect_task: Repeater | None = None
 
+    def to_dict(self) -> dict:
+        return super().to_dict() | {'reconnect_interval': self.reconnect_interval}
+
     @property
     def is_activated(self) -> bool:
         """Whether the camera is activated (reconnect task running)."""

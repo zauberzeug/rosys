@@ -46,3 +46,12 @@ async def test_reconnecting_camera_stops_on_disconnect(rosys_integration):
     await forward(1.0)
     assert not camera.is_activated
     assert not camera.is_connected
+
+
+def test_reconnecting_camera_persists_reconnect_interval(rosys_integration):
+    camera = ReconnectingSimulatedCamera(id='test_cam', width=800, height=600, fps=1, reconnect_interval=999.0)
+    camera_as_dict = camera.to_dict()
+    assert camera_as_dict['reconnect_interval'] == 999.0
+
+    restored_camera = ReconnectingSimulatedCamera.from_dict(camera_as_dict)
+    assert restored_camera.reconnect_interval == 999.0
