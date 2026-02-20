@@ -23,7 +23,7 @@ class ReconnectingCamera(Camera):
     def __init__(self, *, reconnect_interval: float = 5.0, **kwargs) -> None:
         super().__init__(**kwargs)
         self.reconnect_interval = reconnect_interval
-        self._reconnect_task: Repeater | None = None
+        self._reconnect_repeater: Repeater | None = None
 
     def to_dict(self) -> dict:
         return super().to_dict() | {'reconnect_interval': self.reconnect_interval}
@@ -31,24 +31,24 @@ class ReconnectingCamera(Camera):
     @property
     def is_activated(self) -> bool:
         """Whether the camera is activated (reconnect task running)."""
-        return bool(self._reconnect_task and self._reconnect_task.running)
+        return bool(self._reconnect_repeater and self._reconnect_repeater.running)
 
     async def connect(self) -> None:
         try:
             await super().connect()
         except Exception as e:
             log.warning('[%s] connect failed: %s', self.id, e)
-        if not self._reconnect_task:
-            self._reconnect_task = rosys.on_repeat(self._try_reconnect, self.reconnect_interval)
-        if not self._reconnect_task.running:
-            self._reconnect_task.start()
+        if not self._reconnect_repeater:
+            self._reconnect_repeater = rosys.on_repeat(self._try_reconnect, self.reconnect_interval)
+        if not self._reconnect_repeater.running:
+            self._reconnect_repeater.start()
         log.debug('[%s] reconnect task started', self.id)
         self.connect_after_init = True
 
     async def disconnect(self) -> None:
-        if self._reconnect_task:
-            self._reconnect_task.stop()
-            self._reconnect_task = None
+        if self._reconnect_repeater:
+            self._reconnect_repeater.stop()
+            self._reconnect_repeater = None
         try:
             await super().disconnect()
         except Exception as e:
@@ -61,7 +61,3 @@ class ReconnectingCamera(Camera):
                 await super().connect()
             except Exception as e:
                 log.error('reconnection attempt failed: %s', e)
-
-    def __del__(self) -> None:
-        if self._reconnect_task:
-            self._reconnect_task.stop()
