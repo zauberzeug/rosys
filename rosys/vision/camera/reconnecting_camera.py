@@ -60,4 +60,4 @@ class ReconnectingCamera(Camera):
                 log.debug('[%s] trying to reconnect', self.id)
                 await super().connect()
             except Exception as e:
-                log.error('reconnection attempt failed: %s', e)
+                log.error('[%s] reconnection attempt failed: %s', self.id, e)
