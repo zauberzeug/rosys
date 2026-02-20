@@ -160,7 +160,7 @@ def test_storing_calibratable_camera_subclasses_as_dict(rosys_integration):
         pass
 
     for camera_class in [CalibratableRtspCamera, CalibratableUsbCamera, CalibratableMjpegCamera, CalibratableSimulatedCamera]:
-        kwargs: dict = {'id': 'test_cam'}
+        kwargs = {'id': 'test_cam'}
         if issubclass(camera_class, RtspCamera):
             kwargs['mac'] = 'aa:bb:cc:dd:ee:ff'
         camera = camera_class(**kwargs)
