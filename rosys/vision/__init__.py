@@ -1,7 +1,7 @@
 from .annotations import Annotations, BoxAnnotation, ClassificationAnnotation, PointAnnotation
 from .calibratable_camera_provider import CalibratableCameraProvider
 from .calibration import Calibration, Intrinsics
-from .camera import CalibratableCamera, Camera, ConfigurableCamera, TransformableCamera
+from .camera import CalibratableCamera, Camera, ConfigurableCamera, ReconnectingCamera, TransformableCamera
 from .camera_objects_ import CameraObjects as camera_objects
 from .camera_projector import CameraProjector
 from .camera_provider import CameraProvider
@@ -48,6 +48,7 @@ __all__ = [
     'MultiCameraProvider',
     'PointAnnotation',
     'PointDetection',
+    'ReconnectingCamera',
     'ReplayCamera',
     'ReplayCameraProvider',
     'RtspCamera',
