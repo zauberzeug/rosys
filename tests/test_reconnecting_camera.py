@@ -1,3 +1,6 @@
+import asyncio
+from unittest.mock import patch
+
 from rosys.testing import forward
 from rosys.vision import ReconnectingCamera, SimulatedCamera
 
@@ -55,3 +58,34 @@ def test_reconnecting_camera_persists_reconnect_interval(rosys_integration):
 
     restored_camera = ReconnectingSimulatedCamera.from_dict(camera_as_dict)
     assert restored_camera.reconnect_interval == 999.0
+
+
+async def test_disconnect_during_reconnect_race(rosys_integration):
+    """disconnect() called while _try_reconnect is mid-execution must not leave camera connected without reconnect task."""
+    camera = ReconnectingSimulatedCamera(id='test_cam', width=800, height=600, fps=1, reconnect_interval=0.1)
+    await camera.connect()
+    camera.device = None
+    assert not camera.is_connected
+
+    reconnect_connect_released = asyncio.Event()
+    reconnect_connect_reached = asyncio.Event()
+    original_connect = SimulatedCamera.connect
+
+    async def blocking_connect(self):
+        reconnect_connect_reached.set()
+        await reconnect_connect_released.wait()
+        return await original_connect(self)
+
+    with patch.object(SimulatedCamera, 'connect', blocking_connect):
+        await forward(0.2)
+        await asyncio.wait_for(reconnect_connect_reached.wait(), timeout=2.0)
+        # disconnect_task is created before releasing the reconnect, so it lands earlier
+        # in asyncio's ready queue. Without the _device_connection mutex in _try_reconnect,
+        # disconnect() would run first, clear _reconnect_repeater and disconnect, then
+        # _try_reconnect would resume and reconnect — leaving the camera in a bad state.
+        disconnect_task = asyncio.create_task(camera.disconnect())
+        reconnect_connect_released.set()
+        await disconnect_task
+
+    assert not camera.is_connected
+    assert not camera.is_activated

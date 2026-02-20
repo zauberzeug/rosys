@@ -1,4 +1,6 @@
+import asyncio
 import logging
+from contextlib import asynccontextmanager
 
 from ... import rosys
 from ...rosys import Repeater
@@ -24,6 +26,7 @@ class ReconnectingCamera(Camera):
         super().__init__(**kwargs)
         self.reconnect_interval = reconnect_interval
         self._reconnect_repeater: Repeater | None = None
+        self._device_connection_lock = asyncio.Lock()
 
     def to_dict(self) -> dict:
         return super().to_dict() | {'reconnect_interval': self.reconnect_interval}
@@ -45,19 +48,26 @@ class ReconnectingCamera(Camera):
         log.debug('[%s] reconnect task started', self.id)
         self.connect_after_init = True
 
+    @asynccontextmanager
+    async def _device_connection(self):
+        async with self._device_connection_lock:
+            yield
+
     async def disconnect(self) -> None:
-        if self._reconnect_repeater:
-            self._reconnect_repeater.stop()
-            self._reconnect_repeater = None
-        try:
-            await super().disconnect()
-        except Exception as e:
-            log.warning('[%s] disconnect failed: %s', self.id, e)
+        async with self._device_connection():
+            if self._reconnect_repeater:
+                self._reconnect_repeater.stop()
+                self._reconnect_repeater = None
+            try:
+                await super().disconnect()
+            except Exception as e:
+                log.warning('[%s] disconnect failed: %s', self.id, e)
 
     async def _try_reconnect(self) -> None:
-        if not self.is_connected:
-            try:
-                log.debug('[%s] trying to reconnect', self.id)
-                await super().connect()
-            except Exception as e:
-                log.error('[%s] reconnection attempt failed: %s', self.id, e)
+        async with self._device_connection():
+            if self._reconnect_repeater is not None and not self.is_connected:
+                try:
+                    log.debug('[%s] trying to reconnect', self.id)
+                    await super().connect()
+                except Exception as e:
+                    log.error('[%s] reconnection attempt failed: %s', self.id, e)

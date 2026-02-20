@@ -1,11 +1,8 @@
 from __future__ import annotations
 
 import abc
-import asyncio
 import logging
 from collections import deque
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
 from typing import Any, ClassVar, Self
 
 from nicegui import Event
@@ -46,8 +43,6 @@ class Camera(abc.ABC):
             logger.warning('The `polling_interval` parameter has been removed. All cameras should now use callbacks.')
 
         self.NEW_IMAGE = Event[Image]()
-
-        self.device_connection_lock: asyncio.Condition = asyncio.Condition()
 
         create_image_route(self)
 
@@ -102,14 +97,6 @@ class Camera(abc.ABC):
     def is_connected(self) -> bool:
         """To be interpreted as "ready to capture images"."""
         return False
-
-    @asynccontextmanager
-    async def _device_connection(self) -> AsyncGenerator[None, None]:
-        await self.device_connection_lock.acquire()
-        try:
-            yield
-        finally:
-            self.device_connection_lock.release()
 
     async def connect(self) -> None:  # noqa: B027
         pass
