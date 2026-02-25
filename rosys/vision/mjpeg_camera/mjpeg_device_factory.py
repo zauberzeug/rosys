@@ -1,7 +1,6 @@
 from collections.abc import Awaitable, Callable
 
 from .axis_mjpeg_device import AxisMjpegDevice
-from .generic_mjpeg_device import GenericMjpegDevice
 from .mjpeg_device import MjpegDevice
 from .motec_mjpeg_device import MotecMjpegDevice
 from .vendors import VendorType, mac_to_vendor
@@ -27,8 +26,8 @@ class MjpegDeviceFactory:
                                     control_port=control_port, on_new_image_data=on_new_image_data)
 
         if mac_to_vendor(mac) == VendorType.GOODCAM:
-            return GenericMjpegDevice(mac, ip,
-                                      username=username, password=password,
-                                      on_new_image_data=on_new_image_data)
+            return MjpegDevice(mac, ip,
+                               username=username, password=password,
+                               on_new_image_data=on_new_image_data)
 
         raise ValueError(f'Unknown vendor for mac="{mac}"')
