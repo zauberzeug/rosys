@@ -4,13 +4,12 @@ import abc
 import asyncio
 import logging
 from collections import deque
-from collections.abc import AsyncGenerator
-from contextlib import asynccontextmanager
 from typing import Any, ClassVar, Self
 
 from nicegui import Event
 
 from ... import rosys
+from ...rosys import Repeater
 from ..image import Image
 from ..image_route import create_image_route
 
@@ -29,6 +28,7 @@ class Camera(abc.ABC):
                  id: str,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
+                 reconnect_interval: float = 5.0,
                  streaming: bool | None = None,
                  polling_interval: float | None = None,
                  base_path_overwrite: str | None = None,
@@ -37,8 +37,12 @@ class Camera(abc.ABC):
         self.id: str = id
         self.name = name or self.id
         self.connect_after_init = connect_after_init
+        self.reconnect_interval = reconnect_interval
         self.images: deque[Image] = deque(maxlen=Camera.IMAGE_HISTORY_LENGTH)
         self.base_path: str = f'images/{base_path_overwrite or id}'
+
+        self._reconnect_repeater: Repeater | None = None
+        self._device_connection_lock = asyncio.Lock()
 
         if streaming is not None:
             logger.warning('The `streaming` parameter has been removed. All cameras now stream images by default.')
@@ -47,12 +51,10 @@ class Camera(abc.ABC):
 
         self.NEW_IMAGE = Event[Image]()
 
-        self.device_connection_lock: asyncio.Condition = asyncio.Condition()
-
         create_image_route(self)
 
         if connect_after_init:
-            rosys.on_startup(self.connect)
+            rosys.on_startup(self.activate)
 
     @property
     def streaming(self) -> bool:
@@ -87,6 +89,7 @@ class Camera(abc.ABC):
             'id': self.id,
             'name': self.name,
             'connect_after_init': self.connect_after_init,
+            'reconnect_interval': self.reconnect_interval,
             'base_path_overwrite': base_path_id if base_path_id != self.id else None,
         }
 
@@ -103,13 +106,10 @@ class Camera(abc.ABC):
         """To be interpreted as "ready to capture images"."""
         return False
 
-    @asynccontextmanager
-    async def _device_connection(self) -> AsyncGenerator[None, None]:
-        await self.device_connection_lock.acquire()
-        try:
-            yield
-        finally:
-            self.device_connection_lock.release()
+    @property
+    def is_reconnecting(self) -> bool:
+        """Whether the automatic reconnection repeater is running."""
+        return bool(self._reconnect_repeater and self._reconnect_repeater.running)
 
     async def connect(self) -> None:  # noqa: B027
         pass
@@ -120,6 +120,39 @@ class Camera(abc.ABC):
     async def reconnect(self) -> None:
         await self.disconnect()
         await self.connect()
+
+    async def activate(self) -> None:
+        """Connect and start automatic reconnection."""
+        try:
+            await self.connect()
+        except Exception as e:
+            logger.warning('[%s] connect failed: %s', self.id, e)
+        if not self._reconnect_repeater:
+            self._reconnect_repeater = rosys.on_repeat(self._try_reconnect, self.reconnect_interval)
+        if not self._reconnect_repeater.running:
+            self._reconnect_repeater.start()
+            logger.debug('[%s] reconnect repeater started', self.id)
+        self.connect_after_init = True
+
+    async def deactivate(self) -> None:
+        """Stop automatic reconnection and disconnect."""
+        async with self._device_connection_lock:
+            if self._reconnect_repeater:
+                self._reconnect_repeater.stop()
+                self._reconnect_repeater = None
+            try:
+                await self.disconnect()
+            except Exception as e:
+                logger.warning('[%s] disconnect failed: %s', self.id, e)
+
+    async def _try_reconnect(self) -> None:
+        async with self._device_connection_lock:
+            if self._reconnect_repeater is not None and not self.is_connected:
+                try:
+                    logger.debug('[%s] trying to reconnect', self.id)
+                    await self.connect()
+                except Exception as e:
+                    logger.error('[%s] reconnection attempt failed: %s', self.id, e)
 
     @property
     def captured_images(self) -> list[Image]:
