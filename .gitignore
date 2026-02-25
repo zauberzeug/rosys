@@ -8,4 +8,4 @@ detector/
 site/
 .nicegui/
 test.py
-.venv/*
+.venv/
