@@ -4,6 +4,7 @@ from enum import Enum
 class VendorType(Enum):
     AXIS = 1
     MOTEC = 2
+    GOODCAM = 3
     OTHER = -1
 
 
@@ -12,6 +13,8 @@ def mac_to_vendor(mac: str) -> VendorType:
         return VendorType.AXIS
     if mac.startswith('2c:26:5f'):
         return VendorType.MOTEC
+    if mac.startswith('2c:6f:51'):
+        return VendorType.GOODCAM
     return VendorType.OTHER
 
 
@@ -21,4 +24,6 @@ def mac_to_url(mac: str, ip: str, *, index: int | None = None) -> str | None:
         return f'http://{ip}/axis-cgi/mjpg/video.cgi?' + (f'camera={index}' if index is not None else '')
     if vendor == VendorType.MOTEC:
         return f'http://{ip}:1001/stream.mjpg'
+    if vendor == VendorType.GOODCAM:
+        return f'http://{ip}/api/v1/streams/secondary/stream.mjpeg'
     return None
