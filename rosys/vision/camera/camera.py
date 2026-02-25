@@ -4,7 +4,6 @@ import abc
 import asyncio
 import logging
 from collections import deque
-from contextlib import asynccontextmanager
 from typing import Any, ClassVar, Self
 
 from nicegui import Event
@@ -55,7 +54,7 @@ class Camera(abc.ABC):
         create_image_route(self)
 
         if connect_after_init:
-            rosys.on_startup(self.connect)
+            rosys.on_startup(self.activate)
 
     @property
     def streaming(self) -> bool:
@@ -132,17 +131,12 @@ class Camera(abc.ABC):
             self._reconnect_repeater = rosys.on_repeat(self._try_reconnect, self.reconnect_interval)
         if not self._reconnect_repeater.running:
             self._reconnect_repeater.start()
-        logger.debug('[%s] reconnect repeater started', self.id)
+            logger.debug('[%s] reconnect repeater started', self.id)
         self.connect_after_init = True
-
-    @asynccontextmanager
-    async def _device_connection(self):
-        async with self._device_connection_lock:
-            yield
 
     async def deactivate(self) -> None:
         """Stop automatic reconnection and disconnect."""
-        async with self._device_connection():
+        async with self._device_connection_lock:
             if self._reconnect_repeater:
                 self._reconnect_repeater.stop()
                 self._reconnect_repeater = None
@@ -152,7 +146,7 @@ class Camera(abc.ABC):
                 logger.warning('[%s] disconnect failed: %s', self.id, e)
 
     async def _try_reconnect(self) -> None:
-        async with self._device_connection():
+        async with self._device_connection_lock:
             if self._reconnect_repeater is not None and not self.is_connected:
                 try:
                     logger.debug('[%s] trying to reconnect', self.id)
