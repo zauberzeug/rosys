@@ -58,16 +58,15 @@ The following example shows how to stream images from an RTSP camera.
 ## Automatic Reconnection
 
 Cameras can lose connection due to network issues, power cycles, or other transient failures.
-The `ReconnectingCamera` mixin provides automatic reconnection behavior:
+Every camera has built-in automatic reconnection via `activate()` and `deactivate()`:
 
 ```python
-from rosys.vision import ReconnectingCamera, RtspCamera
+from rosys.vision import RtspCamera
 
-class ReconnectingRtspCamera(ReconnectingCamera, RtspCamera):
-    pass
-
-camera = ReconnectingRtspCamera(id='my_camera', ip='192.168.1.100', reconnect_interval=5.0)
+camera = RtspCamera(id='my_camera', ip='192.168.1.100', reconnect_interval=5.0)
+await camera.activate()
 ```
 
-When the camera loses connection, it will automatically attempt to reconnect every `reconnect_interval` seconds.
-The `is_activated` property indicates whether the reconnection task is running.
+When the camera loses connection, it will automatically attempt to reconnect every `reconnect_interval` seconds (default: 5.0).
+The `is_reconnecting` property indicates whether the reconnection repeater is running.
+Use `deactivate()` to stop reconnection and disconnect.

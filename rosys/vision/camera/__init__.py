@@ -1,13 +1,11 @@
 from .calibratable_camera import CalibratableCamera
 from .camera import Camera
 from .configurable_camera import ConfigurableCamera
-from .reconnecting_camera import ReconnectingCamera
 from .transformable_camera import TransformableCamera
 
 __all__ = [
     'CalibratableCamera',
     'Camera',
     'ConfigurableCamera',
-    'ReconnectingCamera',
     'TransformableCamera',
 ]

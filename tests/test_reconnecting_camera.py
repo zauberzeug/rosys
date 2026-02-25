@@ -2,23 +2,19 @@ import asyncio
 from unittest.mock import patch
 
 from rosys.testing import forward
-from rosys.vision import ReconnectingCamera, SimulatedCamera
+from rosys.vision import SimulatedCamera
 
 
-class ReconnectingSimulatedCamera(ReconnectingCamera, SimulatedCamera):
-    """Simulated camera with automatic reconnection for testing."""
-
-
-async def test_reconnecting_camera_connects(rosys_integration):
-    camera = ReconnectingSimulatedCamera(id='test_cam', width=800, height=600, fps=1)
-    await camera.connect()
+async def test_camera_activates(rosys_integration):
+    camera = SimulatedCamera(id='test_cam', width=800, height=600, fps=1)
+    await camera.activate()
     assert camera.is_connected
-    assert camera.is_activated
+    assert camera.is_reconnecting
 
 
-async def test_reconnecting_camera_reconnects_after_disconnect(rosys_integration):
-    camera = ReconnectingSimulatedCamera(id='test_cam', width=800, height=600, fps=1, reconnect_interval=0.5)
-    await camera.connect()
+async def test_camera_reconnects_after_connection_loss(rosys_integration):
+    camera = SimulatedCamera(id='test_cam', width=800, height=600, fps=1, reconnect_interval=0.5)
+    await camera.activate()
     assert camera.is_connected
 
     # Simulate connection loss by clearing the device
@@ -30,40 +26,41 @@ async def test_reconnecting_camera_reconnects_after_disconnect(rosys_integration
     assert camera.is_connected
 
 
-async def test_reconnect_task_running_after_initial_connect(rosys_integration):
-    camera = ReconnectingSimulatedCamera(id='test_cam', width=800, height=600, fps=1, connect_after_init=True)
+async def test_reconnect_repeater_running_after_init(rosys_integration):
+    camera = SimulatedCamera(id='test_cam', width=800, height=600, fps=1, connect_after_init=False)
+    await camera.activate()
     await forward(seconds=1.0)
-    assert camera.is_activated
+    assert camera.is_reconnecting
     assert camera.is_connected
 
 
-async def test_reconnecting_camera_stops_on_disconnect(rosys_integration):
-    camera = ReconnectingSimulatedCamera(id='test_cam', width=800, height=600, fps=1, connect_after_init=False)
-    await camera.connect()
-    assert camera.is_activated
+async def test_camera_stops_reconnecting_on_deactivate(rosys_integration):
+    camera = SimulatedCamera(id='test_cam', width=800, height=600, fps=1, connect_after_init=False)
+    await camera.activate()
+    assert camera.is_reconnecting
 
-    await camera.disconnect()
-    assert not camera.is_activated
+    await camera.deactivate()
+    assert not camera.is_reconnecting
     assert not camera.is_connected
 
     await forward(1.0)
-    assert not camera.is_activated
+    assert not camera.is_reconnecting
     assert not camera.is_connected
 
 
-def test_reconnecting_camera_persists_reconnect_interval(rosys_integration):
-    camera = ReconnectingSimulatedCamera(id='test_cam', width=800, height=600, fps=1, reconnect_interval=999.0)
+def test_camera_persists_reconnect_interval(rosys_integration):
+    camera = SimulatedCamera(id='test_cam', width=800, height=600, fps=1, reconnect_interval=999.0)
     camera_as_dict = camera.to_dict()
     assert camera_as_dict['reconnect_interval'] == 999.0
 
-    restored_camera = ReconnectingSimulatedCamera.from_dict(camera_as_dict)
+    restored_camera = SimulatedCamera.from_dict(camera_as_dict)
     assert restored_camera.reconnect_interval == 999.0
 
 
-async def test_disconnect_during_reconnect_race(rosys_integration):
-    """disconnect() called while _try_reconnect is mid-execution must not leave camera connected without reconnect task."""
-    camera = ReconnectingSimulatedCamera(id='test_cam', width=800, height=600, fps=1, reconnect_interval=0.1)
-    await camera.connect()
+async def test_deactivate_during_reconnect_race(rosys_integration):
+    """deactivate() called while _try_reconnect is mid-execution must not leave camera connected without reconnect repeater."""
+    camera = SimulatedCamera(id='test_cam', width=800, height=600, fps=1, reconnect_interval=0.1, connect_after_init=False)
+    await camera.activate()
     camera.device = None
     assert not camera.is_connected
 
@@ -77,15 +74,18 @@ async def test_disconnect_during_reconnect_race(rosys_integration):
         return await original_connect(self)
 
     with patch.object(SimulatedCamera, 'connect', blocking_connect):
-        await forward(0.2)
-        await asyncio.wait_for(reconnect_connect_reached.wait(), timeout=2.0)
-        # disconnect_task is created before releasing the reconnect, so it lands earlier
-        # in asyncio's ready queue. Without the _device_connection mutex in _try_reconnect,
-        # disconnect() would run first, clear _reconnect_repeater and disconnect, then
-        # _try_reconnect would resume and reconnect — leaving the camera in a bad state.
-        disconnect_task = asyncio.create_task(camera.disconnect())
+        # Trigger _try_reconnect directly as a task
+        reconnect_task = asyncio.create_task(camera._try_reconnect())
+        # Yield enough times for reconnect_task to reach blocking_connect
+        for _ in range(20):
+            if reconnect_connect_reached.is_set():
+                break
+            await asyncio.sleep(0)
+        assert reconnect_connect_reached.is_set(), '_try_reconnect never reached connect()'
+        # deactivate races with the in-progress reconnect; the mutex ensures clean teardown
+        deactivate_task = asyncio.create_task(camera.deactivate())
         reconnect_connect_released.set()
-        await disconnect_task
+        await asyncio.gather(reconnect_task, deactivate_task)
 
     assert not camera.is_connected
-    assert not camera.is_activated
+    assert not camera.is_reconnecting
