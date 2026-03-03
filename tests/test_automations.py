@@ -34,6 +34,15 @@ async def test_driving_a_spline(driver: Driver, automator: Automator, robot: Rob
     assert_pose(dx, 1, deg=0, deg_tolerance=5)
 
 
+async def test_driving_a_spline_backward(driver: Driver, automator: Automator, robot: Robot):
+    assert_pose(0, 0, deg=0)
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=-1, y=0, yaw=0), backward=True)
+    automator.start(driver.drive_spline(spline))
+    await forward(until=lambda: automator.is_running)
+    await forward(until=lambda: automator.is_stopped)
+    assert_pose(-1, 0, deg=0)
+
+
 async def test_aborting_a_drive(driver: Driver, automator: Automator, robot: Robot):
     assert_pose(0, 0, deg=0)
     automator.start(driver.drive_spline(Spline.from_poses(Pose(x=0), Pose(x=2))))
