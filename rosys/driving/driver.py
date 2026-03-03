@@ -276,8 +276,8 @@ class Carrot:
             if self.t >= 1.0:
                 self.t = 1.0
                 break
-        check_point = pose or hook
-        return self.spline.closest_point(check_point.x, check_point.y) < 1.0
+        x, y = (pose.x, pose.y) if pose is not None else (hook.x, hook.y)
+        return self.spline.closest_point(x, y, t_min=self.t) < 1.0
 
     def move_by_foot(self, pose: Pose) -> bool:
         self.t = self.spline.closest_point(pose.x, pose.y, t_min=self.t, t_max=1.0)

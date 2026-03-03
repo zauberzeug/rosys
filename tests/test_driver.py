@@ -19,8 +19,9 @@ def test_carrot_clamps_at_end():
     # t must not overshoot 1.0 even with large carrot distance
     carrot = Carrot(spline=make_spline())
     hook = Point(x=0, y=0)
-    carrot.move(hook, distance=2.0)
+    result = carrot.move(hook, distance=2.0)
     assert carrot.t == 1.0
+    assert not result
 
 
 def test_stops_at_spline_end():
