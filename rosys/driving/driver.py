@@ -288,8 +288,8 @@ class Carrot:
             if self.t >= 1.0:
                 self.t = 1.0
                 break
-        stop_point = pose or hook
-        return self.spline.closest_point(stop_point.x, stop_point.y) < 1.0
+        stop_position = pose or hook
+        return self.spline.closest_point(stop_position.x, stop_position.y) < 1.0
 
     def move_by_foot(self, pose: Pose) -> bool:
         """Snap the carrot to the closest spline point relative to the robot pose.
