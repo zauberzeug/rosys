@@ -270,6 +270,18 @@ class Carrot:
         return self.pose.transform(self.offset)
 
     def move(self, hook: Point, distance: float, pose: Pose | None = None) -> bool:
+        """Advance the carrot along the spline until it is at least ``distance`` ahead of the hook.
+
+        The carrot parameter ``t`` is clamped to 1.0 when it reaches the spline end.
+        The stopping decision uses ``pose`` (or ``hook`` as fallback) to check whether the robot
+        has reached the endpoint — pass the robot pose when driving backward to avoid skew from
+        the hook offset.
+
+        :param hook: The hook point used to measure the carrot gap.
+        :param distance: The desired distance between hook and carrot.
+        :param pose: Optional robot pose used for the stopping check instead of ``hook``.
+        :return: ``True`` if the robot should keep driving, ``False`` when it has reached the end.
+        """
         dt = 0.1 * distance / self._estimated_spline_length
         while hook.distance(self.offset_point) < distance:
             self.t += dt
@@ -280,5 +292,14 @@ class Carrot:
         return self.spline.closest_point(x, y) < 1.0
 
     def move_by_foot(self, pose: Pose) -> bool:
+        """Snap the carrot to the closest spline point relative to the robot pose.
+
+        Unlike ``move()``, this does not incrementally advance the carrot. It projects the robot
+        pose onto the spline, bounded by ``t_min``/``t_max`` to prevent jumping backward.
+        Used for forward-only driving where no hook offset is involved.
+
+        :param pose: The current robot pose.
+        :return: ``True`` if the robot should keep driving, ``False`` when it has reached the end.
+        """
         self.t = self.spline.closest_point(pose.x, pose.y, t_min=self.t, t_max=1.0)
         return self.t < 1.0
