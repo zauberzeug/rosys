@@ -176,7 +176,7 @@ class Driver:
             dYaw = self.parameters.hook_bending_factor * velocity.angular if velocity else 0
             hook = self.pose.transform_pose(Pose(yaw=dYaw)).transform(hook_offset)
             if self.parameters.can_drive_backwards:
-                can_move = carrot.move(hook, distance=self.parameters.carrot_distance)
+                can_move = carrot.move(hook, distance=self.parameters.carrot_distance, pose=self.pose)
             else:
                 can_move = carrot.move_by_foot(self.pose)
             if not can_move:
@@ -269,13 +269,15 @@ class Carrot:
     def offset_point(self) -> Point:
         return self.pose.transform(self.offset)
 
-    def move(self, hook: Point, distance: float) -> bool:
+    def move(self, hook: Point, distance: float, pose: Pose | None = None) -> bool:
         dt = 0.1 * distance / self._estimated_spline_length
         while hook.distance(self.offset_point) < distance:
             self.t += dt
             if self.t >= 1.0:
-                return False
-        return True
+                self.t = 1.0
+                break
+        check_point = pose or hook
+        return self.spline.closest_point(check_point.x, check_point.y) < 1.0
 
     def move_by_foot(self, pose: Pose) -> bool:
         self.t = self.spline.closest_point(pose.x, pose.y, t_min=self.t, t_max=1.0)
