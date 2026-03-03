@@ -23,7 +23,7 @@ def test_carrot_clamps_at_end():
     hook = Point(x=0, y=0)
     result = carrot.move(hook, distance=2.0)
     assert carrot.t == 1.0
-    assert not result
+    assert result  # hook is still at origin → robot hasn't reached endpoint → keep driving
 
 
 def test_stops_at_spline_end():
@@ -52,15 +52,14 @@ def test_pose_override_stops():
     assert not result
 
 
-def test_carrot_clamped_pose_override_cannot_help():
-    # carrot clamped to 1.0 → closest_point(t_min=1.0) returns 1.0 → stops
-    # even though robot is still mid-spline, pose override can't help once t reaches 1.0
+def test_carrot_clamped_pose_override_keeps_driving():
+    # carrot clamped to 1.0 but robot is still mid-spline → keep driving
     carrot = Carrot(spline=make_spline())
     hook = Point(x=0, y=0)
     pose = Pose(x=0.5, y=0)
     result = carrot.move(hook, distance=2.0, pose=pose)
     assert carrot.t == 1.0
-    assert not result
+    assert result  # robot at x=0.5, not at endpoint yet → keep driving
 
 
 def test_pose_at_origin():
