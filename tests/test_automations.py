@@ -59,7 +59,7 @@ async def test_driving_a_curved_spline_backward(driver: Driver, automator: Autom
     automator.start(driver.drive_spline(spline, flip_hook=True))
     await forward(until=lambda: automator.is_running)
     await forward(until=lambda: automator.is_stopped)
-    assert_pose(2, 2, deg=90, deg_tolerance=5)
+    assert_pose(-2, -2, deg=90, deg_tolerance=5)
 
 
 async def test_aborting_a_drive(driver: Driver, automator: Automator, robot: Robot):
