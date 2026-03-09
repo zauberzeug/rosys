@@ -276,7 +276,7 @@ class Carrot:
         """Advance the carrot along the spline until it is at least ``distance`` ahead of the hook.
 
         Increments ``t`` in steps proportional to ``step_fraction * distance / spline_length``
-        until the carrot–hook gap reaches ``distance`` or the spline end is reached.
+        until the carrot-hook gap reaches ``distance`` or the spline end is reached.
 
         :param hook: The reference point to measure the carrot gap from.
         :param distance: The desired gap between hook and carrot.
