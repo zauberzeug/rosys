@@ -22,6 +22,7 @@ class DriveParameters(ModificationContext):
     hook_offset: float = 0.5
     carrot_offset: float = 0.6
     carrot_distance: float = 0.1
+    carrot_step_fraction: float = 0.01
     hook_bending_factor: float = 0.0
     minimum_drive_distance: float = 0.01
     throttle_at_end_distance: float = 0.5
@@ -176,7 +177,9 @@ class Driver:
             dYaw = self.parameters.hook_bending_factor * velocity.angular if velocity else 0
             hook = self.pose.transform_pose(Pose(yaw=dYaw)).transform(hook_offset)
             if self.parameters.can_drive_backwards:
-                can_move = carrot.move(hook, distance=self.parameters.carrot_distance, pose=self.pose)
+                can_move = carrot.move(hook,
+                                       distance=self.parameters.carrot_distance,
+                                       step_fraction=self.parameters.carrot_step_fraction)
             else:
                 can_move = carrot.move_by_foot(self.pose)
             if not can_move:
@@ -269,27 +272,23 @@ class Carrot:
     def offset_point(self) -> Point:
         return self.pose.transform(self.offset)
 
-    def move(self, hook: Point, distance: float, pose: Pose | None = None) -> bool:
+    def move(self, hook: Point, distance: float, *, step_fraction: float = 0.01) -> bool:
         """Advance the carrot along the spline until it is at least ``distance`` ahead of the hook.
 
-        The carrot parameter ``t`` is clamped to 1.0 when it reaches the spline end.
-        The stopping decision uses ``pose`` (or ``hook`` as fallback) to check whether the robot
-        has reached the endpoint — pass the robot pose when driving backward to avoid skew from
-        the hook offset.
+        Increments ``t`` in steps proportional to ``step_fraction * distance / spline_length``
+        until the carrot–hook gap reaches ``distance`` or the spline end is reached.
 
-        :param hook: The hook point used to measure the carrot gap.
-        :param distance: The desired distance between hook and carrot.
-        :param pose: Optional robot pose used for the stopping check instead of ``hook``.
+        :param hook: The reference point to measure the carrot gap from.
+        :param distance: The desired gap between hook and carrot.
+        :param step_fraction: ``t`` increment factor — smaller means finer steps (default: 0.01).
         :return: ``True`` if the robot should keep driving, ``False`` when it has reached the end.
         """
-        dt = 0.1 * distance / self._estimated_spline_length
+        dt = step_fraction * distance / self._estimated_spline_length
         while hook.distance(self.offset_point) < distance:
             self.t += dt
             if self.t >= 1.0:
-                self.t = 1.0
-                break
-        stop_position = pose or hook
-        return self.spline.closest_point(stop_position.x, stop_position.y) < 1.0
+                return False
+        return True
 
     def move_by_foot(self, pose: Pose) -> bool:
         """Snap the carrot to the closest spline point relative to the robot pose.

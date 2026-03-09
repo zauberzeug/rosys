@@ -26,40 +26,24 @@ async def test_pause_and_resume_spline(driver: Driver, automator: Automator, rob
     assert_pose(2, 0, deg=0)
 
 
-@pytest.mark.parametrize('dx', [2, 10])
+@pytest.mark.parametrize('dx', [2, -2, 10])
 async def test_driving_a_spline(driver: Driver, automator: Automator, robot: Robot, dx: float):
     assert_pose(0, 0, deg=0)
-    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=dx, y=1, yaw=0))
-    automator.start(driver.drive_spline(spline))
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=dx, y=1, yaw=0), backward=dx < 0)
+    automator.start(driver.drive_spline(spline, flip_hook=dx < 0))
     await forward(x=dx)
     assert_pose(dx, 1, deg=0, deg_tolerance=5)
 
 
-async def test_driving_a_spline_backward(driver: Driver, automator: Automator, robot: Robot):
+@pytest.mark.parametrize('dx', [2, -2])
+async def test_driving_a_curved_spline(driver: Driver, automator: Automator, robot: Robot, dx: float):
     assert_pose(0, 0, deg=0)
-    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=-1, y=0, yaw=0), backward=True)
-    automator.start(driver.drive_spline(spline))
+    yaw_degrees = 90 if dx > 0 else -90
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=dx, y=2, yaw=np.radians(yaw_degrees)), backward=dx < 0)
+    automator.start(driver.drive_spline(spline, flip_hook=dx < 0))
     await forward(until=lambda: automator.is_running)
     await forward(until=lambda: automator.is_stopped)
-    assert_pose(-1, 0, deg=0)
-
-
-async def test_driving_a_curved_spline(driver: Driver, automator: Automator, robot: Robot):
-    assert_pose(0, 0, deg=0)
-    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=2, yaw=np.radians(90)))
-    automator.start(driver.drive_spline(spline))
-    await forward(until=lambda: automator.is_running)
-    await forward(until=lambda: automator.is_stopped)
-    assert_pose(2, 2, deg=90, deg_tolerance=5)
-
-
-async def test_driving_a_curved_spline_backward(driver: Driver, automator: Automator, robot: Robot):
-    assert_pose(0, 0, deg=0)
-    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=-2, y=-2, yaw=np.radians(90)), backward=True)
-    automator.start(driver.drive_spline(spline, flip_hook=True))
-    await forward(until=lambda: automator.is_running)
-    await forward(until=lambda: automator.is_stopped)
-    assert_pose(-2, -2, deg=90, deg_tolerance=5)
+    assert_pose(dx, 2, deg=yaw_degrees, deg_tolerance=5)
 
 
 async def test_aborting_a_drive(driver: Driver, automator: Automator, robot: Robot):
