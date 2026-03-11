@@ -20,6 +20,25 @@ class ImuMeasurement:
     rotation: Rotation
     angular_velocity: Rotation
 
+    def to_dict(self) -> dict:
+        return {
+            'time': self.time,
+            'gyro_calibration': self.gyro_calibration,
+            'rotation': {
+                'roll': self.rotation.roll,
+                'pitch': self.rotation.pitch,
+                'yaw': self.rotation.yaw,
+                'roll_deg': self.rotation.roll_deg,
+                'pitch_deg': self.rotation.pitch_deg,
+                'yaw_deg': self.rotation.yaw_deg,
+            },
+            'angular_velocity': {
+                'roll': self.angular_velocity.roll,
+                'pitch': self.angular_velocity.pitch,
+                'yaw': self.angular_velocity.yaw,
+            },
+        }
+
 
 class Imu(Module):
     """A module that provides measurements from an IMU."""

@@ -40,6 +40,22 @@ class GnssMeasurement:
     def age(self) -> float:
         return ((self.gnss_time - rosys.time() + SECONDS_HALF_DAY) % SECONDS_DAY) - SECONDS_HALF_DAY
 
+    def to_dict(self) -> dict:
+        return {
+            'time': self.time,
+            'gnss_time': self.gnss_time,
+            'age': self.age,
+            'lat': self.pose.lat,
+            'lon': self.pose.lon,
+            'heading': self.pose.heading,
+            'quality': self.gps_quality.name.lower(),
+            'num_satellites': self.num_satellites,
+            'hdop': self.hdop,
+            'altitude': self.altitude,
+            'latitude_std_dev': self.latitude_std_dev,
+            'longitude_std_dev': self.longitude_std_dev,
+            'heading_std_dev': self.heading_std_dev,
+        }
 
 class Gnss(ABC):
     """A GNSS module that provides measurements from a GNSS receiver."""
