@@ -29,7 +29,7 @@ class Odometer(PoseProvider):
 
         wheels.VELOCITY_MEASURED.subscribe(self.handle_velocities)
         self.prediction: Pose = Pose()
-        self.prediction_frame = Pose3d().as_frame('rosys.odometer.prediction')
+        self.frame = Pose3d().as_frame('rosys.odometer.prediction')
         self.detection: Pose | None = None
         self.current_velocity: Velocity | None = None
         self.last_movement: float = 0
@@ -76,9 +76,9 @@ class Odometer(PoseProvider):
         self._handle_movement()
 
     def _handle_movement(self) -> None:
-        self.prediction_frame.x = self.prediction.x
-        self.prediction_frame.y = self.prediction.y
-        self.prediction_frame.rotation = Rotation.from_euler(0, 0, self.prediction.yaw)
+        self.frame.x = self.prediction.x
+        self.frame.y = self.prediction.y
+        self.frame.rotation = Rotation.from_euler(0, 0, self.prediction.yaw)
         self.PREDICTION_UPDATED.emit()
 
     def prune_history(self, max_age: float = 10.0) -> None:
