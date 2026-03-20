@@ -60,7 +60,7 @@ class Cam(persistence.Persistable):
         self.pose = persistence.from_dict(Frame3d, data['pose'])
 
 
-anchor_frame = Pose3d(z=0.3).as_frame('anchor').in_frame(odometer.prediction_frame)
+anchor_frame = Pose3d(z=0.3).as_frame('anchor').in_frame(odometer.frame)
 arm1 = Link('arm1', anchor_frame, length=0.3).persistent(key='arm1')
 arm2 = Link('arm2', arm1.end, length=0.3).persistent(key='arm2')
 cam = Cam(arm2.end).persistent(key='cam')
@@ -69,8 +69,8 @@ cam = Cam(arm2.end).persistent(key='cam')
 @ui.page('/')
 def page():
     def update_scene():
-        chassis.move(*odometer.prediction_frame.resolve().translation)
-        chassis.rotate_R(odometer.prediction_frame.resolve().rotation.R)
+        chassis.move(*odometer.frame.resolve().translation)
+        chassis.rotate_R(odometer.frame.resolve().rotation.R)
         segment1.move(*arm1.base.resolve().translation)
         segment1.rotate_R(arm1.base.resolve().rotation.R)
         segment2.move(*arm2.base.resolve().translation)
