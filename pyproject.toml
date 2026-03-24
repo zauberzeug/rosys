@@ -10,7 +10,7 @@ keywords = ["robot", "framework", "automation", "control", "steer"]
 
 [tool.poetry.dependencies]
 python = ">=3.11, <3.14"
-nicegui = "^3.7.1"  # https://github.com/zauberzeug/rosys/security/dependabot/100
+nicegui = "^3.9.0"  # https://github.com/zauberzeug/rosys/security/dependabot/105
 pyserial = "^3.5"
 numpy = "<3.0.0"
 scipy = "^1.7.2"
@@ -33,10 +33,9 @@ httpx = ">=0.25.0"
 matplotlib = "^3.7.2"
 pyudev = ">=0.21.0"
 pyquaternion = "^0.9.9"
-cairosvg = "^2.7.0"
-pillow = ">=11.3.0" # https://github.com/zauberzeug/rosys/security/dependabot/68
+cairosvg = "^2.9.0" # https://github.com/zauberzeug/rosys/security/dependabot/104
+pillow = ">=12.1.1" # https://github.com/zauberzeug/rosys/security/dependabot/102
 idna = ">=3.7" # https://github.com/zauberzeug/rosys/security/dependabot/45
-uvicorn = "!=0.29.0" # test_examples.py fails with 0.29.0 due to persistency not correctly writing during teardown
 requests = ">=2.32.4" # https://github.com/zauberzeug/rosys/security/dependabot/64
 urllib3 = ">=2.6.3" # https://github.com/zauberzeug/rosys/security/dependabot/90
 starlette = ">=0.49.1" # https://github.com/zauberzeug/rosys/security/dependabot/73
@@ -44,6 +43,7 @@ aiohttp = ">=3.13.3" # https://github.com/zauberzeug/rosys/security/dependabot/8
 fonttools = "^4.60.2" # https://github.com/zauberzeug/rosys/security/dependabot/74
 marshmallow = "^3.26.2" # https://github.com/zauberzeug/rosys/security/dependabot/81
 pyturbojpeg = "^1.8.2"
+virtualenv = ">=20.36.1" # https://github.com/zauberzeug/rosys/security/dependabot/95
 
 [tool.poetry.group.dev]
 optional = true
@@ -57,12 +57,12 @@ pytest-profiling = "^1.7.0"
 pytest-asyncio = "^1.2.0"
 debugpy = "^1.2.1"
 py-spy = "^0.3.10"
-cryptography = ">=44.0.1" # https://github.com/zauberzeug/rosys/security/dependabot/61
+cryptography = ">=46.0.5" # https://github.com/zauberzeug/rosys/security/dependabot/101
 sh = "^1.14.2"
 mypy = {version = ">=1.15.0, <2.0.0", extras = ["faster-cache"]}
 pylint = "^3.2.5"
 pre-commit = "^4.0.1"
-filelock = "^3.20.1" # https://github.com/zauberzeug/rosys/security/dependabot/80
+filelock = "^3.20.3" # https://github.com/zauberzeug/rosys/security/dependabot/96
 poetry-dynamic-versioning = "^1.8.0"
 
 [build-system]
