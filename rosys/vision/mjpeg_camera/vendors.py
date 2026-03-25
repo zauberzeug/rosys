@@ -5,6 +5,7 @@ class VendorType(Enum):
     AXIS = 1
     MOTEC = 2
     GOODCAM = 3
+    OPENIPC = 4
     OTHER = -1
 
 
@@ -15,6 +16,8 @@ def mac_to_vendor(mac: str) -> VendorType:
         return VendorType.MOTEC
     if mac.startswith('2c:6f:51'):
         return VendorType.GOODCAM
+    if mac.startswith('7a:7a:21'):
+        return VendorType.OPENIPC
     return VendorType.OTHER
 
 
@@ -26,4 +29,6 @@ def mac_to_url(mac: str, ip: str, *, index: int | None = None) -> str | None:
         return f'http://{ip}:1001/stream.mjpg'
     if vendor == VendorType.GOODCAM:
         return f'http://{ip}/api/v1/streams/secondary/stream.mjpeg'
+    if vendor == VendorType.OPENIPC:
+        return f'http://{ip}/mjpeg'
     return None
