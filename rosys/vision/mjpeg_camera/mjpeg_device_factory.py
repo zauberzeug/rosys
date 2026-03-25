@@ -25,7 +25,7 @@ class MjpegDeviceFactory:
                                     username=username, password=password,
                                     control_port=control_port, on_new_image_data=on_new_image_data)
 
-        if mac_to_vendor(mac) == VendorType.GOODCAM:
+        if mac_to_vendor(mac) in {VendorType.GOODCAM, VendorType.OPENIPC}:
             return MjpegDevice(mac, ip,
                                username=username, password=password,
                                on_new_image_data=on_new_image_data)
