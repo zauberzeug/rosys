@@ -32,6 +32,14 @@ class Spline:
     q: float = 0
     r: float = 0
 
+    # Adjacent control-point differences for numerically stable derivative evaluation
+    _dx0: float = 0
+    _dx1: float = 0
+    _dx2: float = 0
+    _dy0: float = 0
+    _dy1: float = 0
+    _dy2: float = 0
+
     def __post_init__(self) -> None:
         self.a = self.start.x
         self.e = self.start.y
@@ -48,6 +56,13 @@ class Spline:
         self.p = self.h - 3 * self.g + 3 * self.f - self.e
         self.q = self.g - 2 * self.f + self.e
         self.r = self.f - self.e
+
+        self._dx0 = self.b - self.a
+        self._dx1 = self.c - self.b
+        self._dx2 = self.d - self.c
+        self._dy0 = self.f - self.e
+        self._dy1 = self.g - self.f
+        self._dy2 = self.h - self.g
 
     def __repr__(self) -> str:
         return f'{type(self).__qualname__}(' + ' ~ '.join([
@@ -108,7 +123,7 @@ class Spline:
     def gx(self, t: np.ndarray) -> np.ndarray: ...
 
     def gx(self, t: float | np.ndarray) -> float | np.ndarray:
-        return 3 * (self.m * t**2 + 2 * self.n * t + self.o)
+        return 3 * ((1 - t)**2 * self._dx0 + 2 * (1 - t) * t * self._dx1 + t**2 * self._dx2)
 
     @overload
     def ggx(self, t: float) -> float: ...
@@ -126,7 +141,7 @@ class Spline:
     def gy(self, t: np.ndarray) -> np.ndarray: ...
 
     def gy(self, t: float | np.ndarray) -> float | np.ndarray:
-        return 3 * (self.p * t**2 + 2 * self.q * t + self.r)
+        return 3 * ((1 - t)**2 * self._dy0 + 2 * (1 - t) * t * self._dy1 + t**2 * self._dy2)
 
     @overload
     def ggy(self, t: float) -> float: ...

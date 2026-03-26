@@ -94,9 +94,8 @@ class GeoPose:
     def from_pose(cls, pose: Pose) -> GeoPose:
         """Create a geo pose from a pose in the current geo reference."""
         assert GeoReference.current is not None
-        geo_point1 = GeoReference.current.point_to_geo(pose)
-        geo_point2 = GeoReference.current.point_to_geo(pose.transform_pose(Pose(x=1)))
-        return cls(geo_point1.lat, geo_point1.lon, geo_point1.direction(geo_point2))
+        geo_point = GeoReference.current.point_to_geo(pose)
+        return cls(geo_point.lat, geo_point.lon, GeoReference.current.direction - pose.yaw)
 
     @property
     def point(self) -> GeoPoint:
@@ -113,9 +112,8 @@ class GeoPose:
     def to_local(self) -> Pose:
         """Transform to local Cartesian coordinates relative to the current geo reference."""
         assert GeoReference.current is not None
-        point1 = GeoReference.current.point_to_local(self)
-        point2 = GeoReference.current.point_to_local(self.point.polar(1, self.heading))
-        return Pose(x=point1.x, y=point1.y, yaw=point1.direction(point2))
+        point = GeoReference.current.point_to_local(self)
+        return Pose(x=point.x, y=point.y, yaw=GeoReference.current.direction - self.heading)
 
     def __str__(self) -> str:
         lat_deg, lon_deg, heading_deg = self.degree_tuple
@@ -175,9 +173,8 @@ class GeoReference:
 
     def pose_to_geo(self, pose: Pose) -> GeoPose:
         """Convert a local pose to a global geo pose."""
-        geo_point1 = self.point_to_geo(pose)
-        geo_point2 = self.point_to_geo(pose.transform_pose(Pose(x=1)))
-        return GeoPose(geo_point1.lat, geo_point1.lon, geo_point1.direction(geo_point2))
+        geo_point = self.point_to_geo(pose)
+        return GeoPose(geo_point.lat, geo_point.lon, self.direction - pose.yaw)
 
     def point_to_local(self, geo_point: GeoPoint | GeoPose) -> Point:
         """Convert a global point to a local point."""
@@ -185,9 +182,8 @@ class GeoReference:
 
     def pose_to_local(self, geo_pose: GeoPose) -> Pose:
         """Convert a global geo pose to a local pose."""
-        point1 = self.point_to_local(geo_pose)
-        point2 = self.point_to_local(geo_pose.point.polar(1, geo_pose.heading))
-        return Pose(x=point1.x, y=point1.y, yaw=point1.direction(point2))
+        point = self.point_to_local(geo_pose)
+        return Pose(x=point.x, y=point.y, yaw=self.direction - geo_pose.heading)
 
     @property
     def degree_tuple(self) -> tuple[float, float, float]:
