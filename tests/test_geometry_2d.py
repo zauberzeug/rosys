@@ -1,6 +1,9 @@
+import math
+
+import numpy as np
 import pytest
 
-from rosys.geometry import Line, LineSegment, Point, Pose, PoseStep, Rectangle
+from rosys.geometry import Line, LineSegment, Point, Pose, PoseStep, Rectangle, Spline
 from rosys.testing import approx
 
 
@@ -73,3 +76,25 @@ def test_rectangle_contains_point():
     assert not rectangle.contains(out2)
     assert rectangle.contains(in1)
     assert rectangle.contains(in2)
+
+
+@pytest.mark.parametrize('yaw', [0, math.pi / 4, math.pi / 2, math.pi, -math.pi / 2, -math.pi])
+def test_spline_boundary_yaw(yaw: float) -> None:
+    """Spline.yaw at t=0 and t=1 must match the input poses."""
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=-1, y=0, yaw=yaw))
+    assert spline.yaw(0) == pytest.approx(0, abs=1e-6)
+    assert spline.yaw(1) == pytest.approx(yaw, abs=1e-6)
+
+
+def test_spline_yaw_stability_near_pi() -> None:
+    """Spline.yaw(1) must not flip from +pi to -pi when positions are np.float64.
+
+    GeoReference.point_to_local returns np.float64 coordinates. When the tangent
+    at t=1 points along -x (yaw=pi), the y-derivative is nearly zero and its sign
+    can flip due to floating-point cancellation in the polynomial evaluation.
+    """
+    spline = Spline.from_poses(
+        Pose(x=np.float64(3.499999999085846), y=np.float64(1.49999999981608), yaw=math.pi / 2),
+        Pose(x=np.float64(2.000000000229767), y=np.float64(2.999999999937638), yaw=math.pi),
+    )
+    assert spline.yaw(1) == pytest.approx(math.pi, abs=0.01)

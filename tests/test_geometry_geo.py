@@ -2,7 +2,7 @@ import math
 
 import pytest
 
-from rosys.geometry import Fixpoint, GeoPoint, GeoPose, GeoReference, Point
+from rosys.geometry import Fixpoint, GeoPoint, GeoPose, GeoReference, Point, Pose
 from rosys.geometry.geo import RADIUS
 
 CIRCUMFERENCE = RADIUS * 2 * math.pi
@@ -81,9 +81,22 @@ def test_point_to_local(direction: str) -> None:
 
 
 @pytest.mark.usefixtures('geo_reference')
-@pytest.mark.parametrize('heading_degrees', (0, 45, 90, 179, -45, -90, -179))
+@pytest.mark.parametrize('heading_degrees', (0, 45, 90, 179, 180, -45, -90, -179, -180))
 def test_pose_to_local(heading_degrees: int) -> None:
     pose = GeoPose.from_degrees(lat=0, lon=0.001, heading=heading_degrees).to_local()
     assert pose.x == pytest.approx(0)
     assert pose.y == pytest.approx(-0.001 * ONE_DEGREE_ARC_LENGTH)
     assert pose.yaw == pytest.approx(math.radians(-heading_degrees))
+
+
+@pytest.mark.parametrize('x, y', [(1, 3), (2, 3), (0, 0), (5, 5)])
+@pytest.mark.parametrize('yaw', [0, math.pi / 2, math.pi, -math.pi / 2, -math.pi])
+def test_geopose_roundtrip(x: float, y: float, yaw: float) -> None:
+    """Pose -> GeoPose -> Pose must preserve yaw within a small tolerance for all positions."""
+    GeoReference.update_current(
+        GeoReference(GeoPoint.from_degrees(lat=51.98333489813455, lon=7.434242465994318)),
+    )
+    roundtrip = GeoPose.from_pose(Pose(x=x, y=y, yaw=yaw)).to_local()
+    assert roundtrip.x == pytest.approx(x, abs=1e-3)
+    assert roundtrip.y == pytest.approx(y, abs=1e-3)
+    assert roundtrip.yaw == pytest.approx(yaw, abs=0.01)
