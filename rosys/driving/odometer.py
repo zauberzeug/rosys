@@ -31,7 +31,7 @@ class Odometer(PoseProvider, FrameProvider):
         self.log = logging.getLogger('rosys.odometer')
 
         wheels.VELOCITY_MEASURED.subscribe(self.handle_velocities)
-        self.pose: Pose = Pose()
+        self.pose = Pose()
         self.frame = Pose3d().as_frame('rosys.odometer')
         self.detection: Pose | None = None
         self.current_velocity: Velocity | None = None
