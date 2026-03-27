@@ -22,7 +22,7 @@ class DriveParameters(ModificationContext):
     hook_offset: float = 0.5
     carrot_offset: float = 0.6
     carrot_distance: float = 0.1
-    carrot_step_fraction: float = 0.01
+    carrot_step_fraction: float = 0.1
     hook_bending_factor: float = 0.0
     minimum_drive_distance: float = 0.01
     throttle_at_end_distance: float = 0.5
