@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Protocol, Self
 
 import numpy as np
-from nicegui import ui
+from nicegui import Event, ui
 
 from .. import rosys
 from .frame3d_registry import frame_registry
@@ -101,6 +101,7 @@ class Frame3d(Pose3d):
 
 class FrameProvider(Protocol):
     """Protocol for objects that provide a moving Frame3d reference frame."""
+    FRAME_UPDATED: Event
     frame: Frame3d
 
 
