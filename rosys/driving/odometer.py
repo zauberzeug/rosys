@@ -4,7 +4,7 @@ from copy import deepcopy
 from nicegui import Event
 
 from .. import rosys
-from ..geometry import FrameProvider, Pose, Pose3d, PoseStep, Rotation, Velocity
+from ..geometry import Frame3d, FrameProvider, Pose, Pose3d, PoseStep, Rotation, Velocity
 from .pose_provider import PoseProvider
 from .velocity_provider import VelocityProvider
 
@@ -31,8 +31,8 @@ class Odometer(PoseProvider, FrameProvider):
         self.log = logging.getLogger('rosys.odometer')
 
         wheels.VELOCITY_MEASURED.subscribe(self.handle_velocities)
-        self.pose = Pose()
-        self.frame = Pose3d().as_frame('rosys.odometer')
+        self._pose = Pose()
+        self._frame = Pose3d().as_frame('rosys.odometer')
         self.detection: Pose | None = None
         self.current_velocity: Velocity | None = None
         self.last_movement: float = 0
@@ -40,6 +40,14 @@ class Odometer(PoseProvider, FrameProvider):
         self.odometry_frame: Pose = Pose()
 
         rosys.on_repeat(self.prune_history, 1.0)
+
+    @property
+    def pose(self) -> Pose:
+        return self._pose
+
+    @property
+    def frame(self) -> Frame3d:
+        return self._frame
 
     def handle_velocities(self, velocities: list[Velocity]) -> None:
         robot_moved: bool = False
@@ -56,7 +64,7 @@ class Odometer(PoseProvider, FrameProvider):
                 robot_moved = True
 
         if self.history:
-            self.pose = self.odometry_frame.transform_pose(self.history[-1])
+            self._pose = self.odometry_frame.transform_pose(self.history[-1])
         if velocities:
             self.current_velocity = velocities[-1]
         if robot_moved:
@@ -69,15 +77,15 @@ class Odometer(PoseProvider, FrameProvider):
 
         if self.history:
             self.odometry_frame = self._compute_odometry_frame(self.get_pose(detection.time, local=True), detection)
-            self.pose = self.odometry_frame.transform_pose(self.history[-1])
+            self._pose = self.odometry_frame.transform_pose(self.history[-1])
         else:
-            self.pose = deepcopy(detection)
+            self._pose = deepcopy(detection)
         self._handle_movement()
 
     def _handle_movement(self) -> None:
-        self.frame.x = self.pose.x
-        self.frame.y = self.pose.y
-        self.frame.rotation = Rotation.from_euler(0, 0, self.pose.yaw)
+        self._frame.x = self._pose.x
+        self._frame.y = self._pose.y
+        self._frame.rotation = Rotation.from_euler(0, 0, self._pose.yaw)
         self.POSE_UPDATED.emit()
         self.FRAME_UPDATED.emit()
 
@@ -94,7 +102,7 @@ class Odometer(PoseProvider, FrameProvider):
                 return local_pose if local else self.odometry_frame.transform_pose(local_pose)
         if local:
             return deepcopy(self.history[-1])
-        return Pose(x=self.pose.x, y=self.pose.y, yaw=self.pose.yaw, time=time)
+        return Pose(x=self._pose.x, y=self._pose.y, yaw=self._pose.yaw, time=time)
 
     @staticmethod
     def _compute_odometry_frame(local_pose: Pose, global_pose: Pose) -> Pose:
@@ -103,7 +111,7 @@ class Odometer(PoseProvider, FrameProvider):
         return frame
 
     def reset(self) -> None:
-        self.pose = Pose()
+        self._pose = Pose()
         self.detection = None
         self.current_velocity = None
         self.last_movement = 0

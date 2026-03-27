@@ -7,4 +7,7 @@ from ..geometry import Pose
 
 class PoseProvider(Protocol):
     POSE_UPDATED: Event
-    pose: Pose
+
+    @property
+    def pose(self) -> Pose:
+        ...
