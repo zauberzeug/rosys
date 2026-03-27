@@ -32,7 +32,7 @@ class Odometer(PoseProvider, FrameProvider):
 
         wheels.VELOCITY_MEASURED.subscribe(self.handle_velocities)
         self.pose: Pose = Pose()
-        self.frame = Pose3d().as_frame('rosys.odometer.prediction')
+        self.frame = Pose3d().as_frame('rosys.odometer')
         self.detection: Pose | None = None
         self.current_velocity: Velocity | None = None
         self.last_movement: float = 0
