@@ -30,12 +30,6 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
         if auto_scan:
             rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
-    def backup_to_dict(self) -> dict:
-        cameras = {}
-        for camera in self._cameras.values():
-            cameras[camera.id] = camera.to_dict()
-        return {'cameras': cameras}
-
     def restore_from_dict(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
             camera = RtspCamera.from_dict(camera_data)
@@ -48,14 +42,11 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
     async def update_device_list(self) -> None:
         self.log.debug('scanning for cameras...')
         for mac, ip in await find_known_cameras(network_interface=self.network_interface):
-            if mac not in self._cameras:
+            camera = next((c for c in self._cameras.values() if c.mac == mac), None)
+            if camera is None:
                 self.log.debug('found new camera %s', mac)
-                self.add_camera(RtspCamera(id=mac,
-                                           fps=self.frame_rate,
-                                           substream=self.substream,
-                                           avdec=self.avdec,
-                                           ip=ip))
-            camera = self._cameras[mac]
+                camera = RtspCamera(mac=mac, fps=self.frame_rate, substream=self.substream, avdec=self.avdec, ip=ip)
+                self.add_camera(camera)
             if not camera.is_connected:
                 self.log.info('activating authorized camera %s...', camera.id)
                 camera.ip = ip

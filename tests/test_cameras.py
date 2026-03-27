@@ -42,7 +42,7 @@ async def test_rtsp_camera(rosys_integration):
     if len(connected_uids) == 0:
         pytest.skip('No RTSP camera detected. This test requires a physical RTSP camera on the local network.')
     mac, ip = connected_uids[0]
-    camera = RtspCamera(id=mac, ip=ip)
+    camera = RtspCamera(mac=mac, ip=ip)
     await camera.connect()
     for _ in range(5):
         await forward(0.1)
