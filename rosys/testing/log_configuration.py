@@ -13,7 +13,7 @@ class RosysFilter(logging.Filter):
         from rosys.testing.helpers import odometer as odo  # pylint: disable=import-outside-toplevel  # noqa: PLC0415
         if odo:
             record.rosys_time = rosys.time()
-            record.robot_pose = f'{odo.prediction.x:.2f}, {odo.prediction.y:1.2f}, {odo.prediction.yaw_deg:1.2f}'
+            record.robot_pose = f'{odo.pose.x:.2f}, {odo.pose.y:1.2f}, {odo.pose.yaw_deg:1.2f}'
         else:
             record.rosys_time = 0
             record.robot_pose = 'no robot pose yet'
