@@ -293,8 +293,8 @@ class Carrot:
     def move_by_foot(self, pose: Pose) -> bool:
         """Snap the carrot to the closest spline point relative to the robot pose.
 
-        Unlike ``move()``, this does not incrementally advance the carrot. It projects the robot
-        pose onto the spline, bounded by ``t_min``/``t_max`` to prevent jumping backward.
+        Unlike ``move()``, this does not incrementally advance the carrot.
+        It projects the robot pose onto the spline, bounded by ``t_min``/``t_max`` to prevent jumping backward.
         Used for forward-only driving where no hook offset is involved.
 
         :param pose: The current robot pose.
