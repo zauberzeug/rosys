@@ -6,7 +6,9 @@ from ..geometry import Pose
 
 
 class PoseProvider(Protocol):
+    """Protocol for objects that provide a moving 2D Pose."""
     POSE_UPDATED: Event[Pose]
+    """Emitted when the pose has been updated."""
 
     @property
     def pose(self) -> Pose:
