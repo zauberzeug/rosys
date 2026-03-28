@@ -37,7 +37,9 @@ class Odometer(PoseProvider, FrameProvider):
         self.current_velocity: Velocity | None = None
         self.last_movement: float = 0
         self.history: list[Pose] = []
+
         self.odometry_frame: Pose = Pose()
+        """Local-to-world transform applied to the smooth, jump-free history."""
 
         rosys.on_repeat(self.prune_history, 1.0)
 
