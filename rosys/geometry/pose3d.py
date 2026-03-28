@@ -101,7 +101,7 @@ class Frame3d(Pose3d):
 
 class FrameProvider(Protocol):
     """Protocol for objects that provide a moving Frame3d reference frame."""
-    FRAME_UPDATED: Event
+    FRAME_UPDATED: Event[Frame3d]
 
     @property
     def frame(self) -> Frame3d:

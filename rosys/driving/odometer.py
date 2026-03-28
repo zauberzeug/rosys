@@ -22,10 +22,10 @@ class Odometer(PoseProvider, FrameProvider):
         self.WHEELS_TURNED = Event[[]]()
         """the wheels have turned with non-zero velocity"""
 
-        self.POSE_UPDATED = Event[[]]()
+        self.POSE_UPDATED = Event[Pose]()
         """Emitted on movement or detection correction."""
 
-        self.FRAME_UPDATED = Event[[]]()
+        self.FRAME_UPDATED = Event[Frame3d]()
         """Emitted on movement or detection correction."""
 
         self.log = logging.getLogger('rosys.odometer')
@@ -88,8 +88,8 @@ class Odometer(PoseProvider, FrameProvider):
         self._frame.x = self._pose.x
         self._frame.y = self._pose.y
         self._frame.rotation = Rotation.from_euler(0, 0, self._pose.yaw)
-        self.POSE_UPDATED.emit()
-        self.FRAME_UPDATED.emit()
+        self.POSE_UPDATED.emit(self._pose)
+        self.FRAME_UPDATED.emit(self._frame)
 
     def prune_history(self, max_age: float = 10.0) -> None:
         cut_off_time = rosys.time() - max_age
