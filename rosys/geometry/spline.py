@@ -108,7 +108,7 @@ class Spline:
     def gx(self, t: np.ndarray) -> np.ndarray: ...
 
     def gx(self, t: float | np.ndarray) -> float | np.ndarray:
-        return 3 * (self.m * t**2 + 2 * self.n * t + self.o)
+        return 3 * ((1 - t)**2 * (self.b - self.a) + 2 * (1 - t) * t * (self.c - self.b) + t**2 * (self.d - self.c))
 
     @overload
     def ggx(self, t: float) -> float: ...
@@ -117,7 +117,7 @@ class Spline:
     def ggx(self, t: np.ndarray) -> np.ndarray: ...
 
     def ggx(self, t: float | np.ndarray) -> float | np.ndarray:
-        return 6 * (self.m * t + self.n)
+        return 6 * ((1 - t) * (self.c - 2 * self.b + self.a) + t * (self.d - 2 * self.c + self.b))
 
     @overload
     def gy(self, t: float) -> float: ...
@@ -126,7 +126,7 @@ class Spline:
     def gy(self, t: np.ndarray) -> np.ndarray: ...
 
     def gy(self, t: float | np.ndarray) -> float | np.ndarray:
-        return 3 * (self.p * t**2 + 2 * self.q * t + self.r)
+        return 3 * ((1 - t)**2 * (self.f - self.e) + 2 * (1 - t) * t * (self.g - self.f) + t**2 * (self.h - self.g))
 
     @overload
     def ggy(self, t: float) -> float: ...
@@ -135,7 +135,7 @@ class Spline:
     def ggy(self, t: np.ndarray) -> np.ndarray: ...
 
     def ggy(self, t: float | np.ndarray) -> float | np.ndarray:
-        return 6 * (self.p * t + self.q)
+        return 6 * ((1 - t) * (self.g - 2 * self.f + self.e) + t * (self.h - 2 * self.g + self.f))
 
     @overload
     def yaw(self, t: float) -> float: ...
