@@ -53,7 +53,7 @@ with ui.card():
     with ui.row():
         state = ui.label()
         ui.timer(0.1, lambda: state.set_text(
-            f'{rosys.time():.3f} s, {odometer.prediction}'
+            f'{rosys.time():.3f} s, {odometer.pose}'
         ))
 
     with ui.row():
