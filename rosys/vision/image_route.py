@@ -11,9 +11,11 @@ from fastapi import Response
 from nicegui import app
 
 from .. import run
+from ..geometry import Rectangle
 from .calibration import Calibration
 from .image import Image
-from .image_processing import encode_image_as_jpeg
+from .image_processing import encode_image_as_jpeg, process_ndarray_image
+from .image_rotation import ImageRotation
 
 if TYPE_CHECKING:
     from .camera import Camera
@@ -36,32 +38,52 @@ def create_image_route(camera: Camera) -> None:
                                shrink: float = 1.0,
                                max_dimension: float | None = None,
                                fast: bool = True,
-                               compression: int = 60) -> Response:
+                               compression: int = 60,
+                               crop_x: int | None = None,
+                               crop_y: int | None = None,
+                               crop_w: int | None = None,
+                               crop_h: int | None = None,
+                               rotation: int = 0) -> Response:
         camera = camera_ref()
         if not camera:
             return Response(content='Camera was removed', status_code=404)
+        crop = Rectangle(x=crop_x, y=crop_y, width=crop_w, height=crop_h) \
+            if None not in (crop_x, crop_y, crop_w, crop_h) else None
+        image_rotation = ImageRotation.from_degrees(rotation)
         return await _get_image(camera, timestamp,
                                 shrink=shrink,
                                 max_dimension=max_dimension,
                                 undistort=False,
                                 fast=fast,
-                                compression=compression)
+                                compression=compression,
+                                crop=crop,
+                                rotation=image_rotation)
 
     async def get_camera_image_undistorted(timestamp: str,
                                            shrink: float = 1.0,
                                            max_dimension: float | None = None,
                                            fast: bool = True,
-                                           compression: int = 60) -> Response:
+                                           compression: int = 60,
+                                           crop_x: int | None = None,
+                                           crop_y: int | None = None,
+                                           crop_w: int | None = None,
+                                           crop_h: int | None = None,
+                                           rotation: int = 0) -> Response:
         camera = camera_ref()
         if not camera:
             return Response(content='Camera was removed', status_code=404)
+        crop = Rectangle(x=crop_x, y=crop_y, width=crop_w, height=crop_h) \
+            if None not in (crop_x, crop_y, crop_w, crop_h) else None
+        image_rotation = ImageRotation.from_degrees(rotation)
         return await _get_image(camera,
                                 timestamp,
                                 shrink=shrink,
                                 max_dimension=max_dimension,
                                 undistort=True,
                                 fast=fast,
-                                compression=compression)
+                                compression=compression,
+                                crop=crop,
+                                rotation=image_rotation)
 
     app.add_api_route(placeholder_url, _get_placeholder)
     app.add_api_route(timestamp_url, get_camera_image)
@@ -86,7 +108,9 @@ async def _get_image(camera: Camera,
                      max_dimension: float | None,
                      undistort: bool,
                      fast: bool,
-                     compression: int) -> Response:
+                     compression: int,
+                     crop: Rectangle | None = None,
+                     rotation: ImageRotation = ImageRotation.NONE) -> Response:
     try:
         if undistort and getattr(camera, 'calibration', None) is None:
             return Response(content='Camera is not calibrated', status_code=404)
@@ -96,7 +120,9 @@ async def _get_image(camera: Camera,
                                    max_dimension=max_dimension,
                                    undistort=undistort,
                                    fast=fast,
-                                   compression=compression)
+                                   compression=compression,
+                                   crop=crop,
+                                   rotation=rotation)
         if not jpeg:
             return Response(content='Image not found', status_code=404)
         return Response(content=jpeg, headers={'cache-control': 'max-age=7776000'}, media_type='image/jpeg')
@@ -111,18 +137,22 @@ async def _try_get_jpeg(camera: Camera,
                         max_dimension: float | None,
                         undistort: bool,
                         fast: bool,
-                        compression: int) -> bytes | None:
+                        compression: int,
+                        crop: Rectangle | None = None,
+                        rotation: ImageRotation = ImageRotation.NONE) -> bytes | None:
     for image in reversed(camera.images):
         if str(image.time) == timestamp:
             shrink_from_max = max(image.size.width, image.size.height) / max_dimension if max_dimension else shrink
 
             shrink = max(1, shrink, shrink_from_max)
 
-            if shrink == 1 and not undistort and compression == 60:
+            if shrink == 1 and not undistort and compression == 60 \
+                    and crop is None and rotation == ImageRotation.NONE:
                 return await run.cpu_bound(encode_image_as_jpeg, image.array)
 
             calibration = camera.calibration if undistort else None  # type: ignore
-            return await run.cpu_bound(_process, image, calibration, shrink, undistort, fast, compression)
+            return await run.cpu_bound(_process, image, calibration, shrink, undistort, fast, compression,
+                                       crop, rotation)
 
     return None
 
@@ -132,7 +162,9 @@ def _process(image: Image,
              shrink: float,
              undistort: bool,
              fast: bool,
-             compression: int) -> bytes | None:
+             compression: int,
+             crop: Rectangle | None = None,
+             rotation: ImageRotation = ImageRotation.NONE) -> bytes | None:
     image_array: np.ndarray = image.array
 
     if undistort:
@@ -141,6 +173,9 @@ def _process(image: Image,
         if image_array is None or image_array.size == 0:
             logging.warning('undistort_array returned an empty image')
             return None
+
+    if crop is not None or rotation != ImageRotation.NONE:
+        image_array = process_ndarray_image(image_array, rotation, crop)
 
     if shrink != 1.0:
         if fast:
