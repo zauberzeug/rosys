@@ -96,9 +96,6 @@ enable = true
 vcs = "git"
 style = "pep440"
 
-[tool.uv]
-default-groups = ["dev"]
-
 [tool.mypy]
 python_version = "3.11"
 install_types = true
