@@ -31,11 +31,13 @@ RUN CURL="curl -s https://api.github.com/repos/zauberzeug/lizard/releases" && \
     unzip *zip && \
     rm *zip && \
     ls -lha
-RUN uv run pip install --no-cache -r requirements.txt
+RUN uv pip install --python /rosys/.venv/bin/python --no-cache -r requirements.txt
 
 WORKDIR /rosys
 COPY LICENSE README.md rosys.code-workspace ./
 ADD ./rosys /rosys/rosys
+ARG VERSION=0.0.0
+ENV POETRY_DYNAMIC_VERSIONING_BYPASS=$VERSION
 RUN uv sync
 
 ENV PATH="/rosys/.venv/bin:$PATH"
