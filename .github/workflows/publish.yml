@@ -16,23 +16,21 @@ jobs:
     needs: pytest
     steps:
       - uses: actions/checkout@v4
-      - name: set up Poetry
-        uses: abatilo/actions-poetry@v4
-      - name: set up Python
-        uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v7
         with:
-          python-version: "3.13"
-          cache: "poetry"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - name: Set up Python
+        run: uv python install 3.13
       - name: get version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-      - name: set version
+      - name: build and publish
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         run: |
           VERSION=${{ env.VERSION }}
-          poetry version ${VERSION#v}
-      - name: publish
-        env:
-          POETRY_PYPI_TOKEN_PYPI: ${{ secrets.PYPI_API_TOKEN }}
-        run: poetry publish --build
+          POETRY_DYNAMIC_VERSIONING_BYPASS=${VERSION#v} uv build
+          uv publish
       - name: Create GitHub release entry
         uses: softprops/action-gh-release@v2
         id: create_release
@@ -144,16 +142,16 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: astral-sh/setup-uv@v7
         with:
-          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+      - name: Set up Python
+        run: uv python install 3.13
       - name: Install dependencies
-        run: |
-          python3 -m pip install -r mkdocs_requirements.txt
-          python3 -m pip install -e .
+        run: uv sync --group docs
       - name: Build docs
-        run: mkdocs build -v
+        run: uv run mkdocs build -v
       - name: Deploy gh-pages
         uses: JamesIves/github-pages-deploy-action@v4.7.3
         with:
