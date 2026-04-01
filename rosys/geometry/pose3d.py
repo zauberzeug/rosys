@@ -100,7 +100,7 @@ class Frame3d(Pose3d):
 
 
 class FrameProvider(Protocol):
-    """Protocol for objects that provide a moving Frame3d reference frame."""
+    """Protocol for objects that provide a Frame3d reference frame."""
     FRAME_UPDATED: Event[Frame3d]
     """Emitted when the frame has been updated."""
 
