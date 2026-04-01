@@ -16,15 +16,15 @@ We're always looking for bug fixes, performance improvements, and new features.
 
 ## Setup
 
-To set up a local development environment for RoSys, you'll need to have Python 3.10+, [poetry](https://python-poetry.org/) and pip installed.
+To set up a local development environment for RoSys, you'll need to have Python 3.11+ and [uv](https://docs.astral.sh/uv/) installed.
 
 You can then use the following command to install RoSys in editable mode including the development dependencies:
 
 ```bash
-poetry install --with dev
+uv sync
 ```
 
-This will install the `rosys` package and all its dependencies in a poetry development environment.
+This will install the `rosys` package and all its dependencies in a virtual environment.
 
 ## Coding Style Guide
 
@@ -34,7 +34,7 @@ We use [autopep8](https://github.com/hhatto/autopep8) with a 120 character line 
 Before submitting a pull request, please run
 
 ```bash
-autopep8 --max-line-length=120 --in-place --recursive .
+uv run autopep8 --max-line-length=120 --in-place --recursive .
 ```
 
 on your code to ensure that it meets our formatting guidelines.
@@ -49,25 +49,17 @@ on a second line and leave the other arguments as they are.
 ### Linting
 
 We use [pre-commit](https://github.com/pre-commit/pre-commit) to make sure the coding style is enforced.
-You first need to install pre-commit and the corresponding git commit hooks by running the following commands:
+You first need to install the corresponding git commit hooks by running the following command:
 
 ```bash
-python3 -m pip install pre-commit
-pre-commit install
+uv run pre-commit install
 ```
 
 After that you can make sure your code satisfies the coding style by running the following command:
 
 ```bash
-pre-commit run --all-files
+uv run pre-commit run --all-files
 ```
-
-> [!TIP]
-> The command may fail with
->
-> > RuntimeError: failed to find interpreter for Builtin discover of python_spec='python3.10'
->
-> You will need to install Python 3.10 and make sure it is available in your `PATH`.
 
 These checks will also run automatically before every commit:
 
@@ -89,13 +81,13 @@ These checks will also run automatically before every commit:
 
 ## Running tests
 
-Our tests are built with pytest and pytest plugins that are installed with the poetry group `dev`.
+Our tests are built with pytest and pytest plugins that are installed with the `dev` dependency group.
 
 Before submitting a pull request, please make sure that all tests are passing.
 To run them all, use the following command in the root directory of RoSys:
 
 ```bash
-pytest
+uv run pytest
 ```
 
 ## Documentation
