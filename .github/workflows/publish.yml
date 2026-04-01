@@ -44,7 +44,7 @@ jobs:
         shell: bash
         run: |
           for i in {1..100}; do
-            if uv run python -m pip install "rosys==${{ env.VERSION }}"; then
+            if python -m pip install "rosys==${{ env.VERSION }}"; then
               echo "Successfully installed rosys version ${{ env.VERSION }}"
               break
             else
