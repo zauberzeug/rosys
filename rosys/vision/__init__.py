@@ -11,7 +11,6 @@ from .detector import Autoupload, Detector
 from .detector_hardware import DetectorHardware
 from .detector_simulation import DetectorSimulation, SimulatedObject
 from .image import Image, ImageArray, ImageSize
-from .image_rotation import ImageRotation
 from .mjpeg_camera import MjpegCamera, MjpegCameraProvider
 from .multi_camera_provider import MultiCameraProvider
 from .record_replay import ImageRecorder, ReplayCamera, ReplayCameraProvider
@@ -42,7 +41,6 @@ __all__ = [
     'Image',
     'ImageArray',
     'ImageRecorder',
-    'ImageRotation',
     'ImageSize',
     'Intrinsics',
     'MjpegCamera',
