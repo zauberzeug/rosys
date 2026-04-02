@@ -23,10 +23,10 @@ class Odometer(PoseProvider, FrameProvider):
         """the wheels have turned with non-zero velocity"""
 
         self.POSE_UPDATED = Event[Pose]()
-        """Emitted on movement or detection correction."""
+        """Emitted on movement or detection correction (argument: current ``Pose``)."""
 
         self.FRAME_UPDATED = Event[Frame3d]()
-        """Emitted on movement or detection correction."""
+        """Emitted on movement or detection correction (argument: current ``Frame3d``)."""
 
         self.log = logging.getLogger('rosys.odometer')
 

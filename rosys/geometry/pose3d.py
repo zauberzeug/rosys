@@ -102,7 +102,7 @@ class Frame3d(Pose3d):
 class FrameProvider(Protocol):
     """Protocol for objects that provide a Frame3d reference frame."""
     FRAME_UPDATED: Event[Frame3d]
-    """Emitted when the frame has been updated."""
+    """Emitted when the frame has been updated (argument: current ``Frame3d``)."""
 
     @property
     def frame(self) -> Frame3d:
