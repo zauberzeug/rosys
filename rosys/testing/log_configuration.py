@@ -10,10 +10,10 @@ from rosys.helpers import PackagePathFilter
 class RosysFilter(logging.Filter):
 
     def filter(self, record: logging.LogRecord) -> bool:
-        from rosys.testing.helpers import odometer as odo  # pylint: disable=import-outside-toplevel  # noqa: PLC0415
-        if odo:
+        from rosys.testing.helpers import odometer  # pylint: disable=import-outside-toplevel  # noqa: PLC0415
+        if odometer:
             record.rosys_time = rosys.time()
-            record.robot_pose = f'{odo.prediction.x:.2f}, {odo.prediction.y:1.2f}, {odo.prediction.yaw_deg:1.2f}'
+            record.robot_pose = f'{odometer.pose.x:.2f}, {odometer.pose.y:1.2f}, {odometer.pose.yaw_deg:1.2f}'
         else:
             record.rosys_time = 0
             record.robot_pose = 'no robot pose yet'
