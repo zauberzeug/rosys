@@ -126,7 +126,7 @@ class WheelsSimulation(Wheels, ModuleSimulation, PoseProvider):
         self._pose.y = value.y
         self._pose.yaw = value.yaw
         self._pose.time = value.time
-        self.POSE_UPDATED.emit(value)
+        self.POSE_UPDATED.emit(self._pose)
 
     async def drive(self, linear: float, angular: float) -> None:
         await super().drive(linear, angular)
