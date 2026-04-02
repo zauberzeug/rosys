@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass, field
-from typing import Self
+from typing import Protocol, Self
 
 import numpy as np
-from nicegui import ui
+from nicegui import Event, ui
 
 from .. import rosys
 from .frame3d_registry import frame_registry
@@ -97,6 +97,16 @@ class Frame3d(Pose3d):
         yield self
         if self.frame_id:
             yield from frame_registry[self.frame_id].ancestors
+
+
+class FrameProvider(Protocol):
+    """Protocol for objects that provide a Frame3d reference frame."""
+    FRAME_UPDATED: Event[Frame3d]
+    """Emitted when the frame has been updated (argument: current ``Frame3d``)."""
+
+    @property
+    def frame(self) -> Frame3d:
+        ...
 
 
 class AxesObject(ui.scene.group):

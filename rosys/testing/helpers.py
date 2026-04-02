@@ -44,17 +44,17 @@ async def forward(seconds: float | None = None,
     elif x is not None and y is not None:
         def condition():
             assert odometer is not None
-            return (odometer.prediction.x - x)**2 + (odometer.prediction.y - y)**2 < tolerance**2
+            return (odometer.pose.x - x)**2 + (odometer.pose.y - y)**2 < tolerance**2
         msg = f'forwarding to {x=} and {y=}'
     elif x is not None:
         def condition():
             assert odometer is not None
-            return abs(odometer.prediction.x - x) < tolerance
+            return abs(odometer.pose.x - x) < tolerance
         msg = f'forwarding to {x=}'
     elif y is not None:
         def condition():
             assert odometer is not None
-            return abs(odometer.prediction.y - y) < tolerance
+            return abs(odometer.pose.y - y) < tolerance
         msg = f'forwarding to {y=}'
     else:
         raise ValueError('invalid arguments')
@@ -75,10 +75,10 @@ async def forward(seconds: float | None = None,
 
 def assert_pose(x: float, y: float, *, deg: float | None = None, position_tolerance: float = 0.1, deg_tolerance: float = 1.0) -> None:
     assert odometer is not None
-    assert odometer.prediction.x == pytest.approx(x, abs=position_tolerance)
-    assert odometer.prediction.y == pytest.approx(y, abs=position_tolerance)
+    assert odometer.pose.x == pytest.approx(x, abs=position_tolerance)
+    assert odometer.pose.y == pytest.approx(y, abs=position_tolerance)
     if deg is not None:
-        assert np.rad2deg(odometer.prediction.yaw) == pytest.approx(deg, abs=deg_tolerance)
+        assert np.rad2deg(odometer.pose.yaw) == pytest.approx(deg, abs=deg_tolerance)
 
 
 def assert_point(actual: Point | Point3d, expected: Point | Point3d, tolerance=0.1) -> None:

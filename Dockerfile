@@ -8,22 +8,20 @@ RUN apt update && apt install -y \
     gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav \
     && rm -rf /var/lib/apt/lists/*
 
-RUN python3 -m pip install --upgrade pip
+# Install uv
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-# We use Poetry for dependency management
-RUN curl -sSL https://install.python-poetry.org | python3 - && \
-    cd /usr/local/bin && \
-    ln -s ~/.local/bin/poetry && \
-    poetry config virtualenvs.create false
-
-
-# only copy poetry package specs to minimize rebuilding of image layers
+# Only copy dependency specs to minimize rebuilding of image layers
 WORKDIR /rosys
-COPY pyproject.toml ./
+COPY pyproject.toml uv.lock ./
 
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=true
-RUN bash -c "if [ $INSTALL_DEV == 'true' ] ; then poetry install -vvv --no-root --with dev ; else poetry install -vvv --no-root ; fi"
+RUN if [ "$INSTALL_DEV" = "true" ]; then \
+      uv sync --no-install-project; \
+    else \
+      uv sync --no-install-project --no-dev; \
+    fi
 
 # Fetch Lizard firmware + scripts for hardware control
 WORKDIR /root/.lizard
@@ -33,13 +31,16 @@ RUN CURL="curl -s https://api.github.com/repos/zauberzeug/lizard/releases" && \
     unzip *zip && \
     rm *zip && \
     ls -lha
-RUN pip install --no-cache -r requirements.txt
+RUN uv pip install --python /rosys/.venv/bin/python --no-cache -r requirements.txt
 
 WORKDIR /rosys
 COPY LICENSE README.md rosys.code-workspace ./
 ADD ./rosys /rosys/rosys
-RUN poetry install -vvv
+ARG VERSION=0.0.0
+ENV POETRY_DYNAMIC_VERSIONING_BYPASS=$VERSION
+RUN uv sync
 
+ENV PATH="/rosys/.venv/bin:$PATH"
 ENV PYTHONPATH="/rosys"
 
 EXPOSE 8080

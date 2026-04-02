@@ -40,7 +40,7 @@ async def test_robot_can_slip_in_simulation(wheels: WheelsSimulation, robot: Rob
     wheels.slip_factor_right = 0.3
     await wheels.drive(1, 0)
     await forward(seconds=3.0)
-    assert odometer.prediction.x == pytest.approx(3.0, abs=0.1)
-    assert odometer.prediction.y == pytest.approx(0.0, abs=0.001)
+    assert odometer.pose.x == pytest.approx(3.0, abs=0.1)
+    assert odometer.pose.y == pytest.approx(0.0, abs=0.001)
     assert wheels.pose.x == pytest.approx(1.4, abs=0.1)
     assert wheels.pose.y == pytest.approx(-1.7, abs=0.1)

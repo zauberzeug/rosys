@@ -105,7 +105,7 @@ class ImuSimulation(Imu, ModuleSimulation):
     """Simulation of an IMU."""
 
     def __init__(self, *,
-                 wheels: PoseProvider,
+                 pose_provider: PoseProvider,
                  interval: float = 0.1,
                  roll: float = 0.0,
                  pitch: float = 0.0,
@@ -114,7 +114,7 @@ class ImuSimulation(Imu, ModuleSimulation):
                  yaw_noise: float = 0.0,
                  **kwargs) -> None:
         super().__init__(**kwargs)
-        self.wheels = wheels
+        self.pose_provider = pose_provider
         self.roll = roll
         self.pitch = pitch
         self.roll_noise = roll_noise
@@ -125,7 +125,7 @@ class ImuSimulation(Imu, ModuleSimulation):
     def simulate(self) -> None:
         roll = np.random.normal(self.roll, self.roll_noise)
         pitch = np.random.normal(self.pitch, self.pitch_noise)
-        yaw = np.random.normal(self.wheels.pose.yaw, self.yaw_noise)
+        yaw = np.random.normal(self.pose_provider.pose.yaw, self.yaw_noise)
         self._emit_measurement(3.0, Rotation.from_euler(roll, pitch, yaw), rosys.time())
 
     def developer_ui(self) -> None:

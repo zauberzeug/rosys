@@ -156,7 +156,7 @@ To create a new release perform the following steps:
 2. Edit the text the script produces with more details and more mentions of people that participated.
 3. In your local repo add a new tag with `v0.{x.y}` as the name to the current main head.
 4. Push to GitHub which starts GitHub Action that performs the following steps:
-   - If the pytests are successful, a poetry build and deployment to [pypi](https://pypi.org/project/rosys/) is issued.
+   - If the pytests are successful, a build and deployment to [pypi](https://pypi.org/project/rosys/) is issued.
    - A multi-arch Docker image is built and pushed to [Docker Hub](https://hub.docker.com/r/zauberzeug/rosys).
 5. Close the milestone on GitHub.
 6. Create a new milestone on GitHub with the next version (`0.{x.y+1}`).

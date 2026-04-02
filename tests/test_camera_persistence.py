@@ -88,13 +88,41 @@ async def test_storing_mjpeg_camera_as_dict(rosys_integration, base_camera_param
 
 
 def test_storing_rtsp_camera_as_dict(rosys_integration, base_camera_parameters):
-    camera = RtspCamera(fps=1, substream=2, bitrate=4097, avdec='h265', ip='192.168.1.1', **base_camera_parameters)
+    camera = RtspCamera(mac='aa:bb:cc:dd:ee:ff', fps=1, substream=2, bitrate=4097, avdec='h265',
+                        ip='192.168.1.1', **base_camera_parameters)
     camera_as_dict = camera.to_dict()
     restored_camera = RtspCamera.from_dict(camera_as_dict)
     assert isinstance(restored_camera, RtspCamera)
     assert_base_camera_parameters_match(camera, restored_camera)
     assert restored_camera.parameters == camera.parameters
     assert restored_camera.ip == camera.ip
+    assert restored_camera.mac == camera.mac
+
+
+def test_rtsp_camera_auto_id(rosys_integration):
+    camera = RtspCamera(mac='aa:bb:cc:dd:ee:ff', substream=1, connect_after_init=False)
+    assert camera.id == 'aa:bb:cc:dd:ee:ff-1'
+    assert camera.mac == 'aa:bb:cc:dd:ee:ff'
+
+
+def test_rtsp_camera_explicit_id(rosys_integration):
+    camera = RtspCamera(mac='aa:bb:cc:dd:ee:ff', id='my-custom-id', connect_after_init=False)
+    assert camera.id == 'my-custom-id'
+    assert camera.mac == 'aa:bb:cc:dd:ee:ff'
+
+
+def test_rtsp_camera_backward_compat(rosys_integration):
+    camera = RtspCamera.from_dict({
+        'id': 'aa:bb:cc:dd:ee:ff',
+        'substream': 1,
+        'fps': 5,
+        'bitrate': 4096,
+        'avdec': 'h264',
+        'ip': '192.168.1.1',
+        'connect_after_init': False,
+    })
+    assert camera.mac == 'aa:bb:cc:dd:ee:ff'
+    assert camera.id == 'aa:bb:cc:dd:ee:ff'
 
 
 def test_storing_usb_camera_as_dict(rosys_integration, base_camera_parameters):
@@ -137,7 +165,10 @@ def test_storing_calibratable_camera_subclasses_as_dict(rosys_integration):
         pass
 
     for camera_class in [CalibratableRtspCamera, CalibratableUsbCamera, CalibratableMjpegCamera, CalibratableSimulatedCamera]:
-        camera = camera_class(id='test_cam')
+        kwargs = {'id': 'test_cam'}
+        if issubclass(camera_class, RtspCamera):
+            kwargs['mac'] = 'aa:bb:cc:dd:ee:ff'
+        camera = camera_class(**kwargs)
         camera.calibration = calibration
         camera_as_dict = camera.to_dict()
         restored_camera = camera_class.from_dict(camera_as_dict)

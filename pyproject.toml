@@ -1,69 +1,85 @@
-[tool.poetry]
+[project]
 name = "rosys"
-version = "0.0.0"
+dynamic = ["version"]
 description = "Modular Robot System With Elegant Automation Capabilities"
-authors = ["Zauberzeug GmbH <info@zauberzeug.com>"]
+authors = [{ name = "Zauberzeug GmbH", email = "info@zauberzeug.com" }]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/zauberzeug/rosys"
+requires-python = ">=3.11, <3.14"
 keywords = ["robot", "framework", "automation", "control", "steer"]
+dependencies = [
+    "nicegui>=3.9.0,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/105
+    "pyserial>=3.5,<4",
+    "numpy<3.0.0",
+    "scipy>=1.7.2,<2",
+    "opencv-contrib-python>=4.12.0.88,<4.13.0.0",
+    "psutil>=5.9.0,<6",
+    "networkx>=2.6.2,<3",
+    "tabulate>=0.8.9,<0.9",
+    "coloredlogs>=15.0.1,<16",
+    "humanize>=4.0.0,<5",
+    "uvloop>=0.17.0",
+    "dataclasses-json>=0.5.7,<0.6",
+    "suntime>=1.2.5,<2",
+    "line-profiler>=4.1.3,<5",
+    "yappi>=1.6.0,<2",
+    "pyloot>=0.1.0,<0.2",
+    "objgraph>=3.6.1,<4",
+    "imgsize>=2.1,<3",
+    "ifaddr>=0.2.0,<0.3",
+    "httpx>=0.25.0",
+    "matplotlib>=3.7.2,<4",
+    "pyudev>=0.21.0",
+    "pyquaternion>=0.9.9,<0.10",
+    "cairosvg>=2.9.0,<3",  # https://github.com/zauberzeug/rosys/security/dependabot/104
+    "pillow>=12.1.1",  # https://github.com/zauberzeug/rosys/security/dependabot/102
+    "idna>=3.7",  # https://github.com/zauberzeug/rosys/security/dependabot/45
+    "requests>=2.32.4",  # https://github.com/zauberzeug/rosys/security/dependabot/64
+    "urllib3>=2.6.3",  # https://github.com/zauberzeug/rosys/security/dependabot/90
+    "starlette>=0.49.1",  # https://github.com/zauberzeug/rosys/security/dependabot/73
+    "aiohttp>=3.13.3",  # https://github.com/zauberzeug/rosys/security/dependabot/89
+    "fonttools>=4.60.2,<5",  # https://github.com/zauberzeug/rosys/security/dependabot/74
+    "marshmallow>=3.26.2,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/81
+    "pyturbojpeg>=1.8.2,<2",
+    "virtualenv>=20.36.1",  # https://github.com/zauberzeug/rosys/security/dependabot/95
+]
 
-[tool.poetry.dependencies]
-python = ">=3.11, <3.14"
-nicegui = "^3.6.1"
-pyserial = "^3.5"
-numpy = "<3.0.0"
-scipy = "^1.7.2"
-opencv-contrib-python = ">= 4.12.0.88, <4.13.0.0"
-psutil = "^5.9.0"
-networkx = "^2.6.2"
-tabulate = "^0.8.9"
-coloredlogs = "^15.0.1"
-humanize = "^4.0.0"
-uvloop = ">=0.17.0"
-dataclasses-json = "^0.5.7"
-suntime = "^1.2.5"
-line-profiler = "^4.1.3"
-yappi = "^1.6.0"
-pyloot = "^0.1.0"
-objgraph = "^3.6.1"
-imgsize = "^2.1"
-ifaddr = "^0.2.0"
-httpx = ">=0.25.0"
-matplotlib = "^3.7.2"
-pyudev = ">=0.21.0"
-pyquaternion = "^0.9.9"
-cairosvg = "^2.7.0"
-pillow = ">=11.3.0" # https://github.com/zauberzeug/rosys/security/dependabot/68
-idna = ">=3.7" # https://github.com/zauberzeug/rosys/security/dependabot/45
-uvicorn = "!=0.29.0" # test_examples.py fails with 0.29.0 due to persistency not correctly writing during teardown
-requests = ">=2.32.4" # https://github.com/zauberzeug/rosys/security/dependabot/64
-urllib3 = ">=2.6.3" # https://github.com/zauberzeug/rosys/security/dependabot/90
-starlette = ">=0.49.1" # https://github.com/zauberzeug/rosys/security/dependabot/73
-aiohttp = ">=3.13.3" # https://github.com/zauberzeug/rosys/security/dependabot/89
-fonttools = "^4.60.2" # https://github.com/zauberzeug/rosys/security/dependabot/74
-marshmallow = "^3.26.2" # https://github.com/zauberzeug/rosys/security/dependabot/81
-pyturbojpeg = "^1.8.2"
+[project.urls]
+Repository = "https://github.com/zauberzeug/rosys"
 
-[tool.poetry.group.dev]
-optional = true
+[project.entry-points.pytest11]
+rosys = "rosys.testing.fixtures"
 
-[tool.poetry.group.dev.dependencies]
-autopep8 = "^1.5.5"
-pytest = "^8.2.2"
-pytest-watch = "^4.2.0"
-pytest-flakefinder = "^1.0.0"
-pytest-profiling = "^1.7.0"
-pytest-asyncio = "^1.2.0"
-debugpy = "^1.2.1"
-py-spy = "^0.3.10"
-cryptography = ">=44.0.1" # https://github.com/zauberzeug/rosys/security/dependabot/61
-sh = "^1.14.2"
-mypy = {version = ">=1.15.0, <2.0.0", extras = ["faster-cache"]}
-pylint = "^3.2.5"
-pre-commit = "^4.0.1"
-filelock = "^3.20.1" # https://github.com/zauberzeug/rosys/security/dependabot/80
-poetry-dynamic-versioning = "^1.8.0"
+[dependency-groups]
+dev = [
+    "autopep8>=1.5.5,<2",
+    "pytest>=8.2.2,<9",
+    "pytest-watch>=4.2.0,<5",
+    "pytest-flakefinder>=1.0.0,<2",
+    "pytest-profiling>=1.7.0,<2",
+    "pytest-asyncio>=1.2.0,<2",
+    "debugpy>=1.2.1,<2",
+    "py-spy>=0.3.10,<0.4",
+    "cryptography>=46.0.5",  # https://github.com/zauberzeug/rosys/security/dependabot/101
+    "sh>=1.14.2,<2",
+    "mypy[faster-cache]>=1.15.0,<2.0.0",
+    "pylint>=3.2.5,<4",
+    "pre-commit>=4.0.1,<5",
+    "filelock>=3.20.3,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/96
+    "poetry-dynamic-versioning>=1.8.0,<2",
+]
+docs = [
+    "mkdocs==1.5.3",
+    "mkdocs-material",
+    "mdx-include",
+    "mkdocs-pymdownx-material-extras",
+    "mdx-footnotes2",
+    "mkdocstrings-python",
+    "mkdocs-gen-files",
+    "mkdocs-literate-nav",
+    "mkdocs-section-index",
+    "black",
+]
 
 [build-system]
 requires = [
@@ -71,6 +87,9 @@ requires = [
     "poetry-dynamic-versioning>=1.0.0,<2.0.0",
 ]
 build-backend = "poetry_dynamic_versioning.backend"
+
+[tool.poetry]
+version = "0.0.0"
 
 [tool.poetry-dynamic-versioning]
 enable = true
@@ -113,9 +132,6 @@ cache_dir = "../.pytest_cache"
 testpaths = [
     "tests"
 ]
-
-[tool.poetry.plugins.pytest11]
-rosys = "rosys.testing.fixtures"
 
 [tool.pylint]
 disable = [

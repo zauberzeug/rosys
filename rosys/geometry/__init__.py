@@ -7,7 +7,7 @@ from .point3d import Point3d
 from .polygon import Polygon
 from .pose import Pose, PoseStep
 from .pose3d import AxesObject as axes_object
-from .pose3d import Frame3d, Pose3d
+from .pose3d import Frame3d, FrameProvider, Pose3d
 from .prism import Prism
 from .rectangle import Rectangle
 from .rotation import Rotation
@@ -17,6 +17,7 @@ from .velocity import Velocity
 __all__ = [
     'Fixpoint',
     'Frame3d',
+    'FrameProvider',
     'GeoPoint',
     'GeoPose',
     'GeoReference',

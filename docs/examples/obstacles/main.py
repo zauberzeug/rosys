@@ -43,7 +43,7 @@ with ui.card():
 
     state = ui.label()
     ui.timer(0.1, lambda: state.set_text(
-        f'{rosys.time():.3f} s, {odometer.prediction}'
+        f'{rosys.time():.3f} s, {odometer.pose}'
     ))
 
     click_mode = ui.toggle({
@@ -59,7 +59,7 @@ with ui.card():
             object_type = (hit.object_name or '').split('_')[0] or hit.object_id
             target = Point(x=hit.x, y=hit.y)
             if object_type == 'ground' and click_mode.value == 'drive':
-                start = odometer.prediction.point
+                start = odometer.pose.point
                 path = [PathSegment(spline=Spline(
                     start=start,
                     control1=start.interpolate(target, 1/3),
@@ -71,8 +71,8 @@ with ui.card():
                 return
             if object_type == 'ground' and click_mode.value == 'navigate':
                 goal = Pose(x=hit.x, y=hit.y,
-                            yaw=odometer.prediction.direction(target))
-                path = await path_planner.search(start=odometer.prediction,
+                            yaw=odometer.pose.direction(target))
+                path = await path_planner.search(start=odometer.pose,
                                                  goal=goal, timeout=3.0)
                 path3d.update(path)
                 automator.start(driver.drive_path(path))
