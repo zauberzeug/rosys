@@ -48,7 +48,7 @@ def create_image_route(camera: Camera) -> None:
         if not camera:
             return Response(content='Camera was removed', status_code=404)
         crop = Rectangle(x=crop_x, y=crop_y, width=crop_w, height=crop_h) \
-            if None not in (crop_x, crop_y, crop_w, crop_h) else None
+            if crop_x is not None and crop_y is not None and crop_w is not None and crop_h is not None else None
         image_rotation = ImageRotation.from_degrees(rotation)
         return await _get_image(camera, timestamp,
                                 shrink=shrink,
@@ -73,7 +73,7 @@ def create_image_route(camera: Camera) -> None:
         if not camera:
             return Response(content='Camera was removed', status_code=404)
         crop = Rectangle(x=crop_x, y=crop_y, width=crop_w, height=crop_h) \
-            if None not in (crop_x, crop_y, crop_w, crop_h) else None
+            if crop_x is not None and crop_y is not None and crop_w is not None and crop_h is not None else None
         image_rotation = ImageRotation.from_degrees(rotation)
         return await _get_image(camera,
                                 timestamp,
