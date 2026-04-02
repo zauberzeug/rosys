@@ -145,4 +145,5 @@ class WheelsSimulation(Wheels, ModuleSimulation, PoseProvider):
                                angular=dt * (right_speed - left_speed) / self.width,
                                time=rosys.time())
         velocity = Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=self._pose.time)
+        self.POSE_UPDATED.emit(self._pose)
         self.VELOCITY_MEASURED.emit([velocity])
