@@ -16,7 +16,7 @@ class GnssSimulation(Gnss):
     """Simulation of a GNSS receiver."""
 
     def __init__(self, *,
-                 wheels: PoseProvider,
+                 pose_provider: PoseProvider,
                  lat_std_dev: float = 0.01,
                  lon_std_dev: float = 0.01,
                  heading_std_dev: float = 0.01,
@@ -24,7 +24,7 @@ class GnssSimulation(Gnss):
                  latency: float = 0.0,
                  gps_quality: GpsQuality = GpsQuality.RTK_FIXED) -> None:
         """
-        :param wheels: the wheels to use for the simulation
+        :param pose_provider: the pose provider to use for the simulation
         :param lat_std_dev: the standard deviation of the latitude in meters
         :param lon_std_dev: the standard deviation of the longitude in meters
         :param heading_std_dev: the standard deviation of the heading in degrees
@@ -33,7 +33,7 @@ class GnssSimulation(Gnss):
         :param latency: the simulated measurement latency in seconds
         """
         super().__init__()
-        self.wheels = wheels
+        self.pose_provider = pose_provider
         self._is_connected = True
         self._lat_std_dev = lat_std_dev
         self._lon_std_dev = lon_std_dev
@@ -54,7 +54,7 @@ class GnssSimulation(Gnss):
     async def simulate(self) -> None:
         if not self.is_connected:
             return
-        geo_pose = GeoPose.from_pose(self.wheels.pose)
+        geo_pose = GeoPose.from_pose(self.pose_provider.pose)
         noise_lat = np.random.normal(0, self._lat_std_dev)
         noise_lon = np.random.normal(0, self._lon_std_dev)
         noise_magnitude = np.sqrt(noise_lat**2 + noise_lon**2)
