@@ -89,7 +89,7 @@ class WheelsSimulation(Wheels, ModuleSimulation, PoseProvider):
         self.width: float = width
         """The distance between the wheels -- used to calculate actual drift when slip_factor_* is used."""
 
-        self._pose: Pose = Pose(time=rosys.time())
+        self.pose: Pose = Pose(time=rosys.time())
         """Provides the actual pose of the robot which can alter due to slippage."""
 
         self.linear_velocity: float = 0
@@ -116,10 +116,6 @@ class WheelsSimulation(Wheels, ModuleSimulation, PoseProvider):
         self.POSE_UPDATED: Event[Pose] = Event()
         """Emitted when the pose has been updated (argument: current ``Pose``)."""
 
-    @property
-    def pose(self) -> Pose:
-        return self._pose
-
     async def drive(self, linear: float, angular: float) -> None:
         await super().drive(linear, angular)
         f = self.inertia_factor
@@ -133,8 +129,8 @@ class WheelsSimulation(Wheels, ModuleSimulation, PoseProvider):
         right_speed = self.linear_velocity + self.angular_velocity * self.width / 2
         left_speed *= 1 - self.slip_factor_left
         right_speed *= 1 - self.slip_factor_right
-        self._pose += PoseStep(linear=dt * (left_speed + right_speed) / 2,
-                               angular=dt * (right_speed - left_speed) / self.width,
-                               time=rosys.time())
-        velocity = Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=self._pose.time)
+        self.pose += PoseStep(linear=dt * (left_speed + right_speed) / 2,
+                              angular=dt * (right_speed - left_speed) / self.width,
+                              time=rosys.time())
+        velocity = Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=self.pose.time)
         self.VELOCITY_MEASURED.emit([velocity])
