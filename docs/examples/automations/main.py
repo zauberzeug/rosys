@@ -14,8 +14,8 @@ async def run() -> None:
 
 
 async def forward() -> None:
-    start = odometer.prediction
-    while start.distance(odometer.prediction) < 1.0:
+    start = odometer.pose
+    while start.distance(odometer.pose) < 1.0:
         await wheels.drive(1.0, 0.0)
         await rosys.sleep(0.1)
     await wheels.stop()
@@ -23,8 +23,8 @@ async def forward() -> None:
 
 @rosys.automation.uninterruptible
 async def turn_left() -> None:
-    start = odometer.prediction
-    while rosys.helpers.angle(start.yaw, odometer.prediction.yaw) < math.radians(90):
+    start = odometer.pose
+    while rosys.helpers.angle(start.yaw, odometer.pose.yaw) < math.radians(90):
         await wheels.drive(0.0, 1.0)
         await rosys.sleep(0.1)
     await wheels.stop()
