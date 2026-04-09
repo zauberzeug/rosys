@@ -58,7 +58,12 @@ def process_jpeg_image(data: bytes, rotation: ImageRotation, crop: Rectangle | N
 def process_ndarray_image(image: np.ndarray, rotation: ImageRotation, crop: Rectangle | None = None) -> np.ndarray:
     """Rotate and crop a NumPy image."""
     if crop is not None:
-        image = image[int(crop.y):int(crop.y+crop.height), int(crop.x):int(crop.x+crop.width)]
+        h, w = image.shape[:2]
+        x1 = max(0, int(crop.x))
+        y1 = max(0, int(crop.y))
+        x2 = min(w, int(crop.x + crop.width))
+        y2 = min(h, int(crop.y + crop.height))
+        image = image[y1:y2, x1:x2]
     if rotation == ImageRotation.LEFT:
         image = cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE)
     elif rotation == ImageRotation.RIGHT:
