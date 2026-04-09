@@ -49,7 +49,10 @@ def create_image_route(camera: Camera) -> None:
             return Response(content='Camera was removed', status_code=404)
         crop = Rectangle(x=crop_x, y=crop_y, width=crop_w, height=crop_h) \
             if crop_x is not None and crop_y is not None and crop_w is not None and crop_h is not None else None
-        image_rotation = ImageRotation.from_degrees(rotation)
+        try:
+            image_rotation = ImageRotation.from_degrees(rotation)
+        except ValueError:
+            return Response(content='Invalid rotation angle. mod(angle, 360) must be one of 0, 90, 180, 270', status_code=400)
         return await _get_image(camera, timestamp,
                                 shrink=shrink,
                                 max_dimension=max_dimension,
