@@ -13,4 +13,4 @@ class ImageRotation(int, Enum):
         for rotation in cls:
             if int(rotation.value) == degrees % 360:
                 return rotation
-        raise ValueError(f'invalid rotation angle: {degrees}')
+        raise ValueError(f'Invalid rotation angle: {degrees}. mod(angle, 360) must be one of 0, 90, 180, 270')

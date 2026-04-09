@@ -12,6 +12,10 @@ class Rectangle:
     width: float
     height: float
 
+    def __post_init__(self) -> None:
+        if self.width < 0 or self.height < 0:
+            raise ValueError(f'Rectangle dimensions must be non-negative, got width={self.width}, height={self.height}')
+
     @property
     def tuple(self) -> tuple[float, float, float, float]:
         return (self.x, self.y, self.width, self.height)
