@@ -22,6 +22,7 @@ class RobotBrain:
     The clock offset is calculated by comparing the hardware time with the system time and averaging the differences over a number of samples.
     If the offset changes significantly, a notification is sent and the offset history is cleared.
     """
+    HEARTBEAT_INTERVAL = 0.5
 
     def __init__(self, communication: Communication, *, enable_esp_on_startup: bool = True, use_espresso: bool = False) -> None:
         self.ESP_CONNECTED = Event[[]]()
@@ -49,6 +50,7 @@ class RobotBrain:
         self.esp_pins_p0 = EspPins(name='p0', robot_brain=self)
 
         self._esp_lock = asyncio.Lock()
+        rosys.on_repeat(self._send_heartbeat, self.HEARTBEAT_INTERVAL)
 
     @property
     def clock_offset(self) -> float | None:
@@ -61,6 +63,13 @@ class RobotBrain:
     @property
     def is_ready(self) -> bool:
         return self._hardware_time is not None
+
+    async def _send_heartbeat(self) -> None:
+        """Send a heartbeat command to the microcontroller to check if it's still connected and to keep the connection alive."""
+        if not self.is_ready:
+            self.log.debug('Skipping heartbeat because ESP is not ready')
+            return
+        await self.send('core.heartbeat()')
 
     def developer_ui(self) -> None:
         version_select: ui.select
