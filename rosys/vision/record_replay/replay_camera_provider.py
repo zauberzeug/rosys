@@ -146,6 +146,8 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         new_replay_time = self._current_time + (now - self._last_update_time) * self._playback_speed
         if new_replay_time > self._end_time:
             new_replay_time = self._start_time + (new_replay_time - self._end_time)
+        if new_replay_time < self._start_time:
+            new_replay_time = self._end_time + (new_replay_time - self._start_time)
         self._set_replay_time(new_replay_time)
         self._last_update_time = now
 
