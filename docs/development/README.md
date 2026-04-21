@@ -72,11 +72,10 @@ Then you can decide for each logger which handlers should be used:
 {! development/log_file.py [ln:38-59] !}
 ```
 
-!!! note
-
-    The above file logger writes to `~/.rosys`.
-    For development it is very helpful to have [auto-reloading on file change activated](../getting_started/README.md#start).
-    Therefore logging should always be stored outside of your project's source directory.
+> [!NOTE]
+> The above file logger writes to `~/.rosys`.
+> For development it is very helpful to have [auto-reloading on file change activated](../getting_started/README.md#start).
+> Therefore logging should always be stored outside of your project's source directory.
 
 ### Formatting
 
@@ -102,16 +101,15 @@ Log output then looks like this:
 
 ## Profiling
 
-!!! note
-
-    The default RoSys installation via pip does not come with profiling packages.
-    To install them, run
-
-    ```bash
-    python3 -m pip install rosys[profiling]
-    ```
-
-    Currently this does not work with Python 3.11 because yappy and line-profiler do not support 3.11 yet.
+> [!NOTE]
+> The default RoSys installation via pip does not come with profiling packages.
+> To install them, run
+>
+> ```bash
+> python3 -m pip install rosys[profiling]
+> ```
+>
+> Currently this does not work with Python 3.11 because yappy and line-profiler do not support 3.11 yet.
 
 You can add a `profile` decorator to expensive functions and add a profiler button to your UI:
 

@@ -75,6 +75,7 @@ docs = [
     "mkdocs-pymdownx-material-extras",
     "mdx-footnotes2",
     "mkdocstrings-python",
+    "mkdocs-callouts",
     "mkdocs-gen-files",
     "mkdocs-literate-nav",
     "mkdocs-section-index",
@@ -191,3 +192,6 @@ ignore = [
     "PLR0915", # too many statements
     "PLR2004", # magic value comparison
 ]
+
+[tool.codespell]
+skip = '*.lock'
