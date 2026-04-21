@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import TypeAlias, cast, overload
 
 import cv2
@@ -15,7 +15,7 @@ from .image import Image, ImageSize
 FloatArray: TypeAlias = NDArray[np.float32] | NDArray[np.float64]
 
 
-class CameraModel(str, Enum):
+class CameraModel(StrEnum):
     PINHOLE = 'pinhole'
     FISHEYE = 'fisheye'
     OMNIDIRECTIONAL = 'omnidirectional'
