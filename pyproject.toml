@@ -97,12 +97,14 @@ enable = true
 vcs = "git"
 style = "pep440"
 
+[tool.autopep8]
+max-line-length = 120
+
 [tool.mypy]
 python_version = "3.11"
 install_types = true
 check_untyped_defs = true
 
-# pyproject.toml
 [[tool.mypy.overrides]]
 module = ["numpy.*"]
 follow_imports = "skip"
