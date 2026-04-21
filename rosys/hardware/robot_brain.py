@@ -170,7 +170,7 @@ class RobotBrain:
         if not self.is_ready:
             self.log.debug('Skipping heartbeat because ESP is not ready')
             return
-        await self.send('core.heartbeat()')
+        await self.send('core.keep_alive()')
 
     async def configure(self) -> None:
         rosys.notify('Configuring Lizard...')
