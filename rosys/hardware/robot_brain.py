@@ -53,7 +53,7 @@ class RobotBrain:
         if enable_esp_on_startup:
             rosys.on_startup(self.enable_esp)
         if heartbeat_interval is not None:
-            rosys.on_repeat(self.send_heartbeat, heartbeat_interval)
+            rosys.on_repeat(self._send_heartbeat, heartbeat_interval)
 
         self.esp_pins_core = EspPins(name='core', robot_brain=self)
         self.esp_pins_p0 = EspPins(name='p0', robot_brain=self)
@@ -165,8 +165,8 @@ class RobotBrain:
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
         ui.label().bind_text_from(self, 'is_ready', lambda ready: f'Ready: {ready}')
 
-    async def send_heartbeat(self) -> None:
-        """Send a heartbeat command to the microcontroller to let it know that RoSys is still running."""
+    async def _send_heartbeat(self) -> None:
+        """Send a ``core.keep_alive()`` command to the microcontroller to let it know that RoSys is still running."""
         if not self.is_ready:
             self.log.debug('Skipping heartbeat because ESP is not ready')
             return
