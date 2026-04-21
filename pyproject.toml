@@ -8,7 +8,7 @@ readme = "README.md"
 requires-python = ">=3.11, <3.14"
 keywords = ["robot", "framework", "automation", "control", "steer"]
 dependencies = [
-    "nicegui>=3.9.0,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/105
+    "nicegui>=3.10.0,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/110
     "pyserial>=3.5,<4",
     "numpy<3.0.0",
     "scipy>=1.7.2,<2",
@@ -32,7 +32,7 @@ dependencies = [
     "pyudev>=0.21.0",
     "pyquaternion>=0.9.9,<0.10",
     "cairosvg>=2.9.0,<3",  # https://github.com/zauberzeug/rosys/security/dependabot/104
-    "pillow>=12.1.1",  # https://github.com/zauberzeug/rosys/security/dependabot/102
+    "pillow>=12.2.0",  # https://github.com/zauberzeug/rosys/security/dependabot/112
     "idna>=3.7",  # https://github.com/zauberzeug/rosys/security/dependabot/45
     "requests>=2.32.4",  # https://github.com/zauberzeug/rosys/security/dependabot/64
     "urllib3>=2.6.3",  # https://github.com/zauberzeug/rosys/security/dependabot/90
@@ -53,14 +53,14 @@ rosys = "rosys.testing.fixtures"
 [dependency-groups]
 dev = [
     "autopep8>=1.5.5,<2",
-    "pytest>=8.2.2,<9",
+    "pytest>=9.0.3,<10",  # https://github.com/zauberzeug/rosys/security/dependabot/113
     "pytest-watch>=4.2.0,<5",
     "pytest-flakefinder>=1.0.0,<2",
     "pytest-profiling>=1.7.0,<2",
     "pytest-asyncio>=1.2.0,<2",
     "debugpy>=1.2.1,<2",
     "py-spy>=0.3.10,<0.4",
-    "cryptography>=46.0.5",  # https://github.com/zauberzeug/rosys/security/dependabot/101
+    "cryptography>=46.0.7",  # https://github.com/zauberzeug/rosys/security/dependabot/111
     "sh>=1.14.2,<2",
     "mypy[faster-cache]>=1.15.0,<2.0.0",
     "pylint>=3.2.5,<4",
