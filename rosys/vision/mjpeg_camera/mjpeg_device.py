@@ -24,7 +24,8 @@ class MjpegDevice:
 
         self._on_new_image_data = on_new_image_data
         self._capture_task: Task | None = None
-        self._authentication = None if username is None or password is None else httpx.DigestAuth(username, password)
+        self._username = username
+        self._password = password
         url = mac_to_url(mac, ip, index=index)
         if url is None:
             raise ValueError(f'could not determine URL for {mac}')
@@ -47,6 +48,16 @@ class MjpegDevice:
         self.shutdown()
         self.start_capture_task()
 
+    async def _resolve_auth(self, client: httpx.AsyncClient) -> httpx.Auth | None:
+        if self._username is None or self._password is None:
+            return None
+        async with client.stream('GET', self._url) as probe:
+            scheme = probe.headers.get('www-authenticate', '').split(' ', 1)[0].lower()
+        self.log.debug('using %s auth for %s', scheme or 'basic (no challenge)', self._url)
+        if scheme == 'digest':
+            return httpx.DigestAuth(self._username, self._password)
+        return httpx.BasicAuth(self._username, self._password)
+
     async def run_capture_task(self) -> None:
         self.log.debug('Starting capture task for %s', self._url)
 
@@ -54,10 +65,11 @@ class MjpegDevice:
             async with httpx.AsyncClient() as client:
                 assert self._url is not None
                 try:
-                    async with client.stream('GET', self._url, auth=self._authentication) as response:  # type: ignore
+                    auth = await self._resolve_auth(client)
+                    async with client.stream('GET', self._url, auth=auth) as response:
                         if response.status_code != 200:
                             self.log.error('could not connect to %s (credentials: %s): %s %s',
-                                           self._url, self._authentication, response.status_code, response.reason_phrase)
+                                           self._url, auth, response.status_code, response.reason_phrase)
                             return
 
                         buffer_size = 16 * 1024 * 1024
