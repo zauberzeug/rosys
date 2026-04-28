@@ -71,11 +71,16 @@ async def test_finally_block(automator: Automator):
         finally:
             events.append('tock')
 
-    automator.start(run())
-    await forward(seconds=10)
-    automator.stop(because='test')
-    await forward(seconds=1)
-    assert events == ['tick', 'tick', 'tick', 'tick', 'tock']
+    pinned: list = []  # prevent refcount-driven GC from masking the bug
+    for _ in range(2):
+        coro = run()
+        pinned.append(coro)
+        automator.start(coro)
+        await forward(seconds=10)
+        pinned.append(automator.automation)
+        automator.stop(because='test')
+        await forward(seconds=1)
+    assert events == ['tick', 'tick', 'tick', 'tick', 'tock'] * 2
 
 
 async def test_parallelize(automator: Automator):
