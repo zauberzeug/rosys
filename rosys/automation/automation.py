@@ -113,6 +113,7 @@ class Automation:
         finally:
             self._is_waited = False
             _CURRENT_AUTOMATION.reset(token)
+            self.coro.close()
         return None
 
     def pause(self) -> None:
