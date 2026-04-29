@@ -33,6 +33,7 @@ dependencies = [
     "pyquaternion>=0.9.9,<0.10",
     "cairosvg>=2.9.0,<3",  # https://github.com/zauberzeug/rosys/security/dependabot/104
     "pillow>=12.2.0",  # https://github.com/zauberzeug/rosys/security/dependabot/112
+    "lxml>=6.1.0",  # https://github.com/zauberzeug/rosys/security/dependabot/115
     "idna>=3.7",  # https://github.com/zauberzeug/rosys/security/dependabot/45
     "requests>=2.32.4",  # https://github.com/zauberzeug/rosys/security/dependabot/64
     "urllib3>=2.6.3",  # https://github.com/zauberzeug/rosys/security/dependabot/90
