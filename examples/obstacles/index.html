@@ -810,16 +810,67 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../reference/rosys/hardware/" class="md-nav__link">
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../reference/rosys/hardware/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     hardware
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            hardware
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/rosys/hardware/gnss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    gnss
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1179,7 +1230,7 @@ Open a browser at location http://localhost:8080.</p>
 
     <span class="n">state</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">()</span>
     <span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">state</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span>
-        <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rosys</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1"> s, </span><span class="si">{</span><span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rosys</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1"> s, </span><span class="si">{</span><span class="n">odometer</span><span class="o">.</span><span class="n">pose</span><span class="si">}</span><span class="s1">&#39;</span>
     <span class="p">))</span>
 
     <span class="n">click_mode</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">toggle</span><span class="p">({</span>
@@ -1195,7 +1246,7 @@ Open a browser at location http://localhost:8080.</p>
             <span class="n">object_type</span> <span class="o">=</span> <span class="p">(</span><span class="n">hit</span><span class="o">.</span><span class="n">object_name</span> <span class="ow">or</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">or</span> <span class="n">hit</span><span class="o">.</span><span class="n">object_id</span>
             <span class="n">target</span> <span class="o">=</span> <span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">y</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">object_type</span> <span class="o">==</span> <span class="s1">&#39;ground&#39;</span> <span class="ow">and</span> <span class="n">click_mode</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">&#39;drive&#39;</span><span class="p">:</span>
-                <span class="n">start</span> <span class="o">=</span> <span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span><span class="o">.</span><span class="n">point</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">odometer</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">point</span>
                 <span class="n">path</span> <span class="o">=</span> <span class="p">[</span><span class="n">PathSegment</span><span class="p">(</span><span class="n">spline</span><span class="o">=</span><span class="n">Spline</span><span class="p">(</span>
                     <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
                     <span class="n">control1</span><span class="o">=</span><span class="n">start</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="mi">1</span><span class="o">/</span><span class="mi">3</span><span class="p">),</span>
@@ -1207,8 +1258,8 @@ Open a browser at location http://localhost:8080.</p>
                 <span class="k">return</span>
             <span class="k">if</span> <span class="n">object_type</span> <span class="o">==</span> <span class="s1">&#39;ground&#39;</span> <span class="ow">and</span> <span class="n">click_mode</span><span class="o">.</span><span class="n">value</span> <span class="o">==</span> <span class="s1">&#39;navigate&#39;</span><span class="p">:</span>
                 <span class="n">goal</span> <span class="o">=</span> <span class="n">Pose</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
-                            <span class="n">yaw</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span><span class="o">.</span><span class="n">direction</span><span class="p">(</span><span class="n">target</span><span class="p">))</span>
-                <span class="n">path</span> <span class="o">=</span> <span class="k">await</span> <span class="n">path_planner</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span><span class="p">,</span>
+                            <span class="n">yaw</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">direction</span><span class="p">(</span><span class="n">target</span><span class="p">))</span>
+                <span class="n">path</span> <span class="o">=</span> <span class="k">await</span> <span class="n">path_planner</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span>
                                                  <span class="n">goal</span><span class="o">=</span><span class="n">goal</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">3.0</span><span class="p">)</span>
                 <span class="n">path3d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
                 <span class="n">automator</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">driver</span><span class="o">.</span><span class="n">drive_path</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>

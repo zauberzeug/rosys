@@ -810,16 +810,67 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../reference/rosys/hardware/" class="md-nav__link">
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../reference/rosys/hardware/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     hardware
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            hardware
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/rosys/hardware/gnss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    gnss
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1129,6 +1180,7 @@
 
 <h1 id="kpi">KPI<a class="headerlink" href="#kpi" title="Permanent link">&para;</a></h1>
 <p>This example demonstrates how to create a KPI page.</p>
+<p>After starting the application, the KPI page can be accessed at http://localhost:8080/kpis.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">random</span><span class="w"> </span><span class="kn">import</span> <span class="n">randint</span>
@@ -1190,7 +1242,7 @@
 <span class="n">generate_example_kpis</span><span class="p">(</span><span class="n">kpi_logger</span><span class="p">)</span>
 <span class="n">kpi_page</span><span class="p">(</span><span class="n">kpi_logger</span><span class="p">)</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;KPI Example&#39;</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;KPI Example&#39;</span><span class="p">,</span> <span class="n">show</span><span class="o">=</span><span class="s1">&#39;/kpis&#39;</span><span class="p">)</span>
 </code></pre></div>
 
 

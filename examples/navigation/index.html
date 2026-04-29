@@ -849,16 +849,67 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../reference/rosys/hardware/" class="md-nav__link">
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../reference/rosys/hardware/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     hardware
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            hardware
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/rosys/hardware/gnss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    gnss
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1212,8 +1263,8 @@
     <span class="k">for</span> <span class="n">hit</span> <span class="ow">in</span> <span class="n">e</span><span class="o">.</span><span class="n">hits</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">hit</span><span class="o">.</span><span class="n">object_id</span> <span class="o">==</span> <span class="s1">&#39;ground&#39;</span><span class="p">:</span>
             <span class="n">goal</span> <span class="o">=</span> <span class="n">Pose</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">y</span><span class="p">,</span>
-                        <span class="n">yaw</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span><span class="o">.</span><span class="n">direction</span><span class="p">(</span><span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">y</span><span class="p">)))</span>
-            <span class="n">path</span> <span class="o">=</span> <span class="k">await</span> <span class="n">path_planner</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span><span class="p">,</span> <span class="n">goal</span><span class="o">=</span><span class="n">goal</span><span class="p">)</span>
+                        <span class="n">yaw</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">pose</span><span class="o">.</span><span class="n">direction</span><span class="p">(</span><span class="n">Point</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">hit</span><span class="o">.</span><span class="n">y</span><span class="p">)))</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="k">await</span> <span class="n">path_planner</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">pose</span><span class="p">,</span> <span class="n">goal</span><span class="o">=</span><span class="n">goal</span><span class="p">)</span>
             <span class="n">path3d</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
             <span class="n">automator</span><span class="o">.</span><span class="n">start</span><span class="p">(</span><span class="n">driver</span><span class="o">.</span><span class="n">drive_path</span><span class="p">(</span><span class="n">path</span><span class="p">))</span>
 

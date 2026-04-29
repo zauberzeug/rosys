@@ -800,16 +800,67 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../hardware/" class="md-nav__link">
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../hardware/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     hardware
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            hardware
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hardware/gnss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    gnss
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -890,6 +941,21 @@
       PathPlanner
     </span>
   </a>
+  
+    <nav class="md-nav" aria-label="PathPlanner">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events" class="md-nav__link">
+    <span class="md-ellipsis">
+      Events
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1157,6 +1223,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="PathPlanner">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events" class="md-nav__link">
+    <span class="md-ellipsis">
+      Events
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
     </ul>
@@ -1222,7 +1303,25 @@ The path planner can search paths, check if a spline interferes with obstacles a
 
     </div>
 
-</div>
+</div><h3 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OBSTACLES_CHANGED</td>
+<td>the obstacles have changed (argument: dictionary of <code>Obstacle</code> objects)</td>
+</tr>
+<tr>
+<td>AREAS_CHANGED</td>
+<td>the areas have changed (argument: list of <code>Area</code> objects or <code>None</code>)</td>
+</tr>
+</tbody>
+</table>
 
 
 

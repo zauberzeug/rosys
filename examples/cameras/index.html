@@ -885,16 +885,67 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../reference/rosys/hardware/" class="md-nav__link">
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../reference/rosys/hardware/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     hardware
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            hardware
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/rosys/hardware/gnss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    gnss
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1308,26 +1359,28 @@ Here we use the <code>NEW_CAMERA</code> event to display the first camera to con
 <span class="n">odometer</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">Odometer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
 
 
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_main_camera</span><span class="p">(</span><span class="n">camera</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">Camera</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">camera_card</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>  <span class="c1"># remove &quot;seeking camera&quot; label</span>
-    <span class="k">with</span> <span class="n">camera_card</span><span class="p">:</span>
-        <span class="n">main_cam</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">()</span>
-        <span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">main_cam</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">get_latest_image_url</span><span class="p">()))</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">root</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">add_main_camera</span><span class="p">(</span><span class="n">camera</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">Camera</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">camera_card</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>  <span class="c1"># remove &quot;seeking camera&quot; label</span>
+        <span class="k">with</span> <span class="n">camera_card</span><span class="p">:</span>
+            <span class="n">main_cam</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">()</span>
+            <span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">main_cam</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">get_latest_image_url</span><span class="p">()))</span>
 
-<span class="n">camera_provider</span><span class="o">.</span><span class="n">CAMERA_ADDED</span><span class="o">.</span><span class="n">register_ui</span><span class="p">(</span><span class="n">add_main_camera</span><span class="p">)</span>
+    <span class="n">camera_provider</span><span class="o">.</span><span class="n">CAMERA_ADDED</span><span class="o">.</span><span class="n">subscribe</span><span class="p">(</span><span class="n">add_main_camera</span><span class="p">)</span>
 
-<span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">()</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">&#39;width:30em&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">camera_card</span><span class="p">:</span>
-    <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;seeking main camera&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-8 text-center&#39;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">()</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">&#39;width:30em&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">camera_card</span><span class="p">:</span>
+        <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;seeking main camera&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-8 text-center&#39;</span><span class="p">)</span>
 
-<span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">()</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">&#39;width:30em&#39;</span><span class="p">):</span>
-    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
-        <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">():</span>
-            <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
-            <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">keyboard_control</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
-        <span class="n">ui</span><span class="o">.</span><span class="n">markdown</span><span class="p">(</span><span class="s1">&#39;steer with joystick on the left or&lt;br /&gt;SHIFT + arrow keys&#39;</span><span class="p">)</span> \
-            <span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-8 text-center&#39;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">()</span><span class="o">.</span><span class="n">style</span><span class="p">(</span><span class="s1">&#39;width:30em&#39;</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
+            <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">():</span>
+                <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">joystick</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
+                <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">keyboard_control</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
+            <span class="n">ui</span><span class="o">.</span><span class="n">markdown</span><span class="p">(</span><span class="s1">&#39;steer with joystick on the left or&lt;br /&gt;SHIFT + arrow keys&#39;</span><span class="p">)</span> \
+                <span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-8 text-center&#39;</span><span class="p">)</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
+
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">)</span>
 </code></pre></div>
 <p>By adding a <code>Joystick</code> and <code>KeyboardControl</code> the robot is ready to go for remote operation.</p>
 <h2 id="controlling-the-camera">Controlling the Camera<a class="headerlink" href="#controlling-the-camera" title="Permanent link">&para;</a></h2>

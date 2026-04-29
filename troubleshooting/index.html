@@ -796,16 +796,67 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../reference/rosys/hardware/" class="md-nav__link">
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../reference/rosys/hardware/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     hardware
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            hardware
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/rosys/hardware/gnss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    gnss
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1118,6 +1169,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#macos-cairo-library-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      macOS Cairo Library Issues
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1161,6 +1221,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#macos-cairo-library-issues" class="md-nav__link">
+    <span class="md-ellipsis">
+      macOS Cairo Library Issues
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1191,6 +1260,14 @@ The warning also provides a (not so readable) hint where the time is consumed.</
 <p>The example above is one of the more frequent scenarios.
 It means some code inside a user interaction event handler (e.g. <code>handle_event()</code> in <code>justpy.py</code>) is blocking.
 Try to figure out which UI event code is responsible by commenting out parts of your logic and try to reproduce the warning systematically.</p>
+<h2 id="macos-cairo-library-issues">macOS Cairo Library Issues<a class="headerlink" href="#macos-cairo-library-issues" title="Permanent link">&para;</a></h2>
+<p>RoSys depends on the 2D graphics library <a href="https://cairographics.org/">Cairo</a> which needs to be installed via brew on macOS.</p>
+<div class="highlight"><pre><span></span><code>brew<span class="w"> </span>install<span class="w"> </span>cairo<span class="w"> </span>pkg-config
+</code></pre></div>
+<p>If you encounter issues with Python not finding the Cairo library, you may need to set the library path:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">export</span><span class="w"> </span><span class="nv">DYLD_LIBRARY_PATH</span><span class="o">=</span><span class="s2">&quot;/opt/homebrew/lib:</span><span class="nv">$DYLD_LIBRARY_PATH</span><span class="s2">&quot;</span>
+</code></pre></div>
+<p>Or add it to your shell profile (<code>~/.zshrc</code> or <code>~/.bash_profile</code>).</p>
 
 
 

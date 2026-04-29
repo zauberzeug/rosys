@@ -59,4 +59,4 @@ kpi_logger = KpiLogger()
 generate_example_kpis(kpi_logger)
 kpi_page(kpi_logger)
 
-ui.run(title='KPI Example')
+ui.run(title='KPI Example', show='/kpis')

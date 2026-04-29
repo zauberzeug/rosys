@@ -25,8 +25,8 @@ async def handle_click(e: SceneClickEventArguments):
     for hit in e.hits:
         if hit.object_id == 'ground':
             goal = Pose(x=hit.x, y=hit.y,
-                        yaw=odometer.prediction.direction(Point(x=hit.x, y=hit.y)))
-            path = await path_planner.search(start=odometer.prediction, goal=goal)
+                        yaw=odometer.pose.direction(Point(x=hit.x, y=hit.y)))
+            path = await path_planner.search(start=odometer.pose, goal=goal)
             path3d.update(path)
             automator.start(driver.drive_path(path))
 

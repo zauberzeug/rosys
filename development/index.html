@@ -798,16 +798,67 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../reference/rosys/hardware/" class="md-nav__link">
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../reference/rosys/hardware/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     hardware
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            hardware
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/rosys/hardware/gnss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    gnss
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1632,7 +1683,7 @@ To create a new release perform the following steps:</p>
 <li>Edit the text the script produces with more details and more mentions of people that participated.</li>
 <li>In your local repo add a new tag with <code>v0.{x.y}</code> as the name to the current main head.</li>
 <li>Push to GitHub which starts GitHub Action that performs the following steps:</li>
-<li>If the pytests are successful, a poetry build and deployment to <a href="https://pypi.org/project/rosys/">pypi</a> is issued.</li>
+<li>If the pytests are successful, a build and deployment to <a href="https://pypi.org/project/rosys/">pypi</a> is issued.</li>
 <li>A multi-arch Docker image is built and pushed to <a href="https://hub.docker.com/r/zauberzeug/rosys">Docker Hub</a>.</li>
 <li>Close the milestone on GitHub.</li>
 <li>Create a new milestone on GitHub with the next version (<code>0.{x.y+1}</code>).</li>

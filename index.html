@@ -1019,16 +1019,67 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="reference/rosys/hardware/" class="md-nav__link">
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="reference/rosys/hardware/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     hardware
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            hardware
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/rosys/hardware/gnss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    gnss
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1564,16 +1615,13 @@ They can hold their own state, register lifecycle hooks, run methods repeatedly 
 Modules can depend on other modules which is mostly implemented by passing them into the constructor.</p>
 <h3 id="lifecycle-hooks-and-loops">Lifecycle Hooks and Loops<a class="headerlink" href="#lifecycle-hooks-and-loops" title="Permanent link">&para;</a></h3>
 <p>Modules can register functions via <code>rosys.on_startup</code> or <code>rosys.on_shutdown</code> as well as repeatedly with a given interval with <code>rosys.on_repeat</code>.</p>
-<!-- prettier-ignore-start -->
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Note that NiceGUI's <code>app</code> object also provides methods <code>app.on_startup</code> and <code>app.on_shutdown</code>, but it is recommended to use RoSys' counterparts:
+<blockquote>
+<p>[!NOTE]
+Note that NiceGUI's <code>app</code> object also provides methods <code>app.on_startup</code> and <code>app.on_shutdown</code>, but it is recommended to use RoSys' counterparts:
 <code>rosys.on_startup</code> ensures the callback is executed <em>after</em> persistent modules have been loaded from storage.
 If you, e.g., set the <code>rosys.config.simulation_speed</code> programmatically via <code>app.on_startup()</code> instead of <code>rosys.on_startup</code>,
 the change is overwritten by RoSys' <code>persistence.restore()</code>.</p>
-</div>
-<!-- prettier-ignore-end -->
-
+</blockquote>
 <h3 id="events">Events<a class="headerlink" href="#events" title="Permanent link">&para;</a></h3>
 <p>Modules can provide events to allow connecting otherwise separated modules of the system.
 For example, one module might read sensor data and raise an event <code>NEW_SENSOR_DATA</code>, without knowing of any consumers.

@@ -810,16 +810,67 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../reference/rosys/hardware/" class="md-nav__link">
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../reference/rosys/hardware/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     hardware
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            hardware
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/rosys/hardware/gnss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    gnss
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1189,7 +1240,7 @@ Open a browser at location http://localhost:8080.</p>
     <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
         <span class="n">state</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">()</span>
         <span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">state</span><span class="o">.</span><span class="n">set_text</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rosys</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1"> s, </span><span class="si">{</span><span class="n">odometer</span><span class="o">.</span><span class="n">prediction</span><span class="si">}</span><span class="s1">&#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">rosys</span><span class="o">.</span><span class="n">time</span><span class="p">()</span><span class="si">:</span><span class="s1">.3f</span><span class="si">}</span><span class="s1"> s, </span><span class="si">{</span><span class="n">odometer</span><span class="o">.</span><span class="n">pose</span><span class="si">}</span><span class="s1">&#39;</span>
         <span class="p">))</span>
 
     <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>

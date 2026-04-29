@@ -11,7 +11,7 @@
         <link rel="canonical" href="https://rosys.io/reference/rosys/helpers/">
       
       
-        <link rel="prev" href="../hardware/">
+        <link rel="prev" href="../hardware/gnss/">
       
       
         <link rel="next" href="../pathplanning/">
@@ -68,7 +68,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#rosys.helpers.ramp" class="md-skip">
+        <a href="#rosys.helpers.MultiQueueLazyWorker" class="md-skip">
           Skip to content
         </a>
       
@@ -800,16 +800,67 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../hardware/" class="md-nav__link">
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../hardware/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     hardware
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            hardware
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hardware/gnss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    gnss
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -864,20 +915,26 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#rosys.helpers.ramp" class="md-nav__link">
+  <a href="#rosys.helpers.MultiQueueLazyWorker" class="md-nav__link">
     <span class="md-ellipsis">
-      ramp
+      MultiQueueLazyWorker
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MultiQueueLazyWorker">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.helpers.MultiQueueLazyWorker.run" class="md-nav__link">
+    <span class="md-ellipsis">
+      run
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#rosys.helpers.remove_indentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      remove_indentation
-    </span>
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1160,20 +1217,26 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#rosys.helpers.ramp" class="md-nav__link">
+  <a href="#rosys.helpers.MultiQueueLazyWorker" class="md-nav__link">
     <span class="md-ellipsis">
-      ramp
+      MultiQueueLazyWorker
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="MultiQueueLazyWorker">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.helpers.MultiQueueLazyWorker.run" class="md-nav__link">
+    <span class="md-ellipsis">
+      run
     </span>
   </a>
   
 </li>
-      
-        <li class="md-nav__item">
-  <a href="#rosys.helpers.remove_indentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      remove_indentation
-    </span>
-  </a>
+        
+      </ul>
+    </nav>
   
 </li>
       
@@ -1194,48 +1257,187 @@
 
   <h1>helpers</h1>
 
-<div class="doc doc-object doc-function">
+<div class="doc doc-object doc-class">
 
 
-<h2 id="rosys.helpers.ramp" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">ramp</span>
+
+<h2 id="rosys.helpers.MultiQueueLazyWorker" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">MultiQueueLazyWorker</span>
 
 
-<a href="#rosys.helpers.ramp" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">ramp</span><span class="p">(</span>
-    <span class="n">x</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">in1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">in2</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">out1</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">out2</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
-    <span class="n">clip</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span>
+<a href="#rosys.helpers.MultiQueueLazyWorker" class="headerlink" title="Permanent link">&para;</a></h2>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">MultiQueueLazyWorker</span><span class="p">(</span><span class="n">running_slots</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
 </code></pre></div>
 
     <div class="doc doc-contents first">
 
-        <p>Map a value x from one range (in1, in2) to another (out1, out2).</p>
+
+        <p>A scheduling worker that controls access to an (implicit) shared resource.</p>
+<p>The shared resource is not managed by the worker itself, but assumed
+to be accessed by the coroutine given to <code>run</code>. The maximum number of
+concurrent accesses is controlled by the <code>running_slots</code> parameter.</p>
+<p>Items from the queues are scheduled fairly, favouring the queue with the
+least recent access to the resource. If the resource is equally contended
+by all queues, this results in round-robin scheduling.</p>
+<p>Each queue has a fixed size of one, where new requests (by calls to <code>run</code>)
+displace old ones, similar to the mechanism used by the <code>LazyWorker</code>.</p>
+<p><em>Note</em>: The implementation is <em>not</em> threadsafe, so it should not be used to
+synchronize access from different threads (e.g., by using a multi threaded
+async runtime).</p>
+
+        <p>Initialize the worker with a fixed number of running slots.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>running_slots</code>
+            </td>
+            <td>
+                  <code><span title="int">int</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Maximum number coroutines running concurrently.</p>
+              </div>
+            </td>
+            <td>
+                  <code>1</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.helpers.MultiQueueLazyWorker.run" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">run</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.helpers.MultiQueueLazyWorker.run" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">run</span><span class="p">(</span>
+    <span class="n">queue_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">coro</span><span class="p">:</span> <span class="n">Coroutine</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">_T</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">_T</span> <span class="o">|</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Try to run the given coroutine. A later call with the same
+queue_id<code>will displace this one. In that case</code>None` is returned.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>queue_id</code>
+            </td>
+            <td>
+                  <code><span title="str">str</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Uniquely identifies the queue that coro will be pushed to</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>coro</code>
+            </td>
+            <td>
+                  <code><span title="collections.abc.Coroutine">Coroutine</span>[<span title="typing.Any">Any</span>, <span title="typing.Any">Any</span>, <span title="rosys.helpers.multi_queue_lazy_worker._T">_T</span>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Coroutine which accesses a shared resource</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="rosys.helpers.multi_queue_lazy_worker._T">_T</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>None if a later call displaced this one, the return value of
+the coroutine otherwise</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
 
 
     </div>
 
 </div>
 
-<div class="doc doc-object doc-function">
 
 
-<h2 id="rosys.helpers.remove_indentation" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">remove_indentation</span>
-
-
-<a href="#rosys.helpers.remove_indentation" class="headerlink" title="Permanent link">&para;</a></h2>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">remove_indentation</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span>
-</code></pre></div>
-
-    <div class="doc doc-contents first">
-
-        <p>Remove indentation from a multi-line string based on the indentation of the first line.</p>
-
+  </div>
 
     </div>
 

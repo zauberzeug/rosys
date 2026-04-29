@@ -810,16 +810,67 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../../reference/rosys/hardware/" class="md-nav__link">
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
         
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../reference/rosys/hardware/" class="md-nav__link ">
+              
   
   <span class="md-ellipsis">
     hardware
   </span>
   
 
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5_5" id="__nav_5_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_5_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5_5">
+            <span class="md-nav__icon md-icon"></span>
+            hardware
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/rosys/hardware/gnss/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    gnss
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1191,7 +1242,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">pose</span> <span class="o">=</span> <span class="n">persistence</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">Frame3d</span><span class="p">,</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;pose&#39;</span><span class="p">])</span>
 
 
-<span class="n">anchor_frame</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span><span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="s1">&#39;anchor&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">in_frame</span><span class="p">(</span><span class="n">odometer</span><span class="o">.</span><span class="n">prediction_frame</span><span class="p">)</span>
+<span class="n">anchor_frame</span> <span class="o">=</span> <span class="n">Pose3d</span><span class="p">(</span><span class="n">z</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span><span class="o">.</span><span class="n">as_frame</span><span class="p">(</span><span class="s1">&#39;anchor&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">in_frame</span><span class="p">(</span><span class="n">odometer</span><span class="o">.</span><span class="n">frame</span><span class="p">)</span>
 <span class="n">arm1</span> <span class="o">=</span> <span class="n">Link</span><span class="p">(</span><span class="s1">&#39;arm1&#39;</span><span class="p">,</span> <span class="n">anchor_frame</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span><span class="o">.</span><span class="n">persistent</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">&#39;arm1&#39;</span><span class="p">)</span>
 <span class="n">arm2</span> <span class="o">=</span> <span class="n">Link</span><span class="p">(</span><span class="s1">&#39;arm2&#39;</span><span class="p">,</span> <span class="n">arm1</span><span class="o">.</span><span class="n">end</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span><span class="o">.</span><span class="n">persistent</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">&#39;arm2&#39;</span><span class="p">)</span>
 <span class="n">cam</span> <span class="o">=</span> <span class="n">Cam</span><span class="p">(</span><span class="n">arm2</span><span class="o">.</span><span class="n">end</span><span class="p">)</span><span class="o">.</span><span class="n">persistent</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="s1">&#39;cam&#39;</span><span class="p">)</span>
@@ -1200,8 +1251,8 @@
 <span class="nd">@ui</span><span class="o">.</span><span class="n">page</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
 <span class="k">def</span><span class="w"> </span><span class="nf">page</span><span class="p">():</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">update_scene</span><span class="p">():</span>
-        <span class="n">chassis</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">odometer</span><span class="o">.</span><span class="n">prediction_frame</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">translation</span><span class="p">)</span>
-        <span class="n">chassis</span><span class="o">.</span><span class="n">rotate_R</span><span class="p">(</span><span class="n">odometer</span><span class="o">.</span><span class="n">prediction_frame</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">rotation</span><span class="o">.</span><span class="n">R</span><span class="p">)</span>
+        <span class="n">chassis</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">odometer</span><span class="o">.</span><span class="n">frame</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">translation</span><span class="p">)</span>
+        <span class="n">chassis</span><span class="o">.</span><span class="n">rotate_R</span><span class="p">(</span><span class="n">odometer</span><span class="o">.</span><span class="n">frame</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">rotation</span><span class="o">.</span><span class="n">R</span><span class="p">)</span>
         <span class="n">segment1</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">arm1</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">translation</span><span class="p">)</span>
         <span class="n">segment1</span><span class="o">.</span><span class="n">rotate_R</span><span class="p">(</span><span class="n">arm1</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">rotation</span><span class="o">.</span><span class="n">R</span><span class="p">)</span>
         <span class="n">segment2</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">arm2</span><span class="o">.</span><span class="n">base</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">translation</span><span class="p">)</span>
