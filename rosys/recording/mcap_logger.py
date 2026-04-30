@@ -231,6 +231,53 @@ class McapLogger:
             'angular': v.angular,
         }, timestamp_ns=int(v.time * NANOSECONDS_PER_SECOND))
 
+    def connect_pose_provider(self, provider: object, *, topic: str, schema_name: str) -> None:
+        """Connect any PoseProvider (Odometer, RobotLocator, etc.) via its POSE_UPDATED event."""
+        assert hasattr(provider, 'POSE_UPDATED'), f'{type(provider).__name__} has no POSE_UPDATED event'
+        self.add_topic(topic, schema_name=schema_name, schema={
+            'type': 'object',
+            'properties': {
+                'x': {'type': 'number', 'description': 'X position in meters'},
+                'y': {'type': 'number', 'description': 'Y position in meters'},
+                'yaw': {'type': 'number', 'description': 'Yaw angle in radians'},
+            },
+        })
+        provider.POSE_UPDATED.subscribe(lambda pose, t=topic: self.log_message(t, {
+            'x': pose.x,
+            'y': pose.y,
+            'yaw': pose.yaw,
+        }, timestamp_ns=int(pose.time * NANOSECONDS_PER_SECOND)))
+
+    def connect_robot_locator(self, locator: object) -> None:
+        """Connect a RobotLocator to log EKF pose and uncertainty."""
+        self.connect_pose_provider(locator, topic='/ekf/pose', schema_name='EkfPose')
+        self.add_topic('/ekf/uncertainty', schema_name='EkfUncertainty', schema={
+            'type': 'object',
+            'properties': {
+                'sigma_x': {'type': 'number', 'description': 'X position std dev in meters'},
+                'sigma_y': {'type': 'number', 'description': 'Y position std dev in meters'},
+                'sigma_yaw': {'type': 'number', 'description': 'Yaw std dev in radians'},
+            },
+        })
+        assert hasattr(locator, 'POSE_UPDATED')
+        assert hasattr(locator, 'uncertainty')
+        locator.POSE_UPDATED.subscribe(self._on_locator_pose_updated)
+        self._locator = locator
+
+    def _on_locator_pose_updated(self, pose: object) -> None:
+        from ..geometry import Pose
+        assert isinstance(pose, Pose)
+        sigma_x, sigma_y, sigma_yaw = self._locator.uncertainty
+        self.log_message('/ekf/uncertainty', {
+            'sigma_x': sigma_x,
+            'sigma_y': sigma_y,
+            'sigma_yaw': sigma_yaw,
+        }, timestamp_ns=int(pose.time * NANOSECONDS_PER_SECOND))
+
+    def connect_odometer(self, odometer: object) -> None:
+        """Connect an Odometer to log raw odometry pose."""
+        self.connect_pose_provider(odometer, topic='/odometry/pose', schema_name='OdometryPose')
+
     def _register_topic(self, topic: str, schema_name: str, schema_dict: dict) -> None:
         assert self._writer is not None
         schema_id = self._writer.register_schema(
