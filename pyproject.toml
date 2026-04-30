@@ -42,6 +42,7 @@ dependencies = [
     "marshmallow>=3.26.2,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/81
     "pyturbojpeg>=1.8.2,<2",
     "virtualenv>=20.36.1",  # https://github.com/zauberzeug/rosys/security/dependabot/95
+    "mcap>=1.1.0,<2",
 ]
 
 [project.urls]
