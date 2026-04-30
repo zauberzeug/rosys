@@ -121,8 +121,12 @@ class BmsHardware(Bms, ModuleHardware):
     def _handle_bms(self, line: str) -> None:
         skip = 2 if self.expander else 1
         words = line.split()[skip:]
-        msg = BmsMessage([int(w, 16) for w in words])
-        msg.check()
+        try:
+            msg = BmsMessage([int(w, 16) for w in words])
+            msg.check()
+        except (AssertionError, ValueError, IndexError):
+            self.log.warning('Invalid BMS message: %s', line)
+            return
         result = msg.interpret()
         percentage = result.get('capacity percent')
         if percentage is not None:
