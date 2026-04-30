@@ -278,6 +278,70 @@ class McapLogger:
         """Connect an Odometer to log raw odometry pose."""
         self.connect_pose_provider(odometer, topic='/odometry/pose', schema_name='OdometryPose')
 
+    def connect_driver(self, driver: object) -> None:
+        """Connect a Driver to log carrot pose, curvature, turn angle, and spline progress."""
+        from ..driving import Driver
+        assert isinstance(driver, Driver)
+        self.add_topic('/driver/state', schema_name='DriveState', schema={
+            'type': 'object',
+            'properties': {
+                'carrot_x': {'type': 'number', 'description': 'Carrot target X in meters'},
+                'carrot_y': {'type': 'number', 'description': 'Carrot target Y in meters'},
+                'carrot_yaw': {'type': 'number', 'description': 'Carrot target yaw in radians'},
+                'curvature': {'type': 'number', 'description': 'Steering curvature in 1/m'},
+                'turn_angle': {'type': 'number', 'description': 'Angle to carrot in radians'},
+                'spline_t': {'type': 'number', 'description': 'Progress along spline (0=start, 1=end)'},
+                'backward': {'type': 'boolean'},
+            },
+        })
+        driver.DRIVE_STATE_UPDATED.subscribe(self._on_drive_state_updated)
+
+    def _on_drive_state_updated(self, state: object) -> None:
+        from ..driving.driver import DriveState
+        assert isinstance(state, DriveState)
+        self.log_message('/driver/state', {
+            'carrot_x': state.carrot_pose.x,
+            'carrot_y': state.carrot_pose.y,
+            'carrot_yaw': state.carrot_pose.yaw,
+            'curvature': state.curvature,
+            'turn_angle': state.turn_angle,
+            'spline_t': state.spline_t,
+            'backward': state.backward,
+        })
+
+    def connect_navigation(self, navigation: object) -> None:
+        """Connect a WaypointNavigation to log segment events."""
+        assert hasattr(navigation, 'SEGMENT_STARTED'), f'{type(navigation).__name__} has no SEGMENT_STARTED event'
+        self.add_topic('/navigation/event', schema_name='NavigationEvent', schema={
+            'type': 'object',
+            'properties': {
+                'event': {'type': 'string', 'description': 'Event type (segment_started, segment_completed, path_completed)'},
+                'segment_start_x': {'type': 'number'},
+                'segment_start_y': {'type': 'number'},
+                'segment_end_x': {'type': 'number'},
+                'segment_end_y': {'type': 'number'},
+                'backward': {'type': 'boolean'},
+            },
+        })
+        navigation.SEGMENT_STARTED.subscribe(
+            lambda seg: self._on_navigation_event('segment_started', seg))
+        navigation.SEGMENT_COMPLETED.subscribe(
+            lambda seg: self._on_navigation_event('segment_completed', seg))
+        navigation.PATH_COMPLETED.subscribe(
+            lambda: self.log_message('/navigation/event', {'event': 'path_completed'}))
+
+    def _on_navigation_event(self, event_type: str, segment: object) -> None:
+        start = segment.spline.pose(0)
+        end = segment.spline.pose(1)
+        self.log_message('/navigation/event', {
+            'event': event_type,
+            'segment_start_x': start.x,
+            'segment_start_y': start.y,
+            'segment_end_x': end.x,
+            'segment_end_y': end.y,
+            'backward': segment.backward,
+        })
+
     def _register_topic(self, topic: str, schema_name: str, schema_dict: dict) -> None:
         assert self._writer is not None
         schema_id = self._writer.register_schema(

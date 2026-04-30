@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 import numpy as np
+from nicegui import Event
 
 from .. import rosys
 from ..analysis import track
@@ -35,6 +36,7 @@ class DriveState:
     curvature: float
     backward: bool
     turn_angle: float
+    spline_t: float = 0.0
 
 
 class DrivingAbortedException(Exception):
@@ -55,6 +57,9 @@ class Driver:
         self.parameters = parameters or DriveParameters()
         self.state: DriveState | None = None
         self._abort = False
+
+        self.DRIVE_STATE_UPDATED = Event[DriveState]()
+        """emitted each control cycle during spline driving (argument: ``DriveState``)"""
 
     @property
     def pose(self) -> Pose:
@@ -208,7 +213,9 @@ class Driver:
                 curvature=curvature,
                 backward=drive_backward,
                 turn_angle=turn_angle,
+                spline_t=t,
             )
+            self.DRIVE_STATE_UPDATED.emit(self.state)
 
             await self.wheels.drive(*self._throttle(linear, angular))
             await rosys.sleep(0.1)
