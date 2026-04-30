@@ -122,7 +122,15 @@ class McapLogger:
     def connect_gnss(self, gnss: object) -> None:
         from ..hardware.gnss import Gnss
         assert isinstance(gnss, Gnss)
-        self.add_topic('/gnss', schema_name='GnssMeasurement', schema={
+        self.add_topic('/gnss', schema_name='foxglove.LocationFix', schema={
+            'type': 'object',
+            'properties': {
+                'latitude': {'type': 'number'},
+                'longitude': {'type': 'number'},
+                'altitude': {'type': 'number'},
+            },
+        })
+        self.add_topic('/gnss/detailed', schema_name='GnssMeasurement', schema={
             'type': 'object',
             'properties': {
                 'latitude_deg': {'type': 'number', 'description': 'Latitude in degrees'},
@@ -138,12 +146,18 @@ class McapLogger:
                 'altitude': {'type': 'number', 'description': 'Altitude in meters'},
             },
         })
-        gnss.NEW_MEASUREMENT.register(self._on_gnss_measurement)
+        gnss.NEW_MEASUREMENT.subscribe(self._on_gnss_measurement)
 
     def _on_gnss_measurement(self, m: object) -> None:
         from ..hardware.gnss import GnssMeasurement
         assert isinstance(m, GnssMeasurement)
+        ts = int(m.time * NANOSECONDS_PER_SECOND)
         self.log_message('/gnss', {
+            'latitude': math.degrees(m.pose.lat),
+            'longitude': math.degrees(m.pose.lon),
+            'altitude': m.altitude,
+        }, timestamp_ns=ts)
+        self.log_message('/gnss/detailed', {
             'latitude_deg': math.degrees(m.pose.lat),
             'longitude_deg': math.degrees(m.pose.lon),
             'heading_deg': math.degrees(m.pose.heading),
@@ -155,7 +169,7 @@ class McapLogger:
             'num_satellites': m.num_satellites,
             'hdop': m.hdop,
             'altitude': m.altitude,
-        }, timestamp_ns=int(m.time * NANOSECONDS_PER_SECOND))
+        }, timestamp_ns=ts)
 
     def connect_imu(self, imu: object) -> None:
         from ..hardware.imu import Imu
@@ -172,7 +186,7 @@ class McapLogger:
                 'gyro_calibration': {'type': 'number'},
             },
         })
-        imu.NEW_MEASUREMENT.register(self._on_imu_measurement)
+        imu.NEW_MEASUREMENT.subscribe(self._on_imu_measurement)
 
     def _on_imu_measurement(self, m: object) -> None:
         from ..hardware.imu import ImuMeasurement
@@ -190,21 +204,32 @@ class McapLogger:
     def connect_wheels(self, wheels: object) -> None:
         from ..hardware.wheels import Wheels
         assert isinstance(wheels, Wheels)
-        self.add_topic('/wheels/velocity', schema_name='WheelVelocity', schema={
+        velocity_schema = {
             'type': 'object',
             'properties': {
                 'linear': {'type': 'number', 'description': 'Linear velocity in m/s'},
                 'angular': {'type': 'number', 'description': 'Angular velocity in rad/s'},
             },
-        })
-        wheels.VELOCITY_MEASURED.register(self._on_velocity_measured)
+        }
+        self.add_topic('/wheels/measured', schema_name='WheelVelocityMeasured', schema=velocity_schema)
+        self.add_topic('/wheels/commanded', schema_name='WheelVelocityCommanded', schema=velocity_schema)
+        wheels.VELOCITY_MEASURED.subscribe(self._on_velocity_measured)
+        wheels.VELOCITY_COMMANDED.subscribe(self._on_velocity_commanded)
 
     def _on_velocity_measured(self, velocities: list) -> None:
         for v in velocities:
-            self.log_message('/wheels/velocity', {
+            self.log_message('/wheels/measured', {
                 'linear': v.linear,
                 'angular': v.angular,
             }, timestamp_ns=int(v.time * NANOSECONDS_PER_SECOND))
+
+    def _on_velocity_commanded(self, v: object) -> None:
+        from ..geometry import Velocity
+        assert isinstance(v, Velocity)
+        self.log_message('/wheels/commanded', {
+            'linear': v.linear,
+            'angular': v.angular,
+        }, timestamp_ns=int(v.time * NANOSECONDS_PER_SECOND))
 
     def _register_topic(self, topic: str, schema_name: str, schema_dict: dict) -> None:
         assert self._writer is not None

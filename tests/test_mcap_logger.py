@@ -1,4 +1,5 @@
 import json
+import random
 import tempfile
 from pathlib import Path
 
@@ -6,6 +7,8 @@ import pytest
 from mcap.reader import make_reader
 
 from rosys.recording import McapLogger
+
+NS = 1_000_000_000
 
 
 @pytest.fixture
@@ -150,3 +153,115 @@ def test_double_start(mcap_dir: Path) -> None:
     logger.start()
     assert logger._file_path == first_file
     logger.stop()
+
+
+def test_simulated_sensor_recording_30s(mcap_dir: Path) -> None:
+    """Simulate 30s of realistic sensor data (GNSS 1Hz, IMU 10Hz, Wheels 50Hz) and report file size."""
+    logger = McapLogger(output_dir=mcap_dir, auto_start=False)
+
+    gnss_schema = {
+        'type': 'object',
+        'properties': {
+            'latitude_deg': {'type': 'number'}, 'longitude_deg': {'type': 'number'},
+            'heading_deg': {'type': 'number'}, 'latitude_std_dev': {'type': 'number'},
+            'longitude_std_dev': {'type': 'number'}, 'heading_std_dev': {'type': 'number'},
+            'gps_quality': {'type': 'integer'}, 'gps_quality_name': {'type': 'string'},
+            'num_satellites': {'type': 'integer'}, 'hdop': {'type': 'number'},
+            'altitude': {'type': 'number'},
+        },
+    }
+    imu_schema = {
+        'type': 'object',
+        'properties': {
+            'roll': {'type': 'number'}, 'pitch': {'type': 'number'}, 'yaw': {'type': 'number'},
+            'angular_velocity_roll': {'type': 'number'},
+            'angular_velocity_pitch': {'type': 'number'},
+            'angular_velocity_yaw': {'type': 'number'},
+            'gyro_calibration': {'type': 'number'},
+        },
+    }
+    velocity_schema = {
+        'type': 'object',
+        'properties': {
+            'linear': {'type': 'number'},
+            'angular': {'type': 'number'},
+        },
+    }
+
+    logger.add_topic('/gnss', schema_name='GnssMeasurement', schema=gnss_schema)
+    logger.add_topic('/imu', schema_name='ImuMeasurement', schema=imu_schema)
+    logger.add_topic('/wheels/measured', schema_name='WheelVelocityMeasured', schema=velocity_schema)
+    logger.add_topic('/wheels/commanded', schema_name='WheelVelocityCommanded', schema=velocity_schema)
+    logger.start()
+
+    lat, lon, heading = 48.123456, 9.654321, 90.0
+    roll, pitch, yaw = 0.01, -0.02, 1.57
+    lin_vel, ang_vel = 0.5, 0.02
+
+    duration_ms = 30_000
+    for ms in range(duration_ms):
+        t_ns = ms * 1_000_000
+
+        if ms % 1000 == 0:
+            lat += random.gauss(0, 0.000001)
+            lon += random.gauss(0, 0.000001)
+            heading += random.gauss(0, 0.1)
+            logger.log_message('/gnss', {
+                'latitude_deg': lat, 'longitude_deg': lon, 'heading_deg': heading,
+                'latitude_std_dev': 0.012, 'longitude_std_dev': 0.015, 'heading_std_dev': 0.8,
+                'gps_quality': 4, 'gps_quality_name': 'RTK_FIXED',
+                'num_satellites': 18, 'hdop': 0.7, 'altitude': 412.345,
+            }, timestamp_ns=t_ns)
+
+        if ms % 100 == 0:
+            roll += random.gauss(0, 0.001)
+            pitch += random.gauss(0, 0.001)
+            yaw += random.gauss(0, 0.005)
+            logger.log_message('/imu', {
+                'roll': roll, 'pitch': pitch, 'yaw': yaw,
+                'angular_velocity_roll': random.gauss(0, 0.01),
+                'angular_velocity_pitch': random.gauss(0, 0.01),
+                'angular_velocity_yaw': random.gauss(0, 0.05),
+                'gyro_calibration': 3.0,
+            }, timestamp_ns=t_ns)
+
+        if ms % 20 == 0:
+            logger.log_message('/wheels/measured', {
+                'linear': lin_vel + random.gauss(0, 0.01),
+                'angular': ang_vel + random.gauss(0, 0.005),
+            }, timestamp_ns=t_ns)
+            logger.log_message('/wheels/commanded', {
+                'linear': lin_vel + random.gauss(0, 0.001),
+                'angular': ang_vel + random.gauss(0, 0.001),
+            }, timestamp_ns=t_ns)
+
+    logger.stop()
+
+    expected_gnss = duration_ms // 1000
+    expected_imu = duration_ms // 100
+    expected_wheels = (duration_ms // 20) * 2
+    expected_total = expected_gnss + expected_imu + expected_wheels
+    assert logger._message_count == expected_total
+
+    files = list(mcap_dir.glob('*.mcap'))
+    assert len(files) == 1
+    file_size = files[0].stat().st_size
+
+    with open(files[0], 'rb') as f:
+        reader = make_reader(f)
+        topics: dict[str, int] = {}
+        for _, channel, _ in reader.iter_messages():
+            topics[channel.topic] = topics.get(channel.topic, 0) + 1
+
+    assert topics['/gnss'] == expected_gnss
+    assert topics['/imu'] == expected_imu
+    assert topics['/wheels/measured'] == expected_wheels // 2
+    assert topics['/wheels/commanded'] == expected_wheels // 2
+
+    print(f'\n--- 30s simulated recording ---')
+    print(f'  Messages: {logger._message_count}')
+    print(f'  File size: {file_size / 1024:.1f} KB')
+    print(f'  -> 10 min extrapolated: {file_size * 20 / 1024:.1f} KB ({file_size * 20 / 1_048_576:.2f} MB)')
+    print(f'  -> 1 hour extrapolated: {file_size * 120 / 1_048_576:.1f} MB')
+    print(f'  -> 8 hours extrapolated: {file_size * 960 / 1_048_576:.1f} MB')
+    print(f'  Per topic: {topics}')
