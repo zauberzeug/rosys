@@ -146,4 +146,4 @@ class GnssHardware(Gnss):
             ui.number('Max Measurement Age', min=0.0, step=0.01, suffix='s') \
                 .bind_value(self, '_max_measurement_age') \
                 .classes('w-32') \
-                .tooltip('Maximum age of measurements to be accepted (default: 0.05s)')
+                .tooltip('Maximum age of measurements to be accepted')
