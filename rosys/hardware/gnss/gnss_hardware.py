@@ -20,7 +20,7 @@ class GnssHardware(Gnss):
         """
         :param antenna_pose: the pose of the main antenna in the robot's coordinate frame (yaw: direction to the auxiliary antenna)
         :param reconnect_interval: the interval to wait before reconnecting to the device
-        :param max_measurement_age: the maximum age of measurements to be accepted (in seconds)
+        :param max_measurement_age: the maximum age of measurements to be accepted in seconds
         """
         super().__init__()
         self.antenna_pose = antenna_pose or Pose(x=0.0, y=0.0, yaw=0.0)
