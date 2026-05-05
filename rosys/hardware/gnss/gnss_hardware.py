@@ -143,7 +143,7 @@ class GnssHardware(Gnss):
     def developer_ui(self) -> None:
         with ui.column():
             super().developer_ui()
-            ui.number('Max Measurement Age', min=0.0, step=0.01, suffix='s') \
+            ui.number('Max Measurement Age', min=0.0, step=0.01, suffix='s', format='%.3f') \
                 .bind_value(self, '_max_measurement_age') \
                 .classes('w-32') \
                 .tooltip('Maximum age of measurements to be accepted')
