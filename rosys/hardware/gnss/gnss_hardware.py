@@ -16,7 +16,7 @@ class GnssHardware(Gnss):
     NMEA_TYPES: ClassVar[set[str]] = {'GPGGA', 'GPGST', 'PSSN,HRP'}
     NMEA_PATTERN = re.compile(r'\$(?P<type>[A-Z,]+),(?P<timestamp>\d{6}(?:\.\d+)?)[^*]*\*[0-9A-Fa-f]{2}\r\n')
 
-    def __init__(self, *, antenna_pose: Pose | None, reconnect_interval: float = 3.0, max_measurement_age: float = 0.2) -> None:
+    def __init__(self, *, antenna_pose: Pose | None, reconnect_interval: float = 3.0, max_measurement_age: float = 0.05) -> None:
         """
         :param antenna_pose: the pose of the main antenna in the robot's coordinate frame (yaw: direction to the auxiliary antenna)
         :param reconnect_interval: the interval to wait before reconnecting to the device
@@ -146,4 +146,4 @@ class GnssHardware(Gnss):
             ui.number('Max Measurement Age', min=0.0, step=0.01, suffix='s') \
                 .bind_value(self, '_max_measurement_age') \
                 .classes('w-32') \
-                .tooltip('Maximum age of measurements to be accepted (default: 0.2s)')
+                .tooltip('Maximum age of measurements to be accepted (default: 0.05s)')
