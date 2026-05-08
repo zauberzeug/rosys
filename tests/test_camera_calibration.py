@@ -235,6 +235,66 @@ def test_projection_from_one_frame_into_world_frame():
         assert np.allclose(world_point.tuple, world_point_.tuple, atol=1e-6)
 
 
+def test_project_from_image_into_local_frame():
+    """``project_from_image(..., frame=...)`` returns coordinates in the given frame instead of resolving to world.
+
+    Useful when the world frame is e.g. a geo frame with an imprecise origin
+    and we only care about positions relative to the robot.
+    """
+    cam, world_points = demo_data()
+    assert cam.calibration is not None
+
+    frame_registry.clear()
+    robot_frame = Pose3d(x=10.0, y=-5.0, z=0.0).as_frame('robot')
+    cam.calibration.extrinsics.in_frame(robot_frame)
+
+    # Re-attach demo points to the robot frame so they remain visible from the camera.
+    local_points = [p.in_frame(robot_frame) for p in world_points]
+    world_points = [p.resolve() for p in local_points]
+
+    for height in {p.z for p in local_points}:
+        local_at_height = [p for p in local_points if p.z == height]
+        world_at_height = [p for p in world_points if p.z == height]
+        image_points = cam.calibration.project_to_image(world_at_height)
+        assert not any(p is None for p in image_points)
+
+        # Without ``frame`` the result is in world coordinates (legacy behaviour).
+        reprojected_world = cam.calibration.project_from_image(image_points, target_height=height)
+        assert not any(p is None for p in reprojected_world)
+        assert np.allclose([p.tuple for p in world_at_height],
+                           [p.tuple for p in reprojected_world], atol=1e-6)
+
+        # With ``frame=robot_frame`` the result is in robot-local coordinates.
+        reprojected_local = cam.calibration.project_from_image(image_points, target_height=height, frame=robot_frame)
+        assert not any(p is None for p in reprojected_local)
+        assert np.allclose([p.tuple for p in local_at_height],
+                           [p.tuple for p in reprojected_local], atol=1e-6)
+
+
+def test_project_from_image_frame_propagation_through_overloads():
+    """``frame`` must be forwarded by the ``Point`` and numpy-array overloads, not only by ``list[Point]``."""
+    cam, _ = demo_data()
+    assert cam.calibration is not None
+
+    frame_registry.clear()
+    robot_frame = Pose3d(x=10.0, y=-5.0, z=0.0).as_frame('robot')
+    cam.calibration.extrinsics.in_frame(robot_frame)
+
+    local = Point3d(x=0.5, y=0.3, z=0.0).in_frame(robot_frame)
+    image_point = cam.calibration.project_to_image(local.resolve())
+    assert image_point is not None
+
+    single = cam.calibration.project_from_image(image_point, target_height=0.0, frame=robot_frame)
+    assert single is not None
+    assert np.allclose(local.tuple, single.tuple, atol=1e-6)
+
+    array_result = cam.calibration.project_from_image(np.array([image_point.tuple], dtype=np.float64),
+                                                      target_height=0.0,
+                                                      frame=robot_frame)
+    assert not np.isnan(array_result).any()
+    assert np.allclose([local.tuple], array_result, atol=1e-6)
+
+
 def test_fisheye_projection():
     cam, world_points = demo_fisheye_data()
     assert cam.calibration is not None
