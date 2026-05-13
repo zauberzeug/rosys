@@ -109,11 +109,11 @@ class RtspDevice:
             self.log.warning('[%s] capture process already running', self._mac)
             return
 
-        async def stream() -> AsyncGenerator[ImageArray, None]:
+        async def stream() -> AsyncGenerator[tuple[ImageArray, float], None]:
             url = self.url
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
-            command = f'gst-launch-1.0 --quiet rtspsrc location="{url}" latency=0 protocols=tcp ! rtp{self._avdec}depay ! avdec_{self._avdec} ! videoconvert ! video/x-raw,format=RGB ! queue max-size-buffers=1 leaky=downstream ! gdppay ! fdsink sync=false'
+            command = f'gst-launch-1.0 --quiet rtspsrc location="{url}" latency=20 buffer-mode=slave protocols=tcp ! rtp{self._avdec}depay ! avdec_{self._avdec} ! videoconvert ! video/x-raw,format=RGB ! queue max-size-buffers=1 leaky=downstream ! gdppay ! fdsink sync=false'
             self.log.debug('[%s] Running command: %s', self._mac, command)
             process = await asyncio.create_subprocess_exec(
                 *shlex.split(command),
@@ -126,6 +126,9 @@ class RtspDevice:
 
             width = None
             height = None
+            anchor_pts_ns: int | None = None
+            anchor_rosys_time: float | None = None
+            last_yield_time: float | None = None
             while process.returncode is None:
                 assert process.stdout is not None
 
@@ -153,7 +156,25 @@ class RtspDevice:
                     assert width * height * 3 == len(packet.payload)
                     frame = np.frombuffer(packet.payload, dtype=np.uint8).reshape(height, width, 3)
 
-                    yield frame
+                    if packet.pts_ns != GST_CLOCK_TIME_NONE:
+                        if anchor_pts_ns is None:
+                            anchor_pts_ns = packet.pts_ns
+                            anchor_rosys_time = rosys.time()
+                        assert anchor_rosys_time is not None
+                        capture_time = anchor_rosys_time + (packet.pts_ns - anchor_pts_ns) / 1e9
+                    else:
+                        capture_time = rosys.time()
+                    self.log.info('TIMING raw-pts mac=%s pts_ns_raw=0x%016x is_none=%s',
+                                  self._mac, packet.pts_ns,
+                                  packet.pts_ns == GST_CLOCK_TIME_NONE)
+
+                    delta = capture_time - last_yield_time if last_yield_time is not None else 0.0
+                    last_yield_time = capture_time
+                    pts_relative_s = (packet.pts_ns - anchor_pts_ns) / 1e9 if anchor_pts_ns is not None else 0.0
+                    self.log.info('TIMING gstreamer-yield mac=%s delta=%.3f size=%dx%d pts_age=%.3f pts=%.6f',
+                                  self._mac, delta, width, height,
+                                  rosys.time() - capture_time, pts_relative_s)
+                    yield frame, capture_time
 
             try:
                 await asyncio.wait_for(process.wait(), timeout=5)
@@ -174,8 +195,7 @@ class RtspDevice:
                 if 'Unauthorized' in error_message:
                     self._authorized = False
 
-        async for image in stream():
-            timestamp = rosys.time()
+        async for image, timestamp in stream():
             result = self._on_new_image_data(image, timestamp)
             if isinstance(result, Awaitable):
                 await result
@@ -224,23 +244,42 @@ class GDPPayloadType(Enum):
     EVENT_NONE = 3
 
 
-# See https://maemo.org/api_refs/5.0/5.0-final/gstreamer-libs-0.10/gstreamer-libs-gstdataprotocol.html for header format
+# GDP header layout (gst-plugins-bad 1.x):
+# 0-1   version
+# 2     flags
+# 3     padding
+# 4-5   payload type (1=BUFFER, 2=CAPS, large for events)
+# 6-9   payload length
+# 10-17 PTS (uint64 nanoseconds, GST_CLOCK_TIME_NONE if unset)
+# 18-25 DTS or duration (we don't currently use either)
+# 26-33 reserved/other (typically GST_CLOCK_TIME_NONE)
+# 34-41 reserved/other (typically GST_CLOCK_TIME_NONE)
+# 42-43 buffer flags
+# 44-57 ABI padding
+# 58-59 CRC header
+# 60-61 CRC payload
 GDPPACKET_FORMAT = struct.Struct('>HcxHIQQQQH14sHH')
 GDP_CAPS_WIDTH_REGEX = re.compile(r'width=\(int\)\s*(\d+)')
 GDP_CAPS_HEIGHT_REGEX = re.compile(r'height=\(int\)\s*(\d+)')
 GDP_HEADER_SIZE = 62
 
 
+GST_CLOCK_TIME_NONE = 0xFFFFFFFFFFFFFFFF
+
+
 @dataclass(slots=True, kw_only=True)
 class GDPPacket:
     payload_type: GDPPayloadType
     payload: bytes
+    pts_ns: int  # presentation timestamp in nanoseconds, or GST_CLOCK_TIME_NONE if absent
 
     @staticmethod
     async def read(stream: asyncio.StreamReader) -> GDPPacket:
         header_bytes = await stream.readexactly(GDP_HEADER_SIZE)
-        _version, _flags, gdp_type, length, *_ = GDPPACKET_FORMAT.unpack(header_bytes)
+        _version, _flags, gdp_type, length, pts, _q1, _q2, _q3, *_ = \
+            GDPPACKET_FORMAT.unpack(header_bytes)
         return GDPPacket(
             payload_type=GDPPayloadType(gdp_type) if gdp_type < 3 else GDPPayloadType.EVENT_NONE,
             payload=await stream.readexactly(length),
+            pts_ns=pts,
         )
