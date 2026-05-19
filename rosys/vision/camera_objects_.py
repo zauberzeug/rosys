@@ -1,5 +1,5 @@
 import numpy as np
-from nicegui import ui
+from nicegui import Client, ui
 from nicegui.elements.scene.scene_object3d import Object3D
 from nicegui.elements.scene.scene_objects import Cylinder, Group, Text, Texture
 
@@ -47,8 +47,22 @@ class CameraObjects(Group):
             if (obj.name or '').split('_', 1)[0] == type_
         }
 
+    @property
+    def _is_alive(self) -> bool:
+        if self.scene.is_deleted:
+            return False
+        try:
+            client = self.scene.client
+        except RuntimeError:
+            return False
+        return client is not None and client.id in Client.instances
+
     async def update(self) -> None:
+        if not self._is_alive:
+            return
         await self.update_cameras()
+        if not self._is_alive:
+            return
         await self.update_images()
 
     async def update_cameras(self) -> None:
@@ -77,17 +91,22 @@ class CameraObjects(Group):
             camera_groups[uid].move(*world_extrinsics.translation)
             camera_groups[uid].rotate_R(world_extrinsics.rotation.R)
 
+    @staticmethod
+    def _coord_changes(items: list[tuple[str, list, list]]) -> set[str]:
+        return {uid for uid, prev, new in items if not CameraProjector.allclose(prev, new)}
+
     async def update_images(self) -> None:
         newest_images = [camera.latest_captured_image
                          for camera in self.calibrated_cameras.values()
                          if camera.latest_captured_image is not None]
 
-        current_uids = [image.camera_id for image in newest_images]
+        current_uids = {image.camera_id for image in newest_images}
         for uid, texture in list(self.textures.items()):
             if uid not in current_uids:
                 texture.delete()
                 del self.textures[uid]
 
+        pending: list[tuple[str, str, list, str, float]] = []
         z = 0.0
         for image in sorted(newest_images, key=lambda i: i.time):
             camera = self.calibrated_cameras.get(image.camera_id)
@@ -97,16 +116,24 @@ class CameraObjects(Group):
             if projection is None:
                 continue
             coordinates = [[point and [point[0], point[1], 0] for point in row] for row in projection.coordinates]
-
             url = f'{camera.get_image_url(image)}?shrink={self.image_shrink_factor}'
-            if image.camera_id not in self.textures:
-                with self:
-                    self.textures[image.camera_id] = Texture(url, coordinates).with_name(f'image_{image.id}')
-            texture = self.textures[image.camera_id]
-
             z += 0.001
+            pending.append((image.camera_id, image.id, coordinates, url, z))
+
+        comparisons = [(cam_id, self.textures[cam_id].args[1], coords)
+                       for cam_id, _, coords, _, _ in pending if cam_id in self.textures]
+        changed = await run.cpu_bound(self._coord_changes, comparisons) if comparisons else set()
+
+        if not self._is_alive:
+            return
+
+        for cam_id, image_id, coordinates, url, z in pending:
+            if cam_id not in self.textures:
+                with self:
+                    self.textures[cam_id] = Texture(url, coordinates).with_name(f'image_{image_id}')
+            texture = self.textures[cam_id]
             texture.move(z=z)
             if texture.args[0] != url:
                 texture.set_url(url)
-            if not await run.cpu_bound(CameraProjector.allclose, texture.args[1], coordinates):
+            if cam_id in changed:
                 texture.set_coordinates(coordinates)
