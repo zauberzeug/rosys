@@ -53,6 +53,7 @@ rosys = "rosys.testing.fixtures"
 
 [dependency-groups]
 dev = [
+    {include-group = "types"},
     "autopep8>=1.5.5,<2",
     "pytest>=9.0.3,<10",  # https://github.com/zauberzeug/rosys/security/dependabot/113
     "pytest-watch>=4.2.0,<5",
@@ -68,6 +69,12 @@ dev = [
     "pre-commit>=4.0.1,<5",
     "filelock>=3.20.3,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/96
     "poetry-dynamic-versioning>=1.8.0,<2",
+]
+types = [
+    "types-aiofiles>=25.1.0",
+    "types-psutil>=5.9.0,<6",
+    "types-requests>=2.32.4",
+    "types-tabulate>=0.8.9,<0.9",
 ]
 docs = [
     "mkdocs==1.5.3",
@@ -103,7 +110,6 @@ max-line-length = 120
 
 [tool.mypy]
 python_version = "3.11"
-install_types = true
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
