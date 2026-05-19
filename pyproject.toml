@@ -8,7 +8,7 @@ readme = "README.md"
 requires-python = ">=3.11, <3.14"
 keywords = ["robot", "framework", "automation", "control", "steer"]
 dependencies = [
-    "nicegui>=3.10.0,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/110
+    "nicegui>=3.12.0,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/120
     "pyserial>=3.5,<4",
     "numpy<3.0.0",
     "scipy>=1.7.2,<2",

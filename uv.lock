@@ -1717,7 +1717,7 @@ wheels = [
 
 [[package]]
 name = "nicegui"
-version = "3.10.0"
+version = "3.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -1730,22 +1730,25 @@ dependencies = [
     { name = "ifaddr" },
     { name = "itsdangerous" },
     { name = "jinja2" },
+    { name = "lxml" },
     { name = "lxml-html-clean" },
     { name = "markdown2" },
     { name = "orjson", marker = "platform_machine != 'i386' and platform_machine != 'i686' and platform_python_implementation != 'PyPy'" },
     { name = "pydantic-core" },
     { name = "pygments" },
+    { name = "python-dotenv" },
     { name = "python-engineio" },
     { name = "python-multipart" },
     { name = "python-socketio", extra = ["asyncio-client"] },
     { name = "starlette" },
+    { name = "tinycss2" },
     { name = "typing-extensions" },
     { name = "uvicorn", extra = ["standard"] },
     { name = "watchfiles" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d9/df/736d1e17db943d2a8425de22a69284b0374b8ed17efdcde10a5ba6d181f8/nicegui-3.10.0.tar.gz", hash = "sha256:10bca0ed1957c91506e54e02a8d2ad8860777e121fb54bfe59797493ba87ec14", size = 19147081, upload-time = "2026-04-07T09:27:33.09Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d3/10/48a16e8c2a2d4c1b1efdcb9c3898a50db3d016fab86a972e3fe083bce206/nicegui-3.12.0.tar.gz", hash = "sha256:f90d091a2b4855e090a9bad8d8ad10396799f7c7792a0846447a11aea396ead3", size = 19602588, upload-time = "2026-05-12T14:22:02.317Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/de/44/73cd2dda7bd46a903751ea3fd93624ac3a97afdfb6a02e0aead6ee4cb0d1/nicegui-3.10.0-py3-none-any.whl", hash = "sha256:0c7f084b1c9036e645ce43727ac354d89214d355dededb25adc3ba2f4d08aaa3", size = 19711706, upload-time = "2026-04-07T09:27:29.203Z" },
+    { url = "https://files.pythonhosted.org/packages/c7/3d/222879aa74d30cd7fe057df5638623b9818de535064e0c8f02117e0b69ce/nicegui-3.12.0-py3-none-any.whl", hash = "sha256:1bdc6ef423f091afddc05ea3bcf5beac1b3c3d27081b0df243aaccf03e612434", size = 20186344, upload-time = "2026-05-12T14:22:06.794Z" },
 ]
 
 [[package]]
@@ -2763,7 +2766,7 @@ requires-dist = [
     { name = "marshmallow", specifier = ">=3.26.2,<4" },
     { name = "matplotlib", specifier = ">=3.7.2,<4" },
     { name = "networkx", specifier = ">=2.6.2,<3" },
-    { name = "nicegui", specifier = ">=3.10.0,<4" },
+    { name = "nicegui", specifier = ">=3.12.0,<4" },
     { name = "numpy", specifier = "<3.0.0" },
     { name = "objgraph", specifier = ">=3.6.1,<4" },
     { name = "opencv-contrib-python", specifier = ">=4.12.0.88,<4.13.0.0" },
