@@ -135,5 +135,5 @@ class CameraObjects(Group):
             texture.move(z=z)
             if texture.args[0] != url:
                 texture.set_url(url)
-            if cam_id in changed:
+            if changed is not None and cam_id in changed:
                 texture.set_coordinates(coordinates)
