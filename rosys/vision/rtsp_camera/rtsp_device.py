@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import os
 import re
 import shlex
 import signal
@@ -20,6 +21,15 @@ from ... import rosys
 from ...vision.image import ImageArray
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
+
+# Camera-side pipeline delay from sensor frame latch to vendor pack_ts
+# assignment at VENC output. The on-wire RTP timestamp encodes this
+# downstream-of-sensor moment, so to recover sensor-side wall-clock we
+# subtract this constant from the decoded RTP-based timestamp.
+
+# Measured 2026-05-20 with calibrate_pipeline_delay.py script.
+CAMERA_PIPELINE_DELAY_S: float = 0.0985
+CAMERA_PIPELINE_DELAY_CALIBRATED_AT: tuple[int, int] = (1280, 960)
 
 
 class RtspDevice:
@@ -112,88 +122,156 @@ class RtspDevice:
         async def stream() -> AsyncGenerator[tuple[ImageArray, float], None]:
             url = self.url
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
-            # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
-            command = f'gst-launch-1.0 --quiet rtspsrc location="{url}" latency=20 buffer-mode=slave protocols=tcp ! rtp{self._avdec}depay ! avdec_{self._avdec} ! videoconvert ! video/x-raw,format=RGB ! queue max-size-buffers=1 leaky=downstream ! gdppay ! fdsink sync=false'
+
+            # Second pipe in addition to stdout, see below.
+            rtp_r_fd, rtp_w_fd = os.pipe()
+
+            # tee splits the rtspsrc output: one branch decodes to RGB (the
+            # existing path); the other forwards application/x-rtp buffers
+            # so the per-frame on-wire RTP timestamp survives to user space.
+            command = (
+                f'gst-launch-1.0 --quiet '
+                f'rtspsrc location="{url}" latency=20 buffer-mode=slave protocols=udp '
+                f'! tee name=t '
+                f't. ! queue max-size-buffers=200 max-size-bytes=10485760 max-size-time=1000000000 '
+                f'! rtp{self._avdec}depay ! avdec_{self._avdec} ! videoconvert '
+                f'! video/x-raw,format=RGB ! queue max-size-buffers=2 leaky=downstream '
+                f'! gdppay ! fdsink fd=1 sync=false '
+                f't. ! queue max-size-buffers=200 max-size-bytes=10485760 max-size-time=1000000000 '
+                f'! gdppay ! fdsink fd={rtp_w_fd} sync=false'
+            )
             self.log.debug('[%s] Running command: %s', self._mac, command)
             process = await asyncio.create_subprocess_exec(
                 *shlex.split(command),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                pass_fds=(rtp_w_fd,),
             )
+            os.close(rtp_w_fd)
             assert process.stdout is not None
             assert process.stderr is not None
             self._capture_process = process
 
-            width = None
-            height = None
-            anchor_pts_ns: int | None = None
-            anchor_rosys_time: float | None = None
-            last_yield_time: float | None = None
-            while process.returncode is None:
-                assert process.stdout is not None
+            loop = asyncio.get_running_loop()
+            rtp_reader = asyncio.StreamReader(limit=2**20)
+            rtp_pipe = os.fdopen(rtp_r_fd, 'rb', buffering=0)
+            await loop.connect_read_pipe(
+                lambda: asyncio.StreamReaderProtocol(rtp_reader),
+                rtp_pipe,
+            )
 
-                try:
-                    packet = await GDPPacket.read(process.stdout)
-                except asyncio.exceptions.IncompleteReadError:
-                    break
+            pipeline_delay_warned = False
 
-                if packet.payload_type == GDPPayloadType.CAPS:
-                    cap_text = packet.payload.decode('utf-8', 'ignore')
+            # Maps gst running-time PTS (ns) -> on-wire 32-bit RTP timestamp.
+            # The wrap window is chosen once so rtp_ts / 90 lands near host
+            # wall-clock now; per-frame lookup then gives wall-clock directly,
+            # independent of any gst PTS drift between tee branches.
+            pts_to_rtp_ts: dict[int, int] = {}
+            k_wrap: int | None = None
+            wrap_ms = (1 << 32) / 90
 
-                    w = GDP_CAPS_WIDTH_REGEX.search(cap_text)
-                    h = GDP_CAPS_HEIGHT_REGEX.search(cap_text)
+            async def consume_rtp() -> None:
+                nonlocal k_wrap
+                while True:
+                    try:
+                        pkt = await GDPPacket.read(rtp_reader)
+                    except asyncio.IncompleteReadError:
+                        return
+                    if pkt.payload_type != GDPPayloadType.BUFFER:
+                        continue
+                    if pkt.pts_ns == GST_CLOCK_TIME_NONE or len(pkt.payload) < 12:
+                        continue
+                    if pkt.pts_ns in pts_to_rtp_ts:
+                        continue
+                    rtp_ts = int.from_bytes(pkt.payload[4:8], 'big')
+                    pts_to_rtp_ts[pkt.pts_ns] = rtp_ts
+                    if k_wrap is None:
+                        base_ms = rtp_ts / 90.0
+                        k_wrap = round((rosys.time() * 1000 - base_ms) / wrap_ms)
+                        self.log.info('[%s] RTP wrap anchor: rtp_ts=%d k=%d', self._mac, rtp_ts, k_wrap)
+                    if len(pts_to_rtp_ts) > 1000:
+                        for old in sorted(pts_to_rtp_ts)[:500]:
+                            del pts_to_rtp_ts[old]
 
-                    assert w is not None and h is not None
-                    assert len(w.groups()) == 1
-                    assert len(h.groups()) == 1
-
-                    width = int(w.group(1))
-                    height = int(h.group(1))
-
-                elif packet.payload_type == GDPPayloadType.BUFFER:
-                    assert width is not None and height is not None
-
-                    assert width * height * 3 == len(packet.payload)
-                    frame = np.frombuffer(packet.payload, dtype=np.uint8).reshape(height, width, 3)
-
-                    if packet.pts_ns != GST_CLOCK_TIME_NONE:
-                        if anchor_pts_ns is None:
-                            anchor_pts_ns = packet.pts_ns
-                            anchor_rosys_time = rosys.time()
-                        assert anchor_rosys_time is not None
-                        capture_time = anchor_rosys_time + (packet.pts_ns - anchor_pts_ns) / 1e9
-                    else:
-                        capture_time = rosys.time()
-                    self.log.info('TIMING raw-pts mac=%s pts_ns_raw=0x%016x is_none=%s',
-                                  self._mac, packet.pts_ns,
-                                  packet.pts_ns == GST_CLOCK_TIME_NONE)
-
-                    delta = capture_time - last_yield_time if last_yield_time is not None else 0.0
-                    last_yield_time = capture_time
-                    pts_relative_s = (packet.pts_ns - anchor_pts_ns) / 1e9 if anchor_pts_ns is not None else 0.0
-                    self.log.info('TIMING gstreamer-yield mac=%s delta=%.3f size=%dx%d pts_age=%.3f pts=%.6f',
-                                  self._mac, delta, width, height,
-                                  rosys.time() - capture_time, pts_relative_s)
-                    yield frame, capture_time
+            rtp_task = asyncio.create_task(consume_rtp(), name=f'rtp-ts {self._mac}')
 
             try:
-                await asyncio.wait_for(process.wait(), timeout=5)
-            except TimeoutError:
-                self.log.warning(
-                    '[%s] Stream ended. Timeout while waiting for gstreamer process to terminate', self._mac)
-                return
+                width = None
+                height = None
+                while process.returncode is None:
+                    try:
+                        packet = await GDPPacket.read(process.stdout)
+                    except asyncio.exceptions.IncompleteReadError:
+                        break
 
-            return_code = process.returncode
-            if return_code == -1 * signal.SIGTERM:
-                self.log.debug('gstreamer process %s was terminated using SIGTERM', process.pid)
-            else:
-                error = await process.stderr.read()
-                error_message = error.decode()
-                self.log.error('gstreamer process %s exited with code %s.\nstderr: %s',
-                               process.pid, return_code, error_message)
+                    if packet.payload_type == GDPPayloadType.CAPS:
+                        cap_text = packet.payload.decode('utf-8', 'ignore')
+                        w = GDP_CAPS_WIDTH_REGEX.search(cap_text)
+                        h = GDP_CAPS_HEIGHT_REGEX.search(cap_text)
+                        assert w is not None and h is not None
+                        assert len(w.groups()) == 1
+                        assert len(h.groups()) == 1
+                        width = int(w.group(1))
+                        height = int(h.group(1))
 
-                if 'Unauthorized' in error_message:
-                    self._authorized = False
+                    elif packet.payload_type == GDPPayloadType.BUFFER:
+                        assert width is not None and height is not None
+                        assert width * height * 3 == len(packet.payload)
+                        frame = np.frombuffer(packet.payload, dtype=np.uint8).reshape(height, width, 3)
+
+                        rtp_ts = pts_to_rtp_ts.get(packet.pts_ns) if packet.pts_ns != GST_CLOCK_TIME_NONE else None
+                        if rtp_ts is not None and k_wrap is not None:
+                            capture_time = (rtp_ts / 90.0 + k_wrap * wrap_ms) / 1000
+                            # The rtp_ts carries vendor-stamped time at VENC output,
+                            # which is delayed from actual sensor latch by the
+                            # camera-side pipeline (VPE + 3DNR + FRAMEBASE queue +
+                            # encode). Subtract the measured delay to recover the
+                            # moment the sensor captured the frame. The constant
+                            # was calibrated for one specific resolution; if the
+                            # stream resolution differs, the delay differs too, so
+                            # we only apply the offset when the resolution matches.
+                            if (width, height) == CAMERA_PIPELINE_DELAY_CALIBRATED_AT:
+                                capture_time -= CAMERA_PIPELINE_DELAY_S
+                            elif not pipeline_delay_warned:
+                                pipeline_delay_warned = True
+                                self.log.warning(
+                                    '[%s] stream %dx%d does not match calibrated '
+                                    '%dx%d; skipping pipeline-delay correction. '
+                                    'Re-run utils/calibrate_pipeline_delay.py for this resolution.',
+                                    self._mac, width, height,
+                                    *CAMERA_PIPELINE_DELAY_CALIBRATED_AT)
+                        else:
+                            # RTP packet for this frame not yet seen on the second
+                            # branch (typical for the first frame, or if the RTP
+                            # branch is briefly behind); fall back to receive time.
+                            self.log.info('[%s] using rosys time for frame', self._mac)
+                            capture_time = rosys.time()
+                        yield frame, capture_time
+
+                try:
+                    await asyncio.wait_for(process.wait(), timeout=5)
+                except TimeoutError:
+                    self.log.warning(
+                        '[%s] Stream ended. Timeout while waiting for gstreamer process to terminate', self._mac)
+                    return
+
+                return_code = process.returncode
+                if return_code == -1 * signal.SIGTERM:
+                    self.log.debug('gstreamer process %s was terminated using SIGTERM', process.pid)
+                else:
+                    error = await process.stderr.read()
+                    error_message = error.decode()
+                    self.log.error('gstreamer process %s exited with code %s.\nstderr: %s',
+                                   process.pid, return_code, error_message)
+
+                    if 'Unauthorized' in error_message:
+                        self._authorized = False
+            finally:
+                rtp_task.cancel()
+                try:
+                    await rtp_task
+                except asyncio.CancelledError:
+                    pass
 
         async for image, timestamp in stream():
             result = self._on_new_image_data(image, timestamp)
