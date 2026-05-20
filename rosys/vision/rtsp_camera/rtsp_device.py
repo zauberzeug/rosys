@@ -163,15 +163,9 @@ class RtspDevice:
             pipeline_delay_warned = False
 
             # Maps gst running-time PTS (ns) -> on-wire 32-bit RTP timestamp.
-            # The wrap window is chosen once so rtp_ts / 90 lands near host
-            # wall-clock now; per-frame lookup then gives wall-clock directly,
-            # independent of any gst PTS drift between tee branches.
             pts_to_rtp_ts: dict[int, int] = {}
-            k_wrap: int | None = None
-            wrap_ms = (1 << 32) / 90
 
             async def consume_rtp() -> None:
-                nonlocal k_wrap
                 while True:
                     try:
                         pkt = await GDPPacket.read(rtp_reader)
@@ -185,10 +179,6 @@ class RtspDevice:
                         continue
                     rtp_ts = int.from_bytes(pkt.payload[4:8], 'big')
                     pts_to_rtp_ts[pkt.pts_ns] = rtp_ts
-                    if k_wrap is None:
-                        base_ms = rtp_ts / 90.0
-                        k_wrap = round((rosys.time() * 1000 - base_ms) / wrap_ms)
-                        self.log.info('[%s] RTP wrap anchor: rtp_ts=%d k=%d', self._mac, rtp_ts, k_wrap)
                     if len(pts_to_rtp_ts) > 1000:
                         for old in sorted(pts_to_rtp_ts)[:500]:
                             del pts_to_rtp_ts[old]
@@ -220,8 +210,15 @@ class RtspDevice:
                         frame = np.frombuffer(packet.payload, dtype=np.uint8).reshape(height, width, 3)
 
                         rtp_ts = pts_to_rtp_ts.get(packet.pts_ns) if packet.pts_ns != GST_CLOCK_TIME_NONE else None
-                        if rtp_ts is not None and k_wrap is not None:
-                            capture_time = (rtp_ts / 90.0 + k_wrap * wrap_ms) / 1000
+                        if rtp_ts is not None:
+                            # Per-frame wrap-window pick: the rtp_ts represents a
+                            # camera wall-clock moment within seconds of "now", so
+                            # the closest 13.25 h wrap window to rosys.time() is
+                            # always the right one.
+                            base_ms = rtp_ts / 90.0
+                            wrap_ms = (1 << 32) / 90
+                            k = round((rosys.time() * 1000 - base_ms) / wrap_ms)
+                            capture_time = (base_ms + k * wrap_ms) / 1000
                             # The rtp_ts carries vendor-stamped time at VENC output,
                             # which is delayed from actual sensor latch by the
                             # camera-side pipeline (VPE + 3DNR + FRAMEBASE queue +
