@@ -1,16 +1,11 @@
 import logging
-import statistics
-from collections import deque
 from typing import Any, Literal, Self
 
-from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image, ImageArray
 from ..image_processing import process_ndarray_image
 from .rtsp_device import RtspDevice
-
-_JITTER_WINDOW = 30
 
 
 class RtspCamera(ConfigurableCamera, TransformableCamera):
@@ -38,7 +33,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.device: RtspDevice | None = None
         self.ip: str | None = ip
         self._last_image_timestamp: float | None = None
-        self._recent_deltas: deque[float] = deque(maxlen=_JITTER_WINDOW)
 
         self._register_parameter('substream', self.get_substream, self.set_substream,
                                  min_value=0, max_value=1, step=1, default_value=substream)
@@ -106,32 +100,10 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.device = None
 
     async def _handle_new_image_data(self, image_array: ImageArray, timestamp: float) -> None:
-        t0 = rosys.time()
-        intake_lag = t0 - timestamp
         transformed_image_array = process_ndarray_image(image_array, self.rotation, self.crop)
-        t1 = rosys.time()
         image = Image.from_array(transformed_image_array, camera_id=self.id, time=timestamp)
         self._add_image(image)
-        t2 = rosys.time()
-        if self._last_image_timestamp is not None:
-            delta = timestamp - self._last_image_timestamp
-            self._recent_deltas.append(delta)
-        else:
-            delta = 0.0
         self._last_image_timestamp = timestamp
-        self.log.info('TIMING handle-frame id=%s delta=%.3f intake_lag=%.3f process=%.3f add=%.3f',
-                      self.id, delta, intake_lag, t1 - t0, t2 - t1)
-        if len(self._recent_deltas) == _JITTER_WINDOW:
-            deltas = list(self._recent_deltas)
-            mean = statistics.fmean(deltas)
-            stddev = statistics.pstdev(deltas, mu=mean)
-            self.log.info('JITTER id=%s n=%d mean=%.3f stddev=%.3f min=%.3f max=%.3f '
-                          'fps_avg=%.2f fps_range=%.2f-%.2f',
-                          self.id, _JITTER_WINDOW, mean, stddev, min(deltas), max(deltas),
-                          1.0 / mean if mean > 0 else 0.0,
-                          1.0 / max(deltas) if max(deltas) > 0 else 0.0,
-                          1.0 / min(deltas) if min(deltas) > 0 else 0.0)
-            self._recent_deltas.clear()
 
     async def set_fps(self, fps: int) -> None:
         assert self.device is not None
