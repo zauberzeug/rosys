@@ -34,7 +34,7 @@ dependencies = [
     "cairosvg>=2.9.0,<3",  # https://github.com/zauberzeug/rosys/security/dependabot/104
     "pillow>=12.2.0",  # https://github.com/zauberzeug/rosys/security/dependabot/112
     "lxml>=6.1.0",  # https://github.com/zauberzeug/rosys/security/dependabot/115
-    "idna>=3.7",  # https://github.com/zauberzeug/rosys/security/dependabot/45
+    "idna>=3.15",  # https://github.com/zauberzeug/rosys/security/dependabot/122
     "requests>=2.32.4",  # https://github.com/zauberzeug/rosys/security/dependabot/64
     "urllib3>=2.7.0",  # https://github.com/zauberzeug/rosys/security/dependabot/118
     "python-multipart>=0.0.27",  # https://github.com/zauberzeug/rosys/security/dependabot/116
@@ -80,6 +80,7 @@ types = [
 docs = [
     "mkdocs==1.5.3",
     "mkdocs-material",
+    "pymdown-extensions>=10.21.3",  # https://github.com/zauberzeug/rosys/security/dependabot/121
     "mdx-include",
     "mkdocs-pymdownx-material-extras",
     "mdx-footnotes2",
