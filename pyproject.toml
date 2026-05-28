@@ -55,7 +55,7 @@ rosys = "rosys.testing.fixtures"
 [dependency-groups]
 dev = [
     {include-group = "types"},
-    "autopep8>=1.5.5,<2",
+    "autopep8>=2.0.0,<3",
     "pytest>=9.0.3,<10",  # https://github.com/zauberzeug/rosys/security/dependabot/113
     "pytest-watch>=4.2.0,<5",
     "pytest-flakefinder>=1.0.0,<2",
