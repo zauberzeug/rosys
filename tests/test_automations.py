@@ -1,3 +1,4 @@
+import asyncio
 from typing import Literal
 
 import numpy as np
@@ -81,6 +82,96 @@ async def test_finally_block(automator: Automator):
         automator.stop(because='test')
         await forward(seconds=1)
     assert events == ['tick', 'tick', 'tick', 'tick', 'tock'] * 2
+
+
+async def test_async_finally_block_on_stop(automator: Automator):
+    """Stopping an automation must let async cleanup in ``finally`` blocks run to completion.
+
+    Regression test for the PR #403 tradeoff: ``coro.close()`` injected a ``GeneratorExit``,
+    which forbids ``await`` during cleanup ("coroutine ignored GeneratorExit").
+    """
+    events: list[str] = []
+
+    async def run() -> None:
+        try:
+            while True:
+                events.append('tick')
+                await rosys.sleep(3)
+        finally:
+            events.append('cleanup start')
+            await rosys.sleep(1)  # async cleanup must be allowed to run
+            events.append('cleanup done')
+
+    pinned: list = []  # prevent refcount-driven GC from masking the bug
+    coro = run()
+    pinned.append(coro)
+    automator.start(coro)
+    await forward(seconds=5)
+    pinned.append(automator.automation)
+    automator.stop(because='test')
+    await forward(seconds=3)
+    assert events == ['tick', 'tick', 'cleanup start', 'cleanup done']
+    assert automator.is_stopped
+
+
+async def test_async_finally_block_in_parallelize_on_stop(automator: Automator):
+    """Async cleanup must also run when stopping a parallelized coroutine."""
+    events: list[str] = []
+
+    async def worker() -> None:
+        try:
+            while True:
+                events.append('tick')
+                await rosys.sleep(3)
+        finally:
+            events.append('cleanup start')
+            await rosys.sleep(1)
+            events.append('cleanup done')
+
+    async def run() -> None:
+        await rosys.automation.parallelize(worker(), return_when_first_completed=True)
+
+    automator.start(run())
+    await forward(seconds=5)
+    automator.stop(because='test')
+    await forward(seconds=3)
+    assert events == ['tick', 'tick', 'cleanup start', 'cleanup done']
+    assert automator.is_stopped
+
+
+async def test_async_finally_runs_when_stopped_while_parked_on_future(automator: Automator):
+    """Production-faithful variant: the coroutine parks on a real ``Future`` (``parallelize``'s bare yield),
+    not on the ``asyncio.sleep(0)`` of test-mode ``rosys.sleep``. The stop must still drive async cleanup.
+    """
+    events: list[str] = []
+
+    class ParkOnFuture:
+        """Awaitable that yields an unresolved ``Future`` like production ``asyncio.sleep``, resolved next tick."""
+
+        def __await__(self):
+            loop = asyncio.get_event_loop()
+            future = loop.create_future()
+            loop.call_soon(future.set_result, None)
+            return (yield from future.__await__())
+
+    async def worker() -> None:
+        try:
+            while True:
+                events.append('tick')
+                await ParkOnFuture()
+        finally:
+            events.append('cleanup start')
+            await ParkOnFuture()
+            events.append('cleanup done')
+
+    async def run() -> None:
+        await rosys.automation.parallelize(worker(), return_when_first_completed=True)
+
+    automator.start(run())
+    await forward(until=lambda: events.count('tick') >= 2)
+    automator.stop(because='test')
+    await forward(until=lambda: automator.is_stopped, timeout=5)
+    assert events == ['tick', 'tick', 'cleanup start', 'cleanup done']
 
 
 async def test_parallelize(automator: Automator):

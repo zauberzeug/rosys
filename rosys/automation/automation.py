@@ -11,6 +11,15 @@ from typing import Any
 _CURRENT_AUTOMATION: ContextVar[Automation | None] = ContextVar('rosys_automation_current', default=None)
 
 
+class AutomationStopped(BaseException):
+    """Injected into a running automation when it is stopped.
+
+    Like ``asyncio.CancelledError`` it derives from ``BaseException`` (not ``Exception``) so that
+    ``except Exception`` blocks in user code do not swallow the stop, while ``try/finally`` and
+    ``async with`` cleanup still runs to completion -- including ``await`` statements during cleanup.
+    """
+
+
 def uninterruptible(func: Callable):
     """Decorator to make an async function uninterruptible until it exits.
 
@@ -83,21 +92,27 @@ class Automation:
             iter_send, iter_throw = coro_iter.send, coro_iter.throw
             send: Callable = iter_send
             message: Any = None
-            while not (self._uninterruptible_depth == 0 and self._stop):
+            stop_injected = False  # True once AutomationStopped has been thrown into the coroutine
+            while True:
                 try:
                     while self._uninterruptible_depth == 0 and not self._can_run.is_set() and not self._stop:
                         yield from self._can_run.wait().__await__()  # pylint: disable=no-member
                 except BaseException as err:
                     send, message = iter_throw, err
 
-                if self._uninterruptible_depth == 0 and self._stop:
-                    return None
+                # On stop, inject AutomationStopped once and then keep driving the coroutine so its
+                # cleanup (try/finally, async with) runs to completion -- including await statements.
+                if self._uninterruptible_depth == 0 and self._stop and not stop_injected:
+                    stop_injected = True
+                    send, message = iter_throw, AutomationStopped()
 
                 try:
                     signal = send(message)
+                except AutomationStopped:
+                    return None  # the coroutine finished its cleanup and acknowledged the stop
                 except StopIteration as err:
                     self.log.info('automation is finished')
-                    if self.on_complete:
+                    if self.on_complete and not stop_injected:
                         self.on_complete()
                     return err.value
                 send = iter_send
