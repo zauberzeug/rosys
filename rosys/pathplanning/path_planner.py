@@ -2,7 +2,6 @@ import asyncio
 import logging
 import time
 from copy import copy
-from multiprocessing import Pipe
 from typing import Any
 
 from nicegui import Event
@@ -13,6 +12,7 @@ from ..geometry import Point, Pose, Prism, Spline
 from .area import Area
 from .obstacle import Obstacle
 from .planner_process import (
+    SPAWN_CONTEXT,
     PlannerCommand,
     PlannerGrowMapCommand,
     PlannerObstacleDistanceCommand,
@@ -35,7 +35,7 @@ class PathPlanner(persistence.Persistable):
 
         self.log = logging.getLogger('rosys.path_planner')
 
-        self.connection, process_connection = Pipe()
+        self.connection, process_connection = SPAWN_CONTEXT.Pipe()
         self.process = PlannerProcess(process_connection, robot_shape.outline)
         self.responses: dict[str, Any] = {}
 
