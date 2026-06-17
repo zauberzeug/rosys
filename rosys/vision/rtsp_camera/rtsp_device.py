@@ -71,16 +71,17 @@ class RtspDevice:
         return url
 
     async def shutdown(self) -> None:
-        if self._capture_process is not None:
+        process = self._capture_process
+        if process is not None:
             self.log.debug('[%s] Terminating gstreamer process', self._mac)
-            self._capture_process.terminate()
+            process.terminate()
             try:
-                await asyncio.wait_for(self._capture_process.wait(), timeout=5)
+                await asyncio.wait_for(process.wait(), timeout=5)
             except TimeoutError:
                 self.log.warning('[%s] Timeout while waiting for gstreamer process to terminate', self._mac)
             else:
                 self.log.debug('[%s] Successfully shut down process (code %s)',
-                               self._mac, self._capture_process.returncode if self._capture_process.returncode is not None else 'None')
+                               self._mac, process.returncode if process.returncode is not None else 'None')
                 self._capture_process = None
         if self._capture_task is not None and not self._capture_task.done():
             self.log.debug('[%s] Cancelling gstreamer task', self._mac)
