@@ -47,6 +47,13 @@ class MjpegDevice:
         self.shutdown()
         self.start_capture_task()
 
+    async def _prepare_stream(self) -> None:
+        """Hook executed right before the MJPEG stream is opened (and on every restart).
+
+        Vendors whose HTTP stream must be enabled before it serves data can override this.
+        Implementations should log and return on failure rather than raise.
+        """
+
     async def run_capture_task(self) -> None:
         self.log.debug('Starting capture task for %s', self._url)
 
@@ -54,6 +61,7 @@ class MjpegDevice:
             async with httpx.AsyncClient() as client:
                 assert self._url is not None
                 try:
+                    await self._prepare_stream()
                     async with client.stream('GET', self._url, auth=self._authentication) as response:  # type: ignore
                         if response.status_code != 200:
                             self.log.error('could not connect to %s (credentials: %s): %s %s',
@@ -116,19 +124,19 @@ class MjpegDevice:
             self._capture_task.cancel()
             self._capture_task = None
 
-    async def get_fps(self) -> int:
+    async def get_fps(self) -> int | None:
         return 0
 
     async def set_fps(self, fps: int) -> None:
         pass
 
-    async def get_resolution(self) -> tuple[int, int]:
+    async def get_resolution(self) -> tuple[int, int] | None:
         return 0, 0
 
     async def set_resolution(self, width: int, height: int) -> None:
         pass
 
-    async def get_mirrored(self) -> bool:
+    async def get_mirrored(self) -> bool | None:
         return False
 
     async def set_mirrored(self, mirrored: bool) -> None:

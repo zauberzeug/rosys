@@ -18,6 +18,7 @@ from nicegui import background_tasks
 
 from ... import rosys
 from ...vision.image import ImageArray
+from .arkvision_rtsp_interface import ArkVisionRtspInterface
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
 
@@ -34,7 +35,7 @@ class RtspDevice:
         self._fps = fps
         self._substream = substream
         self._on_new_image_data = on_new_image_data
-        self._avdec = avdec
+        self._avdec: Literal['h264', 'h265'] = avdec
 
         self._capture_task: asyncio.Task | None = None
         self._capture_process: Process | None = None
@@ -42,9 +43,15 @@ class RtspDevice:
 
         vendor_type = mac_to_vendor(mac)
 
-        self._settings_interface: JovisionInterface | None = None
+        if vendor_type == VendorType.ARKVISION and self._avdec != 'h264':
+            self.log.warning('[%s] ArkVision cameras only provide H.264; forcing avdec to "h264"', self._mac)
+            self._avdec = 'h264'
+
+        self._settings_interface: JovisionInterface | ArkVisionRtspInterface | None = None
         if vendor_type == VendorType.JOVISION:
             self._settings_interface = JovisionInterface(ip)
+        elif vendor_type == VendorType.ARKVISION:
+            self._settings_interface = ArkVisionRtspInterface(ip)
         else:
             self.log.warning('[%s] No settings interface for vendor type %s', self._mac, vendor_type)
             self.log.warning('[%s] Using default fps of 10', self._mac)
@@ -214,6 +221,9 @@ class RtspDevice:
         return self._avdec
 
     def set_avdec(self, avdec: Literal['h264', 'h265']) -> None:
+        if mac_to_vendor(self._mac) == VendorType.ARKVISION and avdec != 'h264':
+            self.log.warning('[%s] ArkVision cameras only provide H.264; ignoring avdec="%s"', self._mac, avdec)
+            avdec = 'h264'
         self._avdec = avdec
 
 
