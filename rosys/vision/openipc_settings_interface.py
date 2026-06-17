@@ -19,9 +19,8 @@ from typing import Any
 
 import httpx
 
-# divinus documents the /api/mp4 and /api/mjpeg bitrate unit inconsistently (kbps in
-# config.md, bit/s in endpoints.md). RoSys models bitrate in kbps, so the value is
-# passed through unchanged; verify against a live camera and adjust here if needed.
+# Bitrate is in kbps on both sides: RoSys models kbps and divinus forwards mp4_bitrate
+# straight to the encoder, whose bitrate fields are kbps. Passed through unchanged.
 
 REQUEST_TIMEOUT = 5.0
 
