@@ -3,6 +3,7 @@ from collections.abc import Awaitable, Callable
 from .axis_mjpeg_device import AxisMjpegDevice
 from .mjpeg_device import MjpegDevice
 from .motec_mjpeg_device import MotecMjpegDevice
+from .openipc_mjpeg_device import OpenIpcMjpegDevice
 from .vendors import VendorType, mac_to_vendor
 
 
@@ -25,7 +26,12 @@ class MjpegDeviceFactory:
                                     username=username, password=password,
                                     control_port=control_port, on_new_image_data=on_new_image_data)
 
-        if mac_to_vendor(mac) in {VendorType.GOODCAM, VendorType.OPENIPC}:
+        if mac_to_vendor(mac) == VendorType.OPENIPC:
+            return OpenIpcMjpegDevice(mac, ip,
+                                      username=username, password=password,
+                                      on_new_image_data=on_new_image_data)
+
+        if mac_to_vendor(mac) == VendorType.GOODCAM:
             return MjpegDevice(mac, ip,
                                username=username, password=password,
                                on_new_image_data=on_new_image_data)
