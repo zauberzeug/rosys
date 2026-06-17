@@ -125,19 +125,19 @@ class MjpegDevice:
             self._capture_task = None
 
     async def get_fps(self) -> int | None:
-        return 0
+        return None
 
     async def set_fps(self, fps: int) -> None:
         pass
 
     async def get_resolution(self) -> tuple[int, int] | None:
-        return 0, 0
+        return None
 
     async def set_resolution(self, width: int, height: int) -> None:
         pass
 
     async def get_mirrored(self) -> bool | None:
-        return False
+        return None
 
     async def set_mirrored(self, mirrored: bool) -> None:
         pass

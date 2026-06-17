@@ -35,17 +35,13 @@ class RtspDevice:
         self._fps = fps
         self._substream = substream
         self._on_new_image_data = on_new_image_data
-        self._avdec: Literal['h264', 'h265'] = avdec
+        self._avdec: Literal['h264', 'h265'] = self._clamp_avdec(avdec)
 
         self._capture_task: asyncio.Task | None = None
         self._capture_process: Process | None = None
         self._authorized: bool = True
 
         vendor_type = mac_to_vendor(mac)
-
-        if vendor_type == VendorType.ARKVISION and self._avdec != 'h264':
-            self.log.warning('[%s] ArkVision cameras only provide H.264; forcing avdec to "h264"', self._mac)
-            self._avdec = 'h264'
 
         self._settings_interface: JovisionInterface | ArkVisionRtspInterface | None = None
         if vendor_type == VendorType.JOVISION:
@@ -221,10 +217,14 @@ class RtspDevice:
         return self._avdec
 
     def set_avdec(self, avdec: Literal['h264', 'h265']) -> None:
+        self._avdec = self._clamp_avdec(avdec)
+
+    def _clamp_avdec(self, avdec: Literal['h264', 'h265']) -> Literal['h264', 'h265']:
+        """ArkVision cameras only provide H.264, so force `avdec` to 'h264' for them."""
         if mac_to_vendor(self._mac) == VendorType.ARKVISION and avdec != 'h264':
-            self.log.warning('[%s] ArkVision cameras only provide H.264; ignoring avdec="%s"', self._mac, avdec)
-            avdec = 'h264'
-        self._avdec = avdec
+            self.log.warning('[%s] ArkVision cameras only provide H.264; forcing avdec to "h264"', self._mac)
+            return 'h264'
+        return avdec
 
 
 class GDPPayloadType(Enum):
