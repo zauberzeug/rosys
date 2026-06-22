@@ -66,3 +66,5 @@ This requires a Jetson with the accelerated GStreamer stack (`gst-launch-1.0` wi
 ```
 
 For an interactive demo with live exposure, gain and fps controls (including a long-exposure preset), see `examples/cameras/gmsl_control.py`.
+GMSL cameras are registered explicitly by their Argus `sensor_id` (the GMSL port); there is no auto-discovery.
+`examples/cameras/jetson_cameras.py` shows multiple GMSL cameras via `GmslCameraProvider` and notes the Jetson caveat that the USB and network camera providers must not run alongside it (they would grab the `/dev/video*` nodes or arp-scan the network).
