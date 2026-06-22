@@ -64,3 +64,5 @@ This requires a Jetson with the accelerated GStreamer stack (`gst-launch-1.0` wi
 ```python
 {! examples/cameras/gmsl.py !}
 ```
+
+For an interactive demo with live exposure, gain and fps controls (including a long-exposure preset), see `examples/cameras/gmsl_control.py`.

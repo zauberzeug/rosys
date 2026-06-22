@@ -4,13 +4,15 @@ import shutil
 import pytest
 
 from rosys.vision import GmslCamera, GmslCameraProvider
-from rosys.vision.gmsl_camera.gmsl_camera_scanner import parse_sensor_ids
+from rosys.vision.gmsl_camera.gmsl_camera_scanner import count_gmsl_sensors, parse_sensor_ids
 from rosys.vision.gmsl_camera.gmsl_device import build_argus_command
 from rosys.vision.gstreamer import parse_caps_dimensions
 
 # Representative `v4l2-ctl --list-devices` output of a Jetson GMSL carrier board with a single camera connected.
+# A sensor exposes several `/dev/video` nodes, and the media controller / a dummy device must be ignored.
 V4L2_LIST_DEVICES_OUTPUT = '''\
-vi-output, gmsl-cam 9-0016 (platform:tegra-capture-vi:2):
+vi-output, gmsl-cam 0-0015 (platform:tegra-capture-vi:2):
+\t/dev/video4
 \t/dev/video5
 
 NVIDIA Tegra Video Input Device (platform:tegra-camrtc-ca):
@@ -19,6 +21,24 @@ NVIDIA Tegra Video Input Device (platform:tegra-camrtc-ca):
 dummy video (platform:vivid-000):
 \t/dev/video10
 \t/dev/video11
+'''
+
+# Three GMSL sensors connected (the planned multi-camera setup), each exposing two video nodes.
+V4L2_LIST_DEVICES_THREE_SENSORS = '''\
+NVIDIA Tegra Video Input Device (platform:tegra-camrtc-ca):
+\t/dev/media0
+
+vi-output, gmsl-cam 0-0011 (platform:tegra-capture-vi:0):
+\t/dev/video0
+\t/dev/video1
+
+vi-output, gmsl-cam 0-0015 (platform:tegra-capture-vi:2):
+\t/dev/video4
+\t/dev/video5
+
+vi-output, gmsl-cam 0-0013 (platform:tegra-capture-vi:3):
+\t/dev/video2
+\t/dev/video3
 '''
 
 
@@ -46,8 +66,15 @@ def test_build_command_sets_resolution_and_framerate() -> None:
     assert 'width=1920,height=1200,framerate=4/1' in command
 
 
-def test_parse_sensor_ids_only_returns_tegra_nodes() -> None:
-    assert parse_sensor_ids(V4L2_LIST_DEVICES_OUTPUT) == {5}
+def test_count_one_sensor_ignoring_nodes_and_media_controller() -> None:
+    # one sensor with two video nodes -> a single sensor, ids {0}; the media controller and dummy are ignored
+    assert count_gmsl_sensors(V4L2_LIST_DEVICES_OUTPUT) == 1
+    assert parse_sensor_ids(V4L2_LIST_DEVICES_OUTPUT) == {0}
+
+
+def test_count_three_sensors() -> None:
+    assert count_gmsl_sensors(V4L2_LIST_DEVICES_THREE_SENSORS) == 3
+    assert parse_sensor_ids(V4L2_LIST_DEVICES_THREE_SENSORS) == {0, 1, 2}
 
 
 def test_parse_sensor_ids_empty_without_tegra_devices() -> None:
