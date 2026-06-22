@@ -123,6 +123,8 @@ follow_imports = "skip"
 module = [
     "cairosvg",
     "coloredlogs",
+    "gi",
+    "gi.*",
     "imgsize",
     "networkx",
     "objgraph",
