@@ -18,7 +18,7 @@ from nicegui import background_tasks
 
 from ... import rosys
 from ...vision.image import ImageArray
-from ..openipc_settings_interface import OpenIpcSettingsInterface
+from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
 
@@ -43,11 +43,11 @@ class RtspDevice:
 
         vendor_type = mac_to_vendor(mac)
 
-        self._settings_interface: JovisionInterface | OpenIpcSettingsInterface | None = None
+        self._settings_interface: JovisionInterface | OpenIpcZauberzeugSettingsInterface | None = None
         if vendor_type == VendorType.JOVISION:
             self._settings_interface = JovisionInterface(ip)
-        elif vendor_type == VendorType.OPENIPC:
-            self._settings_interface = OpenIpcSettingsInterface(ip)
+        elif vendor_type == VendorType.OPENIPC_ZAUBERZEUG:
+            self._settings_interface = OpenIpcZauberzeugSettingsInterface(ip)
         else:
             self.log.warning('[%s] No settings interface for vendor type %s', self._mac, vendor_type)
             self.log.warning('[%s] Using default fps of 10', self._mac)

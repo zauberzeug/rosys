@@ -1,14 +1,14 @@
 from collections.abc import Awaitable, Callable
 
-from ..openipc_settings_interface import OpenIpcSettingsInterface
+from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
 from .mjpeg_device import MjpegDevice
 from .vendors import VendorType, mac_to_vendor
 
 
-class OpenIpcMjpegDevice(MjpegDevice):
-    """MJPEG device for OpenIPC cameras running the divinus streamer.
+class OpenIpcZauberzeugMjpegDevice(MjpegDevice):
+    """MJPEG device for OpenIPC-Zauberzeug cameras running the divinus streamer.
 
-    Extends :class:`MjpegDevice` with an :class:`OpenIpcSettingsInterface` so fps,
+    Extends :class:`MjpegDevice` with an :class:`OpenIpcZauberzeugSettingsInterface` so fps,
     resolution and mirroring are applied on the device via the divinus HTTP API
     instead of the no-op defaults of the base class.
     """
@@ -20,10 +20,11 @@ class OpenIpcMjpegDevice(MjpegDevice):
         super().__init__(mac, ip, username=username, password=password, on_new_image_data=on_new_image_data)
 
         vendor = mac_to_vendor(mac)
-        if vendor != VendorType.OPENIPC:
-            raise ValueError(f'OpenIpcMjpegDevice can only be used with OPENIPC devices. Got {vendor} for mac="{mac}"')
+        if vendor != VendorType.OPENIPC_ZAUBERZEUG:
+            raise ValueError(f'OpenIpcZauberzeugMjpegDevice can only be used with '
+                             f'OPENIPC_ZAUBERZEUG devices. Got {vendor} for mac="{mac}"')
 
-        self.settings_interface = OpenIpcSettingsInterface(ip, username=username, password=password)
+        self.settings_interface = OpenIpcZauberzeugSettingsInterface(ip, username=username, password=password)
 
     async def set_fps(self, fps: int) -> None:
         await self.settings_interface.set_mjpeg_fps(fps)

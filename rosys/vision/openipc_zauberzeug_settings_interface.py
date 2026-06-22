@@ -1,6 +1,6 @@
-"""Settings interface for OpenIPC cameras running the divinus streamer.
+"""Settings interface for OpenIPC-Zauberzeug cameras running the divinus streamer.
 
-OpenIPC cameras flashed with the divinus streamer
+OpenIPC-Zauberzeug cameras flashed with the divinus streamer
 (https://github.com/zauberzeug/divinus) expose an HTTP control API. This
 interface drives that API so the camera parameters RoSys already models
 (fps, bitrate, resolution, mirroring, ...) are actually applied on the device
@@ -25,8 +25,8 @@ import httpx
 REQUEST_TIMEOUT = 5.0
 
 
-class OpenIpcSettingsInterface:
-    """Communicates with the divinus HTTP API of an OpenIPC camera."""
+class OpenIpcZauberzeugSettingsInterface:
+    """Communicates with the divinus HTTP API of an OpenIPC-Zauberzeug camera."""
 
     def __init__(self, ip: str, *, username: str | None = None, password: str | None = None) -> None:
         self.ip = ip
@@ -70,7 +70,7 @@ class OpenIpcSettingsInterface:
     async def get_bitrate(self, stream_id: int) -> int | None:  # pylint: disable=unused-argument
         return (await self.get_mp4()).get('bitrate')
 
-    # --- MJPEG stream + ISP (OpenIpcMjpegDevice) -----------------------------
+    # --- MJPEG stream + ISP (OpenIpcZauberzeugMjpegDevice) -------------------
 
     async def set_mjpeg_fps(self, fps: int) -> None:
         await self._request('/api/mjpeg', fps=int(fps))
