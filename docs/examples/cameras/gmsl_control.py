@@ -5,14 +5,11 @@ Shows the live Argus stream with controls for the headline capability: a settabl
 exposure. Toggle auto exposure off and raise the exposure (lowering the fps) to
 get a long-exposure image; the hardware ISP still handles color and white balance.
 
-Run this on the Jetson (where `nvarguscamerasrc` lives) and open the page from
-another machine. Because GMSL camera parameters are fixed when the GStreamer
-pipeline starts, every change restarts the pipeline -- so the controls below set
-values on user interaction only (they are intentionally not bound back to the
-camera, which would restart the pipeline on every update).
+Because GMSL camera parameters are fixed when the GStreamer pipeline starts, every
+change restarts the pipeline -- so the controls set values on user interaction only
+(they are intentionally not bound back to the camera, which would restart it on every
+update). Run this on the Jetson, where `nvarguscamerasrc` lives.
 """
-import multiprocessing
-
 from nicegui import ui
 
 import rosys
@@ -25,7 +22,7 @@ image = ui.interactive_image()
 ui.timer(0.1, lambda: image.set_source(camera.get_latest_image_url()))
 
 with ui.row().classes('items-center gap-4'):
-    ui.label().bind_text_from(camera, 'is_connected', lambda c: '🟢 connected' if c else '🔴 disconnected')
+    ui.label().bind_text_from(camera, 'is_connected', lambda c: 'connected' if c else 'disconnected')
 
     ui.switch('Auto exposure', value=True,
               on_change=lambda e: camera.set_parameters({'auto_exposure': e.value}))
@@ -49,6 +46,4 @@ with ui.row().classes('items-center gap-4'):
               on_click=lambda: camera.set_parameters({'auto_exposure': False, 'exposure': 0.25, 'fps': 4})) \
         .props('outline')
 
-if __name__ in {'__main__', '__mp_main__'}:
-    multiprocessing.set_start_method('spawn', force=True)
-    ui.run(title='RoSys GMSL camera', reload=False)
+ui.run(title='RoSys GMSL camera')
