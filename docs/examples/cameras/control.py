@@ -71,6 +71,7 @@ def update_camera_cards() -> None:
         rtsp_camera_provider,
         mjpeg_camera_provider,
         usb_camera_provider,
+        gmsl_camera_provider,
         simulated_camera_provider,
     ]
     for provider in providers:
@@ -86,7 +87,11 @@ camera_grid = ui.row()
 rtsp_camera_provider = rosys.vision.RtspCameraProvider()
 mjpeg_camera_provider = rosys.vision.MjpegCameraProvider()
 usb_camera_provider = rosys.vision.UsbCameraProvider()
+gmsl_camera_provider = rosys.vision.GmslCameraProvider()
 simulated_camera_provider = rosys.vision.SimulatedCameraProvider()
+
+# On a Jetson, register the connected GMSL cameras by their Argus sensor-id, e.g.:
+# gmsl_camera_provider.add_camera(rosys.vision.GmslCamera(id='gmsl-0', sensor_id=0))
 
 ui.timer(0.1, update_camera_cards)
 

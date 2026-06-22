@@ -40,7 +40,7 @@ By adding a `Joystick` and `KeyboardControl` the robot is ready to go for remote
 
 The following example creates a web interface for controlling multiple camera types.
 It displays cameras in a grid, showing their live feeds along with controls to connect/disconnect and adjust settings like FPS, quality, exposure, and color.
-The demo supports RTSP, MJPEG, USB, and simulated cameras.
+The demo supports RTSP, MJPEG, USB, GMSL, and simulated cameras.
 It automatically updates every 0.1 seconds to detect and display new cameras, and initializes with one simulated camera.
 
 ```python
