@@ -6,7 +6,7 @@ import shlex
 import signal
 import subprocess
 from asyncio.subprocess import Process
-from collections.abc import AsyncGenerator, Awaitable, Callable
+from collections.abc import Awaitable, Callable
 
 import numpy as np
 from nicegui import background_tasks
@@ -59,7 +59,15 @@ class GmslDevice:
     Because `nvarguscamerasrc` properties are fixed at pipeline construction time,
     changing a parameter restarts the pipeline (debounced, so a batch of changes
     only triggers a single restart).
+
+    The capture loop automatically restarts the pipeline if it exits unexpectedly.
+    This matters on Jetson, where the Argus stack intermittently fails to create a
+    capture session (e.g. transient `NvBufSurfaceFromFd` errors or a session held by
+    another client), and over a long GMSL coax run where the link may drop.
     """
+
+    RECONNECT_DELAY: float = 2.0
+    """Seconds to wait before restarting the pipeline after it exits unexpectedly."""
 
     def __init__(self,
                  sensor_id: int,
@@ -84,6 +92,7 @@ class GmslDevice:
         self.width = width
         self.height = height
 
+        self._running: bool = True
         self._capture_task: asyncio.Task | None = None
         self._capture_process: Process | None = None
         self._restart_task: asyncio.Task | None = None
@@ -122,86 +131,81 @@ class GmslDevice:
 
     async def _debounced_restart(self) -> None:
         await asyncio.sleep(0)  # let a synchronous batch of setters finish before rebuilding the pipeline
-        await self.shutdown()
-        self._start_gstreamer_task()
+        await self._terminate_process()  # the capture loop rebuilds the pipeline with the new configuration
+
+    async def _terminate_process(self) -> None:
+        process = self._capture_process
+        if process is None:
+            return
+        self.log.debug('terminating gstreamer process')
+        try:
+            process.terminate()
+            await asyncio.wait_for(process.wait(), timeout=5)
+        except ProcessLookupError:
+            pass  # process already exited on its own
+        except TimeoutError:
+            self.log.warning('timeout while waiting for gstreamer process to terminate')
 
     async def shutdown(self) -> None:
-        if self._capture_process is not None:
-            self.log.debug('terminating gstreamer process')
-            try:
-                self._capture_process.terminate()
-                await asyncio.wait_for(self._capture_process.wait(), timeout=5)
-            except ProcessLookupError:
-                pass  # process already exited on its own
-            except TimeoutError:
-                self.log.warning('timeout while waiting for gstreamer process to terminate')
-            self._capture_process = None
+        self._running = False
+        await self._terminate_process()
         if self._capture_task is not None and not self._capture_task.done():
             self._capture_task.cancel()
             try:
                 await asyncio.wait_for(self._capture_task, timeout=5)
-            except TimeoutError:
-                self.log.warning('timeout while waiting for capture task to cancel')
-                return
-            except asyncio.CancelledError:
+            except (TimeoutError, asyncio.CancelledError):
                 pass
         self._capture_task = None
+        self._capture_process = None
 
     async def _run_gstreamer(self) -> None:
-        if self._capture_process is not None and self._capture_process.returncode is None:
-            self.log.warning('capture process already running')
-            return
-
-        async def stream() -> AsyncGenerator[ImageArray, None]:
-            command = self.build_command()
-            self.log.debug('running command: %s', command)
-            try:
-                process = await asyncio.create_subprocess_exec(
-                    *shlex.split(command),
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                )
-            except OSError as e:
-                self.log.error('could not start gstreamer pipeline: %s', e)
-                return
-            assert process.stdout is not None
-            assert process.stderr is not None
-            self._capture_process = process
-
-            width: int | None = None
-            height: int | None = None
-            while process.returncode is None:
-                try:
-                    packet = await GDPPacket.read(process.stdout)
-                except asyncio.IncompleteReadError:
-                    break
-
-                if packet.payload_type == GDPPayloadType.CAPS:
-                    cap_text = packet.payload.decode('utf-8', 'ignore')
-                    width, height = parse_caps_dimensions(cap_text)
-                elif packet.payload_type == GDPPayloadType.BUFFER:
-                    assert width is not None and height is not None
-                    if width * height * 3 != len(packet.payload):
-                        self.log.warning('unexpected buffer size %d for %dx%d', len(packet.payload), width, height)
-                        continue
-                    yield np.frombuffer(packet.payload, dtype=np.uint8).reshape(height, width, 3)
-
-            try:
-                await asyncio.wait_for(process.wait(), timeout=5)
-            except TimeoutError:
-                self.log.warning('stream ended; timeout while waiting for gstreamer process to terminate')
-                return
-
-            if process.returncode not in (0, -signal.SIGTERM):
-                error_message = (await process.stderr.read()).decode()
-                self.log.error('gstreamer process %s exited with code %s.\nstderr: %s',
-                               process.pid, process.returncode, error_message)
-
-        async for image in stream():
-            result = self._on_new_image_data(image, rosys.time())
-            if isinstance(result, Awaitable):
-                await result
-
-        self.log.info('stream ended')
+        while self._running:
+            await self._stream_once()
+            if self._running:
+                await asyncio.sleep(self.RECONNECT_DELAY)  # back off before retrying the (flaky) Argus pipeline
         self._capture_process = None
-        self._capture_task = None
+
+    async def _stream_once(self) -> None:
+        """Run one pipeline lifetime: spawn the subprocess and forward frames until it exits."""
+        command = self.build_command()
+        self.log.debug('running command: %s', command)
+        try:
+            process = await asyncio.create_subprocess_exec(
+                *shlex.split(command),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+        except OSError as e:
+            self.log.error('could not start gstreamer pipeline: %s', e)
+            return
+        assert process.stdout is not None
+        assert process.stderr is not None
+        self._capture_process = process
+
+        width: int | None = None
+        height: int | None = None
+        while process.returncode is None:
+            try:
+                packet = await GDPPacket.read(process.stdout)
+            except asyncio.IncompleteReadError:
+                break
+            if packet.payload_type == GDPPayloadType.CAPS:
+                width, height = parse_caps_dimensions(packet.payload.decode('utf-8', 'ignore'))
+            elif packet.payload_type == GDPPayloadType.BUFFER:
+                assert width is not None and height is not None
+                if width * height * 3 != len(packet.payload):
+                    self.log.warning('unexpected buffer size %d for %dx%d', len(packet.payload), width, height)
+                    continue
+                image = np.frombuffer(packet.payload, dtype=np.uint8).reshape(height, width, 3)
+                result = self._on_new_image_data(image, rosys.time())
+                if isinstance(result, Awaitable):
+                    await result
+
+        try:
+            await asyncio.wait_for(process.wait(), timeout=5)
+        except TimeoutError:
+            self.log.warning('timeout while waiting for gstreamer process to terminate')
+        if self._running and process.returncode not in (0, -signal.SIGTERM):
+            error_message = (await process.stderr.read()).decode().strip()
+            self.log.warning('gstreamer pipeline exited with code %s; restarting in %ss.\nstderr: %s',
+                             process.returncode, self.RECONNECT_DELAY, error_message[-500:])
