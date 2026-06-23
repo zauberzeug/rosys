@@ -18,6 +18,7 @@ from nicegui import background_tasks
 
 from ... import rosys
 from ...vision.image import ImageArray
+from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
 
@@ -42,9 +43,11 @@ class RtspDevice:
 
         vendor_type = mac_to_vendor(mac)
 
-        self._settings_interface: JovisionInterface | None = None
+        self._settings_interface: JovisionInterface | OpenIpcZauberzeugSettingsInterface | None = None
         if vendor_type == VendorType.JOVISION:
             self._settings_interface = JovisionInterface(ip)
+        elif vendor_type == VendorType.OPENIPC_ZAUBERZEUG:
+            self._settings_interface = OpenIpcZauberzeugSettingsInterface(ip)
         else:
             self.log.warning('[%s] No settings interface for vendor type %s', self._mac, vendor_type)
             self.log.warning('[%s] Using default fps of 10', self._mac)
@@ -68,16 +71,17 @@ class RtspDevice:
         return url
 
     async def shutdown(self) -> None:
-        if self._capture_process is not None:
+        process = self._capture_process
+        if process is not None:
             self.log.debug('[%s] Terminating gstreamer process', self._mac)
-            self._capture_process.terminate()
+            process.terminate()
             try:
-                await asyncio.wait_for(self._capture_process.wait(), timeout=5)
+                await asyncio.wait_for(process.wait(), timeout=5)
             except TimeoutError:
                 self.log.warning('[%s] Timeout while waiting for gstreamer process to terminate', self._mac)
             else:
                 self.log.debug('[%s] Successfully shut down process (code %s)',
-                               self._mac, self._capture_process.returncode if self._capture_process.returncode is not None else 'None')
+                               self._mac, process.returncode if process.returncode is not None else 'None')
                 self._capture_process = None
         if self._capture_task is not None and not self._capture_task.done():
             self.log.debug('[%s] Cancelling gstreamer task', self._mac)
