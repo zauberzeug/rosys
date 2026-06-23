@@ -10,6 +10,7 @@ class VendorType(Enum):
     ANJOY = 6
     OPENIPC_ZAUBERZEUG = 7
     GOODCAM = 8
+    ARKVISION = 9
     OTHER = -1
 
 
@@ -25,6 +26,7 @@ mac_prefix_to_vendor: dict[str, VendorType] = {
     'f0:00:06': VendorType.ANJOY,
     '7a:7a:21': VendorType.OPENIPC_ZAUBERZEUG,
     '2c:6f:51': VendorType.GOODCAM,
+    '18:fd:cb': VendorType.ARKVISION,  # NOTE: prefix observed on a single ArkCam Basic+ mini; may need expanding
 }
 
 
@@ -46,6 +48,8 @@ def _vendor_to_url(vendor_type: VendorType, ip: str, substream: int) -> str | No
         case VendorType.GOODCAM:
             path = '/videoSub' if substream else '/videoMain'
             return f'rtsp://root:Adminadmin@{ip}{path}'
+        case VendorType.ARKVISION:
+            return f'rtsp://{ip}:8554/h264'  # no auth; no separate substream
         case VendorType.OTHER:
             return None
     raise AssertionError('unreachable')  # Just for mypy

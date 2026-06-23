@@ -19,6 +19,7 @@ from nicegui import background_tasks
 from ... import rosys
 from ...vision.image import ImageArray
 from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
+from .arkvision_rtsp_interface import ArkVisionRtspInterface
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
 
@@ -35,7 +36,7 @@ class RtspDevice:
         self._fps = fps
         self._substream = substream
         self._on_new_image_data = on_new_image_data
-        self._avdec = avdec
+        self._avdec: Literal['h264', 'h265'] = self._clamp_avdec(avdec)
 
         self._capture_task: asyncio.Task | None = None
         self._capture_process: Process | None = None
@@ -43,9 +44,11 @@ class RtspDevice:
 
         vendor_type = mac_to_vendor(mac)
 
-        self._settings_interface: JovisionInterface | OpenIpcZauberzeugSettingsInterface | None = None
+        self._settings_interface: JovisionInterface | ArkVisionRtspInterface | OpenIpcZauberzeugSettingsInterface | None = None
         if vendor_type == VendorType.JOVISION:
             self._settings_interface = JovisionInterface(ip)
+        elif vendor_type == VendorType.ARKVISION:
+            self._settings_interface = ArkVisionRtspInterface(ip)
         elif vendor_type == VendorType.OPENIPC_ZAUBERZEUG:
             self._settings_interface = OpenIpcZauberzeugSettingsInterface(ip)
         else:
@@ -218,7 +221,14 @@ class RtspDevice:
         return self._avdec
 
     def set_avdec(self, avdec: Literal['h264', 'h265']) -> None:
-        self._avdec = avdec
+        self._avdec = self._clamp_avdec(avdec)
+
+    def _clamp_avdec(self, avdec: Literal['h264', 'h265']) -> Literal['h264', 'h265']:
+        """ArkVision cameras only provide H.264, so force `avdec` to 'h264' for them."""
+        if mac_to_vendor(self._mac) == VendorType.ARKVISION and avdec != 'h264':
+            self.log.warning('[%s] ArkVision cameras only provide H.264; forcing avdec to "h264"', self._mac)
+            return 'h264'
+        return avdec
 
 
 class GDPPayloadType(Enum):

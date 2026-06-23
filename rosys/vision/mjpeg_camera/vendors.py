@@ -6,6 +6,7 @@ class VendorType(Enum):
     MOTEC = 2
     GOODCAM = 3
     OPENIPC_ZAUBERZEUG = 4
+    ARKVISION = 5
     OTHER = -1
 
 
@@ -18,6 +19,8 @@ def mac_to_vendor(mac: str) -> VendorType:
         return VendorType.GOODCAM
     if mac.startswith('7a:7a:21'):
         return VendorType.OPENIPC_ZAUBERZEUG
+    if mac.startswith('18:fd:cb'):  # NOTE: prefix observed on a single ArkCam Basic+ mini; may need expanding
+        return VendorType.ARKVISION
     return VendorType.OTHER
 
 
@@ -31,4 +34,6 @@ def mac_to_url(mac: str, ip: str, *, index: int | None = None) -> str | None:
         return f'http://{ip}/api/v1/streams/secondary/stream.mjpeg'
     if vendor == VendorType.OPENIPC_ZAUBERZEUG:
         return f'http://{ip}/mjpeg'
+    if vendor == VendorType.ARKVISION:
+        return f'http://{ip}:81/'
     return None
