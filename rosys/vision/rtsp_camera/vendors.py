@@ -49,7 +49,7 @@ def _vendor_to_url(vendor_type: VendorType, ip: str, substream: int) -> str | No
             path = '/videoSub' if substream else '/videoMain'
             return f'rtsp://root:Adminadmin@{ip}{path}'
         case VendorType.ARKVISION:
-            return f'rtsp://{ip}:8554/h264'  # single H.264 stream, non-standard port, no auth; substream ignored
+            return f'rtsp://{ip}:8554/h264'  # no auth; no separate substream
         case VendorType.OTHER:
             return None
     raise AssertionError('unreachable')  # Just for mypy

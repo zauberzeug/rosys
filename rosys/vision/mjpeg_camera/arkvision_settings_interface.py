@@ -11,7 +11,7 @@ class ArkVisionSettingsInterface(ArkVisionRestClient):
     """Reads and writes ArkCam Basic+ MJPEG stream settings (fps, resolution, mirror) via REST."""
 
     async def enable_http_mjpeg(self) -> None:
-        """Ensure the MJPEG-over-HTTP stream (port 81) is enabled (``mJpegStreamType`` = 2 = HTTP)."""
+        """Ensure the MJPEG-over-HTTP stream is enabled (``mJpegStreamType`` = 2 = HTTP)."""
         common = await self._get('streamCommon')
         if common is None or common.get('mJpegStreamType') == 2:
             return

@@ -27,13 +27,7 @@ def nearest_index(values: list[int], target: int) -> int:
 
 
 class ArkVisionRestClient:
-    """Base for ArkCam Basic+ REST settings interfaces (``http://<ip>/rest/...``).
-
-    The REST server has no authentication: a GET reads a settings group, a POST writes (partial)
-    JSON. Readers return ``None`` on a REST error so callers can keep the previously cached value
-    (``ConfigurableCamera`` ignores ``None`` values). Frame rate lives here because both the MJPEG
-    and the H.264 stream select it the same way: a sensor-mode-dependent ``framerate`` enum index.
-    """
+    """Base for ArkCam Basic+ REST settings interfaces (``http://<ip>/rest/...``)."""
 
     def __init__(self, ip: str) -> None:
         self.ip = ip

@@ -6,11 +6,7 @@ from .vendors import VendorType, mac_to_vendor
 
 
 class ArkVisionMjpegDevice(MjpegDevice):
-    """MJPEG device for Ark Vision ArkCam Basic+ cameras.
-
-    Images come from the MJPEG-over-HTTP stream on port 81, which is enabled on demand via the
-    REST API. Frame rate, resolution and mirroring are adjusted through the same REST API.
-    """
+    """MJPEG device for Ark Vision ArkCam Basic+ cameras. Includes auto-enable and configuration through the REST API."""
 
     def __init__(self, mac: str, ip: str, *,
                  index: int | None = None,

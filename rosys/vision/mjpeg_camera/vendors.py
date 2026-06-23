@@ -35,5 +35,5 @@ def mac_to_url(mac: str, ip: str, *, index: int | None = None) -> str | None:
     if vendor == VendorType.OPENIPC:
         return f'http://{ip}/mjpeg'
     if vendor == VendorType.ARKVISION:
-        return f'http://{ip}:81/'  # MJPEG-over-HTTP (must be enabled via REST, see ArkVisionMjpegDevice)
+        return f'http://{ip}:81/'
     return None
