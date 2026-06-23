@@ -4,6 +4,7 @@ from .arkvision_mjpeg_device import ArkVisionMjpegDevice
 from .axis_mjpeg_device import AxisMjpegDevice
 from .mjpeg_device import MjpegDevice
 from .motec_mjpeg_device import MotecMjpegDevice
+from .openipc_zauberzeug_mjpeg_device import OpenIpcZauberzeugMjpegDevice
 from .vendors import VendorType, mac_to_vendor
 
 
@@ -33,7 +34,12 @@ class MjpegDeviceFactory:
                                         index=index, username=username,
                                         password=password, on_new_image_data=on_new_image_data)
 
-        if vendor in {VendorType.GOODCAM, VendorType.OPENIPC}:
+        if vendor == VendorType.OPENIPC_ZAUBERZEUG:
+            return OpenIpcZauberzeugMjpegDevice(mac, ip,
+                                                username=username, password=password,
+                                                on_new_image_data=on_new_image_data)
+
+        if vendor == VendorType.GOODCAM:
             return MjpegDevice(mac, ip,
                                username=username, password=password,
                                on_new_image_data=on_new_image_data)

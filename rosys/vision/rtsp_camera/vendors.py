@@ -8,7 +8,7 @@ class VendorType(Enum):
     REOLINK = 4
     UNIARCH = 5
     ANJOY = 6
-    OPENIPC = 7
+    OPENIPC_ZAUBERZEUG = 7
     GOODCAM = 8
     ARKVISION = 9
     OTHER = -1
@@ -24,7 +24,7 @@ mac_prefix_to_vendor: dict[str, VendorType] = {
     'ec:71:db': VendorType.REOLINK,
     '6c:f1:7e': VendorType.UNIARCH,
     'f0:00:06': VendorType.ANJOY,
-    '7a:7a:21': VendorType.OPENIPC,
+    '7a:7a:21': VendorType.OPENIPC_ZAUBERZEUG,
     '2c:6f:51': VendorType.GOODCAM,
     '18:fd:cb': VendorType.ARKVISION,  # NOTE: prefix observed on a single ArkCam Basic+ mini; may need expanding
 }
@@ -43,7 +43,7 @@ def _vendor_to_url(vendor_type: VendorType, ip: str, substream: int) -> str | No
             return f'rtsp://admin:Admin_adm1n@{ip}/media/video{2 if substream else 1}'
         case VendorType.ANJOY:
             return f'rtsp://admin:123456@{ip}/h264/ch{2 if substream else 1}'
-        case VendorType.OPENIPC:
+        case VendorType.OPENIPC_ZAUBERZEUG:
             return f'rtsp://root:Adminadmin@{ip}/stream={substream}'
         case VendorType.GOODCAM:
             path = '/videoSub' if substream else '/videoMain'
