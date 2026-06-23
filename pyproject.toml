@@ -8,7 +8,7 @@ readme = "README.md"
 requires-python = ">=3.11, <3.14"
 keywords = ["robot", "framework", "automation", "control", "steer"]
 dependencies = [
-    "nicegui>=3.9.0,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/105
+    "nicegui>=3.13.0,<4",
     "pyserial>=3.5,<4",
     "numpy<3.0.0",
     "scipy>=1.7.2,<2",
@@ -32,12 +32,15 @@ dependencies = [
     "pyudev>=0.21.0",
     "pyquaternion>=0.9.9,<0.10",
     "cairosvg>=2.9.0,<3",  # https://github.com/zauberzeug/rosys/security/dependabot/104
-    "pillow>=12.1.1",  # https://github.com/zauberzeug/rosys/security/dependabot/102
-    "idna>=3.7",  # https://github.com/zauberzeug/rosys/security/dependabot/45
+    "pillow>=12.2.0",  # https://github.com/zauberzeug/rosys/security/dependabot/112
+    "lxml>=6.1.0",  # https://github.com/zauberzeug/rosys/security/dependabot/115
+    "idna>=3.15",  # https://github.com/zauberzeug/rosys/security/dependabot/122
     "requests>=2.32.4",  # https://github.com/zauberzeug/rosys/security/dependabot/64
-    "urllib3>=2.6.3",  # https://github.com/zauberzeug/rosys/security/dependabot/90
-    "starlette>=0.49.1",  # https://github.com/zauberzeug/rosys/security/dependabot/73
-    "aiohttp>=3.13.3",  # https://github.com/zauberzeug/rosys/security/dependabot/89
+    "urllib3>=2.7.0",  # https://github.com/zauberzeug/rosys/security/dependabot/118
+    "python-multipart>=0.0.31",  # https://github.com/zauberzeug/rosys/security/dependabot/130
+    "starlette>=1.0.1",  # https://github.com/zauberzeug/rosys/security/dependabot/126
+    "aiohttp>=3.14.0",  # https://github.com/zauberzeug/rosys/security/dependabot/124
+    "webob>=1.8.10",  # https://github.com/zauberzeug/rosys/security/dependabot/125
     "fonttools>=4.60.2,<5",  # https://github.com/zauberzeug/rosys/security/dependabot/74
     "marshmallow>=3.26.2,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/81
     "pyturbojpeg>=1.8.2,<2",
@@ -52,15 +55,16 @@ rosys = "rosys.testing.fixtures"
 
 [dependency-groups]
 dev = [
-    "autopep8>=1.5.5,<2",
-    "pytest>=8.2.2,<9",
+    {include-group = "types"},
+    "autopep8>=2.0.0,<3",
+    "pytest>=9.0.3,<10",  # https://github.com/zauberzeug/rosys/security/dependabot/113
     "pytest-watch>=4.2.0,<5",
     "pytest-flakefinder>=1.0.0,<2",
     "pytest-profiling>=1.7.0,<2",
     "pytest-asyncio>=1.2.0,<2",
     "debugpy>=1.2.1,<2",
     "py-spy>=0.3.10,<0.4",
-    "cryptography>=46.0.5",  # https://github.com/zauberzeug/rosys/security/dependabot/101
+    "cryptography>=48.0.1",  # https://github.com/zauberzeug/rosys/security/dependabot/131
     "sh>=1.14.2,<2",
     "mypy[faster-cache]>=1.15.0,<2.0.0",
     "pylint>=3.2.5,<4",
@@ -68,13 +72,21 @@ dev = [
     "filelock>=3.20.3,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/96
     "poetry-dynamic-versioning>=1.8.0,<2",
 ]
+types = [
+    "types-aiofiles>=25.1.0",
+    "types-psutil>=5.9.0,<6",
+    "types-requests>=2.32.4",
+    "types-tabulate>=0.8.9,<0.9",
+]
 docs = [
     "mkdocs==1.5.3",
     "mkdocs-material",
+    "pymdown-extensions>=10.21.3",  # https://github.com/zauberzeug/rosys/security/dependabot/121
     "mdx-include",
     "mkdocs-pymdownx-material-extras",
     "mdx-footnotes2",
     "mkdocstrings-python",
+    "mkdocs-callouts",
     "mkdocs-gen-files",
     "mkdocs-literate-nav",
     "mkdocs-section-index",
@@ -96,12 +108,13 @@ enable = true
 vcs = "git"
 style = "pep440"
 
+[tool.autopep8]
+max-line-length = 120
+
 [tool.mypy]
 python_version = "3.11"
-install_types = true
 check_untyped_defs = true
 
-# pyproject.toml
 [[tool.mypy.overrides]]
 module = ["numpy.*"]
 follow_imports = "skip"
@@ -191,3 +204,6 @@ ignore = [
     "PLR0915", # too many statements
     "PLR2004", # magic value comparison
 ]
+
+[tool.codespell]
+skip = '*.lock'

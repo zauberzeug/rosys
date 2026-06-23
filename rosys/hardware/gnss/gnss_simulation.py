@@ -62,18 +62,20 @@ class GnssSimulation(Gnss):
         noise_point = geo_pose.point.polar(noise_magnitude, noise_direction)
         noise_heading = np.random.normal(geo_pose.heading, math.radians(self._heading_std_dev))
         noise_pose = GeoPose(lat=noise_point.lat, lon=noise_point.lon, heading=noise_heading)
-        timestamp = rosys.time()
+        fix_time = rosys.time()  # the measurement reflects the pose at this epoch
+        if self._latency:
+            await rosys.sleep(self._latency)
+        # mirror the hardware: ``time`` is the arrival epoch (now), ``gnss_time`` the fix epoch,
+        # so ``measurement.age`` carries the latency just as it does on a real receiver
         self.last_measurement = GnssMeasurement(
-            time=timestamp,
-            gnss_time=timestamp,
+            time=rosys.time(),
+            gnss_time=fix_time,
             pose=noise_pose,
             latitude_std_dev=self._lat_std_dev,
             longitude_std_dev=self._lon_std_dev,
             heading_std_dev=self._heading_std_dev,
             gps_quality=self._gps_quality,
         )
-        if self._latency:
-            await rosys.sleep(self._latency)
         self.NEW_MEASUREMENT.emit(self.last_measurement)
 
     def developer_ui(self) -> None:

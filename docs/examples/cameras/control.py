@@ -26,6 +26,15 @@ def add_card(camera: rosys.vision.Camera, container: ui.element) -> None:
     streams[uid].set_source(camera.get_latest_image_url())
 
 
+def resolution_to_str(resolution: tuple[int, int] | None) -> str | None:
+    return f'{resolution[0]}x{resolution[1]}' if resolution else None
+
+
+def str_to_resolution(text: str) -> tuple[int, int]:
+    width, height = text.split('x')
+    return int(width), int(height)
+
+
 def create_camera_settings_panel(camera: rosys.vision.ConfigurableCamera) -> None:
     camera_parameters = camera.get_capabilities()
     parameter_names = [parameter.name for parameter in camera_parameters]
@@ -42,10 +51,31 @@ def create_camera_settings_panel(camera: rosys.vision.ConfigurableCamera) -> Non
                           on_change=lambda e: camera.set_parameters({'fps': e.value})) \
                     .bind_value_from(camera, 'parameters',
                                      backward=lambda params: params['fps'])
+        if 'resolution' in parameter_names:
+            resolutions = [(1920, 1080), (1280, 720), (800, 600), (640, 480), (480, 360)]
+            with ui.card(), ui.row():
+                ui.label('Resolution:')
+                ui.select(options=[resolution_to_str(r) for r in resolutions],
+                          on_change=lambda e: camera.set_parameters({'resolution': str_to_resolution(e.value)})) \
+                    .bind_value_from(camera, 'parameters',
+                                     backward=lambda params: resolution_to_str(params.get('resolution')))
+        if 'mirrored' in parameter_names:
+            with ui.card():
+                ui.switch('Mirrored',
+                          on_change=lambda e: camera.set_parameters({'mirrored': e.value})) \
+                    .bind_value_from(camera, 'parameters',
+                                     backward=lambda params: bool(params.get('mirrored')))
         if 'substream' in parameter_names:
             with ui.card():
                 ui.switch('High Quality',
                           on_change=lambda e: camera.set_parameters({'substream': 0 if e.value else 1}))
+        if 'bitrate' in parameter_names:
+            with ui.card(), ui.row():
+                ui.label('Bitrate (kbit):')
+                ui.select(options=[512, 1024, 2048, 4096, 8192],
+                          on_change=lambda e: camera.set_parameters({'bitrate': e.value})) \
+                    .bind_value_from(camera, 'parameters',
+                                     backward=lambda params: params.get('bitrate'))
         if 'exposure' in parameter_names:
             with ui.card(), ui.row():
                 ui.label('Exposure:')

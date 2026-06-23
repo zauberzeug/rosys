@@ -99,7 +99,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         assert self.device is not None
         await self.device.set_fps(fps)
 
-    async def _get_fps(self) -> int:
+    async def _get_fps(self) -> int | None:
         assert self.device is not None
 
         return await self.device.get_fps()
@@ -109,7 +109,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
         await self.device.set_resolution(*resolution)
 
-    async def _get_resolution(self) -> tuple[int, int]:
+    async def _get_resolution(self) -> tuple[int, int] | None:
         assert self.device is not None
 
         return await self.device.get_resolution()
@@ -119,7 +119,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
         await self.device.set_mirrored(mirrored)
 
-    async def _get_mirrored(self) -> bool:
+    async def _get_mirrored(self) -> bool | None:
         assert self.device is not None
 
         return await self.device.get_mirrored()
