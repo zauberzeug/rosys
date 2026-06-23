@@ -1,7 +1,6 @@
 import asyncio
 import gc
 import logging
-import multiprocessing
 import os
 import signal
 import threading
@@ -28,10 +27,6 @@ log = logging.getLogger('rosys.core')
 translator: Any | None = None
 
 core.is_test = is_test = helpers.is_test()
-
-# POSIX standard to create processes is "fork", which is inherently broken for python (see https://pythonspeed.com/articles/python-multiprocessing/)
-if __name__ == '__main__':
-    multiprocessing.set_start_method('spawn')
 
 
 @dataclass(slots=True, kw_only=True)
@@ -232,9 +227,6 @@ def on_shutdown(handler: Callable) -> None:
 async def startup() -> None:
     if _state.startup_finished:
         raise RuntimeError('should be only executed once')
-    if multiprocessing.get_start_method() != 'spawn':
-        raise RuntimeError(
-            'multiprocessing start method must be "spawn"; see https://pythonspeed.com/articles/python-multiprocessing/')
 
     _state.startup_finished = True
 
