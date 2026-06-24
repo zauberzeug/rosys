@@ -11,17 +11,8 @@ from .gmsl_camera import GmslCamera
 class GmslCameraProvider(CameraProvider[GmslCamera]):
     """Collects and provides GMSL2/FPD-Link cameras attached to an NVIDIA Jetson.
 
-    Cameras are accessed through NVIDIA's Argus stack (`nvarguscamerasrc`) and must be
-    registered explicitly with their Argus ``sensor_id`` (the GMSL port), e.g.::
-
-        provider.add_camera(GmslCamera(id='gmsl-0', sensor_id=0))
-
-    There is no automatic discovery: whether a port has a camera connected cannot be told
-    from Video4Linux or sysfs (the device tree exposes every defined port as a `/dev/video`
-    node regardless), and the only reliable signals -- an Argus capture attempt or the GMSL
-    deserializer link-lock register over I2C -- are too expensive or too board-specific to
-    run as a generic scan. The ``sensor_id`` maps 1:1 to ``/dev/video<sensor_id>`` and to the
-    device-tree camera-module index.
+    Cameras must be added explicitly through ``add_camera()`` (or restored from persistence).
+    Auto discovery is not supported.
     """
 
     def __init__(self) -> None:

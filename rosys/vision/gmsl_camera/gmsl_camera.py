@@ -15,20 +15,22 @@ from .gmsl_device import GmslDevice
 
 
 class GmslCamera(ConfigurableCamera, TransformableCamera, CalibratableCamera):
-    """A GMSL2/FPD-Link camera attached to an NVIDIA Jetson (e.g. a global-shutter camera on a Jetson GMSL carrier board).
+    """A GMSL2/FPD-Link camera connected through a deserializer board.
 
     Frames are captured through NVIDIA's Argus stack via `GmslDevice`, so the hardware ISP
     handles debayering, white balance and tone mapping. Exposure and gain can run on the ISP's
-    auto algorithms or be pinned to fixed values, e.g. a long manual exposure with a low fps for
-    long-exposure capture.
+    auto algorithms or be pinned to fixed values.
 
-    The camera is identified by its Argus ``sensor_id`` (the GMSL port on the board).
+    The hardware is located by its Argus ``sensor_id`` (the GMSL port on the board), while ``id``
+    is the stable application-level identity used for persistence and image tagging.
+    Keeping them separate lets a camera move between ports without losing its persisted state;
+    ``id`` defaults to ``f'gmsl-{sensor_id}'`` when not given.
     """
 
     def __init__(self,
                  *,
-                 id: str,  # pylint: disable=redefined-builtin
                  sensor_id: int = 0,
+                 id: str | None = None,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
                  auto_exposure: bool = True,
@@ -39,7 +41,7 @@ class GmslCamera(ConfigurableCamera, TransformableCamera, CalibratableCamera):
                  width: int = 1920,
                  height: int = 1200,
                  **kwargs) -> None:
-        super().__init__(id=id,
+        super().__init__(id=id or f'gmsl-{sensor_id}',
                          name=name,
                          connect_after_init=connect_after_init,
                          **kwargs)

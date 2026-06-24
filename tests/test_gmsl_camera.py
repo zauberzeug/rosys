@@ -50,6 +50,11 @@ def test_to_dict_round_trip() -> None:
     assert restored.parameters['fps'] == 4
 
 
+def test_id_defaults_to_sensor_id() -> None:
+    assert GmslCamera(sensor_id=3, connect_after_init=False).id == 'gmsl-3'
+    assert GmslCamera(id='front', sensor_id=3, connect_after_init=False).id == 'front'
+
+
 def test_provider_not_operable_without_gstreamer() -> None:
     if shutil.which('gst-launch-1.0') is not None:
         pytest.skip('gst-launch-1.0 is installed; cannot test the non-operable case')
