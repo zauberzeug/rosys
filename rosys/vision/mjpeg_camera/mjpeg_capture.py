@@ -8,8 +8,7 @@ from multiprocessing.context import SpawnProcess
 from typing import Any
 
 from ...geometry import Rectangle
-from ..image import Image
-from ..image_processing import process_jpeg_image
+from ..image import Image, ImageArray
 from ..image_rotation import ImageRotation
 from .mjpeg_device import MjpegDevice
 from .mjpeg_device_factory import MjpegDeviceFactory
@@ -61,6 +60,9 @@ class MjpegCaptureProcess(SpawnProcess):  # always spawn
         self._device = MjpegDeviceFactory.create(self._mac, self._ip, index=self._index,
                                                  username=self._username, password=self._password,
                                                  on_new_image_data=self._handle_image_data)
+        # set before the first await, so the capture task picks them up on its first frame
+        self._device.rotation = self._rotation
+        self._device.crop = self._crop
         for name, value in self._parameters.items():
             args = value if isinstance(value, tuple) else (value,)
             await self._call_device(f'set_{name}', args)
@@ -74,17 +76,12 @@ class MjpegCaptureProcess(SpawnProcess):  # always spawn
         if self._stop is not None:
             self._stop.set()
 
-    def _handle_image_data(self, image_bytes: bytes, timestamp: float) -> None:
-        if self._crop is not None or self._rotation != ImageRotation.NONE:
-            array = process_jpeg_image(image_bytes, self._rotation, self._crop)
-            image = None if array is None else Image.from_array(array, camera_id=self._camera_id, time=timestamp)
-        else:
-            image = Image.from_jpeg_bytes(image_bytes, camera_id=self._camera_id, time=timestamp)
-        if image is not None:
-            try:
-                self._image_writer.send(image)
-            except (BrokenPipeError, OSError):
-                self._request_stop()
+    def _handle_image_data(self, image_array: ImageArray, timestamp: float) -> None:
+        image = Image.from_array(image_array, camera_id=self._camera_id, time=timestamp)
+        try:
+            self._image_writer.send(image)
+        except (BrokenPipeError, OSError):
+            self._request_stop()
 
     def _on_control_readable(self) -> None:
         try:
