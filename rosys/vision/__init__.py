@@ -10,7 +10,7 @@ from .detections import BoxDetection, Detection, Detections, PointDetection
 from .detector import Autoupload, Detector
 from .detector_hardware import DetectorHardware
 from .detector_simulation import DetectorSimulation, SimulatedObject
-from .image import Image, ImageArray, ImageSize
+from .image import BytesImage, Image, ImageArray, ImageSize
 from .image_rotation import ImageRotation
 from .mjpeg_camera import MjpegCamera, MjpegCameraProvider
 from .multi_camera_provider import MultiCameraProvider
@@ -25,6 +25,7 @@ __all__ = [
     'Autoupload',
     'BoxAnnotation',
     'BoxDetection',
+    'BytesImage',
     'CalibratableCamera',
     'CalibratableCameraProvider',
     'Calibration',
