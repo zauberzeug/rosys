@@ -7,11 +7,17 @@ from contextlib import asynccontextmanager
 import httpx
 
 from ... import rosys
+from ...geometry import Rectangle
 from ...rosys import on_startup
-from ..image_processing import remove_exif
+from ..image import ImageArray
+from ..image_processing import process_jpeg_image, remove_exif
+from ..image_rotation import ImageRotation
 from .vendors import mac_to_url
 
 log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device')
+
+ImageDataHandler = Callable[[ImageArray, float], Awaitable | None]
+"""Receives a decoded, cropped and rotated frame together with its capture timestamp."""
 
 
 def parse_capture_timestamp(part_header: bytes) -> float | None:
@@ -40,12 +46,14 @@ class MjpegDevice:
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
+                 on_new_image_data: ImageDataHandler) -> None:
         self._mac = mac
         self._ip = ip
         self.log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device.' + self._mac)
 
         self._on_new_image_data = on_new_image_data
+        self.rotation: ImageRotation = ImageRotation.NONE
+        self.crop: Rectangle | None = None
         self._capture_task: Task | None = None
         self._username = username
         self._password = password
@@ -133,7 +141,10 @@ class MjpegDevice:
                                 continue
                             try:
                                 timestamp = capture_time if capture_time is not None else rosys.time()
-                                result = self._on_new_image_data(remove_exif(image), timestamp)
+                                array = process_jpeg_image(remove_exif(image), self.rotation, self.crop)
+                                if array is None:
+                                    continue
+                                result = self._on_new_image_data(array, timestamp)
                                 if isinstance(result, Awaitable):
                                     await result
                             except Exception as e:
