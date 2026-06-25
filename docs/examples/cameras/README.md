@@ -47,6 +47,13 @@ It automatically updates every 0.1 seconds to detect and display new cameras, an
 {! examples/cameras/control.py !}
 ```
 
+## Automatic Reconnection
+
+Network cameras can lose their connection due to network or power glitches.
+`RtspCamera` and `MjpegCamera` reconnect on their own: once connected, the underlying device keeps a single stream alive and retries every `reconnect_interval` seconds (default 3.0) whenever the stream drops.
+A camera provider can therefore run with `auto_scan=False` and scan only on demand, while previously connected cameras stay connected by themselves.
+Reconnection runs until the camera is disconnected, so `disconnect()` both stops the retries and tears down the stream.
+
 ## Streaming RTSP Cameras
 
 The following example shows how to stream images from an RTSP camera.
