@@ -123,3 +123,33 @@ class Image:
     def byte_size(self) -> int:
         """Compute the size of the stored image representation in bytes."""
         return self.array.size
+
+
+@dataclass(slots=True, kw_only=True)
+class BytesImage:
+    """An image as raw, uncompressed RGB pixel bytes.
+
+    A lightweight carrier for cheap transfer (e.g. across a process boundary): it pickles as a plain
+    ``bytes`` blob and reconstructs via a zero-copy ``np.frombuffer`` view, avoiding the heavier pickling
+    of a full :class:`Image` (numpy reconstruction plus detections/metadata).
+    """
+    data: bytes
+    size: ImageSize
+    camera_id: str
+    time: float
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_image(cls, image: Image) -> BytesImage:
+        return cls(data=image.array.tobytes(), size=image.size,
+                   camera_id=image.camera_id, time=image.time, metadata=image.metadata)
+
+    @classmethod
+    def from_array(cls, array: ImageArray, *,
+                   camera_id: str, time: float, metadata: dict[str, Any] | None = None) -> BytesImage:
+        return cls(data=array.tobytes(), size=ImageSize(width=array.shape[1], height=array.shape[0]),
+                   camera_id=camera_id, time=time, metadata=metadata or {})
+
+    def to_image(self) -> Image:
+        array = np.frombuffer(self.data, dtype=np.uint8).reshape(self.size.height, self.size.width, 3)
+        return Image.from_array(array, camera_id=self.camera_id, time=self.time, metadata=self.metadata)

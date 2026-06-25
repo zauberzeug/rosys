@@ -8,7 +8,7 @@ from multiprocessing.context import SpawnProcess
 from typing import Any
 
 from ...geometry import Rectangle
-from ..image import Image, ImageArray
+from ..image import BytesImage, Image, ImageArray
 from ..image_rotation import ImageRotation
 from .mjpeg_device import MjpegDevice
 from .mjpeg_device_factory import MjpegDeviceFactory
@@ -77,9 +77,9 @@ class MjpegCaptureProcess(SpawnProcess):  # always spawn
             self._stop.set()
 
     def _handle_image_data(self, image_array: ImageArray, timestamp: float) -> None:
-        image = Image.from_array(image_array, camera_id=self._camera_id, time=timestamp)
+        bytes_image = BytesImage.from_array(image_array, camera_id=self._camera_id, time=timestamp)
         try:
-            self._image_writer.send(image)
+            self._image_writer.send(bytes_image)
         except (BrokenPipeError, OSError):
             self._request_stop()
 
@@ -161,10 +161,10 @@ class MjpegCapture:
     def _read_images(self) -> None:
         while True:
             try:
-                image = self._image_reader.recv()
+                bytes_image: BytesImage = self._image_reader.recv()
             except (EOFError, OSError):
                 break
-            self._loop.call_soon_threadsafe(self._on_image, image)
+            self._loop.call_soon_threadsafe(self._on_image, bytes_image.to_image())
 
     async def call(self, method: str, *args: Any) -> Any:
         """Run a device method in the subprocess and return its result (re-raising any exception)."""
