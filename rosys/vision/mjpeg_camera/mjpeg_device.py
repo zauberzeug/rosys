@@ -64,7 +64,12 @@ class MjpegDevice:
         def create_capture_task() -> None:
             loop = asyncio.get_event_loop()
             self._capture_task = loop.create_task(self.run_capture_task())
-        on_startup(create_capture_task)
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            on_startup(create_capture_task)  # no loop yet (e.g. constructed at import time): defer to startup
+        else:
+            create_capture_task()  # a loop is already running (e.g. inside the capture subprocess)
 
     def restart_capture(self) -> None:
         self.log.debug('Restarting capture task')
