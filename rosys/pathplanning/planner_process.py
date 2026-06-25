@@ -1,15 +1,19 @@
 import abc
 import logging
+import multiprocessing
 import uuid
 from dataclasses import dataclass, field
-from multiprocessing import Process
 from multiprocessing.connection import Connection
+from multiprocessing.context import SpawnProcess
 from typing import Any
 
 from ..geometry import Point, Pose, Spline
 from .area import Area
 from .delaunay_planner import DelaunayPlanner
 from .obstacle_map import Obstacle
+
+# spawn, not fork (which is broken for Python), regardless of the global start method (#19)
+SPAWN_CONTEXT = multiprocessing.get_context('spawn')
 
 
 @dataclass
@@ -57,7 +61,7 @@ class PlannerResponse:
     content: Any
 
 
-class PlannerProcess(Process):
+class PlannerProcess(SpawnProcess):  # always spawn (#19)
 
     def __init__(self, connection: Connection, robot_outline: list[tuple[float, float]]) -> None:
         super().__init__()
