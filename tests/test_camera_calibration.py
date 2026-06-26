@@ -238,7 +238,9 @@ def test_projection_with_frame_argument():
         # With ``frame=cam_frame`` the result is in frame-local coordinates.
         frame_point_ = cam.calibration.project_from_image(image_point_from_frame, frame_point.z, frame=cam_frame)
         assert frame_point_ is not None
+        assert frame_point_.frame_id == cam_frame.id
         assert np.allclose(frame_point.tuple, frame_point_.tuple, atol=1e-6)
+        assert np.allclose(world_point.tuple, frame_point_.resolve().tuple, atol=1e-6)
 
         # The numpy-array overload must forward ``frame`` as well.
         image_array = np.array([image_point_from_frame.tuple], dtype=np.float64)

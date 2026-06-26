@@ -305,7 +305,10 @@ class Calibration:
                                                   target_height=target_height,
                                                   reprojection_tolerance=reprojection_tolerance,
                                                   frame=frame)
-            return [Point3d(x=point[0], y=point[1], z=point[2]) if not np.isnan(point).any() else None for point in world_array]
+            return [
+                Point3d(x=point[0], y=point[1], z=point[2]).in_frame(frame) if not np.isnan(point).any() else None
+                for point in world_array
+            ]
 
         if len(image_coordinates) == 0:
             return np.empty((0, 3), dtype=np.float64)
