@@ -60,11 +60,4 @@ The following example shows how to stream images from an RTSP camera.
 GMSL2/FPD-Link cameras (e.g. a global-shutter camera on a Jetson GMSL carrier board) are accessed through NVIDIA's Argus stack via `nvarguscamerasrc`, so the hardware ISP performs debayering, white balance and tone mapping.
 Each camera is identified by its Argus `sensor_id` (the GMSL port on the board), and exposure and gain can either run on the ISP's auto algorithms or be pinned to fixed values for long-exposure capture.
 This requires a Jetson with the accelerated GStreamer stack (`gst-launch-1.0` with `nvarguscamerasrc`) and the vendor's GMSL driver installed.
-
-```python
-{! examples/cameras/gmsl.py !}
-```
-
-For an interactive demo with live exposure, gain and fps controls (including a long-exposure preset), see `examples/cameras/gmsl_control.py`.
-GMSL cameras are registered explicitly by their Argus `sensor_id` (the GMSL port); there is no auto-discovery.
-`examples/cameras/jetson_cameras.py` shows multiple GMSL cameras via `GmslCameraProvider` and notes the Jetson caveat that the USB and network camera providers must not run alongside it (they would grab the `/dev/video*` nodes or arp-scan the network).
+GMSL cameras are registered explicitly by their Argus `sensor_id` (the GMSL port); there is no auto-discovery, as shown in the control example above.

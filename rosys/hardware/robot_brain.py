@@ -38,6 +38,8 @@ class RobotBrain:
         """a line has been received from the microcontroller (argument: line as string)"""
         self.FLASH_P0_COMPLETE = Event[[]]()
         """flashing p0 was successful and 'Replica complete' was received"""
+        self.CORE_MESSAGE_RECEIVED = Event[float]()
+        """a core message was received (argument: hardware millis timestamp)"""
 
         self.log = logging.getLogger('rosys.robot_brain')
 
@@ -209,6 +211,7 @@ class RobotBrain:
             hardware_time: float | None = None
             if first == 'core':
                 millis = float(words.pop(0))
+                self.CORE_MESSAGE_RECEIVED.emit(millis)
                 if self.clock_offset is None:
                     continue
                 hardware_time = millis / 1000 + self.clock_offset
