@@ -1,11 +1,14 @@
 import asyncio
 from unittest.mock import patch
 
+import numpy as np
+
 import rosys
 from rosys.testing import forward
-from rosys.vision import MjpegCamera, RtspCamera
+from rosys.vision import MjpegCamera, RtspCamera, SimulatedCamera, UsbCamera
 from rosys.vision.mjpeg_camera.mjpeg_device import MjpegDevice
 from rosys.vision.rtsp_camera.rtsp_device import RtspDevice
+from rosys.vision.usb_camera.usb_device import UsbDevice
 
 # A MAC that maps to a "GOODCAM" URL in both the RTSP and MJPEG vendor tables.
 # GOODCAM needs no settings interface, so the device is constructed without any network access.
@@ -142,3 +145,122 @@ async def test_mjpeg_camera_passes_reconnect_interval_to_device(rosys_integratio
         assert camera.device is not None
         assert camera.device.reconnect_interval == 7.0
         await camera.disconnect()
+
+
+class FakeCapture:
+    """Minimal stand-in for cv2.VideoCapture that can simulate a disconnected device."""
+
+    def __init__(self) -> None:
+        self._opened = True
+        self._frame = np.zeros((48, 64, 3), dtype=np.uint8)
+
+    def isOpened(self) -> bool:  # cv2 API name
+        return self._opened
+
+    def read(self):
+        if not self._opened:
+            return False, None
+        return True, self._frame
+
+    def release(self) -> None:
+        self._opened = False
+
+    def get(self, _prop) -> float:
+        return 0.0
+
+    def set(self, _prop, _value) -> bool:
+        return True
+
+
+async def test_usb_device_reconnects_after_disconnect(rosys_integration):
+    captures: list[FakeCapture] = []
+
+    def make_capture(_index: int) -> FakeCapture:
+        capture = FakeCapture()
+        captures.append(capture)
+        return capture
+
+    frames: list = []
+    with patch.object(UsbDevice, 'create_capture', make_capture), \
+            patch('rosys.vision.usb_camera.usb_device.find_video_id', return_value=0):
+        device = UsbDevice.from_uid('fakecam', lambda data, timestamp: frames.append(data), reconnect_interval=0.3)
+        assert device is not None
+        try:
+            for _ in range(15):
+                await forward(0.1)
+                await asyncio.sleep(0.02)
+                if frames:
+                    break
+            assert frames, 'device did not capture any frames'
+            assert device.is_connected
+            captures_before = len(captures)
+
+            captures[-1].release()  # simulate a bad cable: the capture dies
+            for _ in range(20):
+                await forward(0.3)
+                await asyncio.sleep(0.02)
+                if len(captures) > captures_before:
+                    break
+            assert len(captures) > captures_before, 'device did not reopen its capture'
+            assert device.is_connected
+
+            frames_after_reconnect = len(frames)
+            for _ in range(10):
+                await forward(0.1)
+                await asyncio.sleep(0.02)
+                if len(frames) > frames_after_reconnect:
+                    break
+            assert len(frames) > frames_after_reconnect, 'frames did not resume after reconnect'
+
+            await device.shutdown()
+            assert not device.is_connected
+            captures_at_shutdown = len(captures)
+            for _ in range(5):
+                await forward(0.3)
+                await asyncio.sleep(0.02)
+            assert len(captures) == captures_at_shutdown, 'device kept reopening after shutdown'
+        finally:
+            await device.shutdown()
+
+
+async def test_simulated_camera_reconnects_after_disconnect(rosys_integration):
+    camera = SimulatedCamera(id='sim', width=64, height=48, fps=10, reconnect_interval=0.5)
+    await camera.connect()
+    assert camera.device is not None
+    await forward(0.5)
+    assert camera.images, 'no images while connected'
+
+    camera.device.disconnect()  # simulate a bad cable
+    assert not camera.device.is_connected
+    count_at_disconnect = len(camera.images)
+    await forward(0.3)  # shorter than reconnect_interval -> still disconnected
+    assert not camera.device.is_connected
+    assert len(camera.images) == count_at_disconnect, 'images kept arriving while disconnected'
+
+    await forward(0.5)  # now past reconnect_interval since the disconnect
+    assert camera.device.is_connected
+    await forward(0.3)
+    assert len(camera.images) > count_at_disconnect, 'images did not resume after reconnect'
+
+
+async def test_simulated_camera_passes_params_to_device(rosys_integration):
+    camera = SimulatedCamera(id='sim', reconnect_interval=9.0, simulate_failing=True)
+    await camera.connect()
+    assert camera.device is not None
+    assert camera.device.reconnect_interval == 9.0
+    assert camera.device.simulate_failing is True
+    await camera.disconnect()
+
+
+def test_simulated_camera_persists_reconnect_interval(rosys_integration):
+    camera = SimulatedCamera(id='sim', reconnect_interval=12.5, connect_after_init=False)
+    data = camera.to_dict()
+    assert data['reconnect_interval'] == 12.5
+    assert SimulatedCamera.from_dict(data).reconnect_interval == 12.5
+
+
+def test_usb_camera_persists_reconnect_interval(rosys_integration):
+    camera = UsbCamera(id='cam', reconnect_interval=12.5, connect_after_init=False)
+    data = camera.to_dict()
+    assert data['reconnect_interval'] == 12.5
+    assert UsbCamera.from_dict(data).reconnect_interval == 12.5

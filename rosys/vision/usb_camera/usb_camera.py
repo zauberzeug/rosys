@@ -24,11 +24,13 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                  width: int = 800,
                  height: int = 600,
                  fps: int = 10,
+                 reconnect_interval: float = 3.0,
                  **kwargs) -> None:
         super().__init__(id=id,
                          name=name,
                          connect_after_init=connect_after_init,
                          **kwargs)
+        self.reconnect_interval = reconnect_interval
         self._pending_operations = 0
         self.device: UsbDevice | None = None
         self.detect: bool = False
@@ -43,6 +45,8 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
     def to_dict(self) -> dict[str, Any]:
         return super().to_dict() | {
             name: param.value for name, param in self._parameters.items()
+        } | {
+            'reconnect_interval': self.reconnect_interval,
         }
 
     @property
@@ -53,7 +57,8 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         if self.is_connected:
             return
 
-        device = UsbDevice.from_uid(self.id, self._handle_new_image_data)
+        device = UsbDevice.from_uid(self.id, self._handle_new_image_data,
+                                    reconnect_interval=self.reconnect_interval)
         if device is None:
             logging.warning('Connecting camera %s: failed', self.id)
             return
@@ -68,7 +73,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
             return
 
         assert self.device is not None
-        await self.device.release_capture()
+        await self.device.shutdown()
         self.device = None
         logging.info('camera %s: disconnected', self.id)
 
