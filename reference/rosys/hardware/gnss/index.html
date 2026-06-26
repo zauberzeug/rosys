@@ -1368,7 +1368,8 @@
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">GnssHardware</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">antenna_pose</span><span class="p">:</span> <span class="n">Pose</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">reconnect_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span>
+    <span class="n">reconnect_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span>
+    <span class="n">max_measurement_age</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -1423,6 +1424,22 @@
             </td>
             <td>
                   <code>3.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>max_measurement_age</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>the maximum age of measurements to be accepted in seconds</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.05</code>
             </td>
           </tr>
       </tbody>

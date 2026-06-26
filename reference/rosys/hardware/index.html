@@ -3071,6 +3071,10 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 <td>FLASH_P0_COMPLETE</td>
 <td>flashing p0 was successful and 'Replica complete' was received</td>
 </tr>
+<tr>
+<td>CORE_MESSAGE_RECEIVED</td>
+<td>a core message was received (argument: hardware millis timestamp)</td>
+</tr>
 </tbody>
 </table>
 
@@ -3201,7 +3205,8 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
 <div class="doc-signature highlight"><pre><span></span><code><span class="nf">GnssHardware</span><span class="p">(</span>
     <span class="o">*</span><span class="p">,</span>
     <span class="n">antenna_pose</span><span class="p">:</span> <span class="n">Pose</span> <span class="o">|</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">reconnect_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span>
+    <span class="n">reconnect_interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span>
+    <span class="n">max_measurement_age</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -3256,6 +3261,22 @@ It can be set to true or false by calling <code>set_soft_estop(active: bool)</co
             </td>
             <td>
                   <code>3.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>max_measurement_age</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>the maximum age of measurements to be accepted in seconds</p>
+              </div>
+            </td>
+            <td>
+                  <code>0.05</code>
             </td>
           </tr>
       </tbody>
@@ -4146,6 +4167,10 @@ If the offset changes significantly, a notification is sent and the offset histo
 <td>FLASH_P0_COMPLETE</td>
 <td>flashing p0 was successful and 'Replica complete' was received</td>
 </tr>
+<tr>
+<td>CORE_MESSAGE_RECEIVED</td>
+<td>a core message was received (argument: hardware millis timestamp)</td>
+</tr>
 </tbody>
 </table>
 
@@ -4555,6 +4580,10 @@ while communicating with the hardware components connected to a physical Robot B
 <td>the wheel velocities have been measured (argument: list of <code>Velocity</code> objects)</td>
 </tr>
 <tr>
+<td>VELOCITY_COMMANDED</td>
+<td>a drive command has been issued (argument: <code>Velocity</code> with commanded linear/angular speeds)</td>
+</tr>
+<tr>
 <td>POSE_UPDATED:</td>
 <td>Emitted when the pose has been updated (argument: current <code>Pose</code>).</td>
 </tr>
@@ -4631,6 +4660,10 @@ Velocities are read and emitted regularly.</p>
 <tr>
 <td>VELOCITY_MEASURED</td>
 <td>the wheel velocities have been measured (argument: list of <code>Velocity</code> objects)</td>
+</tr>
+<tr>
+<td>VELOCITY_COMMANDED</td>
+<td>a drive command has been issued (argument: <code>Velocity</code> with commanded linear/angular speeds)</td>
 </tr>
 <tr>
 <td>POSE_UPDATED:</td>
@@ -4938,6 +4971,10 @@ A simulated pose is regularly updated with these velocities, while the velocitie
 <tr>
 <td>VELOCITY_MEASURED</td>
 <td>the wheel velocities have been measured (argument: list of <code>Velocity</code> objects)</td>
+</tr>
+<tr>
+<td>VELOCITY_COMMANDED</td>
+<td>a drive command has been issued (argument: <code>Velocity</code> with commanded linear/angular speeds)</td>
 </tr>
 <tr>
 <td>POSE_UPDATED:</td>
