@@ -248,12 +248,14 @@ class Calibration:
     def project_from_image(self,
                            image_coordinates: Point,
                            target_height: float = 0, *,
-                           reprojection_tolerance: float = 0.002) -> Point3d | None:
+                           reprojection_tolerance: float = 0.002,
+                           frame: Frame3d | None = None) -> Point3d | None:
         """Project a point in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: The image coordinates to project.
-        :param target_height: The height of the plane in world coordinates.
+        :param target_height: The height of the plane in ``frame`` or world coordinates.
         :param reprojection_tolerance: The reprojection tolerance as a fraction of the maximum image dimension.
+        :param frame: The coordinate frame to project to. If none is given, project to world coordinates.
         :return: The world coordinates of the projected point, or None if projection failed.
         """
 
@@ -261,12 +263,14 @@ class Calibration:
     def project_from_image(self,
                            image_coordinates: list[Point],
                            target_height: float = 0, *,
-                           reprojection_tolerance: float = 0.002) -> list[Point3d | None]:
+                           reprojection_tolerance: float = 0.002,
+                           frame: Frame3d | None = None) -> list[Point3d | None]:
         """Project points in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: The list of image coordinates to project.
-        :param target_height: The height of the plane in world coordinates.
+        :param target_height: The height of the plane in ``frame`` or world coordinates.
         :param reprojection_tolerance: The reprojection tolerance as a fraction of the maximum image dimension.
+        :param frame: The coordinate frame to project to. If none is given, project to world coordinates.
         :return: The world coordinates of the projected points, or None if any projection failed.
         """
 
@@ -274,34 +278,42 @@ class Calibration:
     def project_from_image(self,
                            image_coordinates: FloatArray,
                            target_height: float = 0, *,
-                           reprojection_tolerance: float = 0.002) -> FloatArray:
+                           reprojection_tolerance: float = 0.002,
+                           frame: Frame3d | None = None) -> FloatArray:
         """Project points in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: (Nx2) The image coordinates to project.
-        :param target_height: The height of the plane in world coordinates.
+        :param target_height: The height of the plane in ``frame`` or world coordinates.
         :param reprojection_tolerance: The reprojection tolerance as a fraction of the maximum image dimension.
+        :param frame: The coordinate frame to project to. If none is given, project to world coordinates.
         :return: (Nx3) The world coordinates of the projected points.
         """
 
     def project_from_image(self,
                            image_coordinates: Point | list[Point] | FloatArray,
                            target_height: float = 0, *,
-                           reprojection_tolerance: float = 0.002) -> Point3d | None | list[Point3d | None] | FloatArray:
+                           reprojection_tolerance: float = 0.002,
+                           frame: Frame3d | None = None) -> Point3d | None | list[Point3d | None] | FloatArray:
         if isinstance(image_coordinates, Point):
             return self.project_from_image([image_coordinates],
                                            target_height=target_height,
-                                           reprojection_tolerance=reprojection_tolerance)[0]
+                                           reprojection_tolerance=reprojection_tolerance,
+                                           frame=frame)[0]
         if not isinstance(image_coordinates, np.ndarray):
             image_array = np.array([point.tuple for point in image_coordinates], dtype=np.float64)
             world_array = self.project_from_image(image_array,
                                                   target_height=target_height,
-                                                  reprojection_tolerance=reprojection_tolerance)
-            return [Point3d(x=point[0], y=point[1], z=point[2]) if not np.isnan(point).any() else None for point in world_array]
+                                                  reprojection_tolerance=reprojection_tolerance,
+                                                  frame=frame)
+            return [
+                Point3d(x=point[0], y=point[1], z=point[2]).in_frame(frame) if not np.isnan(point).any() else None
+                for point in world_array
+            ]
 
         if len(image_coordinates) == 0:
             return np.empty((0, 3), dtype=np.float64)
 
-        world_extrinsics = self.extrinsics.resolve()
+        world_extrinsics = self.extrinsics.relative_to(frame)
         image_rays = self._points_to_rays(image_coordinates.astype(np.float64).reshape(-1, 1, 2))
         objPoints = image_rays @ world_extrinsics.rotation.matrix.T
         Z = world_extrinsics.z
@@ -315,7 +327,7 @@ class Calibration:
         # Check if the point is within the reprojection tolerance
         if reprojection_tolerance != float('inf'):
             tolerance_px = max(self.intrinsics.size.width, self.intrinsics.size.height) * reprojection_tolerance
-            reprojection = self.project_to_image(world_array)
+            reprojection = self.project_to_image(world_array, frame=frame)
             distance = np.linalg.norm(reprojection - image_coordinates.reshape(-1, 2), axis=1)
             world_array[distance > tolerance_px, :] = np.nan
 
