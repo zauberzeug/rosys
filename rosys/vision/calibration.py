@@ -253,7 +253,7 @@ class Calibration:
         """Project a point in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: The image coordinates to project.
-        :param target_height: The height of the plane in world coordinates.
+        :param target_height: The height of the plane in ``frame`` or world coordinates.
         :param reprojection_tolerance: The reprojection tolerance as a fraction of the maximum image dimension.
         :param frame: The coordinate frame to project to. If none is given, project to world coordinates.
         :return: The world coordinates of the projected point, or None if projection failed.
@@ -268,7 +268,7 @@ class Calibration:
         """Project points in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: The list of image coordinates to project.
-        :param target_height: The height of the plane in world coordinates.
+        :param target_height: The height of the plane in ``frame`` or world coordinates.
         :param reprojection_tolerance: The reprojection tolerance as a fraction of the maximum image dimension.
         :param frame: The coordinate frame to project to. If none is given, project to world coordinates.
         :return: The world coordinates of the projected points, or None if any projection failed.
@@ -283,7 +283,7 @@ class Calibration:
         """Project points in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: (Nx2) The image coordinates to project.
-        :param target_height: The height of the plane in world coordinates.
+        :param target_height: The height of the plane in ``frame`` or world coordinates.
         :param reprojection_tolerance: The reprojection tolerance as a fraction of the maximum image dimension.
         :param frame: The coordinate frame to project to. If none is given, project to world coordinates.
         :return: (Nx3) The world coordinates of the projected points.
