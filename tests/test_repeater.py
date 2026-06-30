@@ -6,7 +6,7 @@ import pytest
 from nicegui import core
 
 import rosys
-from rosys.rosys import _state, _weaken, startup_handlers
+from rosys.rosys import Repeater, _state, _weaken, startup_handlers
 from rosys.testing import forward
 
 
@@ -125,6 +125,8 @@ async def test_weak_repeater_stops_when_object_is_collected():
 
     await forward(0.35)
     assert repeater.running
+    task = repeater._task  # pylint: disable=protected-access
+    assert task in Repeater.tasks
     calls_while_alive = len(calls)
     assert calls_while_alive >= 1  # the repeater was actually ticking
 
@@ -134,4 +136,5 @@ async def test_weak_repeater_stops_when_object_is_collected():
 
     await forward(0.5)
     assert not repeater.running  # the timer tore itself down
+    assert task not in Repeater.tasks  # the done-callback pruned the registry
     assert len(calls) == calls_while_alive  # and stopped ticking after collection
