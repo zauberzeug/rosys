@@ -6,7 +6,7 @@ import pytest
 from nicegui import core
 
 import rosys
-from rosys.rosys import Repeater, _state, _weaken, startup_handlers
+from rosys.rosys import Repeater, _state, _weaken, _WeakHandler, startup_handlers
 from rosys.testing import forward
 
 
@@ -84,7 +84,8 @@ async def test_collected_object_does_not_start_orphan_task_after_startup():
 
     del handlers
     gc.collect()
-    assert not repeater.handler.alive  # type: ignore[attr-defined]  # handler's object is gone
+    assert isinstance(repeater.handler, _WeakHandler)
+    assert not repeater.handler.alive  # handler's object is gone
 
     await rosys.startup()  # replays the deferred start handlers
 

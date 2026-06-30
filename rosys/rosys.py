@@ -185,7 +185,7 @@ class Repeater:
 
     @property
     def _alive(self) -> bool:
-        return getattr(self.handler, 'alive', True)  # strong handlers are always alive
+        return not isinstance(self.handler, _WeakHandler) or self.handler.alive  # strong handlers are always alive
 
     def start(self) -> None:
         if self.running or not self._alive:
