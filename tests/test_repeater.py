@@ -138,4 +138,5 @@ async def test_weak_repeater_stops_when_object_is_collected():
     await forward(0.5)
     assert not repeater.running  # the timer tore itself down
     assert task not in Repeater.tasks  # the done-callback pruned the registry
+    assert repeater._task is None  # pylint: disable=protected-access  # ...and cleared the reference, like stop()
     assert len(calls) == calls_while_alive  # and stopped ticking after collection

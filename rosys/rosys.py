@@ -193,9 +193,14 @@ class Repeater:
         if _state.startup_finished:
             self._task = background_tasks.create(self._repeat())
             self.tasks.add(self._task)
-            self._task.add_done_callback(self.tasks.discard)
+            self._task.add_done_callback(self._handle_task_done)
         elif self.start not in startup_handlers:
             startup_handlers.append(self.start)
+
+    def _handle_task_done(self, task: asyncio.Task) -> None:
+        self.tasks.discard(task)
+        if self._task is task:  # not a stale callback from a task replaced by a restart
+            self._task = None
 
     async def _repeat(self) -> None:
         await sleep(self.interval)  # NOTE delaying first execution so not all actors rush in at the same time
