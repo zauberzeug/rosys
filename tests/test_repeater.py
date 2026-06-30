@@ -1,7 +1,11 @@
+import asyncio
 import gc
 import weakref
 
-from rosys.rosys import _weaken
+from nicegui import core
+
+import rosys
+from rosys.rosys import _state, _weaken, startup_handlers
 
 
 def _on_dead() -> None:
@@ -59,3 +63,27 @@ def test_weaken_does_not_keep_object_alive():
     assert reference() is None  # object collected despite the live wrapper
     assert dead == [True]  # on_dead fired on collection
     assert wrapper() is None  # wrapper became a no-op
+
+
+async def test_stopped_flag_prevents_orphan_task_when_object_dies_before_startup():
+    # NOTE: a weak repeater created pre-startup defers its start; if the object dies first,
+    # the finalizer's stop() must keep the replayed start (during startup) from launching an orphan task.
+    core.loop = asyncio.get_event_loop()
+    rosys.reset_before_test()
+    assert not _state.startup_finished
+
+    handlers = Handlers()
+    repeater = rosys.on_repeat(handlers.method, 0.01, weak=True)
+    assert not repeater.running  # start was deferred, not launched
+    assert repeater.start in startup_handlers
+
+    del handlers
+    gc.collect()
+    assert repeater._stopped  # finalizer ran stop() before startup  # pylint: disable=protected-access
+
+    await rosys.startup()  # replays the deferred start handlers
+
+    assert not repeater.running  # guard prevented the orphan task
+
+    await rosys.shutdown()
+    rosys.reset_after_test()
