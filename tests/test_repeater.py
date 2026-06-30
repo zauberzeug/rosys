@@ -81,9 +81,9 @@ def test_weaken_does_not_keep_object_alive():
     assert wrapper() is None  # wrapper became a no-op
 
 
-async def test_stopped_flag_prevents_orphan_task_when_object_dies_before_startup():
+async def test_dead_flag_prevents_orphan_task_when_object_dies_before_startup():
     # NOTE: a weak repeater created pre-startup defers its start; if the object dies first,
-    # the finalizer's stop() must keep the replayed start (during startup) from launching an orphan task.
+    # the finalizer must keep the replayed start (during startup) from launching an orphan task.
     core.loop = asyncio.get_event_loop()
     rosys.reset_before_test()
     assert not _state.startup_finished
@@ -95,7 +95,7 @@ async def test_stopped_flag_prevents_orphan_task_when_object_dies_before_startup
 
     del handlers
     gc.collect()
-    assert repeater._stopped  # finalizer ran stop() before startup  # pylint: disable=protected-access
+    assert repeater._dead  # finalizer marked it dead before startup  # pylint: disable=protected-access
 
     await rosys.startup()  # replays the deferred start handlers
 
@@ -103,6 +103,28 @@ async def test_stopped_flag_prevents_orphan_task_when_object_dies_before_startup
 
     await rosys.shutdown()
     rosys.reset_after_test()
+
+
+@pytest.mark.usefixtures('rosys_integration')
+async def test_repeater_can_restart_after_stop():
+    calls: list[float] = []
+    ticker = Ticker(calls)
+    repeater = rosys.on_repeat(ticker.step, 0.1)
+
+    await forward(0.35)
+    assert repeater.running
+    assert len(calls) >= 1
+
+    repeater.stop()
+    assert not repeater.running
+    calls_after_stop = len(calls)
+    await forward(0.5)
+    assert len(calls) == calls_after_stop  # stopped: no more ticks
+
+    repeater.start()
+    assert repeater.running  # a plain stop() must not permanently disable restart
+    await forward(0.35)
+    assert len(calls) > calls_after_stop  # restarted: ticking again
 
 
 @pytest.mark.usefixtures('rosys_integration')
