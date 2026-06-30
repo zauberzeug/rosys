@@ -6,6 +6,7 @@ import signal
 import threading
 import time as pytime
 import warnings
+import weakref
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any, ClassVar, Literal
@@ -143,16 +144,31 @@ def _run_handler(handler: Callable) -> None:
         log.exception('error while starting handler "%s"', handler.__qualname__)
 
 
+def _weaken(handler: Callable, on_dead: Callable[[], None]) -> Callable:
+    obj = getattr(handler, '__self__', None)
+    if obj is None or isinstance(obj, type):
+        return handler
+    weak = weakref.WeakMethod(handler)
+    weakref.finalize(obj, on_dead)
+
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        method = weak()
+        return None if method is None else method(*args, **kwargs)
+    wrapper.__qualname__ = handler.__qualname__
+    return wrapper
+
+
 class Repeater:
     tasks: ClassVar[set[asyncio.Task]] = set()
 
-    def __init__(self, handler: Callable, interval: float) -> None:
-        self.handler = handler
+    def __init__(self, handler: Callable, interval: float, *, weak: bool = False) -> None:
         self.interval = interval
         self._task: asyncio.Task | None = None
+        self._stopped = False
+        self.handler = _weaken(handler, self.stop) if weak else handler
 
     def start(self) -> None:
-        if self.running:
+        if self.running or self._stopped:  # guard against a finalizer that fired pre-startup
             return
         if _state.startup_finished:
             self._task = background_tasks.create(self._repeat())
@@ -188,6 +204,7 @@ class Repeater:
                 return
 
     def stop(self) -> None:
+        self._stopped = True
         if not self._task:
             return
 
@@ -207,8 +224,8 @@ class Repeater:
             repeater.cancel()
 
 
-def on_repeat(handler: Callable, interval: float) -> Repeater:
-    repeater = Repeater(handler, interval)
+def on_repeat(handler: Callable, interval: float, *, weak: bool = False) -> Repeater:
+    repeater = Repeater(handler, interval, weak=weak)
     repeater.start()
     return repeater
 

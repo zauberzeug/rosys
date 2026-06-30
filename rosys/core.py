@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 # and would need to import rosys (via persistable.py).
 
 is_test: bool
-on_repeat: Callable[[Callable, float], Repeater]
+on_repeat: Callable[..., Repeater]
 on_startup: Callable[[Callable], None]
 on_shutdown: Callable[[Callable], None]
 sleep: Callable[[float], Coroutine[Any, Any, None]]
