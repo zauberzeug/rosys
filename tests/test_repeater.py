@@ -1,0 +1,61 @@
+import gc
+import weakref
+
+from rosys.rosys import _weaken
+
+
+def _on_dead() -> None:
+    pass
+
+
+def plain_function() -> str:
+    return 'function'
+
+
+class Handlers:
+    def method(self) -> str:
+        return 'method'
+
+    @staticmethod
+    def static_method() -> str:
+        return 'static'
+
+    @classmethod
+    def class_method(cls) -> str:
+        return 'class'
+
+
+def test_weaken_passes_through_plain_function():
+    assert _weaken(plain_function, _on_dead) is plain_function
+
+
+def test_weaken_passes_through_static_method():
+    static_method = Handlers().static_method
+    assert _weaken(static_method, _on_dead) is static_method
+
+
+def test_weaken_passes_through_class_method():
+    class_method = Handlers.class_method
+    assert _weaken(class_method, _on_dead) is class_method
+
+
+def test_weaken_wraps_bound_method():
+    handlers = Handlers()
+    wrapper = _weaken(handlers.method, _on_dead)
+    assert getattr(wrapper, '__self__', None) is None  # wrapped, not the bound method
+    assert wrapper() == 'method'  # still forwards to the method
+    assert wrapper.__qualname__ == 'Handlers.method'  # qualname preserved for logging
+
+
+def test_weaken_does_not_keep_object_alive():
+    dead = []
+    handlers = Handlers()
+    reference = weakref.ref(handlers)
+    wrapper = _weaken(handlers.method, lambda: dead.append(True))
+
+    del handlers
+    gc.collect()
+
+    assert reference() is None  # object collected despite the live wrapper
+    assert dead == [True]  # on_dead fired on collection
+    assert wrapper() is None  # wrapper became a no-op
