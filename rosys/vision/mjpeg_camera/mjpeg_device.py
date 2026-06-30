@@ -37,7 +37,8 @@ class MjpegDevice:
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
+                 on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 reconnect_interval: float = 3.0) -> None:
         self._mac = mac
         self._ip = ip
         self.log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device.' + self._mac)
@@ -49,8 +50,11 @@ class MjpegDevice:
         if url is None:
             raise ValueError(f'could not determine URL for {mac}')
         self._url = url
+        self.reconnect_interval = reconnect_interval
+        self._should_run: bool = True
 
         self.start_capture_task()
+        rosys.on_shutdown(self.shutdown)
 
     @property
     def is_connected(self) -> bool:
@@ -58,9 +62,31 @@ class MjpegDevice:
 
     def start_capture_task(self) -> None:
         def create_capture_task() -> None:
+            if self._capture_task is not None and not self._capture_task.done():
+                return
+            self._should_run = True
             loop = asyncio.get_event_loop()
-            self._capture_task = loop.create_task(self.run_capture_task())
+            self._capture_task = loop.create_task(self._run_capture_loop())
         on_startup(create_capture_task)
+
+    async def _run_capture_loop(self) -> None:
+        """Keep a single MJPEG session alive, reconnecting after `reconnect_interval` when it ends.
+
+        Runs until `shutdown()` cancels the task.
+        """
+        try:
+            while self._should_run:
+                try:
+                    await self.run_capture_task()
+                except Exception:
+                    self.log.exception('capture session failed')
+                if not self._should_run:
+                    break
+                self.log.info('stream ended; reconnecting in %.1f s', self.reconnect_interval)
+                await rosys.sleep(self.reconnect_interval)
+        finally:
+            if self._capture_task is asyncio.current_task():
+                self._capture_task = None
 
     def restart_capture(self) -> None:
         self.log.debug('Restarting capture task')
@@ -137,11 +163,11 @@ class MjpegDevice:
             except Exception as e:
                 self.log.error('Error processing image: %s', e)
 
-        self.log.warning('Capture task stopped')
-        self._capture_task = None
+        self.log.debug('capture session ended')
 
     def shutdown(self) -> None:
         self.log.debug('Shutting down capture task')
+        self._should_run = False
         if self._capture_task is not None:
             self._capture_task.cancel()
             self._capture_task = None

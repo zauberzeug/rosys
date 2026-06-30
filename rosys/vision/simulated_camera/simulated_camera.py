@@ -17,6 +17,8 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
                  height: int = 600,
                  color: str | None = None,
                  fps: int = 5,
+                 reconnect_interval: float = 3.0,
+                 simulate_failing: bool = False,
                  **kwargs,
                  ) -> None:
         super().__init__(id=id,
@@ -25,6 +27,8 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
                          **kwargs)
         self.device: SimulatedDevice | None = None
         self.resolution = ImageSize(width=width, height=height)
+        self.reconnect_interval = reconnect_interval
+        self.simulate_failing = simulate_failing
         self._register_parameter('color', self._get_color, self._set_color,
                                  color or f'#{random.randint(0, 0xffffff):06x}')
         self._register_parameter('fps', self._get_fps, self._set_fps,
@@ -34,6 +38,7 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
         return super().to_dict() | {
             'width': self.resolution.width,
             'height': self.resolution.height,
+            'reconnect_interval': self.reconnect_interval,
         } | {
             name: param.value for name, param in self._parameters.items()
         }
@@ -45,7 +50,9 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
     async def connect(self) -> None:
         if not self.is_connected:
             self.device = SimulatedDevice(id=self.id, size=self.resolution, fps=self.parameters['fps'],
-                                          on_new_image=self._add_image)
+                                          on_new_image=self._add_image,
+                                          reconnect_interval=self.reconnect_interval,
+                                          simulate_failing=self.simulate_failing)
             await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
