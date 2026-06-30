@@ -1,11 +1,13 @@
 import asyncio
 import gc
+import logging
 import weakref
 
+import pytest
 from nicegui import core
 
 import rosys
-from rosys.rosys import _state, _weaken, startup_handlers
+from rosys.rosys import Repeater, _state, _weaken, startup_handlers
 from rosys.testing import forward
 
 
@@ -38,18 +40,23 @@ class Handlers:
         return 'class'
 
 
-def test_weaken_passes_through_plain_function():
-    assert _weaken(plain_function, _on_dead) is plain_function
+def test_weaken_returns_none_for_plain_function():
+    assert _weaken(plain_function, _on_dead) is None
 
 
-def test_weaken_passes_through_static_method():
-    static_method = Handlers().static_method
-    assert _weaken(static_method, _on_dead) is static_method
+def test_weaken_returns_none_for_static_method():
+    assert _weaken(Handlers().static_method, _on_dead) is None
 
 
-def test_weaken_passes_through_class_method():
-    class_method = Handlers.class_method
-    assert _weaken(class_method, _on_dead) is class_method
+def test_weaken_returns_none_for_class_method():
+    assert _weaken(Handlers.class_method, _on_dead) is None
+
+
+def test_repeater_warns_when_weak_handler_cannot_be_weakened(caplog: pytest.LogCaptureFixture):
+    with caplog.at_level(logging.WARNING):
+        repeater = Repeater(plain_function, 0.1, weak=True)
+    assert repeater.handler is plain_function  # falls back to the original handler
+    assert 'weak=True has no effect' in caplog.text
 
 
 def test_weaken_wraps_bound_method():
