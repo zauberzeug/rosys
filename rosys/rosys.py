@@ -144,10 +144,10 @@ def _run_handler(handler: Callable) -> None:
         log.exception('error while starting handler "%s"', handler.__qualname__)
 
 
-def _weaken(handler: Callable, on_dead: Callable[[], None]) -> Callable:
+def _weaken(handler: Callable, on_dead: Callable[[], None]) -> Callable | None:
     obj = getattr(handler, '__self__', None)
     if obj is None or isinstance(obj, type):
-        return handler
+        return None
     weak = weakref.WeakMethod(handler)
     weakref.finalize(obj, on_dead)
 
@@ -165,7 +165,13 @@ class Repeater:
         self.interval = interval
         self._task: asyncio.Task | None = None
         self._stopped = False
-        self.handler = _weaken(handler, self.stop) if weak else handler
+        self.handler = handler
+        if weak:
+            wrapped = _weaken(handler, self.stop)
+            if wrapped is None:
+                log.warning('weak=True has no effect on "%s": only bound methods can be weakened', handler.__qualname__)
+            else:
+                self.handler = wrapped
 
     def start(self) -> None:
         if self.running or self._stopped:  # guard against a finalizer that fired pre-startup
