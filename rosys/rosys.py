@@ -164,17 +164,21 @@ class Repeater:
     def __init__(self, handler: Callable, interval: float, *, weak: bool = False) -> None:
         self.interval = interval
         self._task: asyncio.Task | None = None
-        self._stopped = False
+        self._dead = False  # set once the weakly-referenced object is collected; never (re)start after that
         self.handler = handler
         if weak:
-            wrapped = _weaken(handler, self.stop)
+            wrapped = _weaken(handler, self._handle_collected)
             if wrapped is None:
                 log.warning('weak=True has no effect on "%s": only bound methods can be weakened', handler.__qualname__)
             else:
                 self.handler = wrapped
 
+    def _handle_collected(self) -> None:
+        self._dead = True  # may fire before startup, so the deferred start() must not launch an orphan task
+        self.stop()
+
     def start(self) -> None:
-        if self.running or self._stopped:  # guard against a finalizer that fired pre-startup
+        if self.running or self._dead:
             return
         if _state.startup_finished:
             self._task = background_tasks.create(self._repeat())
@@ -210,7 +214,6 @@ class Repeater:
                 return
 
     def stop(self) -> None:
-        self._stopped = True
         if not self._task:
             return
 
