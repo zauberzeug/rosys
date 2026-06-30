@@ -6,6 +6,7 @@ from nicegui import core
 
 import rosys
 from rosys.rosys import _state, _weaken, startup_handlers
+from rosys.testing import forward
 
 
 def _on_dead() -> None:
@@ -14,6 +15,14 @@ def _on_dead() -> None:
 
 def plain_function() -> str:
     return 'function'
+
+
+class Ticker:
+    def __init__(self, calls: list[float]) -> None:
+        self.calls = calls  # external list, so the Ticker can be collected while we keep counting
+
+    def step(self) -> None:
+        self.calls.append(rosys.time())
 
 
 class Handlers:
@@ -87,3 +96,24 @@ async def test_stopped_flag_prevents_orphan_task_when_object_dies_before_startup
 
     await rosys.shutdown()
     rosys.reset_after_test()
+
+
+@pytest.mark.usefixtures('rosys_integration')
+async def test_weak_repeater_stops_when_object_is_collected():
+    calls: list[float] = []
+    ticker = Ticker(calls)
+    repeater = rosys.on_repeat(ticker.step, 0.1, weak=True)
+    reference = weakref.ref(ticker)
+
+    await forward(0.35)
+    assert repeater.running
+    calls_while_alive = len(calls)
+    assert calls_while_alive >= 1  # the repeater was actually ticking
+
+    del ticker
+    gc.collect()
+    assert reference() is None  # nothing keeps the object alive
+
+    await forward(0.5)
+    assert not repeater.running  # the timer tore itself down
+    assert len(calls) == calls_while_alive  # and stopped ticking after collection
