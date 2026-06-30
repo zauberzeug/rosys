@@ -144,18 +144,29 @@ def _run_handler(handler: Callable) -> None:
         log.exception('error while starting handler "%s"', handler.__qualname__)
 
 
-def _weaken(handler: Callable, on_dead: Callable[[], None]) -> Callable | None:
-    obj = getattr(handler, '__self__', None)
+class _WeakHandler:
+    def __init__(self, method: Callable) -> None:
+        self._weak = weakref.WeakMethod(method)
+        self.__qualname__ = method.__qualname__
+
+    @property
+    def alive(self) -> bool:
+        return self._weak() is not None
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        method = self._weak()
+        return None if method is None else method(*args, **kwargs)
+
+
+def _weaken(method: Callable) -> _WeakHandler | None:
+    """Wrap a bound method so it can be called without keeping its object alive.
+
+    Returns None for handlers with no weakenable object (plain functions, static/classmethods).
+    """
+    obj = getattr(method, '__self__', None)
     if obj is None or isinstance(obj, type):
         return None
-    weak = weakref.WeakMethod(handler)
-    weakref.finalize(obj, on_dead)
-
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-        method = weak()
-        return None if method is None else method(*args, **kwargs)
-    wrapper.__qualname__ = handler.__qualname__
-    return wrapper
+    return _WeakHandler(method)
 
 
 class Repeater:
@@ -164,31 +175,31 @@ class Repeater:
     def __init__(self, handler: Callable, interval: float, *, weak: bool = False) -> None:
         self.interval = interval
         self._task: asyncio.Task | None = None
-        self._dead = False  # set once the weakly-referenced object is collected; never (re)start after that
         self.handler = handler
         if weak:
-            wrapped = _weaken(handler, self._handle_collected)
-            if wrapped is None:
+            weakened = _weaken(handler)
+            if weakened is None:
                 log.warning('weak=True has no effect on "%s": only bound methods can be weakened', handler.__qualname__)
             else:
-                self.handler = wrapped
+                self.handler = weakened
 
-    def _handle_collected(self) -> None:
-        self._dead = True  # may fire before startup, so the deferred start() must not launch an orphan task
-        self.stop()
+    @property
+    def _alive(self) -> bool:
+        return getattr(self.handler, 'alive', True)  # strong handlers are always alive
 
     def start(self) -> None:
-        if self.running or self._dead:
+        if self.running or not self._alive:
             return
         if _state.startup_finished:
             self._task = background_tasks.create(self._repeat())
             self.tasks.add(self._task)
+            self._task.add_done_callback(self.tasks.discard)
         elif self.start not in startup_handlers:
             startup_handlers.append(self.start)
 
     async def _repeat(self) -> None:
         await sleep(self.interval)  # NOTE delaying first execution so not all actors rush in at the same time
-        while True:
+        while self._alive:  # a weak handler whose object was collected ends the loop
             start = time()
             try:
                 if is_stopping():
@@ -220,7 +231,7 @@ class Repeater:
         if not self._task.done():
             self._task.cancel()
 
-        self.tasks.remove(self._task)
+        self.tasks.discard(self._task)
         self._task = None
 
     @property

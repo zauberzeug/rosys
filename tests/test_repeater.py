@@ -1,18 +1,13 @@
 import asyncio
 import gc
-import logging
 import weakref
 
 import pytest
 from nicegui import core
 
 import rosys
-from rosys.rosys import Repeater, _state, _weaken, startup_handlers
+from rosys.rosys import _state, _weaken, startup_handlers
 from rosys.testing import forward
-
-
-def _on_dead() -> None:
-    pass
 
 
 def plain_function() -> str:
@@ -41,49 +36,43 @@ class Handlers:
 
 
 def test_weaken_returns_none_for_plain_function():
-    assert _weaken(plain_function, _on_dead) is None
+    assert _weaken(plain_function) is None
 
 
 def test_weaken_returns_none_for_static_method():
-    assert _weaken(Handlers().static_method, _on_dead) is None
+    assert _weaken(Handlers().static_method) is None
 
 
 def test_weaken_returns_none_for_class_method():
-    assert _weaken(Handlers.class_method, _on_dead) is None
-
-
-def test_repeater_warns_when_weak_handler_cannot_be_weakened(caplog: pytest.LogCaptureFixture):
-    with caplog.at_level(logging.WARNING):
-        repeater = Repeater(plain_function, 0.1, weak=True)
-    assert repeater.handler is plain_function  # falls back to the original handler
-    assert 'weak=True has no effect' in caplog.text
+    assert _weaken(Handlers.class_method) is None
 
 
 def test_weaken_wraps_bound_method():
     handlers = Handlers()
-    wrapper = _weaken(handlers.method, _on_dead)
-    assert getattr(wrapper, '__self__', None) is None  # wrapped, not the bound method
-    assert wrapper() == 'method'  # still forwards to the method
-    assert wrapper.__qualname__ == 'Handlers.method'  # qualname preserved for logging
+    handler = _weaken(handlers.method)
+    assert handler is not None
+    assert handler.alive  # object still there
+    assert handler() == 'method'  # still forwards to the method
+    assert handler.__qualname__ == 'Handlers.method'  # qualname preserved for logging
 
 
 def test_weaken_does_not_keep_object_alive():
-    dead = []
     handlers = Handlers()
     reference = weakref.ref(handlers)
-    wrapper = _weaken(handlers.method, lambda: dead.append(True))
+    handler = _weaken(handlers.method)
+    assert handler is not None
 
     del handlers
     gc.collect()
 
-    assert reference() is None  # object collected despite the live wrapper
-    assert dead == [True]  # on_dead fired on collection
-    assert wrapper() is None  # wrapper became a no-op
+    assert reference() is None  # object collected despite the live handler
+    assert not handler.alive  # handler reports its object is gone
+    assert handler() is None  # calling it is a safe no-op
 
 
-async def test_dead_flag_prevents_orphan_task_when_object_dies_before_startup():
+async def test_collected_object_does_not_start_orphan_task_after_startup():
     # NOTE: a weak repeater created pre-startup defers its start; if the object dies first,
-    # the finalizer must keep the replayed start (during startup) from launching an orphan task.
+    # the replayed start (during startup) must see the dead handler and not launch an orphan task.
     core.loop = asyncio.get_event_loop()
     rosys.reset_before_test()
     assert not _state.startup_finished
@@ -95,11 +84,11 @@ async def test_dead_flag_prevents_orphan_task_when_object_dies_before_startup():
 
     del handlers
     gc.collect()
-    assert repeater._dead  # finalizer marked it dead before startup  # pylint: disable=protected-access
+    assert not repeater.handler.alive  # type: ignore[attr-defined]  # handler's object is gone
 
     await rosys.startup()  # replays the deferred start handlers
 
-    assert not repeater.running  # guard prevented the orphan task
+    assert not repeater.running  # no orphan task launched
 
     await rosys.shutdown()
     rosys.reset_after_test()
