@@ -6,9 +6,15 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 import httpx
 
 from ... import rosys
+from ...geometry import Rectangle
 from ...rosys import on_startup
-from ..image_processing import remove_exif
+from ..image import ImageArray
+from ..image_processing import process_jpeg_image, remove_exif
+from ..image_rotation import ImageRotation
 from .vendors import mac_to_url
+
+ImageDataHandler = Callable[[ImageArray, float], Awaitable | None]
+"""Receives a decoded, cropped and rotated frame together with its capture timestamp."""
 
 
 def parse_capture_timestamp(part_header: bytes) -> float | None:
@@ -37,12 +43,14 @@ class MjpegDevice:
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
+                 on_new_image_data: ImageDataHandler) -> None:
         self._mac = mac
         self._ip = ip
         self.log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device.' + self._mac)
 
         self._on_new_image_data = on_new_image_data
+        self.rotation: ImageRotation = ImageRotation.NONE
+        self.crop: Rectangle | None = None
         self._capture_task: Task | None = None
         self._authentication = None if username is None or password is None else httpx.DigestAuth(username, password)
         url = mac_to_url(mac, ip, index=index)
@@ -60,7 +68,12 @@ class MjpegDevice:
         def create_capture_task() -> None:
             loop = asyncio.get_event_loop()
             self._capture_task = loop.create_task(self.run_capture_task())
-        on_startup(create_capture_task)
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            on_startup(create_capture_task)  # no loop yet (e.g. constructed at import time): defer to startup
+        else:
+            create_capture_task()  # a loop is already running (e.g. inside the capture subprocess)
 
     def restart_capture(self) -> None:
         self.log.debug('Restarting capture task')
@@ -131,7 +144,10 @@ class MjpegDevice:
                 continue
             try:
                 timestamp = capture_time if capture_time is not None else rosys.time()
-                result = self._on_new_image_data(remove_exif(image), timestamp)
+                array = process_jpeg_image(remove_exif(image), self.rotation, self.crop)
+                if array is None:
+                    continue
+                result = self._on_new_image_data(array, timestamp)
                 if isinstance(result, Awaitable):
                     await result
             except Exception as e:

@@ -1,13 +1,10 @@
+import asyncio
 import logging
 from typing import Any
 
-from ... import rosys
 from ..camera import ConfigurableCamera, TransformableCamera
-from ..image import Image
-from ..image_processing import process_jpeg_image
-from ..image_rotation import ImageRotation
-from .mjpeg_device import MjpegDevice
-from .mjpeg_device_factory import MjpegDeviceFactory
+from .mjpeg_capture import MjpegCapture
+from .vendors import VendorType, mac_to_vendor
 
 
 class MjpegCamera(TransformableCamera, ConfigurableCamera):
@@ -40,7 +37,8 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             self.index = int(parts[1])
 
         self.mac = parts[0]
-        self.device: MjpegDevice | None = None
+
+        self._capture: MjpegCapture | None = None
 
         self._register_parameter('fps', self._get_fps, self._set_fps, default_value=fps)
         self._register_parameter('resolution', self._get_resolution, self._set_resolution, default_value=resolution)
@@ -57,7 +55,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
     @property
     def is_connected(self) -> bool:
-        return (self.device is not None) and self.device.is_connected
+        return self._capture is not None and self._capture.is_running
 
     async def connect(self) -> None:
         if self.is_connected:
@@ -67,59 +65,39 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             self.log.error('No IP address provided')
             return
 
-        try:
-            self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
-                                                    password=self.password, on_new_image_data=self._handle_new_image_data)
-        except ValueError as error:
-            self.log.error('Could not connect to device: %s', error)
+        if mac_to_vendor(self.mac) == VendorType.OTHER:
+            self.log.error('Could not connect to device: unknown vendor for mac="%s"', self.mac)
             return
 
-        await self._apply_all_parameters()
+        self._capture = MjpegCapture(camera_id=self.id, mac=self.mac, ip=self.ip, index=self.index,
+                                     username=self.username, password=self.password,
+                                     rotation=self.rotation, crop=self.crop, parameters=self.parameters,
+                                     loop=asyncio.get_running_loop(), on_image=self._add_image)
+        self._capture.start()
 
     async def disconnect(self) -> None:
-        if self.device is None:
+        if self._capture is None:
             return
-
-        self.device.shutdown()
-        self.device = None
-
-    async def _handle_new_image_data(self, image_bytes: bytes, timestamp: float) -> None:
-        image: Image | None = None
-        if self.crop or self.rotation != ImageRotation.NONE:
-            image_array = await rosys.run.cpu_bound(process_jpeg_image, image_bytes, self.rotation, self.crop)
-            if image_array is not None:
-                image = Image.from_array(image_array, camera_id=self.id, time=timestamp)
-        else:
-            image = await rosys.run.cpu_bound(Image.from_jpeg_bytes, image_bytes, camera_id=self.id, time=timestamp)
-
-        if image is not None:
-            self._add_image(image)
+        await self._capture.shutdown()
+        self._capture = None
 
     async def _set_fps(self, fps: int) -> None:
-        assert self.device is not None
-        await self.device.set_fps(fps)
+        if self._capture is not None:
+            await self._capture.call('set_fps', fps)
 
     async def _get_fps(self) -> int | None:
-        assert self.device is not None
-
-        return await self.device.get_fps()
+        return await self._capture.call('get_fps') if self._capture is not None else None
 
     async def _set_resolution(self, resolution: tuple[int, int]) -> None:
-        assert self.device is not None
-
-        await self.device.set_resolution(*resolution)
+        if self._capture is not None:
+            await self._capture.call('set_resolution', *resolution)
 
     async def _get_resolution(self) -> tuple[int, int] | None:
-        assert self.device is not None
-
-        return await self.device.get_resolution()
+        return await self._capture.call('get_resolution') if self._capture is not None else None
 
     async def _set_mirrored(self, mirrored: bool) -> None:
-        assert self.device is not None
-
-        await self.device.set_mirrored(mirrored)
+        if self._capture is not None:
+            await self._capture.call('set_mirrored', mirrored)
 
     async def _get_mirrored(self) -> bool | None:
-        assert self.device is not None
-
-        return await self.device.get_mirrored()
+        return await self._capture.call('get_mirrored') if self._capture is not None else None
