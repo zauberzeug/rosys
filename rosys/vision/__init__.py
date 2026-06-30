@@ -10,6 +10,7 @@ from .detections import BoxDetection, Detection, Detections, PointDetection
 from .detector import Autoupload, Detector
 from .detector_hardware import DetectorHardware
 from .detector_simulation import DetectorSimulation, SimulatedObject
+from .gmsl_camera import GmslCamera, GmslCameraProvider
 from .image import Image, ImageArray, ImageSize
 from .image_rotation import ImageRotation
 from .mjpeg_camera import MjpegCamera, MjpegCameraProvider
@@ -39,6 +40,8 @@ __all__ = [
     'Detector',
     'DetectorHardware',
     'DetectorSimulation',
+    'GmslCamera',
+    'GmslCameraProvider',
     'Image',
     'ImageArray',
     'ImageRecorder',
