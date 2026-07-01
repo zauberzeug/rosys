@@ -13,6 +13,7 @@ from typing import Any, ClassVar, Literal
 import numpy as np
 import psutil
 from nicegui import Client, Event, app, background_tasks, context, ui
+from nicegui import core as nicegui_core
 from nicegui.slot import Slot
 
 from . import core, helpers, run
@@ -148,8 +149,11 @@ def _resolve_scope(scope: Literal['app', 'client', 'auto'], handler: Callable) -
     """Return the client whose deletion should end the handler's lifetime (None for app lifetime)."""
     if scope == 'app':
         return None
-    if Slot.get_stack():  # NOTE: check the stack first; accessing `context.client` outside a UI context would enter script mode
-        return context.client
+    # NOTE: check the stack first, because accessing `context.client` outside a UI context would enter script mode
+    if Slot.get_stack():
+        client = context.client
+        if client is not nicegui_core.script_client:  # NOTE: the script-mode client is deleted before startup
+            return client
     if scope == 'client':
         raise RuntimeError(f'cannot bind repeater for {handler} to a client outside of a UI context')
     return None
@@ -162,24 +166,25 @@ class Repeater:
         self.handler = handler
         self.interval = interval
         self._task: asyncio.Task | None = None
-        self._client = _resolve_scope(scope, handler)
-        if self._client is not None:
-            self._client.on_delete(self.stop)
+        self._client_deleted = False
+        client = _resolve_scope(scope, handler)
+        if client is not None:
+            # NOTE: not storing the client avoids a reference cycle that would outlive its deletion
+            client.on_delete(self._handle_client_delete)
+
+    def _handle_client_delete(self) -> None:
+        self._client_deleted = True
+        self.stop()
 
     def start(self) -> None:
-        if self.running:
+        if self.running or self._client_deleted:  # a client-scoped repeater must not outlive its client
             return
         if _state.startup_finished:
             self._task = background_tasks.create(self._repeat())
             self.tasks.add(self._task)
-            self._task.add_done_callback(self._handle_task_done)
+            self._task.add_done_callback(self.tasks.discard)
         elif self.start not in startup_handlers:
             startup_handlers.append(self.start)
-
-    def _handle_task_done(self, task: asyncio.Task) -> None:
-        self.tasks.discard(task)
-        if self._task is task:  # not a stale callback from a task replaced by a restart
-            self._task = None
 
     async def _repeat(self) -> None:
         await sleep(self.interval)  # NOTE delaying first execution so not all actors rush in at the same time
@@ -259,7 +264,7 @@ async def startup() -> None:
 
     _state.startup_finished = True
 
-    for handler in startup_handlers:
+    for handler in list(startup_handlers):  # NOTE: snapshot, because a handler can mutate the list via Repeater.stop()
         _run_handler(handler)
 
 
