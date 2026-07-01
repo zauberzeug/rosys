@@ -9,7 +9,7 @@ from multiprocessing.context import SpawnProcess
 from typing import Any
 
 from ...geometry import Rectangle
-from ..image import BytesImage, Image, ImageArray, MemfdImage
+from ..image import Image, ImageArray, MemfdImage
 from ..image_rotation import ImageRotation
 from .mjpeg_device import MjpegDevice
 from .mjpeg_device_factory import MjpegDeviceFactory
@@ -18,8 +18,8 @@ from .mjpeg_device_factory import MjpegDeviceFactory
 SPAWN_CONTEXT = multiprocessing.get_context('spawn')
 
 # memfd hands the frame to the main process as a file descriptor instead of copying the pixels through the
-# pipe (the main-process bottleneck). Linux-only; elsewhere we fall back to copying via BytesImage.
-ImageCarrier = MemfdImage if hasattr(os, 'memfd_create') else BytesImage
+# pipe (the main-process bottleneck). Linux-only; elsewhere we ship the Image itself (no gain, but correct).
+USE_MEMFD = hasattr(os, 'memfd_create')
 
 
 class MjpegCaptureProcess(SpawnProcess):  # always spawn
@@ -82,9 +82,10 @@ class MjpegCaptureProcess(SpawnProcess):  # always spawn
             self._stop.set()
 
     def _handle_image_data(self, image_array: ImageArray, timestamp: float) -> None:
-        carrier = ImageCarrier.from_array(image_array, camera_id=self._camera_id, time=timestamp)
+        factory = MemfdImage.from_array if USE_MEMFD else Image.from_array
+        payload = factory(image_array, camera_id=self._camera_id, time=timestamp)
         try:
-            self._image_writer.send(carrier)
+            self._image_writer.send(payload)
         except (BrokenPipeError, OSError):
             self._request_stop()
 
@@ -166,10 +167,11 @@ class MjpegCapture:
     def _read_images(self) -> None:
         while True:
             try:
-                carrier: BytesImage | MemfdImage = self._image_reader.recv()
+                payload: MemfdImage | Image = self._image_reader.recv()
             except (EOFError, OSError):
                 break
-            self._loop.call_soon_threadsafe(self._on_image, carrier.to_image())
+            image = payload.to_image() if isinstance(payload, MemfdImage) else payload
+            self._loop.call_soon_threadsafe(self._on_image, image)
 
     async def call(self, method: str, *args: Any) -> Any:
         """Run a device method in the subprocess and return its result (re-raising any exception)."""
