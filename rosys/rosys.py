@@ -12,7 +12,8 @@ from typing import Any, ClassVar, Literal
 
 import numpy as np
 import psutil
-from nicegui import Client, Event, app, background_tasks, ui
+from nicegui import Client, Event, app, background_tasks, context, ui
+from nicegui.slot import Slot
 
 from . import core, helpers, run
 from .config import Config
@@ -143,13 +144,27 @@ def _run_handler(handler: Callable) -> None:
         log.exception('error while starting handler "%s"', handler.__qualname__)
 
 
+def _resolve_scope(scope: Literal['app', 'client', 'auto'], handler: Callable) -> Client | None:
+    """Return the client whose deletion should end the handler's lifetime (None for app lifetime)."""
+    if scope == 'app':
+        return None
+    if Slot.get_stack():  # NOTE: check the stack first; accessing `context.client` outside a UI context would enter script mode
+        return context.client
+    if scope == 'client':
+        raise RuntimeError(f'cannot bind repeater for {handler} to a client outside of a UI context')
+    return None
+
+
 class Repeater:
     tasks: ClassVar[set[asyncio.Task]] = set()
 
-    def __init__(self, handler: Callable, interval: float) -> None:
+    def __init__(self, handler: Callable, interval: float, *, scope: Literal['app', 'client', 'auto'] = 'app') -> None:
         self.handler = handler
         self.interval = interval
         self._task: asyncio.Task | None = None
+        self._client = _resolve_scope(scope, handler)
+        if self._client is not None:
+            self._client.on_delete(self.stop)
 
     def start(self) -> None:
         if self.running:
@@ -157,8 +172,14 @@ class Repeater:
         if _state.startup_finished:
             self._task = background_tasks.create(self._repeat())
             self.tasks.add(self._task)
+            self._task.add_done_callback(self._handle_task_done)
         elif self.start not in startup_handlers:
             startup_handlers.append(self.start)
+
+    def _handle_task_done(self, task: asyncio.Task) -> None:
+        self.tasks.discard(task)
+        if self._task is task:  # not a stale callback from a task replaced by a restart
+            self._task = None
 
     async def _repeat(self) -> None:
         await sleep(self.interval)  # NOTE delaying first execution so not all actors rush in at the same time
@@ -188,13 +209,15 @@ class Repeater:
                 return
 
     def stop(self) -> None:
+        if self.start in startup_handlers:  # a deferred start must not revive the repeater at startup
+            startup_handlers.remove(self.start)
         if not self._task:
             return
 
         if not self._task.done():
             self._task.cancel()
 
-        self.tasks.remove(self._task)
+        self.tasks.discard(self._task)
         self._task = None
 
     @property
@@ -207,8 +230,14 @@ class Repeater:
             repeater.cancel()
 
 
-def on_repeat(handler: Callable, interval: float) -> Repeater:
-    repeater = Repeater(handler, interval)
+def on_repeat(handler: Callable, interval: float, *, scope: Literal['app', 'client', 'auto'] = 'app') -> Repeater:
+    """Repeatedly call a handler with a given interval.
+
+    With ``scope='app'`` the repeater runs for the lifetime of the app.
+    With ``scope='client'`` it must be created within a UI context and stops when that client is deleted.
+    With ``scope='auto'`` it binds to the client if created within a UI context and to the app otherwise.
+    """
+    repeater = Repeater(handler, interval, scope=scope)
     repeater.start()
     return repeater
 
