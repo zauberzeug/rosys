@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import mmap
+import os
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, Self
 
@@ -123,3 +125,49 @@ class Image:
     def byte_size(self) -> int:
         """Compute the size of the stored image representation in bytes."""
         return self.array.size
+
+
+@dataclass(slots=True, kw_only=True)
+class MemfdImage:
+    """A frame shared with another process via a Linux ``memfd`` file descriptor.
+
+    The pixels are written once into an anonymous in-memory file; only the (cheap) file descriptor crosses
+    the process boundary, and the receiver maps it with a zero-copy ``np.frombuffer``. The reconstructed
+    :class:`Image` keeps the mapping alive until it is garbage-collected.
+
+    Linux-only (requires ``os.memfd_create``); where it is unavailable, senders fall back to shipping the
+    :class:`Image` itself across the boundary.
+    """
+    fd: Any  # multiprocessing.reduction.DupFd, picklable across the process boundary
+    nbytes: int
+    size: ImageSize
+    camera_id: str
+    time: float
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_array(cls, array: ImageArray, *,
+                   camera_id: str, time: float, metadata: dict[str, Any] | None = None) -> MemfdImage:
+        # imported lazily: DupFd is POSIX-only (absent on Windows), this path runs only where memfd exists
+        from multiprocessing.reduction import DupFd  # noqa: PLC0415 # pylint: disable=import-outside-toplevel
+        height, width = array.shape[:2]
+        nbytes = int(array.nbytes)
+        fd = os.memfd_create(f'rosys-image-{camera_id}')  # pylint: disable=no-member  # Linux-only, guarded by caller
+        try:
+            os.ftruncate(fd, nbytes)
+            with mmap.mmap(fd, nbytes) as buffer:
+                np.frombuffer(buffer, dtype=np.uint8).reshape(height, width, 3)[:] = array
+            dup_fd = DupFd(fd)  # an independent dup that survives closing our fd, sent across the boundary
+        finally:
+            os.close(fd)
+        return cls(fd=dup_fd, nbytes=nbytes, size=ImageSize(width=width, height=height),
+                   camera_id=camera_id, time=time, metadata=metadata or {})
+
+    def to_image(self) -> Image:
+        fd = self.fd.detach()
+        try:
+            buffer = mmap.mmap(fd, self.nbytes)  # keeps the mapping alive after the fd is closed
+        finally:
+            os.close(fd)
+        array = np.frombuffer(buffer, dtype=np.uint8).reshape(self.size.height, self.size.width, 3)
+        return Image.from_array(array, camera_id=self.camera_id, time=self.time, metadata=self.metadata)
