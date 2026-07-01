@@ -120,7 +120,7 @@ class ImuSimulation(Imu, ModuleSimulation):
         self.roll_noise = roll_noise
         self.pitch_noise = pitch_noise
         self.yaw_noise = yaw_noise
-        rosys.on_repeat(self.simulate, interval)
+        rosys.on_repeat(self.simulate, interval, weak=True)
 
     def simulate(self) -> None:
         roll = np.random.normal(self.roll, self.roll_noise)

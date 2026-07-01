@@ -55,7 +55,7 @@ class DetectorHardware(Detector):
         self.sio.on('connect_error', lambda e: self.log.warning('connect error on %s:%s %s', self.host, self.port, e))
 
         rosys.on_startup(self.connect)
-        rosys.on_repeat(self._ensure_connection, 10.0)
+        rosys.on_repeat(self._ensure_connection, 10.0, weak=True)
 
     @property
     def is_connected(self) -> bool:
