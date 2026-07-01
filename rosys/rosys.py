@@ -12,7 +12,9 @@ from typing import Any, ClassVar, Literal
 
 import numpy as np
 import psutil
-from nicegui import Client, Event, app, background_tasks, ui
+from nicegui import Client, Event, app, background_tasks, context, ui
+from nicegui import core as nicegui_core
+from nicegui.slot import Slot
 
 from . import core, helpers, run
 from .config import Config
@@ -143,20 +145,44 @@ def _run_handler(handler: Callable) -> None:
         log.exception('error while starting handler "%s"', handler.__qualname__)
 
 
+def _resolve_scope(scope: Literal['app', 'client', 'auto'], handler: Callable) -> Client | None:
+    """Return the client whose deletion should end the handler's lifetime (None for app lifetime)."""
+    if scope == 'app':
+        return None
+    # NOTE: check the stack first, because accessing `context.client` outside a UI context would enter script mode
+    if Slot.get_stack():
+        client = context.client
+        if client is not nicegui_core.script_client:  # NOTE: the script-mode client is deleted before startup
+            return client
+    if scope == 'client':
+        raise RuntimeError(f'cannot bind repeater for {handler} to a client outside of a UI context')
+    return None
+
+
 class Repeater:
     tasks: ClassVar[set[asyncio.Task]] = set()
 
-    def __init__(self, handler: Callable, interval: float) -> None:
+    def __init__(self, handler: Callable, interval: float, *, scope: Literal['app', 'client', 'auto'] = 'app') -> None:
         self.handler = handler
         self.interval = interval
         self._task: asyncio.Task | None = None
+        self._client_deleted = False
+        client = _resolve_scope(scope, handler)
+        if client is not None:
+            # NOTE: not storing the client avoids a reference cycle that would outlive its deletion
+            client.on_delete(self._handle_client_delete)
+
+    def _handle_client_delete(self) -> None:
+        self._client_deleted = True
+        self.stop()
 
     def start(self) -> None:
-        if self.running:
+        if self.running or self._client_deleted:  # a client-scoped repeater must not outlive its client
             return
         if _state.startup_finished:
             self._task = background_tasks.create(self._repeat())
             self.tasks.add(self._task)
+            self._task.add_done_callback(self.tasks.discard)
         elif self.start not in startup_handlers:
             startup_handlers.append(self.start)
 
@@ -188,13 +214,15 @@ class Repeater:
                 return
 
     def stop(self) -> None:
+        if self.start in startup_handlers:  # a deferred start must not revive the repeater at startup
+            startup_handlers.remove(self.start)
         if not self._task:
             return
 
         if not self._task.done():
             self._task.cancel()
 
-        self.tasks.remove(self._task)
+        self.tasks.discard(self._task)
         self._task = None
 
     @property
@@ -207,8 +235,14 @@ class Repeater:
             repeater.cancel()
 
 
-def on_repeat(handler: Callable, interval: float) -> Repeater:
-    repeater = Repeater(handler, interval)
+def on_repeat(handler: Callable, interval: float, *, scope: Literal['app', 'client', 'auto'] = 'app') -> Repeater:
+    """Repeatedly call a handler with a given interval.
+
+    With ``scope='app'`` the repeater runs for the lifetime of the app.
+    With ``scope='client'`` it must be created within a UI context and stops when that client is deleted.
+    With ``scope='auto'`` it binds to the client if created within a UI context and to the app otherwise.
+    """
+    repeater = Repeater(handler, interval, scope=scope)
     repeater.start()
     return repeater
 
@@ -230,7 +264,7 @@ async def startup() -> None:
 
     _state.startup_finished = True
 
-    for handler in startup_handlers:
+    for handler in list(startup_handlers):  # NOTE: snapshot, because a handler can mutate the list via Repeater.stop()
         _run_handler(handler)
 
 
