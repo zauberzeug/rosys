@@ -41,7 +41,7 @@ class GnssSimulation(Gnss):
         self._gps_quality = gps_quality
         self._latency = latency
         self.last_measurement: GnssMeasurement | None = None
-        rosys.on_repeat(self.simulate, interval)
+        rosys.on_repeat(self.simulate, interval, weak=True)
 
     @property
     def is_connected(self) -> bool:

@@ -50,7 +50,7 @@ class PathPlanner(persistence.Persistable):
 
         rosys.on_startup(self.startup)
         rosys.on_shutdown(self.shutdown)
-        rosys.on_repeat(self.step, 0.1)
+        rosys.on_repeat(self.step, 0.1, weak=True)
 
     def backup_to_dict(self) -> dict:
         finished_areas = {area_id: copy(area).close() for area_id, area in self.areas.items() if len(area.outline) >= 3}

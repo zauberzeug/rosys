@@ -24,7 +24,7 @@ class BackupSchedule:
         self.backup_count = backup_count
         self.log = logging.getLogger('rosys.persistence')
 
-        core.on_repeat(self.backup, 60)
+        core.on_repeat(self.backup, 60, weak=True)
 
     def backup(self) -> None:
         """Backup the persistence files every day at the specified time."""
