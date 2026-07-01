@@ -208,7 +208,7 @@ class Repeater:
             start = time()
             try:
                 if is_stopping():
-                    log.info('%s must be stopped', self.handler)
+                    log.info('%s must be stopped', self.handler.__qualname__)
                     break
                 await invoke(self.handler)
                 dt = time() - start
