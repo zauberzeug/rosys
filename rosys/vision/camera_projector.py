@@ -29,7 +29,7 @@ class CameraProjector:
 
         self.projections: dict[str, Projection] = {}
 
-        rosys.on_repeat(self.step, interval)
+        rosys.on_repeat(self.step, interval, weak=True)
 
     async def step(self) -> None:
         for id_ in list(self.projections):
