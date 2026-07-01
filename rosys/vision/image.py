@@ -128,36 +128,6 @@ class Image:
 
 
 @dataclass(slots=True, kw_only=True)
-class BytesImage:
-    """An image as raw, uncompressed RGB pixel bytes.
-
-    A lightweight carrier for cheap transfer (e.g. across a process boundary): it pickles as a plain
-    ``bytes`` blob and reconstructs via a zero-copy ``np.frombuffer`` view, avoiding the heavier pickling
-    of a full :class:`Image` (numpy reconstruction plus detections/metadata).
-    """
-    data: bytes
-    size: ImageSize
-    camera_id: str
-    time: float
-    metadata: dict[str, Any] = field(default_factory=dict)
-
-    @classmethod
-    def from_image(cls, image: Image) -> BytesImage:
-        return cls(data=image.array.tobytes(), size=image.size,
-                   camera_id=image.camera_id, time=image.time, metadata=image.metadata)
-
-    @classmethod
-    def from_array(cls, array: ImageArray, *,
-                   camera_id: str, time: float, metadata: dict[str, Any] | None = None) -> BytesImage:
-        return cls(data=array.tobytes(), size=ImageSize(width=array.shape[1], height=array.shape[0]),
-                   camera_id=camera_id, time=time, metadata=metadata or {})
-
-    def to_image(self) -> Image:
-        array = np.frombuffer(self.data, dtype=np.uint8).reshape(self.size.height, self.size.width, 3)
-        return Image.from_array(array, camera_id=self.camera_id, time=self.time, metadata=self.metadata)
-
-
-@dataclass(slots=True, kw_only=True)
 class MemfdImage:
     """A frame shared with another process via a Linux ``memfd`` file descriptor.
 
@@ -165,8 +135,8 @@ class MemfdImage:
     the process boundary, and the receiver maps it with a zero-copy ``np.frombuffer``. The reconstructed
     :class:`Image` keeps the mapping alive until it is garbage-collected.
 
-    Linux-only (requires ``os.memfd_create``); use :class:`BytesImage` elsewhere. Both share the
-    ``from_array`` / ``to_image`` interface so the receiver does not need to know which one it got.
+    Linux-only (requires ``os.memfd_create``); where it is unavailable, senders fall back to shipping the
+    :class:`Image` itself across the boundary.
     """
     fd: Any  # multiprocessing.reduction.DupFd, picklable across the process boundary
     nbytes: int
@@ -182,7 +152,7 @@ class MemfdImage:
         from multiprocessing.reduction import DupFd  # noqa: PLC0415 # pylint: disable=import-outside-toplevel
         height, width = array.shape[:2]
         nbytes = int(array.nbytes)
-        fd = os.memfd_create(f'rosys-image-{camera_id}')
+        fd = os.memfd_create(f'rosys-image-{camera_id}')  # pylint: disable=no-member  # Linux-only, guarded by caller
         try:
             os.ftruncate(fd, nbytes)
             with mmap.mmap(fd, nbytes) as buffer:
