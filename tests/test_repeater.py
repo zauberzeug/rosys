@@ -140,3 +140,28 @@ async def test_stopping_repeater_during_startup_does_not_skip_other_handlers():
         await rosys.shutdown()
     finally:
         rosys.reset_after_test()
+
+
+async def test_stopping_repeater_during_startup_does_not_revive_it():
+    # NOTE: flipped ordering of the test above: when the stopping handler precedes the deferred start,
+    # startup() must not invoke the stale snapshot entry and revive the stopped repeater.
+    core.loop = asyncio.get_event_loop()
+    rosys.reset_before_test()
+    try:
+        ticker = Ticker()
+        repeaters: list[rosys.Repeater] = []
+
+        def stopper() -> None:
+            repeaters[0].stop()
+
+        rosys.on_startup(stopper)  # registered before the repeater, so its deferred start comes later
+        repeaters.append(rosys.on_repeat(ticker.step, 0.01))
+        assert startup_handlers.index(stopper) < startup_handlers.index(repeaters[0].start)
+
+        await rosys.startup()
+
+        assert not repeaters[0].running  # the stopped repeater was not revived by the snapshot
+
+        await rosys.shutdown()
+    finally:
+        rosys.reset_after_test()

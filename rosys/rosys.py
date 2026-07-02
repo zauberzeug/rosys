@@ -265,7 +265,8 @@ async def startup() -> None:
     _state.startup_finished = True
 
     for handler in list(startup_handlers):  # NOTE: snapshot, because a handler can mutate the list via Repeater.stop()
-        _run_handler(handler)
+        if handler in startup_handlers:  # NOTE: a previous handler may have removed this one via Repeater.stop()
+            _run_handler(handler)
 
 
 async def _garbage_collection() -> None:
