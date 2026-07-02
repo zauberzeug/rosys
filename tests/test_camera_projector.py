@@ -1,6 +1,32 @@
 import numpy as np
+import pytest
+from nicegui import Client
+from nicegui.page import page
 
-from rosys.vision import CalibratableCamera, CameraProjector
+import rosys
+from rosys.testing import forward
+from rosys.vision import CalibratableCamera, CameraProjector, SimulatedCameraProvider
+
+
+@pytest.mark.usefixtures('rosys_integration')
+async def test_projector_created_in_ui_context_keeps_running_by_default():
+    # NOTE: a shared projector may be constructed lazily inside a page handler;
+    # the default scope='app' must keep it running when that client is deleted.
+    steps: list[float] = []
+
+    class CountingProjector(CameraProjector):
+
+        async def step(self) -> None:
+            await super().step()
+            steps.append(rosys.time())
+
+    client = Client(page('/projector-test'), request=None)
+    with client:
+        CountingProjector(SimulatedCameraProvider(), interval=0.1)
+    client.delete()
+
+    await forward(0.35)
+    assert steps  # still ticking after the constructing client is gone
 
 
 def test_projection():
