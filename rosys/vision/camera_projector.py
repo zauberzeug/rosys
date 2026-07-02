@@ -1,6 +1,5 @@
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Literal
 
 import numpy as np
 
@@ -23,21 +22,17 @@ class CameraProjector:
     """The camera projector computes a grid of projected image points on the ground plane.
 
     It is mainly used for visualization purposes.
-
-    The ``scope`` parameter controls the lifetime of the update loop (see ``rosys.on_repeat``).
-    The default ``'app'`` keeps the projector running independently of where it was constructed;
-    pass ``'client'`` for a page-local projector that should stop when its client is deleted.
     """
 
     def __init__(self,
                  camera_provider: CalibratableCameraProvider, *,
                  interval: float = 1.0,
-                 scope: Literal['app', 'client'] = 'app') -> None:
+                 client_scoped: bool = False) -> None:
         self.camera_provider = camera_provider
 
         self.projections: dict[str, Projection] = {}
 
-        rosys.on_repeat(self.step, interval, scope=scope)
+        rosys.on_repeat(self.step, interval, client_scoped=client_scoped)
 
     async def step(self) -> None:
         for id_ in list(self.projections):

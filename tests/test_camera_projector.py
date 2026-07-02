@@ -11,7 +11,7 @@ from rosys.vision import CalibratableCamera, CameraProjector, SimulatedCameraPro
 @pytest.mark.usefixtures('rosys_integration')
 async def test_projector_created_in_ui_context_keeps_running_by_default():
     # NOTE: a shared projector may be constructed lazily inside a page handler;
-    # the default scope='app' must keep it running when that client is deleted.
+    # by default it must keep running when that client is deleted.
     steps: list[float] = []
 
     class CountingProjector(CameraProjector):

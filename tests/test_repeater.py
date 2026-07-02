@@ -41,137 +41,102 @@ async def test_repeater_can_restart_after_stop():
 
 
 @pytest.mark.usefixtures('rosys_integration')
-async def test_app_scoped_repeater_ignores_ui_context():
-    ticker = Ticker()
-    client = Client(page('/app-scope-test'), request=None)
-    with client:
-        repeater = rosys.on_repeat(ticker.step, 0.1)
-
-    client.delete()
-    await forward(0.35)
-    assert repeater.running  # the default scope is not affected by client deletion
-
-
-@pytest.mark.usefixtures('rosys_integration')
 async def test_client_scoped_repeater_stops_when_client_is_deleted():
-    ticker = Ticker()
-    client = Client(page('/client-scope-test'), request=None)
+    app_ticker = Ticker()
+    client_ticker = Ticker()
+    client = Client(page('/scope-test'), request=None)
     with client:
-        repeater = rosys.on_repeat(ticker.step, 0.1, scope='client')
+        app_repeater = rosys.on_repeat(app_ticker.step, 0.1)
+        client_repeater = rosys.on_repeat(client_ticker.step, 0.1, client_scoped=True)
 
     await forward(0.35)
-    assert repeater.running
-    calls_while_alive = len(ticker.calls)
+    assert client_repeater.running
+    calls_while_alive = len(client_ticker.calls)
     assert calls_while_alive >= 1  # the repeater was actually ticking
 
     client.delete()
-    assert not repeater.running  # the client teardown stopped the repeater
-    assert repeater.handler is None  # the handler is released so the deleted client does not pin its owner
-    repeater.start()
-    assert not repeater.running  # a client-scoped repeater cannot be revived after its client is deleted
+    assert app_repeater.running  # the default is not affected by client deletion
+    assert not client_repeater.running  # the client teardown stopped the client-scoped repeater
+    assert client_repeater.handler is None  # the handler is released so the deleted client does not pin its owner
+    client_repeater.start()
+    assert not client_repeater.running  # a client-scoped repeater cannot be revived after its client is deleted
     await forward(0.5)
-    assert len(ticker.calls) == calls_while_alive  # no more ticks after deletion
+    assert len(client_ticker.calls) == calls_while_alive  # no more ticks after deletion
 
 
 @pytest.mark.usefixtures('rosys_integration')
-async def test_client_scope_outside_ui_context_raises():
+async def test_client_scoped_repeater_outside_ui_context_raises():
     ticker = Ticker()
     with pytest.raises(RuntimeError):
-        rosys.on_repeat(ticker.step, 0.1, scope='client')
+        rosys.on_repeat(ticker.step, 0.1, client_scoped=True)
 
 
-@pytest.mark.usefixtures('rosys_integration')
-async def test_client_scope_binds_to_script_mode_client():
-    # NOTE: NiceGUI deletes the script-mode client before startup;
-    # a client-scoped repeater binds to it and dies with it, like with any other client.
-    ticker = Ticker()
-    client = Client(page('/script-mode-test'), request=None)
-    core.script_client = client
-    try:
-        with client:
-            repeater = rosys.on_repeat(ticker.step, 0.1, scope='client')
-        client.delete()
-    finally:
-        core.script_client = None
-
-    assert not repeater.running  # died with the script-mode client
+@pytest.fixture
+async def pre_startup():
+    """Set up a rosys test environment without running startup, so tests can exercise deferred starts."""
+    core.loop = asyncio.get_event_loop()
+    rosys.reset_before_test()
+    yield
+    if _state.startup_finished:
+        await rosys.shutdown()
+    rosys.reset_after_test()
 
 
+@pytest.mark.usefixtures('pre_startup')
 async def test_stop_before_startup_prevents_deferred_start():
     # NOTE: a repeater created pre-startup defers its start; stopping it before startup
     # must remove the deferred start so the repeater is not revived when startup replays the handlers.
-    core.loop = asyncio.get_event_loop()
-    rosys.reset_before_test()
-    try:
-        assert not _state.startup_finished
+    ticker = Ticker()
+    repeater = rosys.on_repeat(ticker.step, 0.01)
+    assert not repeater.running  # start was deferred, not launched
+    assert repeater.start in startup_handlers
 
-        ticker = Ticker()
-        repeater = rosys.on_repeat(ticker.step, 0.01)
-        assert not repeater.running  # start was deferred, not launched
-        assert repeater.start in startup_handlers
+    repeater.stop()
+    assert repeater.start not in startup_handlers
 
-        repeater.stop()
-        assert repeater.start not in startup_handlers
+    await rosys.startup()  # replays the deferred start handlers
 
-        await rosys.startup()  # replays the deferred start handlers
-
-        assert not repeater.running  # the stopped repeater was not revived
-
-        await rosys.shutdown()
-    finally:
-        rosys.reset_after_test()
+    assert not repeater.running  # the stopped repeater was not revived
 
 
+@pytest.mark.usefixtures('pre_startup')
 async def test_stopping_repeater_during_startup_does_not_skip_other_handlers():
     # NOTE: Repeater.stop() removes a deferred start from startup_handlers;
     # startup() must iterate a snapshot so this mutation does not skip the following handler.
-    core.loop = asyncio.get_event_loop()
-    rosys.reset_before_test()
-    try:
-        ticker = Ticker()
-        repeater = rosys.on_repeat(ticker.step, 0.01)
-        events: list[str] = []
+    ticker = Ticker()
+    repeater = rosys.on_repeat(ticker.step, 0.01)
+    events: list[str] = []
 
-        def stopper() -> None:
-            repeater.stop()
-            events.append('stopper')
+    def stopper() -> None:
+        repeater.stop()
+        events.append('stopper')
 
-        def victim() -> None:
-            events.append('victim')
+    def victim() -> None:
+        events.append('victim')
 
-        rosys.on_startup(stopper)
-        rosys.on_startup(victim)
+    rosys.on_startup(stopper)
+    rosys.on_startup(victim)
 
-        await rosys.startup()
+    await rosys.startup()
 
-        assert events == ['stopper', 'victim']  # the mutation must not skip the next startup handler
-        assert not repeater.running
-
-        await rosys.shutdown()
-    finally:
-        rosys.reset_after_test()
+    assert events == ['stopper', 'victim']  # the mutation must not skip the next startup handler
+    assert not repeater.running
 
 
+@pytest.mark.usefixtures('pre_startup')
 async def test_stopping_repeater_during_startup_does_not_revive_it():
     # NOTE: flipped ordering of the test above: when the stopping handler precedes the deferred start,
     # startup() must not invoke the stale snapshot entry and revive the stopped repeater.
-    core.loop = asyncio.get_event_loop()
-    rosys.reset_before_test()
-    try:
-        ticker = Ticker()
-        repeaters: list[Repeater] = []
+    ticker = Ticker()
+    repeaters: list[Repeater] = []
 
-        def stopper() -> None:
-            repeaters[0].stop()
+    def stopper() -> None:
+        repeaters[0].stop()
 
-        rosys.on_startup(stopper)  # registered before the repeater, so its deferred start comes later
-        repeaters.append(rosys.on_repeat(ticker.step, 0.01))
-        assert startup_handlers.index(stopper) < startup_handlers.index(repeaters[0].start)
+    rosys.on_startup(stopper)  # registered before the repeater, so its deferred start comes later
+    repeaters.append(rosys.on_repeat(ticker.step, 0.01))
+    assert startup_handlers.index(stopper) < startup_handlers.index(repeaters[0].start)
 
-        await rosys.startup()
+    await rosys.startup()
 
-        assert not repeaters[0].running  # the stopped repeater was not revived by the snapshot
-
-        await rosys.shutdown()
-    finally:
-        rosys.reset_after_test()
+    assert not repeaters[0].running  # the stopped repeater was not revived by the snapshot

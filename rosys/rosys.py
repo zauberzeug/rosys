@@ -144,31 +144,19 @@ def _run_handler(handler: Callable) -> None:
         log.exception('error while starting handler "%s"', handler.__qualname__)
 
 
-def _resolve_scope(scope: Literal['app', 'client'], handler: Callable) -> Client | None:
-    """Return the client whose deletion should end the handler's lifetime (None for app lifetime)."""
-    if scope == 'app':
-        return None
-    # NOTE: check the stack first, because accessing `context.client` outside a UI context would enter script mode
-    if Slot.get_stack():
-        # NOTE: this may be the script-mode client, which is deleted before startup;
-        # binding to it is correct: the pre-flight repeater dies with it,
-        # while each per-connection re-execution binds to its own client
-        return context.client
-    raise RuntimeError(f'cannot bind repeater for {handler} to a client outside of a UI context')
-
-
 class Repeater:
     tasks: ClassVar[set[asyncio.Task]] = set()
 
-    def __init__(self, handler: Callable, interval: float, *, scope: Literal['app', 'client'] = 'app') -> None:
+    def __init__(self, handler: Callable, interval: float, *, client_scoped: bool = False) -> None:
         self.handler: Callable | None = handler
         self.interval = interval
         self._task: asyncio.Task | None = None
         self._client_deleted = False
-        client = _resolve_scope(scope, handler)
-        if client is not None:
+        if client_scoped:
+            if not Slot.get_stack():  # NOTE: check the stack; accessing `context.client` would enter script mode
+                raise RuntimeError(f'cannot bind repeater for {handler} to a client outside of a UI context')
             # NOTE: not storing the client avoids a reference cycle that would outlive its deletion
-            client.on_delete(self._handle_client_delete)
+            context.client.on_delete(self._handle_client_delete)
 
     def _handle_client_delete(self) -> None:
         self._client_deleted = True
@@ -238,13 +226,12 @@ class Repeater:
             repeater.cancel()
 
 
-def on_repeat(handler: Callable, interval: float, *, scope: Literal['app', 'client'] = 'app') -> Repeater:
+def on_repeat(handler: Callable, interval: float, *, client_scoped: bool = False) -> Repeater:
     """Repeatedly call a handler with a given interval.
 
-    With ``scope='app'`` the repeater runs for the lifetime of the app.
-    With ``scope='client'`` it must be created within a UI context and stops when that client is deleted.
+    A client-scoped repeater must be created within a UI context and stops when that client is deleted.
     """
-    repeater = Repeater(handler, interval, scope=scope)
+    repeater = Repeater(handler, interval, client_scoped=client_scoped)
     repeater.start()
     return repeater
 
