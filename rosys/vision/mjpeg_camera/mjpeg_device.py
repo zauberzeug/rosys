@@ -103,6 +103,10 @@ class MjpegDevice:
                         async with client.stream('GET', self._url, auth=auth) as response:
                             if response.status_code == 401 and auth is None \
                                     and self._username is not None and self._password is not None:
+                                # DigestAuth still runs its own unauthenticated-then-401-then-authenticated
+                                # cycle here (it has no cached challenge yet), so this branch only removes
+                                # the redundant leading probe connection -- it does not make Digest a
+                                # single extra request the way it does for Basic.
                                 auth = self._auth_for_challenge(response.headers.get('www-authenticate', ''),
                                                                 self._username, self._password)
                                 continue
