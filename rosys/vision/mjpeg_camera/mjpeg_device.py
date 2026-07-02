@@ -76,14 +76,7 @@ class MjpegDevice:
         """
 
     def _auth_for_challenge(self, www_authenticate: str, username: str, password: str) -> httpx.Auth:
-        """Map a ``WWW-Authenticate`` challenge to the matching httpx auth handler.
-
-        Only the first offered scheme is inspected; a server advertising several schemes in one
-        header (e.g. ``Digest ..., Basic ...``) resolves to whichever is listed first. Every
-        camera seen so far advertises exactly one scheme, so this hasn't been a problem in
-        practice. Anything other than ``digest`` -- including a missing or malformed header --
-        falls back to Basic, matching this class's pre-existing default.
-        """
+        """Map a ``WWW-Authenticate`` challenge to the matching httpx auth handler. Fall back to basic if unknown."""
         scheme = www_authenticate.split(' ', 1)[0].lower()
         self.log.debug('%s challenged with %s auth', self._url, scheme or '<none>, defaulting to basic')
         if scheme == 'digest':
@@ -103,10 +96,6 @@ class MjpegDevice:
                         async with client.stream('GET', self._url, auth=auth) as response:
                             if response.status_code == 401 and auth is None \
                                     and self._username is not None and self._password is not None:
-                                # DigestAuth still runs its own unauthenticated-then-401-then-authenticated
-                                # cycle here (it has no cached challenge yet), so this branch only removes
-                                # the redundant leading probe connection -- it does not make Digest a
-                                # single extra request the way it does for Basic.
                                 auth = self._auth_for_challenge(response.headers.get('www-authenticate', ''),
                                                                 self._username, self._password)
                                 continue
