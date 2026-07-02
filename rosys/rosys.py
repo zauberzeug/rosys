@@ -13,7 +13,6 @@ from typing import Any, ClassVar, Literal
 import numpy as np
 import psutil
 from nicegui import Client, Event, app, background_tasks, context, ui
-from nicegui import core as nicegui_core
 from nicegui.slot import Slot
 
 from . import core, helpers, run
@@ -145,28 +144,23 @@ def _run_handler(handler: Callable) -> None:
         log.exception('error while starting handler "%s"', handler.__qualname__)
 
 
-def _resolve_scope(scope: Literal['app', 'client', 'auto'], handler: Callable) -> Client | None:
+def _resolve_scope(scope: Literal['app', 'client'], handler: Callable) -> Client | None:
     """Return the client whose deletion should end the handler's lifetime (None for app lifetime)."""
     if scope == 'app':
         return None
     # NOTE: check the stack first, because accessing `context.client` outside a UI context would enter script mode
     if Slot.get_stack():
-        client = context.client
-        # NOTE: with 'auto' we must not bind to the script-mode client, which is deleted before startup;
-        # with 'client' binding to it is correct: the pre-flight repeater dies with it,
+        # NOTE: this may be the script-mode client, which is deleted before startup;
+        # binding to it is correct: the pre-flight repeater dies with it,
         # while each per-connection re-execution binds to its own client
-        if scope == 'client' or client is not nicegui_core.script_client:
-            return client
-        return None
-    if scope == 'client':
-        raise RuntimeError(f'cannot bind repeater for {handler} to a client outside of a UI context')
-    return None
+        return context.client
+    raise RuntimeError(f'cannot bind repeater for {handler} to a client outside of a UI context')
 
 
 class Repeater:
     tasks: ClassVar[set[asyncio.Task]] = set()
 
-    def __init__(self, handler: Callable, interval: float, *, scope: Literal['app', 'client', 'auto'] = 'app') -> None:
+    def __init__(self, handler: Callable, interval: float, *, scope: Literal['app', 'client'] = 'app') -> None:
         self.handler: Callable | None = handler
         self.interval = interval
         self._task: asyncio.Task | None = None
@@ -244,12 +238,11 @@ class Repeater:
             repeater.cancel()
 
 
-def on_repeat(handler: Callable, interval: float, *, scope: Literal['app', 'client', 'auto'] = 'app') -> Repeater:
+def on_repeat(handler: Callable, interval: float, *, scope: Literal['app', 'client'] = 'app') -> Repeater:
     """Repeatedly call a handler with a given interval.
 
     With ``scope='app'`` the repeater runs for the lifetime of the app.
     With ``scope='client'`` it must be created within a UI context and stops when that client is deleted.
-    With ``scope='auto'`` it binds to the client if created within a UI context and to the app otherwise.
     """
     repeater = Repeater(handler, interval, scope=scope)
     repeater.start()

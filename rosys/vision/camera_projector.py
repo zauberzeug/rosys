@@ -32,7 +32,7 @@ class CameraProjector:
     def __init__(self,
                  camera_provider: CalibratableCameraProvider, *,
                  interval: float = 1.0,
-                 scope: Literal['app', 'client', 'auto'] = 'app') -> None:
+                 scope: Literal['app', 'client'] = 'app') -> None:
         self.camera_provider = camera_provider
 
         self.projections: dict[str, Projection] = {}

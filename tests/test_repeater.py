@@ -5,7 +5,7 @@ from nicegui import Client, core
 from nicegui.page import page
 
 import rosys
-from rosys.rosys import _state, startup_handlers
+from rosys.rosys import Repeater, _state, startup_handlers
 from rosys.testing import forward
 
 
@@ -57,7 +57,7 @@ async def test_client_scoped_repeater_stops_when_client_is_deleted():
     ticker = Ticker()
     client = Client(page('/client-scope-test'), request=None)
     with client:
-        repeater = rosys.on_repeat(ticker.step, 0.1, scope='auto')
+        repeater = rosys.on_repeat(ticker.step, 0.1, scope='client')
 
     await forward(0.35)
     assert repeater.running
@@ -74,14 +74,6 @@ async def test_client_scoped_repeater_stops_when_client_is_deleted():
 
 
 @pytest.mark.usefixtures('rosys_integration')
-async def test_auto_scope_outside_ui_context_falls_back_to_app_scope():
-    ticker = Ticker()
-    repeater = rosys.on_repeat(ticker.step, 0.1, scope='auto')
-    await forward(0.25)
-    assert repeater.running
-
-
-@pytest.mark.usefixtures('rosys_integration')
 async def test_client_scope_outside_ui_context_raises():
     ticker = Ticker()
     with pytest.raises(RuntimeError):
@@ -89,23 +81,20 @@ async def test_client_scope_outside_ui_context_raises():
 
 
 @pytest.mark.usefixtures('rosys_integration')
-async def test_scopes_handle_script_mode_client():
+async def test_client_scope_binds_to_script_mode_client():
     # NOTE: NiceGUI deletes the script-mode client before startup;
-    # 'auto' must fall back to app scope, while 'client' binds to it and dies with it.
+    # a client-scoped repeater binds to it and dies with it, like with any other client.
     ticker = Ticker()
     client = Client(page('/script-mode-test'), request=None)
     core.script_client = client
     try:
         with client:
-            auto_repeater = rosys.on_repeat(ticker.step, 0.1, scope='auto')
-            client_repeater = rosys.on_repeat(ticker.step, 0.1, scope='client')
+            repeater = rosys.on_repeat(ticker.step, 0.1, scope='client')
         client.delete()
     finally:
         core.script_client = None
 
-    assert not client_repeater.running  # died with the script-mode client
-    await forward(0.35)
-    assert auto_repeater.running  # fell back to app scope, unaffected by the deletion
+    assert not repeater.running  # died with the script-mode client
 
 
 async def test_stop_before_startup_prevents_deferred_start():
@@ -170,7 +159,7 @@ async def test_stopping_repeater_during_startup_does_not_revive_it():
     rosys.reset_before_test()
     try:
         ticker = Ticker()
-        repeaters: list[rosys.Repeater] = []
+        repeaters: list[Repeater] = []
 
         def stopper() -> None:
             repeaters[0].stop()
