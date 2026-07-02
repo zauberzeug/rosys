@@ -9,7 +9,7 @@ Depending on your environment you can then instantiate the correct implementatio
 For a differential-steering controlled robot, RoSys offers
 a [`Wheels`](../../reference/rosys/hardware.md#rosys.hardware.Wheels) base class plus
 a [`WheelsSimulation`](../../reference/rosys/hardware.md#rosys.hardware.WheelsSimulation).
-The following example illustrates how to implement a `CustomWheelsHardware` module that derives from `Wheels`, reads the currrent velocity regularly and can be steered with linear and angular velocity.
+The following example illustrates how to implement a `CustomWheelsHardware` module that derives from `Wheels`, reads the current velocity regularly and can be steered with linear and angular velocity.
 
 ```python
 {! examples/hardware/custom.py !}

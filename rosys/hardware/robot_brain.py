@@ -23,13 +23,23 @@ class RobotBrain:
     If the offset changes significantly, a notification is sent and the offset history is cleared.
     """
 
-    def __init__(self, communication: Communication, *, enable_esp_on_startup: bool = True, use_espresso: bool = False) -> None:
+    def __init__(self, communication: Communication, *, enable_esp_on_startup: bool = True, use_espresso: bool = False, heartbeat_interval: float | None = None) -> None:
+        """
+        Initialize the RobotBrain and connect to the microcontroller.
+
+        :param communication: The communication object to use for reading and writing messages
+        :param enable_esp_on_startup: Whether to enable the ESP on startup (default: ``True``)
+        :param use_espresso: Whether to use the new espresso.py for controlling the ESP instead of the old flash.py (default: ``False``)
+        :param heartbeat_interval: If not ``None``, the interval in seconds at which to send heartbeat messages to the ESP (default: ``None``)
+        """
         self.ESP_CONNECTED = Event[[]]()
         """ESP has been connected and Lizard is ready to use"""
         self.LINE_RECEIVED = Event[str]()
         """a line has been received from the microcontroller (argument: line as string)"""
         self.FLASH_P0_COMPLETE = Event[[]]()
         """flashing p0 was successful and 'Replica complete' was received"""
+        self.CORE_MESSAGE_RECEIVED = Event[float]()
+        """a core message was received (argument: hardware millis timestamp)"""
 
         self.log = logging.getLogger('rosys.robot_brain')
 
@@ -44,6 +54,8 @@ class RobotBrain:
         self._use_espresso = use_espresso
         if enable_esp_on_startup:
             rosys.on_startup(self.enable_esp)
+        if heartbeat_interval is not None:
+            rosys.on_repeat(self.send_heartbeat, heartbeat_interval)
 
         self.esp_pins_core = EspPins(name='core', robot_brain=self)
         self.esp_pins_p0 = EspPins(name='p0', robot_brain=self)
@@ -155,6 +167,13 @@ class RobotBrain:
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
         ui.label().bind_text_from(self, 'is_ready', lambda ready: f'Ready: {ready}')
 
+    async def send_heartbeat(self) -> None:
+        """Send a ``core.keep_alive()`` command to the microcontroller to let it know that RoSys is still running."""
+        if not self.is_ready:
+            self.log.debug('Skipping heartbeat because ESP is not ready')
+            return
+        await self.send('core.keep_alive()')
+
     async def configure(self) -> None:
         rosys.notify('Configuring Lizard...')
         await self.send('!-', force=True)
@@ -192,6 +211,7 @@ class RobotBrain:
             hardware_time: float | None = None
             if first == 'core':
                 millis = float(words.pop(0))
+                self.CORE_MESSAGE_RECEIVED.emit(millis)
                 if self.clock_offset is None:
                     continue
                 hardware_time = millis / 1000 + self.clock_offset

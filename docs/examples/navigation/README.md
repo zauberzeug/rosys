@@ -23,11 +23,10 @@ In the following illustration these points are depicted as spheres: the coordina
 
 You can display a wire frame version of the robot by passing `debug=true` to the [`robot_object`](../../reference/rosys/driving.md#rosys.driving.robot_object).
 
-!!! note
-
-    The automation `drive_spline` has an optional argument `flip_hook`.
-    It turns the hook 180 degrees to the back of the robot, while preserving the distance `hook_offset` to the robot's coordinate center.
-    This allows the robot to drive backwards to a point behind it instead of turning around and approaching it forwards.
+> [!NOTE]
+> The automation `drive_spline` has an optional argument `flip_hook`.
+> It turns the hook 180 degrees to the back of the robot, while preserving the distance `hook_offset` to the robot's coordinate center.
+> This allows the robot to drive backwards to a point behind it instead of turning around and approaching it forwards.
 
 A more complex example can be found in the [RoSys GitHub repository](https://github.com/zauberzeug/rosys/tree/main/examples/obstacles).
 There you can create new obstacles and choose between straight driving or navigation.

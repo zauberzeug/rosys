@@ -23,7 +23,7 @@ jobs:
       - name: pre-commit, mypy and pylint
         run: |
           uv run pre-commit run --all-files
-          uv run mypy ./rosys --non-interactive
+          uv run mypy ./rosys
           uv run pylint ./rosys
 
   pytest:

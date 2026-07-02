@@ -85,7 +85,8 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
             .on('change', lambda e: self.jump_to_time(e.args)) \
             .props('label-always') \
             .classes('w-full')
-        s.bind_value_to(s.props, 'label-value', lambda x: f'{datetime.fromtimestamp(x).strftime(time_label_format)}')
+        s.bind_value_to(s.props, 'label-value',
+                        lambda x: f'{datetime.fromtimestamp(x or 0).strftime(time_label_format)}')
 
     def set_speed(self, speed: float) -> None:
         """Set the playback speed.
@@ -146,6 +147,8 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         new_replay_time = self._current_time + (now - self._last_update_time) * self._playback_speed
         if new_replay_time > self._end_time:
             new_replay_time = self._start_time + (new_replay_time - self._end_time)
+        if new_replay_time < self._start_time:
+            new_replay_time = self._end_time + (new_replay_time - self._start_time)
         self._set_replay_time(new_replay_time)
         self._last_update_time = now
 

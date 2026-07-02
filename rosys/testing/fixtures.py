@@ -1,6 +1,5 @@
 # pylint: disable=redefined-outer-name,unused-argument
 import asyncio
-import multiprocessing
 from collections.abc import AsyncGenerator
 
 import pytest
@@ -71,10 +70,8 @@ async def kpi_logger(rosys_integration: None) -> KpiLogger:
 
 
 @pytest.fixture(scope='session', autouse=True)
-def enforce_spawn_process() -> None:
-    if multiprocessing.get_start_method() != 'spawn':
-        multiprocessing.set_start_method('spawn', force=True)
-    run.setup()  # Some tests need the CPU pool
+def setup_run_pool() -> None:
+    run.setup()  # Some tests need the CPU pool (the path planner now spawns via its own context, see #19)
 
 
 @pytest.fixture

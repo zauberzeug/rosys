@@ -27,7 +27,7 @@ then
     echo "Arguments:"
     echo
     echo "  containers    One or more containers (omit to affect all containers)"
-    echo "  container     Excactly one container to be affected"
+    echo "  container     Exactly one container to be affected"
     echo "  command       Command to be executed inside a container"
     exit
 fi
@@ -56,7 +56,7 @@ case $cmd in
         docker-compose restart $cmd_args
         ;;
     i | install)
-        echo "disabing restart for any containers which may have been configured before"
+        echo "disabling restart for any containers which may have been configured before"
         docker update --restart=no $(docker ps -a -q) > /dev/null
         echo "configuring running containers to always restart"
         docker update --restart=always $(docker ps -q)

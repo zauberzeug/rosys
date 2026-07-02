@@ -2,6 +2,7 @@ import re
 from typing import ClassVar
 
 import serial
+from nicegui import ui
 from serial.tools import list_ports
 
 from ... import rosys
@@ -12,18 +13,19 @@ from .nmea import Gga, GpsQuality, Gst, Pssn
 
 class GnssHardware(Gnss):
     """This hardware module connects to a Septentrio SimpleRTK3b (Mosaic-H) GNSS receiver."""
-    MAX_MEASUREMENT_AGE = 0.05
     NMEA_TYPES: ClassVar[set[str]] = {'GPGGA', 'GPGST', 'PSSN,HRP'}
     NMEA_PATTERN = re.compile(r'\$(?P<type>[A-Z,]+),(?P<timestamp>\d{6}(?:\.\d+)?)[^*]*\*[0-9A-Fa-f]{2}\r\n')
 
-    def __init__(self, *, antenna_pose: Pose | None, reconnect_interval: float = 3.0) -> None:
+    def __init__(self, *, antenna_pose: Pose | None, reconnect_interval: float = 3.0, max_measurement_age: float = 0.05) -> None:
         """
         :param antenna_pose: the pose of the main antenna in the robot's coordinate frame (yaw: direction to the auxiliary antenna)
         :param reconnect_interval: the interval to wait before reconnecting to the device
+        :param max_measurement_age: the maximum age of measurements to be accepted in seconds
         """
         super().__init__()
         self.antenna_pose = antenna_pose or Pose(x=0.0, y=0.0, yaw=0.0)
         self._reconnect_interval = reconnect_interval
+        self._max_measurement_age = max_measurement_age
         self.serial_connection: serial.Serial | None = None
         rosys.on_startup(self._run)
 
@@ -79,9 +81,9 @@ class GnssHardware(Gnss):
                     self.log.debug('Failed to parse measurement: %s', e)
                     continue
                 measurement_age = measurement.age
-                if abs(measurement_age) > self.MAX_MEASUREMENT_AGE:
+                if abs(measurement_age) > self._max_measurement_age:
                     self.log.warning('measurement age = %.3f (exceeds threshold of %s)',
-                                     measurement_age, self.MAX_MEASUREMENT_AGE)
+                                     measurement_age, self._max_measurement_age)
                     continue
                 self.log.debug('dt: %.3f - %s', measurement_age, measurement)
                 self.last_measurement = measurement
@@ -137,3 +139,11 @@ class GnssHardware(Gnss):
             return serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
         except serial.SerialException as e:
             raise RuntimeError(f'Could not connect to GNSS device: {port}') from e
+
+    def developer_ui(self) -> None:
+        with ui.column():
+            super().developer_ui()
+            ui.number('Max Measurement Age', min=0.0, step=0.01, suffix='s', format='%.3f') \
+                .bind_value(self, '_max_measurement_age') \
+                .classes('w-32') \
+                .tooltip('Maximum age of measurements to be accepted')

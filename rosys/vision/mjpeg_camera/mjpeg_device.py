@@ -2,6 +2,7 @@ import asyncio
 import logging
 from asyncio import Task
 from collections.abc import AsyncGenerator, Awaitable, Callable
+from contextlib import asynccontextmanager
 
 import httpx
 
@@ -9,6 +10,26 @@ from ... import rosys
 from ...rosys import on_startup
 from ..image_processing import remove_exif
 from .vendors import mac_to_url
+
+
+def parse_capture_timestamp(part_header: bytes) -> float | None:
+    """Extract the absolute capture instant (Unix epoch seconds) from the ``X-Timestamp``
+    field of an MJPEG multipart part header.
+
+    Cameras that stamp each frame at capture time emit an ``X-Timestamp: <sec>.<usec>``
+    line in the part header preceding the JPEG. Returns ``None`` when the field is absent
+    or unparsable, so the caller can fall back to the receive time.
+    """
+    marker = b'x-timestamp:'
+    index = part_header.lower().rfind(marker)
+    if index == -1:
+        return None
+    line_end = part_header.find(b'\r\n', index)
+    raw = part_header[index + len(marker):] if line_end == -1 else part_header[index + len(marker):line_end]
+    try:
+        return float(raw.strip())
+    except ValueError:
+        return None
 
 
 class MjpegDevice:
@@ -48,28 +69,61 @@ class MjpegDevice:
         self.shutdown()
         self.start_capture_task()
 
-    async def _resolve_auth(self, client: httpx.AsyncClient) -> httpx.Auth | None:
-        if self._username is None or self._password is None:
-            return None
-        async with client.stream('GET', self._url) as probe:
-            scheme = probe.headers.get('www-authenticate', '').split(' ', 1)[0].lower()
-        self.log.debug('using %s auth for %s', scheme or 'basic (no challenge)', self._url)
+    async def _prepare_stream(self) -> None:
+        """Hook executed right before the MJPEG stream is opened (and on every restart).
+
+        Vendors whose HTTP stream must be enabled before it serves data can override this.
+        Implementations should log and return on failure rather than raise.
+        """
+
+    def _auth_for_challenge(self, www_authenticate: str, username: str, password: str) -> httpx.Auth:
+        """Map a ``WWW-Authenticate`` challenge to the matching httpx auth handler.
+
+        Only the first offered scheme is inspected; a server advertising several schemes in one
+        header (e.g. ``Digest ..., Basic ...``) resolves to whichever is listed first. Every
+        camera seen so far advertises exactly one scheme, so this hasn't been a problem in
+        practice. Anything other than ``digest`` -- including a missing or malformed header --
+        falls back to Basic, matching this class's pre-existing default.
+        """
+        scheme = www_authenticate.split(' ', 1)[0].lower()
+        self.log.debug('%s challenged with %s auth', self._url, scheme or '<none>, defaulting to basic')
         if scheme == 'digest':
-            return httpx.DigestAuth(self._username, self._password)
-        return httpx.BasicAuth(self._username, self._password)
+            return httpx.DigestAuth(username, password)
+        return httpx.BasicAuth(username, password)
+
+    @asynccontextmanager
+    async def _open_stream(self, client: httpx.AsyncClient) -> AsyncGenerator[httpx.Response, None]:
+        """Open the MJPEG stream, retrying once with the right auth if the server challenges us.
+
+        The first request is always unauthenticated, so credentials are never sent to a camera
+        that never asked for them. A 401 response picks Digest or Basic from the challenge and
+        retries once; any other outcome (200, or a non-401 error) is handed to the caller as-is.
+        """
+        assert self._url is not None
+        auth: httpx.Auth | None = None
+        while True:
+            async with client.stream('GET', self._url, auth=auth) as response:
+                if response.status_code == 401 and auth is None \
+                        and self._username is not None and self._password is not None:
+                    auth = self._auth_for_challenge(response.headers.get('www-authenticate', ''),
+                                                     self._username, self._password)
+                    continue
+                yield response
+                return
 
     async def run_capture_task(self) -> None:
         self.log.debug('Starting capture task for %s', self._url)
 
-        async def stream() -> AsyncGenerator[bytes, None]:
+        async def stream() -> AsyncGenerator[tuple[bytes, float | None], None]:
             async with httpx.AsyncClient() as client:
                 assert self._url is not None
                 try:
-                    auth = await self._resolve_auth(client)
-                    async with client.stream('GET', self._url, auth=auth) as response:
+                    await self._prepare_stream()
+                    async with self._open_stream(client) as response:
                         if response.status_code != 200:
-                            self.log.error('could not connect to %s (credentials: %s): %s %s',
-                                           self._url, auth, response.status_code, response.reason_phrase)
+                            auth_scheme = response.request.headers.get('authorization', '<none>').split(' ', 1)[0]
+                            self.log.error('could not connect to %s (auth: %s): %s %s',
+                                           self._url, auth_scheme, response.status_code, response.reason_phrase)
                             return
 
                         buffer_size = 16 * 1024 * 1024
@@ -96,8 +150,10 @@ class MjpegDevice:
                                 if start == -1:
                                     continue
 
+                                # the bytes before the SOI marker are this frame's multipart part header
+                                capture_time = parse_capture_timestamp(bytes(buffer_view[:start]))
                                 end += 2
-                                yield buffer_view[start:end]
+                                yield bytes(buffer_view[start:end]), capture_time
                                 buffer_view[:buffer_end - end] = buffer_view[end:buffer_end]
                                 buffer_end -= end
 
@@ -108,11 +164,11 @@ class MjpegDevice:
                     self.log.warning('Connection to %s failed. Was something disconnected?\n%s', self._url, e)
                     raise e
 
-        async for image in stream():
+        async for image, capture_time in stream():
             if not image:
                 continue
             try:
-                timestamp = rosys.time()
+                timestamp = capture_time if capture_time is not None else rosys.time()
                 result = self._on_new_image_data(remove_exif(image), timestamp)
                 if isinstance(result, Awaitable):
                     await result
@@ -128,20 +184,20 @@ class MjpegDevice:
             self._capture_task.cancel()
             self._capture_task = None
 
-    async def get_fps(self) -> int:
-        return 0
+    async def get_fps(self) -> int | None:
+        return None
 
     async def set_fps(self, fps: int) -> None:
         pass
 
-    async def get_resolution(self) -> tuple[int, int]:
-        return 0, 0
+    async def get_resolution(self) -> tuple[int, int] | None:
+        return None
 
     async def set_resolution(self, width: int, height: int) -> None:
         pass
 
-    async def get_mirrored(self) -> bool:
-        return False
+    async def get_mirrored(self) -> bool | None:
+        return None
 
     async def set_mirrored(self, mirrored: bool) -> None:
         pass
