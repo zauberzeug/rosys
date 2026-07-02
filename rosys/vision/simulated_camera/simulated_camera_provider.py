@@ -1,3 +1,4 @@
+import warnings
 from collections.abc import AsyncGenerator
 
 from ... import rosys
@@ -22,6 +23,18 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera]):
         if auto_scan:
             rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
+    @property
+    def simulate_device_failure(self) -> bool:
+        warnings.warn('`simulate_device_failure` is deprecated, use `simulate_failing` instead.',
+                      DeprecationWarning, stacklevel=2)
+        return self.simulate_failing
+
+    @simulate_device_failure.setter
+    def simulate_device_failure(self, value: bool) -> None:
+        warnings.warn('`simulate_device_failure` is deprecated, use `simulate_failing` instead.',
+                      DeprecationWarning, stacklevel=2)
+        self.simulate_failing = value
+
     def backup_to_dict(self) -> dict:
         cameras = {}
         for camera in self._cameras.values():
@@ -45,7 +58,7 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera]):
                 camera = SimulatedCamera(id=camera_id, width=640, height=480,
                                          simulate_failing=self.simulate_failing)
                 self.add_camera(camera)
-            if not camera.is_connected:
+            if not camera.is_active:
                 await camera.connect()
 
     def add_cameras(self, num_cameras: int) -> None:

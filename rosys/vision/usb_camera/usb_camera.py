@@ -51,11 +51,17 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
     @property
     def is_connected(self) -> bool:
-        return self.device is not None
+        return self.device is not None and self.device.is_connected
+
+    @property
+    def is_active(self) -> bool:
+        return self.device is not None and self.device.is_active
 
     async def connect(self) -> None:
-        if self.is_connected:
+        if self.is_active:
             return
+        if self.device is not None:
+            await self.disconnect()
 
         device = UsbDevice.from_uid(self.id, self._handle_new_image_data,
                                     reconnect_interval=self.reconnect_interval)
@@ -69,7 +75,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
-        if not self.is_connected:
+        if self.device is None:
             return
 
         assert self.device is not None
@@ -78,7 +84,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         logging.info('camera %s: disconnected', self.id)
 
     async def _handle_new_image_data(self, image_data: np.ndarray | bytes, timestamp: float) -> None:
-        if not self.is_connected:
+        if self.device is None:
             return None
 
         assert self.device is not None

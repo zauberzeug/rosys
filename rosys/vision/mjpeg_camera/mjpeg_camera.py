@@ -62,9 +62,15 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
     def is_connected(self) -> bool:
         return (self.device is not None) and self.device.is_connected
 
+    @property
+    def is_active(self) -> bool:
+        return (self.device is not None) and self.device.is_active
+
     async def connect(self) -> None:
-        if self.is_connected:
+        if self.is_active:
             return
+        if self.device is not None:
+            await self.disconnect()
 
         if not self.ip:
             self.log.error('No IP address provided')

@@ -45,17 +45,27 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
 
     @property
     def is_connected(self) -> bool:
-        return self.device is not None
+        return self.device is not None and self.device.is_connected
+
+    @property
+    def is_active(self) -> bool:
+        return self.device is not None and self.device.is_active
 
     async def connect(self) -> None:
-        if not self.is_connected:
-            self.device = SimulatedDevice(id=self.id, size=self.resolution, fps=self.parameters['fps'],
-                                          on_new_image=self._add_image,
-                                          reconnect_interval=self.reconnect_interval,
-                                          simulate_failing=self.simulate_failing)
-            await self._apply_all_parameters()
+        if self.is_active:
+            return
+        if self.device is not None:
+            await self.disconnect()
+        self.device = SimulatedDevice(id=self.id, size=self.resolution, fps=self.parameters['fps'],
+                                      on_new_image=self._add_image,
+                                      reconnect_interval=self.reconnect_interval,
+                                      simulate_failing=self.simulate_failing)
+        await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
+        if self.device is None:
+            return
+        self.device.shutdown()
         self.device = None
 
     def _set_color(self, value: str) -> None:

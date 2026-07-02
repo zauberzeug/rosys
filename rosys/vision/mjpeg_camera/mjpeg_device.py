@@ -32,13 +32,24 @@ class MjpegDevice:
         self._url = url
         self.reconnect_interval = reconnect_interval
         self._should_run: bool = True
+        self._streaming: bool = False
+        self._authorized: bool = True
 
         self.start_capture_task()
-        rosys.on_shutdown(self.shutdown)
 
     @property
     def is_connected(self) -> bool:
+        """Whether the MJPEG stream is currently delivering frames."""
+        return self._streaming
+
+    @property
+    def is_active(self) -> bool:
+        """Whether the self-healing capture loop is alive (streaming or waiting to reconnect)."""
         return (self._capture_task is not None) and (not self._capture_task.done())
+
+    @property
+    def authorized(self) -> bool:
+        return self._authorized
 
     def start_capture_task(self) -> None:
         def create_capture_task() -> None:
@@ -52,7 +63,7 @@ class MjpegDevice:
     async def _run_capture_loop(self) -> None:
         """Keep a single MJPEG session alive, reconnecting after `reconnect_interval` when it ends.
 
-        Runs until `shutdown()` cancels the task.
+        Runs until `shutdown()` cancels the task or the camera rejects us as unauthorized.
         """
         try:
             while self._should_run:
@@ -60,7 +71,7 @@ class MjpegDevice:
                     await self.run_capture_task()
                 except Exception:
                     self.log.exception('capture session failed')
-                if not self._should_run:
+                if not self._should_run or not self._authorized:
                     break
                 self.log.info('stream ended; reconnecting in %.1f s', self.reconnect_interval)
                 await rosys.sleep(self.reconnect_interval)
@@ -89,10 +100,16 @@ class MjpegDevice:
                 try:
                     await self._prepare_stream()
                     async with client.stream('GET', self._url, auth=self._authentication) as response:  # type: ignore
+                        if response.status_code == 401:
+                            self.log.error('unauthorized (401) for %s (credentials: %s); giving up',
+                                           self._url, self._authentication)
+                            self._authorized = False
+                            return
                         if response.status_code != 200:
                             self.log.error('could not connect to %s (credentials: %s): %s %s',
                                            self._url, self._authentication, response.status_code, response.reason_phrase)
                             return
+                        self._streaming = True
 
                         buffer_size = 16 * 1024 * 1024
                         buffer = bytearray(buffer_size)
@@ -130,22 +147,25 @@ class MjpegDevice:
                     self.log.warning('Connection to %s failed. Was something disconnected?\n%s', self._url, e)
                     raise e
 
-        async for image in stream():
-            if not image:
-                continue
-            try:
-                timestamp = rosys.time()
-                result = self._on_new_image_data(remove_exif(image), timestamp)
-                if isinstance(result, Awaitable):
-                    await result
-            except Exception as e:
-                self.log.error('Error processing image: %s', e)
-
+        try:
+            async for image in stream():
+                if not image:
+                    continue
+                try:
+                    timestamp = rosys.time()
+                    result = self._on_new_image_data(remove_exif(image), timestamp)
+                    if isinstance(result, Awaitable):
+                        await result
+                except Exception as e:
+                    self.log.error('Error processing image: %s', e)
+        finally:
+            self._streaming = False
         self.log.debug('capture session ended')
 
     def shutdown(self) -> None:
         self.log.debug('Shutting down capture task')
         self._should_run = False
+        self._streaming = False
         if self._capture_task is not None:
             self._capture_task.cancel()
             self._capture_task = None

@@ -37,12 +37,21 @@ class SimulatedDevice:
     def is_connected(self) -> bool:
         return self._connected
 
+    @property
+    def is_active(self) -> bool:
+        """Whether the self-healing loop is alive (streaming or waiting to reconnect)."""
+        return self._repeater.running
+
     def disconnect(self) -> None:
         """Simulate a connection loss (e.g. a bad cable); the device reconnects itself after `reconnect_interval`."""
         if not self._connected:
             return
         self._connected = False
         self._disconnect_time = rosys.time()
+
+    def shutdown(self) -> None:
+        """Stop the image loop; the device no longer reconnects on its own."""
+        self._repeater.stop()
 
     async def _step(self) -> None:
         if not self._connected:

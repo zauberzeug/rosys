@@ -56,7 +56,6 @@ class UsbDevice:
         self.set_video_format()
 
         self._capture_task = rosys.on_repeat(self._capture_image, interval=0.01)
-        rosys.on_shutdown(self.shutdown)
 
     def __del__(self) -> None:
         if self._capture is not None:
@@ -67,6 +66,11 @@ class UsbDevice:
     def is_connected(self) -> bool:
         """Whether a working capture is currently open (False while a lost capture is being reconnected)."""
         return self._capture is not None
+
+    @property
+    def is_active(self) -> bool:
+        """Whether the self-healing capture loop is alive (capturing or waiting to reconnect)."""
+        return self._capture_task.running
 
     @property
     def video_formats(self) -> set[str]:

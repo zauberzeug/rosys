@@ -69,16 +69,20 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         return self.device is not None and self.device.is_connected
 
     @property
-    def url(self) -> str | None:
-        if not self.is_connected:
-            return None
-        assert self.device is not None
+    def is_active(self) -> bool:
+        return self.device is not None and self.device.is_active
 
+    @property
+    def url(self) -> str | None:
+        if self.device is None:
+            return None
         return self.device.url
 
     async def connect(self) -> None:
-        if self.is_connected:
+        if self.is_active:
             return
+        if self.device is not None:
+            await self.disconnect()
 
         if not self.ip:
             self.log.error('no IP address provided for camera %s', self.id)
@@ -94,7 +98,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
-        if not self.is_connected:
+        if self.device is None:
             return
         logging.info('camera %s: disconnect initialized...', self.id)
 
@@ -149,6 +153,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     async def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
         await super()._apply_parameters(new_values, force_set)
-        if self.is_connected:
+        if self.is_active:
             assert self.device is not None
             await self.device.restart_gstreamer()

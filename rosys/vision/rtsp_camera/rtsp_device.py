@@ -60,10 +60,15 @@ class RtspDevice:
 
         self.log.info('[%s] Starting VideoStream for %s', self._mac, self.url)
         self._start_capture_loop()
-        rosys.on_shutdown(self.shutdown)
 
     @property
     def is_connected(self) -> bool:
+        """Whether the gstreamer stream is currently running."""
+        return self._capture_process is not None and self._capture_process.returncode is None
+
+    @property
+    def is_active(self) -> bool:
+        """Whether the self-healing capture loop is alive (streaming or waiting to reconnect)."""
         return self._capture_task is not None and not self._capture_task.done()
 
     @property
@@ -206,15 +211,19 @@ class RtspDevice:
                 if 'Unauthorized' in error_message:
                     self._authorized = False
 
-        async for image in stream():
-            timestamp = rosys.time()
-            result = self._on_new_image_data(image, timestamp)
-            if isinstance(result, Awaitable):
-                await result
-
-        self.log.info('[%s] stream ended', self._mac)
-
-        self._capture_process = None
+        try:
+            async for image in stream():
+                timestamp = rosys.time()
+                result = self._on_new_image_data(image, timestamp)
+                if isinstance(result, Awaitable):
+                    await result
+            self.log.info('[%s] stream ended', self._mac)
+        finally:
+            process = self._capture_process
+            if process is not None and process.returncode is None:
+                self.log.debug('[%s] terminating leftover gstreamer process', self._mac)
+                process.terminate()
+            self._capture_process = None
 
     async def set_fps(self, fps: int) -> None:
         self._fps = fps
