@@ -66,6 +66,7 @@ async def test_client_scoped_repeater_stops_when_client_is_deleted():
 
     client.delete()
     assert not repeater.running  # the client teardown stopped the repeater
+    assert repeater.handler is None  # the handler is released so the deleted client does not pin its owner
     repeater.start()
     assert not repeater.running  # a client-scoped repeater cannot be revived after its client is deleted
     await forward(0.5)
@@ -85,6 +86,26 @@ async def test_client_scope_outside_ui_context_raises():
     ticker = Ticker()
     with pytest.raises(RuntimeError):
         rosys.on_repeat(ticker.step, 0.1, scope='client')
+
+
+@pytest.mark.usefixtures('rosys_integration')
+async def test_scopes_handle_script_mode_client():
+    # NOTE: NiceGUI deletes the script-mode client before startup;
+    # 'auto' must fall back to app scope, while 'client' binds to it and dies with it.
+    ticker = Ticker()
+    client = Client(page('/script-mode-test'), request=None)
+    core.script_client = client
+    try:
+        with client:
+            auto_repeater = rosys.on_repeat(ticker.step, 0.1, scope='auto')
+            client_repeater = rosys.on_repeat(ticker.step, 0.1, scope='client')
+        client.delete()
+    finally:
+        core.script_client = None
+
+    assert not client_repeater.running  # died with the script-mode client
+    await forward(0.35)
+    assert auto_repeater.running  # fell back to app scope, unaffected by the deletion
 
 
 async def test_stop_before_startup_prevents_deferred_start():

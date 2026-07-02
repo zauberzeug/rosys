@@ -22,6 +22,9 @@ class CameraProjector:
     """The camera projector computes a grid of projected image points on the ground plane.
 
     It is mainly used for visualization purposes.
+
+    The update loop uses ``scope='auto'``: constructed within a UI context it stops when that client is deleted,
+    so construct shared instances outside of a UI context to keep them running for the app lifetime.
     """
 
     def __init__(self, camera_provider: CalibratableCameraProvider, *, interval: float = 1.0) -> None:

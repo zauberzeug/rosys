@@ -152,8 +152,12 @@ def _resolve_scope(scope: Literal['app', 'client', 'auto'], handler: Callable) -
     # NOTE: check the stack first, because accessing `context.client` outside a UI context would enter script mode
     if Slot.get_stack():
         client = context.client
-        if client is not nicegui_core.script_client:  # NOTE: the script-mode client is deleted before startup
+        # NOTE: with 'auto' we must not bind to the script-mode client, which is deleted before startup;
+        # with 'client' binding to it is correct: the pre-flight repeater dies with it,
+        # while each per-connection re-execution binds to its own client
+        if scope == 'client' or client is not nicegui_core.script_client:
             return client
+        return None
     if scope == 'client':
         raise RuntimeError(f'cannot bind repeater for {handler} to a client outside of a UI context')
     return None
@@ -163,7 +167,7 @@ class Repeater:
     tasks: ClassVar[set[asyncio.Task]] = set()
 
     def __init__(self, handler: Callable, interval: float, *, scope: Literal['app', 'client', 'auto'] = 'app') -> None:
-        self.handler = handler
+        self.handler: Callable | None = handler
         self.interval = interval
         self._task: asyncio.Task | None = None
         self._client_deleted = False
@@ -175,6 +179,9 @@ class Repeater:
     def _handle_client_delete(self) -> None:
         self._client_deleted = True
         self.stop()
+        # NOTE: the client never clears its delete handlers, so release the handler to not pin its owner;
+        # this is safe because stop() has cancelled the task and _client_deleted blocks any restart
+        self.handler = None
 
     def start(self) -> None:
         if self.running or self._client_deleted:  # a client-scoped repeater must not outlive its client
@@ -187,24 +194,26 @@ class Repeater:
             startup_handlers.append(self.start)
 
     async def _repeat(self) -> None:
+        handler = self.handler
+        assert handler is not None  # NOTE: the handler is only released after the task has been cancelled
         await sleep(self.interval)  # NOTE delaying first execution so not all actors rush in at the same time
         while True:
             start = time()
             try:
                 if is_stopping():
-                    log.info('%s must be stopped', self.handler)
+                    log.info('%s must be stopped', handler)
                     break
-                await invoke(self.handler)
+                await invoke(handler)
                 dt = time() - start
             except (asyncio.CancelledError, GeneratorExit):
                 return
             except Exception:
                 dt = time() - start
-                log.exception('error in "%s"', self.handler.__qualname__)
+                log.exception('error in "%s"', handler.__qualname__)
                 if self.interval == 0 and dt < 0.1:
                     delay = 0.1 - dt
                     log.warning(
-                        f'"{self.handler.__qualname__}" would be called to frequently ' +
+                        f'"{handler.__qualname__}" would be called to frequently ' +
                         f'because it only took {dt*1000:.0f} ms; ' +
                         f'delaying this step for {delay*1000:.0f} ms')
                     await sleep(delay)
