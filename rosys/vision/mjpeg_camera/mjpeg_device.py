@@ -2,7 +2,6 @@ import asyncio
 import logging
 from asyncio import Task
 from collections.abc import AsyncGenerator, Awaitable, Callable
-from contextlib import asynccontextmanager
 
 import httpx
 
@@ -91,26 +90,6 @@ class MjpegDevice:
             return httpx.DigestAuth(username, password)
         return httpx.BasicAuth(username, password)
 
-    @asynccontextmanager
-    async def _open_stream(self, client: httpx.AsyncClient) -> AsyncGenerator[httpx.Response, None]:
-        """Open the MJPEG stream, retrying once with the right auth if the server challenges us.
-
-        The first request is always unauthenticated, so credentials are never sent to a camera
-        that never asked for them. A 401 response picks Digest or Basic from the challenge and
-        retries once; any other outcome (200, or a non-401 error) is handed to the caller as-is.
-        """
-        assert self._url is not None
-        auth: httpx.Auth | None = None
-        while True:
-            async with client.stream('GET', self._url, auth=auth) as response:
-                if response.status_code == 401 and auth is None \
-                        and self._username is not None and self._password is not None:
-                    auth = self._auth_for_challenge(response.headers.get('www-authenticate', ''),
-                                                     self._username, self._password)
-                    continue
-                yield response
-                return
-
     async def run_capture_task(self) -> None:
         self.log.debug('Starting capture task for %s', self._url)
 
@@ -119,47 +98,56 @@ class MjpegDevice:
                 assert self._url is not None
                 try:
                     await self._prepare_stream()
-                    async with self._open_stream(client) as response:
-                        if response.status_code != 200:
-                            auth_scheme = response.request.headers.get('authorization', '<none>').split(' ', 1)[0]
-                            self.log.error('could not connect to %s (auth: %s): %s %s',
-                                           self._url, auth_scheme, response.status_code, response.reason_phrase)
+                    auth: httpx.Auth | None = None
+                    while True:
+                        async with client.stream('GET', self._url, auth=auth) as response:
+                            if response.status_code == 401 and auth is None \
+                                    and self._username is not None and self._password is not None:
+                                auth = self._auth_for_challenge(response.headers.get('www-authenticate', ''),
+                                                                self._username, self._password)
+                                continue
+                            if response.status_code != 200:
+                                auth_scheme = response.request.headers.get('authorization', '<none>')
+                                auth_scheme = auth_scheme.split(' ', 1)[0]
+                                self.log.error('could not connect to %s (auth: %s): %s %s',
+                                               self._url, auth_scheme, response.status_code, response.reason_phrase)
+                                return
+
+                            buffer_size = 16 * 1024 * 1024
+                            buffer = bytearray(buffer_size)
+                            buffer_view = memoryview(buffer)
+                            buffer_end = 0
+
+                            try:
+                                async for chunk in response.aiter_bytes():
+                                    chunk_len = len(chunk)
+
+                                    if buffer_end + chunk_len > buffer_size:
+                                        self.log.warning('Buffer overflow, resetting buffer')
+                                        buffer_end = 0
+
+                                    buffer_view[buffer_end:buffer_end + chunk_len] = chunk
+                                    buffer_end += chunk_len
+
+                                    end = buffer.rfind(b'\xff\xd9', 0, buffer_end)
+                                    if end == -1:
+                                        continue
+
+                                    start = buffer.rfind(b'\xff\xd8', 0, end)
+                                    if start == -1:
+                                        continue
+
+                                    # the bytes before the SOI marker are this frame's multipart part header
+                                    capture_time = parse_capture_timestamp(bytes(buffer_view[:start]))
+                                    end += 2
+                                    yield bytes(buffer_view[start:end]), capture_time
+                                    buffer_view[:buffer_end - end] = buffer_view[end:buffer_end]
+                                    buffer_end -= end
+
+                                self.log.debug('Stream ended')
+                            except httpx.ReadTimeout:
+                                self.log.warning('Connection to %s timed out', self._url)
                             return
-
-                        buffer_size = 16 * 1024 * 1024
-                        buffer = bytearray(buffer_size)
-                        buffer_view = memoryview(buffer)
-                        buffer_end = 0
-
-                        try:
-                            async for chunk in response.aiter_bytes():
-                                chunk_len = len(chunk)
-
-                                if buffer_end + chunk_len > buffer_size:
-                                    self.log.warning('Buffer overflow, resetting buffer')
-                                    buffer_end = 0
-
-                                buffer_view[buffer_end:buffer_end + chunk_len] = chunk
-                                buffer_end += chunk_len
-
-                                end = buffer.rfind(b'\xff\xd9', 0, buffer_end)
-                                if end == -1:
-                                    continue
-
-                                start = buffer.rfind(b'\xff\xd8', 0, end)
-                                if start == -1:
-                                    continue
-
-                                # the bytes before the SOI marker are this frame's multipart part header
-                                capture_time = parse_capture_timestamp(bytes(buffer_view[:start]))
-                                end += 2
-                                yield bytes(buffer_view[start:end]), capture_time
-                                buffer_view[:buffer_end - end] = buffer_view[end:buffer_end]
-                                buffer_end -= end
-
-                            self.log.debug('Stream ended')
-                        except httpx.ReadTimeout:
-                            self.log.warning('Connection to %s timed out', self._url)
                 except Exception as e:
                     self.log.warning('Connection to %s failed. Was something disconnected?\n%s', self._url, e)
                     raise e
