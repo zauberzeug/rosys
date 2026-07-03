@@ -210,7 +210,7 @@ def test_projection_with_custom_coordinate_frame():
         assert np.allclose(world_point.tuple, world_point_.tuple, atol=1e-6)
 
 
-def test_projection_from_one_frame_into_world_frame():
+def test_projection_with_frame_argument():
     cam, world_points = demo_data()
     assert cam.calibration is not None
 
@@ -230,9 +230,23 @@ def test_projection_from_one_frame_into_world_frame():
         assert image_point_from_world is not None
         assert np.allclose(image_point_from_frame.tuple, image_point_from_world.tuple, atol=1e-6)
 
-        world_point_ = cam.calibration.project_from_image(image_point_from_frame, target_height=world_point.z)
+        # Without ``frame`` the result is in world coordinates (legacy behavior).
+        world_point_ = cam.calibration.project_from_image(image_point_from_frame, world_point.z)
         assert world_point_ is not None
         assert np.allclose(world_point.tuple, world_point_.tuple, atol=1e-6)
+
+        # With ``frame=cam_frame`` the result is in frame-local coordinates.
+        frame_point_ = cam.calibration.project_from_image(image_point_from_frame, frame_point.z, frame=cam_frame)
+        assert frame_point_ is not None
+        assert frame_point_.frame_id == cam_frame.id
+        assert np.allclose(frame_point.tuple, frame_point_.tuple, atol=1e-6)
+        assert np.allclose(world_point.tuple, frame_point_.resolve().tuple, atol=1e-6)
+
+        # The numpy-array overload must forward ``frame`` as well.
+        image_array = np.array([image_point_from_frame.tuple], dtype=np.float64)
+        frame_array = cam.calibration.project_from_image(image_array, frame_point.z, frame=cam_frame)
+        assert not np.isnan(frame_array).any()
+        assert np.allclose([frame_point.tuple], frame_array, atol=1e-6)
 
 
 def test_fisheye_projection():

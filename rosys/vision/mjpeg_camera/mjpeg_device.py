@@ -11,6 +11,26 @@ from ..image_processing import remove_exif
 from .vendors import mac_to_url
 
 
+def parse_capture_timestamp(part_header: bytes) -> float | None:
+    """Extract the absolute capture instant (Unix epoch seconds) from the ``X-Timestamp``
+    field of an MJPEG multipart part header.
+
+    Cameras that stamp each frame at capture time emit an ``X-Timestamp: <sec>.<usec>``
+    line in the part header preceding the JPEG. Returns ``None`` when the field is absent
+    or unparsable, so the caller can fall back to the receive time.
+    """
+    marker = b'x-timestamp:'
+    index = part_header.lower().rfind(marker)
+    if index == -1:
+        return None
+    line_end = part_header.find(b'\r\n', index)
+    raw = part_header[index + len(marker):] if line_end == -1 else part_header[index + len(marker):line_end]
+    try:
+        return float(raw.strip())
+    except ValueError:
+        return None
+
+
 class MjpegDevice:
 
     def __init__(self, mac: str, ip: str, *,
@@ -94,7 +114,7 @@ class MjpegDevice:
     async def run_capture_task(self) -> None:
         self.log.debug('Starting capture task for %s', self._url)
 
-        async def stream() -> AsyncGenerator[bytes, None]:
+        async def stream() -> AsyncGenerator[tuple[bytes, float | None], None]:
             async with httpx.AsyncClient() as client:
                 assert self._url is not None
                 try:
@@ -135,8 +155,10 @@ class MjpegDevice:
                                 if start == -1:
                                     continue
 
+                                # the bytes before the SOI marker are this frame's multipart part header
+                                capture_time = parse_capture_timestamp(bytes(buffer_view[:start]))
                                 end += 2
-                                yield buffer_view[start:end]
+                                yield bytes(buffer_view[start:end]), capture_time
                                 buffer_view[:buffer_end - end] = buffer_view[end:buffer_end]
                                 buffer_end -= end
 
@@ -148,11 +170,11 @@ class MjpegDevice:
                     raise e
 
         try:
-            async for image in stream():
+            async for image, capture_time in stream():
                 if not image:
                     continue
                 try:
-                    timestamp = rosys.time()
+                    timestamp = capture_time if capture_time is not None else rosys.time()
                     result = self._on_new_image_data(remove_exif(image), timestamp)
                     if isinstance(result, Awaitable):
                         await result

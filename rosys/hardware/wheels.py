@@ -23,6 +23,9 @@ class Wheels(Module, abc.ABC):
         self.VELOCITY_MEASURED = Event[list[Velocity]]()
         """the wheel velocities have been measured (argument: list of ``Velocity`` objects)"""
 
+        self.VELOCITY_COMMANDED = Event[Velocity]()
+        """a drive command has been issued (argument: ``Velocity`` with commanded linear/angular speeds)"""
+
         self.linear_target_speed: float = 0.0
         self.angular_target_speed: float = 0.0
 
@@ -32,6 +35,7 @@ class Wheels(Module, abc.ABC):
     async def drive(self, linear: float, angular: float) -> None:
         self.linear_target_speed = linear
         self.angular_target_speed = angular
+        self.VELOCITY_COMMANDED.emit(Velocity(linear=linear, angular=angular, time=rosys.time()))
 
     async def stop(self) -> None:
         await self.drive(0.0, 0.0)
