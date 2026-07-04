@@ -127,7 +127,9 @@ class LizardFirmware:
             return
         assert isinstance(self.robot_brain.communication, SerialCommunication)
         rosys.notify(f'Flashing Lizard firmware {self.local_version} to Core...')
-        if any(await self.robot_brain.esp_pins_core.get_strapping_pins()):
+        # NOTE: GPIO0 idles high in normal operation and is pulled low by Lizard itself during flashing,
+        # so only GPIO2 and GPIO12 can be pre-checked here (https://github.com/zauberzeug/rosys/issues/430)
+        if any(await self.robot_brain.esp_pins_core.get_strapping_pins(numbers=(2, 12))):
             rosys.notify('Flashing Core failed. Check strapping pins.', 'negative')
             return
         self.robot_brain.communication.disconnect()
@@ -143,7 +145,9 @@ class LizardFirmware:
             rosys.notify('Flashing P0 failed. Robot Brain is not ready.', 'negative')
             return
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
-        if any(await self.robot_brain.esp_pins_p0.get_strapping_pins()):
+        # NOTE: GPIO0 idles high in normal operation and is pulled low by Lizard itself during flashing,
+        # so only GPIO2 and GPIO12 can be pre-checked here (https://github.com/zauberzeug/rosys/issues/430)
+        if any(await self.robot_brain.esp_pins_p0.get_strapping_pins(numbers=(2, 12))):
             rosys.notify('Flashing P0 failed. Check strapping pins.', 'negative')
             return
         await self.robot_brain.send('p0.flash()')
