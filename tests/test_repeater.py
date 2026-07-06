@@ -1,4 +1,5 @@
 import asyncio
+import functools
 import gc
 import weakref
 
@@ -6,7 +7,7 @@ import pytest
 from nicegui import core
 
 import rosys
-from rosys.rosys import Repeater, _state, _weaken, _WeakHandler, startup_handlers
+from rosys.rosys import Repeater, _handler_name, _state, _weaken, _WeakHandler, startup_handlers
 from rosys.testing import forward
 
 
@@ -20,6 +21,11 @@ class Ticker:
 
     def step(self) -> None:
         self.calls.append(rosys.time())
+
+
+class CallableHandler:
+    def __call__(self) -> None:
+        pass
 
 
 class Handlers:
@@ -45,6 +51,20 @@ def test_weaken_returns_none_for_static_method():
 
 def test_weaken_returns_none_for_class_method():
     assert _weaken(Handlers.class_method) is None
+
+
+def test_handler_name_falls_back_when_qualname_is_missing():
+    assert _handler_name(plain_function) == 'plain_function'  # functions/methods keep their qualname
+    partial = functools.partial(Handlers().method)
+    assert _handler_name(partial) == repr(partial)  # partials and callables have no __qualname__
+
+
+def test_repeater_warning_does_not_crash_on_handlers_without_qualname():
+    # these hit the "weak=True has no effect" warning path, which used to do a hard .__qualname__
+    partial = functools.partial(Handlers().method)
+    assert Repeater(partial, 0.1, weak=True).handler is partial
+    callable_handler = CallableHandler()
+    assert Repeater(callable_handler, 0.1, weak=True).handler is callable_handler
 
 
 def test_weaken_wraps_bound_method():

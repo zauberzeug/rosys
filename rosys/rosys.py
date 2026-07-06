@@ -135,13 +135,17 @@ async def sleep(seconds: float) -> None:
             await asyncio.sleep(0)
 
 
+def _handler_name(handler: Callable) -> str:
+    return getattr(handler, '__qualname__', repr(handler))  # partials and callable instances lack __qualname__
+
+
 def _run_handler(handler: Callable) -> None:
     try:
         result = handler()
         if isinstance(result, Awaitable):
-            tasks.append(background_tasks.create(result, name=handler.__qualname__))
+            tasks.append(background_tasks.create(result, name=_handler_name(handler)))
     except Exception:
-        log.exception('error while starting handler "%s"', handler.__qualname__)
+        log.exception('error while starting handler "%s"', _handler_name(handler))
 
 
 class _WeakHandler:
@@ -179,7 +183,7 @@ class Repeater:
         if weak:
             weakened = _weaken(handler)
             if weakened is None:
-                log.warning('weak=True has no effect on "%s": only bound methods can be weakened', handler.__qualname__)
+                log.warning('weak=True has no effect on "%s": only bound methods can be weakened', _handler_name(handler))
             else:
                 self.handler = weakened
 
@@ -208,7 +212,7 @@ class Repeater:
             start = time()
             try:
                 if is_stopping():
-                    log.info('%s must be stopped', self.handler.__qualname__)
+                    log.info('%s must be stopped', _handler_name(self.handler))
                     break
                 await invoke(self.handler)
                 dt = time() - start
@@ -216,11 +220,11 @@ class Repeater:
                 return
             except Exception:
                 dt = time() - start
-                log.exception('error in "%s"', self.handler.__qualname__)
+                log.exception('error in "%s"', _handler_name(self.handler))
                 if self.interval == 0 and dt < 0.1:
                     delay = 0.1 - dt
                     log.warning(
-                        f'"{self.handler.__qualname__}" would be called to frequently ' +
+                        f'"{_handler_name(self.handler)}" would be called to frequently ' +
                         f'because it only took {dt*1000:.0f} ms; ' +
                         f'delaying this step for {delay*1000:.0f} ms')
                     await sleep(delay)
