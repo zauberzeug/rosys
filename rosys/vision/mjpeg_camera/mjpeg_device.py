@@ -11,6 +11,8 @@ from ...rosys import on_startup
 from ..image_processing import remove_exif
 from .vendors import mac_to_url
 
+log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device')
+
 
 def parse_capture_timestamp(part_header: bytes) -> float | None:
     """Extract the absolute capture instant (Unix epoch seconds) from the ``X-Timestamp``
@@ -30,14 +32,6 @@ def parse_capture_timestamp(part_header: bytes) -> float | None:
         return float(raw.strip())
     except ValueError:
         return None
-
-
-def _auth_for_challenge(www_authenticate: str, username: str, password: str) -> httpx.Auth:
-    """Map a ``WWW-Authenticate`` challenge to the matching httpx auth handler. Fall back to basic if unknown."""
-    scheme = www_authenticate.split(' ', 1)[0].lower()
-    if scheme == 'digest':
-        return httpx.DigestAuth(username, password)
-    return httpx.BasicAuth(username, password)
 
 
 class MjpegDevice:
@@ -84,31 +78,7 @@ class MjpegDevice:
         Implementations should log and return on failure rather than raise.
         """
 
-    @asynccontextmanager
-    async def _open_stream(self, client: httpx.AsyncClient) -> AsyncIterator[httpx.Response | None]:
-        """Negotiate the auth scheme and open the http connection.
-
-        Credentials are only sent after the camera has challenged the unauthenticated request with a 401.
-        Yields the live 200 response, or ``None`` if the camera refused the connection.
-        """
-        auth: httpx.Auth | None = None
-        while True:
-            async with client.stream('GET', self._url, auth=auth) as response:
-                if response.status_code == 401 and auth is None \
-                        and self._username is not None and self._password is not None:
-                    auth = _auth_for_challenge(response.headers.get('www-authenticate', ''),
-                                               self._username, self._password)
-                    continue
-                if response.status_code != 200:
-                    auth_scheme = response.request.headers.get('authorization', '<none>').split(' ', 1)[0]
-                    self.log.error('could not connect to %s (auth: %s): %s %s',
-                                   self._url, auth_scheme, response.status_code, response.reason_phrase)
-                    yield None
-                    return
-                yield response
-                return
-
-    async def _frames(self, response: httpx.Response) -> AsyncGenerator[tuple[bytes, float | None], None]:
+    async def _frame_reader(self, response: httpx.Response) -> AsyncGenerator[tuple[bytes, float | None], None]:
         """Yield ``(jpeg, capture_time)`` pairs from a live MJPEG response."""
         buffer_size = 16 * 1024 * 1024
         buffer = bytearray(buffer_size)
@@ -151,9 +121,9 @@ class MjpegDevice:
         async with httpx.AsyncClient() as client:
             try:
                 await self._prepare_stream()
-                async with self._open_stream(client) as response:
+                async with open_stream(client, self._url, self._username, self._password) as response:
                     if response is not None:
-                        async for image, capture_time in self._frames(response):
+                        async for image, capture_time in self._frame_reader(response):
                             if not image:
                                 continue
                             try:
@@ -193,3 +163,38 @@ class MjpegDevice:
 
     async def set_mirrored(self, mirrored: bool) -> None:
         pass
+
+
+def auth_for_challenge(www_authenticate: str, username: str, password: str) -> httpx.Auth:
+    """Map a ``WWW-Authenticate`` challenge to the matching httpx auth handler. Fall back to basic if unknown."""
+    scheme = www_authenticate.split(' ', 1)[0].lower()
+    if scheme == 'digest':
+        return httpx.DigestAuth(username, password)
+    if scheme != 'basic':
+        log.debug('unknown auth scheme "%s", falling back to basic', scheme)
+    return httpx.BasicAuth(username, password)
+
+
+@asynccontextmanager
+async def open_stream(client: httpx.AsyncClient, url: str,
+                      username: str | None, password: str | None) -> AsyncIterator[httpx.Response | None]:
+    """Negotiate the auth scheme and open the http connection.
+
+    Credentials are only sent after the camera has challenged the unauthenticated request with a 401.
+    Yields the live 200 response, or ``None`` if the camera refused the connection.
+    """
+    auth: httpx.Auth | None = None
+    while True:
+        async with client.stream('GET', url, auth=auth) as response:
+            if response.status_code == 401 and auth is None and username is not None and password is not None:
+                auth = auth_for_challenge(response.headers.get('www-authenticate', ''), username, password)
+                log.debug('camera at %s challenged with 401, retrying with %s', url, type(auth).__name__)
+                continue
+            if response.status_code != 200:
+                auth_scheme = response.request.headers.get('authorization', '<none>').split(' ', 1)[0]
+                log.error('could not connect to %s (auth: %s): %s %s',
+                          url, auth_scheme, response.status_code, response.reason_phrase)
+                yield None
+                return
+            yield response
+            return
