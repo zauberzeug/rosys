@@ -81,12 +81,12 @@ class EspPins:
         await self.robot_brain.send(f'{self.name}.set_pin_level({pin.gpio}, {1 if level else 0})')
 
     async def get_strapping_pins(self, numbers: Sequence[int] = (0, 2, 12)) -> list[bool]:
-"""Get the state of the strapping pins.
+        """Get the state of the strapping pins.
 
-       See https://github.com/zauberzeug/lizard/issues/75 and https://github.com/zauberzeug/lizard/pull/95.
-       
-       :param numbers: GPIO numbers to check (default: strapping pins 0, 2 and 12)
-       """
+        See https://github.com/zauberzeug/lizard/issues/75 and https://github.com/zauberzeug/lizard/pull/95.
+
+        :param numbers: GPIO numbers to check (default: strapping pins 0, 2 and 12)
+        """
         return [await self.get_pin_level(number) for number in numbers]
 
     def developer_ui(self) -> None:
