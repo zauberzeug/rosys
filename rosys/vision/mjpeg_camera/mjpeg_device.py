@@ -1,7 +1,8 @@
 import asyncio
 import logging
 from asyncio import Task
-from collections.abc import AsyncGenerator, Awaitable, Callable
+from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
+from contextlib import asynccontextmanager
 
 import httpx
 
@@ -29,6 +30,14 @@ def parse_capture_timestamp(part_header: bytes) -> float | None:
         return float(raw.strip())
     except ValueError:
         return None
+
+
+def _auth_for_challenge(www_authenticate: str, username: str, password: str) -> httpx.Auth:
+    """Map a ``WWW-Authenticate`` challenge to the matching httpx auth handler. Fall back to basic if unknown."""
+    scheme = www_authenticate.split(' ', 1)[0].lower()
+    if scheme == 'digest':
+        return httpx.DigestAuth(username, password)
+    return httpx.BasicAuth(username, password)
 
 
 class MjpegDevice:
@@ -75,86 +84,88 @@ class MjpegDevice:
         Implementations should log and return on failure rather than raise.
         """
 
-    def _auth_for_challenge(self, www_authenticate: str, username: str, password: str) -> httpx.Auth:
-        """Map a ``WWW-Authenticate`` challenge to the matching httpx auth handler. Fall back to basic if unknown."""
-        scheme = www_authenticate.split(' ', 1)[0].lower()
-        self.log.debug('%s challenged with %s auth', self._url, scheme or '<none>, defaulting to basic')
-        if scheme == 'digest':
-            return httpx.DigestAuth(username, password)
-        return httpx.BasicAuth(username, password)
+    @asynccontextmanager
+    async def _open_stream(self, client: httpx.AsyncClient) -> AsyncIterator[httpx.Response | None]:
+        """Open the MJPEG stream, negotiating the auth scheme before any capturing starts.
+
+        Credentials are only sent after the camera has challenged the unauthenticated request with a 401.
+        Yields the live 200 response, or ``None`` if the camera refused the connection.
+        """
+        auth: httpx.Auth | None = None
+        while True:
+            async with client.stream('GET', self._url, auth=auth) as response:
+                if response.status_code == 401 and auth is None \
+                        and self._username is not None and self._password is not None:
+                    auth = _auth_for_challenge(response.headers.get('www-authenticate', ''),
+                                               self._username, self._password)
+                    continue
+                if response.status_code != 200:
+                    auth_scheme = response.request.headers.get('authorization', '<none>').split(' ', 1)[0]
+                    self.log.error('could not connect to %s (auth: %s): %s %s',
+                                   self._url, auth_scheme, response.status_code, response.reason_phrase)
+                    yield None
+                    return
+                yield response
+                return
+
+    async def _frames(self, response: httpx.Response) -> AsyncGenerator[tuple[bytes, float | None], None]:
+        """Yield ``(jpeg, capture_time)`` pairs from a live MJPEG response."""
+        buffer_size = 16 * 1024 * 1024
+        buffer = bytearray(buffer_size)
+        buffer_view = memoryview(buffer)
+        buffer_end = 0
+
+        try:
+            async for chunk in response.aiter_bytes():
+                chunk_len = len(chunk)
+
+                if buffer_end + chunk_len > buffer_size:
+                    self.log.warning('Buffer overflow, resetting buffer')
+                    buffer_end = 0
+
+                buffer_view[buffer_end:buffer_end + chunk_len] = chunk
+                buffer_end += chunk_len
+
+                end = buffer.rfind(b'\xff\xd9', 0, buffer_end)
+                if end == -1:
+                    continue
+
+                start = buffer.rfind(b'\xff\xd8', 0, end)
+                if start == -1:
+                    continue
+
+                # the bytes before the SOI marker are this frame's multipart part header
+                capture_time = parse_capture_timestamp(bytes(buffer_view[:start]))
+                end += 2
+                yield bytes(buffer_view[start:end]), capture_time
+                buffer_view[:buffer_end - end] = buffer_view[end:buffer_end]
+                buffer_end -= end
+
+            self.log.debug('Stream ended')
+        except httpx.ReadTimeout:
+            self.log.warning('Connection to %s timed out', self._url)
 
     async def run_capture_task(self) -> None:
         self.log.debug('Starting capture task for %s', self._url)
 
-        async def stream() -> AsyncGenerator[tuple[bytes, float | None], None]:
-            async with httpx.AsyncClient() as client:
-                assert self._url is not None
-                try:
-                    await self._prepare_stream()
-                    auth: httpx.Auth | None = None
-                    while True:
-                        async with client.stream('GET', self._url, auth=auth) as response:
-                            if response.status_code == 401 and auth is None \
-                                    and self._username is not None and self._password is not None:
-                                auth = self._auth_for_challenge(response.headers.get('www-authenticate', ''),
-                                                                self._username, self._password)
-                                continue
-                            if response.status_code != 200:
-                                auth_scheme = response.request.headers.get('authorization', '<none>')
-                                auth_scheme = auth_scheme.split(' ', 1)[0]
-                                self.log.error('could not connect to %s (auth: %s): %s %s',
-                                               self._url, auth_scheme, response.status_code, response.reason_phrase)
-                                return
-
-                            buffer_size = 16 * 1024 * 1024
-                            buffer = bytearray(buffer_size)
-                            buffer_view = memoryview(buffer)
-                            buffer_end = 0
-
-                            try:
-                                async for chunk in response.aiter_bytes():
-                                    chunk_len = len(chunk)
-
-                                    if buffer_end + chunk_len > buffer_size:
-                                        self.log.warning('Buffer overflow, resetting buffer')
-                                        buffer_end = 0
-
-                                    buffer_view[buffer_end:buffer_end + chunk_len] = chunk
-                                    buffer_end += chunk_len
-
-                                    end = buffer.rfind(b'\xff\xd9', 0, buffer_end)
-                                    if end == -1:
-                                        continue
-
-                                    start = buffer.rfind(b'\xff\xd8', 0, end)
-                                    if start == -1:
-                                        continue
-
-                                    # the bytes before the SOI marker are this frame's multipart part header
-                                    capture_time = parse_capture_timestamp(bytes(buffer_view[:start]))
-                                    end += 2
-                                    yield bytes(buffer_view[start:end]), capture_time
-                                    buffer_view[:buffer_end - end] = buffer_view[end:buffer_end]
-                                    buffer_end -= end
-
-                                self.log.debug('Stream ended')
-                            except httpx.ReadTimeout:
-                                self.log.warning('Connection to %s timed out', self._url)
-                            return
-                except Exception as e:
-                    self.log.warning('Connection to %s failed. Was something disconnected?\n%s', self._url, e)
-                    raise e
-
-        async for image, capture_time in stream():
-            if not image:
-                continue
+        async with httpx.AsyncClient() as client:
             try:
-                timestamp = capture_time if capture_time is not None else rosys.time()
-                result = self._on_new_image_data(remove_exif(image), timestamp)
-                if isinstance(result, Awaitable):
-                    await result
+                await self._prepare_stream()
+                async with self._open_stream(client) as response:
+                    if response is not None:
+                        async for image, capture_time in self._frames(response):
+                            if not image:
+                                continue
+                            try:
+                                timestamp = capture_time if capture_time is not None else rosys.time()
+                                result = self._on_new_image_data(remove_exif(image), timestamp)
+                                if isinstance(result, Awaitable):
+                                    await result
+                            except Exception as e:
+                                self.log.error('Error processing image: %s', e)
             except Exception as e:
-                self.log.error('Error processing image: %s', e)
+                self.log.warning('Connection to %s failed. Was something disconnected?\n%s', self._url, e)
+                raise
 
         self.log.warning('Capture task stopped')
         self._capture_task = None
