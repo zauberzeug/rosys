@@ -86,7 +86,7 @@ class MjpegDevice:
 
     @asynccontextmanager
     async def _open_stream(self, client: httpx.AsyncClient) -> AsyncIterator[httpx.Response | None]:
-        """Open the MJPEG stream, negotiating the auth scheme before any capturing starts.
+        """Negotiate the auth scheme and open the http connection.
 
         Credentials are only sent after the camera has challenged the unauthenticated request with a 401.
         Yields the live 200 response, or ``None`` if the camera refused the connection.
