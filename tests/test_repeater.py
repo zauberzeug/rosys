@@ -2,6 +2,7 @@ import asyncio
 import functools
 import gc
 import weakref
+from dataclasses import dataclass
 
 import pytest
 from nicegui import core
@@ -28,6 +29,14 @@ class CallableHandler:
         pass
 
 
+@dataclass(slots=True, kw_only=True)
+class SlotsValue:  # __slots__ without __weakref__ -> not weak-referenceable
+    value: int = 0
+
+    def method(self) -> None:
+        pass
+
+
 class Handlers:
     def method(self) -> str:
         return 'method'
@@ -51,6 +60,15 @@ def test_weaken_returns_none_for_static_method():
 
 def test_weaken_returns_none_for_class_method():
     assert _weaken(Handlers.class_method) is None
+
+
+def test_weaken_returns_none_for_non_weakreferenceable_object():
+    assert _weaken(SlotsValue().method) is None  # no __weakref__, so WeakMethod would raise TypeError
+
+
+def test_repeater_weak_falls_back_for_non_weakreferenceable_object():
+    handler = SlotsValue().method
+    assert Repeater(handler, 0.1, weak=True).handler is handler  # no crash; falls back to the strong handler
 
 
 def test_handler_name_falls_back_when_qualname_is_missing():

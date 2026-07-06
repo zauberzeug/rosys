@@ -165,12 +165,16 @@ class _WeakHandler:
 def _weaken(method: Callable) -> _WeakHandler | None:
     """Wrap a bound method so it can be called without keeping its object alive.
 
-    Returns None for handlers with no weakenable object (plain functions, static/classmethods).
+    Returns None for handlers that cannot be weakened: plain functions, static/classmethods,
+    and bound methods whose object is not weak-referenceable (e.g. a __slots__ class without __weakref__).
     """
     obj = getattr(method, '__self__', None)
     if obj is None or isinstance(obj, type):
         return None
-    return _WeakHandler(method)
+    try:
+        return _WeakHandler(method)
+    except TypeError:  # obj is not weak-referenceable, e.g. a @dataclass(slots=True) value type
+        return None
 
 
 class Repeater:
@@ -183,7 +187,8 @@ class Repeater:
         if weak:
             weakened = _weaken(handler)
             if weakened is None:
-                log.warning('weak=True has no effect on "%s": only bound methods can be weakened', _handler_name(handler))
+                log.warning('weak=True has no effect on "%s": only weak-referenceable bound methods can be weakened',
+                            _handler_name(handler))
             else:
                 self.handler = weakened
 
