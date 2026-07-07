@@ -46,6 +46,7 @@ class RobotBrain:
         self.communication = communication
         self.lizard_code = ''
         self.lizard_firmware = LizardFirmware(self)
+        self.ESP_CONNECTED.subscribe(self._check_lizard_code)
 
         self.waiting_list: dict[str, str | None] = {}
         self._clock_offset: float | None = None
@@ -229,6 +230,18 @@ class RobotBrain:
         if millis is not None:
             self._handle_clock_offset(rosys.time() - millis / 1000)
         return lines
+
+    async def _check_lizard_code(self) -> None:
+        if not self.lizard_code:
+            return
+        self.lizard_firmware.read_local_checksum()
+        await self.lizard_firmware.read_core_checksum()
+        if self.lizard_firmware.core_checksum is None:
+            self.log.warning('Could not verify Lizard startup code (no checksum received)')
+            return
+        if self.lizard_firmware.local_checksum != self.lizard_firmware.core_checksum:
+            rosys.notify('The Lizard startup code on the microcontroller differs from the expected configuration. '
+                         'Please configure the microcontroller.', 'negative', log_level=logging.WARNING)
 
     def _handle_clock_offset(self, offset: float) -> None:
         if self._clock_offset is not None and abs(offset - self._clock_offset) > 0.1:

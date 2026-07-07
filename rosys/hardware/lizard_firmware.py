@@ -96,6 +96,7 @@ class LizardFirmware:
         self.log.info('local checksum: %s', self.local_checksum)
 
     async def read_core_checksum(self) -> None:
+        self.core_checksum = None
         if not self.robot_brain.is_ready:
             self.log.error('Could not read startup checksum from Core. Robot Brain is not ready.')
             return
