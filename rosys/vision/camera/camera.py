@@ -106,11 +106,7 @@ class Camera(abc.ABC):
 
     @property
     def is_active(self) -> bool:
-        """Whether the camera keeps itself connected (streaming or waiting to reconnect).
-
-        Device-backed cameras override this to reflect their self-healing device;
-        cameras without a device fall back to `is_connected`.
-        """
+        """Whether the camera keeps itself connected (streaming or waiting to reconnect)."""
         return self.is_connected
 
     @property

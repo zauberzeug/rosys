@@ -121,7 +121,7 @@ class UsbDevice:
         if not capture_success:
             self._read_failures += 1
             if self._read_failures >= self.MAX_READ_FAILURES:
-                self.log.warning('[%s] capture lost after %d failed reads; reconnecting',
+                self.log.warning('[%s] releasing capture after %d failed reads (reconnecting after that)',
                                  self.uid, self._read_failures)
                 await self._release()
             return
