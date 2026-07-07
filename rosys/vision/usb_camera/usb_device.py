@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import re
 from collections.abc import Awaitable, Callable
@@ -51,16 +52,19 @@ class UsbDevice:
         self._fps: int | None = None
         self._should_run: bool = True
         self._read_failures: int = 0
-        self._next_reconnect_time: float = 0.0
+        self._capture_task: asyncio.Task | None = None
 
         self.set_video_format()
 
-        self._capture_task = rosys.on_repeat(self._capture_image, interval=0.01)
+        self._start_capture_loop()
 
     def __del__(self) -> None:
+        self._should_run = False
+        if self._capture_task is not None and not self._capture_task.done():
+            self._capture_task.cancel()
         if self._capture is not None:
             self._capture.release()
-        self._capture_task.stop()
+            self._capture = None
 
     @property
     def is_connected(self) -> bool:
@@ -70,7 +74,7 @@ class UsbDevice:
     @property
     def is_active(self) -> bool:
         """Whether the self-healing capture loop is alive (capturing or waiting to reconnect)."""
-        return self._capture_task.running
+        return self._capture_task is not None and not self._capture_task.done()
 
     @property
     def video_formats(self) -> set[str]:
@@ -107,44 +111,72 @@ class UsbDevice:
             return None
         return capture
 
-    async def _capture_image(self) -> None:
-        if not self._should_run:
+    def _start_capture_loop(self) -> None:
+        if self._capture_task is not None and not self._capture_task.done():
+            self.log.warning('[%s] capture loop already running', self.uid)
             return
-        if self._capture is None or not self._capture.isOpened():
-            await self._reconnect()
-            return
-        read_result = await rosys.run.io_bound(self._capture.read)
-        if read_result is None:
-            return
-        capture_success, frame = read_result
+        self._should_run = True
+        self._capture_task = rosys.background_tasks.create(
+            self._run_capture_loop(), name=f'usb capture {self.uid}')
 
-        if not capture_success:
-            self._read_failures += 1
-            if self._read_failures >= self.MAX_READ_FAILURES:
-                self.log.warning('[%s] releasing capture after %d failed reads (reconnecting after that)',
-                                 self.uid, self._read_failures)
-                await self._release()
-            return
-        self._read_failures = 0
+    async def _run_capture_loop(self) -> None:
+        """Keep a single capture session alive, reconnecting after `reconnect_interval` when it ends.
 
-        timestamp = rosys.time()
-        if self._image_is_jpg:
-            bytes_ = await rosys.run.io_bound(to_bytes, frame[0])
-            if bytes_ is None:
+        Runs until `shutdown()` cancels the task.
+        """
+        try:
+            while self._should_run:
+                try:
+                    await self._run_capture_session()
+                except Exception:
+                    self.log.exception('[%s] capture session failed', self.uid)
+                if not self._should_run:
+                    break
+                self.log.info('[%s] capture ended; reconnecting in %.1f s', self.uid, self.reconnect_interval)
+                await rosys.sleep(self.reconnect_interval)
+        finally:
+            if self._capture_task is asyncio.current_task():
+                self._capture_task = None
+
+    async def _run_capture_session(self) -> None:
+        """Read frames until the capture is lost, then release it."""
+        while self._should_run:
+            if self._capture is None or not self._capture.isOpened():
+                await self._open_capture()
+                if self._capture is None:
+                    return
+
+            read_result = await rosys.run.io_bound(self._capture.read)
+            if read_result is None:
                 return
-            result = self._on_new_image_data(bytes_, timestamp)
-        else:
-            # convert bgr to rgb
-            frame = frame[:, :, ::-1]
-            result = self._on_new_image_data(frame, timestamp)
-        if isinstance(result, Awaitable):
-            await result
+            capture_success, frame = read_result
 
-    async def _reconnect(self) -> None:
-        """Re-find and re-open the capture for this camera, rate-limited by `reconnect_interval`."""
-        if rosys.time() < self._next_reconnect_time:
-            return
-        self._next_reconnect_time = rosys.time() + self.reconnect_interval
+            if not capture_success:
+                self._read_failures += 1
+                if self._read_failures >= self.MAX_READ_FAILURES:
+                    self.log.warning('[%s] releasing capture after %d failed reads',
+                                     self.uid, self._read_failures)
+                    await self._release()
+                    return
+                await rosys.sleep(0.01)
+                continue
+            self._read_failures = 0
+
+            timestamp = rosys.time()
+            if self._image_is_jpg:
+                bytes_ = await rosys.run.io_bound(to_bytes, frame[0])
+                if bytes_ is None:
+                    continue
+                result = self._on_new_image_data(bytes_, timestamp)
+            else:
+                # convert bgr to rgb
+                frame = frame[:, :, ::-1]
+                result = self._on_new_image_data(frame, timestamp)
+            if isinstance(result, Awaitable):
+                await result
+
+    async def _open_capture(self) -> None:
+        """Re-find and re-open the capture for this camera."""
         await self._release()
         video_id = await rosys.run.io_bound(find_video_id, self.uid)
         if video_id is None:
@@ -152,7 +184,7 @@ class UsbDevice:
         capture = await rosys.run.io_bound(UsbDevice.create_capture, video_id)
         if capture is None:
             return
-        self.log.info('[%s] reconnected on /dev/video%d', self.uid, video_id)
+        self.log.info('[%s] connected on /dev/video%d', self.uid, video_id)
         self._video_id = video_id
         self._capture = capture
         self._read_failures = 0
@@ -166,7 +198,15 @@ class UsbDevice:
 
     async def shutdown(self) -> None:
         self._should_run = False
-        self._capture_task.stop()
+        if self._capture_task is not None and not self._capture_task.done():
+            self._capture_task.cancel()
+            try:
+                await asyncio.wait_for(self._capture_task, timeout=5)
+            except TimeoutError:
+                self.log.warning('[%s] timeout while waiting for capture task to cancel', self.uid)
+            except asyncio.CancelledError:
+                pass
+            self._capture_task = None
         await self._release()
 
     def _reapply_settings(self) -> None:
