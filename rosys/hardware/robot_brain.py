@@ -236,9 +236,7 @@ class RobotBrain:
             return
         self.lizard_firmware.read_local_checksum()
         await self.lizard_firmware.read_core_checksum()
-        if self.lizard_firmware.checksums_match is None:
-            self.log.warning('Could not verify Lizard startup code (no checksum received)')
-        elif not self.lizard_firmware.checksums_match:
+        if self.lizard_firmware.checksums_match is False:
             rosys.notify('Lizard startup code is outdated. Please configure.', 'negative', log_level=logging.WARNING)
 
     def _handle_clock_offset(self, offset: float) -> None:

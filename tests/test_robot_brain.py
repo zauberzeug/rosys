@@ -34,6 +34,10 @@ class CommunicationSimulation(Communication):
         return augment(self.incoming.popleft()) if self.incoming else None
 
 
+def matching_checksum(robot_brain: RobotBrain) -> str:
+    return f'{sum(ord(c) for c in robot_brain.lizard_code) % 0x10000:04x}'
+
+
 async def connect(communication: CommunicationSimulation) -> None:
     for millis in (100, 200):  # NOTE: the first core message only establishes the clock offset
         communication.incoming.append(f'core {millis}')
@@ -53,8 +57,7 @@ async def test_no_warning_when_lizard_code_matches(robot_brain: RobotBrain) -> N
     rosys.NEW_NOTIFICATION.subscribe(notifications.append)
     communication = robot_brain.communication
     assert isinstance(communication, CommunicationSimulation)
-    checksum = sum(ord(c) for c in robot_brain.lizard_code) % 0x10000
-    communication.startup_checksum = f'{checksum:04x}'
+    communication.startup_checksum = matching_checksum(robot_brain)
     await connect(communication)
     assert 'core.startup_checksum()' in communication.sent
     assert not any(MISMATCH_MESSAGE in message for message in notifications)
@@ -83,8 +86,7 @@ async def test_check_runs_again_after_configuring(robot_brain: RobotBrain) -> No
     await connect(communication)
     assert robot_brain.lizard_firmware.checksums_match is False
 
-    checksum = sum(ord(c) for c in robot_brain.lizard_code) % 0x10000
-    communication.startup_checksum = f'{checksum:04x}'
+    communication.startup_checksum = matching_checksum(robot_brain)
     configure_task = background_tasks.create(robot_brain.configure(), name='configure')
     communication.incoming.append('core 5000')  # NOTE: buffered message arriving after ``core.restart()``
     await forward(seconds=2.0)
