@@ -1,6 +1,7 @@
 from collections import deque
 
 import pytest
+from nicegui import background_tasks
 
 import rosys
 from rosys.hardware import RobotBrain, RobotHardware
@@ -8,7 +9,7 @@ from rosys.hardware.communication import Communication
 from rosys.hardware.robot_brain import augment
 from rosys.testing import forward
 
-MISMATCH_MESSAGE = 'differs from the expected configuration'
+MISMATCH_MESSAGE = 'Lizard startup code is outdated'
 
 
 class CommunicationSimulation(Communication):
@@ -67,3 +68,30 @@ async def test_warning_when_lizard_code_differs(robot_brain: RobotBrain) -> None
     communication.startup_checksum = 'ffff'
     await connect(communication)
     assert any(MISMATCH_MESSAGE in message for message in notifications)
+
+
+async def test_check_runs_again_after_configuring(robot_brain: RobotBrain) -> None:
+    connect_count = 0
+
+    def count_connect() -> None:
+        nonlocal connect_count
+        connect_count += 1
+    robot_brain.ESP_CONNECTED.subscribe(count_connect)
+    communication = robot_brain.communication
+    assert isinstance(communication, CommunicationSimulation)
+    communication.startup_checksum = 'ffff'
+    await connect(communication)
+    assert robot_brain.lizard_firmware.checksums_match is False
+
+    checksum = sum(ord(c) for c in robot_brain.lizard_code) % 0x10000
+    communication.startup_checksum = f'{checksum:04x}'
+    configure_task = background_tasks.create(robot_brain.configure(), name='configure')
+    communication.incoming.append('core 5000')  # NOTE: buffered message arriving after ``core.restart()``
+    await forward(seconds=2.0)
+    assert configure_task.done()
+    assert not robot_brain.is_ready, 'buffered messages should not re-establish the connection'
+    assert connect_count == 1
+
+    await connect(communication)
+    assert connect_count == 2
+    assert robot_brain.lizard_firmware.checksums_match is True

@@ -186,12 +186,12 @@ class RobotBrain:
 
     async def restart(self) -> None:
         await self.send('core.restart()', force=True)
-        try:
-            await self.LINE_RECEIVED.emitted(timeout=1.0)  # NOTE: we have to wait for the last core message to be sent
-        except TimeoutError:
-            pass
-        finally:
-            self._hardware_time = None
+        # NOTE: wait until core messages cease; otherwise buffered messages would re-establish the hardware time
+        # and emit ESP_CONNECTED again before the ESP has actually restarted
+        deadline = rosys.time() + 5.0
+        while rosys.time() < deadline and self._hardware_time is not None and rosys.time() - self._hardware_time < 0.5:
+            await rosys.sleep(0.1)
+        self._hardware_time = None
 
     async def read_lines(self) -> list[tuple[float, str]]:
         lines: list[tuple[float, str]] = []
@@ -236,12 +236,10 @@ class RobotBrain:
             return
         self.lizard_firmware.read_local_checksum()
         await self.lizard_firmware.read_core_checksum()
-        if self.lizard_firmware.core_checksum is None:
+        if self.lizard_firmware.checksums_match is None:
             self.log.warning('Could not verify Lizard startup code (no checksum received)')
-            return
-        if self.lizard_firmware.local_checksum != self.lizard_firmware.core_checksum:
-            rosys.notify('The Lizard startup code on the microcontroller differs from the expected configuration. '
-                         'Please configure the microcontroller.', 'negative', log_level=logging.WARNING)
+        elif not self.lizard_firmware.checksums_match:
+            rosys.notify('Lizard startup code is outdated. Please configure.', 'negative', log_level=logging.WARNING)
 
     def _handle_clock_offset(self, offset: float) -> None:
         if self._clock_offset is not None and abs(offset - self._clock_offset) > 0.1:

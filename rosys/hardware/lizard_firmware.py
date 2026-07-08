@@ -36,6 +36,13 @@ class LizardFirmware:
         self._p0_flash_last_complete: float = 0.0
         self.robot_brain.FLASH_P0_COMPLETE.subscribe(lambda: setattr(self, '_p0_flash_last_complete', rosys.time()))
 
+    @property
+    def checksums_match(self) -> bool | None:
+        """Whether the local and core startup checksums match, or ``None`` if the core checksum is unknown."""
+        if self.core_checksum is None:
+            return None
+        return self.local_checksum == self.core_checksum
+
     async def read_all(self) -> None:
         await self.read_online_version()
         self.read_local_version()
