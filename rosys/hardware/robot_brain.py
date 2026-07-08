@@ -122,8 +122,7 @@ class RobotBrain:
             local_update_button.visible = \
                 self.lizard_firmware.local_version != self.lizard_firmware.core_version or \
                 self.lizard_firmware.local_version != self.lizard_firmware.p0_version
-            configure_button.visible = \
-                self.lizard_firmware.local_checksum != self.lizard_firmware.core_checksum
+            configure_button.visible = self.lizard_firmware.checksums_match is False
         ui.timer(1.0, update_visibility)
 
         with ui.row().classes('items-center'):

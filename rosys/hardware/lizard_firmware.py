@@ -38,8 +38,8 @@ class LizardFirmware:
 
     @property
     def checksums_match(self) -> bool | None:
-        """Whether the local and core startup checksums match, or ``None`` if the core checksum is unknown."""
-        if self.core_checksum is None:
+        """Whether the local and core startup checksums match, or ``None`` if either checksum is unknown."""
+        if self.local_checksum is None or self.core_checksum is None:
             return None
         return self.local_checksum == self.core_checksum
 
