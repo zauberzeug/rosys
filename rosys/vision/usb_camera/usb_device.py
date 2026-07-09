@@ -56,7 +56,7 @@ class UsbDevice:
 
         self.set_video_format()
 
-        self._start_capture_loop()
+        self._start_capture_task()
 
     def __del__(self) -> None:
         self._should_run = False
@@ -111,15 +111,15 @@ class UsbDevice:
             return None
         return capture
 
-    def _start_capture_loop(self) -> None:
+    def _start_capture_task(self) -> None:
         if self._capture_task is not None and not self._capture_task.done():
             self.log.warning('[%s] capture loop already running', self.uid)
             return
         self._should_run = True
         self._capture_task = rosys.background_tasks.create(
-            self._run_capture_loop(), name=f'usb capture {self.uid}')
+            self._run_capture_task(), name=f'usb capture {self.uid}')
 
-    async def _run_capture_loop(self) -> None:
+    async def _run_capture_task(self) -> None:
         """Keep a single capture session alive, reconnecting after `reconnect_interval` when it ends.
 
         Runs until `shutdown()` cancels the task.

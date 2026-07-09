@@ -60,7 +60,7 @@ class MjpegDevice:
         self._streaming: bool = False
         self._authorized: bool = True
 
-        self.start_capture_task()
+        self._start_capture_task()
 
     @property
     def is_connected(self) -> bool:
@@ -76,16 +76,16 @@ class MjpegDevice:
     def authorized(self) -> bool:
         return self._authorized
 
-    def start_capture_task(self) -> None:
+    def _start_capture_task(self) -> None:
         def create_capture_task() -> None:
             if self._capture_task is not None and not self._capture_task.done():
                 return
             self._should_run = True
             loop = asyncio.get_event_loop()
-            self._capture_task = loop.create_task(self._run_capture_loop())
+            self._capture_task = loop.create_task(self._run_capture_task())
         on_startup(create_capture_task)
 
-    async def _run_capture_loop(self) -> None:
+    async def _run_capture_task(self) -> None:
         """Keep a single MJPEG session alive, reconnecting after `reconnect_interval` when it ends.
 
         Runs until `shutdown()` cancels the task or the camera rejects us as unauthorized.
@@ -93,7 +93,7 @@ class MjpegDevice:
         try:
             while self._should_run:
                 try:
-                    await self.run_capture_task()
+                    await self._connect_and_stream_images()
                 except Exception:
                     self.log.exception('capture session failed')
                 if not self._should_run or not self._authorized:
@@ -107,7 +107,7 @@ class MjpegDevice:
     def restart_capture(self) -> None:
         self.log.debug('Restarting capture task')
         self.shutdown()
-        self.start_capture_task()
+        self._start_capture_task()
 
     async def _prepare_stream(self) -> None:
         """Hook executed right before the MJPEG stream is opened (and on every restart).
@@ -153,7 +153,7 @@ class MjpegDevice:
         except httpx.ReadTimeout:
             self.log.warning('Connection to %s timed out', self._url)
 
-    async def run_capture_task(self) -> None:
+    async def _connect_and_stream_images(self) -> None:
         self.log.debug('Starting capture task for %s', self._url)
 
         try:

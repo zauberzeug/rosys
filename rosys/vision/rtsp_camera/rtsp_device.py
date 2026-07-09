@@ -59,7 +59,7 @@ class RtspDevice:
             self.log.warning('[%s] Using default fps of 10', self._mac)
 
         self.log.info('[%s] Starting VideoStream for %s', self._mac, self.url)
-        self._start_capture_loop()
+        self._start_capture_task()
 
     @property
     def is_connected(self) -> bool:
@@ -110,15 +110,15 @@ class RtspDevice:
                 self.log.debug('[%s] Task finished', self._mac)
             self._capture_task = None
 
-    def _start_capture_loop(self) -> None:
+    def _start_capture_task(self) -> None:
         self.log.debug('[%s] Starting capture loop', self._mac)
         if self._capture_task is not None and not self._capture_task.done():
             self.log.warning('[%s] capture loop already running', self._mac)
             return
         self._should_run = True
-        self._capture_task = background_tasks.create(self._run_capture_loop(), name=f'capture {self._mac}')
+        self._capture_task = background_tasks.create(self._run_capture_task(), name=f'capture {self._mac}')
 
-    async def _run_capture_loop(self) -> None:
+    async def _run_capture_task(self) -> None:
         """Keep a single gstreamer session alive, reconnecting after `reconnect_interval` when it ends.
 
         Runs until `shutdown()` cancels the task or the camera rejects us as unauthorized.
@@ -139,7 +139,7 @@ class RtspDevice:
 
     async def restart_gstreamer(self) -> None:
         await self.shutdown()
-        self._start_capture_loop()
+        self._start_capture_task()
 
     async def _run_gstreamer(self) -> None:
         if self._capture_process is not None and self._capture_process.returncode is None:

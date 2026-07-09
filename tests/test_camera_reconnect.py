@@ -178,7 +178,7 @@ async def test_mjpeg_camera_passes_reconnect_interval_to_device(rosys_integratio
         await rosys.sleep(7.0)
 
     camera = MjpegCamera(id=GOODCAM_MAC, ip='127.0.0.1:1', reconnect_interval=7.0, connect_after_init=False)
-    with patch.object(MjpegDevice, 'run_capture_task', no_stream):
+    with patch.object(MjpegDevice, '_connect_and_stream_images', no_stream):
         await camera.connect()
         assert camera.device is not None
         assert camera.device.reconnect_interval == 7.0
