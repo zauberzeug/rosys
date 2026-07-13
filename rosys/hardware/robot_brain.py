@@ -46,6 +46,7 @@ class RobotBrain:
         self.communication = communication
         self.lizard_code = ''
         self.lizard_firmware = LizardFirmware(self)
+        self.ESP_CONNECTED.subscribe(self._check_lizard_code)
 
         self.waiting_list: dict[str, str | None] = {}
         self._clock_offset: float | None = None
@@ -121,8 +122,7 @@ class RobotBrain:
             local_update_button.visible = \
                 self.lizard_firmware.local_version != self.lizard_firmware.core_version or \
                 self.lizard_firmware.local_version != self.lizard_firmware.p0_version
-            configure_button.visible = \
-                self.lizard_firmware.local_checksum != self.lizard_firmware.core_checksum
+            configure_button.visible = self.lizard_firmware.checksums_match is False
         ui.timer(1.0, update_visibility)
 
         with ui.row().classes('items-center'):
@@ -185,12 +185,12 @@ class RobotBrain:
 
     async def restart(self) -> None:
         await self.send('core.restart()', force=True)
-        try:
-            await self.LINE_RECEIVED.emitted(timeout=1.0)  # NOTE: we have to wait for the last core message to be sent
-        except TimeoutError:
-            pass
-        finally:
-            self._hardware_time = None
+        # NOTE: wait until core messages cease; otherwise buffered messages would re-establish the hardware time
+        # and emit ESP_CONNECTED again before the ESP has actually restarted
+        deadline = rosys.time() + 5.0
+        while rosys.time() < deadline and self._hardware_time is not None and rosys.time() - self._hardware_time < 0.5:
+            await rosys.sleep(0.1)
+        self._hardware_time = None
 
     async def read_lines(self) -> list[tuple[float, str]]:
         lines: list[tuple[float, str]] = []
@@ -229,6 +229,14 @@ class RobotBrain:
         if millis is not None:
             self._handle_clock_offset(rosys.time() - millis / 1000)
         return lines
+
+    async def _check_lizard_code(self) -> None:
+        if not self.lizard_code:
+            return
+        self.lizard_firmware.read_local_checksum()
+        await self.lizard_firmware.read_core_checksum()
+        if self.lizard_firmware.checksums_match is False:
+            rosys.notify('Lizard startup code is outdated. Please configure.', 'negative', log_level=logging.WARNING)
 
     def _handle_clock_offset(self, offset: float) -> None:
         if self._clock_offset is not None and abs(offset - self._clock_offset) > 0.1:
