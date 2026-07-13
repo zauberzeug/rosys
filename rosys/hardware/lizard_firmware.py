@@ -108,7 +108,7 @@ class LizardFirmware:
             self.log.error('Could not read startup checksum from Core. Robot Brain is not ready.')
             return
         deadline = rosys.time() + 5.0
-        while rosys.time() < deadline:
+        while rosys.time() < deadline and self.robot_brain.is_ready:
             if response := await self.robot_brain.send_and_await('core.startup_checksum()', 'checksum:', timeout=1):
                 self.core_checksum = response.split()[-1]
                 self.log.info('core checksum: %s', self.core_checksum)

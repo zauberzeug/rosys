@@ -39,7 +39,7 @@ def matching_checksum(robot_brain: RobotBrain) -> str:
 
 
 async def connect(communication: CommunicationSimulation) -> None:
-    for millis in (100, 200):  # NOTE: the first core message only establishes the clock offset
+    for millis in (100, 200):  # NOTE: on a first connect, the first core message only establishes the clock offset
         communication.incoming.append(f'core {millis}')
         await forward(seconds=1.0)
     await forward(seconds=3.0)  # NOTE: let the checksum request and response complete
