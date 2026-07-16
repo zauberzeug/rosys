@@ -1,0 +1,69 @@
+import json
+import tempfile
+from pathlib import Path
+
+import pytest
+from mcap.writer import CompressionType, Writer
+
+from rosys.analysis.recording import McapRecorder, TopicSchema, is_indexed, reindex
+
+NS = 1_000_000_000
+
+
+@pytest.fixture
+def mcap_dir():
+    with tempfile.TemporaryDirectory(prefix='rosys-mcap-') as tmp:
+        yield Path(tmp)
+
+
+def _write_unindexed(path: Path, messages: int = 2000) -> None:
+    """Write a chunked MCAP file but never call finish() — like a crashed process."""
+    with open(path, 'wb') as file:
+        writer = Writer(file, compression=CompressionType.ZSTD, chunk_size=4096)
+        writer.start(profile='', library='test')
+        schema_id = writer.register_schema(name='T', encoding='jsonschema', data=b'{}')
+        channel_id = writer.register_channel(schema_id=schema_id, topic='/t', message_encoding='json')
+        for i in range(messages):
+            writer.add_message(channel_id=channel_id, log_time=i * NS,
+                               data=json.dumps({'v': i, 'pad': 'x' * 200}).encode(), publish_time=i * NS)
+        file.flush()  # no finish() -> no summary index
+
+
+def test_finished_recording_is_indexed(mcap_dir: Path) -> None:
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/t', TopicSchema('T', b'{}', 'jsonschema', 'json'))
+    recorder.start()
+    recorder.log_message('/t', b'{"v": 1}', timestamp_ns=NS)
+    recorder.stop()
+
+    assert is_indexed(recorder.recordings[0])
+    assert recorder.unindexed_recordings() == []
+
+
+def test_reindex_recovers_and_indexes(mcap_dir: Path) -> None:
+    path = mcap_dir / 'crash.mcap'
+    _write_unindexed(path)
+    assert not is_indexed(path)
+
+    recovered = reindex(path)
+
+    assert recovered > 0
+    assert is_indexed(path)
+
+
+async def test_reindex_unindexed_via_recorder(mcap_dir: Path) -> None:
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    _write_unindexed(mcap_dir / 'crash.mcap')
+    assert len(recorder.unindexed_recordings()) == 1
+
+    await recorder.reindex_unindexed()
+
+    assert recorder.unindexed_recordings() == []
+
+
+def test_current_recording_excluded_from_unindexed(mcap_dir: Path) -> None:
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/t', TopicSchema('T', b'{}', 'jsonschema', 'json'))
+    recorder.start()  # active file has no index yet, but must not count as a reindex orphan
+    assert recorder.unindexed_recordings() == []
+    recorder.stop()
