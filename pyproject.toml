@@ -47,6 +47,7 @@ dependencies = [
     "marshmallow>=3.26.2,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/81
     "pyturbojpeg>=1.8.2,<2",
     "virtualenv>=20.36.1",  # https://github.com/zauberzeug/rosys/security/dependabot/95
+    "mcap>=1.1.0,<2",
 ]
 
 [project.urls]
@@ -119,6 +120,13 @@ check_untyped_defs = true
 
 [[tool.mypy.overrides]]
 module = ["numpy.*"]
+follow_imports = "skip"
+
+[[tool.mypy.overrides]]
+# mcap ships no stubs; analysing its sources also trips mypy's
+# "source file found twice" on its package layout, so skip it.
+module = "mcap.*"
+ignore_missing_imports = true
 follow_imports = "skip"
 
 [[tool.mypy.overrides]]
