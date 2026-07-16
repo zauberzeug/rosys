@@ -34,8 +34,7 @@ class CameraProjector:
     def acquire(self) -> None:
         """Register interest in up-to-date projections; the projector only runs while at least one consumer holds it."""
         self._consumer_count += 1
-        if self._consumer_count == 1:
-            self._repeater.start()
+        self._repeater.start()  # idempotent: no-op while already running
 
     def release(self) -> None:
         """Give up interest previously registered with acquire()."""
