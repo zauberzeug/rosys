@@ -1,3 +1,5 @@
+from typing import Self
+
 import numpy as np
 from nicegui import ui
 from nicegui.elements.scene.scene_object3d import Object3D
@@ -13,6 +15,9 @@ class CameraObjects(Group):
     """This module provides a UI element for displaying cameras in a 3D scene.
 
     It requires a camera provider as a source of cameras as well as a camera projector to show the current images projected on the ground plane.
+    The camera projector can be shared between clients: every visible CameraObjects holds it via acquire()/release(),
+    so it only computes projections while at least one consumer needs them.
+    Hiding this element via ``visible(False)`` also pauses its update timer, so an invisible element causes no load.
     The `px_per_m` argument can be used to scale the camera frustums.
     With `debug=True` camera IDs are shown (default: `False`).
     """
@@ -34,7 +39,34 @@ class CameraObjects(Group):
         self.textures: dict[str, Texture] = {}
         self.image_shrink_factor = 2
 
-        ui.timer(interval, self.update)
+        self._holds_projector = False
+        self._acquire_projector()
+        self._timer = ui.timer(interval, self.update)
+
+    def visible(self, value: bool = True) -> Self:
+        if value:
+            self._acquire_projector()
+            self._timer.activate()
+        else:
+            self._release_projector()
+            self._timer.deactivate()
+        return super().visible(value)
+
+    def __del__(self) -> None:
+        try:
+            self._release_projector()
+        except Exception:
+            pass  # NOTE: finalizers can run during interpreter teardown where anything may be gone already
+
+    def _acquire_projector(self) -> None:
+        if not self._holds_projector:
+            self.camera_projector.acquire()
+            self._holds_projector = True
+
+    def _release_projector(self) -> None:
+        if self._holds_projector:
+            self.camera_projector.release()
+            self._holds_projector = False
 
     @property
     def calibrated_cameras(self) -> dict[str, CalibratableCamera]:
