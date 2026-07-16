@@ -10,9 +10,7 @@ from nicegui import app, ui
 
 from ... import rosys
 from .mcap_recorder import McapRecorder, RecordingInfo
-
-PAGE_PATH = '/recordings'
-DOWNLOAD_PATH = '/api/recordings'
+from .paths import DOWNLOAD_PATH, PAGE_PATH
 
 
 class RecordingsPage:

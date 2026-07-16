@@ -12,6 +12,7 @@ from nicegui import Event, ui
 
 from ... import rosys
 from .indexing import is_indexed, reindex
+from .paths import PAGE_PATH
 
 NANOSECONDS_PER_SECOND = 1_000_000_000
 
@@ -398,7 +399,6 @@ class McapRecorder:
         The topic checkboxes live in a collapsed expansion to keep the panel compact;
         the selection applies to the next start (a running recording is unaffected).
         """
-        from .recordings_page_ import PAGE_PATH
         with ui.column():
             ui.label('MCAP Recording').classes('text-center text-bold')
             self._stats_ui()

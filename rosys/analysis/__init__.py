@@ -16,9 +16,9 @@ from .videos_page_ import VideosPage as videos_page
 
 # NOTE: imported last because the recording package pulls in rosys.hardware, whose
 # import chain loops back to rosys.analysis.track — which must be bound by then.
-from . import recording  # noqa: E402
-from .recording import McapRecorder  # noqa: E402
-from .recording import RecordingsPage as recordings_page  # noqa: E402
+from . import recording  # isort: skip
+from .recording import McapRecorder  # isort: skip
+from .recording import RecordingsPage as recordings_page  # isort: skip
 
 __all__ = [
     'AsyncioMonitor',

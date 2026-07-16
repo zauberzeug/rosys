@@ -32,7 +32,8 @@ from .mcap_recorder import (
     RecordingSource,
     TopicSchema,
 )
-from .recordings_page_ import DOWNLOAD_PATH, PAGE_PATH, RecordingsPage
+from .paths import DOWNLOAD_PATH, PAGE_PATH
+from .recordings_page_ import RecordingsPage
 
 __all__ = [
     'DOWNLOAD_PATH',

@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any
 from ... import rosys
 from ...geometry import Pose, Velocity
 from ...hardware.bms_state import BmsState
-from ...hardware.gnss import GnssMeasurement
+from ...hardware.gnss.gnss import GnssMeasurement
 from ...hardware.imu import ImuMeasurement
 from ...vision import CalibratableCamera, Image
 from .mcap_recorder import NANOSECONDS_PER_SECOND, McapRecorder, TopicSchema
