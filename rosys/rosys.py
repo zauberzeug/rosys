@@ -188,6 +188,8 @@ class Repeater:
                 return
 
     def stop(self) -> None:
+        if self.start in startup_handlers:
+            startup_handlers.remove(self.start)  # queued but not yet started: cancel the pending start
         if not self._task:
             return
 

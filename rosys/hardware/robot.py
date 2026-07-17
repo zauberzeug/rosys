@@ -129,7 +129,11 @@ class RobotSimulation(Robot):
     def __init__(self, modules: list[Module]) -> None:
         super().__init__(modules)
         self._last_step: float | None = None
-        rosys.on_repeat(self.step, 0.01)
+        self._step_repeater = rosys.on_repeat(self.step, 0.01)
+
+    def tear_down(self) -> None:
+        """Stop the simulation loop so this instance can be released (e.g. per NiceGUI client)."""
+        self._step_repeater.stop()
 
     async def step(self) -> None:
         now = rosys.time()

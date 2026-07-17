@@ -30,6 +30,7 @@ class Odometer(PoseProvider, FrameProvider):
 
         self.log = logging.getLogger('rosys.odometer')
 
+        self.wheels = wheels
         wheels.VELOCITY_MEASURED.subscribe(self.handle_velocities)
         self._pose = Pose()
         self._frame = Pose3d().as_frame('rosys.odometer')
@@ -41,7 +42,12 @@ class Odometer(PoseProvider, FrameProvider):
         self.odometry_frame: Pose = Pose()
         """Local-to-world transform applied to the smooth, jump-free history."""
 
-        rosys.on_repeat(self.prune_history, 1.0)
+        self._prune_repeater = rosys.on_repeat(self.prune_history, 1.0)
+
+    def tear_down(self) -> None:
+        """Stop the prune loop and unsubscribe so this instance can be released."""
+        self._prune_repeater.stop()
+        self.wheels.VELOCITY_MEASURED.unsubscribe(self.handle_velocities)
 
     @property
     def pose(self) -> Pose:
