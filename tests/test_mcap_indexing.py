@@ -61,6 +61,38 @@ async def test_reindex_unindexed_via_recorder(mcap_dir: Path) -> None:
     assert recorder.unindexed_recordings() == []
 
 
+def test_reindex_recovers_readable_prefix_of_truncated_file(mcap_dir: Path) -> None:
+    """A recording whose tail is cut off mid-chunk still reindexes its readable prefix."""
+    path = mcap_dir / 'crash.mcap'
+    _write_unindexed(path)
+    path.write_bytes(path.read_bytes()[:-100])  # drop the last bytes, as a crash mid-write would
+    assert not is_indexed(path)
+
+    recovered = reindex(path)
+
+    assert recovered > 0
+    assert is_indexed(path)
+
+
+def test_reindex_write_failure_keeps_original_and_leaves_no_temp(mcap_dir: Path,
+                                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    """A write failure mid-rebuild re-raises and never replaces the complete original with a truncation."""
+    path = mcap_dir / 'crash.mcap'
+    _write_unindexed(path)
+    original = path.read_bytes()
+
+    def fail(*args: object, **kwargs: object) -> None:
+        raise OSError('No space left on device')
+
+    monkeypatch.setattr(Writer, 'add_message', fail)
+
+    with pytest.raises(OSError, match='No space left on device'):
+        reindex(path)
+
+    assert path.read_bytes() == original  # the only complete copy is untouched
+    assert not (mcap_dir / 'crash.mcap.reindex').exists()  # no half-written temp left behind
+
+
 def test_current_recording_excluded_from_unindexed(mcap_dir: Path) -> None:
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     recorder.add_topic('/t', TopicSchema('T', b'{}', 'jsonschema', 'json'))

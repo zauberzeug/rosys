@@ -8,11 +8,21 @@ readable message (all but the final unflushed chunk).
 from __future__ import annotations
 
 from pathlib import Path
+from struct import error as StructError
 
+from mcap.exceptions import McapError
 from mcap.reader import make_reader
 from mcap.records import Channel, Header, Message, Schema
 from mcap.stream_reader import StreamReader
 from mcap.writer import CompressionType, Writer
+from zstandard import ZstdError
+
+# Errors raised while reading past the last cleanly written record of a crashed
+# recording: the truncated/half-flushed tail decodes into a bogus length, a broken
+# zstd frame, or non-UTF-8 bytes. Everything readable up to that point has already
+# been recovered, so hitting one of these means "stop", not "fail". Write-side
+# errors are deliberately excluded and propagate (see :func:`reindex`).
+_TRUNCATION_ERRORS = (McapError, StructError, ZstdError, UnicodeDecodeError, OverflowError)
 
 
 def is_indexed(path: Path | str) -> bool:
@@ -30,17 +40,34 @@ def reindex(path: Path | str, *, chunk_size: int = 1_048_576) -> int:
     Reads the file sequentially (tolerating a truncated tail from a crash) and
     writes a fresh, indexed copy. Messages in the final unflushed chunk of a
     crashed recording are unrecoverable.
+
+    Only read-side failures on the crashed tail are tolerated; any write-side
+    failure (e.g. ENOSPC while the temp copy transiently doubles disk usage)
+    removes the temp file and re-raises, so the original complete file is never
+    replaced by a truncated one.
+
+    :param path: the recording to reindex in place.
+    :param chunk_size: the target chunk size of the rewritten file.
+    :return: the number of messages recovered into the indexed copy.
+    :raises Exception: if writing the indexed copy fails; the original is left untouched.
     """
     path = Path(path)
     temp = path.with_name(path.name + '.reindex')
     count = 0
-    with open(path, 'rb') as source, open(temp, 'wb') as target:
-        writer = Writer(target, compression=CompressionType.ZSTD, chunk_size=chunk_size)
-        started = False
-        schemas: dict[int, int] = {}
-        channels: dict[int, int] = {}
-        try:
-            for record in StreamReader(source, emit_chunks=False).records:
+    try:
+        with open(path, 'rb') as source, open(temp, 'wb') as target:
+            writer = Writer(target, compression=CompressionType.ZSTD, chunk_size=chunk_size)
+            started = False
+            schemas: dict[int, int] = {}
+            channels: dict[int, int] = {}
+            records = iter(StreamReader(source, emit_chunks=False).records)
+            while True:
+                try:
+                    record = next(records)
+                except StopIteration:
+                    break
+                except _TRUNCATION_ERRORS:
+                    break  # reached the unflushed tail of a crashed recording; keep the readable prefix
                 if isinstance(record, Header):
                     writer.start(profile=record.profile, library=record.library)
                     started = True
@@ -56,10 +83,11 @@ def reindex(path: Path | str, *, chunk_size: int = 1_048_576) -> int:
                         channel_id=channels[record.channel_id], log_time=record.log_time,
                         data=record.data, publish_time=record.publish_time, sequence=record.sequence)
                     count += 1
-        except Exception:  # pylint: disable=broad-except  # truncated tail of a crashed recording
-            pass
-        if not started:
-            writer.start(profile='', library='rosys-reindex')
-        writer.finish()
+            if not started:
+                writer.start(profile='', library='rosys-reindex')
+            writer.finish()
+    except BaseException:  # a write-side failure must not leave a truncated temp (nor replace the original)
+        temp.unlink(missing_ok=True)
+        raise
     temp.replace(path)
     return count

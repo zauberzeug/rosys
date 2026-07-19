@@ -40,6 +40,9 @@ class RecordingsPage:
         @app.get(f'{DOWNLOAD_PATH}/{{name}}')
         def download_recording(name: str) -> Response:
             file_path = recorder.output_dir / Path(name).name  # basename only, no path traversal
+            if file_path.suffix != '.mcap':  # never serve transient *.mcap.reindex temp files
+                return JSONResponse(content={'status': 'error', 'message': 'Recording not found'},
+                                    status_code=status.HTTP_404_NOT_FOUND)
             if file_path == recorder.current_recording:
                 return JSONResponse(content={'status': 'error', 'message': 'Recording is currently being written'},
                                     status_code=status.HTTP_409_CONFLICT)
@@ -106,7 +109,7 @@ class RecordingsPage:
         async def _delete(path: Path) -> None:
             if not await _confirm_dialog(f'Delete recording {path.name}?'):
                 return
-            recorder.delete_recording(path)
+            await rosys.run.io_bound(recorder.delete_recording, path)  # unlink off the loop
             await reload()
 
         async def _reindex() -> None:
@@ -116,7 +119,7 @@ class RecordingsPage:
         async def _delete_all() -> None:
             if not await _confirm_dialog('Delete all recordings?'):
                 return
-            recorder.delete_all_recordings()
+            await rosys.run.io_bound(recorder.delete_all_recordings)  # unlink + glob off the loop
             await reload()
 
         async def _rename(path: Path) -> None:
@@ -128,7 +131,9 @@ class RecordingsPage:
                     ui.button('Rename', on_click=lambda: dialog.submit(name_input.value))
             new_name = await dialog
             if new_name:
-                recorder.rename_recording(path, new_name)
+                renamed = await rosys.run.io_bound(recorder.rename_recording, path, new_name)  # off the loop
+                if renamed is None:
+                    rosys.notify(f'Could not rename {path.name} (name already in use or invalid)', type='negative')
                 await reload()
 
         with ui.row().classes('w-full items-center gap-2'):
