@@ -9,16 +9,20 @@ from typing import Any
 import numpy as np
 import pytest
 from mcap.reader import make_reader
-from nicegui import Event
+from nicegui import Client, Event
+from nicegui.page import page
 
 from rosys.analysis.recording import (
+    Converter,
     McapRecorder,
+    TopicSchema,
     add_event_topic,
     add_pose_topic,
     add_timer_topic,
     battery_state,
     camera_calibration,
     converter_for,
+    converters,
     custom_message,
     frame_transform,
     gnss_status,
@@ -32,6 +36,7 @@ from rosys.geometry import GeoPose, Pose, Pose3d, Rotation, Velocity
 from rosys.hardware.bms_state import BmsState
 from rosys.hardware.gnss import GnssMeasurement
 from rosys.hardware.gnss.nmea import GpsQuality
+from rosys.hardware.imu import ImuMeasurement
 from rosys.vision import BoxDetection, Detections, Image, PointDetection
 
 NS = 1_000_000_000
@@ -43,7 +48,9 @@ class FakeEvent:
     def __init__(self) -> None:
         self.callbacks: list = []
 
-    def subscribe(self, callback) -> None:
+    def subscribe(self, callback, *, unsubscribe_on_delete: bool | None = None) -> None:
+        # unsubscribe_on_delete mirrors nicegui's Event.subscribe; the fake has no client
+        # binding, so it is accepted and ignored.
         self.callbacks.append(callback)
 
     def unsubscribe(self, callback) -> None:
@@ -376,11 +383,14 @@ def test_location_fix_converts_radians_to_degrees() -> None:
     class _Measurement:
         pose = _Pose()
         altitude = 412.0
+        latitude_std_dev = 0.0
+        longitude_std_dev = 0.0
 
     message = json.loads(location_fix().encode(_Measurement(), 2 * NS))
     assert message['latitude'] == pytest.approx(48.5)
     assert message['longitude'] == pytest.approx(9.1)
     assert message['altitude'] == 412.0
+    assert message['position_covariance_type'] == 0  # no std devs reported -> covariance UNKNOWN
 
 
 def test_transform_3d_uses_full_rotation() -> None:
@@ -619,3 +629,108 @@ def test_gnss_status_without_heading_stays_valid_json(mcap_dir: Path) -> None:
     assert message['heading_available'] is False
     assert message['heading_std_dev'] is None
     assert message['quality'] == 'RTK_FLOAT'
+
+
+def test_location_fix_includes_diagonal_covariance_when_std_devs_present() -> None:
+    """Known horizontal std devs become a diagonal position covariance (m²) with type DIAGONAL_KNOWN."""
+    measurement = GnssMeasurement(
+        time=1.0, gnss_time=1.0,
+        pose=GeoPose.from_degrees(lat=48.0, lon=9.0, heading=0.0),
+        latitude_std_dev=0.02, longitude_std_dev=0.03, altitude=100.0,
+    )
+    message = json.loads(location_fix().encode(measurement, NS))
+    covariance = message['position_covariance']
+    assert message['position_covariance_type'] == 2  # DIAGONAL_KNOWN
+    assert covariance[0] == pytest.approx(0.03 ** 2)  # East (longitude) variance
+    assert covariance[4] == pytest.approx(0.02 ** 2)  # North (latitude) variance
+    assert covariance[8] == 0.0  # Up variance unknown (GnssMeasurement has no altitude std dev)
+    assert covariance[1] == 0.0 and covariance[3] == 0.0  # off-diagonal stays zero
+
+
+# --------------------------------------------------------------------------- #
+# IMU (custom message)
+# --------------------------------------------------------------------------- #
+
+
+def test_imu_records_rotation_rates_and_calibration(mcap_dir: Path) -> None:
+    """The imu converter records roll/pitch/yaw, angular velocities and gyro calibration."""
+    measurement = ImuMeasurement(
+        time=4.0, gyro_calibration=2.5,
+        rotation=Rotation.from_euler(0.1, 0.2, 0.3),
+        angular_velocity=Rotation.from_euler(0.01, 0.02, 0.03),
+    )
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+    add_event_topic(recorder, '/imu', event=event)
+    recorder.start()
+    event.emit(measurement)
+    recorder.stop()
+
+    schema_name, message = _read(_only_file(mcap_dir))[0]
+    assert schema_name == 'ImuMeasurement'
+    assert (message['roll'], message['pitch'], message['yaw']) == \
+        pytest.approx((0.1, 0.2, 0.3))
+    assert (message['angular_velocity_roll'], message['angular_velocity_pitch'],
+            message['angular_velocity_yaw']) == pytest.approx((0.01, 0.02, 0.03))
+    assert message['gyro_calibration'] == pytest.approx(2.5)
+
+
+# --------------------------------------------------------------------------- #
+# Timestamp fallback and off-loop encoding
+# --------------------------------------------------------------------------- #
+
+
+def test_timestamp_ns_uses_positive_time_attribute() -> None:
+    """A payload's positive ``time`` attribute is used as the log time."""
+    assert converters._timestamp_ns(SimpleNamespace(time=5.0)) == 5 * NS
+
+
+def test_timestamp_ns_falls_back_without_usable_time(monkeypatch: pytest.MonkeyPatch) -> None:
+    """A payload without ``time`` (or with ``time == 0``) falls back to ``rosys.time()``."""
+    monkeypatch.setattr(converters.rosys, 'time', lambda: 7.0)
+    assert converters._timestamp_ns(object()) == 7 * NS  # no ``time`` attribute at all
+    assert converters._timestamp_ns(SimpleNamespace(time=0.0)) == 7 * NS  # ``time == 0`` treated as unset
+
+
+def test_deselected_topic_is_not_encoded(mcap_dir: Path) -> None:
+    """A deselected topic skips encoding entirely; encoding runs only for recorded topics."""
+    encoded: list[Any] = []
+
+    def counting_encode(value: Any, _timestamp_ns: int) -> bytes:
+        encoded.append(value)
+        return json.dumps({'value': value}).encode()
+
+    converter = Converter(TopicSchema('Counted', b'{}', 'jsonschema', 'json'), counting_encode)
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    kept, dropped = FakeEvent(), FakeEvent()
+    add_event_topic(recorder, '/kept', event=kept, converter=converter)
+    add_event_topic(recorder, '/dropped', event=dropped, converter=converter)
+    recorder.start(topics=['/kept'])
+    kept.emit(1)
+    dropped.emit(2)  # deselected -> must never be encoded
+    recorder.stop()
+
+    assert encoded == [1]
+
+
+def test_event_subscription_survives_client_deletion(mcap_dir: Path) -> None:
+    """A recording started from a UI context keeps recording after that browser tab closes.
+
+    nicegui auto-unsubscribes callbacks subscribed inside a slot context when the client is
+    deleted; the recorder opts out (``unsubscribe_on_delete=False``) so event-driven topics
+    are not silently lost when the tab that started the recording disconnects.
+    """
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event: Event = Event()
+    add_event_topic(recorder, '/pose', event=event)
+    client = Client(page('/'))
+    with client:  # subscribe from within a UI/client context (as the developer panel does)
+        recorder.start()
+    assert client.delete_handlers == []  # no auto-unsubscribe registered against the client
+    client.delete()  # the browser tab that started the recording disconnects
+
+    event.emit(Pose(x=3.0, y=0.0, yaw=0.0, time=1.0))  # subscription must have survived
+    recorder.stop()
+
+    _, message = _read(_only_file(mcap_dir))[0]
+    assert message['pose']['position']['x'] == 3.0

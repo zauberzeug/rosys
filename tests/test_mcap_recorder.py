@@ -26,6 +26,16 @@ def mcap_dir():
         yield Path(tmp)
 
 
+def _values(path: Path) -> list:
+    """Read the ``value`` field of every JSON message in a recording, in file order.
+
+    :param path: the MCAP file to read.
+    :return: the recorded ``value`` of each message.
+    """
+    with open(path, 'rb') as f:
+        return [json.loads(msg.data)['value'] for _, _, msg in make_reader(f).iter_messages()]
+
+
 def test_write_and_read_messages(mcap_dir: Path) -> None:
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     recorder.add_topic('/test', _schema())
@@ -408,3 +418,118 @@ def test_mixed_encodings_in_one_file(mcap_dir: Path) -> None:
             encodings[channel.topic] = (channel.message_encoding, bytes(message.data))
     assert encodings['/json'] == ('json', b'{"a": 1}')
     assert encodings['/raw'] == ('cdr', b'\x01\x02\x03')
+
+
+def test_stop_writes_all_enqueued_messages_exactly_once(mcap_dir: Path) -> None:
+    """stop() drains every message still queued (never flushed), writing each exactly once."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start()
+    for i in range(20):
+        recorder.log_message('/test', _json({'value': i}), timestamp_ns=i * NS)  # nothing flushes before stop
+    recorder.stop()
+
+    assert recorder._message_count == 20
+    assert _values(recorder.recordings[0]) == list(range(20))
+
+
+def test_stop_does_not_leak_messages_into_next_recording(mcap_dir: Path) -> None:
+    """Messages queued before stop() land in their own file, never in the next recording's file."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start()
+    first = recorder.current_recording
+    for i in range(5):
+        recorder.log_message('/test', _json({'value': i}), timestamp_ns=i * NS)
+    recorder.stop()
+
+    recorder.start()
+    second = recorder.current_recording
+    recorder.log_message('/test', _json({'value': 99}), timestamp_ns=99 * NS)
+    recorder.stop()
+
+    assert first is not None and second is not None and first != second
+    assert _values(first) == [0, 1, 2, 3, 4]
+    assert _values(second) == [99]
+
+
+async def test_flush_then_stop_writes_every_batch(mcap_dir: Path) -> None:
+    """A background flush followed by stop() writes both the flushed and the remaining messages, in order."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start()
+    for i in range(5):
+        recorder.log_message('/test', _json({'value': i}), timestamp_ns=i * NS)
+    await recorder._flush()  # first batch drained off the loop
+    for i in range(5, 10):
+        recorder.log_message('/test', _json({'value': i}), timestamp_ns=i * NS)
+    recorder.stop()  # second batch drained synchronously
+
+    assert recorder._message_count == 10
+    assert _values(recorder.recordings[0]) == list(range(10))
+
+
+def test_queue_cap_drops_oldest_messages(mcap_dir: Path) -> None:
+    """When the writer cannot keep up, the queue is capped and the oldest messages are dropped."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.max_queued_messages = 3
+    recorder.start()
+    for i in range(5):
+        recorder.log_message('/test', _json({'value': i}), timestamp_ns=i * NS)  # nothing flushes
+
+    assert len(recorder._queue) == 3  # capped
+    assert recorder._dropped_message_count == 2
+    recorder.stop()
+
+    assert _values(recorder.recordings[0]) == [2, 3, 4]  # the two oldest were dropped
+
+
+@pytest.mark.parametrize('bad_name', ['.', '..', '...', '/', '   '])
+def test_rename_rejects_names_that_escape_output_dir(mcap_dir: Path, bad_name: str) -> None:
+    """Renaming to '.', '/', whitespace or dots-only is rejected instead of writing outside the output dir."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start()
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=NS)
+    recorder.stop()
+    path = recorder.recordings[0]
+
+    assert recorder.rename_recording(path, bad_name) is None
+    assert path.exists()  # the original file is untouched
+    assert recorder.recordings == [path]  # nothing new appeared, nothing escaped the directory
+
+
+def test_rename_rejects_collision(mcap_dir: Path) -> None:
+    """Renaming onto an existing file name is rejected (returns None, both files kept)."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start()
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=NS)
+    recorder.stop()
+    alpha = recorder.rename_recording(recorder.recordings[0], 'alpha')
+    assert alpha is not None
+
+    recorder.start()
+    recorder.log_message('/test', _json({'value': 2}), timestamp_ns=NS)
+    recorder.stop()
+    other = next(path for path in recorder.recordings if path != alpha)
+
+    assert recorder.rename_recording(other, 'alpha') is None  # 'alpha.mcap' already exists
+    assert alpha.exists() and other.exists()
+
+
+def test_start_deletes_old_recordings_over_budget(mcap_dir: Path) -> None:
+    """start() enforces the disk budget on entry, deleting the oldest recordings before opening the new file."""
+    for i in range(3):
+        path = mcap_dir / f'old_{i}.mcap'
+        path.write_bytes(os.urandom(60 * 1024))  # 60 KiB each -> 180 KiB total
+        os.utime(path, (i, i))  # ascending mtimes so old_0 is the oldest
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.12, auto_start=False)  # ~126 KiB budget
+
+    recorder.start()  # must delete the oldest file(s) to get under budget before opening the new file
+    recorder.stop()  # empty -> new file discarded
+
+    remaining = {path.name for path in mcap_dir.glob('*.mcap')}
+    assert 'old_0.mcap' not in remaining  # oldest deleted to satisfy the budget
+    assert 'old_2.mcap' in remaining  # newest kept

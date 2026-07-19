@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import logging
 import threading
-from collections.abc import Collection
+from collections.abc import Callable, Collection
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import BinaryIO, NamedTuple, Protocol
+from typing import Any, BinaryIO, NamedTuple, Protocol
 
 from mcap.writer import CompressionType, Writer
 from nicegui import Event, ui
@@ -15,6 +15,24 @@ from .indexing import is_indexed, reindex
 from .paths import PAGE_PATH
 
 NANOSECONDS_PER_SECOND = 1_000_000_000
+
+MAX_QUEUED_MESSAGES = 10_000
+"""Cap on unwritten messages held in memory.
+
+At the mix of high-rate topics a robot records (camera frames plus sensors) this is
+a few seconds of backlog, which comfortably absorbs a slow flush; if the disk
+stalls for longer the oldest messages are dropped (see :meth:`McapRecorder.log_message`)
+so a stuck writer cannot grow the queue until the process runs out of memory.
+"""
+
+_DROP_WARNING_INTERVAL = 10.0  # seconds between 'queue full' warnings, so drops do not spam the log
+
+QueuedMessage = tuple[str, Any, Callable[[Any, int], bytes | None] | None, int]
+"""A queued entry: ``(topic, payload, encode_or_None, timestamp_ns)``.
+
+``payload`` is already-serialized ``bytes`` when ``encode`` is ``None``; otherwise
+``encode(payload, timestamp_ns)`` runs on the background writer to produce the bytes.
+"""
 
 
 class TopicSchema(NamedTuple):
@@ -32,6 +50,13 @@ class RecordingInfo(NamedTuple):
     size: int
     is_live: bool
     indexed: bool  # has a summary index; always False for the live file (not indexed until stopped)
+
+
+class _DiskStats(NamedTuple):
+    """Directory statistics for the developer panel, collected off the event loop."""
+    current_file_size: int
+    total_size: int
+    file_count: int
 
 
 class RecordingSource(Protocol):
@@ -52,16 +77,26 @@ class McapRecorder:
 
     Messages are enqueued from the event loop (cheap, non-blocking) and written
     to disk by a single background consumer via ``rosys.run.io_bound`` so that
-    ZSTD compression and file I/O never block the loop. All writer access is
-    serialized through ``_lock`` so the synchronous drain in ``stop()`` cannot
-    race the background consumer.
+    encoding, ZSTD compression and file I/O never block the loop. Encoding runs on
+    the writer too: sources enqueue the raw payload plus an ``encode`` callable,
+    so no JSON/JPEG work happens on the loop. The log time is captured at enqueue,
+    but encoding is deferred, so payloads are expected to be immutable value
+    snapshots (as RoSys sensor events emit); a payload mutated after being enqueued
+    would encode its later state.
+
+    Two locks keep the loop responsive. ``_lock`` serializes all writer access so the
+    synchronous drain in ``stop()`` cannot race the background consumer; it may be held
+    for the duration of a multi-second write. ``_queue_lock`` guards only queue mutation
+    (enqueue, cap-drop, swap) and is held for microseconds, so the event loop never
+    blocks behind a write when appending a message. Lock order is ``_lock`` outer,
+    ``_queue_lock`` inner; the loop takes ``_queue_lock`` alone, so there is no deadlock.
 
     The recorder is encoding-agnostic: a topic carries a :class:`TopicSchema`
-    (schema name/bytes plus schema- and message-encoding) and ``log_message``
-    takes already-serialized bytes. Conversion from application data types to
-    those bytes lives entirely in ``converters.py``. Topics are fed by opaque
-    :class:`RecordingSource` objects that are activated on ``start()`` and
-    deactivated on ``stop()``.
+    (schema name/bytes plus schema- and message-encoding). ``log_message`` takes
+    either already-serialized bytes or a payload plus an ``encode`` callback.
+    Conversion from application data types lives entirely in ``converters.py`` /
+    ``foxglove.py``. Topics are fed by opaque :class:`RecordingSource` objects that
+    are activated on ``start()`` and deactivated on ``stop()``.
     """
 
     def __init__(
@@ -85,6 +120,7 @@ class McapRecorder:
         self.chunk_size = chunk_size
         self.profile = profile
         self.library = library
+        self.max_queued_messages = MAX_QUEUED_MESSAGES
 
         self.RECORDING_STARTED = Event[Path]()
         """a new recording file has been opened (argument: path)"""
@@ -99,12 +135,16 @@ class McapRecorder:
         self._file_path: Path | None = None
         self._topics: dict[str, int] = {}
         self._schemas: dict[str, TopicSchema] = {}
-        self._queue: list[tuple[str, bytes, int]] = []
-        self._lock = threading.Lock()
+        self._queue: list[QueuedMessage] = []
+        self._lock = threading.Lock()  # serializes writer access; may be held for a full write
+        self._queue_lock = threading.Lock()  # guards queue mutation only; held for microseconds
         self._sources: list[RecordingSource] = []
         self._message_count: int = 0
+        self._dropped_message_count: int = 0
+        self._last_drop_warning: float = float('-inf')
         self._is_recording: bool = False
         self._warned_topics: set[str] = set()
+        self._disk_stats = _DiskStats(0, 0, 0)
 
         if auto_start:
             rosys.on_startup(self.start)
@@ -117,13 +157,13 @@ class McapRecorder:
 
     @property
     def current_file_size(self) -> int:
-        if self._file_path and self._file_path.exists():
-            return self._file_path.stat().st_size
-        return 0
+        if self._file_path is None:
+            return 0
+        return _safe_size(self._file_path)
 
     @property
     def total_size(self) -> int:
-        return sum(f.stat().st_size for f in self.output_dir.glob('*.mcap'))
+        return sum(_safe_size(f) for f in self.output_dir.glob('*.mcap'))
 
     @property
     def file_count(self) -> int:
@@ -143,13 +183,27 @@ class McapRecorder:
 
     @property
     def recordings(self) -> list[Path]:
-        """All recording files, newest first."""
-        return sorted(self.output_dir.glob('*.mcap'), reverse=True)
+        """All recording files, newest first (by modification time, so renames keep the order)."""
+        return sorted(self.output_dir.glob('*.mcap'), key=_safe_mtime, reverse=True)
 
     @property
     def current_recording(self) -> Path | None:
         """The file currently being written (unindexed until stopped), else None."""
         return self._file_path if self._is_recording else None
+
+    def accepts(self, topic: str) -> bool:
+        """Whether a message on ``topic`` would currently be recorded.
+
+        Cheap, loop-safe pre-check (recording is active and the topic is not
+        deselected) so callers can skip expensive encoding for topics that would
+        be dropped anyway.
+
+        :param topic: the topic name to test.
+        :return: ``True`` if a message on this topic would be enqueued.
+        """
+        if not self._is_recording:
+            return False
+        return self._selected_topics is None or topic in self._selected_topics
 
     def scan_recordings(self) -> list[RecordingInfo]:
         """Stat every recording and check its summary index; newest first.
@@ -157,14 +211,18 @@ class McapRecorder:
         Globs and stats every file and probes its summary index, which is blocking
         I/O; call via ``rosys.run.io_bound``. The live file is flagged and never
         index-probed (the writer holds it open and it has no summary index until
-        stopped).
+        stopped). Files that vanish during the scan (e.g. deleted from the
+        recordings page) are skipped.
 
         :return: one :class:`RecordingInfo` per file, ordered newest first.
         """
         current = self.current_recording
         infos: list[RecordingInfo] = []
         for path in self.recordings:
-            stat = path.stat()
+            try:
+                stat = path.stat()
+            except FileNotFoundError:
+                continue  # deleted concurrently while scanning
             is_live = path == current
             indexed = False if is_live else is_indexed(path)  # never read the open live file
             infos.append(RecordingInfo(path, stat.st_mtime, stat.st_size, is_live, indexed))
@@ -190,12 +248,17 @@ class McapRecorder:
         """Rename a recording within the output directory; returns the new path or None.
 
         The currently-recording file cannot be renamed (the writer holds it open).
-        ``new_name`` is reduced to a bare filename and given a ``.mcap`` suffix.
+        ``new_name`` is reduced to a bare filename and given a ``.mcap`` suffix;
+        empty, whitespace-only or dots-only names are rejected (they would escape
+        the output directory) by returning ``None``.
         """
         path = Path(path)
         if path.parent != self.output_dir or not path.exists() or path == self.current_recording:
             return None
-        target = self.output_dir / Path(new_name).name
+        name = Path(new_name.strip()).name
+        if not name.strip('.'):  # empty, whitespace-only, or only dots ('.', '..', '...')
+            return None
+        target = self.output_dir / name
         if target.suffix != '.mcap':
             target = target.with_suffix('.mcap')
         if target == path or target.exists():
@@ -205,15 +268,21 @@ class McapRecorder:
         return target
 
     def unindexed_recordings(self) -> list[Path]:
-        """Finished recordings without a summary index (e.g. left by a crash)."""
+        """Finished recordings without a summary index (e.g. left by a crash).
+
+        Opens and probes every finished file, which is blocking I/O; call via
+        ``rosys.run.io_bound``.
+        """
         return [path for path in self.recordings if path != self.current_recording and not is_indexed(path)]
 
     async def reindex_unindexed(self) -> None:
         """Rebuild the index of every unindexed recording on a background thread."""
-        for path in self.unindexed_recordings():
+        unindexed = await rosys.run.io_bound(self.unindexed_recordings)  # per-file open + index probe: off the loop
+        for path in unindexed or []:
             self.log.warning('reindexing unindexed recording: %s', path.name)
             recovered = await rosys.run.io_bound(reindex, path)
-            self.log.info('reindexed %s (%d messages recovered)', path.name, recovered)
+            if recovered is not None:
+                self.log.info('reindexed %s (%d messages recovered)', path.name, recovered)
 
     def add_topic(self, topic: str, schema: TopicSchema) -> None:
         """Register a topic with its schema and encoding.
@@ -259,6 +328,11 @@ class McapRecorder:
             return
         self._selected_topics = set(topics) if topics is not None else None
         self._message_count = 0
+        # Budget enforcement and opening the file run on the loop here because start must
+        # synchronously establish the recording before returning (callers read
+        # current_recording and receive RECORDING_STARTED immediately). start is a rare
+        # user/lifecycle action; the hot periodic-flush path enforces the budget off the
+        # loop in the io_bound writer (see _write_batch -> _write_messages -> _rotate).
         self._enforce_disk_budget()
         with self._lock:
             self._open_new_file()
@@ -275,12 +349,16 @@ class McapRecorder:
         self._is_recording = False
         for source in self._sources:
             source.stop()
-        remaining, self._queue = self._queue, []
-        file_path = self._file_path
-        # Acquiring the lock here may briefly block the loop if a background flush is
-        # mid-write; that window is bounded (one batch) and stop is rare, so we accept it.
+        # Drain and finalize under the lock so this synchronous stop cannot race the
+        # background writer. The final drain may rotate, so read the finalized path only
+        # after writing (finding: emit the actually-finalized file). Acquiring the lock
+        # may briefly block the loop if a flush is mid-write, but that window is bounded
+        # (one batch) and stop is rare.
         with self._lock:
-            self._write_messages(remaining)
+            with self._queue_lock:  # brief: only the swap, not the write
+                batch, self._queue = self._queue, []
+            self._write_messages(batch)
+            file_path = self._file_path
             self._close_file()
         if file_path is not None and self._message_count == 0:
             file_path.unlink(missing_ok=True)  # discard empty recordings (e.g. from rapid toggling)
@@ -290,10 +368,20 @@ class McapRecorder:
             if file_path is not None:
                 self.RECORDING_STOPPED.emit(file_path)
 
-    def log_message(self, topic: str, data: bytes, *, timestamp_ns: int | None = None) -> None:
-        if not self._is_recording:
-            return
-        if self._selected_topics is not None and topic not in self._selected_topics:
+    def log_message(self, topic: str, data: Any, *,
+                    encode: Callable[[Any, int], bytes | None] | None = None,
+                    timestamp_ns: int | None = None) -> None:
+        """Enqueue a message for the background writer.
+
+        :param topic: the (registered) topic to write to; unknown topics are dropped
+            with a one-time warning.
+        :param data: already-serialized ``bytes`` when ``encode`` is ``None``, otherwise
+            the raw payload passed to ``encode`` on the writer thread.
+        :param encode: optional ``(payload, timestamp_ns) -> bytes | None`` run off the
+            event loop by the background writer; returning ``None`` drops the message.
+        :param timestamp_ns: log time in nanoseconds (default: current ``rosys.time()``).
+        """
+        if not self.accepts(topic):
             return
         if topic not in self._schemas:
             if topic not in self._warned_topics:
@@ -302,26 +390,50 @@ class McapRecorder:
             return
         if timestamp_ns is None:
             timestamp_ns = int(rosys.time() * NANOSECONDS_PER_SECOND)
-        self._queue.append((topic, data, timestamp_ns))
+        with self._queue_lock:  # microsecond hold; never blocks behind a write
+            self._queue.append((topic, data, encode, timestamp_ns))
+            self._enforce_queue_cap()
+
+    def _enforce_queue_cap(self) -> None:
+        """Drop the oldest queued messages when the disk cannot keep up. Caller holds ``_queue_lock``.
+
+        Bounds memory if the writer stalls; the drop is logged at most once per
+        ``_DROP_WARNING_INTERVAL`` so a persistent stall does not flood the log.
+        """
+        overflow = len(self._queue) - self.max_queued_messages
+        if overflow <= 0:
+            return
+        del self._queue[:overflow]
+        self._dropped_message_count += overflow
+        now = rosys.time()
+        if now - self._last_drop_warning >= _DROP_WARNING_INTERVAL:
+            self.log.warning('recording queue full at %d messages; dropping oldest — disk cannot keep up '
+                             '(%d dropped so far)', self.max_queued_messages, self._dropped_message_count)
+            self._last_drop_warning = now
 
     async def _flush(self) -> None:
         if not self._is_recording or not self._queue:
             return
-        batch, self._queue = self._queue, []
-        await rosys.run.io_bound(self._write_batch, batch)
+        await rosys.run.io_bound(self._write_batch)
 
-    def _write_batch(self, batch: list[tuple[str, bytes, int]]) -> None:
+    def _write_batch(self) -> None:
+        """Drain the queue and write it. Runs on the background writer thread."""
         with self._lock:
+            with self._queue_lock:  # brief: only the swap, not the write
+                batch, self._queue = self._queue, []
             self._write_messages(batch)
 
-    def _write_messages(self, batch: list[tuple[str, bytes, int]]) -> None:
-        """Write a batch of messages. Caller must hold ``_lock``."""
+    def _write_messages(self, batch: list[QueuedMessage]) -> None:
+        """Encode and write a batch of messages. Caller must hold ``_lock``."""
         if self._writer is None:
             return
-        for topic, data, timestamp_ns in batch:
+        for topic, payload, encode, timestamp_ns in batch:
             schema = self._schemas.get(topic)
             if schema is None:
                 continue
+            data = encode(payload, timestamp_ns) if encode is not None else payload
+            if data is None:
+                continue  # converter chose to skip this value
             if topic not in self._topics:
                 self._register_topic(topic, schema)
             self._writer.add_message(
@@ -381,28 +493,36 @@ class McapRecorder:
         self._open_new_file()
 
     def _enforce_disk_budget(self) -> None:
-        file_stats = [(f, f.stat()) for f in self.output_dir.glob('*.mcap')]
-        file_stats.sort(key=lambda fs: fs[1].st_mtime)
-        total = sum(s.st_size for _, s in file_stats)
+        file_stats: list[tuple[Path, int, float]] = []
+        for path in self.output_dir.glob('*.mcap'):
+            try:
+                stat = path.stat()
+            except FileNotFoundError:
+                continue  # vanished concurrently (e.g. deleted from the recordings page)
+            file_stats.append((path, stat.st_size, stat.st_mtime))
+        file_stats.sort(key=lambda item: item[2])  # oldest first
+        total = sum(size for _, size, _ in file_stats)
         while total > self.max_total_size and file_stats:
-            oldest, stat = file_stats.pop(0)
-            oldest.unlink()
-            total -= stat.st_size
-            self.log.info('deleted old recording: %s (freed %.1f MB)', oldest.name, stat.st_size / 1_048_576)
+            oldest, size, _ = file_stats.pop(0)
+            oldest.unlink(missing_ok=True)
+            total -= size
+            self.log.info('deleted old recording: %s (freed %.1f MB)', oldest.name, size / 1_048_576)
 
     def developer_ui(self) -> None:
         """Developer panel: auto-refreshing stats, start/stop buttons, and a topic selection.
 
         Only the stats grid is rebuilt on the timer; the buttons are built once and
-        toggle their visibility reactively, so they never flicker. The timer is bound
-        to the client and cleaned up on disconnect (no global event subscriptions).
+        toggle their visibility reactively, so they never flicker. The timer refreshes
+        cached directory stats collected off the event loop (globbing and statting the
+        directory would otherwise block the loop every second) and is bound to the
+        client, so it is cleaned up on disconnect (no global event subscriptions).
         The topic checkboxes live in a collapsed expansion to keep the panel compact;
         the selection applies to the next start (a running recording is unaffected).
         """
         with ui.column():
             ui.label('MCAP Recording').classes('text-center text-bold')
             self._stats_ui()
-            ui.timer(1.0, self._stats_ui.refresh)
+            ui.timer(1.0, self._refresh_stats)
             with ui.row().classes('items-center'):
                 ui.button(icon='fiber_manual_record', color='red', on_click=self._start_with_selection) \
                     .tooltip('Start recording') \
@@ -441,17 +561,45 @@ class McapRecorder:
                             on_change=lambda event, topic=topic: self._topic_selection.__setitem__(topic, event.value)) \
                     .props('dense size=xs')
 
+    async def _refresh_stats(self) -> None:
+        """Refresh the cached directory stats off the event loop, then rebuild the stats grid."""
+        stats = await rosys.run.io_bound(self._collect_disk_stats)
+        if stats is not None:
+            self._disk_stats = stats
+        self._stats_ui.refresh()
+
+    def _collect_disk_stats(self) -> _DiskStats:
+        """Stat the output directory (blocking I/O; run off the loop)."""
+        return _DiskStats(self.current_file_size, self.total_size, self.file_count)
+
     @ui.refreshable_method
     def _stats_ui(self) -> None:
         mb = 1_048_576
+        stats = self._disk_stats
         with ui.grid(columns='auto auto').classes('gap-y-1'):
             ui.label('Messages:')
             ui.label(str(self._message_count))
             ui.label('File:')
             ui.label(self._file_path.name if self._file_path else '-')
             ui.label('File size:')
-            ui.label(f'{self.current_file_size / mb:.1f} MB')
+            ui.label(f'{stats.current_file_size / mb:.1f} MB')
             ui.label('Total:')
-            ui.label(f'{self.total_size / mb:.1f} / {self.max_total_size / mb:.0f} MB')
+            ui.label(f'{stats.total_size / mb:.1f} / {self.max_total_size / mb:.0f} MB')
             ui.label('Files:')
-            ui.label(str(self.file_count))
+            ui.label(str(stats.file_count))
+
+
+def _safe_mtime(path: Path) -> float:
+    """Modification time of ``path``, or 0 if it vanished (e.g. deleted concurrently)."""
+    try:
+        return path.stat().st_mtime
+    except FileNotFoundError:
+        return 0.0
+
+
+def _safe_size(path: Path) -> int:
+    """Size of ``path`` in bytes, or 0 if it vanished (e.g. deleted concurrently)."""
+    try:
+        return path.stat().st_size
+    except FileNotFoundError:
+        return 0
