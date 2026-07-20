@@ -120,8 +120,8 @@ python_version = "3.11"
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
-# numpy's stubs surface ufunc/ndarray typing errors in rosys; analysing mcap's
-# sources trips mypy's fatal "source file found twice"
+# numpy's stubs surface ufunc/ndarray typing errors in rosys
+# analysing mcap's sources trips mypy's fatal "source file found twice"
 module = ["numpy.*", "mcap.*"]
 follow_imports = "skip"
 
