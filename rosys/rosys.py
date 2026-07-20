@@ -6,6 +6,7 @@ import signal
 import threading
 import time as pytime
 import warnings
+import weakref
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any, ClassVar, Literal
@@ -134,39 +135,89 @@ async def sleep(seconds: float) -> None:
             await asyncio.sleep(0)
 
 
+def _handler_name(handler: Callable) -> str:
+    return getattr(handler, '__qualname__', repr(handler))  # partials and callable instances lack __qualname__
+
+
 def _run_handler(handler: Callable) -> None:
     try:
         result = handler()
         if isinstance(result, Awaitable):
-            tasks.append(background_tasks.create(result, name=handler.__qualname__))
+            tasks.append(background_tasks.create(result, name=_handler_name(handler)))
     except Exception:
-        log.exception('error while starting handler "%s"', handler.__qualname__)
+        log.exception('error while starting handler "%s"', _handler_name(handler))
+
+
+class _WeakHandler:
+    def __init__(self, method: Callable) -> None:
+        self._weak = weakref.WeakMethod(method)
+        self.__qualname__ = method.__qualname__
+
+    @property
+    def alive(self) -> bool:
+        return self._weak() is not None
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        method = self._weak()
+        return None if method is None else method(*args, **kwargs)
+
+
+def _weaken(method: Callable) -> _WeakHandler | None:
+    """Wrap a bound method so it can be called without keeping its object alive.
+
+    Returns None for handlers that cannot be weakened: plain functions, static/classmethods,
+    and bound methods whose object is not weak-referenceable (e.g. a __slots__ class without __weakref__).
+    """
+    obj = getattr(method, '__self__', None)
+    if obj is None or isinstance(obj, type):
+        return None
+    try:
+        return _WeakHandler(method)
+    except TypeError:  # obj is not weak-referenceable, e.g. a @dataclass(slots=True) value type
+        return None
 
 
 class Repeater:
     tasks: ClassVar[set[asyncio.Task]] = set()
 
-    def __init__(self, handler: Callable, interval: float) -> None:
-        self.handler = handler
+    def __init__(self, handler: Callable, interval: float, *, weak: bool = False) -> None:
         self.interval = interval
         self._task: asyncio.Task | None = None
+        self.handler = handler
+        if weak:
+            weakened = _weaken(handler)
+            if weakened is None:
+                log.warning('weak=True has no effect on "%s": only weak-referenceable bound methods can be weakened',
+                            _handler_name(handler))
+            else:
+                self.handler = weakened
+
+    @property
+    def _alive(self) -> bool:
+        return not isinstance(self.handler, _WeakHandler) or self.handler.alive  # strong handlers are always alive
 
     def start(self) -> None:
-        if self.running:
+        if self.running or not self._alive:
             return
         if _state.startup_finished:
             self._task = background_tasks.create(self._repeat())
             self.tasks.add(self._task)
+            self._task.add_done_callback(self._handle_task_done)
         elif self.start not in startup_handlers:
             startup_handlers.append(self.start)
 
+    def _handle_task_done(self, task: asyncio.Task) -> None:
+        self.tasks.discard(task)
+        if self._task is task:  # not a stale callback from a task replaced by a restart
+            self._task = None
+
     async def _repeat(self) -> None:
         await sleep(self.interval)  # NOTE delaying first execution so not all actors rush in at the same time
-        while True:
+        while self._alive:  # a weak handler whose object was collected ends the loop
             start = time()
             try:
                 if is_stopping():
-                    log.info('%s must be stopped', self.handler)
+                    log.info('%s must be stopped', _handler_name(self.handler))
                     break
                 await invoke(self.handler)
                 dt = time() - start
@@ -174,11 +225,11 @@ class Repeater:
                 return
             except Exception:
                 dt = time() - start
-                log.exception('error in "%s"', self.handler.__qualname__)
+                log.exception('error in "%s"', _handler_name(self.handler))
                 if self.interval == 0 and dt < 0.1:
                     delay = 0.1 - dt
                     log.warning(
-                        f'"{self.handler.__qualname__}" would be called to frequently ' +
+                        f'"{_handler_name(self.handler)}" would be called to frequently ' +
                         f'because it only took {dt*1000:.0f} ms; ' +
                         f'delaying this step for {delay*1000:.0f} ms')
                     await sleep(delay)
@@ -194,7 +245,7 @@ class Repeater:
         if not self._task.done():
             self._task.cancel()
 
-        self.tasks.remove(self._task)
+        self.tasks.discard(self._task)
         self._task = None
 
     @property
@@ -207,8 +258,8 @@ class Repeater:
             repeater.cancel()
 
 
-def on_repeat(handler: Callable, interval: float) -> Repeater:
-    repeater = Repeater(handler, interval)
+def on_repeat(handler: Callable, interval: float, *, weak: bool = False) -> Repeater:
+    repeater = Repeater(handler, interval, weak=weak)
     repeater.start()
     return repeater
 

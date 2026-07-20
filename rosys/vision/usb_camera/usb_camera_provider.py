@@ -22,7 +22,7 @@ class UsbCameraProvider(CameraProvider[UsbCamera]):
 
         rosys.on_shutdown(self.shutdown)
         if auto_scan:
-            rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
+            rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL, weak=True)
 
     def backup_to_dict(self) -> dict:
         return {
