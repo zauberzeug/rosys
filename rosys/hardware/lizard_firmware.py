@@ -61,7 +61,7 @@ class LizardFirmware:
         if self.supported_versions is None:
             return True
         try:
-            return Version(version) in self.supported_versions
+            return self.supported_versions.contains(Version(version))
         except InvalidVersion:
             return False
 
