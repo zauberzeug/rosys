@@ -1,15 +1,33 @@
 import pytest
+from nicegui import background_tasks
 from packaging.specifiers import InvalidSpecifier
-from test_robot_brain import CommunicationSimulation  # pylint: disable=wrong-import-order
+from test_robot_brain import CommunicationSimulation, connect  # pylint: disable=wrong-import-order
 
 import rosys
 from rosys.hardware import RobotBrain, RobotHardware
 from rosys.hardware.lizard_firmware import LizardFirmware
+from rosys.testing import forward
+
+
+class VersionCommunicationSimulation(CommunicationSimulation):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.core_version = 'v0.13.0'
+        self.p0_version = 'v0.13.0'
+
+    async def send(self, msg: str) -> None:
+        await super().send(msg)
+        line = msg.rsplit('@', 1)[0]
+        if line == 'core.version()':
+            self.incoming.append(f'version: {self.core_version}')
+        if line == 'p0.version()':
+            self.incoming.append(f'p0: version: {self.p0_version}')
 
 
 @pytest.fixture
 async def lizard_firmware(rosys_integration: None) -> LizardFirmware:
-    robot_brain = RobotBrain(CommunicationSimulation(),
+    robot_brain = RobotBrain(VersionCommunicationSimulation(),
                              enable_esp_on_startup=False,
                              supported_lizard_versions='<0.14.0')
     RobotHardware([], robot_brain)
@@ -115,3 +133,47 @@ async def test_flash_p0_refuses_unsupported_core_version(lizard_firmware: Lizard
     lizard_firmware.core_version = '0.14.0'
     await lizard_firmware.flash_p0()
     assert any('not supported' in message for message in notifications)
+
+
+async def test_warning_when_core_runs_unsupported_version(lizard_firmware: LizardFirmware) -> None:
+    """Reading an unsupported version from the Core warns that a supported version needs to be flashed."""
+    notifications: list[str] = []
+    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
+    communication = lizard_firmware.robot_brain.communication
+    assert isinstance(communication, VersionCommunicationSimulation)
+    communication.core_version = 'v0.14.0'
+    await connect(communication)
+    task = background_tasks.create(lizard_firmware.read_core_version(), name='read core version')
+    await forward(seconds=3.0)
+    assert task.done()
+    assert lizard_firmware.core_version == '0.14.0'
+    assert any('Core is running Lizard 0.14.0' in message for message in notifications)
+
+
+async def test_no_warning_when_core_runs_supported_version(lizard_firmware: LizardFirmware) -> None:
+    """Reading a supported version from the Core does not warn."""
+    notifications: list[str] = []
+    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
+    communication = lizard_firmware.robot_brain.communication
+    assert isinstance(communication, VersionCommunicationSimulation)
+    await connect(communication)
+    task = background_tasks.create(lizard_firmware.read_core_version(), name='read core version')
+    await forward(seconds=3.0)
+    assert task.done()
+    assert lizard_firmware.core_version == '0.13.0'
+    assert not any('not supported' in message for message in notifications)
+
+
+async def test_warning_when_p0_runs_unsupported_version(lizard_firmware: LizardFirmware) -> None:
+    """Reading an unsupported version from the P0 warns that a supported version needs to be flashed."""
+    notifications: list[str] = []
+    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
+    communication = lizard_firmware.robot_brain.communication
+    assert isinstance(communication, VersionCommunicationSimulation)
+    communication.p0_version = 'v0.14.0'
+    await connect(communication)
+    task = background_tasks.create(lizard_firmware.read_p0_version(), name='read p0 version')
+    await forward(seconds=3.0)
+    assert task.done()
+    assert lizard_firmware.p0_version == '0.14.0'
+    assert any('P0 is running Lizard 0.14.0' in message for message in notifications)

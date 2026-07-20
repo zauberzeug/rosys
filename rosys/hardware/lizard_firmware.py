@@ -111,6 +111,7 @@ class LizardFirmware:
         while rosys.time() < deadline:
             if response := await self.robot_brain.send_and_await('core.version()', 'version:', timeout=1):
                 self.core_version = response.split()[-1].split('-')[0][1:]
+                self._notify_unsupported_version(self.core_version, 'Core')
                 return
         self.log.error('Could not read Lizard version from Core')
 
@@ -122,8 +123,15 @@ class LizardFirmware:
         while rosys.time() < deadline:
             if response := await self.robot_brain.send_and_await('p0.version()', 'p0:', timeout=1):
                 self.p0_version = response.split()[-1].split('-')[0][1:]
+                self._notify_unsupported_version(self.p0_version, 'P0')
                 return
         self.log.error('Could not read Lizard version from P0')
+
+    def _notify_unsupported_version(self, version: str, target: str) -> None:
+        if not self.is_version_supported(version):
+            rosys.notify(f'{target} is running Lizard {version} which is not supported by this Robot Brain '
+                         f'(requires {self.supported_versions}). Please flash a supported version.',
+                         'negative', log_level=logging.WARNING)
 
     def read_local_checksum(self) -> None:
         checksum = sum(ord(c) for c in self.robot_brain.lizard_code) % 0x10000
