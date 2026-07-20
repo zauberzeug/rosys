@@ -1,6 +1,8 @@
+from pathlib import Path
+
 import pytest
 from nicegui import background_tasks
-from packaging.specifiers import InvalidSpecifier
+from packaging.specifiers import InvalidSpecifier, SpecifierSet
 from test_robot_brain import CommunicationSimulation, connect  # pylint: disable=wrong-import-order
 
 import rosys
@@ -52,7 +54,7 @@ def test_upper_bound_specifier(lizard_firmware: LizardFirmware) -> None:
 
 def test_exact_version_specifier(lizard_firmware: LizardFirmware) -> None:
     """An exact specifier like ``==0.13.0`` only allows that very version."""
-    lizard_firmware.supported_versions = '==0.13.0'
+    lizard_firmware.supported_versions = SpecifierSet('==0.13.0')
     assert lizard_firmware.is_version_supported('0.13.0')
     assert not lizard_firmware.is_version_supported('0.12.9')
     assert not lizard_firmware.is_version_supported('0.13.1')
@@ -60,7 +62,7 @@ def test_exact_version_specifier(lizard_firmware: LizardFirmware) -> None:
 
 def test_combined_specifier(lizard_firmware: LizardFirmware) -> None:
     """Combined bounds like ``>0.12.0,<0.14.0`` are evaluated together."""
-    lizard_firmware.supported_versions = '>0.12.0,<0.14.0'
+    lizard_firmware.supported_versions = SpecifierSet('>0.12.0,<0.14.0')
     assert not lizard_firmware.is_version_supported('0.12.0')
     assert lizard_firmware.is_version_supported('0.12.1')
     assert lizard_firmware.is_version_supported('0.13.9')
@@ -115,12 +117,30 @@ async def test_flash_core_refuses_unsupported_local_version(lizard_firmware: Liz
     assert any('not supported' in message for message in notifications)
 
 
-async def test_flash_core_refuses_unknown_local_version(lizard_firmware: LizardFirmware) -> None:
-    """With a restriction in place, flashing the core is refused as long as the local version has not been read."""
+async def test_flash_core_refuses_unknown_local_version(lizard_firmware: LizardFirmware,
+                                                        monkeypatch: pytest.MonkeyPatch,
+                                                        tmp_path: Path) -> None:
+    """With a restriction in place, flashing the core is refused as long as the local version cannot be read."""
+    monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
     notifications: list[str] = []
     rosys.NEW_NOTIFICATION.subscribe(notifications.append)
     await lizard_firmware.flash_core()
     assert any('version is unknown' in message for message in notifications)
+
+
+async def test_flash_core_reads_local_version_before_version_check(lizard_firmware: LizardFirmware,
+                                                                   monkeypatch: pytest.MonkeyPatch,
+                                                                   tmp_path: Path) -> None:
+    """Flashing the core reads the local version by itself if it has not been read yet."""
+    monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
+    (tmp_path / 'build').mkdir()
+    (tmp_path / 'build' / 'lizard.bin').write_bytes(b'v0.13.0\x00lizard')
+    notifications: list[str] = []
+    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
+    await lizard_firmware.flash_core()
+    assert lizard_firmware.local_version == '0.13.0'
+    assert not any('version is unknown' in message for message in notifications)
+    assert any('not ready' in message for message in notifications)
 
 
 async def test_flash_p0_refuses_unknown_core_version(lizard_firmware: LizardFirmware) -> None:
@@ -137,6 +157,16 @@ async def test_flash_core_with_supported_version_passes_version_check(lizard_fir
     rosys.NEW_NOTIFICATION.subscribe(notifications.append)
     lizard_firmware.local_version = '0.13.0'
     await lizard_firmware.flash_core()
+    assert not any('not supported' in message for message in notifications)
+    assert any('not ready' in message for message in notifications)
+
+
+async def test_flash_p0_with_supported_version_passes_version_check(lizard_firmware: LizardFirmware) -> None:
+    """A supported core version passes the version check and proceeds to the readiness check."""
+    notifications: list[str] = []
+    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
+    lizard_firmware.core_version = '0.13.0'
+    await lizard_firmware.flash_p0()
     assert not any('not supported' in message for message in notifications)
     assert any('not ready' in message for message in notifications)
 

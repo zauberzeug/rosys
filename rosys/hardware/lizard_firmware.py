@@ -26,11 +26,9 @@ class LizardFirmware:
             downloaded and flashed, e.g. ``'<0.14.0'`` (default: ``None``, all versions are supported)
         :raises InvalidSpecifier: When ``supported_versions`` is not a valid version specifier
         """
-        if supported_versions:
-            SpecifierSet(supported_versions)  # NOTE: fail fast on an invalid specifier
         self.log = logging.getLogger('rosys.lizard_firmware')
         self.robot_brain = robot_brain
-        self.supported_versions = supported_versions
+        self.supported_versions = SpecifierSet(supported_versions) if supported_versions else None
 
         self.flash_params: list[str] = []
 
@@ -60,10 +58,10 @@ class LizardFirmware:
         :return: ``True`` if no specifier is configured or the version satisfies it,
             ``False`` for unparsable versions
         """
-        if not self.supported_versions:
+        if self.supported_versions is None:
             return True
         try:
-            return Version(version) in SpecifierSet(self.supported_versions)
+            return Version(version) in self.supported_versions
         except InvalidVersion:
             return False
 
@@ -158,7 +156,6 @@ class LizardFirmware:
             rosys.notify(f'Downloading failed. Lizard {self.selected_online_version} is not supported '
                          f'by this Robot Brain (requires {self.supported_versions}).', 'negative')
             return
-        assert self.selected_online_version is not None
         assert self.selected_online_version in self.online_versions
         url = self.online_versions[self.selected_online_version]
         zip_path = self.PATH / 'lizard.zip'
@@ -168,7 +165,12 @@ class LizardFirmware:
         self.read_local_version()
 
     async def flash_core(self) -> None:
-        if self.supported_versions:
+        if self.supported_versions is not None:
+            if self.local_version is None:
+                try:
+                    self.read_local_version()
+                except FileNotFoundError:
+                    pass
             if self.local_version is None:
                 rosys.notify('Flashing Core failed. The local Lizard version is unknown.', 'negative')
                 return
@@ -195,7 +197,7 @@ class LizardFirmware:
         rosys.notify('Finished.', 'positive')
 
     async def flash_p0(self, timeout: float = 120) -> None:
-        if self.supported_versions:
+        if self.supported_versions is not None:
             if self.core_version is None:
                 rosys.notify('Flashing P0 failed. The Core Lizard version is unknown.', 'negative')
                 return
