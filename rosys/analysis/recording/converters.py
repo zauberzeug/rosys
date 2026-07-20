@@ -77,10 +77,17 @@ def add_event_topic(recorder: McapRecorder, topic: str, *,
     (e.g. ``frame='map'``). With ``unpack=True`` the payload is treated as an
     iterable and each element is recorded separately (e.g. ``list[Velocity]``).
     ``argless=True`` is for events that emit no payload (the converter is fed
-    ``None``); it must then be explicit. ``timestamp`` overrides the log time
-    (seconds); by default the payload's ``time`` attribute is used, falling back
-    to ``rosys.time()``. The subscription is only active while recording.
+    ``None``); a converter must then be given explicitly, as there is no payload
+    to auto-dispatch one from. ``timestamp`` overrides the log time (seconds); by
+    default the payload's ``time`` attribute is used, falling back to
+    ``rosys.time()``. The subscription is only active while recording.
+
+    :raises ValueError: if ``argless=True`` is passed without an explicit ``converter``
+        (an argless event emits no payload, so nothing could be recorded silently).
     """
+    if argless and converter is None:
+        raise ValueError('add_event_topic(argless=True) needs an explicit converter: '
+                         'an argless event emits no payload to auto-dispatch a converter from')
     if converter is not None:
         recorder.add_topic(topic, converter.schema)
     else:

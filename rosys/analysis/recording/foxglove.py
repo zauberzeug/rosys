@@ -21,7 +21,7 @@ from ...hardware.gnss.gnss import GnssMeasurement
 from ...hardware.imu import ImuMeasurement
 from ...vision import CalibratableCamera, Image
 from .converters import Converter, add_event_topic, custom_message, register
-from .mcap_recorder import NANOSECONDS_PER_SECOND
+from .mcap_recorder import NANOSECONDS_PER_SECOND, McapRecorder
 
 if TYPE_CHECKING:
     from nicegui import Event
@@ -55,7 +55,7 @@ _POINT2_SCHEMA = {'type': 'object', 'properties': {'x': {'type': 'number'}, 'y':
 # --------------------------------------------------------------------------- #
 
 
-def add_pose_topic(recorder, topic: str, *,
+def add_pose_topic(recorder: McapRecorder, topic: str, *,
                    event: Event,
                    child: str,
                    frame: str = 'map',

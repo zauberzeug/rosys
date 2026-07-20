@@ -1,7 +1,6 @@
 import base64
 import json
 import math
-import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -61,12 +60,6 @@ class FakeEvent:
             callback(*args)
 
 
-@pytest.fixture
-def mcap_dir():
-    with tempfile.TemporaryDirectory(prefix='rosys-mcap-') as tmp:
-        yield Path(tmp)
-
-
 def _read(path: Path) -> list[tuple[str, dict]]:
     with open(path, 'rb') as f:
         reader = make_reader(f)
@@ -89,18 +82,14 @@ def _only_file(mcap_dir: Path) -> Path:
     return files[0]
 
 
-# --------------------------------------------------------------------------- #
-# Auto-dispatch to foxglove schemas
-# --------------------------------------------------------------------------- #
-
-
-def test_event_topic_auto_picks_pose_in_frame(mcap_dir: Path) -> None:
+async def test_event_topic_auto_picks_pose_in_frame(mcap_dir: Path) -> None:
+    """An event carrying a ``Pose`` auto-dispatches to the ``foxglove.PoseInFrame`` converter."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event = FakeEvent()
     add_event_topic(recorder, '/pose', event=event)
     recorder.start()
     event.emit(Pose(x=1.0, y=2.0, yaw=math.pi / 2, time=3.0))
-    recorder.stop()
+    await recorder.stop()
 
     (schema_name, message), = _read(_only_file(mcap_dir))
     assert schema_name == 'foxglove.PoseInFrame'
@@ -110,38 +99,41 @@ def test_event_topic_auto_picks_pose_in_frame(mcap_dir: Path) -> None:
     assert message['pose']['orientation']['z'] == pytest.approx(math.sin(math.pi / 4))
 
 
-def test_event_topic_auto_picks_velocity(mcap_dir: Path) -> None:
+async def test_event_topic_auto_picks_velocity(mcap_dir: Path) -> None:
+    """An event carrying a ``Velocity`` auto-dispatches to the velocity converter."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event = FakeEvent()
     add_event_topic(recorder, '/wheels', event=event)
     recorder.start()
     event.emit(Velocity(linear=0.5, angular=0.1, time=1.0))
-    recorder.stop()
+    await recorder.stop()
 
     schema_name, message = _read(_only_file(mcap_dir))[0]
     assert schema_name == 'Velocity'
     assert message == {'linear': 0.5, 'angular': 0.1}
 
 
-def test_override_frame_forwarded_to_converter(mcap_dir: Path) -> None:
+async def test_override_frame_forwarded_to_converter(mcap_dir: Path) -> None:
+    """A ``frame`` override is forwarded to the auto-picked converter factory."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event = FakeEvent()
     add_event_topic(recorder, '/pose', event=event, frame='odom')
     recorder.start()
     event.emit(Pose(x=0.0, y=0.0, yaw=0.0, time=1.0))
-    recorder.stop()
+    await recorder.stop()
 
     _, message = _read(_only_file(mcap_dir))[0]
     assert message['frame_id'] == 'odom'
 
 
-def test_explicit_converter_frame_transform(mcap_dir: Path) -> None:
+async def test_explicit_converter_frame_transform(mcap_dir: Path) -> None:
+    """An explicit ``frame_transform`` converter overrides auto-dispatch."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event = FakeEvent()
     add_event_topic(recorder, '/tf', event=event, converter=frame_transform(parent='map', child='base_link'))
     recorder.start()
     event.emit(Pose(x=1.0, y=0.0, yaw=0.0, time=1.0))
-    recorder.stop()
+    await recorder.stop()
 
     schema_name, message = _read(_only_file(mcap_dir))[0]
     assert schema_name == 'foxglove.FrameTransform'
@@ -150,13 +142,14 @@ def test_explicit_converter_frame_transform(mcap_dir: Path) -> None:
     assert message['translation'] == {'x': 1.0, 'y': 0.0, 'z': 0.0}
 
 
-def test_add_pose_topic_emits_pose_and_tf(mcap_dir: Path) -> None:
+async def test_add_pose_topic_emits_pose_and_tf(mcap_dir: Path) -> None:
+    """``add_pose_topic`` records the pose as both a ``PoseInFrame`` and a ``FrameTransform``."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event = FakeEvent()
     add_pose_topic(recorder, '/odometry/pose', event=event, child='odometry')
     recorder.start()
     event.emit(Pose(x=1.0, y=2.0, yaw=0.0, time=1.0))
-    recorder.stop()
+    await recorder.stop()
 
     by_schema = dict(_read(_only_file(mcap_dir)))
     assert set(by_schema) == {'foxglove.PoseInFrame', 'foxglove.FrameTransform'}
@@ -164,50 +157,62 @@ def test_add_pose_topic_emits_pose_and_tf(mcap_dir: Path) -> None:
     assert by_schema['foxglove.FrameTransform']['child_frame_id'] == 'odometry'
 
 
-def test_add_pose_topic_extract_skips_none(mcap_dir: Path) -> None:
+async def test_add_pose_topic_extract_skips_none(mcap_dir: Path) -> None:
+    """An ``extract`` returning ``None`` records nothing."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event = FakeEvent()
     add_pose_topic(recorder, '/gnss/local', event=event, child='gnss', extract=lambda _m: None)
     recorder.start()
     event.emit(object())
-    recorder.stop()
-    assert recorder._message_count == 0
+    await recorder.stop()
+    assert recorder.message_count == 0
 
 
-def test_unpack_records_each_element(mcap_dir: Path) -> None:
+async def test_unpack_records_each_element(mcap_dir: Path) -> None:
+    """``unpack=True`` records each element of an iterable payload separately."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event = FakeEvent()
     add_event_topic(recorder, '/wheels', event=event, unpack=True)
     recorder.start()
     event.emit([Velocity(linear=0.1, angular=0.0, time=1.0),
                 Velocity(linear=0.2, angular=0.0, time=2.0)])
-    recorder.stop()
+    await recorder.stop()
 
     assert [m['linear'] for _, m in _read(_only_file(mcap_dir))] == [0.1, 0.2]
 
 
 def test_converter_for_unknown_type_raises() -> None:
+    """Resolving a converter for an unregistered type raises ``TypeError``."""
     with pytest.raises(TypeError, match='no converter registered'):
         converter_for(object())
 
 
-def test_real_nicegui_event_delivers_payload(mcap_dir: Path) -> None:
-    # Regression: nicegui only passes the emitted payload if the handler has a
-    # required positional parameter, so a `*args`-only handler received None.
+def test_argless_event_requires_explicit_converter(mcap_dir: Path) -> None:
+    """``argless=True`` without a converter is rejected: an argless event records nothing otherwise."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    with pytest.raises(ValueError, match='argless'):
+        add_event_topic(recorder, '/marker', event=FakeEvent(), argless=True)
 
+
+async def test_real_nicegui_event_delivers_payload(mcap_dir: Path) -> None:
+    """A real nicegui event delivers its payload to the handler.
+
+    Regression: nicegui only passes the emitted payload if the handler has a required
+    positional parameter, so a ``*args``-only handler received ``None``.
+    """
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event: Event = Event()
     add_event_topic(recorder, '/pose', event=event)
     recorder.start()
     event.emit(Pose(x=7.0, y=0.0, yaw=0.0, time=1.0))
-    recorder.stop()
+    await recorder.stop()
 
     _, message = _read(_only_file(mcap_dir))[0]
     assert message['pose']['position']['x'] == 7.0
 
 
-def test_argless_event_records(mcap_dir: Path) -> None:
-
+async def test_argless_event_records(mcap_dir: Path) -> None:
+    """An argless event (no payload) records via its explicit converter."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event: Event = Event()
     converter = custom_message('Marker', {'type': 'object', 'properties': {'event': {'type': 'string'}}},
@@ -215,25 +220,27 @@ def test_argless_event_records(mcap_dir: Path) -> None:
     add_event_topic(recorder, '/marker', event=event, argless=True, converter=converter)
     recorder.start()
     event.emit()  # no payload
-    recorder.stop()
+    await recorder.stop()
 
     _, message = _read(_only_file(mcap_dir))[0]
     assert message == {'event': 'done'}
 
 
-def test_scalar_auto_dispatch(mcap_dir: Path) -> None:
+async def test_scalar_auto_dispatch(mcap_dir: Path) -> None:
+    """A float polled from a timer auto-dispatches to the ``Float`` scalar schema."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     add_timer_topic(recorder, '/temperature', interval=0.1, read=lambda: 42.5)
     recorder.start()
     recorder._sources[0]._poll()
-    recorder.stop()
+    await recorder.stop()
 
     schema_name, message = _read(_only_file(mcap_dir))[0]
     assert schema_name == 'Float'
     assert message == {'value': 42.5}
 
 
-def test_scalar_extract_pulls_field(mcap_dir: Path) -> None:
+async def test_scalar_extract_pulls_field(mcap_dir: Path) -> None:
+    """``scalar(extract=...)`` pulls the plotted field off the payload."""
     class _State:
         curvature = 0.25
 
@@ -243,27 +250,31 @@ def test_scalar_extract_pulls_field(mcap_dir: Path) -> None:
                     converter=scalar(extract=lambda s: s.curvature))
     recorder.start()
     event.emit(_State())
-    recorder.stop()
+    await recorder.stop()
 
     _, message = _read(_only_file(mcap_dir))[0]
     assert message == {'value': 0.25}
 
 
-def test_bool_dispatches_to_boolean(mcap_dir: Path) -> None:
+async def test_bool_dispatches_to_boolean(mcap_dir: Path) -> None:
+    """A bool auto-dispatches to the ``Boolean`` scalar schema (registered before ``int``)."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     add_timer_topic(recorder, '/flag', interval=0.1, read=lambda: True)
     recorder.start()
     recorder._sources[0]._poll()
-    recorder.stop()
+    await recorder.stop()
 
     schema_name, message = _read(_only_file(mcap_dir))[0]
     assert schema_name == 'Boolean'
     assert message == {'value': True}
 
 
-def test_scalar_encodes_numpy_types(mcap_dir: Path) -> None:
-    # Regression: np.bool_/np.int64 are not JSON-serializable by default (and in
-    # numpy 2.x np.bool_ even reports its type name as 'bool'); coerce via .item().
+async def test_scalar_encodes_numpy_types(mcap_dir: Path) -> None:
+    """numpy scalar types are coerced to native JSON via ``.item()``.
+
+    Regression: ``np.bool_``/``np.int64`` are not JSON-serializable by default (and in
+    numpy 2.x ``np.bool_`` even reports its type name as ``'bool'``); coerce via ``.item()``.
+    """
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     bool_event, int_event = FakeEvent(), FakeEvent()
     add_event_topic(recorder, '/driver/backward', event=bool_event, converter=scalar(value_type='boolean'))
@@ -271,16 +282,19 @@ def test_scalar_encodes_numpy_types(mcap_dir: Path) -> None:
     recorder.start()
     bool_event.emit(np.bool_(True))
     int_event.emit(np.int64(7))
-    recorder.stop()
+    await recorder.stop()
 
     by_topic = {schema_name: message for schema_name, message in _read(_only_file(mcap_dir))}
     assert by_topic['Boolean'] == {'value': True}
     assert by_topic['Integer'] == {'value': 7}
 
 
-def test_scalars_of_different_types_get_distinct_schema_names(mcap_dir: Path) -> None:
-    # Regression: Foxglove keys datatypes by name, so float and bool scalars must
-    # not share a single 'Scalar' schema name (it collides as float64 vs bool).
+async def test_scalars_of_different_types_get_distinct_schema_names(mcap_dir: Path) -> None:
+    """Scalars of different value types get distinct schema names.
+
+    Regression: Foxglove keys datatypes by name, so float and bool scalars must not
+    share a single ``Scalar`` schema name (it collides as float64 vs bool).
+    """
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     number_event, bool_event = FakeEvent(), FakeEvent()
     add_event_topic(recorder, '/driver/curvature', event=number_event, converter=scalar())
@@ -289,18 +303,14 @@ def test_scalars_of_different_types_get_distinct_schema_names(mcap_dir: Path) ->
     recorder.start()
     number_event.emit(0.25)
     bool_event.emit(True)
-    recorder.stop()
+    await recorder.stop()
 
     schema_names = {name for name, _ in _read(_only_file(mcap_dir))}
     assert schema_names == {'Float', 'Boolean'}
 
 
-# --------------------------------------------------------------------------- #
-# Lifecycle: sources only active while recording
-# --------------------------------------------------------------------------- #
-
-
-def test_subscription_only_active_while_recording(mcap_dir: Path) -> None:
+async def test_subscription_only_active_while_recording(mcap_dir: Path) -> None:
+    """An event source subscribes on start and unsubscribes on stop."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event = FakeEvent()
     add_event_topic(recorder, '/pose', event=event)
@@ -308,36 +318,34 @@ def test_subscription_only_active_while_recording(mcap_dir: Path) -> None:
     assert event.callbacks == []
     recorder.start()
     assert len(event.callbacks) == 1
-    recorder.stop()
+    await recorder.stop()
     assert event.callbacks == []
 
 
-def test_source_added_while_recording_starts_immediately(mcap_dir: Path) -> None:
+async def test_source_added_while_recording_starts_immediately(mcap_dir: Path) -> None:
+    """A source added while already recording starts immediately."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     recorder.start()
     event = FakeEvent()
     add_event_topic(recorder, '/pose', event=event)
     assert len(event.callbacks) == 1
-    recorder.stop()
+    await recorder.stop()
     assert event.callbacks == []
 
 
-def test_messages_after_stop_are_ignored(mcap_dir: Path) -> None:
+async def test_messages_after_stop_are_ignored(mcap_dir: Path) -> None:
+    """Events emitted after stop are not recorded."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event = FakeEvent()
     add_event_topic(recorder, '/pose', event=event)
     recorder.start()
-    recorder.stop()
+    await recorder.stop()
     event.emit(Pose(x=1.0, y=1.0, yaw=0.0, time=1.0))
-    assert recorder._message_count == 0
+    assert recorder.message_count == 0
 
 
-# --------------------------------------------------------------------------- #
-# Timer source
-# --------------------------------------------------------------------------- #
-
-
-def test_timer_topic_polls_and_records(mcap_dir: Path) -> None:
+async def test_timer_topic_polls_and_records(mcap_dir: Path) -> None:
+    """A timer source records each polled value and skips a ``read`` returning ``None``."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     values: list[Any] = [Velocity(linear=0.3, angular=0.0, time=1.0)]
     add_timer_topic(recorder, '/wheels', interval=0.1, read=lambda: values[0])
@@ -346,28 +354,25 @@ def test_timer_topic_polls_and_records(mcap_dir: Path) -> None:
     source._poll()
     values[0] = None  # read() returning None must be skipped
     source._poll()
-    recorder.stop()
+    await recorder.stop()
 
     assert [m['linear'] for _, m in _read(_only_file(mcap_dir))] == [0.3]
 
 
-def test_timer_source_repeater_lifecycle(mcap_dir: Path) -> None:
+async def test_timer_source_repeater_lifecycle(mcap_dir: Path) -> None:
+    """The timer source's repeater exists only while recording."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     add_timer_topic(recorder, '/wheels', interval=0.1, read=lambda: None)
     source = recorder._sources[0]
     assert source._repeater is None
     recorder.start()
     assert source._repeater is not None
-    recorder.stop()
+    await recorder.stop()
     assert source._repeater is None
 
 
-# --------------------------------------------------------------------------- #
-# Converter encoding
-# --------------------------------------------------------------------------- #
-
-
 def test_pose_in_frame_maps_yaw_to_quaternion() -> None:
+    """``pose_in_frame`` maps yaw to a z-axis quaternion."""
     data = pose_in_frame(frame='map').encode(Pose(x=1.0, y=2.0, yaw=math.pi, time=0.0), 5 * NS)
     message = json.loads(data)
     assert message['pose']['orientation']['z'] == pytest.approx(1.0)
@@ -376,6 +381,7 @@ def test_pose_in_frame_maps_yaw_to_quaternion() -> None:
 
 
 def test_location_fix_converts_radians_to_degrees() -> None:
+    """``location_fix`` converts latitude/longitude from radians to degrees."""
     class _Pose:
         lat = math.radians(48.5)
         lon = math.radians(9.1)
@@ -394,6 +400,7 @@ def test_location_fix_converts_radians_to_degrees() -> None:
 
 
 def test_transform_3d_uses_full_rotation() -> None:
+    """``transform_3d`` encodes the pose's full 3D rotation."""
     pose = Pose3d(x=1.0, y=2.0, z=3.0, rotation=Rotation.from_euler(0.0, 0.0, math.pi))
     message = json.loads(transform_3d(child='camera_front', parent='base_link').encode(pose, NS))
     assert message['child_frame_id'] == 'camera_front'
@@ -402,6 +409,7 @@ def test_transform_3d_uses_full_rotation() -> None:
 
 
 def test_camera_calibration_encode() -> None:
+    """``camera_calibration`` encodes intrinsics (K/D/P) and image size."""
     class _Size:
         width, height = 640, 480
 
@@ -430,19 +438,21 @@ def test_camera_calibration_encode() -> None:
 
 
 def test_camera_calibration_skips_when_uncalibrated() -> None:
+    """``camera_calibration`` returns ``None`` while the camera is uncalibrated."""
     class _Camera:
         calibration = None
 
     assert camera_calibration(_Camera(), frame='camera_front').encode(None, NS) is None
 
 
-def test_compressed_image_encode(mcap_dir: Path) -> None:
+async def test_compressed_image_encode(mcap_dir: Path) -> None:
+    """An ``Image`` is recorded as a base64 JPEG ``foxglove.CompressedImage``."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event = FakeEvent()
     add_event_topic(recorder, '/camera/front/image', event=event)
     recorder.start()
     event.emit(Image.create_placeholder('hello', camera_id='front', time=5.0))
-    recorder.stop()
+    await recorder.stop()
 
     schema_name, message = _read(_only_file(mcap_dir))[0]
     assert schema_name == 'foxglove.CompressedImage'
@@ -451,19 +461,20 @@ def test_compressed_image_encode(mcap_dir: Path) -> None:
     assert base64.b64decode(message['data'])[:2] == b'\xff\xd8'  # JPEG magic
 
 
-def test_image_annotations_from_detections(mcap_dir: Path) -> None:
+async def test_image_annotations_from_detections(mcap_dir: Path) -> None:
+    """Detections become box outlines and point circles with labelled text in an ``ImageAnnotations`` overlay."""
     image = Image.create_placeholder('x', camera_id='front', time=2.0)
-    image._detections['detector'] = Detections(
+    image.set_detections('detector', Detections(
         boxes=[BoxDetection(category_name='weed', model_name='m', confidence=0.9,
                             x=10.0, y=20.0, width=30.0, height=40.0)],
         points=[PointDetection(category_name='crop', model_name='m', confidence=0.8, x=5.0, y=6.0)],
-    )
+    ))
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event = FakeEvent()
     add_event_topic(recorder, '/camera/front/annotations', event=event, converter=image_annotations())
     recorder.start()
     event.emit(image)
-    recorder.stop()
+    await recorder.stop()
 
     schema_name, message = _read(_only_file(mcap_dir))[0]
     assert schema_name == 'foxglove.ImageAnnotations'
@@ -473,23 +484,20 @@ def test_image_annotations_from_detections(mcap_dir: Path) -> None:
     assert {t['text'] for t in message['texts']} == {'weed (0.90)', 'crop (0.80)'}
 
 
-def test_image_annotations_filters_by_camera_id(mcap_dir: Path) -> None:
+async def test_image_annotations_filters_by_camera_id(mcap_dir: Path) -> None:
+    """``image_annotations(camera_id=...)`` skips images from other cameras."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event = FakeEvent()
     add_event_topic(recorder, '/camera/front/annotations', event=event,
                     converter=image_annotations(camera_id='front'))
     recorder.start()
     event.emit(Image.create_placeholder('x', camera_id='back', time=1.0))  # other camera -> skipped
-    recorder.stop()
-    assert recorder._message_count == 0
+    await recorder.stop()
+    assert recorder.message_count == 0
 
 
-# --------------------------------------------------------------------------- #
-# custom_message
-# --------------------------------------------------------------------------- #
-
-
-def test_custom_message_roundtrip(mcap_dir: Path) -> None:
+async def test_custom_message_roundtrip(mcap_dir: Path) -> None:
+    """A ``custom_message`` converter records and reads back its JSON payload."""
     converter = custom_message(
         'TestDiag',
         {'type': 'object', 'properties': {'value': {'type': 'number'}}},
@@ -499,29 +507,26 @@ def test_custom_message_roundtrip(mcap_dir: Path) -> None:
     add_timer_topic(recorder, '/diag', interval=0.1, read=lambda: {'value': 7.5}, converter=converter)
     recorder.start()
     recorder._sources[0]._poll()
-    recorder.stop()
+    await recorder.stop()
 
     schema_name, message = _read(_only_file(mcap_dir))[0]
     assert schema_name == 'TestDiag'
     assert message == {'value': 7.5}
 
 
-def test_custom_message_skips_on_none(mcap_dir: Path) -> None:
+async def test_custom_message_skips_on_none(mcap_dir: Path) -> None:
+    """A ``build`` returning ``None`` records nothing."""
     converter = custom_message('TestSkip', {'type': 'object'}, lambda _v, _ts: None)
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     add_timer_topic(recorder, '/skip', interval=0.1, read=lambda: {'value': 1.0}, converter=converter)
     recorder.start()
     recorder._sources[0]._poll()
-    recorder.stop()
-    assert recorder._message_count == 0
+    await recorder.stop()
+    assert recorder.message_count == 0
 
 
-# --------------------------------------------------------------------------- #
-# Battery -> sensor_msgs/msg/BatteryState
-# --------------------------------------------------------------------------- #
-
-
-def test_battery_maps_bms_state_to_ros_battery_state(mcap_dir: Path) -> None:
+async def test_battery_maps_bms_state_to_ros_battery_state(mcap_dir: Path) -> None:
+    """A ``BmsState`` maps to ``sensor_msgs/msg/BatteryState`` with the timestamp taken from ``last_update``."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event = FakeEvent()
     add_event_topic(recorder, '/battery', event=event,
@@ -529,7 +534,7 @@ def test_battery_maps_bms_state_to_ros_battery_state(mcap_dir: Path) -> None:
     recorder.start()
     event.emit(SimpleNamespace(percentage=87.5, voltage=25.2, current=-3.1,
                                temperature=24.0, is_charging=False, last_update=5.0))
-    recorder.stop()
+    await recorder.stop()
 
     with open(_only_file(mcap_dir), 'rb') as f:
         (schema, _, message), = make_reader(f).iter_messages()
@@ -546,12 +551,14 @@ def test_battery_maps_bms_state_to_ros_battery_state(mcap_dir: Path) -> None:
 
 
 def test_battery_charging_status(mcap_dir: Path) -> None:
+    """A charging battery reports ``power_supply_status`` CHARGING."""
     message = json.loads(battery_state().encode(
         SimpleNamespace(percentage=50.0, voltage=24.0, current=2.0, temperature=20.0, is_charging=True), NS))
     assert message['power_supply_status'] == 1  # CHARGING
 
 
 def test_battery_unmeasured_fields_are_null(mcap_dir: Path) -> None:
+    """Unmeasured battery fields are recorded as ``null`` and the status is UNKNOWN."""
     message = json.loads(battery_state().encode(
         SimpleNamespace(percentage=None, voltage=24.0, current=None, temperature=None, is_charging=None), NS))
     assert message['percentage'] is None
@@ -561,7 +568,8 @@ def test_battery_unmeasured_fields_are_null(mcap_dir: Path) -> None:
     assert message['charge'] is None and message['capacity'] is None
 
 
-def test_battery_auto_dispatches_for_bms_state(mcap_dir: Path) -> None:
+async def test_battery_auto_dispatches_for_bms_state(mcap_dir: Path) -> None:
+    """A ``BmsState`` payload auto-dispatches to the battery converter."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     event = FakeEvent()
     add_event_topic(recorder, '/battery', event=event, timestamp=lambda state: state.last_update)
@@ -569,19 +577,14 @@ def test_battery_auto_dispatches_for_bms_state(mcap_dir: Path) -> None:
     state = BmsState(percentage=42.0, voltage=24.0, current=-1.0, temperature=21.0,
                      is_charging=False, last_update=3.0)
     event.emit(state)
-    recorder.stop()
+    await recorder.stop()
 
     schema_name, message = _read(_only_file(mcap_dir))[0]
     assert schema_name == 'sensor_msgs/msg/BatteryState'
     assert message['percentage'] == pytest.approx(0.42)
 
 
-# --------------------------------------------------------------------------- #
-# GNSS status (custom message)
-# --------------------------------------------------------------------------- #
-
-
-def test_gnss_status_records_diagnostics_with_heading(mcap_dir: Path) -> None:
+async def test_gnss_status_records_diagnostics_with_heading(mcap_dir: Path) -> None:
     """A dual-antenna fix records quality, satellites, hdop, heading and std devs."""
     measurement = GnssMeasurement(
         time=5.0, gnss_time=5.0,
@@ -594,7 +597,7 @@ def test_gnss_status_records_diagnostics_with_heading(mcap_dir: Path) -> None:
     add_event_topic(recorder, '/gnss/status', event=event, converter=gnss_status())
     recorder.start()
     event.emit(measurement)
-    recorder.stop()
+    await recorder.stop()
 
     schema_name, message = _read(_only_file(mcap_dir))[0]
     assert schema_name == 'GnssStatus'
@@ -608,7 +611,7 @@ def test_gnss_status_records_diagnostics_with_heading(mcap_dir: Path) -> None:
     assert message['longitude_std_dev'] == pytest.approx(0.02)
 
 
-def test_gnss_status_without_heading_stays_valid_json(mcap_dir: Path) -> None:
+async def test_gnss_status_without_heading_stays_valid_json(mcap_dir: Path) -> None:
     """A single-antenna fix (infinite heading std dev) records valid JSON with heading unavailable."""
     measurement = GnssMeasurement(
         time=1.0, gnss_time=1.0,
@@ -621,7 +624,7 @@ def test_gnss_status_without_heading_stays_valid_json(mcap_dir: Path) -> None:
     add_event_topic(recorder, '/gnss/status', event=event, converter=gnss_status())
     recorder.start()
     event.emit(measurement)
-    recorder.stop()
+    await recorder.stop()
 
     raw, = _read_raw(_only_file(mcap_dir))
     assert b'Infinity' not in raw and b'NaN' not in raw  # strict JSON has neither
@@ -647,12 +650,7 @@ def test_location_fix_includes_diagonal_covariance_when_std_devs_present() -> No
     assert covariance[1] == 0.0 and covariance[3] == 0.0  # off-diagonal stays zero
 
 
-# --------------------------------------------------------------------------- #
-# IMU (custom message)
-# --------------------------------------------------------------------------- #
-
-
-def test_imu_records_rotation_rates_and_calibration(mcap_dir: Path) -> None:
+async def test_imu_records_rotation_rates_and_calibration(mcap_dir: Path) -> None:
     """The imu converter records roll/pitch/yaw, angular velocities and gyro calibration."""
     measurement = ImuMeasurement(
         time=4.0, gyro_calibration=2.5,
@@ -664,7 +662,7 @@ def test_imu_records_rotation_rates_and_calibration(mcap_dir: Path) -> None:
     add_event_topic(recorder, '/imu', event=event)
     recorder.start()
     event.emit(measurement)
-    recorder.stop()
+    await recorder.stop()
 
     schema_name, message = _read(_only_file(mcap_dir))[0]
     assert schema_name == 'ImuMeasurement'
@@ -673,11 +671,6 @@ def test_imu_records_rotation_rates_and_calibration(mcap_dir: Path) -> None:
     assert (message['angular_velocity_roll'], message['angular_velocity_pitch'],
             message['angular_velocity_yaw']) == pytest.approx((0.01, 0.02, 0.03))
     assert message['gyro_calibration'] == pytest.approx(2.5)
-
-
-# --------------------------------------------------------------------------- #
-# Timestamp fallback and off-loop encoding
-# --------------------------------------------------------------------------- #
 
 
 def test_timestamp_ns_uses_positive_time_attribute() -> None:
@@ -692,7 +685,7 @@ def test_timestamp_ns_falls_back_without_usable_time(monkeypatch: pytest.MonkeyP
     assert converters._timestamp_ns(SimpleNamespace(time=0.0)) == 7 * NS  # ``time == 0`` treated as unset
 
 
-def test_deselected_topic_is_not_encoded(mcap_dir: Path) -> None:
+async def test_deselected_topic_is_not_encoded(mcap_dir: Path) -> None:
     """A deselected topic skips encoding entirely; encoding runs only for recorded topics."""
     encoded: list[Any] = []
 
@@ -708,12 +701,12 @@ def test_deselected_topic_is_not_encoded(mcap_dir: Path) -> None:
     recorder.start(topics=['/kept'])
     kept.emit(1)
     dropped.emit(2)  # deselected -> must never be encoded
-    recorder.stop()
+    await recorder.stop()
 
     assert encoded == [1]
 
 
-def test_event_subscription_survives_client_deletion(mcap_dir: Path) -> None:
+async def test_event_subscription_survives_client_deletion(mcap_dir: Path) -> None:
     """A recording started from a UI context keeps recording after that browser tab closes.
 
     nicegui auto-unsubscribes callbacks subscribed inside a slot context when the client is
@@ -730,7 +723,7 @@ def test_event_subscription_survives_client_deletion(mcap_dir: Path) -> None:
     client.delete()  # the browser tab that started the recording disconnects
 
     event.emit(Pose(x=3.0, y=0.0, yaw=0.0, time=1.0))  # subscription must have survived
-    recorder.stop()
+    await recorder.stop()
 
     _, message = _read(_only_file(mcap_dir))[0]
     assert message['pose']['position']['x'] == 3.0

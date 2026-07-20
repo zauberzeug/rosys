@@ -2769,6 +2769,7 @@ dependencies = [
     { name = "virtualenv" },
     { name = "webob" },
     { name = "yappi" },
+    { name = "zstandard" },
 ]
 
 [package.dev-dependencies]
@@ -2856,6 +2857,7 @@ requires-dist = [
     { name = "virtualenv", specifier = ">=20.36.1" },
     { name = "webob", specifier = ">=1.8.10" },
     { name = "yappi", specifier = ">=1.6.0,<2" },
+    { name = "zstandard", specifier = ">=0.23.0" },
 ]
 
 [package.metadata.requires-dev]
