@@ -120,8 +120,7 @@ python_version = "3.11"
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
-# numpy: skip re-analysing its huge stubs; mcap: analysing its sources is fatal
-# (mcap/writer.py imports `.__init__`, tripping "source file found twice").
+# analysing mcap's sources trips mypy's fatal "source file found twice"
 module = ["numpy.*", "mcap.*"]
 follow_imports = "skip"
 
