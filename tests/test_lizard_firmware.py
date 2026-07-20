@@ -67,9 +67,8 @@ def test_combined_specifier(lizard_firmware: LizardFirmware) -> None:
     assert not lizard_firmware.is_version_supported('0.14.0')
 
 
-def test_unknown_versions_are_not_supported(lizard_firmware: LizardFirmware) -> None:
-    """With a restriction in place, unknown or unparsable versions are rejected."""
-    assert not lizard_firmware.is_version_supported(None)
+def test_unparsable_versions_are_not_supported(lizard_firmware: LizardFirmware) -> None:
+    """With a restriction in place, unparsable versions are rejected."""
     assert not lizard_firmware.is_version_supported('')
     assert not lizard_firmware.is_version_supported('not-a-version')
 
@@ -114,6 +113,22 @@ async def test_flash_core_refuses_unsupported_local_version(lizard_firmware: Liz
     lizard_firmware.local_version = '0.14.0'
     await lizard_firmware.flash_core()
     assert any('not supported' in message for message in notifications)
+
+
+async def test_flash_core_refuses_unknown_local_version(lizard_firmware: LizardFirmware) -> None:
+    """With a restriction in place, flashing the core is refused as long as the local version has not been read."""
+    notifications: list[str] = []
+    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
+    await lizard_firmware.flash_core()
+    assert any('version is unknown' in message for message in notifications)
+
+
+async def test_flash_p0_refuses_unknown_core_version(lizard_firmware: LizardFirmware) -> None:
+    """With a restriction in place, flashing the P0 is refused as long as the core version has not been read."""
+    notifications: list[str] = []
+    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
+    await lizard_firmware.flash_p0()
+    assert any('version is unknown' in message for message in notifications)
 
 
 async def test_flash_core_with_supported_version_passes_version_check(lizard_firmware: LizardFirmware) -> None:

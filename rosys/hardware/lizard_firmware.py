@@ -53,17 +53,15 @@ class LizardFirmware:
             return None
         return self.local_checksum == self.core_checksum
 
-    def is_version_supported(self, version: str | None) -> bool:
+    def is_version_supported(self, version: str) -> bool:
         """Whether the given Lizard version satisfies the ``supported_versions`` specifier.
 
         :param version: the Lizard version to check
         :return: ``True`` if no specifier is configured or the version satisfies it,
-            ``False`` for unknown or unparsable versions
+            ``False`` for unparsable versions
         """
         if not self.supported_versions:
             return True
-        if not version:
-            return False
         try:
             return Version(version) in SpecifierSet(self.supported_versions)
         except InvalidVersion:
@@ -170,10 +168,14 @@ class LizardFirmware:
         self.read_local_version()
 
     async def flash_core(self) -> None:
-        if not self.is_version_supported(self.local_version):
-            rosys.notify(f'Flashing Core failed. Lizard {self.local_version or "(unknown)"} is not supported '
-                         f'by this Robot Brain (requires {self.supported_versions}).', 'negative')
-            return
+        if self.supported_versions:
+            if self.local_version is None:
+                rosys.notify('Flashing Core failed. The local Lizard version is unknown.', 'negative')
+                return
+            if not self.is_version_supported(self.local_version):
+                rosys.notify(f'Flashing Core failed. Lizard {self.local_version} is not supported '
+                             f'by this Robot Brain (requires {self.supported_versions}).', 'negative')
+                return
         if not self.robot_brain.is_ready:
             rosys.notify('Flashing Core failed. Robot Brain is not ready.', 'negative')
             return
@@ -193,10 +195,14 @@ class LizardFirmware:
         rosys.notify('Finished.', 'positive')
 
     async def flash_p0(self, timeout: float = 120) -> None:
-        if not self.is_version_supported(self.core_version):
-            rosys.notify(f'Flashing P0 failed. Lizard {self.core_version or "(unknown)"} is not supported '
-                         f'by this Robot Brain (requires {self.supported_versions}).', 'negative')
-            return
+        if self.supported_versions:
+            if self.core_version is None:
+                rosys.notify('Flashing P0 failed. The Core Lizard version is unknown.', 'negative')
+                return
+            if not self.is_version_supported(self.core_version):
+                rosys.notify(f'Flashing P0 failed. Lizard {self.core_version} is not supported '
+                             f'by this Robot Brain (requires {self.supported_versions}).', 'negative')
+                return
         if not self.robot_brain.is_ready:
             rosys.notify('Flashing P0 failed. Robot Brain is not ready.', 'negative')
             return
