@@ -1,7 +1,6 @@
-from collections.abc import Awaitable, Callable
 
 from .arkvision_settings_interface import ArkVisionSettingsInterface
-from .mjpeg_device import MjpegDevice
+from .mjpeg_device import ImageDataHandler, MjpegDevice
 from .vendors import VendorType, mac_to_vendor
 
 
@@ -12,7 +11,7 @@ class ArkVisionMjpegDevice(MjpegDevice):
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
+                 on_new_image_data: ImageDataHandler) -> None:
         vendor = mac_to_vendor(mac)
         if vendor != VendorType.ARKVISION:
             raise ValueError(
