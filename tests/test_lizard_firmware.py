@@ -192,7 +192,7 @@ async def test_warning_when_core_runs_unsupported_version(lizard_firmware: Lizar
     await forward(seconds=3.0)
     assert task.done()
     assert lizard_firmware.core_version == '0.14.0'
-    assert any('Core is running Lizard 0.14.0' in message for message in notifications)
+    assert any('Core: Lizard 0.14.0 is not supported' in message for message in notifications)
 
 
 async def test_no_warning_when_core_runs_supported_version(lizard_firmware: LizardFirmware) -> None:
@@ -221,4 +221,4 @@ async def test_warning_when_p0_runs_unsupported_version(lizard_firmware: LizardF
     await forward(seconds=3.0)
     assert task.done()
     assert lizard_firmware.p0_version == '0.14.0'
-    assert any('P0 is running Lizard 0.14.0' in message for message in notifications)
+    assert any('P0: Lizard 0.14.0 is not supported' in message for message in notifications)
