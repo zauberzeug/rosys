@@ -18,6 +18,7 @@ dependencies = [
     "tabulate>=0.8.9,<0.9",
     "coloredlogs>=15.0.1,<16",
     "humanize>=4.0.0,<5",
+    "packaging>=26.0",
     "uvloop>=0.17.0",
     "dataclasses-json>=0.5.7,<0.6",
     "suntime>=1.2.5,<2",
