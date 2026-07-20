@@ -83,6 +83,8 @@ class LizardFirmware:
                 assert 'tag_name' in item
                 version_name = item['tag_name'].removeprefix('v')
                 if not self.is_version_supported(version_name):
+                    self.log.debug('Skipping Lizard version %s which is not supported by this Robot Brain',
+                                   version_name)
                     continue
                 assert 'assets' in item
                 browser_download_url = item['assets'][0]['browser_download_url']
@@ -152,9 +154,7 @@ class LizardFirmware:
         if not self.selected_online_version:
             rosys.notify('No version selected.', 'warning')
             return
-        if not self.is_version_supported(self.selected_online_version):
-            rosys.notify(f'Downloading failed. Lizard {self.selected_online_version} is not supported '
-                         f'by this Robot Brain (requires {self.supported_versions}).', 'negative')
+        if self._refuse_unsupported_version(self.selected_online_version, 'Downloading'):
             return
         assert self.selected_online_version in self.online_versions
         url = self.online_versions[self.selected_online_version]
@@ -174,9 +174,7 @@ class LizardFirmware:
             if self.local_version is None:
                 rosys.notify('Flashing Core failed. The local Lizard version is unknown.', 'negative')
                 return
-            if not self.is_version_supported(self.local_version):
-                rosys.notify(f'Flashing Core failed. Lizard {self.local_version} is not supported '
-                             f'by this Robot Brain (requires {self.supported_versions}).', 'negative')
+            if self._refuse_unsupported_version(self.local_version, 'Flashing Core'):
                 return
         if not self.robot_brain.is_ready:
             rosys.notify('Flashing Core failed. Robot Brain is not ready.', 'negative')
@@ -201,9 +199,7 @@ class LizardFirmware:
             if self.core_version is None:
                 rosys.notify('Flashing P0 failed. The Core Lizard version is unknown.', 'negative')
                 return
-            if not self.is_version_supported(self.core_version):
-                rosys.notify(f'Flashing P0 failed. Lizard {self.core_version} is not supported '
-                             f'by this Robot Brain (requires {self.supported_versions}).', 'negative')
+            if self._refuse_unsupported_version(self.core_version, 'Flashing P0'):
                 return
         if not self.robot_brain.is_ready:
             rosys.notify('Flashing P0 failed. Robot Brain is not ready.', 'negative')
@@ -226,3 +222,10 @@ class LizardFirmware:
         await rosys.sleep(3.0)
         await self.read_p0_version()
         rosys.notify('Finished.', 'positive')
+
+    def _refuse_unsupported_version(self, version: str, action: str) -> bool:
+        if self.is_version_supported(version):
+            return False
+        rosys.notify(f'{action} failed. Lizard {version} is not supported '
+                     f'by this Robot Brain (requires {self.supported_versions}).', 'negative')
+        return True

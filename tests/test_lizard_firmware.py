@@ -28,7 +28,7 @@ class VersionCommunicationSimulation(CommunicationSimulation):
 
 
 @pytest.fixture
-async def lizard_firmware(rosys_integration: None) -> LizardFirmware:
+def lizard_firmware(rosys_integration: None) -> LizardFirmware:
     robot_brain = RobotBrain(VersionCommunicationSimulation(),
                              enable_esp_on_startup=False,
                              supported_lizard_versions='<0.14.0')
