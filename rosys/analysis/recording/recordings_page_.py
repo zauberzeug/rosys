@@ -12,6 +12,8 @@ from ... import rosys
 from .mcap_recorder import McapRecorder, RecordingInfo
 from .paths import DOWNLOAD_PATH, PAGE_PATH
 
+_MAX_TIMEZONE_OFFSET_MINUTES = 24 * 60  # reject offsets beyond ±24 h from untrusted client JavaScript
+
 
 class RecordingsPage:
     """Lists the MCAP recordings for download and deletion.
@@ -28,6 +30,12 @@ class RecordingsPage:
     """
 
     def __init__(self, recorder: McapRecorder, *, header: Callable[[], None] | None = None) -> None:
+        """Register the recordings page and its download endpoint on the nicegui app.
+
+        :param recorder: the recorder whose recordings this page lists, manages, and serves.
+        :param header: optional callback rendered once at the top of the page before the
+            content (e.g. a shared application header or navigation); ``None`` renders no header.
+        """
         self.recorder = recorder
         self.header = header
 
@@ -39,17 +47,7 @@ class RecordingsPage:
 
         @app.get(f'{DOWNLOAD_PATH}/{{name}}')
         def download_recording(name: str) -> Response:
-            file_path = recorder.output_dir / Path(name).name  # basename only, no path traversal
-            if file_path.suffix != '.mcap':  # never serve transient *.mcap.reindex temp files
-                return JSONResponse(content={'status': 'error', 'message': 'Recording not found'},
-                                    status_code=status.HTTP_404_NOT_FOUND)
-            if file_path == recorder.current_recording:
-                return JSONResponse(content={'status': 'error', 'message': 'Recording is currently being written'},
-                                    status_code=status.HTTP_409_CONFLICT)
-            if not file_path.is_file():
-                return JSONResponse(content={'status': 'error', 'message': 'Recording not found'},
-                                    status_code=status.HTTP_404_NOT_FOUND)
-            return FileResponse(file_path, media_type='application/octet-stream', filename=file_path.name)
+            return _download_response(recorder, name)
 
     async def content(self) -> None:
         recorder = self.recorder
@@ -113,8 +111,11 @@ class RecordingsPage:
             await reload()
 
         async def _reindex() -> None:
-            await recorder.reindex_unindexed()
-            await reload()
+            reindex_button.disable()  # block a second concurrent rebuild (double-click or same client)
+            try:
+                await recorder.reindex_unindexed()
+            finally:
+                await reload()  # refreshes the list, which recomputes the button's enabled state
 
         async def _delete_all() -> None:
             if not await _confirm_dialog('Delete all recordings?'):
@@ -147,28 +148,74 @@ class RecordingsPage:
         with ui.scroll_area().classes('w-full').style('max-height: 75vh'):
             recordings_list()
 
+        def _change_token() -> tuple[tuple[Path, ...], Path | None]:
+            """A cheap change token — the recording paths plus the live file.
+
+            Both accessors glob the output directory, so this runs off the event loop.
+            """
+            return tuple(recorder.recordings), recorder.current_recording
+
         async def sync_if_changed() -> None:
             # Picks up start/stop, size-based rotation, and external add/remove. The
-            # change check itself is cheap and on-loop (a glob plus the current path);
-            # the expensive stat/index scan in reload() runs off the loop. A
-            # client-scoped timer (auto-removed on disconnect) avoids subscribing to
-            # the process-lifetime recorder, so handlers don't accumulate across page
-            # visits, and reloading only on an actual change keeps it off idle ticks.
+            # change token globs the directory, so it is computed off the loop (matching
+            # the class docstring); only an actual change triggers the fuller stat/index
+            # scan in reload(). A client-scoped timer (auto-removed on disconnect) avoids
+            # subscribing to the process-lifetime recorder, so handlers don't accumulate
+            # across page visits, and reloading only on a change keeps it off idle ticks.
+            token = await rosys.run.io_bound(_change_token)
+            if token is None:
+                return  # recorder shut down mid-scan
             live = next((info.path for info in infos if info.is_live), None)
-            if recorder.recordings != [info.path for info in infos] or recorder.current_recording != live:
+            if token != (tuple(info.path for info in infos), live):
                 await reload()
 
         ui.timer(0.1, reload, once=True)  # populate the snapshot off the loop after the page is built
         ui.timer(2.0, sync_if_changed)
 
 
+def _download_response(recorder: McapRecorder, name: str) -> Response:
+    """Build the HTTP response for a recording download request.
+
+    Serves a finished recording by basename only (no path traversal), refusing the
+    live file with 409 and anything missing, non-``.mcap``, or containing a NUL byte
+    with 404.
+
+    :param recorder: the recorder whose output directory holds the recordings.
+    :param name: the requested recording name from the URL (reduced to its basename).
+    :return: a :class:`FileResponse` for a valid recording, else a JSON error response.
+    """
+    if '\x00' in name:  # a NUL byte makes is_file() raise ValueError -> reject up front (else an unhandled 500)
+        return _not_found()
+    file_path = recorder.output_dir / Path(name).name  # basename only, no path traversal
+    if file_path.suffix != '.mcap':  # never serve transient *.mcap.reindex temp files
+        return _not_found()
+    if file_path == recorder.current_recording:
+        return JSONResponse(content={'status': 'error', 'message': 'Recording is currently being written'},
+                            status_code=status.HTTP_409_CONFLICT)
+    if not file_path.is_file():
+        return _not_found()
+    return FileResponse(file_path, media_type='application/octet-stream', filename=file_path.name)
+
+
+def _not_found() -> JSONResponse:
+    """A 404 JSON response for a missing or unservable recording."""
+    return JSONResponse(content={'status': 'error', 'message': 'Recording not found'},
+                        status_code=status.HTTP_404_NOT_FOUND)
+
+
 async def _browser_timezone() -> timezone:
-    """The connected client's timezone, from its UTC offset; falls back to UTC."""
+    """The connected client's timezone, from its UTC offset; falls back to UTC.
+
+    The offset comes from untrusted client JavaScript, so it is coerced to a number
+    and clamped to a sane range; anything non-numeric, out of range, or slow to
+    arrive falls back to UTC rather than breaking the page for that client.
+    """
     try:
         await ui.context.client.connected()
         offset_minutes = await ui.run_javascript('new Date().getTimezoneOffset()')
-        return timezone(timedelta(minutes=-offset_minutes))
-    except TimeoutError:
+        minutes = max(-_MAX_TIMEZONE_OFFSET_MINUTES, min(_MAX_TIMEZONE_OFFSET_MINUTES, float(offset_minutes)))
+        return timezone(timedelta(minutes=-minutes))
+    except (TimeoutError, TypeError, ValueError):
         return UTC
 
 

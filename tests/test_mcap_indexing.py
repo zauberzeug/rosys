@@ -1,19 +1,13 @@
 import json
-import tempfile
 from pathlib import Path
 
 import pytest
 from mcap.writer import CompressionType, Writer
 
 from rosys.analysis.recording import McapRecorder, TopicSchema, is_indexed, reindex
+from rosys.analysis.recording.indexing import _reindex_temp_path
 
 NS = 1_000_000_000
-
-
-@pytest.fixture
-def mcap_dir():
-    with tempfile.TemporaryDirectory(prefix='rosys-mcap-') as tmp:
-        yield Path(tmp)
 
 
 def _write_unindexed(path: Path, messages: int = 2000) -> None:
@@ -29,12 +23,12 @@ def _write_unindexed(path: Path, messages: int = 2000) -> None:
         file.flush()  # no finish() -> no summary index
 
 
-def test_finished_recording_is_indexed(mcap_dir: Path) -> None:
+async def test_finished_recording_is_indexed(mcap_dir: Path) -> None:
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     recorder.add_topic('/t', TopicSchema('T', b'{}', 'jsonschema', 'json'))
     recorder.start()
     recorder.log_message('/t', b'{"v": 1}', timestamp_ns=NS)
-    recorder.stop()
+    await recorder.stop()
 
     assert is_indexed(recorder.recordings[0])
     assert recorder.unindexed_recordings() == []
@@ -90,12 +84,25 @@ def test_reindex_write_failure_keeps_original_and_leaves_no_temp(mcap_dir: Path,
         reindex(path)
 
     assert path.read_bytes() == original  # the only complete copy is untouched
-    assert not (mcap_dir / 'crash.mcap.reindex').exists()  # no half-written temp left behind
+    assert list(mcap_dir.glob('*.reindex*')) == []  # no half-written temp left behind
 
 
-def test_current_recording_excluded_from_unindexed(mcap_dir: Path) -> None:
+def test_reindex_temp_paths_are_unique(mcap_dir: Path) -> None:
+    """Two reindex runs of the same recording get distinct temp files, so they cannot collide."""
+    path = mcap_dir / 'crash.mcap'
+
+    first, second = _reindex_temp_path(path), _reindex_temp_path(path)
+
+    assert first != second  # a fixed name would let overlapping runs overwrite each other
+    assert first.parent == path.parent == second.parent  # same directory keeps replace() atomic
+    assert first.name.startswith('crash.mcap.reindex-')  # startup cleanup globs '*.mcap.reindex*'
+    assert second.name.startswith('crash.mcap.reindex-')
+    assert first.suffix != '.mcap'  # the download endpoint must never serve a temp as a recording
+
+
+async def test_current_recording_excluded_from_unindexed(mcap_dir: Path) -> None:
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     recorder.add_topic('/t', TopicSchema('T', b'{}', 'jsonschema', 'json'))
     recorder.start()  # active file has no index yet, but must not count as a reindex orphan
     assert recorder.unindexed_recordings() == []
-    recorder.stop()
+    await recorder.stop()

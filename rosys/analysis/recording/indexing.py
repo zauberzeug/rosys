@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from struct import error as StructError
+from uuid import uuid4
 
 from mcap.exceptions import McapError
 from mcap.reader import make_reader
@@ -46,13 +47,17 @@ def reindex(path: Path | str, *, chunk_size: int = 1_048_576) -> int:
     removes the temp file and re-raises, so the original complete file is never
     replaced by a truncated one.
 
+    The rebuild goes through a per-run unique temp file (see :func:`_reindex_temp_path`),
+    so two overlapping reindexes of the same recording cannot interleave writes and
+    corrupt each other's output.
+
     :param path: the recording to reindex in place.
     :param chunk_size: the target chunk size of the rewritten file.
     :return: the number of messages recovered into the indexed copy.
     :raises Exception: if writing the indexed copy fails; the original is left untouched.
     """
     path = Path(path)
-    temp = path.with_name(path.name + '.reindex')
+    temp = _reindex_temp_path(path)
     count = 0
     try:
         with open(path, 'rb') as source, open(temp, 'wb') as target:
@@ -91,3 +96,17 @@ def reindex(path: Path | str, *, chunk_size: int = 1_048_576) -> int:
         raise
     temp.replace(path)
     return count
+
+
+def _reindex_temp_path(path: Path) -> Path:
+    """A unique temp path for one reindex run, alongside ``path`` so ``replace()`` stays atomic.
+
+    Each run gets its own random suffix, so two overlapping reindexes of the same
+    recording write to different temp files and cannot corrupt each other's output.
+    Orphaned temps left by a crash mid-rebuild are cleaned up on recorder startup
+    (glob ``*.mcap.reindex*``), so the suffix must keep the ``.mcap.reindex`` prefix.
+
+    :param path: the recording being reindexed.
+    :return: a sibling path named ``<recording>.reindex-<random hex>``.
+    """
+    return path.with_name(f'{path.name}.reindex-{uuid4().hex}')
