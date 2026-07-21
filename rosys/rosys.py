@@ -200,11 +200,7 @@ class Repeater:
         self._task: asyncio.Task | None = None
         self.handler = _prepare_handler(handler)
         if isinstance(self.handler, _WeakHandler):
-            if _state.startup_finished:
-                background_tasks.create(self._warn_if_object_was_never_stored(),
-                                        name=f'check object of {_handler_name(self.handler)}')
-            else:
-                startup_handlers.append(self._warn_if_object_was_never_stored)
+            on_startup(self._warn_if_object_was_never_stored)
 
     async def _warn_if_object_was_never_stored(self) -> None:
         # NOTE: an object that is already gone once control returns to the event loop can never have been stored
