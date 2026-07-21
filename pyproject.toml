@@ -48,6 +48,8 @@ dependencies = [
     "marshmallow>=3.26.2,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/81
     "pyturbojpeg>=1.8.2,<2",
     "virtualenv>=20.36.1",  # https://github.com/zauberzeug/rosys/security/dependabot/95
+    "mcap>=1.1.0,<2",
+    "zstandard>=0.23.0",  # imported directly in analysis/recording/indexing.py (also a transitive dep of mcap)
 ]
 
 [project.urls]
@@ -119,7 +121,9 @@ python_version = "3.11"
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = ["numpy.*"]
+# numpy's stubs surface ufunc/ndarray typing errors in rosys
+# analysing mcap's sources trips mypy's fatal "source file found twice"
+module = ["numpy.*", "mcap.*"]
 follow_imports = "skip"
 
 [[tool.mypy.overrides]]

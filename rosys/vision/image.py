@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any, ClassVar, Self
 
 import numpy as np
@@ -44,6 +46,14 @@ class Image:
             raise RuntimeError(
                 f'Image has multiple detection types ({", ".join(self._detections.keys())}). Use `get_detections(type)` instead.')
         return next(iter(self._detections.values()))
+
+    @property
+    def detections_by_detector_id(self) -> Mapping[str, Detections]:
+        """A read-only view of all detections keyed by the detector that produced them.
+
+        :return: a mapping from detector id to its :class:`Detections`.
+        """
+        return MappingProxyType(self._detections)
 
     @property
     def array(self) -> ImageArray:
