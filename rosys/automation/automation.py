@@ -85,8 +85,8 @@ class Automation:
         return await self
 
     def __await__(self) -> Generator[Any, None, Any | None]:
-        token = _CURRENT_AUTOMATION.set(self)  # bind this Automation instance into the task context
         coro_iter = self.coro.__await__()
+        token = _CURRENT_AUTOMATION.set(self)  # bind this Automation instance into the task context
         try:
             self._is_waited = True
             iter_send, iter_throw = coro_iter.send, coro_iter.throw
