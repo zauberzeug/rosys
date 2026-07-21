@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import gc
+import logging
 import weakref
 from dataclasses import dataclass
 
@@ -10,6 +11,14 @@ from nicegui import core
 import rosys
 from rosys.rosys import Repeater, _handler_name, _prepare_handler, _state, _WeakHandler, startup_handlers
 from rosys.testing import forward
+
+
+@pytest.fixture
+def rosys_log(rosys_integration: None, caplog: pytest.LogCaptureFixture):
+    logger = logging.getLogger('rosys.core')  # NOTE: the test log configuration disables propagation to the root
+    logger.addHandler(caplog.handler)
+    yield caplog
+    logger.removeHandler(caplog.handler)
 
 
 def plain_function() -> str:
@@ -181,6 +190,34 @@ async def test_repeater_can_restart_after_stop():
     assert repeater.running  # a plain stop() must not permanently disable restart
     await forward(0.35)
     assert len(calls) > calls_after_stop  # restarted: ticking again
+
+
+async def test_never_stored_object_logs_warning(rosys_log: pytest.LogCaptureFixture):
+    calls: list[float] = []
+    repeater = rosys.on_repeat(Ticker(calls).step, 0.1)  # NOTE: the Ticker is not stored anywhere
+
+    await forward(0.5)
+
+    assert not repeater.running
+    assert not calls  # never ticked
+    assert any('will never be called' in record.message for record in rosys_log.records)
+
+
+async def test_object_collected_later_logs_debug_instead_of_warning(rosys_log: pytest.LogCaptureFixture):
+    rosys_log.set_level(logging.DEBUG, logger='rosys.core')
+    calls: list[float] = []
+    ticker = Ticker(calls)
+    repeater = rosys.on_repeat(ticker.step, 0.1)
+
+    await forward(0.35)
+    del ticker
+    gc.collect()
+    await forward(0.5)
+
+    assert not repeater.running
+    assert not any('will never be called' in record.message for record in rosys_log.records)
+    assert any('garbage-collected' in record.message and record.levelno == logging.DEBUG
+               for record in rosys_log.records)
 
 
 @pytest.mark.usefixtures('rosys_integration')

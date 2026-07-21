@@ -197,6 +197,19 @@ class Repeater:
         self.interval = interval
         self._task: asyncio.Task | None = None
         self.handler = _prepare_handler(handler)
+        if isinstance(self.handler, _WeakHandler):
+            if _state.startup_finished:
+                background_tasks.create(self._warn_if_object_was_never_stored(),
+                                        name=f'check object of {_handler_name(self.handler)}')
+            else:
+                startup_handlers.append(self._warn_if_object_was_never_stored)
+
+    async def _warn_if_object_was_never_stored(self) -> None:
+        # NOTE: an object that is already gone once control returns to the event loop can never have been stored
+        if not self._alive:
+            log.warning('"%s" will never be called because its object has already been garbage-collected; '
+                        'store the object to define the lifetime of the repetition',
+                        _handler_name(self.handler))
 
     @property
     def _alive(self) -> bool:
@@ -243,6 +256,8 @@ class Repeater:
                 await sleep(self.interval - dt)
             except (asyncio.CancelledError, GeneratorExit):
                 return
+        if not self._alive:
+            log.debug('"%s" stops repeating because its object was garbage-collected', _handler_name(self.handler))
 
     def stop(self) -> None:
         if not self._task:
