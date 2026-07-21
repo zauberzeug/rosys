@@ -24,7 +24,7 @@ class SimulatedDevice:
         self._on_new_image = on_new_image
         self._creation_time: float = rosys.time()
 
-        self._repeater = rosys.on_repeat(self._create_image, interval=1.0 / fps, weak=True)
+        self._repeater = rosys.on_repeat(self._create_image, interval=1.0 / fps)
 
     @property
     def creation_time(self) -> float:

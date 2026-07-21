@@ -69,7 +69,7 @@ class Schedule(persistence.Persistable):
         self.half_hours = [True] * 2 * 24 * 7
 
         self._is_active = False
-        rosys.on_repeat(self.step, 1, weak=True)
+        rosys.on_repeat(self.step, 1)
 
     def backup_to_dict(self) -> dict:
         return {

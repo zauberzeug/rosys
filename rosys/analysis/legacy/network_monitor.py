@@ -29,7 +29,7 @@ class NetworkMonitor:
         self.log = logging.getLogger('rosys.network_monitor')
         self.interfaces: dict[str, NetworkStats] = {}
 
-        rosys.on_repeat(self.step, 60, weak=True)
+        rosys.on_repeat(self.step, 60)
 
     @staticmethod
     def is_operable() -> bool:

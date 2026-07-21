@@ -8,7 +8,7 @@ import pytest
 from nicegui import core
 
 import rosys
-from rosys.rosys import Repeater, _handler_name, _state, _weaken, _WeakHandler, startup_handlers
+from rosys.rosys import Repeater, _handler_name, _prepare_handler, _state, _WeakHandler, startup_handlers
 from rosys.testing import forward
 
 
@@ -50,25 +50,70 @@ class Handlers:
         return 'class'
 
 
-def test_weaken_returns_none_for_plain_function():
-    assert _weaken(plain_function) is None
+def test_plain_function_stays_strong():
+    assert _prepare_handler(plain_function) is plain_function
 
 
-def test_weaken_returns_none_for_static_method():
-    assert _weaken(Handlers().static_method) is None
+def test_static_method_stays_strong():
+    assert _prepare_handler(Handlers().static_method) is Handlers.static_method
 
 
-def test_weaken_returns_none_for_class_method():
-    assert _weaken(Handlers.class_method) is None
+def test_capture_free_nested_function_stays_strong():
+    def nested() -> None:
+        pass
+    assert _prepare_handler(nested) is nested
 
 
-def test_weaken_returns_none_for_non_weakreferenceable_object():
-    assert _weaken(SlotsValue().method) is None  # no __weakref__, so WeakMethod would raise TypeError
+def test_bound_method_becomes_weak():
+    handlers = Handlers()
+    handler = _prepare_handler(handlers.method)
+    assert isinstance(handler, _WeakHandler)
+    assert handler.alive  # object still there
+    assert handler() == 'method'  # still forwards to the method
+    assert handler.__qualname__ == 'Handlers.method'  # qualname preserved for logging
 
 
-def test_repeater_weak_falls_back_for_non_weakreferenceable_object():
-    handler = SlotsValue().method
-    assert Repeater(handler, 0.1, weak=True).handler is handler  # no crash; falls back to the strong handler
+def test_class_method_becomes_weak_on_the_everlasting_class():
+    handler = _prepare_handler(Handlers.class_method)
+    assert isinstance(handler, _WeakHandler)
+    assert handler.alive
+    assert handler() == 'class'
+
+
+def test_bound_dunder_call_becomes_weak():
+    callable_handler = CallableHandler()
+    handler = _prepare_handler(callable_handler.__call__)
+    assert isinstance(handler, _WeakHandler)
+    assert handler.alive
+
+
+def test_lambda_is_rejected():
+    with pytest.raises(TypeError, match='lambdas are not supported'):
+        Repeater(lambda: None, 0.1)
+
+
+def test_capturing_closure_is_rejected():
+    x = 42
+
+    def closure() -> int:
+        return x
+    with pytest.raises(TypeError, match='captures variables'):
+        Repeater(closure, 0.1)
+
+
+def test_partial_is_rejected():
+    with pytest.raises(TypeError, match='unsupported handler'):
+        Repeater(functools.partial(Handlers().method), 0.1)
+
+
+def test_callable_object_is_rejected():
+    with pytest.raises(TypeError, match='unsupported handler'):
+        Repeater(CallableHandler(), 0.1)
+
+
+def test_non_weakreferenceable_object_is_rejected():
+    with pytest.raises(TypeError, match='does not support weak references'):
+        Repeater(SlotsValue().method, 0.1)  # no __weakref__, so WeakMethod would raise TypeError
 
 
 def test_handler_name_falls_back_when_qualname_is_missing():
@@ -77,28 +122,11 @@ def test_handler_name_falls_back_when_qualname_is_missing():
     assert _handler_name(partial) == repr(partial)  # partials and callables have no __qualname__
 
 
-def test_repeater_warning_does_not_crash_on_handlers_without_qualname():
-    # these hit the "weak=True has no effect" warning path, which used to do a hard .__qualname__
-    partial = functools.partial(Handlers().method)
-    assert Repeater(partial, 0.1, weak=True).handler is partial
-    callable_handler = CallableHandler()
-    assert Repeater(callable_handler, 0.1, weak=True).handler is callable_handler
-
-
-def test_weaken_wraps_bound_method():
-    handlers = Handlers()
-    handler = _weaken(handlers.method)
-    assert handler is not None
-    assert handler.alive  # object still there
-    assert handler() == 'method'  # still forwards to the method
-    assert handler.__qualname__ == 'Handlers.method'  # qualname preserved for logging
-
-
-def test_weaken_does_not_keep_object_alive():
+def test_weak_handler_does_not_keep_object_alive():
     handlers = Handlers()
     reference = weakref.ref(handlers)
-    handler = _weaken(handlers.method)
-    assert handler is not None
+    handler = _prepare_handler(handlers.method)
+    assert isinstance(handler, _WeakHandler)
 
     del handlers
     gc.collect()
@@ -109,14 +137,14 @@ def test_weaken_does_not_keep_object_alive():
 
 
 async def test_collected_object_does_not_start_orphan_task_after_startup():
-    # NOTE: a weak repeater created pre-startup defers its start; if the object dies first,
+    # NOTE: a repeater created pre-startup defers its start; if the object dies first,
     # the replayed start (during startup) must see the dead handler and not launch an orphan task.
     core.loop = asyncio.get_event_loop()
     rosys.reset_before_test()
     assert not _state.startup_finished
 
     handlers = Handlers()
-    repeater = rosys.on_repeat(handlers.method, 0.01, weak=True)
+    repeater = rosys.on_repeat(handlers.method, 0.01)
     assert not repeater.running  # start was deferred, not launched
     assert repeater.start in startup_handlers
 
@@ -156,10 +184,10 @@ async def test_repeater_can_restart_after_stop():
 
 
 @pytest.mark.usefixtures('rosys_integration')
-async def test_weak_repeater_stops_when_object_is_collected():
+async def test_repeater_stops_when_object_is_collected():
     calls: list[float] = []
     ticker = Ticker(calls)
-    repeater = rosys.on_repeat(ticker.step, 0.1, weak=True)
+    repeater = rosys.on_repeat(ticker.step, 0.1)
     reference = weakref.ref(ticker)
 
     await forward(0.35)

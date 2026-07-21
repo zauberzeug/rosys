@@ -46,7 +46,7 @@ class RobotHardware(Robot):
         self._last_warning_time = 0.0
         self.robot_brain.lizard_code = self.generate_lizard_code()
         self.expander_prefixes = set(f'{module.name}:' for module in modules if isinstance(module, ExpanderHardware))
-        rosys.on_repeat(self.update, 0.01, weak=True)
+        rosys.on_repeat(self.update, 0.01)
 
     def add_module(self, module: Module) -> None:
         super().add_module(module)
@@ -129,7 +129,7 @@ class RobotSimulation(Robot):
     def __init__(self, modules: list[Module]) -> None:
         super().__init__(modules)
         self._last_step: float | None = None
-        rosys.on_repeat(self.step, 0.01, weak=True)
+        rosys.on_repeat(self.step, 0.01)
 
     async def step(self) -> None:
         now = rosys.time()

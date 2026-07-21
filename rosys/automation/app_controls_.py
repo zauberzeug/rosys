@@ -59,7 +59,7 @@ class AppControls:
 
         def handle_esp_ready():
             rosys.on_shutdown(self.clear)
-            rosys.on_repeat(self.refresh, 0.1, weak=True)
+            rosys.on_repeat(self.refresh, 0.1)
             rosys.NEW_NOTIFICATION.subscribe(self.notify)
             robot_brain.ESP_CONNECTED.subscribe(self.sync)
             robot_brain.LINE_RECEIVED.subscribe(self.parse)

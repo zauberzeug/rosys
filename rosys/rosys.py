@@ -1,5 +1,6 @@
 import asyncio
 import gc
+import inspect
 import logging
 import os
 import signal
@@ -162,35 +163,40 @@ class _WeakHandler:
         return None if method is None else method(*args, **kwargs)
 
 
-def _weaken(method: Callable) -> _WeakHandler | None:
-    """Wrap a bound method so it can be called without keeping its object alive.
+def _prepare_handler(handler: Callable) -> Callable:
+    """Weaken bound methods so the repetition ends with their object; keep plain functions strong.
 
-    Returns None for handlers that cannot be weakened: plain functions, static/classmethods,
-    and bound methods whose object is not weak-referenceable (e.g. a __slots__ class without __weakref__).
+    Lambdas, capturing closures, partials and other callables are rejected
+    because no single lifetime behavior can serve their intent.
     """
-    obj = getattr(method, '__self__', None)
-    if obj is None or isinstance(obj, type):
-        return None
-    try:
-        return _WeakHandler(method)
-    except TypeError:  # obj is not weak-referenceable, e.g. a @dataclass(slots=True) value type
-        return None
+    if inspect.ismethod(handler):
+        try:
+            return _WeakHandler(handler)
+        except TypeError as e:
+            raise TypeError(f'the object behind "{handler.__qualname__}" does not support weak references; '
+                            'add "__weakref__" to its __slots__ or use "weakref_slot=True" for dataclasses') from e
+    if inspect.isfunction(handler):
+        if handler.__name__ == '<lambda>':
+            raise TypeError('lambdas are not supported; '
+                            'pass a bound method (bind arguments as attributes or default parameters) '
+                            'or a plain function to repeat until shutdown')
+        if handler.__closure__:
+            raise TypeError(f'"{handler.__qualname__}" captures variables; '
+                            'turn them into attributes of a bound method '
+                            'or default parameters of a plain function')
+        return handler
+    raise TypeError(f'unsupported handler {_handler_name(handler)}; '
+                    'pass a bound method (repeats until its object dies) '
+                    'or a plain function (repeats until shutdown)')
 
 
 class Repeater:
     tasks: ClassVar[set[asyncio.Task]] = set()
 
-    def __init__(self, handler: Callable, interval: float, *, weak: bool = False) -> None:
+    def __init__(self, handler: Callable, interval: float) -> None:
         self.interval = interval
         self._task: asyncio.Task | None = None
-        self.handler = handler
-        if weak:
-            weakened = _weaken(handler)
-            if weakened is None:
-                log.warning('weak=True has no effect on "%s": only weak-referenceable bound methods can be weakened',
-                            _handler_name(handler))
-            else:
-                self.handler = weakened
+        self.handler = _prepare_handler(handler)
 
     @property
     def _alive(self) -> bool:
@@ -258,8 +264,8 @@ class Repeater:
             repeater.cancel()
 
 
-def on_repeat(handler: Callable, interval: float, *, weak: bool = False) -> Repeater:
-    repeater = Repeater(handler, interval, weak=weak)
+def on_repeat(handler: Callable, interval: float) -> Repeater:
+    repeater = Repeater(handler, interval)
     repeater.start()
     return repeater
 

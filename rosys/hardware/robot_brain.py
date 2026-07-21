@@ -56,7 +56,7 @@ class RobotBrain:
         if enable_esp_on_startup:
             rosys.on_startup(self.enable_esp)
         if heartbeat_interval is not None:
-            rosys.on_repeat(self.send_heartbeat, heartbeat_interval, weak=True)
+            rosys.on_repeat(self.send_heartbeat, heartbeat_interval)
 
         self.esp_pins_core = EspPins(name='core', robot_brain=self)
         self.esp_pins_p0 = EspPins(name='p0', robot_brain=self)

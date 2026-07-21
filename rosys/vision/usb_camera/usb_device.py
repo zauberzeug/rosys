@@ -43,7 +43,7 @@ class UsbDevice:
 
         self.set_video_format()
 
-        self._capture_task = rosys.on_repeat(self._capture_image, interval=0.01, weak=True)
+        self._capture_task = rosys.on_repeat(self._capture_image, interval=0.01)
 
     def __del__(self) -> None:
         self._capture.release()

@@ -38,7 +38,7 @@ class ReplayCameraProvider(CameraProvider[ReplayCamera]):
         self._find_cameras(replay_folder)
         self._set_time_interval()
 
-        self._repeater = rosys.on_repeat(self._step, interval=replay_interval, weak=True)
+        self._repeater = rosys.on_repeat(self._step, interval=replay_interval)
 
     def pause(self) -> None:
         self._update_time()

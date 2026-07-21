@@ -41,7 +41,7 @@ class Odometer(PoseProvider, FrameProvider):
         self.odometry_frame: Pose = Pose()
         """Local-to-world transform applied to the smooth, jump-free history."""
 
-        rosys.on_repeat(self.prune_history, 1.0, weak=True)
+        rosys.on_repeat(self.prune_history, 1.0)
 
     @property
     def pose(self) -> Pose:

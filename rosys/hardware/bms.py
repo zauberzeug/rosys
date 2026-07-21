@@ -111,7 +111,7 @@ class BmsHardware(Bms, ModuleHardware):
             {name}.unmute()
         ''')
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, **kwargs)
-        rosys.on_repeat(self._request, 1.0, weak=True)
+        rosys.on_repeat(self._request, 1.0)
         self.message_hooks[name] = self._handle_bms
 
     async def _request(self) -> None:

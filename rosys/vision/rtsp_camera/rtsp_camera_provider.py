@@ -28,7 +28,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
 
         rosys.on_shutdown(self.shutdown)
         if auto_scan:
-            rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL, weak=True)
+            rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
     def restore_from_dict(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():

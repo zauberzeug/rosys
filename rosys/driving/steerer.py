@@ -35,7 +35,7 @@ class Steerer:
         self.linear_speed = 0.0
         self.angular_speed = 0.0
 
-        rosys.on_repeat(self.step, 0.05, weak=True)
+        rosys.on_repeat(self.step, 0.05)
 
     def start(self) -> None:
         self.log.info('start steering')

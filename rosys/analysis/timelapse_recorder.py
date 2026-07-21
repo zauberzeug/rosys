@@ -65,7 +65,7 @@ class TimelapseRecorder:
         self.ongoing_compressions: list[str] = []
         """List of video files that are currently being compressed."""
 
-        rosys.on_repeat(self._capture, 0.01, weak=True)
+        rosys.on_repeat(self._capture, 0.01)
         self.frame_info_builder: Callable[[RosysImage], str | None] = lambda image: None
 
     async def _capture(self) -> None:

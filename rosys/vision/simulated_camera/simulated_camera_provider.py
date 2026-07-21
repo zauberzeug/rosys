@@ -22,7 +22,7 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera]):
         self.simulate_device_failure = simulate_failing
 
         if auto_scan:
-            rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL, weak=True)
+            rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
     def backup_to_dict(self) -> dict:
         cameras = {}
