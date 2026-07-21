@@ -25,6 +25,18 @@ def plain_function() -> str:
     return 'function'
 
 
+def _transparent_decorator(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+
+@_transparent_decorator
+def decorated_function() -> str:
+    return 'decorated'
+
+
 class Ticker:
     def __init__(self, calls: list[float]) -> None:
         self.calls = calls  # external list, so the Ticker can be collected while we keep counting
@@ -71,6 +83,16 @@ def test_capture_free_nested_function_stays_strong():
     def nested() -> None:
         pass
     assert _prepare_handler(nested) is nested
+
+
+def test_decorated_plain_function_stays_strong():
+    assert _prepare_handler(decorated_function) is decorated_function
+
+
+def test_decorated_bound_method_is_rejected():
+    wrapped_method = _transparent_decorator(Handlers().method)  # the closure captures the method strongly
+    with pytest.raises(TypeError, match='captures variables'):
+        _prepare_handler(wrapped_method)
 
 
 def test_bound_method_becomes_weak():

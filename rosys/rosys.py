@@ -181,9 +181,11 @@ def _prepare_handler(handler: Callable) -> Callable:
                             'pass a bound method (bind arguments as attributes or default parameters) '
                             'or a plain function to repeat until shutdown')
         if handler.__closure__:
-            raise TypeError(f'"{handler.__qualname__}" captures variables; '
-                            'turn them into attributes of a bound method '
-                            'or default parameters of a plain function')
+            unwrapped = inspect.unwrap(handler)  # NOTE: decorators create closures but only wrap transparently
+            if unwrapped is handler or not inspect.isfunction(unwrapped) or unwrapped.__closure__:
+                raise TypeError(f'"{handler.__qualname__}" captures variables; '
+                                'turn them into attributes of a bound method '
+                                'or default parameters of a plain function')
         return handler
     raise TypeError(f'unsupported handler {_handler_name(handler)}; '
                     'pass a bound method (repeats until its object dies) '
