@@ -1,4 +1,5 @@
 import asyncio
+import time
 from typing import Literal
 
 import numpy as np
@@ -6,6 +7,7 @@ import pytest
 
 import rosys
 from rosys.automation import Automator
+from rosys.automation.automation import Automation
 from rosys.driving import Driver
 from rosys.geometry import Pose, Spline
 from rosys.hardware import Robot
@@ -255,6 +257,44 @@ async def test_parallelize_exception(automator: Automator):
     automator.start(run())
     await forward(seconds=10)
     assert failures == ['an exception occurred in an automation: i is 3']
+
+
+async def test_parallelize_suspends_while_all_coroutines_are_parked_on_futures():
+    """``parallelize`` must wait on the coroutines' futures instead of busy-polling the event loop (regression).
+
+    This runs on real time because test-mode ``rosys.sleep`` never parks on a future.
+    """
+    events: list[str] = []
+
+    async def fast() -> None:
+        await asyncio.sleep(0.1)
+        events.append('fast done')
+
+    async def slow() -> None:
+        try:
+            await asyncio.sleep(5.0)
+            events.append('slow done')
+        finally:
+            events.append('slow cleanup')
+
+    cpu_start = time.process_time()
+    wall_start = time.monotonic()
+    await rosys.automation.parallelize(slow(), fast(), return_when_first_completed=True)
+    assert time.monotonic() - wall_start < 1.0, 'should return as soon as the fast coroutine completes'
+    assert time.process_time() - cpu_start < 0.05, 'should suspend instead of burning CPU while waiting'
+    assert events == ['fast done', 'slow cleanup']
+
+
+async def test_automation_can_wrap_a_non_coroutine_awaitable():
+    """``Automation`` must also close awaitables like ``parallelize`` which are not coroutines (regression)."""
+    events: list[str] = []
+
+    async def worker() -> None:
+        await asyncio.sleep(0.01)
+        events.append('done')
+
+    assert await Automation(rosys.automation.parallelize(worker())).run() is None
+    assert events == ['done']
 
 
 @pytest.mark.parametrize('method', ['pause', 'stop'])
