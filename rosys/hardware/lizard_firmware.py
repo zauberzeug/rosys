@@ -22,6 +22,7 @@ class LizardFirmware:
 
     def __init__(self, robot_brain: 'RobotBrain', *, supported_versions: str | None = None) -> None:
         """
+        :param robot_brain: the Robot Brain instance to use for reading and flashing Lizard firmware
         :param supported_versions: PEP 440 version specifier restricting which Lizard versions can be
             downloaded and flashed, e.g. ``'<0.14.0'`` (default: ``None``, all versions are supported)
         :raises InvalidSpecifier: When ``supported_versions`` is not a valid version specifier
@@ -52,12 +53,7 @@ class LizardFirmware:
         return self.local_checksum == self.core_checksum
 
     def is_version_supported(self, version: str) -> bool:
-        """Whether the given Lizard version satisfies the ``supported_versions`` specifier.
-
-        :param version: the Lizard version to check
-        :return: ``True`` if no specifier is configured or the version satisfies it,
-            ``False`` for unparsable versions
-        """
+        """Whether the given Lizard ``version`` satisfies the ``supported_versions`` specifier."""
         if self.supported_versions is None:
             return True
         try:
@@ -83,8 +79,7 @@ class LizardFirmware:
                 assert 'tag_name' in item
                 version_name = item['tag_name'].removeprefix('v')
                 if not self.is_version_supported(version_name):
-                    self.log.debug('Skipping Lizard version %s which is not supported by this Robot Brain',
-                                   version_name)
+                    self.log.debug('Lizard %s is not supported by this Robot Brain. Skipping.', version_name)
                     continue
                 assert 'assets' in item
                 browser_download_url = item['assets'][0]['browser_download_url']
@@ -226,6 +221,6 @@ class LizardFirmware:
         """
         if self.is_version_supported(version):
             return False
-        rosys.notify(f'{context}: Lizard {version} is not supported by this Robot Brain '
-                     f'(requires {self.supported_versions}).', 'negative', log_level=logging.WARNING)
+        msg = f'{context}: Lizard {version} is not supported by this Robot Brain (requires {self.supported_versions}).'
+        rosys.notify(msg, 'negative', log_level=logging.WARNING)
         return True
