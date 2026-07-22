@@ -6,7 +6,7 @@ from nicegui import background_tasks
 import rosys
 from rosys.hardware import RobotBrain, RobotHardware
 from rosys.hardware.communication import Communication
-from rosys.hardware.robot_brain import augment
+from rosys.hardware.robot_brain import augment, check
 from rosys.testing import forward
 
 MISMATCH_MESSAGE = 'Lizard startup code is outdated'
@@ -97,3 +97,31 @@ async def test_check_runs_again_after_configuring(robot_brain: RobotBrain) -> No
     await connect(communication)
     assert connect_count == 2
     assert robot_brain.lizard_firmware.checksums_match is True
+
+
+@pytest.mark.parametrize('line', ['hello', 'wheels.speed(1, 2)', 'grün', 'café', 'ß', '日本'])
+def test_checksum_round_trip(line: str) -> None:
+    assert check(augment(line)) == line
+
+
+@pytest.mark.parametrize('line', ['hello', 'grün', '日本'])
+def test_checksum_is_computed_over_utf8_bytes(line: str) -> None:
+    checksum = 0
+    for byte in line.encode():  # NOTE: Lizard XORs the raw bytes it receives, not Unicode code points
+        checksum ^= byte
+    assert augment(line) == f'{line}@{checksum:02x}'
+    assert len(augment(line).rsplit('@', 1)[1]) == 2  # NOTE: '02x' is a minimum width, so a value >0xff emits 3 digits
+
+
+@pytest.mark.parametrize('line', ['foo@zz', 'foo@1z', 'foo@-1'])
+def test_check_rejects_unparseable_checksum(line: str) -> None:
+    assert check(line) == ''
+
+
+def test_check_rejects_undecodable_line() -> None:
+    assert check('\ud800@ff') == ''
+
+
+def test_augment_rejects_undecodable_line() -> None:
+    with pytest.raises(UnicodeEncodeError):
+        augment('\ud800')

@@ -375,8 +375,8 @@ class EspNotReadyException(Exception):
 
 def augment(line: str) -> str:
     checksum = 0
-    for c in line:
-        checksum ^= ord(c)
+    for byte in line.encode():
+        checksum ^= byte
     return f'{line}@{checksum:02x}'
 
 
@@ -385,11 +385,14 @@ def check(line: str | None) -> str:
         return ''
     if line[-3:-2] != '@':
         return ''
-    check_ = int(line[-2:], 16)
-    line = line[:-3]
     checksum = 0
-    for c in line:
-        checksum ^= ord(c)
+    try:
+        check_ = int(line[-2:], 16)
+        line = line[:-3]
+        for byte in line.encode():
+            checksum ^= byte
+    except ValueError:
+        return ''
     if checksum != check_:
         return ''
     return line
