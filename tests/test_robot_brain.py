@@ -106,27 +106,22 @@ async def test_local_checksum_is_computed_over_utf8_bytes(robot_brain: RobotBrai
     assert robot_brain.lizard_firmware.local_checksum == '02c6'
 
 
-@pytest.mark.parametrize('line', ['hello', 'wheels.speed(1, 2)', 'grün', 'café', 'ß', '日本'])
-def test_checksum_round_trip(line: str) -> None:
+@pytest.mark.parametrize('line, checksum', [
+    ('hello', '62'),
+    ('wheels.speed(1, 2)', '47'),
+    ('grün', '04'),  # NOTE: XOR over the UTF-8 bytes, like Lizard, not over code points (which would give '87')
+    ('café', '0e'),
+    ('ß', '5c'),
+    ('日本', '02'),  # NOTE: code points would XOR to 0x2c9 and overflow the two-digit '{:02x}' format
+])
+def test_augment_and_check(line: str, checksum: str) -> None:
+    assert augment(line) == f'{line}@{checksum}'
     assert check(augment(line)) == line
 
 
-@pytest.mark.parametrize('line', ['hello', 'grün', '日本'])
-def test_checksum_is_computed_over_utf8_bytes(line: str) -> None:
-    checksum = 0
-    for byte in line.encode():  # NOTE: Lizard XORs the raw bytes it receives, not Unicode code points
-        checksum ^= byte
-    assert augment(line) == f'{line}@{checksum:02x}'
-    assert len(augment(line).rsplit('@', 1)[1]) == 2  # NOTE: '02x' is a minimum width, so a value >0xff emits 3 digits
-
-
-@pytest.mark.parametrize('line', ['foo@zz', 'foo@1z', 'foo@-1'])
-def test_check_rejects_unparseable_checksum(line: str) -> None:
+@pytest.mark.parametrize('line', ['foo@zz', 'foo@1z', 'foo@-1', '\ud800@ff'])
+def test_check_rejects_corrupted_lines(line: str) -> None:
     assert check(line) == ''
-
-
-def test_check_rejects_undecodable_line() -> None:
-    assert check('\ud800@ff') == ''
 
 
 def test_augment_rejects_undecodable_line() -> None:
