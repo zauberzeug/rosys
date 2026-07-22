@@ -24,6 +24,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
                  fps: int = 10,
                  resolution: tuple[int, int] = (640, 480),
                  mirrored: bool = False,
+                 reconnect_interval: float = 3.0,
                  **kwargs: Any,
                  ) -> None:
         super().__init__(id=id, name=name, connect_after_init=connect_after_init,
@@ -33,6 +34,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         self.password = password
 
         self.ip = ip
+        self.reconnect_interval = reconnect_interval
 
         self.index: int | None = None
         parts = self.id.split('-')
@@ -53,15 +55,22 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             'username': self.username,
             'password': self.password,
             'ip': self.ip,
+            'reconnect_interval': self.reconnect_interval,
         }
 
     @property
     def is_connected(self) -> bool:
         return (self.device is not None) and self.device.is_connected
 
+    @property
+    def is_active(self) -> bool:
+        return (self.device is not None) and self.device.is_active
+
     async def connect(self) -> None:
-        if self.is_connected:
+        if self.is_active:
             return
+        if self.device is not None:
+            await self.disconnect()
 
         if not self.ip:
             self.log.error('No IP address provided')
@@ -70,6 +79,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         try:
             self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
                                                     password=self.password, on_new_image_data=self._handle_new_image_data)
+            self.device.reconnect_interval = self.reconnect_interval
         except ValueError as error:
             self.log.error('Could not connect to device: %s', error)
             return

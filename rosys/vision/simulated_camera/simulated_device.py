@@ -1,3 +1,4 @@
+import random
 from collections.abc import Awaitable, Callable
 
 import numpy as np
@@ -17,18 +18,54 @@ class SimulatedDevice:
                  size: ImageSize,
                  on_new_image: Callable[[Image], Awaitable | None],
                  color: str = '#ffffff',
-                 fps: float = 30.0) -> None:
+                 fps: float = 30.0,
+                 reconnect_interval: float = 3.0,
+                 simulate_failing: bool = False) -> None:
         self._id = id
         self._size = size
         self.color = color
         self._on_new_image = on_new_image
-        self._creation_time: float = rosys.time()
+        self.reconnect_interval = reconnect_interval
+        self.simulate_failing = simulate_failing
+        self._connected: bool = True
+        self._last_connect_time: float = rosys.time()
+        self._disconnect_time: float | None = None
 
-        self._repeater = rosys.on_repeat(self._create_image, interval=1.0 / fps)
+        self._repeater = rosys.on_repeat(self._step, interval=1.0 / fps)
 
     @property
-    def creation_time(self) -> float:
-        return self._creation_time
+    def is_connected(self) -> bool:
+        return self._connected
+
+    @property
+    def is_active(self) -> bool:
+        """Whether the self-healing loop is alive (streaming or waiting to reconnect)."""
+        return self._repeater.running
+
+    def disconnect(self) -> None:
+        """Simulate a connection loss (e.g. a bad cable); the device reconnects itself after `reconnect_interval`."""
+        if not self._connected:
+            return
+        self._connected = False
+        self._disconnect_time = rosys.time()
+
+    def shutdown(self) -> None:
+        """Stop the image loop; the device no longer reconnects on its own."""
+        self._repeater.stop()
+
+    async def _step(self) -> None:
+        if not self._connected:
+            assert self._disconnect_time is not None
+            if rosys.time() - self._disconnect_time >= self.reconnect_interval:
+                self._connected = True
+                self._last_connect_time = rosys.time()
+                self._disconnect_time = None
+            return
+        if self.simulate_failing and \
+                random.random() < (rosys.time() - self._last_connect_time) / 30.0 * self._repeater.interval:
+            self.disconnect()
+            return
+        await self._create_image()
 
     async def _create_image(self) -> None:
         timestamp = rosys.time()

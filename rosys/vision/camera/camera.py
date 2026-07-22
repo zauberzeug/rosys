@@ -53,6 +53,7 @@ class Camera(abc.ABC):
 
         if connect_after_init:
             rosys.on_startup(self.connect)
+        rosys.on_shutdown(self.disconnect)
 
     @property
     def streaming(self) -> bool:
@@ -100,8 +101,18 @@ class Camera(abc.ABC):
 
     @property
     def is_connected(self) -> bool:
-        """To be interpreted as "ready to capture images"."""
+        """Whether the camera is currently streaming or capturing images."""
         return False
+
+    @property
+    def is_active(self) -> bool:
+        """Whether the camera keeps itself connected (streaming or waiting to reconnect)."""
+        return self.is_connected
+
+    @property
+    def is_reconnecting(self) -> bool:
+        """Whether the camera is active but not currently streaming (waiting to reconnect)."""
+        return self.is_active and not self.is_connected
 
     @asynccontextmanager
     async def _device_connection(self) -> AsyncGenerator[None, None]:

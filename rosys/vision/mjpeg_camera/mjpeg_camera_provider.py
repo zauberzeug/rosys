@@ -83,7 +83,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera]):
                 self.add_camera(MjpegCamera(id=camera_id, username=self.username,
                                 password=self.password, ip=ip))
             camera = self._cameras[camera_id]
-            if not camera.is_connected:
+            if not camera.is_active:
                 self.log.info('activating camera "%s" at ip "%s" ...', camera.id, ip)
                 camera.ip = ip
                 await camera.connect()

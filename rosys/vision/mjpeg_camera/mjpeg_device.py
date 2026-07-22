@@ -3,6 +3,7 @@ import logging
 from asyncio import Task
 from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 
 import httpx
 
@@ -40,7 +41,8 @@ class MjpegDevice:
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
+                 on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 reconnect_interval: float = 3.0) -> None:
         self._mac = mac
         self._ip = ip
         self.log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device.' + self._mac)
@@ -53,23 +55,59 @@ class MjpegDevice:
         if url is None:
             raise ValueError(f'could not determine URL for {mac}')
         self._url = url
+        self.reconnect_interval = reconnect_interval
+        self._should_run: bool = True
+        self._streaming: bool = False
+        self._authorized: bool = True
 
-        self.start_capture_task()
+        self._start_capture_task()
 
     @property
     def is_connected(self) -> bool:
+        """Whether the MJPEG stream is currently delivering frames."""
+        return self._streaming
+
+    @property
+    def is_active(self) -> bool:
+        """Whether the self-healing capture loop is alive (streaming or waiting to reconnect)."""
         return (self._capture_task is not None) and (not self._capture_task.done())
 
-    def start_capture_task(self) -> None:
+    @property
+    def authorized(self) -> bool:
+        return self._authorized
+
+    def _start_capture_task(self) -> None:
         def create_capture_task() -> None:
+            if self._capture_task is not None and not self._capture_task.done():
+                return
+            self._should_run = True
             loop = asyncio.get_event_loop()
-            self._capture_task = loop.create_task(self.run_capture_task())
+            self._capture_task = loop.create_task(self._run_capture_task())
         on_startup(create_capture_task)
+
+    async def _run_capture_task(self) -> None:
+        """Keep a single MJPEG session alive, reconnecting after `reconnect_interval` when it ends.
+
+        Runs until `shutdown()` cancels the task or the camera rejects us as unauthorized.
+        """
+        try:
+            while self._should_run:
+                try:
+                    await self._connect_and_stream_images()
+                except Exception:
+                    self.log.exception('capture session failed')
+                if not self._should_run or not self._authorized:
+                    break
+                self.log.info('stream ended; reconnecting in %.1f s', self.reconnect_interval)
+                await rosys.sleep(self.reconnect_interval)
+        finally:
+            if self._capture_task is asyncio.current_task():
+                self._capture_task = None
 
     def restart_capture(self) -> None:
         self.log.debug('Restarting capture task')
         self.shutdown()
-        self.start_capture_task()
+        self._start_capture_task()
 
     async def _prepare_stream(self) -> None:
         """Hook executed right before the MJPEG stream is opened (and on every restart).
@@ -115,33 +153,41 @@ class MjpegDevice:
         except httpx.ReadTimeout:
             self.log.warning('Connection to %s timed out', self._url)
 
-    async def run_capture_task(self) -> None:
+    async def _connect_and_stream_images(self) -> None:
         self.log.debug('Starting capture task for %s', self._url)
 
-        async with httpx.AsyncClient() as client:
-            try:
-                await self._prepare_stream()
-                async with open_stream(client, self._url, self._username, self._password) as response:
-                    if response is not None:
-                        async for image, capture_time in self._frame_reader(response):
+        try:
+            async with httpx.AsyncClient() as client:
+                try:
+                    await self._prepare_stream()
+                    async with open_stream(client, self._url, self._username, self._password) as result:
+                        if result.unauthorized:
+                            self._authorized = False
+                            return
+                        if result.response is None:
+                            return
+                        self._streaming = True
+                        async for image, capture_time in self._frame_reader(result.response):
                             if not image:
                                 continue
                             try:
                                 timestamp = capture_time if capture_time is not None else rosys.time()
-                                result = self._on_new_image_data(remove_exif(image), timestamp)
-                                if isinstance(result, Awaitable):
-                                    await result
+                                callback_result = self._on_new_image_data(remove_exif(image), timestamp)
+                                if isinstance(callback_result, Awaitable):
+                                    await callback_result
                             except Exception as e:
                                 self.log.error('Error processing image: %s', e)
-            except Exception as e:
-                self.log.warning('Connection to %s failed. Was something disconnected?\n%s', self._url, e)
-                raise
-
-        self.log.warning('Capture task stopped')
-        self._capture_task = None
+                except Exception as e:
+                    self.log.warning('Connection to %s failed. Was something disconnected?\n%s', self._url, e)
+                    raise
+        finally:
+            self._streaming = False
+        self.log.debug('capture session ended')
 
     def shutdown(self) -> None:
         self.log.debug('Shutting down capture task')
+        self._should_run = False
+        self._streaming = False
         if self._capture_task is not None:
             self._capture_task.cancel()
             self._capture_task = None
@@ -175,26 +221,37 @@ def auth_for_challenge(www_authenticate: str, username: str, password: str) -> h
     return httpx.BasicAuth(username, password)
 
 
+@dataclass(frozen=True, slots=True)
+class StreamOpenResult:
+    response: httpx.Response | None
+    unauthorized: bool = False
+
+
 @asynccontextmanager
 async def open_stream(client: httpx.AsyncClient, url: str,
-                      username: str | None, password: str | None) -> AsyncIterator[httpx.Response | None]:
+                      username: str | None, password: str | None) -> AsyncIterator[StreamOpenResult]:
     """Negotiate the auth scheme and open the http connection.
 
     Credentials are only sent after the camera has challenged the unauthenticated request with a 401.
-    Yields the live 200 response, or ``None`` if the camera refused the connection.
+    Yields a :class:`StreamOpenResult` with the live 200 response, or ``None`` if the camera refused the connection.
     """
     auth: httpx.Auth | None = None
     while True:
         async with client.stream('GET', url, auth=auth) as response:
-            if response.status_code == 401 and auth is None and username is not None and password is not None:
-                auth = auth_for_challenge(response.headers.get('www-authenticate', ''), username, password)
-                log.debug('camera at %s challenged with 401, retrying with %s', url, type(auth).__name__)
-                continue
+            if response.status_code == 401:
+                if auth is None and username is not None and password is not None:
+                    auth = auth_for_challenge(response.headers.get('www-authenticate', ''), username, password)
+                    log.debug('camera at %s challenged with 401, retrying with %s', url, type(auth).__name__)
+                    continue
+                auth_scheme = response.request.headers.get('authorization', '<none>').split(' ', 1)[0]
+                log.error('unauthorized (401) for %s (auth: %s)', url, auth_scheme)
+                yield StreamOpenResult(None, unauthorized=True)
+                return
             if response.status_code != 200:
                 auth_scheme = response.request.headers.get('authorization', '<none>').split(' ', 1)[0]
                 log.error('could not connect to %s (auth: %s): %s %s',
                           url, auth_scheme, response.status_code, response.reason_phrase)
-                yield None
+                yield StreamOpenResult(None)
                 return
-            yield response
+            yield StreamOpenResult(response)
             return

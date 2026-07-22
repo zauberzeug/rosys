@@ -28,7 +28,8 @@ class RtspDevice:
 
     def __init__(self, mac: str, ip: str, *,
                  substream: int, fps: int, on_new_image_data: Callable[[ImageArray, float], Awaitable | None],
-                 avdec: Literal['h264', 'h265'] = 'h264') -> None:
+                 avdec: Literal['h264', 'h265'] = 'h264',
+                 reconnect_interval: float = 3.0) -> None:
         self._mac = mac
         self._ip = ip
         self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device.' + self._mac)
@@ -41,6 +42,8 @@ class RtspDevice:
         self._capture_task: asyncio.Task | None = None
         self._capture_process: Process | None = None
         self._authorized: bool = True
+        self.reconnect_interval = reconnect_interval
+        self._should_run: bool = True
 
         vendor_type = mac_to_vendor(mac)
 
@@ -56,11 +59,17 @@ class RtspDevice:
             self.log.warning('[%s] Using default fps of 10', self._mac)
 
         self.log.info('[%s] Starting VideoStream for %s', self._mac, self.url)
-        self._start_gstreamer_task()
+        self._start_capture_task()
 
     @property
     def is_connected(self) -> bool:
-        return self._capture_task is not None
+        """Whether the gstreamer stream is currently running."""
+        return self._capture_process is not None and self._capture_process.returncode is None
+
+    @property
+    def is_active(self) -> bool:
+        """Whether the self-healing capture loop is alive (streaming or waiting to reconnect)."""
+        return self._capture_task is not None and not self._capture_task.done()
 
     @property
     def authorized(self) -> bool:
@@ -74,6 +83,7 @@ class RtspDevice:
         return url
 
     async def shutdown(self) -> None:
+        self._should_run = False
         process = self._capture_process
         if process is not None:
             self.log.debug('[%s] Terminating gstreamer process', self._mac)
@@ -100,16 +110,36 @@ class RtspDevice:
                 self.log.debug('[%s] Task finished', self._mac)
             self._capture_task = None
 
-    def _start_gstreamer_task(self) -> None:
-        self.log.debug('[%s] Starting gstreamer task', self._mac)
+    def _start_capture_task(self) -> None:
+        self.log.debug('[%s] Starting capture loop', self._mac)
         if self._capture_task is not None and not self._capture_task.done():
-            self.log.warning('[%s] capture task already running', self._mac)
+            self.log.warning('[%s] capture loop already running', self._mac)
             return
-        self._capture_task = background_tasks.create(self._run_gstreamer(), name=f'capture {self._mac}')
+        self._should_run = True
+        self._capture_task = background_tasks.create(self._run_capture_task(), name=f'capture {self._mac}')
+
+    async def _run_capture_task(self) -> None:
+        """Keep a single gstreamer session alive, reconnecting after `reconnect_interval` when it ends.
+
+        Runs until `shutdown()` cancels the task or the camera rejects us as unauthorized.
+        """
+        try:
+            while self._should_run:
+                try:
+                    await self._run_gstreamer()
+                except Exception:
+                    self.log.exception('[%s] capture session failed', self._mac)
+                if not self._should_run or not self._authorized:
+                    break
+                self.log.info('[%s] stream ended; reconnecting in %.1f s', self._mac, self.reconnect_interval)
+                await rosys.sleep(self.reconnect_interval)
+        finally:
+            if self._capture_task is asyncio.current_task():
+                self._capture_task = None
 
     async def restart_gstreamer(self) -> None:
         await self.shutdown()
-        self._start_gstreamer_task()
+        self._start_capture_task()
 
     async def _run_gstreamer(self) -> None:
         if self._capture_process is not None and self._capture_process.returncode is None:
@@ -181,15 +211,19 @@ class RtspDevice:
                 if 'Unauthorized' in error_message:
                     self._authorized = False
 
-        async for image in stream():
-            timestamp = rosys.time()
-            result = self._on_new_image_data(image, timestamp)
-            if isinstance(result, Awaitable):
-                await result
-
-        self.log.info('[%s] stream ended', self._mac)
-
-        self._capture_task = None
+        try:
+            async for image in stream():
+                timestamp = rosys.time()
+                result = self._on_new_image_data(image, timestamp)
+                if isinstance(result, Awaitable):
+                    await result
+            self.log.info('[%s] stream ended', self._mac)
+        finally:
+            process = self._capture_process
+            if process is not None and process.returncode is None:
+                self.log.debug('[%s] terminating leftover gstreamer process', self._mac)
+                process.terminate()
+            self._capture_process = None
 
     async def set_fps(self, fps: int) -> None:
         self._fps = fps

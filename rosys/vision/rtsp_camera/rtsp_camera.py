@@ -21,6 +21,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                  bitrate: int = 4096,
                  avdec: Literal['h264', 'h265'] = 'h264',
                  ip: str | None = None,
+                 reconnect_interval: float = 3.0,
                  **kwargs) -> None:
         self.mac = mac
         super().__init__(id=id or f'{mac}-{substream}',
@@ -32,6 +33,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         self.device: RtspDevice | None = None
         self.ip: str | None = ip
+        self.reconnect_interval = reconnect_interval
 
         self._register_parameter('substream', self.get_substream, self.set_substream,
                                  min_value=0, max_value=1, step=1, default_value=substream)
@@ -48,6 +50,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         return super().to_dict() | parameters | {
             'mac': self.mac,
             'ip': self.ip,
+            'reconnect_interval': self.reconnect_interval,
         }
 
     @classmethod
@@ -66,16 +69,20 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         return self.device is not None and self.device.is_connected
 
     @property
-    def url(self) -> str | None:
-        if not self.is_connected:
-            return None
-        assert self.device is not None
+    def is_active(self) -> bool:
+        return self.device is not None and self.device.is_active
 
+    @property
+    def url(self) -> str | None:
+        if self.device is None:
+            return None
         return self.device.url
 
     async def connect(self) -> None:
-        if self.is_connected:
+        if self.is_active:
             return
+        if self.device is not None:
+            await self.disconnect()
 
         if not self.ip:
             self.log.error('no IP address provided for camera %s', self.id)
@@ -85,12 +92,13 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                                  substream=self.parameters['substream'],
                                  fps=self.parameters['fps'],
                                  on_new_image_data=self._handle_new_image_data,
-                                 avdec=self.parameters['avdec'])
+                                 avdec=self.parameters['avdec'],
+                                 reconnect_interval=self.reconnect_interval)
 
         await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
-        if not self.is_connected:
+        if self.device is None:
             return
         logging.info('camera %s: disconnect initialized...', self.id)
 
@@ -145,6 +153,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     async def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
         await super()._apply_parameters(new_values, force_set)
-        if self.is_connected:
+        if self.is_active:
             assert self.device is not None
             await self.device.restart_gstreamer()
