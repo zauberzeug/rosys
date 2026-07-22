@@ -35,7 +35,7 @@ class CommunicationSimulation(Communication):
 
 
 def matching_checksum(robot_brain: RobotBrain) -> str:
-    return f'{sum(ord(c) for c in robot_brain.lizard_code) % 0x10000:04x}'
+    return f'{sum(robot_brain.lizard_code.encode()) % 0x10000:04x}'
 
 
 async def connect(communication: CommunicationSimulation) -> None:
@@ -97,6 +97,13 @@ async def test_check_runs_again_after_configuring(robot_brain: RobotBrain) -> No
     await connect(communication)
     assert connect_count == 2
     assert robot_brain.lizard_firmware.checksums_match is True
+
+
+async def test_local_checksum_is_computed_over_utf8_bytes(robot_brain: RobotBrain) -> None:
+    robot_brain.lizard_code = 'grün'
+    robot_brain.lizard_firmware.read_local_checksum()
+    # NOTE: Lizard sums the raw bytes of the stored startup script (0x67 + 0x72 + 0xc3 + 0xbc + 0x6e = 0x02c6)
+    assert robot_brain.lizard_firmware.local_checksum == '02c6'
 
 
 @pytest.mark.parametrize('line', ['hello', 'wheels.speed(1, 2)', 'grün', 'café', 'ß', '日本'])
