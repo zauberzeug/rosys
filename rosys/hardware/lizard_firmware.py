@@ -121,7 +121,7 @@ class LizardFirmware:
         self.log.error('Could not read Lizard version from P0')
 
     def read_local_checksum(self) -> None:
-        checksum = sum(ord(c) for c in self.robot_brain.lizard_code) % 0x10000
+        checksum = sum(self.robot_brain.lizard_code.encode()) % 0x10000
         self.local_checksum = f'{checksum:04x}'
         self.log.info('local checksum: %s', self.local_checksum)
 

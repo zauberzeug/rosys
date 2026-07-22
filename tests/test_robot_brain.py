@@ -6,7 +6,7 @@ from nicegui import background_tasks
 import rosys
 from rosys.hardware import RobotBrain, RobotHardware
 from rosys.hardware.communication import Communication
-from rosys.hardware.robot_brain import augment
+from rosys.hardware.robot_brain import augment, check
 from rosys.testing import forward
 
 MISMATCH_MESSAGE = 'Lizard startup code is outdated'
@@ -35,7 +35,7 @@ class CommunicationSimulation(Communication):
 
 
 def matching_checksum(robot_brain: RobotBrain) -> str:
-    return f'{sum(ord(c) for c in robot_brain.lizard_code) % 0x10000:04x}'
+    return f'{sum(robot_brain.lizard_code.encode()) % 0x10000:04x}'
 
 
 async def connect(communication: CommunicationSimulation) -> None:
@@ -97,3 +97,33 @@ async def test_check_runs_again_after_configuring(robot_brain: RobotBrain) -> No
     await connect(communication)
     assert connect_count == 2
     assert robot_brain.lizard_firmware.checksums_match is True
+
+
+async def test_local_checksum_is_computed_over_utf8_bytes(robot_brain: RobotBrain) -> None:
+    robot_brain.lizard_code = 'grün'
+    robot_brain.lizard_firmware.read_local_checksum()
+    # NOTE: Lizard sums the raw bytes of the stored startup script (0x67 + 0x72 + 0xc3 + 0xbc + 0x6e = 0x02c6)
+    assert robot_brain.lizard_firmware.local_checksum == '02c6'
+
+
+@pytest.mark.parametrize('line, checksum', [
+    ('hello', '62'),
+    ('wheels.speed(1, 2)', '47'),
+    ('grün', '04'),  # NOTE: XOR over the UTF-8 bytes, like Lizard, not over code points (which would give '87')
+    ('café', '0e'),
+    ('ß', '5c'),
+    ('日本', '02'),  # NOTE: code points would XOR to 0x2c9 and overflow the two-digit '{:02x}' format
+])
+def test_augment_and_check(line: str, checksum: str) -> None:
+    assert augment(line) == f'{line}@{checksum}'
+    assert check(augment(line)) == line
+
+
+@pytest.mark.parametrize('line', ['foo@zz', 'foo@1z', 'foo@-1', '\ud800@ff'])
+def test_check_rejects_corrupted_lines(line: str) -> None:
+    assert check(line) == ''
+
+
+def test_augment_rejects_undecodable_line() -> None:
+    with pytest.raises(UnicodeEncodeError):
+        augment('\ud800')
