@@ -92,6 +92,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                                  substream=self.parameters['substream'],
                                  fps=self.parameters['fps'],
                                  on_new_image_data=self._handle_new_image_data,
+                                 on_connect=self._apply_all_parameters,
                                  avdec=self.parameters['avdec'],
                                  reconnect_interval=self.reconnect_interval)
 
@@ -151,8 +152,10 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         self.device.set_avdec(avdec)
 
-    async def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
-        await super()._apply_parameters(new_values, force_set)
+    async def set_parameters(self, new_values: dict[str, Any]) -> None:
+        # NOTE the restart lives here rather than in _apply_parameters: the device invokes _apply_all_parameters
+        # from within its own capture task whenever a stream comes up, and a restart would cancel that very task.
+        await super().set_parameters(new_values)
         if self.is_active:
             assert self.device is not None
             await self.device.restart_gstreamer()

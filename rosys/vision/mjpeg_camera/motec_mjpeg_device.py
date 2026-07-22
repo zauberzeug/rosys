@@ -10,9 +10,11 @@ class MotecMjpegDevice(MjpegDevice):
                  username: str | None = '',
                  password: str | None = '',
                  control_port: int | None = 8885,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
+                 on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 on_connect: Callable[[], Awaitable | None] | None = None) -> None:
 
-        super().__init__(mac, ip, username=username, password=password, on_new_image_data=on_new_image_data)
+        super().__init__(mac, ip, username=username, password=password,
+                         on_new_image_data=on_new_image_data, on_connect=on_connect)
 
         vendor = mac_to_vendor(mac)
         if vendor != VendorType.MOTEC:

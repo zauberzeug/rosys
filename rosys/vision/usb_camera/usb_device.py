@@ -34,12 +34,14 @@ class UsbDevice:
 
     def __init__(self, uid: str, video_id: int, capture: cv2.VideoCapture, *,
                  on_new_image_data: Callable[[np.ndarray | bytes, float], Awaitable | None],
+                 on_connect: Callable[[], Awaitable | None] | None = None,
                  reconnect_interval: float = 3.0) -> None:
         self.uid = uid
         self.log = logging.getLogger('rosys.vision.usb_camera.usb_device.' + uid)
         self._video_id: int = video_id
         self._capture: cv2.VideoCapture | None = capture
         self._on_new_image_data = on_new_image_data
+        self._on_connect = on_connect
         self.reconnect_interval = reconnect_interval
         self._exposure_min: int = 0
         self._exposure_max: int = 0
@@ -47,9 +49,6 @@ class UsbDevice:
         self._has_manual_exposure: bool = False
         self._video_formats: set[str] = set()
         self._image_is_jpg: bool = False
-        self._width: int | None = None
-        self._height: int | None = None
-        self._fps: int | None = None
         self._should_run: bool = True
         self._read_failures: int = 0
         self._capture_task: asyncio.Task | None = None
@@ -86,6 +85,7 @@ class UsbDevice:
 
     @staticmethod
     def from_uid(camera_id: str, on_new_image_data: Callable[[np.ndarray | bytes, float], Awaitable | None],
+                 on_connect: Callable[[], Awaitable | None] | None = None,
                  reconnect_interval: float = 3.0) -> UsbDevice | None:
         video_id = find_video_id(camera_id)
         if video_id is None:
@@ -98,7 +98,8 @@ class UsbDevice:
             return None
 
         return UsbDevice(uid=camera_id, video_id=video_id, capture=capture,
-                         on_new_image_data=on_new_image_data, reconnect_interval=reconnect_interval)
+                         on_new_image_data=on_new_image_data, on_connect=on_connect,
+                         reconnect_interval=reconnect_interval)
 
     @staticmethod
     def create_capture(index: int) -> cv2.VideoCapture | None:
@@ -189,7 +190,15 @@ class UsbDevice:
         self._capture = capture
         self._read_failures = 0
         self.set_video_format()
-        self._reapply_settings()
+        await self._invoke_on_connect()
+
+    async def _invoke_on_connect(self) -> None:
+        """Notify the owner that a capture session has been (re-)established, e.g. to reapply camera parameters."""
+        if self._on_connect is None:
+            return
+        result = self._on_connect()
+        if isinstance(result, Awaitable):
+            await result
 
     async def _release(self) -> None:
         if self._capture is not None:
@@ -208,14 +217,6 @@ class UsbDevice:
                 pass
             self._capture_task = None
         await self._release()
-
-    def _reapply_settings(self) -> None:
-        if self._width is not None:
-            self.set_width(self._width)
-        if self._height is not None:
-            self.set_height(self._height)
-        if self._fps is not None:
-            self.set_fps(self._fps)
 
     async def load_value_ranges(self) -> None:
         output = await self.run_v4l('--all')
@@ -286,31 +287,28 @@ class UsbDevice:
         return self._capture.get(cv2.CAP_PROP_EXPOSURE) / self._exposure_max
 
     def set_width(self, width: int) -> None:
-        self._width = width
         if self._capture is not None:
             self._capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
 
-    def get_width(self) -> int:
+    def get_width(self) -> int | None:
         if self._capture is None:
-            return self._width or 0
+            return None
         return int(self._capture.get(cv2.CAP_PROP_FRAME_WIDTH))
 
     def set_height(self, height: int) -> None:
-        self._height = height
         if self._capture is not None:
             self._capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
 
-    def get_height(self) -> int:
+    def get_height(self) -> int | None:
         if self._capture is None:
-            return self._height or 0
+            return None
         return int(self._capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
     def set_fps(self, fps: int) -> None:
-        self._fps = fps
         if self._capture is not None:
             self._capture.set(cv2.CAP_PROP_FPS, fps)
 
-    def get_fps(self) -> int:
+    def get_fps(self) -> int | None:
         if self._capture is None:
-            return self._fps or 0
+            return None
         return int(self._capture.get(cv2.CAP_PROP_FPS))

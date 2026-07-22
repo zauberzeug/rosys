@@ -58,6 +58,7 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
             await self.disconnect()
         self.device = SimulatedDevice(id=self.id, size=self.resolution, fps=self.parameters['fps'],
                                       on_new_image=self._add_image,
+                                      on_connect=self._apply_all_parameters,
                                       reconnect_interval=self.reconnect_interval,
                                       simulate_failing=self.simulate_failing)
         await self._apply_all_parameters()

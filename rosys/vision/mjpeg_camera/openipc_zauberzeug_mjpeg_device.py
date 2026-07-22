@@ -16,8 +16,10 @@ class OpenIpcZauberzeugMjpegDevice(MjpegDevice):
     def __init__(self, mac: str, ip: str, *,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
-        super().__init__(mac, ip, username=username, password=password, on_new_image_data=on_new_image_data)
+                 on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 on_connect: Callable[[], Awaitable | None] | None = None) -> None:
+        super().__init__(mac, ip, username=username, password=password,
+                         on_new_image_data=on_new_image_data, on_connect=on_connect)
 
         vendor = mac_to_vendor(mac)
         if vendor != VendorType.OPENIPC_ZAUBERZEUG:

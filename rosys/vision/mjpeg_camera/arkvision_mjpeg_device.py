@@ -12,14 +12,15 @@ class ArkVisionMjpegDevice(MjpegDevice):
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
+                 on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 on_connect: Callable[[], Awaitable | None] | None = None) -> None:
         vendor = mac_to_vendor(mac)
         if vendor != VendorType.ARKVISION:
             raise ValueError(
                 f'ArkVisionMjpegDevice can only be used with ARKVISION devices. Got {vendor} for mac="{mac}"')
         self.settings_interface = ArkVisionSettingsInterface(ip)
         super().__init__(mac, ip, index=index, username=username, password=password,
-                         on_new_image_data=on_new_image_data)
+                         on_new_image_data=on_new_image_data, on_connect=on_connect)
 
     async def _prepare_stream(self) -> None:
         await self.settings_interface.enable_http_mjpeg()

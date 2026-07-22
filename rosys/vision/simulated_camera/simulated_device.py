@@ -17,6 +17,7 @@ class SimulatedDevice:
                  *,
                  size: ImageSize,
                  on_new_image: Callable[[Image], Awaitable | None],
+                 on_connect: Callable[[], Awaitable | None] | None = None,
                  color: str = '#ffffff',
                  fps: float = 30.0,
                  reconnect_interval: float = 3.0,
@@ -25,6 +26,7 @@ class SimulatedDevice:
         self._size = size
         self.color = color
         self._on_new_image = on_new_image
+        self._on_connect = on_connect
         self.reconnect_interval = reconnect_interval
         self.simulate_failing = simulate_failing
         self._connected: bool = True
@@ -60,6 +62,7 @@ class SimulatedDevice:
                 self._connected = True
                 self._last_connect_time = rosys.time()
                 self._disconnect_time = None
+                await self._invoke_on_connect()
             return
         if self.simulate_failing and \
                 random.random() < (rosys.time() - self._last_connect_time) / 30.0 * self._repeater.interval:
@@ -75,6 +78,14 @@ class SimulatedDevice:
         else:
             image = _create_image_data(self._id, self._size, self.color, timestamp)
         result = self._on_new_image(image)
+        if isinstance(result, Awaitable):
+            await result
+
+    async def _invoke_on_connect(self) -> None:
+        """Notify the owner that the device has reconnected, e.g. to reapply camera parameters."""
+        if self._on_connect is None:
+            return
+        result = self._on_connect()
         if isinstance(result, Awaitable):
             await result
 

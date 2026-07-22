@@ -28,6 +28,7 @@ class RtspDevice:
 
     def __init__(self, mac: str, ip: str, *,
                  substream: int, fps: int, on_new_image_data: Callable[[ImageArray, float], Awaitable | None],
+                 on_connect: Callable[[], Awaitable | None] | None = None,
                  avdec: Literal['h264', 'h265'] = 'h264',
                  reconnect_interval: float = 3.0) -> None:
         self._mac = mac
@@ -37,6 +38,7 @@ class RtspDevice:
         self._fps = fps
         self._substream = substream
         self._on_new_image_data = on_new_image_data
+        self._on_connect = on_connect
         self._avdec: Literal['h264', 'h265'] = self._clamp_avdec(avdec)
 
         self._capture_task: asyncio.Task | None = None
@@ -141,6 +143,14 @@ class RtspDevice:
         await self.shutdown()
         self._start_capture_task()
 
+    async def _invoke_on_connect(self) -> None:
+        """Notify the owner that a capture session has been (re-)established, e.g. to reapply camera parameters."""
+        if self._on_connect is None:
+            return
+        result = self._on_connect()
+        if isinstance(result, Awaitable):
+            await result
+
     async def _run_gstreamer(self) -> None:
         if self._capture_process is not None and self._capture_process.returncode is None:
             self.log.warning('[%s] capture process already running', self._mac)
@@ -160,6 +170,7 @@ class RtspDevice:
             assert process.stdout is not None
             assert process.stderr is not None
             self._capture_process = process
+            await self._invoke_on_connect()
 
             width = None
             height = None

@@ -36,7 +36,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self.detect: bool = False
         self.color: str | None = None
 
-        self._register_parameter('auto_exposure', self.get_exposure, self.set_exposure, auto_exposure)
+        self._register_parameter('auto_exposure', self.get_auto_exposure, self.set_auto_exposure, auto_exposure)
         self._register_parameter('exposure', self.get_exposure, self.set_exposure, exposure)
         self._register_parameter('width', self.get_width, self.set_width, width)
         self._register_parameter('height', self.get_height, self.set_height, height)
@@ -64,6 +64,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
             await self.disconnect()
 
         device = UsbDevice.from_uid(self.id, self._handle_new_image_data,
+                                    on_connect=self._apply_all_parameters,
                                     reconnect_interval=self.reconnect_interval)
         if device is None:
             logging.warning('Connecting camera %s: failed', self.id)
@@ -128,7 +129,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         self.device.set_width(width)
 
-    def get_width(self) -> int:
+    def get_width(self) -> int | None:
         assert self.device is not None
         return self.device.get_width()
 
@@ -136,7 +137,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         self.device.set_height(height)
 
-    def get_height(self) -> int:
+    def get_height(self) -> int | None:
         assert self.device is not None
         return self.device.get_height()
 
@@ -144,6 +145,6 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         self.device.set_fps(fps)
 
-    def get_fps(self) -> int:
+    def get_fps(self) -> int | None:
         assert self.device is not None
         return self.device.get_fps()

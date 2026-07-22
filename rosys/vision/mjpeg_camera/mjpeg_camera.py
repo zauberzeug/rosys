@@ -78,7 +78,8 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
         try:
             self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
-                                                    password=self.password, on_new_image_data=self._handle_new_image_data)
+                                                    password=self.password, on_new_image_data=self._handle_new_image_data,
+                                                    on_connect=self._apply_all_parameters)
             self.device.reconnect_interval = self.reconnect_interval
         except ValueError as error:
             self.log.error('Could not connect to device: %s', error)

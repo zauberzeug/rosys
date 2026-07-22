@@ -58,12 +58,14 @@ class MjpegDevice:
                  username: str | None = None,
                  password: str | None = None,
                  on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 on_connect: Callable[[], Awaitable | None] | None = None,
                  reconnect_interval: float = 3.0) -> None:
         self._mac = mac
         self._ip = ip
         self.log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device.' + self._mac)
 
         self._on_new_image_data = on_new_image_data
+        self._on_connect = on_connect
         self._capture_task: Task | None = None
         self._username = username
         self._password = password
@@ -123,6 +125,14 @@ class MjpegDevice:
         self.shutdown()
         self._start_capture_task()
 
+    async def _invoke_on_connect(self) -> None:
+        """Notify the owner that a capture session has been (re-)established, e.g. to reapply camera parameters."""
+        if self._on_connect is None:
+            return
+        result = self._on_connect()
+        if isinstance(result, Awaitable):
+            await result
+
     async def _prepare_stream(self) -> None:
         """Hook executed right before the MJPEG stream is opened (and on every restart).
 
@@ -181,6 +191,7 @@ class MjpegDevice:
                         if result.response is None:
                             return
                         self._state = CaptureState.STREAMING
+                        await self._invoke_on_connect()
                         async for image, capture_time in self._frame_reader(result.response):
                             if not image:
                                 continue
