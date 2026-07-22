@@ -1,4 +1,5 @@
 import asyncio
+import enum
 import logging
 from asyncio import Task
 from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
@@ -13,6 +14,21 @@ from ..image_processing import remove_exif
 from .vendors import mac_to_url
 
 log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device')
+
+
+class CaptureState(enum.Enum):
+    """State of the self-healing capture loop.
+
+    Modelling the loop as a single state (instead of separate ``should_run``/``streaming``/``authorized``
+    flags) keeps only the valid combinations representable.
+    """
+    CONNECTING = enum.auto()    # loop alive, opening the stream or waiting to reconnect
+    STREAMING = enum.auto()     # stream open and delivering frames
+    UNAUTHORIZED = enum.auto()  # camera rejected our credentials; loop gives up
+    STOPPED = enum.auto()       # shutdown requested; loop gives up
+
+
+_TERMINAL_STATES = (CaptureState.UNAUTHORIZED, CaptureState.STOPPED)
 
 
 def parse_capture_timestamp(part_header: bytes) -> float | None:
@@ -56,16 +72,14 @@ class MjpegDevice:
             raise ValueError(f'could not determine URL for {mac}')
         self._url = url
         self.reconnect_interval = reconnect_interval
-        self._should_run: bool = True
-        self._streaming: bool = False
-        self._authorized: bool = True
+        self._state = CaptureState.CONNECTING
 
         self._start_capture_task()
 
     @property
     def is_connected(self) -> bool:
         """Whether the MJPEG stream is currently delivering frames."""
-        return self._streaming
+        return self._state is CaptureState.STREAMING
 
     @property
     def is_active(self) -> bool:
@@ -74,13 +88,13 @@ class MjpegDevice:
 
     @property
     def authorized(self) -> bool:
-        return self._authorized
+        return self._state is not CaptureState.UNAUTHORIZED
 
     def _start_capture_task(self) -> None:
         def create_capture_task() -> None:
             if self._capture_task is not None and not self._capture_task.done():
                 return
-            self._should_run = True
+            self._state = CaptureState.CONNECTING
             loop = asyncio.get_event_loop()
             self._capture_task = loop.create_task(self._run_capture_task())
         on_startup(create_capture_task)
@@ -91,12 +105,12 @@ class MjpegDevice:
         Runs until `shutdown()` cancels the task or the camera rejects us as unauthorized.
         """
         try:
-            while self._should_run:
+            while self._state not in _TERMINAL_STATES:
                 try:
                     await self._connect_and_stream_images()
                 except Exception:
                     self.log.exception('capture session failed')
-                if not self._should_run or not self._authorized:
+                if self._state in _TERMINAL_STATES:
                     break
                 self.log.info('stream ended; reconnecting in %.1f s', self.reconnect_interval)
                 await rosys.sleep(self.reconnect_interval)
@@ -162,11 +176,11 @@ class MjpegDevice:
                     await self._prepare_stream()
                     async with open_stream(client, self._url, self._username, self._password) as result:
                         if result.unauthorized:
-                            self._authorized = False
+                            self._state = CaptureState.UNAUTHORIZED
                             return
                         if result.response is None:
                             return
-                        self._streaming = True
+                        self._state = CaptureState.STREAMING
                         async for image, capture_time in self._frame_reader(result.response):
                             if not image:
                                 continue
@@ -181,13 +195,13 @@ class MjpegDevice:
                     self.log.warning('Connection to %s failed. Was something disconnected?\n%s', self._url, e)
                     raise
         finally:
-            self._streaming = False
+            if self._state is CaptureState.STREAMING:
+                self._state = CaptureState.CONNECTING
         self.log.debug('capture session ended')
 
     def shutdown(self) -> None:
         self.log.debug('Shutting down capture task')
-        self._should_run = False
-        self._streaming = False
+        self._state = CaptureState.STOPPED
         if self._capture_task is not None:
             self._capture_task.cancel()
             self._capture_task = None
