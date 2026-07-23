@@ -35,7 +35,11 @@ class Steerer:
         self.linear_speed = 0.0
         self.angular_speed = 0.0
 
-        rosys.on_repeat(self.step, 0.05)
+        self._step_repeater = rosys.on_repeat(self.step, 0.05)
+
+    def tear_down(self) -> None:
+        """Stop the steering loop so this instance can be released (e.g. per NiceGUI client)."""
+        self._step_repeater.stop()
 
     def start(self) -> None:
         self.log.info('start steering')
