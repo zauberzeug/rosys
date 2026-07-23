@@ -21,6 +21,7 @@ mac_prefix_to_vendor: dict[str, VendorType] = {
     'd4:43:0e': VendorType.DAHUA,
     'fc:5f:49': VendorType.DAHUA,
     '30:dd:aa': VendorType.DAHUA,
+    '40:7a:a4': VendorType.DAHUA,
     'ec:71:db': VendorType.REOLINK,
     '6c:f1:7e': VendorType.UNIARCH,
     'f0:00:06': VendorType.ANJOY,
