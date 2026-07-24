@@ -1,3 +1,4 @@
+from collections.abc import AsyncGenerator
 from pathlib import Path
 
 import pytest
@@ -28,13 +29,13 @@ class VersionCommunicationSimulation(CommunicationSimulation):
 
 
 @pytest.fixture
-def lizard_firmware(rosys_integration: None) -> LizardFirmware:
+async def lizard_firmware(rosys_integration: None) -> AsyncGenerator[LizardFirmware, None]:
     """A firmware restricted to Lizard versions below 0.14.0."""
     robot_brain = RobotBrain(VersionCommunicationSimulation(),
                              enable_esp_on_startup=False,
                              supported_lizard_versions='<0.14.0')
-    RobotHardware([], robot_brain)
-    return robot_brain.lizard_firmware
+    _robot = RobotHardware([], robot_brain)  # NOTE: keep alive so its weak update repeater keeps running
+    yield robot_brain.lizard_firmware
 
 
 @pytest.fixture

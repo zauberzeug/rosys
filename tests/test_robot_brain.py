@@ -49,7 +49,7 @@ async def connect(communication: CommunicationSimulation) -> None:
 @pytest.fixture
 async def robot_brain(rosys_integration: None) -> AsyncGenerator[RobotBrain, None]:
     robot_brain = RobotBrain(CommunicationSimulation(), enable_esp_on_startup=False)
-    robot = RobotHardware([], robot_brain)  # noqa: F841  # NOTE: keep alive so its weak update repeater keeps running
+    _robot = RobotHardware([], robot_brain)  # NOTE: keep alive so its weak update repeater keeps running
     yield robot_brain
 
 
