@@ -1,4 +1,5 @@
 from collections import deque
+from collections.abc import Generator
 
 import pytest
 from nicegui import background_tasks
@@ -46,10 +47,10 @@ async def connect(communication: CommunicationSimulation) -> None:
 
 
 @pytest.fixture
-async def robot_brain(rosys_integration: None) -> RobotBrain:
+def robot_brain(rosys_integration: None) -> Generator[RobotBrain, None, None]:
     robot_brain = RobotBrain(CommunicationSimulation(), enable_esp_on_startup=False)
-    RobotHardware([], robot_brain)
-    return robot_brain
+    _robot = RobotHardware([], robot_brain)  # NOTE: keep alive so its weak update repeater keeps running
+    yield robot_brain
 
 
 async def test_no_warning_when_lizard_code_matches(robot_brain: RobotBrain) -> None:
