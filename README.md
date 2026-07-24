@@ -56,6 +56,11 @@ Modules can depend on other modules which is mostly implemented by passing them 
 
 Modules can register functions via `rosys.on_startup` or `rosys.on_shutdown` as well as repeatedly with a given interval with `rosys.on_repeat`.
 
+The lifetime of such a repetition is derived from the type of the callback:
+a bound method repeats until its object is garbage-collected — the repeater does not keep the object alive, so its owner defines the lifetime of the repetition by storing it;
+a plain function repeats until shutdown.
+Lambdas, capturing closures and partials are rejected because no single lifetime rule fits them.
+
 > [!NOTE]
 > Note that NiceGUI's `app` object also provides methods `app.on_startup` and `app.on_shutdown`, but it is recommended to use RoSys' counterparts:
 > `rosys.on_startup` ensures the callback is executed _after_ persistent modules have been loaded from storage.

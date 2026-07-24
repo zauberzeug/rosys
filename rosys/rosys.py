@@ -200,6 +200,15 @@ def _prepare_handler(handler: Callable) -> Callable:
 
 
 class Repeater:
+    """Repeatedly invokes a handler, waiting ``interval`` seconds between invocations.
+
+    The lifetime of the repetition is derived from the type of the handler:
+    a bound method is held weakly and repeats until its object is garbage-collected,
+    a plain function repeats until shutdown.
+    Static methods count as plain functions; class methods are bound to their long-lived class.
+    Lambdas, capturing closures, partials and other callables are rejected with a ``TypeError``.
+    """
+
     tasks: ClassVar[set[asyncio.Task]] = set()
 
     def __init__(self, handler: Callable, interval: float) -> None:
@@ -285,6 +294,12 @@ class Repeater:
 
 
 def on_repeat(handler: Callable, interval: float) -> Repeater:
+    """Repeatedly call the handler, waiting ``interval`` seconds between invocations (see ``Repeater``).
+
+    A bound method repeats until its object is garbage-collected;
+    the repeater does not keep the object alive, so store it to define the lifetime of the repetition.
+    A plain function repeats until shutdown.
+    """
     repeater = Repeater(handler, interval)
     repeater.start()
     return repeater
