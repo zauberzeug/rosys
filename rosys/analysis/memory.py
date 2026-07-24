@@ -48,32 +48,27 @@ def compare_tracemalloc_snapshots(snapshot, prev_snapshot):
         log.info('%s"\n"%s', trace, usage)
 
 
-class _MemoryObserver:
-
-    def __init__(self, with_tracemalloc: bool) -> None:
-        self.with_tracemalloc = with_tracemalloc
-        self.prev_memory: int = 0
-        self.prev_snapshot: tracemalloc.Snapshot | None = None
-
-    async def stats(self) -> None:
-        gc.collect()
-        growth = get_process_memory() - self.prev_memory
-        log.info("memory growth: %s, now it's %s", bytes2human(growth), get_humanreadable_process_memory())
-        self.prev_memory = get_process_memory()
-        if self.with_tracemalloc:
-            snapshot = tracemalloc.take_snapshot()
-            if growth > 4 * 1e-6 and self.prev_snapshot is not None:
-                await run.cpu_bound(compare_tracemalloc_snapshots, snapshot, self.prev_snapshot)
-            self.prev_snapshot = snapshot
+class _state:
+    with_tracemalloc = False
+    prev_memory: int = 0
+    prev_snapshot: tracemalloc.Snapshot | None = None
 
 
-_observers: list[_MemoryObserver] = []  # NOTE: keeps the observers alive so their repetitions run until shutdown
+async def _stats() -> None:
+    gc.collect()
+    growth = get_process_memory() - _state.prev_memory
+    log.info("memory growth: %s, now it's %s", bytes2human(growth), get_humanreadable_process_memory())
+    _state.prev_memory = get_process_memory()
+    if _state.with_tracemalloc:
+        snapshot = tracemalloc.take_snapshot()
+        if growth > 4 * 1e-6 and _state.prev_snapshot is not None:
+            await run.cpu_bound(compare_tracemalloc_snapshots, snapshot, _state.prev_snapshot)
+        _state.prev_snapshot = snapshot
 
 
 def observe_memory_growth(with_tracemalloc: bool = False) -> None:
     log.info('Observing memory growth')
+    _state.with_tracemalloc = with_tracemalloc
     if with_tracemalloc:
         tracemalloc.start(10)
-    observer = _MemoryObserver(with_tracemalloc)
-    _observers.append(observer)
-    rosys.on_repeat(observer.stats, 60.0)
+    rosys.on_repeat(_stats, 60.0)
