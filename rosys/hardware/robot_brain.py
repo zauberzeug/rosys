@@ -23,7 +23,11 @@ class RobotBrain:
     If the offset changes significantly, a notification is sent and the offset history is cleared.
     """
 
-    def __init__(self, communication: Communication, *, enable_esp_on_startup: bool = True, use_espresso: bool = False, heartbeat_interval: float | None = None) -> None:
+    def __init__(self, communication: Communication, *,
+                 enable_esp_on_startup: bool = True,
+                 use_espresso: bool = False,
+                 heartbeat_interval: float | None = None,
+                 supported_lizard_versions: str | None = None) -> None:
         """
         Initialize the RobotBrain and connect to the microcontroller.
 
@@ -31,6 +35,9 @@ class RobotBrain:
         :param enable_esp_on_startup: Whether to enable the ESP on startup (default: ``True``)
         :param use_espresso: Whether to use the new espresso.py for controlling the ESP instead of the old flash.py (default: ``False``)
         :param heartbeat_interval: If not ``None``, the interval in seconds at which to send heartbeat messages to the ESP (default: ``None``)
+        :param supported_lizard_versions: PEP 440 version specifier restricting which Lizard versions can be
+            downloaded and flashed, e.g. ``'<0.14.0'`` (default: ``None``, all versions are supported)
+        :raises InvalidSpecifier: When ``supported_lizard_versions`` is not a valid version specifier
         """
         self.ESP_CONNECTED = Event[[]]()
         """ESP has been connected and Lizard is ready to use"""
@@ -45,7 +52,7 @@ class RobotBrain:
 
         self.communication = communication
         self.lizard_code = ''
-        self.lizard_firmware = LizardFirmware(self)
+        self.lizard_firmware = LizardFirmware(self, supported_versions=supported_lizard_versions)
         self.ESP_CONNECTED.subscribe(self._check_lizard_code)
 
         self.waiting_list: dict[str, str | None] = {}
@@ -368,8 +375,8 @@ class EspNotReadyException(Exception):
 
 def augment(line: str) -> str:
     checksum = 0
-    for c in line:
-        checksum ^= ord(c)
+    for byte in line.encode():
+        checksum ^= byte
     return f'{line}@{checksum:02x}'
 
 
@@ -378,11 +385,14 @@ def check(line: str | None) -> str:
         return ''
     if line[-3:-2] != '@':
         return ''
-    check_ = int(line[-2:], 16)
-    line = line[:-3]
     checksum = 0
-    for c in line:
-        checksum ^= ord(c)
+    try:
+        check_ = int(line[-2:], 16)
+        line = line[:-3]
+        for byte in line.encode():
+            checksum ^= byte
+    except ValueError:
+        return ''
     if checksum != check_:
         return ''
     return line

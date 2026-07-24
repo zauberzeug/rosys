@@ -18,6 +18,7 @@ dependencies = [
     "tabulate>=0.8.9,<0.9",
     "coloredlogs>=15.0.1,<16",
     "humanize>=4.0.0,<5",
+    "packaging>=26.0",
     "uvloop>=0.17.0",
     "dataclasses-json>=0.5.7,<0.6",
     "suntime>=1.2.5,<2",
@@ -32,7 +33,7 @@ dependencies = [
     "pyudev>=0.21.0",
     "pyquaternion>=0.9.9,<0.10",
     "cairosvg>=2.9.0,<3",  # https://github.com/zauberzeug/rosys/security/dependabot/104
-    "pillow>=12.2.0",  # https://github.com/zauberzeug/rosys/security/dependabot/112
+    "pillow>=12.3.0",  # https://github.com/zauberzeug/rosys/security/dependabot/148
     "lxml>=6.1.0",  # https://github.com/zauberzeug/rosys/security/dependabot/115
     "idna>=3.15",  # https://github.com/zauberzeug/rosys/security/dependabot/122
     "requests>=2.32.4",  # https://github.com/zauberzeug/rosys/security/dependabot/64
@@ -47,6 +48,8 @@ dependencies = [
     "marshmallow>=3.26.2,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/81
     "pyturbojpeg>=1.8.2,<2",
     "virtualenv>=20.36.1",  # https://github.com/zauberzeug/rosys/security/dependabot/95
+    "mcap>=1.1.0,<2",
+    "zstandard>=0.23.0",  # imported directly in analysis/recording/indexing.py (also a transitive dep of mcap)
 ]
 
 [project.urls]
@@ -118,7 +121,9 @@ python_version = "3.11"
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = ["numpy.*"]
+# numpy's stubs surface ufunc/ndarray typing errors in rosys
+# analysing mcap's sources trips mypy's fatal "source file found twice"
+module = ["numpy.*", "mcap.*"]
 follow_imports = "skip"
 
 [[tool.mypy.overrides]]
