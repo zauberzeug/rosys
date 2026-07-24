@@ -222,7 +222,8 @@ class Repeater:
         # NOTE: an object that is already gone once control returns to the event loop can never have been stored
         if not self._alive:
             log.warning('"%s" will never be called because its object has already been garbage-collected; '
-                        'store the object to define the lifetime of the repetition',
+                        'store the object to define the lifetime of the repetition, '
+                        'or use ui.timer for page-scoped UI updates',
                         _handler_name(self.handler))
 
     @property
