@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator
+from collections.abc import Generator
 from pathlib import Path
 
 import pytest
@@ -29,7 +29,7 @@ class VersionCommunicationSimulation(CommunicationSimulation):
 
 
 @pytest.fixture
-async def lizard_firmware(rosys_integration: None) -> AsyncGenerator[LizardFirmware, None]:
+def lizard_firmware(rosys_integration: None) -> Generator[LizardFirmware, None, None]:
     """A firmware restricted to Lizard versions below 0.14.0."""
     robot_brain = RobotBrain(VersionCommunicationSimulation(),
                              enable_esp_on_startup=False,

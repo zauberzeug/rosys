@@ -1,5 +1,5 @@
 from collections import deque
-from collections.abc import AsyncGenerator
+from collections.abc import Generator
 
 import pytest
 from nicegui import background_tasks
@@ -47,7 +47,7 @@ async def connect(communication: CommunicationSimulation) -> None:
 
 
 @pytest.fixture
-async def robot_brain(rosys_integration: None) -> AsyncGenerator[RobotBrain, None]:
+def robot_brain(rosys_integration: None) -> Generator[RobotBrain, None, None]:
     robot_brain = RobotBrain(CommunicationSimulation(), enable_esp_on_startup=False)
     _robot = RobotHardware([], robot_brain)  # NOTE: keep alive so its weak update repeater keeps running
     yield robot_brain
