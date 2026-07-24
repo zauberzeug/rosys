@@ -54,6 +54,14 @@ class _state:
     prev_snapshot: tracemalloc.Snapshot | None = None
 
 
+def observe_memory_growth(with_tracemalloc: bool = False) -> None:
+    log.info('Observing memory growth')
+    _state.with_tracemalloc = with_tracemalloc
+    if with_tracemalloc:
+        tracemalloc.start(10)
+    rosys.on_repeat(_stats, 60.0)
+
+
 async def _stats() -> None:
     gc.collect()
     growth = get_process_memory() - _state.prev_memory
@@ -64,11 +72,3 @@ async def _stats() -> None:
         if growth > 4 * 1e-6 and _state.prev_snapshot is not None:
             await run.cpu_bound(compare_tracemalloc_snapshots, snapshot, _state.prev_snapshot)
         _state.prev_snapshot = snapshot
-
-
-def observe_memory_growth(with_tracemalloc: bool = False) -> None:
-    log.info('Observing memory growth')
-    _state.with_tracemalloc = with_tracemalloc
-    if with_tracemalloc:
-        tracemalloc.start(10)
-    rosys.on_repeat(_stats, 60.0)
