@@ -302,6 +302,7 @@ async def startup() -> None:
 
     for handler in startup_handlers:
         _run_handler(handler)
+    startup_handlers.clear()  # NOTE: release the handlers so they don't keep their objects alive forever
 
 
 async def _garbage_collection() -> None:
