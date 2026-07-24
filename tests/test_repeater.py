@@ -174,22 +174,23 @@ async def test_collected_object_does_not_start_orphan_task_after_startup():
     rosys.reset_before_test()
     assert not _state.startup_finished
 
-    handlers = Handlers()
-    repeater = rosys.on_repeat(handlers.method, 0.01)
-    assert not repeater.running  # start was deferred, not launched
-    assert repeater.start in startup_handlers
+    try:
+        handlers = Handlers()
+        repeater = rosys.on_repeat(handlers.method, 0.01)
+        assert not repeater.running  # start was deferred, not launched
+        assert repeater.start in startup_handlers
 
-    del handlers
-    gc.collect()
-    assert isinstance(repeater.handler, _WeakHandler)
-    assert not repeater.handler.alive  # handler's object is gone
+        del handlers
+        gc.collect()
+        assert isinstance(repeater.handler, _WeakHandler)
+        assert not repeater.handler.alive  # handler's object is gone
 
-    await rosys.startup()  # replays the deferred start handlers
+        await rosys.startup()  # replays the deferred start handlers
 
-    assert not repeater.running  # no orphan task launched
-
-    await rosys.shutdown()
-    rosys.reset_after_test()
+        assert not repeater.running  # no orphan task launched
+    finally:
+        await rosys.shutdown()  # NOTE: don't let a failure above leak startup state into the next test
+        rosys.reset_after_test()
 
 
 @pytest.mark.usefixtures('rosys_integration')
