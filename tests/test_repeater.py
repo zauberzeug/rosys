@@ -9,7 +9,7 @@ import pytest
 from nicegui import core
 
 import rosys
-from rosys.rosys import Repeater, _handler_name, _prepare_handler, _state, _WeakHandler, startup_handlers
+from rosys.rosys import Repeater, _handler_name, _prepare_handler, _state, _WeakHandler, startup_handlers, tasks
 from rosys.testing import forward
 
 
@@ -212,6 +212,17 @@ async def test_repeater_can_restart_after_stop():
     assert repeater.running  # a plain stop() must not permanently disable restart
     await forward(0.35)
     assert len(calls) > calls_after_stop  # restarted: ticking again
+
+
+@pytest.mark.usefixtures('rosys_integration')
+async def test_never_stored_check_does_not_linger_in_task_registry():
+    calls: list[float] = []
+    ticker = Ticker(calls)
+    rosys.on_repeat(ticker.step, 0.1)  # NOTE: creating a weak repeater after startup schedules the never-stored check
+
+    await forward(0.5)
+
+    assert not any(task.done() for task in tasks)  # the finished check task got pruned from the registry
 
 
 async def test_never_stored_object_logs_warning(rosys_log: pytest.LogCaptureFixture):

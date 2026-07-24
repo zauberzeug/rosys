@@ -144,9 +144,16 @@ def _run_handler(handler: Callable) -> None:
     try:
         result = handler()
         if isinstance(result, Awaitable):
-            tasks.append(background_tasks.create(result, name=_handler_name(handler)))
+            task = background_tasks.create(result, name=_handler_name(handler))
+            tasks.append(task)
+            task.add_done_callback(_forget_task)
     except Exception:
         log.exception('error while starting handler "%s"', _handler_name(handler))
+
+
+def _forget_task(task: asyncio.Task) -> None:
+    if task in tasks:  # NOTE: shutdown may already have cleared the registry
+        tasks.remove(task)
 
 
 class _WeakHandler:
