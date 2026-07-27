@@ -9,6 +9,8 @@ import pytest
 from nicegui import core
 
 import rosys
+from rosys.automation import Automator
+from rosys.hardware import WheelsSimulation
 from rosys.rosys import Repeater, _handler_name, _prepare_handler, _state, _WeakHandler, startup_handlers, tasks
 from rosys.testing import forward
 
@@ -277,3 +279,44 @@ async def test_repeater_stops_when_object_is_collected():
     assert task not in Repeater.tasks  # the done-callback pruned the registry
     assert repeater._task is None  # pylint: disable=protected-access  # ...and cleared the reference, like stop()
     assert len(calls) == calls_while_alive  # and stopped ticking after collection
+
+
+@pytest.mark.usefixtures('rosys_integration')
+async def test_on_shutdown_does_not_keep_a_discarded_module_alive():
+    wheels = WheelsSimulation()  # registers rosys.on_shutdown(self.stop) in __init__
+    reference = weakref.ref(wheels)
+
+    del wheels
+    gc.collect()
+
+    assert reference() is None  # the shutdown registry does not pin the module
+
+
+@pytest.mark.usefixtures('rosys_integration')
+async def test_on_shutdown_does_not_keep_a_discarded_automator_alive():
+    automator = Automator(None)  # registers a shutdown handler for its own teardown
+    reference = weakref.ref(automator)
+
+    del automator
+    gc.collect()
+
+    assert reference() is None
+
+
+async def test_weak_shutdown_handler_is_still_awaited_while_its_object_lives():
+    core.loop = asyncio.get_event_loop()
+    rosys.reset_before_test()
+    calls: list[str] = []
+
+    class Stoppable:
+        async def stop(self) -> None:  # async, so this also covers awaiting through the weak wrapper
+            calls.append('stopped')
+
+    stoppable = Stoppable()  # kept alive, so its handler must still run
+    try:
+        rosys.on_shutdown(stoppable.stop)
+        await rosys.startup()
+        await rosys.shutdown()
+        assert calls == ['stopped']
+    finally:
+        rosys.reset_after_test()

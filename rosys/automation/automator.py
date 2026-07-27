@@ -65,7 +65,10 @@ class Automator:
         self.AUTOMATION_STOPPED.subscribe(lambda _: self._handle_interrupt(stop=True))
         self.AUTOMATION_FAILED.subscribe(lambda _: self._handle_interrupt(stop=True))
 
-        rosys.on_shutdown(lambda: self.stop(because='automator is shutting down'))
+        rosys.on_shutdown(self._stop_on_shutdown)
+
+    def _stop_on_shutdown(self) -> None:
+        self.stop(because='automator is shutting down')
 
     @property
     def is_stopped(self) -> bool:

@@ -314,6 +314,13 @@ def on_startup(handler: Callable) -> None:
 
 
 def on_shutdown(handler: Callable) -> None:
+    """Call the handler on shutdown; a bound method is held weakly, so a discarded object is not kept alive."""
+    if inspect.ismethod(handler):
+        try:
+            handler = _WeakHandler(handler)
+        except TypeError:
+            log.warning('"%s" stays alive until shutdown because its object does not support weak references',
+                        handler.__qualname__)
     shutdown_handlers.append(handler)
 
 
