@@ -22,6 +22,8 @@ if TYPE_CHECKING:
 
 log = logging.getLogger('rosys.image_route')
 
+_route_owners: dict[str, weakref.ref] = {}
+
 
 def create_image_route(camera: Camera) -> None:
     placeholder_url = '/' + camera.base_path + '/placeholder'
@@ -33,6 +35,9 @@ def create_image_route(camera: Camera) -> None:
     app.remove_route(undistorted_url)
 
     camera_ref = weakref.ref(camera)
+    urls = (placeholder_url, timestamp_url, undistorted_url)
+    for url in urls:
+        _route_owners[url] = camera_ref  # NOTE: claim the urls before adding, so a pending finalizer cannot remove them
 
     async def get_camera_image(timestamp: str,
                                shrink: float = 1.0,
@@ -94,6 +99,15 @@ def create_image_route(camera: Camera) -> None:
     app.add_api_route(placeholder_url, _get_placeholder)
     app.add_api_route(timestamp_url, get_camera_image)
     app.add_api_route(undistorted_url, get_camera_image_undistorted)
+
+    weakref.finalize(camera, _remove_image_routes, camera_ref, urls)
+
+
+def _remove_image_routes(camera_ref: weakref.ref, urls: tuple[str, ...]) -> None:
+    for url in urls:
+        if _route_owners.get(url) is camera_ref:  # NOTE: a newer camera with the same id may own them by now
+            app.remove_route(url)
+            del _route_owners[url]
 
 
 def _create_placeholder(shrink: int) -> bytes:
