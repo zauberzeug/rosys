@@ -275,6 +275,8 @@ class Repeater:
             log.debug('"%s" stops repeating because its object was garbage-collected', _handler_name(self.handler))
 
     def stop(self) -> None:
+        if self.start in startup_handlers:
+            startup_handlers.remove(self.start)  # queued but not yet started: cancel the pending start
         if not self._task:
             return
 

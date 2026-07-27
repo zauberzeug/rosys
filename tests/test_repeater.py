@@ -193,6 +193,29 @@ async def test_collected_object_does_not_start_orphan_task_after_startup():
         rosys.reset_after_test()
 
 
+async def test_stop_before_startup_prevents_the_deferred_start():
+    # NOTE: a repeater created pre-startup defers its start; stopping it must also drop that pending start.
+    core.loop = asyncio.get_event_loop()
+    rosys.reset_before_test()
+    assert not _state.startup_finished
+
+    calls: list[float] = []
+    try:
+        ticker = Ticker(calls)  # kept alive, so a dead handler is not what stops it
+        repeater = rosys.on_repeat(ticker.step, 0.01)
+        assert repeater.start in startup_handlers
+
+        repeater.stop()
+
+        await rosys.startup()  # replays the deferred start handlers
+
+        assert not repeater.running  # the stopped repeater was not started by the replay
+        assert not calls
+    finally:
+        await rosys.shutdown()  # NOTE: don't let a failure above leak startup state into the next test
+        rosys.reset_after_test()
+
+
 @pytest.mark.usefixtures('rosys_integration')
 async def test_repeater_can_restart_after_stop():
     calls: list[float] = []
