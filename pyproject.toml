@@ -84,9 +84,9 @@ types = [
     "types-tabulate>=0.8.9,<0.9",
 ]
 docs = [
-    "mkdocs==1.5.3",
-    "mkdocs-material",
-    "pymdown-extensions>=10.21.3",  # https://github.com/zauberzeug/rosys/security/dependabot/121
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.7",
+    "pymdown-extensions>=11.0.0",  # https://github.com/zauberzeug/rosys/security/dependabot/149
     "mdx-include",
     "mkdocs-pymdownx-material-extras",
     "mdx-footnotes2",
