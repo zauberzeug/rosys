@@ -206,11 +206,65 @@ async def test_stop_before_startup_prevents_the_deferred_start():
         assert repeater.start in startup_handlers
 
         repeater.stop()
+        assert repeater.start not in startup_handlers  # the pending start was dropped
 
         await rosys.startup()  # replays the deferred start handlers
 
         assert not repeater.running  # the stopped repeater was not started by the replay
         assert not calls
+    finally:
+        await rosys.shutdown()  # NOTE: don't let a failure above leak startup state into the next test
+        rosys.reset_after_test()
+
+
+async def test_restart_before_startup_keeps_the_deferred_start():
+    # NOTE: stopping and starting again before startup must leave the start queued exactly once.
+    core.loop = asyncio.get_event_loop()
+    rosys.reset_before_test()
+    assert not _state.startup_finished
+
+    calls: list[float] = []
+    try:
+        ticker = Ticker(calls)
+        repeater = rosys.on_repeat(ticker.step, 0.01)
+
+        repeater.stop()
+        repeater.start()
+        assert startup_handlers.count(repeater.start) == 1  # re-queued, but not twice
+
+        await rosys.startup()  # replays the deferred start handlers
+
+        assert repeater.running  # the restarted repeater was started by the replay
+    finally:
+        await rosys.shutdown()  # NOTE: don't let a failure above leak startup state into the next test
+        rosys.reset_after_test()
+
+
+async def test_stopping_a_repeater_during_startup_keeps_the_other_handlers():
+    # NOTE: stop() removes a pending start from the list that startup() is iterating; it must not skip a sibling.
+    core.loop = asyncio.get_event_loop()
+    rosys.reset_before_test()
+    assert not _state.startup_finished
+
+    calls: list[float] = []
+    started: list[str] = []
+    try:
+        ticker = Ticker(calls)
+        repeater = rosys.on_repeat(ticker.step, 0.01)  # queued before the handlers below
+
+        def stopper() -> None:
+            repeater.stop()  # drops the earlier pending start, shortening the list
+
+        def sibling() -> None:
+            started.append('sibling')
+
+        rosys.on_startup(stopper)
+        rosys.on_startup(sibling)
+
+        await rosys.startup()  # replays the deferred start handlers
+
+        assert not repeater.running  # the stopped repeater was not started by the replay
+        assert started == ['sibling']  # ...and the handler behind it was not skipped
     finally:
         await rosys.shutdown()  # NOTE: don't let a failure above leak startup state into the next test
         rosys.reset_after_test()
