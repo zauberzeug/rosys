@@ -1,7 +1,7 @@
 import asyncio
 from collections.abc import Coroutine
 
-from .automation import AutomationStopped
+from .automation import AutomationStopped, in_uninterruptible_section
 
 
 class parallelize:
@@ -12,6 +12,8 @@ class parallelize:
     to run them in parallel.
 
     Note that ``parallelize`` will be uninterruptible if one of its coroutines is marked with ``@rosys.automation.uninterruptible``.
+    This also holds for ``return_when_first_completed``: the remaining coroutines are only stopped
+    once no coroutine is inside an uninterruptible section anymore.
     """
 
     def __init__(self, *coros: Coroutine, return_when_first_completed: bool = False) -> None:
@@ -27,6 +29,7 @@ class parallelize:
         completed = [False for _ in sends]
         waiting: list[asyncio.Future | asyncio.Task | None] = [None for _ in sends]
         cancelling = False  # whether a cancellation is being drained through the unfinished coroutines
+        stop_when_interruptible = False  # a first-completed stop, held back by an uninterruptible section
         exception_to_reraise: list[BaseException] = []  # holds the external stop to re-raise once draining is done
 
         def cancel_unfinished(exception: BaseException, *, propagate: bool) -> None:
@@ -41,6 +44,9 @@ class parallelize:
 
         try:
             while not all(completed):
+                if stop_when_interruptible and not in_uninterruptible_section():
+                    stop_when_interruptible = False
+                    cancel_unfinished(AutomationStopped(), propagate=False)
                 active_coros = [i for i, is_completed in enumerate(completed) if not is_completed]
 
                 for i in active_coros:
@@ -56,8 +62,12 @@ class parallelize:
                     except StopIteration:
                         completed[i] = True
                         if self.return_when_first_completed and not cancelling:
-                            # stop the remaining coroutines, but let their cleanup run before returning
-                            cancel_unfinished(AutomationStopped(), propagate=False)
+                            # stop the remaining coroutines, but let their cleanup run before returning;
+                            # an uninterruptible one first runs to the end of its section
+                            if in_uninterruptible_section():
+                                stop_when_interruptible = True
+                            else:
+                                cancel_unfinished(AutomationStopped(), propagate=False)
                         continue
                     except BaseException:
                         # the coroutine finished by (re-)raising; while draining a cancellation this is expected
