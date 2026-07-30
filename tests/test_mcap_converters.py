@@ -292,6 +292,18 @@ async def test_extract_reads_live_state_at_write_time(mcap_dir: Path) -> None:
     assert message == {'value': 1}
 
 
+async def test_scalar_extract_returning_none_skips_the_message(mcap_dir: Path) -> None:
+    """A ``scalar`` whose ``extract`` yields ``None`` records nothing, not an unplottable null."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+    add_event_topic(recorder, '/live', event=event, converter=scalar(extract=lambda _payload: None))
+    recorder.start()
+    event.emit(0)
+    await recorder.stop()
+
+    assert recorder.message_count == 0
+
+
 async def test_a_raising_sample_does_not_reach_the_emitter(mcap_dir: Path) -> None:
     """A converter raising while sampling costs its message, not the emission that triggered it.
 

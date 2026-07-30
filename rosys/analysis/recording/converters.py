@@ -41,7 +41,8 @@ class Converter:
     The two callables run in different places, which is the whole point of splitting them:
 
     * ``sample`` reduces the payload to the value that is to be recorded, **on the event loop**, at
-      the moment the topic is written. Anything reading live state belongs here.
+      the moment the topic is written (``None`` to skip the message, as in ``encode``). Anything
+      reading live state belongs here.
     * ``encode`` turns that value into bytes (``None`` to skip the message) **on the background
       writer**, off the event loop, because JSON and JPEG encoding are the expensive part.
 
@@ -293,7 +294,8 @@ def scalar(*, value_type: str = 'number', extract: Callable[[Any], Any] | None =
     """A primitive value -> ``{value: ...}`` (plottable).
 
     ``extract`` pulls the field off the payload, on the event loop at write time, so it may read live
-    state (a hardware module's attribute, say) and still record the value of that instant.
+    state (a hardware module's attribute, say) and still record the value of that instant. Returning
+    ``None`` from it skips the message, rather than recording an unplottable ``{'value': null}``.
     """
     schema = {'type': 'object', 'properties': {'value': {'type': value_type}}}
 
