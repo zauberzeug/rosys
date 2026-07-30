@@ -56,6 +56,11 @@ class Converter:
     moves the reference onto the queue, so the writer still encodes whatever that object holds later
     and the staircase remains. The same applies to the payload itself when there is no ``sample``
     (e.g. ``Odometer.FRAME_UPDATED`` re-emits one in-place-mutated ``Frame3d``).
+
+    That copy has to stay cheap, though: ``sample`` runs on the event loop at the topic's full rate,
+    so a field read or a small copy is the budget. Where a snapshot would cost more than that —
+    deep-copying an image, walking a list — the topic wants a smaller value to record, not a heavier
+    ``sample``.
     """
     schema: TopicSchema
     encode: Callable[[Any, int], bytes | None]
