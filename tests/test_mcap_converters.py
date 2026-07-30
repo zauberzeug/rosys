@@ -168,6 +168,21 @@ async def test_add_pose_topic_extract_skips_none(mcap_dir: Path) -> None:
     assert recorder.message_count == 0
 
 
+async def test_none_payload_is_skipped_before_the_timestamp_is_read(mcap_dir: Path) -> None:
+    """A ``None`` payload on an auto-dispatched topic is skipped without calling ``timestamp``.
+
+    A custom ``timestamp`` reads a field off the payload, so it must not see the ``None`` that
+    auto-dispatch already gives up on — the guard has to come first, or the handler raises.
+    """
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+    add_event_topic(recorder, '/pose', event=event, timestamp=lambda measurement: measurement.time)
+    recorder.start()
+    event.emit(None)
+    await recorder.stop()
+    assert recorder.message_count == 0
+
+
 async def test_unpack_records_each_element(mcap_dir: Path) -> None:
     """``unpack=True`` records each element of an iterable payload separately."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
@@ -254,6 +269,27 @@ async def test_scalar_extract_pulls_field(mcap_dir: Path) -> None:
 
     _, message = _read(_only_file(mcap_dir))[0]
     assert message == {'value': 0.25}
+
+
+async def test_extract_reads_live_state_at_write_time(mcap_dir: Path) -> None:
+    """``extract`` samples when the topic is written, not when the writer encodes it.
+
+    Regression: the extraction used to sit inside ``encode``, which runs on the background writer.
+    Every message of one flush batch then read the same, later value — a live signal came out of the
+    file as a staircase with the writer's flush period, while the timestamps stayed evenly spaced, so
+    nothing about the recording looked wrong.
+    """
+    state = SimpleNamespace(value=1)
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+    add_event_topic(recorder, '/live', event=event, converter=scalar(extract=lambda _payload: state.value))
+    recorder.start()
+    event.emit(None)
+    state.value = 2  # as the robot would move on before the writer gets around to this message
+    await recorder.stop()
+
+    _, message = _read(_only_file(mcap_dir))[0]
+    assert message == {'value': 1}
 
 
 async def test_bool_dispatches_to_boolean(mcap_dir: Path) -> None:
@@ -428,7 +464,9 @@ def test_camera_calibration_encode() -> None:
     class _Camera:
         calibration = _Calibration()
 
-    message = json.loads(camera_calibration(_Camera(), frame='camera_front').encode(None, NS))
+    converter = camera_calibration(_Camera(), frame='camera_front')
+    assert converter.sample is not None
+    message = json.loads(converter.encode(converter.sample(None), NS))  # sample on the loop, encode after
     assert (message['width'], message['height']) == (640, 480)
     assert message['distortion_model'] == 'plumb_bob'
     assert message['K'][0] == 600.0  # fx
@@ -438,11 +476,14 @@ def test_camera_calibration_encode() -> None:
 
 
 def test_camera_calibration_skips_when_uncalibrated() -> None:
-    """``camera_calibration`` returns ``None`` while the camera is uncalibrated."""
+    """``camera_calibration`` skips the message while the camera is uncalibrated."""
     class _Camera:
         calibration = None
 
-    assert camera_calibration(_Camera(), frame='camera_front').encode(None, NS) is None
+    converter = camera_calibration(_Camera(), frame='camera_front')
+    assert converter.sample is not None
+    assert converter.sample(None) is None  # the writer drops it on this, before encoding
+    assert converter.encode(None, NS) is None
 
 
 async def test_compressed_image_encode(mcap_dir: Path) -> None:

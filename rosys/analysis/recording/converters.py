@@ -1,15 +1,18 @@
 """Registry, topic sources and JSON machinery that feed the MCAP recorder.
 
-A :class:`Converter` bundles a :class:`TopicSchema` with an ``encode`` returning
-JSON bytes (or ``None`` to skip). The registry maps RoSys types to converter
-factories so :func:`add_event_topic` / :func:`add_timer_topic` pick the right
-converter from the value's runtime type, with explicit overrides. App-specific
-topics without a foxglove schema use :func:`custom_message` with a JSON schema.
+A :class:`Converter` bundles a :class:`TopicSchema` with an optional ``sample``
+reducing the payload to the value to record, and an ``encode`` returning JSON
+bytes (or ``None`` to skip). The registry maps RoSys types to converter factories
+so :func:`add_event_topic` / :func:`add_timer_topic` pick the right converter from
+the value's runtime type, with explicit overrides. App-specific topics without a
+foxglove schema use :func:`custom_message` with a JSON schema.
 
 The concrete converters for RoSys/Foxglove data types live in :mod:`.foxglove`;
 this module only holds the machinery that wires values into the recorder. Values
-are enqueued unencoded and :func:`Converter.encode` runs on the recorder's
-background writer, so no JSON/JPEG encoding happens on the event loop.
+are sampled and timestamped on the event loop but enqueued unencoded:
+:func:`Converter.encode` runs on the recorder's background writer, so no
+JSON/JPEG encoding happens on the event loop (see :class:`Converter` for why the
+two cannot be swapped).
 """
 from __future__ import annotations
 
@@ -33,9 +36,29 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class Converter:
-    """A topic's schema plus an ``encode`` returning JSON bytes (or ``None`` to skip)."""
+    """A topic's schema, an optional ``sample`` and an ``encode`` returning JSON bytes.
+
+    The two callables run in different places, which is the whole point of splitting them:
+
+    * ``sample`` reduces the payload to the value that is to be recorded, **on the event loop**, at
+      the moment the topic is written. Anything reading live state belongs here.
+    * ``encode`` turns that value into bytes (``None`` to skip the message) **on the background
+      writer**, off the event loop, because JSON and JPEG encoding are the expensive part.
+
+    Putting a field access into ``encode`` instead silently records the wrong instant: the payload is
+    queued, and by the time the writer encodes it, the object it reads from has moved on. Every
+    message of one flush batch then carries the same value, which turns a live signal into a staircase
+    with the writer's flush period while the timestamps stay perfectly spaced.
+
+    ``sample`` must return an immutable snapshot (a number, or a value object that is replaced rather
+    than mutated, as ``Odometer.pose`` is) — or an explicit copy. Returning a live mutable object only
+    moves the reference onto the queue, so the writer still encodes whatever that object holds later
+    and the staircase remains. The same applies to the payload itself when there is no ``sample``
+    (e.g. ``Odometer.FRAME_UPDATED`` re-emits one in-place-mutated ``Frame3d``).
+    """
     schema: TopicSchema
     encode: Callable[[Any, int], bytes | None]
+    sample: Callable[[Any], Any] | None = None
 
 
 ConverterFactory = Callable[..., Converter]
@@ -116,11 +139,12 @@ def add_timer_topic(recorder: McapRecorder, topic: str, *,
 
 
 class _TopicWriter:
-    """Shared lazy-dispatch + enqueue for a single topic.
+    """Shared sampling + lazy-dispatch + enqueue for a single topic.
 
-    Auto-dispatch and timestamping happen on the event loop (both cheap), but the
-    value is handed to the recorder unencoded together with its ``encode``
-    callable, so the actual JSON/JPEG encoding runs on the background writer.
+    Sampling, auto-dispatch and timestamping happen on the event loop (all cheap),
+    but the sampled value is handed to the recorder unencoded together with its
+    ``encode`` callable, so the actual JSON/JPEG encoding runs on the background
+    writer.
     """
 
     def __init__(self, recorder: McapRecorder, topic: str, converter: Converter | None,
@@ -133,14 +157,21 @@ class _TopicWriter:
 
     def write(self, value: Any) -> None:
         if not self._recorder.accepts(self._topic):
-            return  # not recording or topic deselected -> skip before any (auto-dispatch or encode) work
+            return  # not recording or topic deselected -> skip before any (sample, dispatch, encode) work
         if self._converter is None:
             if value is None:
-                return  # cannot auto-dispatch a None payload
-            self._converter = converter_for(value, **self._overrides)
+                return  # cannot auto-dispatch a None payload (before any timestamp call, which would see None)
+            self._converter = converter_for(value, **self._overrides)  # dispatched on the payload type
             self._recorder.add_topic(self._topic, self._converter.schema)
+        # Taken from the payload, before sampling: the `time` field lives on the payload, and the
+        # sampled value (a float, say) no longer has one — reading it afterwards would silently fall
+        # back to the current time and shift the whole trace.
         timestamp_ns = int(self._timestamp(value) * NANOSECONDS_PER_SECOND) \
             if self._timestamp is not None else _timestamp_ns(value)
+        if self._converter.sample is not None:
+            value = self._converter.sample(value)
+            if value is None:
+                return  # nothing to record at this instant; same meaning as an encode returning None
         self._recorder.log_message(self._topic, value, encode=self._converter.encode, timestamp_ns=timestamp_ns)
 
 
@@ -213,8 +244,14 @@ def _timestamp_ns(value: Any) -> int:
 # --------------------------------------------------------------------------- #
 
 
-def custom_message(schema_name: str, schema: dict, build: Callable[[Any, int], dict | None]) -> Converter:
-    """Converter for an app-specific JSON message; ``build`` returns a dict (or None to skip)."""
+def custom_message(schema_name: str, schema: dict, build: Callable[[Any, int], dict | None], *,
+                   sample: Callable[[Any], Any] | None = None) -> Converter:
+    """Converter for an app-specific JSON message; ``build`` returns a dict (or None to skip).
+
+    ``build`` runs on the background writer, so it must not read anything that moves — pass a
+    ``sample`` for that, which runs on the event loop and reduces the payload to the value ``build``
+    then sees. See :class:`Converter`.
+    """
     topic_schema = TopicSchema(schema_name, json.dumps(schema).encode(), 'jsonschema', 'json')
 
     def encode(value: Any, timestamp_ns: int) -> bytes | None:
@@ -223,7 +260,7 @@ def custom_message(schema_name: str, schema: dict, build: Callable[[Any, int], d
             return None
         return json.dumps(message, default=_json_native).encode()
 
-    return Converter(topic_schema, encode)
+    return Converter(topic_schema, encode, sample)
 
 
 def _json_native(obj: Any) -> Any:
@@ -246,13 +283,17 @@ _SCALAR_SCHEMA_NAME = {'number': 'Float', 'integer': 'Integer', 'boolean': 'Bool
 
 
 def scalar(*, value_type: str = 'number', extract: Callable[[Any], Any] | None = None) -> Converter:
-    """A primitive value -> ``{value: ...}`` (plottable). ``extract`` pulls the field off the payload."""
+    """A primitive value -> ``{value: ...}`` (plottable).
+
+    ``extract`` pulls the field off the payload, on the event loop at write time, so it may read live
+    state (a hardware module's attribute, say) and still record the value of that instant.
+    """
     schema = {'type': 'object', 'properties': {'value': {'type': value_type}}}
 
     def build(value: Any, _timestamp_ns: int) -> dict:
-        return {'value': extract(value) if extract is not None else value}
+        return {'value': value}
 
-    return custom_message(_SCALAR_SCHEMA_NAME[value_type], schema, build)
+    return custom_message(_SCALAR_SCHEMA_NAME[value_type], schema, build, sample=extract)
 
 
 def number() -> Converter:

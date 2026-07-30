@@ -84,8 +84,7 @@ def pose_in_frame(*, frame: str = 'map', extract: Callable[[Any], Any] | None = 
         },
     }
 
-    def build(value: Any, timestamp_ns: int) -> dict | None:
-        pose = extract(value) if extract is not None else value
+    def build(pose: Any, timestamp_ns: int) -> dict | None:
         if pose is None:
             return None
         return {
@@ -94,7 +93,7 @@ def pose_in_frame(*, frame: str = 'map', extract: Callable[[Any], Any] | None = 
                      'orientation': _quaternion_from_yaw(pose.yaw)},
         }
 
-    return custom_message('foxglove.PoseInFrame', schema, build)
+    return custom_message('foxglove.PoseInFrame', schema, build, sample=extract)
 
 
 def frame_transform(*, child: str, parent: str = 'map',
@@ -109,8 +108,7 @@ def frame_transform(*, child: str, parent: str = 'map',
         },
     }
 
-    def build(value: Any, timestamp_ns: int) -> dict | None:
-        pose = extract(value) if extract is not None else value
+    def build(pose: Any, timestamp_ns: int) -> dict | None:
         if pose is None:
             return None
         return {
@@ -120,7 +118,7 @@ def frame_transform(*, child: str, parent: str = 'map',
             'rotation': _quaternion_from_yaw(pose.yaw),
         }
 
-    return custom_message('foxglove.FrameTransform', schema, build)
+    return custom_message('foxglove.FrameTransform', schema, build, sample=extract)
 
 
 def transform_3d(*, child: str, parent: str = 'base_link',
@@ -135,8 +133,7 @@ def transform_3d(*, child: str, parent: str = 'base_link',
         },
     }
 
-    def build(value: Any, timestamp_ns: int) -> dict | None:
-        pose = extract(value) if extract is not None else value
+    def build(pose: Any, timestamp_ns: int) -> dict | None:
         if pose is None:
             return None
         w, x, y, z = pose.rotation.quaternion
@@ -147,7 +144,7 @@ def transform_3d(*, child: str, parent: str = 'base_link',
             'rotation': {'x': x, 'y': y, 'z': z, 'w': w},
         }
 
-    return custom_message('foxglove.FrameTransform', schema, build)
+    return custom_message('foxglove.FrameTransform', schema, build, sample=extract)
 
 
 # --------------------------------------------------------------------------- #
@@ -333,7 +330,8 @@ def compressed_image(*, frame: str = 'camera') -> Converter:
 def camera_calibration(camera: CalibratableCamera, *, frame: str) -> Converter:
     """A ``CalibratableCamera`` -> ``foxglove.CameraCalibration`` (intrinsics K/D/P).
 
-    Reads ``camera.calibration`` on each call; returns ``None`` while uncalibrated.
+    Samples ``camera.calibration`` on each write, on the event loop, and skips the message while the
+    camera is uncalibrated.
     """
     schema = {
         'type': 'object',
@@ -349,8 +347,7 @@ def camera_calibration(camera: CalibratableCamera, *, frame: str) -> Converter:
     }
     distortion_models = {'pinhole': 'plumb_bob', 'fisheye': 'equidistant'}
 
-    def build(_value: Any, timestamp_ns: int) -> dict | None:
-        calibration = camera.calibration
+    def build(calibration: Any, timestamp_ns: int) -> dict | None:
         if calibration is None:
             return None
         intrinsics = calibration.intrinsics
@@ -366,7 +363,8 @@ def camera_calibration(camera: CalibratableCamera, *, frame: str) -> Converter:
             'P': [fx, 0.0, cx, 0.0, 0.0, fy, cy, 0.0, 0.0, 0.0, 1.0, 0.0],
         }
 
-    return custom_message('foxglove.CameraCalibration', schema, build)
+    return custom_message('foxglove.CameraCalibration', schema, build,
+                          sample=lambda _image: camera.calibration)
 
 
 def image_annotations(*, camera_id: str | None = None, thickness: float = 2.0) -> Converter:
