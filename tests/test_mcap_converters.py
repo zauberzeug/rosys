@@ -292,6 +292,30 @@ async def test_extract_reads_live_state_at_write_time(mcap_dir: Path) -> None:
     assert message == {'value': 1}
 
 
+async def test_a_raising_sample_does_not_reach_the_emitter(mcap_dir: Path) -> None:
+    """A converter raising while sampling costs its message, not the emission that triggered it.
+
+    ``sample`` runs on the event loop inside the emitting handler, where the writer's failure path
+    around ``encode`` cannot catch it — unguarded, it would surface as an error in the app that
+    emitted.
+    """
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+
+    def extract(payload: int) -> int:
+        if payload in (1, 2):
+            raise ValueError(f'cannot sample {payload}')
+        return payload
+
+    add_event_topic(recorder, '/live', event=event, converter=scalar(extract=extract))
+    recorder.start()
+    for value in range(4):
+        event.emit(value)  # raising inside a handler would propagate out of this
+    await recorder.stop()
+
+    assert [message for _, message in _read(_only_file(mcap_dir))] == [{'value': 0}, {'value': 3}]
+
+
 async def test_bool_dispatches_to_boolean(mcap_dir: Path) -> None:
     """A bool auto-dispatches to the ``Boolean`` scalar schema (registered before ``int``)."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)

@@ -169,7 +169,14 @@ class _TopicWriter:
         timestamp_ns = int(self._timestamp(value) * NANOSECONDS_PER_SECOND) \
             if self._timestamp is not None else _timestamp_ns(value)
         if self._converter.sample is not None:
-            value = self._converter.sample(value)
+            try:
+                value = self._converter.sample(value)
+            except Exception:
+                # Unlike `encode`, this runs on the event loop, inside the emitting handler or the
+                # polling repeater: unguarded, a broken converter would log per emission (at up to
+                # the event rate) instead of once, and surface as an error in the app that emitted.
+                self._recorder.warn_converter_failure(self._topic, 'sampling')
+                return
             if value is None:
                 return  # nothing to record at this instant; same meaning as an encode returning None
         self._recorder.log_message(self._topic, value, encode=self._converter.encode, timestamp_ns=timestamp_ns)
