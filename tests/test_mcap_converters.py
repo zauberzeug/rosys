@@ -20,6 +20,7 @@ from rosys.analysis.recording import (
     add_timer_topic,
     battery_state,
     camera_calibration,
+    compressed_image,
     converter_for,
     converters,
     custom_message,
@@ -477,6 +478,12 @@ async def test_compressed_image_quality_override(mcap_dir: Path) -> None:
         jpeg_sizes = {channel.topic: len(base64.b64decode(json.loads(message.data)['data']))
                       for _, channel, message in make_reader(f).iter_messages()}
     assert jpeg_sizes['/camera/front/low_quality'] < jpeg_sizes['/camera/front/default'] / 2
+
+
+def test_compressed_image_rejects_invalid_quality() -> None:
+    """An out-of-range quality fails while the topic is set up, before any frame is dropped."""
+    with pytest.raises(ValueError, match='between 1 and 100'):
+        compressed_image(quality=101)
 
 
 async def test_image_annotations_from_detections(mcap_dir: Path) -> None:

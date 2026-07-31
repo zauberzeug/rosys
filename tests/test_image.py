@@ -1,5 +1,6 @@
 import numpy as np
 import PIL.Image
+import pytest
 
 from rosys.vision import Image, ImageSize
 
@@ -43,6 +44,14 @@ def test_image_to_jpeg_bytes_quality():
     assert default_jpeg[:2] == b'\xff\xd8'  # JPEG magic
     assert low_quality_jpeg[:2] == b'\xff\xd8'
     assert len(low_quality_jpeg) < len(default_jpeg) / 2
+
+
+def test_image_to_jpeg_bytes_rejects_invalid_quality():
+    """A quality outside 1 to 100 is rejected instead of failing inside the encoder."""
+    image = Image.create_placeholder('x')
+
+    with pytest.raises(ValueError, match='between 1 and 100'):
+        image.to_jpeg_bytes(quality=101)
 
 
 def test_image_from_jpeg_bytes():

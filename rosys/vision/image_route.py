@@ -14,7 +14,7 @@ from .. import run
 from ..geometry import Rectangle
 from .calibration import Calibration
 from .image import Image
-from .image_processing import encode_image_as_jpeg, process_ndarray_image
+from .image_processing import encode_image_as_jpeg, process_ndarray_image, validate_jpeg_quality
 from .image_rotation import ImageRotation
 
 if TYPE_CHECKING:
@@ -48,6 +48,7 @@ def create_image_route(camera: Camera) -> None:
         if not camera:
             return Response(content='Camera was removed', status_code=404)
         try:
+            validate_jpeg_quality(compression)
             crop = Rectangle(x=crop_x, y=crop_y, width=crop_w, height=crop_h) \
                 if crop_x is not None and crop_y is not None and crop_w is not None and crop_h is not None else None
             image_rotation = ImageRotation.from_degrees(rotation)
@@ -76,6 +77,7 @@ def create_image_route(camera: Camera) -> None:
         if not camera:
             return Response(content='Camera was removed', status_code=404)
         try:
+            validate_jpeg_quality(compression)
             crop = Rectangle(x=crop_x, y=crop_y, width=crop_w, height=crop_h) \
                 if crop_x is not None and crop_y is not None and crop_w is not None and crop_h is not None else None
             image_rotation = ImageRotation.from_degrees(rotation)

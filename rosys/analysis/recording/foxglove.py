@@ -19,7 +19,7 @@ from ...geometry import Pose, Velocity
 from ...hardware.bms_state import BmsState
 from ...hardware.gnss.gnss import GnssMeasurement
 from ...hardware.imu import ImuMeasurement
-from ...vision import DEFAULT_JPEG_QUALITY, CalibratableCamera, Image
+from ...vision import DEFAULT_JPEG_QUALITY, CalibratableCamera, Image, validate_jpeg_quality
 from .converters import Converter, add_event_topic, custom_message, register
 from .mcap_recorder import NANOSECONDS_PER_SECOND, McapRecorder
 
@@ -318,7 +318,10 @@ def compressed_image(*, frame: str = 'camera', quality: int = DEFAULT_JPEG_QUALI
     :param quality: JPEG quality from 1 to 100. Camera streams dominate a recording's
         size, so lowering this is the main lever on disk usage: 75 roughly halves the
         bytes per frame. Passed through ``add_event_topic(..., quality=...)``.
+    :raises ValueError: if the quality is not between 1 and 100.
     """
+    validate_jpeg_quality(quality)  # fail while setting up the topic, not silently per frame
+
     schema = {
         'type': 'object',
         'properties': {
