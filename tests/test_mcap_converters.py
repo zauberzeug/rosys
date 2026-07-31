@@ -461,6 +461,24 @@ async def test_compressed_image_encode(mcap_dir: Path) -> None:
     assert base64.b64decode(message['data'])[:2] == b'\xff\xd8'  # JPEG magic
 
 
+async def test_compressed_image_quality_override(mcap_dir: Path) -> None:
+    """A ``quality`` passed to ``add_event_topic`` reaches the JPEG encoder of the image topic."""
+    noise = np.random.default_rng(seed=0).integers(0, 256, size=(240, 320, 3), dtype=np.uint8)
+    image = Image.from_array(noise, camera_id='front', time=5.0)
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+    add_event_topic(recorder, '/camera/front/default', event=event)
+    add_event_topic(recorder, '/camera/front/low_quality', event=event, quality=25)
+    recorder.start()
+    event.emit(image)
+    await recorder.stop()
+
+    with open(_only_file(mcap_dir), 'rb') as f:
+        jpeg_sizes = {channel.topic: len(base64.b64decode(json.loads(message.data)['data']))
+                      for _, channel, message in make_reader(f).iter_messages()}
+    assert jpeg_sizes['/camera/front/low_quality'] < jpeg_sizes['/camera/front/default'] / 2
+
+
 async def test_image_annotations_from_detections(mcap_dir: Path) -> None:
     """Detections become box outlines and point circles with labelled text in an ``ImageAnnotations`` overlay."""
     image = Image.create_placeholder('x', camera_id='front', time=2.0)

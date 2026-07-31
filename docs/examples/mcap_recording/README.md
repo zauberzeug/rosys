@@ -16,6 +16,10 @@ Topics
 : `add_event_topic` and `add_pose_topic` bind a topic to a RoSys event; the matching Foxglove converter is picked from the payload type automatically.
 The subscription is only active while a recording is open.
 
+Image quality
+: Camera topics dominate a recording's size.
+Keyword arguments are forwarded to the converter, so `add_event_topic(recorder, '/camera/front/image', event=camera.NEW_IMAGE, quality=75)` records JPEGs at quality 75 instead of the default 90, roughly halving the bytes per frame.
+
 Recordings page
 : `RecordingsPage` mounts a page for listing, renaming, reindexing and downloading recordings, plus a download endpoint at `/api/recordings/{name}`.
 The optional `header` callback renders shared navigation at the top of the page.

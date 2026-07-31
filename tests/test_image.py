@@ -32,6 +32,19 @@ def test_image_placeholder():
     assert img.size.tuple == Image.DEFAULT_PLACEHOLDER_SIZE
 
 
+def test_image_to_jpeg_bytes_quality():
+    """A lower JPEG quality encodes the same image into noticeably fewer bytes."""
+    noise = np.random.default_rng(seed=0).integers(0, 256, size=(240, 320, 3), dtype=np.uint8)
+    image = Image.from_array(noise)
+
+    default_jpeg = image.to_jpeg_bytes()
+    low_quality_jpeg = image.to_jpeg_bytes(quality=25)
+
+    assert default_jpeg[:2] == b'\xff\xd8'  # JPEG magic
+    assert low_quality_jpeg[:2] == b'\xff\xd8'
+    assert len(low_quality_jpeg) < len(default_jpeg) / 2
+
+
 def test_image_from_jpeg_bytes():
     # Smallest valid jpeg: https://github.com/mathiasbynens/small/blob/master/jpeg.jpg
     img = Image.from_jpeg_bytes(b'\xff\xd8\xff\xdb\x00C\x00\x03\x02\x02\x02\x02\x02\x03\x02\x02\x02\x03\x03\x03\x03\x04\x06\x04\x04\x04\x04\x04\x08\x06\x06\x05\x06\t\x08\n\n\t\x08\t\t\n\x0c\x0f\x0c\n\x0b\x0e\x0b\t\t\r\x11\r\x0e\x0f\x10\x10\x11\x10\n\x0c\x12\x13\x12\x10\x13\x0f\x10\x10\x10\xff\xc9\x00\x0b\x08\x00\x01\x00\x01\x01\x01\x11\x00\xff\xcc\x00\x06\x00\x10\x10\x05\xff\xda\x00\x08\x01\x01\x00\x00?\x00\xd2\xcf \xff\xd9')
