@@ -152,9 +152,8 @@ async def _try_get_jpeg(camera: Camera,
 
             shrink = max(1, shrink, shrink_from_max)
 
-            if shrink == 1 and not undistort and compression == 60 \
-                    and crop is None and rotation == ImageRotation.NONE:
-                return await run.cpu_bound(encode_image_as_jpeg, image.array)
+            if shrink == 1 and not undistort and crop is None and rotation == ImageRotation.NONE:
+                return await run.cpu_bound(encode_image_as_jpeg, image.array, compression)
 
             calibration = camera.calibration if undistort else None  # type: ignore
             return await run.cpu_bound(_process, image, calibration, shrink, undistort, fast, compression,
@@ -193,4 +192,4 @@ def _process(image: Image,
             # INTER_AREA is optimal for downsampling
             image_array = cv2.resize(image_array, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
-    return encode_image_as_jpeg(image_array, compression_level=compression)
+    return encode_image_as_jpeg(image_array, quality=compression)
