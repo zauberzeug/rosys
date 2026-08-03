@@ -14,7 +14,7 @@ from .. import run
 from ..geometry import Rectangle
 from .calibration import Calibration
 from .image import Image
-from .image_processing import encode_image_as_jpeg, process_ndarray_image, validate_jpeg_quality
+from .image_processing import DEFAULT_JPEG_QUALITY, encode_image_as_jpeg, process_ndarray_image, validate_jpeg_quality
 from .image_rotation import ImageRotation
 
 if TYPE_CHECKING:
@@ -38,7 +38,7 @@ def create_image_route(camera: Camera) -> None:
                                shrink: float = 1.0,
                                max_dimension: float | None = None,
                                fast: bool = True,
-                               compression: int = 60,
+                               compression: int = DEFAULT_JPEG_QUALITY,
                                crop_x: int | None = None,
                                crop_y: int | None = None,
                                crop_w: int | None = None,
@@ -67,7 +67,7 @@ def create_image_route(camera: Camera) -> None:
                                            shrink: float = 1.0,
                                            max_dimension: float | None = None,
                                            fast: bool = True,
-                                           compression: int = 60,
+                                           compression: int = DEFAULT_JPEG_QUALITY,
                                            crop_x: int | None = None,
                                            crop_y: int | None = None,
                                            crop_w: int | None = None,
