@@ -193,7 +193,7 @@ class McapRecorder:
         self._last_drop_warning: float = float('-inf')
         self._is_recording: bool = False
         self._warned_topics: set[str] = set()
-        self._warned_encode_topics: set[str] = set()
+        self._warned_converter_topics: set[tuple[str, str]] = set()
         self._disk_stats = _DiskStats(0, 0, 0)
 
         self._cleanup_orphaned_reindex_files()
@@ -539,7 +539,7 @@ class McapRecorder:
         Resilient to two failures that would otherwise lose data silently:
 
         * a converter that raises for one message is logged (once per topic) and skipped, so
-          the rest of the batch still lands (see :meth:`_warn_encode_failure`);
+          the rest of the batch still lands (see :meth:`warn_converter_failure`);
         * a lost writer — ``None`` while still recording, e.g. after a failed rotation — is
           reopened once; if that fails the recorder hard-stops with an error and a drop count
           rather than silently swallowing every future message (see :meth:`_hard_stop`).
@@ -557,7 +557,7 @@ class McapRecorder:
                 data = message.encode(message.payload, message.timestamp_ns) \
                     if message.encode is not None else message.payload
             except Exception:
-                self._warn_encode_failure(message.topic)
+                self.warn_converter_failure(message.topic, 'encoding')
                 continue
             if data is None:
                 continue  # converter chose to skip this value
@@ -576,13 +576,22 @@ class McapRecorder:
                 if not self._rotate_file(dropped_on_failure=len(batch) - index - 1):
                     return
 
-    def _warn_encode_failure(self, topic: str) -> None:
-        """Log a converter failure once per topic, so one bad message never floods the log."""
-        if topic in self._warned_encode_topics:
+    def warn_converter_failure(self, topic: str, stage: str) -> None:
+        """Log a converter failure once per topic and stage, so one bad message never floods the log.
+
+        Both halves of a converter can raise, in different places: ``sample`` on the event loop, at
+        the topic's full rate, and ``encode`` on the writer thread. Both report here, so a broken
+        converter costs one log line rather than one per message. Call from an exception handler.
+
+        :param topic: the topic whose converter raised.
+        :param stage: which half raised, ``'sampling'`` or ``'encoding'``; keyed separately so a
+            failing ``sample`` does not mute a later ``encode`` failure on the same topic.
+        """
+        if (topic, stage) in self._warned_converter_topics:
             return
-        self._warned_encode_topics.add(topic)
-        self.log.exception('encoding a message for topic %s failed; skipping it '
-                           '(further failures on this topic are silent)', topic)
+        self._warned_converter_topics.add((topic, stage))
+        self.log.exception('%s a message for topic %s failed; skipping it '
+                           '(further %s failures on this topic are silent)', stage, topic, stage)
 
     def _reopen_file(self, *, dropped_on_failure: int) -> bool:
         """Reopen a fresh file after the writer was lost (e.g. a failed rotation). Caller holds ``_lock``.
