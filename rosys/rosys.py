@@ -316,7 +316,27 @@ def on_startup(handler: Callable) -> None:
 
 
 def on_shutdown(handler: Callable) -> None:
+    """Call the handler on shutdown; a bound method is held weakly, so a discarded object is not kept alive.
+
+    A bound method whose object does not support weak references is held strongly and a warning is logged.
+    """
+    if inspect.ismethod(handler):
+        try:
+            weak_handler = _WeakHandler(handler)
+        except TypeError:
+            log.warning('"%s" stays alive until shutdown because its object does not support weak references',
+                        handler.__qualname__)
+        else:
+            shutdown_handlers.append(weak_handler)
+            # NOTE: "handler" still references the object, so the finalizer cannot fire before the append above
+            weakref.finalize(handler.__self__, _forget_shutdown_handler, weak_handler)
+            return
     shutdown_handlers.append(handler)
+
+
+def _forget_shutdown_handler(handler: Callable) -> None:
+    if handler in shutdown_handlers:  # NOTE: shutdown may already have cleared the registry
+        shutdown_handlers.remove(handler)
 
 
 async def startup() -> None:
@@ -340,8 +360,8 @@ async def _garbage_collection() -> None:
 
 
 async def shutdown() -> None:
-    for handler in shutdown_handlers:
-        log.debug('invoking shutdown handler "%s"', handler.__qualname__)
+    for handler in list(shutdown_handlers):  # NOTE: a finalizer may drop entries while we await
+        log.debug('invoking shutdown handler "%s"', _handler_name(handler))
         await invoke(handler)
     log.debug('tear down "run" tasks')
     run.tear_down()

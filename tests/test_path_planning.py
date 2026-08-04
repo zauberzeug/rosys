@@ -1,6 +1,8 @@
 import asyncio
+import gc
 import time
 import uuid
+import weakref
 
 import numpy as np
 import pytest
@@ -96,3 +98,20 @@ async def test_overlapping_commands(path_planner: PathPlanner) -> None:
     path, test = await asyncio.gather(task1, task2)
     assert isinstance(path, list)
     assert isinstance(test, bool)
+
+
+@pytest.mark.usefixtures('rosys_integration')
+async def test_a_discarded_path_planner_stops_its_process(shape: Prism) -> None:
+    planner = PathPlanner(shape)  # startup already ran, so the process starts immediately
+    process = planner.process  # holds no reference back to the planner
+    assert process.is_alive()
+    reference = weakref.ref(planner)
+
+    del planner
+    gc.collect()
+
+    assert reference() is None  # nothing pins the planner
+    deadline = time.time() + 5
+    while process.is_alive() and time.time() < deadline:
+        await asyncio.sleep(0.1)
+    assert not process.is_alive()  # dropping the planner closes the pipe, so the process ends on EOF
