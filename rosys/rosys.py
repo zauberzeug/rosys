@@ -359,7 +359,7 @@ async def _garbage_collection() -> None:
 
 async def shutdown() -> None:
     for handler in list(shutdown_handlers):  # NOTE: a finalizer may drop entries while we await
-        log.debug('invoking shutdown handler "%s"', handler.__qualname__)
+        log.debug('invoking shutdown handler "%s"', _handler_name(handler))
         await invoke(handler)
     log.debug('tear down "run" tasks')
     run.tear_down()
