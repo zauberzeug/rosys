@@ -22,7 +22,7 @@ if TYPE_CHECKING:
 
 log = logging.getLogger('rosys.image_route')
 
-_route_owners: dict[str, weakref.ref] = {}
+_route_owners: dict[str, weakref.ref[Camera]] = {}
 
 
 def create_image_route(camera: Camera) -> None:
@@ -103,7 +103,7 @@ def create_image_route(camera: Camera) -> None:
     weakref.finalize(camera, _remove_image_routes, camera_ref, urls)
 
 
-def _remove_image_routes(camera_ref: weakref.ref, urls: tuple[str, ...]) -> None:
+def _remove_image_routes(camera_ref: weakref.ref[Camera], urls: tuple[str, ...]) -> None:
     for url in urls:
         if _route_owners.get(url) is camera_ref:  # NOTE: a newer camera with the same id may own them by now
             app.remove_route(url)
