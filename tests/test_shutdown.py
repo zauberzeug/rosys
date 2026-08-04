@@ -1,6 +1,7 @@
 import asyncio
 import gc
 import weakref
+from collections.abc import Callable
 
 import pytest
 from nicegui import core
@@ -12,25 +13,15 @@ from rosys.rosys import shutdown_handlers
 
 
 @pytest.mark.usefixtures('rosys_integration')
-async def test_on_shutdown_does_not_keep_a_discarded_module_alive():
-    wheels = WheelsSimulation()  # registers rosys.on_shutdown(self.stop) in __init__
-    reference = weakref.ref(wheels)
+@pytest.mark.parametrize('create_module', [WheelsSimulation, lambda: Automator(None)], ids=['wheels', 'automator'])
+async def test_on_shutdown_does_not_keep_a_discarded_module_alive(create_module: Callable):
+    module = create_module()  # registers a shutdown handler for its own teardown in __init__
+    reference = weakref.ref(module)
 
-    del wheels
+    del module
     gc.collect()
 
     assert reference() is None  # the shutdown registry does not pin the module
-
-
-@pytest.mark.usefixtures('rosys_integration')
-async def test_on_shutdown_does_not_keep_a_discarded_automator_alive():
-    automator = Automator(None)  # registers a shutdown handler for its own teardown
-    reference = weakref.ref(automator)
-
-    del automator
-    gc.collect()
-
-    assert reference() is None
 
 
 async def test_weak_shutdown_handler_is_still_awaited_while_its_object_lives():
