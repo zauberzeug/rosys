@@ -64,6 +64,8 @@ Lambdas, capturing closures and partials are rejected because no single lifetime
 For a bound method, "storing" means keeping a strong reference to the object:
 a module kept in your robot assembly repeats until shutdown, while a short-lived object stops as soon as it is discarded.
 
+`rosys.on_shutdown` follows the same rule for bound methods — they are held weakly and simply skipped if their object has been discarded — while plain functions, lambdas and other callables are held strongly and run at shutdown.
+
 ```python
 class Camera:
     def __init__(self) -> None:
