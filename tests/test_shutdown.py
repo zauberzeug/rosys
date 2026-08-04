@@ -15,6 +15,7 @@ from rosys.rosys import shutdown_handlers
 @pytest.mark.usefixtures('rosys_integration')
 @pytest.mark.parametrize('create_module', [WheelsSimulation, lambda: Automator(None)], ids=['wheels', 'automator'])
 async def test_on_shutdown_does_not_keep_a_discarded_module_alive(create_module: Callable):
+    count = len(shutdown_handlers)
     module = create_module()  # registers a shutdown handler for its own teardown in __init__
     reference = weakref.ref(module)
 
@@ -22,6 +23,7 @@ async def test_on_shutdown_does_not_keep_a_discarded_module_alive(create_module:
     gc.collect()
 
     assert reference() is None  # the shutdown registry does not pin the module
+    assert len(shutdown_handlers) == count  # ...and the dead entry removed itself
 
 
 async def test_weak_shutdown_handler_is_still_awaited_while_its_object_lives():
@@ -41,17 +43,6 @@ async def test_weak_shutdown_handler_is_still_awaited_while_its_object_lives():
         assert calls == ['stopped']
     finally:
         rosys.reset_after_test()
-
-
-@pytest.mark.usefixtures('rosys_integration')
-async def test_shutdown_handlers_do_not_accumulate_for_discarded_modules():
-    count = len(shutdown_handlers)
-
-    for _ in range(5):
-        WheelsSimulation()  # each registers a shutdown handler and is discarded right away
-    gc.collect()
-
-    assert len(shutdown_handlers) == count  # the dead entries removed themselves
 
 
 async def test_a_module_dying_during_shutdown_does_not_skip_another_handler():
