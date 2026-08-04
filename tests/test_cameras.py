@@ -7,7 +7,6 @@ from nicegui import app
 
 from rosys.testing import forward
 from rosys.vision import RtspCamera, RtspCameraProvider, SimulatedCamera, UsbCamera, UsbCameraProvider
-from rosys.vision.image_route import _remove_image_routes, _route_owners
 
 
 async def test_simulated_camera(rosys_integration):
@@ -81,23 +80,18 @@ async def test_a_collected_camera_keeps_the_routes_of_its_successor(rosys_integr
 
 async def test_a_pending_finalizer_cannot_remove_the_routes_of_a_reused_id(rosys_integration, monkeypatch):
     """The old camera's finalizer may fire while its successor is still registering its routes."""
-    old_camera = SimulatedCamera(id='reused_cam', connect_after_init=False)
-    stale_ref = _route_owners['/images/reused_cam/placeholder']
-    urls = tuple(url for url in _route_owners if url.startswith('/images/reused_cam/'))
+    old_camera: SimulatedCamera | None = SimulatedCamera(id='raced_cam', connect_after_init=False)
     original_add_api_route = app.add_api_route
-    fired = False
 
     def add_api_route(*args, **kwargs):
-        nonlocal fired
+        nonlocal old_camera
         result = original_add_api_route(*args, **kwargs)
-        if not fired:  # NOTE: fire once the successor has registered its first route, not before
-            fired = True
-            _remove_image_routes(stale_ref, urls)
+        old_camera = None  # NOTE: collect the old camera once the successor has registered its first route
+        gc.collect()
         return result
     monkeypatch.setattr(app, 'add_api_route', add_api_route)
 
-    new_camera = SimulatedCamera(id='reused_cam', connect_after_init=False)
+    new_camera = SimulatedCamera(id='raced_cam', connect_after_init=False)
 
-    monkeypatch.undo()
-    assert _image_route_count('reused_cam') == 3
-    assert new_camera.base_path == old_camera.base_path
+    assert _image_route_count('raced_cam') == 3
+    assert new_camera.base_path == 'images/raced_cam'
