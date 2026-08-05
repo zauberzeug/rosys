@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 import logging
 from io import BytesIO
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import cv2
 import numpy as np
@@ -19,20 +19,40 @@ if TYPE_CHECKING:
 if not TURBO_JPEG:
     logging.getLogger('rosys').warning('TurboJPEG is not available. Using PIL for JPEG decoding and encoding.')
 
+DEFAULT_JPEG_QUALITY = 90
+"""JPEG quality (1-100) used wherever no quality is requested explicitly."""
 
-def encode_image_as_jpeg(image: np.ndarray, compression_level: int = 90) -> bytes:
-    """Encode image as JPEG using TurboJPEG if available, otherwise PIL."""
+
+def validate_jpeg_quality(quality: int) -> None:
+    """Ensure a JPEG quality is within the range both encoders accept.
+
+    TurboJPEG only reports an unspecific ``Invalid argument`` for out-of-range values,
+    and the failure would surface deep inside an encode - possibly per frame.
+
+    :param quality: the JPEG quality to check.
+    :raises ValueError: if the quality is not between 1 and 100.
+    """
+    if not 1 <= quality <= 100:
+        raise ValueError(f'JPEG quality must be between 1 and 100. Got "{quality}"')
+
+
+def encode_image_as_jpeg(image: np.ndarray, quality: int = DEFAULT_JPEG_QUALITY) -> bytes:
+    """Encode image as JPEG using TurboJPEG if available, otherwise PIL.
+
+    :param image: the pixel array to encode.
+    :param quality: JPEG quality from 1 (smallest file) to 100 (best quality).
+    :return: the encoded JPEG bytes.
+    :raises ValueError: if the quality is not between 1 and 100.
+    """
+    validate_jpeg_quality(quality)
+
     if TURBO_JPEG is not None:
-        return TURBO_JPEG.encode(image, quality=compression_level)
+        return TURBO_JPEG.encode(image, quality=quality)
 
     pil_image = PIL.Image.fromarray(image.astype(np.uint8))
 
     buffer = BytesIO()
-    save_kwargs: dict[str, Any] = {}
-    if compression_level is not None:
-        save_kwargs['quality'] = compression_level
-
-    pil_image.save(buffer, format='JPEG', **save_kwargs)
+    pil_image.save(buffer, format='JPEG', quality=quality)
     return buffer.getvalue()
 
 
