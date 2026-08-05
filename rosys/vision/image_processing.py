@@ -33,7 +33,7 @@ def validate_jpeg_quality(quality: int) -> None:
     :raises ValueError: if the quality is not between 1 and 100.
     """
     if not 1 <= quality <= 100:
-        raise ValueError(f'JPEG quality must be between 1 and 100, not {quality}')
+        raise ValueError(f'JPEG quality must be between 1 and 100. Got "{quality}"')
 
 
 def encode_image_as_jpeg(image: np.ndarray, quality: int = DEFAULT_JPEG_QUALITY) -> bytes:
