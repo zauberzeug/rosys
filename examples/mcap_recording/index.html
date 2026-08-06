@@ -8,13 +8,13 @@
       
       
       
-        <link rel="canonical" href="https://rosys.io/examples/areas/">
+        <link rel="canonical" href="https://rosys.io/examples/mcap_recording/">
       
       
-        <link rel="prev" href="../../getting_started/">
+        <link rel="prev" href="../kpi/">
       
       
-        <link rel="next" href="../automations/">
+        <link rel="next" href="../navigation/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Areas - RoSys</title>
+        <title>Mcap Recording - RoSys</title>
       
     
     
@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#areas" class="md-skip">
+        <a href="#mcap-recording" class="md-skip">
           Skip to content
         </a>
       
@@ -106,7 +106,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Areas
+              Mcap Recording
             
           </span>
         </div>
@@ -353,19 +353,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../areas/" class="md-nav__link">
         
   
   
@@ -381,7 +372,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -615,10 +605,19 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../mcap_recording/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -634,6 +633,7 @@
   
 
       </a>
+      
     </li>
   
 
@@ -1566,39 +1566,55 @@
   
 
 
-<h1 id="areas">Areas<a class="headerlink" href="#areas" title="Permanent link">&para;</a></h1>
-<p>This example demonstrates how to create and modify areas that can be used for path planning.</p>
-<p>The example uses the <code>PathPlanner</code> to create a path planner instance.
-The <code>AreaManipulation</code> class is used to create and modify areas.</p>
-<p>The UI allows selecting the area type and color.
-Additionally, the UI shows a 3D representation of the area that can be used to create and modify the area.</p>
+<h1 id="mcap-recording">MCAP Recording<a class="headerlink" href="#mcap-recording" title="Permanent link">&para;</a></h1>
+<p>This example records simulated robot data to MCAP files for replay and analysis in Foxglove Studio.</p>
+<p>After starting the application, the developer panel offers start/stop buttons and a topic selection, and the recordings can be listed and downloaded at http://localhost:8080/recordings.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">nicegui</span><span class="w"> </span><span class="kn">import</span> <span class="n">ui</span>
 
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">recording</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.analysis.recording</span><span class="w"> </span><span class="kn">import</span> <span class="n">McapRecorder</span><span class="p">,</span> <span class="n">RecordingsPage</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.driving</span><span class="w"> </span><span class="kn">import</span> <span class="n">Odometer</span><span class="p">,</span> <span class="n">Steerer</span><span class="p">,</span> <span class="n">keyboard_control</span><span class="p">,</span> <span class="n">robot_object</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">rosys.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prism</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.pathplanning</span><span class="w"> </span><span class="kn">import</span> <span class="n">AreaManipulation</span><span class="p">,</span> <span class="n">PathPlanner</span><span class="p">,</span> <span class="n">area_object</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rosys.hardware</span><span class="w"> </span><span class="kn">import</span> <span class="n">RobotSimulation</span><span class="p">,</span> <span class="n">WheelsSimulation</span>
 
-<span class="c1"># setup</span>
-<span class="n">path_planner</span> <span class="o">=</span> <span class="n">PathPlanner</span><span class="p">(</span><span class="n">Prism</span><span class="o">.</span><span class="n">default_robot_shape</span><span class="p">())</span>
-<span class="n">area_manipulation</span> <span class="o">=</span> <span class="n">AreaManipulation</span><span class="p">(</span><span class="n">path_planner</span><span class="p">)</span>
+<span class="n">shape</span> <span class="o">=</span> <span class="n">Prism</span><span class="o">.</span><span class="n">default_robot_shape</span><span class="p">()</span>
+<span class="n">wheels</span> <span class="o">=</span> <span class="n">WheelsSimulation</span><span class="p">()</span>
+<span class="n">robot</span> <span class="o">=</span> <span class="n">RobotSimulation</span><span class="p">([</span><span class="n">wheels</span><span class="p">])</span>
+<span class="n">odometer</span> <span class="o">=</span> <span class="n">Odometer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
+<span class="n">steerer</span> <span class="o">=</span> <span class="n">Steerer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
 
-<span class="c1"># ui</span>
-<span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;mx-auto&#39;</span><span class="p">):</span>
-    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">()</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;items-center&#39;</span><span class="p">):</span>
-        <span class="n">select</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">select</span><span class="p">({</span><span class="kc">None</span><span class="p">:</span> <span class="s1">&#39;Asphalt&#39;</span><span class="p">,</span> <span class="s1">&#39;sand&#39;</span><span class="p">:</span> <span class="s1">&#39;Sand&#39;</span><span class="p">})</span> \
-            <span class="o">.</span><span class="n">bind_value</span><span class="p">(</span><span class="n">area_manipulation</span><span class="p">,</span> <span class="s1">&#39;area_type&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;w-20&#39;</span><span class="p">)</span>
-        <span class="n">ui</span><span class="o">.</span><span class="n">color_input</span><span class="p">(</span><span class="n">preview</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> \
-            <span class="o">.</span><span class="n">bind_value</span><span class="p">(</span><span class="n">area_manipulation</span><span class="p">,</span> <span class="s1">&#39;area_color&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;w-40&#39;</span><span class="p">)</span>
-        <span class="n">area_manipulation</span><span class="o">.</span><span class="n">create_ui</span><span class="p">()</span>
-    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">(</span><span class="mi">640</span><span class="p">,</span> <span class="mi">480</span><span class="p">,</span>
-                  <span class="n">on_click</span><span class="o">=</span><span class="n">area_manipulation</span><span class="o">.</span><span class="n">handle_click</span><span class="p">,</span>
-                  <span class="n">on_drag_end</span><span class="o">=</span><span class="n">area_manipulation</span><span class="o">.</span><span class="n">handle_drag_end</span><span class="p">,</span>
-                  <span class="n">drag_constraints</span><span class="o">=</span><span class="s1">&#39;z = 0&#39;</span><span class="p">):</span>
-        <span class="n">area_object</span><span class="p">(</span><span class="n">path_planner</span><span class="p">,</span> <span class="n">area_manipulation</span><span class="p">)</span>
+<span class="hll"><span class="n">recorder</span> <span class="o">=</span> <span class="n">McapRecorder</span><span class="p">(</span><span class="n">auto_start</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span class="hll"><span class="n">recording</span><span class="o">.</span><span class="n">add_event_topic</span><span class="p">(</span><span class="n">recorder</span><span class="p">,</span> <span class="s1">&#39;/wheels&#39;</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="n">wheels</span><span class="o">.</span><span class="n">VELOCITY_MEASURED</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span class="hll"><span class="n">recording</span><span class="o">.</span><span class="n">add_pose_topic</span><span class="p">(</span><span class="n">recorder</span><span class="p">,</span> <span class="s1">&#39;/odometry/pose&#39;</span><span class="p">,</span> <span class="n">event</span><span class="o">=</span><span class="n">odometer</span><span class="o">.</span><span class="n">POSE_UPDATED</span><span class="p">,</span> <span class="n">child</span><span class="o">=</span><span class="s1">&#39;odometry&#39;</span><span class="p">)</span>
+</span>
+<span class="hll"><span class="n">RecordingsPage</span><span class="p">(</span><span class="n">recorder</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">ui</span><span class="o">.</span><span class="n">link</span><span class="p">(</span><span class="s1">&#39;steering&#39;</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">))</span>
+</span>
 
-<span class="c1"># start</span>
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;areas&#39;</span><span class="p">)</span>
+<span class="nd">@ui</span><span class="o">.</span><span class="n">page</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">index</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">keyboard_control</span><span class="p">(</span><span class="n">steerer</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">scene</span><span class="p">():</span>
+        <span class="n">robot_object</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">odometer</span><span class="p">)</span>
+    <span class="n">recorder</span><span class="o">.</span><span class="n">developer_ui</span><span class="p">()</span>
+
+
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;MCAP Recording&#39;</span><span class="p">)</span>
 </code></pre></div>
+<dl>
+<dt>Recorder</dt>
+<dd>The <code>McapRecorder</code> writes every registered topic to rotating MCAP files under <code>~/.rosys/mcap</code>.
+With <code>auto_start=False</code> it stays idle until you press the record button in <code>developer_ui</code>.</dd>
+<dt>Topics</dt>
+<dd><code>add_event_topic</code> and <code>add_pose_topic</code> bind a topic to a RoSys event; the matching Foxglove converter is picked from the payload type automatically.
+The subscription is only active while a recording is open.</dd>
+<dt>Image quality</dt>
+<dd>Camera topics dominate a recording's size.
+Keyword arguments are forwarded to the converter, so <code>add_event_topic(recorder, '/camera/front/image', event=camera.NEW_IMAGE, quality=75)</code> records JPEGs at quality 75 instead of the default 90, roughly halving the bytes per frame.</dd>
+<dt>Recordings page</dt>
+<dd><code>RecordingsPage</code> mounts a page for listing, renaming, reindexing and downloading recordings, plus a download endpoint at <code>/api/recordings/{name}</code>.
+The optional <code>header</code> callback renders shared navigation at the top of the page.</dd>
+</dl>
 
 
 
