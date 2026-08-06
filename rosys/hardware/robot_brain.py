@@ -10,6 +10,7 @@ from .esp_pins import EspPins
 from .lizard_firmware import LizardFirmware
 
 CLOCK_OFFSET_HISTORY_LENGTH = 100
+MAX_CONFIGURE_ATTEMPTS = 3
 
 
 class RobotBrain:
@@ -183,10 +184,18 @@ class RobotBrain:
 
     async def configure(self) -> None:
         rosys.notify('Configuring Lizard...')
-        await self.send('!-', force=True)
-        for line in self.lizard_code.splitlines():
-            await self.send(f'!+{line}', force=True)
-        await self.send('!.', force=True)
+        self.lizard_firmware.read_local_checksum()
+        for _ in range(MAX_CONFIGURE_ATTEMPTS):
+            await self.send('!-', force=True)
+            for line in self.lizard_code.splitlines():
+                await self.send(f'!+{line}', force=True)
+            await self.send('!.', force=True)
+            response = await self.send_and_await('core.startup_checksum()', 'checksum:', timeout=3.0, force=True)
+            if response is not None and response.split()[-1] == self.lizard_firmware.local_checksum:
+                break
+        else:
+            rosys.notify('Configuring Lizard failed: checksum mismatch.', 'negative', log_level=logging.ERROR)
+            return
         await self.restart()
         rosys.notify('Lizard configured successfully.', 'positive')
 
