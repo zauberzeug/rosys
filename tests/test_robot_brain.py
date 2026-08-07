@@ -11,6 +11,7 @@ from rosys.hardware.robot_brain import MAX_CONFIGURE_ATTEMPTS, augment, check
 from rosys.testing import forward
 
 MISMATCH_MESSAGE = 'Lizard startup code is outdated'
+MATCHING = 'matching'  # NOTE: placeholder for the checksum of the actual Lizard code, which is only known in the test
 
 
 class CommunicationSimulation(Communication):
@@ -20,8 +21,7 @@ class CommunicationSimulation(Communication):
         self.incoming: deque[str] = deque()
         self.sent: list[str] = []
         self.startup_checksum = ''
-        self.startup_checksums: deque[str] = deque()
-        self.answers_checksum = True
+        self.startup_checksums: deque[str | None] = deque()  # NOTE: ``None`` simulates a missing response
 
     @classmethod
     def is_possible(cls) -> bool:
@@ -30,10 +30,11 @@ class CommunicationSimulation(Communication):
     async def send(self, msg: str) -> None:
         line = msg.rsplit('@', 1)[0]
         self.sent.append(line)
-        if line == 'core.startup_checksum()' and self.answers_checksum:
-            if self.startup_checksums:
-                self.startup_checksum = self.startup_checksums.popleft()
-            self.incoming.append(f'checksum: {self.startup_checksum}')
+        if line == 'core.startup_checksum()':
+            checksum = self.startup_checksums.popleft() if self.startup_checksums else self.startup_checksum
+            if checksum is not None:
+                self.startup_checksum = checksum
+                self.incoming.append(f'checksum: {checksum}')
 
     async def read(self) -> str | None:
         return augment(self.incoming.popleft()) if self.incoming else None
@@ -104,46 +105,26 @@ async def test_check_runs_again_after_configuring(robot_brain: RobotBrain) -> No
     assert robot_brain.lizard_firmware.checksums_match is True
 
 
-async def test_configure_retries_on_checksum_mismatch(robot_brain: RobotBrain) -> None:
-    communication = robot_brain.communication
-    assert isinstance(communication, CommunicationSimulation)
-    communication.startup_checksum = matching_checksum(robot_brain)
-    await connect(communication)
-    communication.startup_checksums.extend(['ffff', matching_checksum(robot_brain)])
-    background_tasks.create(robot_brain.configure(), name='configure')
-    await forward(seconds=2.0)
-    assert communication.sent.count('!.') == 2
-    assert 'core.restart()' in communication.sent
-
-
-async def test_configure_fails_after_repeated_mismatches(robot_brain: RobotBrain) -> None:
+@pytest.mark.parametrize('checksums, expect_success', [
+    (['ffff', MATCHING], True),
+    (['ffff'] * MAX_CONFIGURE_ATTEMPTS, False),
+    ([None] * MAX_CONFIGURE_ATTEMPTS, False),
+], ids=['retry_then_match', 'repeated_mismatch', 'no_response'])
+async def test_configure_verifies_startup_checksum(robot_brain: RobotBrain,
+                                                   checksums: list[str | None], expect_success: bool) -> None:
     notifications: list[str] = []
     rosys.NEW_NOTIFICATION.subscribe(notifications.append)
     communication = robot_brain.communication
     assert isinstance(communication, CommunicationSimulation)
     communication.startup_checksum = matching_checksum(robot_brain)
     await connect(communication)
-    communication.startup_checksums.extend(['ffff'] * MAX_CONFIGURE_ATTEMPTS)
-    background_tasks.create(robot_brain.configure(), name='configure')
-    await forward(seconds=2.0)
-    assert communication.sent.count('!.') == MAX_CONFIGURE_ATTEMPTS
-    assert 'core.restart()' not in communication.sent
-    assert any('Configuring Lizard failed' in message for message in notifications)
-
-
-async def test_configure_fails_when_checksum_is_unavailable(robot_brain: RobotBrain) -> None:
-    notifications: list[str] = []
-    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
-    communication = robot_brain.communication
-    assert isinstance(communication, CommunicationSimulation)
-    communication.startup_checksum = matching_checksum(robot_brain)
-    await connect(communication)
-    communication.answers_checksum = False
+    communication.startup_checksums.extend(matching_checksum(robot_brain) if checksum is MATCHING else checksum
+                                           for checksum in checksums)
     background_tasks.create(robot_brain.configure(), name='configure')
     await forward(seconds=15.0)
-    assert communication.sent.count('!.') == MAX_CONFIGURE_ATTEMPTS
-    assert 'core.restart()' not in communication.sent
-    assert any('Configuring Lizard failed' in message for message in notifications)
+    assert communication.sent.count('!.') == len(checksums)
+    assert ('core.restart()' in communication.sent) == expect_success
+    assert any('Configuring Lizard failed' in message for message in notifications) != expect_success
 
 
 async def test_local_checksum_is_computed_over_utf8_bytes(robot_brain: RobotBrain) -> None:
