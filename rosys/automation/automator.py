@@ -116,6 +116,8 @@ class Automator:
             coro.close()
             return
         self.stop(because='new automation starts')
+        if rosys.is_test:
+            rosys.record_automation_failure(None)
         self.automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
         rosys.background_tasks.create(self.automation.run(), name='automation')  # type: ignore
         self.AUTOMATION_STARTED.emit()
@@ -200,6 +202,7 @@ class Automator:
     def _handle_exception(self, e: Exception) -> None:
         self.abort(because=f'an exception occurred in an automation{f": {e}" if str(e) else ""}')
         if rosys.is_test:
+            rosys.record_automation_failure(e)
             self.log.exception('automation failed')
 
     def _on_complete(self) -> None:

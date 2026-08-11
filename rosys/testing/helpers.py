@@ -26,7 +26,8 @@ async def forward(seconds: float | None = None,
                   y: float | None = None,
                   tolerance: float = 0.1,
                   dt: float = 0.01,
-                  timeout: float = 100):
+                  timeout: float = 100,
+                  fail_on_automation_failure: bool = True):
     start_time = rosys.time()
     if seconds is not None:
         def condition():
@@ -61,6 +62,9 @@ async def forward(seconds: float | None = None,
 
     log.info('\033[94m%s\033[0m', msg)
     while not condition():
+        failure = rosys.get_automation_failure()
+        if fail_on_automation_failure and failure is not None:
+            raise AssertionError(f'automation failed: {failure!r}') from failure
         if rosys.time() > start_time + timeout:
             raise TimeoutError(f'condition took more than {timeout} s')
         if not run.running_cpu_bound_processes:
@@ -68,9 +72,6 @@ async def forward(seconds: float | None = None,
             await asyncio.sleep(0)
         else:
             await asyncio.sleep(0.01)
-        exception = rosys.get_last_exception()
-        if exception is not None:
-            raise RuntimeError(f'error while forwarding time {dt} s') from exception
 
 
 def assert_pose(x: float, y: float, *, deg: float | None = None, position_tolerance: float = 0.1, deg_tolerance: float = 1.0) -> None:
