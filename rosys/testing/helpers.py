@@ -62,9 +62,8 @@ async def forward(seconds: float | None = None,
 
     log.info('\033[94m%s\033[0m', msg)
     while not condition():
-        failure = rosys.get_automation_failure()
-        if fail_on_automation_failure and failure is not None:
-            raise AssertionError(f'automation failed: {failure!r}') from failure
+        if fail_on_automation_failure and automator is not None and automator.last_exception is not None:
+            raise AssertionError(f'automation failed: {automator.last_exception!r}') from automator.last_exception
         if rosys.time() > start_time + timeout:
             raise TimeoutError(f'condition took more than {timeout} s')
         if not run.running_cpu_bound_processes:

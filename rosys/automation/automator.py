@@ -57,6 +57,8 @@ class Automator:
 
         self.enabled: bool = True
         self.automation: Automation | None = None
+        self.last_exception: Exception | None = None
+        """Why the automation that ran most recently failed; ``None`` until one does."""
 
         if steerer:
             steerer.STEERING_STARTED.subscribe(lambda: self.pause(because='steering started'))
@@ -116,8 +118,7 @@ class Automator:
             coro.close()
             return
         self.stop(because='new automation starts')
-        if rosys.is_test:
-            rosys.record_automation_failure(None)
+        self.last_exception = None
         self.automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
         rosys.background_tasks.create(self.automation.run(), name='automation')  # type: ignore
         self.AUTOMATION_STARTED.emit()
@@ -200,9 +201,9 @@ class Automator:
         self.default_automation = default_automation
 
     def _handle_exception(self, e: Exception) -> None:
+        self.last_exception = e
         self.abort(because=f'an exception occurred in an automation{f": {e}" if str(e) else ""}')
         if rosys.is_test:
-            rosys.record_automation_failure(e)
             self.log.exception('automation failed')
 
     def _on_complete(self) -> None:

@@ -45,7 +45,6 @@ class _state:
     start_time: float = 0.0 if is_test else pytime.time()
     time = start_time
     last_time_request: float = start_time
-    automation_failure: BaseException | None = None  # NOTE: used for tests
     startup_finished: bool = False
     is_simulation: bool = False
 
@@ -58,15 +57,6 @@ def is_simulation() -> bool:
 def enter_simulation() -> None:
     """Enter system time simulation mode."""
     _state.is_simulation = True
-
-
-def record_automation_failure(exception: BaseException | None) -> None:
-    """Remember why an automation failed, so ``rosys.testing.forward`` can stop on it."""
-    _state.automation_failure = exception
-
-
-def get_automation_failure() -> BaseException | None:
-    return _state.automation_failure
 
 
 notifications: list[Notification] = []
@@ -390,12 +380,10 @@ async def shutdown() -> None:
 def reset_before_test() -> None:
     assert is_test
     set_time(0)  # NOTE: in tests we start at zero for better readability
-    _state.automation_failure = None
 
 
 def reset_after_test() -> None:
     assert is_test
-    _state.automation_failure = None  # NOTE: a test without the fixture never resets it on its own
     startup_handlers.clear()
     tasks.clear()
     _state.startup_finished = False

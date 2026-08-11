@@ -19,11 +19,20 @@ from rosys.testing import helpers, log_configuration
 async def rosys_integration() -> AsyncGenerator:
     log_configuration.setup()
     core.loop = asyncio.get_event_loop()
+    _forget_helper_globals()
     rosys.reset_before_test()
     await rosys.startup()
     yield
     await rosys.shutdown()
     rosys.reset_after_test()
+    _forget_helper_globals()
+
+
+def _forget_helper_globals() -> None:
+    """Drop the objects ``rosys.testing.helpers`` works on, so no test inherits the previous one's."""
+    helpers.automator = None
+    helpers.driver = None
+    helpers.odometer = None
 
 
 @pytest.fixture
