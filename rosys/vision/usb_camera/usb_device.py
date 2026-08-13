@@ -120,7 +120,7 @@ class UsbDevice:
         else:
             self._has_manual_exposure = False
         output = await self.run_v4l('--list-formats')
-        matches = re.finditer(r"$.*'(.*)'.*", output)
+        matches = re.finditer(r"\[\d+\]:\s*'([^']*)'", output)
         for m in matches:
             self._video_formats.add(m.group(1))
 
