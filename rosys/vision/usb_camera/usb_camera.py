@@ -61,6 +61,9 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self.device = device
         logging.info('Connecting camera %s: succeeded', self.id)
 
+        await device.load_value_ranges()
+        device.set_video_format()
+
         await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
