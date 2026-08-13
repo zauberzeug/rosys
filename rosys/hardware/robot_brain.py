@@ -191,6 +191,7 @@ class RobotBrain:
         """
         rosys.notify('Configuring Lizard...')
         self.lizard_firmware.read_local_checksum()
+        await self.read_startup_checksum(timeout=1.0, force=True)  # drain any stale checksum: response
         for _ in range(MAX_CONFIGURE_ATTEMPTS):
             await self.send('!-', force=True)
             for line in self.lizard_code.splitlines():

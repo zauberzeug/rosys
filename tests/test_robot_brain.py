@@ -119,6 +119,7 @@ async def test_configure_verifies_startup_checksum(robot_brain: RobotBrain,
     assert isinstance(communication, CommunicationSimulation)
     communication.startup_checksum = matching_checksum(robot_brain)
     await connect(communication)
+    communication.startup_checksums.append('0000')  # NOTE: consumed by the pre-loop drain in configure()
     communication.startup_checksums.extend(matching_checksum(robot_brain) if checksum == MATCHING else checksum
                                            for checksum in checksums)
     task = background_tasks.create(robot_brain.configure(), name='configure')
