@@ -93,20 +93,16 @@ class RobotBrain:
             if version_select.options:
                 version_select.value = version_select.options[0]
 
-        async def online_update() -> None:
-            await self.lizard_firmware.download()
-            await self.lizard_firmware.flash_core()
-            await self.restart()
-            if not await self.configure():
-                return
-            await self.lizard_firmware.flash_p0()
-
         async def local_update() -> None:
             await self.lizard_firmware.flash_core()
             await self.restart()
             if not await self.configure():
                 return
             await self.lizard_firmware.flash_p0()
+
+        async def online_update() -> None:
+            await self.lizard_firmware.download()
+            await local_update()
 
         with ui.row().classes('items-center'):
             version_select = ui.select([], label='Lizard Version').style('min-width: 140px;') \
@@ -195,7 +191,6 @@ class RobotBrain:
         """
         rosys.notify('Configuring Lizard...')
         self.lizard_firmware.read_local_checksum()
-        reason = 'no checksum received'
         for _ in range(MAX_CONFIGURE_ATTEMPTS):
             await self.send('!-', force=True)
             for line in self.lizard_code.splitlines():

@@ -33,7 +33,6 @@ class CommunicationSimulation(Communication):
         if line == 'core.startup_checksum()':
             checksum = self.startup_checksums.popleft() if self.startup_checksums else self.startup_checksum
             if checksum is not None:
-                self.startup_checksum = checksum
                 self.incoming.append(f'checksum: {checksum}')
 
     async def read(self) -> str | None:
@@ -41,8 +40,9 @@ class CommunicationSimulation(Communication):
 
 
 def matching_checksum(robot_brain: RobotBrain) -> str:
-    startup = ''.join(f'{line}\n' for line in robot_brain.lizard_code.splitlines())
-    return f'{sum(startup.encode()) % 0x10000:04x}'
+    robot_brain.lizard_firmware.read_local_checksum()
+    assert robot_brain.lizard_firmware.local_checksum is not None
+    return robot_brain.lizard_firmware.local_checksum
 
 
 async def connect(communication: CommunicationSimulation) -> None:
@@ -119,7 +119,7 @@ async def test_configure_verifies_startup_checksum(robot_brain: RobotBrain,
     assert isinstance(communication, CommunicationSimulation)
     communication.startup_checksum = matching_checksum(robot_brain)
     await connect(communication)
-    communication.startup_checksums.extend(matching_checksum(robot_brain) if checksum is MATCHING else checksum
+    communication.startup_checksums.extend(matching_checksum(robot_brain) if checksum == MATCHING else checksum
                                            for checksum in checksums)
     task = background_tasks.create(robot_brain.configure(), name='configure')
     await forward(seconds=15.0)
