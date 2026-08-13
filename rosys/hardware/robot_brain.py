@@ -207,6 +207,9 @@ class RobotBrain:
                 f'checksum mismatch ({checksum} instead of {self.lizard_firmware.local_checksum})'
         else:
             rosys.notify(f'Configuring Lizard failed: {reason}.', 'negative', log_level=logging.ERROR)
+            # NOTE: restart to reload the persisted script into RAM; otherwise core.startup_checksum() would keep
+            # reporting the unpersisted upload and the startup check could show a false "checksums match"
+            await self.restart()
             return False
         await self.send('!.', force=True)
         await self.restart()

@@ -125,7 +125,8 @@ async def test_configure_verifies_startup_checksum(robot_brain: RobotBrain,
     await forward(seconds=15.0)
     assert communication.sent.count('!-') == len(checksums)
     assert communication.sent.count('!.') == (0 if reason else 1), 'only a verified script may be persisted'
-    assert ('core.restart()' in communication.sent) == (reason is None)
+    assert communication.sent.count('core.restart()') == 1, \
+        'restart applies the persisted script -- or restores it into RAM after a failed upload'
     assert task.result() == (reason is None)
     assert any(f'Configuring Lizard failed: {reason}' in message for message in notifications) == (reason is not None)
 
