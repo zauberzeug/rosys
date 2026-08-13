@@ -7,7 +7,7 @@ from ... import rosys
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image
-from ..image_processing import decode_jpeg_image, process_ndarray_image
+from ..image_processing import decode_jpeg_image, process_jpeg_image, process_ndarray_image
 from ..image_rotation import ImageRotation
 from .usb_device import UsbDevice
 
@@ -89,7 +89,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                 image_array = image_data
         else:
             if self.crop or self.rotation != ImageRotation.NONE:
-                image_array = await rosys.run.cpu_bound(self._decode_and_transform, image_data, self.rotation, self.crop)
+                image_array = await rosys.run.cpu_bound(process_jpeg_image, image_data, self.rotation, self.crop)
             else:
                 image_array = await rosys.run.io_bound(decode_jpeg_image, image_data)
 
@@ -98,13 +98,6 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
         image = Image.from_array(image_array, camera_id=self.id, time=timestamp)
         self._add_image(image)
-
-    @staticmethod
-    def _decode_and_transform(data: bytes, rotation: ImageRotation, crop) -> np.ndarray | None:
-        array = decode_jpeg_image(data)
-        if array is None:
-            return None
-        return process_ndarray_image(array, rotation, crop)
 
     def set_auto_exposure(self, auto: bool) -> None:
         assert self.device is not None
