@@ -216,18 +216,21 @@ class RobotBrain:
         rosys.notify('Lizard configured successfully.', 'positive')
         return True
 
-    async def read_startup_checksum(self, *, timeout: float = float('inf'), force: bool = False) -> str | None:
+    async def read_startup_checksum(self, *, timeout: float = 3.0, force: bool = False) -> str | None:
         """Read the checksum of the startup script that the microcontroller currently holds.
 
         Requests are serialized, because responses are matched by their ``checksum:`` prefix and would
         otherwise be delivered to whichever concurrent request happens to wake up first.
+        The timeout must be finite, because an unanswered request would hold the lock
+        and stall all future requests, including the ones sent by ``configure()``.
 
-        :param timeout: response timeout
+        :param timeout: Response timeout
         :param force: Whether to send the message even if the ESP is not ready
-        :raises EspNotReadyException: When the ESP is not ready and force is ``False``
-        :return: the checksum or ``None`` if the timeout is reached
+        :return: The checksum, or ``None`` if the timeout is reached or the ESP is not ready
         """
         async with self._checksum_lock:
+            if not self.is_ready and not force:
+                return None  # NOTE: the ESP may have gone away while we were waiting for the lock
             response = await self.send_and_await('core.startup_checksum()', 'checksum:', timeout=timeout, force=force)
         return response.split()[-1] if response else None
 
