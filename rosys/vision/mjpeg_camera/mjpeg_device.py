@@ -47,6 +47,8 @@ class MjpegDevice:
 
         self._on_new_image_data = on_new_image_data
         self._capture_task: Task | None = None
+        self.transferred_bytes = 0
+        """Bytes read from this device's MJPEG stream, counted before any parsing or EXIF removal."""
         self._username = username
         self._password = password
         url = mac_to_url(mac, ip, index=index)
@@ -88,6 +90,7 @@ class MjpegDevice:
         try:
             async for chunk in response.aiter_bytes():
                 chunk_len = len(chunk)
+                self.transferred_bytes += chunk_len
 
                 if buffer_end + chunk_len > buffer_size:
                     self.log.warning('Buffer overflow, resetting buffer')
