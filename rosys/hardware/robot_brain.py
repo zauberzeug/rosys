@@ -112,23 +112,23 @@ class RobotBrain:
             online_update_button = ui.button(on_click=online_update).props('icon=file_download flat round dense') \
                 .tooltip('Download and flash online version to Core and P0 microcontrollers')
         with ui.row().classes('items-center'):
-            ui.label().bind_text_from(self.lizard_firmware, 'local_version', backward=lambda x: f'Local: {x or "?"}')
+            ui.label().bind_text_from(self.lizard_firmware, 'local_description', backward=lambda x: f'Local: {x}')
             local_update_button = ui.button(on_click=local_update).props('icon=file_download flat round dense') \
                 .tooltip('Flash local version to Core and P0 microcontrollers')
         with ui.row().classes('items-center'):
-            ui.label().bind_text_from(self.lizard_firmware, 'core_version', backward=lambda x: f'Core: {x or "?"}')
+            ui.label().bind_text_from(self.lizard_firmware, 'core_description', backward=lambda x: f'Core: {x}')
             configure_button = ui.button(on_click=self.configure).props('icon=build flat round dense') \
                 .tooltip('Configure microcontrollers')
         with ui.row().classes('items-center'):
-            ui.label().bind_text_from(self.lizard_firmware, 'p0_version', backward=lambda x: f'P0: {x or "?"}')
+            ui.label().bind_text_from(self.lizard_firmware, 'p0_description', backward=lambda x: f'P0: {x}')
 
         def update_visibility() -> None:
             online_update_button.visible = \
                 self.lizard_firmware.selected_online_version != self.lizard_firmware.core_version or \
                 self.lizard_firmware.selected_online_version != self.lizard_firmware.p0_version
             local_update_button.visible = \
-                self.lizard_firmware.local_version != self.lizard_firmware.core_version or \
-                self.lizard_firmware.local_version != self.lizard_firmware.p0_version
+                self.lizard_firmware.local_description != self.lizard_firmware.core_description or \
+                self.lizard_firmware.local_description != self.lizard_firmware.p0_description
             configure_button.visible = self.lizard_firmware.checksums_match is False
         ui.timer(1.0, update_visibility)
 

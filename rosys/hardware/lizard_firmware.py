@@ -1,4 +1,5 @@
 import logging
+import re
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -19,6 +20,9 @@ class LizardFirmware:
     GITHUB_URL = 'https://api.github.com/repos/zauberzeug/lizard/releases'
     PATH = Path('~/.lizard').expanduser()
     PATH.mkdir(exist_ok=True)
+    VERSION_LINE_PATTERN = re.compile(r'version: (?:(?P<project>\S+) )?(?P<version>\S+)')
+    VERSION_PATTERN = re.compile(r'v?(\d+\.\d+\.\d+)')
+    APP_DESC_MAGIC = b'\x32\x54\xcd\xab'  # marks the esp_app_desc_t at offset 0x20 of an ESP32 app image
 
     def __init__(self, robot_brain: 'RobotBrain', *, supported_versions: str | None = None) -> None:
         """
@@ -34,8 +38,11 @@ class LizardFirmware:
         self.flash_params: list[str] = []
 
         self.core_version: str | None = None
+        self.core_project: str | None = None
         self.p0_version: str | None = None
+        self.p0_project: str | None = None
         self.local_version: str | None = None
+        self.local_project: str | None = None
         self.online_versions: dict[str, str] = {}
         self.selected_online_version: str | None = None
 
@@ -44,6 +51,21 @@ class LizardFirmware:
 
         self._p0_flash_last_complete: float = 0.0
         self.robot_brain.FLASH_P0_COMPLETE.subscribe(lambda: setattr(self, '_p0_flash_last_complete', rosys.time()))
+
+    @property
+    def core_description(self) -> str:
+        """Project name and version of the firmware on the Core, e.g. ``'lizard-zz 0.0.2'``."""
+        return ' '.join(filter(None, (self.core_project, self.core_version))) or '?'
+
+    @property
+    def p0_description(self) -> str:
+        """Project name and version of the firmware on the P0."""
+        return ' '.join(filter(None, (self.p0_project, self.p0_version))) or '?'
+
+    @property
+    def local_description(self) -> str:
+        """Project name and version of the downloaded firmware binary."""
+        return ' '.join(filter(None, (self.local_project, self.local_version))) or '?'
 
     @property
     def checksums_match(self) -> bool | None:
@@ -91,10 +113,14 @@ class LizardFirmware:
                 break
 
     def read_local_version(self) -> None:
-        path = self.PATH / 'build' / 'lizard.bin'
+        path = next((self.PATH / 'build').glob('*.bin'), self.PATH / 'build' / 'lizard.bin')
         with path.open('rb') as f:
-            head = f.read(150).decode('utf-8', 'backslashreplace')
-        self.local_version = head.replace('\x00', '').split('lizard')[0].split('v')[-1]
+            header = f.read(112)  # image header plus esp_app_desc_t up to the project name
+        if header[32:36] != self.APP_DESC_MAGIC:
+            self.log.error('%s is not an ESP32 app image', path)
+            return
+        self.local_version = self._parse_version(header[48:80].split(b'\x00', 1)[0].decode('utf-8', 'replace'))
+        self.local_project = header[80:112].split(b'\x00', 1)[0].decode('utf-8', 'replace') or None
 
     async def read_core_version(self) -> None:
         if not self.robot_brain.is_ready:
@@ -103,7 +129,7 @@ class LizardFirmware:
         deadline = rosys.time() + 5.0
         while rosys.time() < deadline:
             if response := await self.robot_brain.send_and_await('core.version()', 'version:', timeout=1):
-                self.core_version = response.split()[-1].split('-')[0][1:]
+                self.core_project, self.core_version = self._parse_version_line(response)
                 self._refuse_version(self.core_version, 'Core')
                 return
         self.log.error('Could not read Lizard version from Core')
@@ -115,10 +141,29 @@ class LizardFirmware:
         deadline = rosys.time() + 5.0
         while rosys.time() < deadline:
             if response := await self.robot_brain.send_and_await('p0.version()', 'p0:', timeout=1):
-                self.p0_version = response.split()[-1].split('-')[0][1:]
+                self.p0_project, self.p0_version = self._parse_version_line(response)
                 self._refuse_version(self.p0_version, 'P0')
                 return
         self.log.error('Could not read Lizard version from P0')
+
+    @classmethod
+    def _parse_version_line(cls, response: str) -> tuple[str | None, str | None]:
+        """Parse a ``version: [<project>] <version>`` response into project name and version.
+
+        Firmware built before the project name was reported yields ``'lizard'``,
+        an unparsable response ``(None, None)``.
+        """
+        match = cls.VERSION_LINE_PATTERN.search(response)
+        version = cls._parse_version(match.group('version')) if match else None
+        if match is None or version is None:
+            return None, None
+        return match.group('project') or 'lizard', version
+
+    @classmethod
+    def _parse_version(cls, token: str) -> str | None:
+        """Reduce a version token like ``'v0.13.0-3-g248f4ed-dirty'`` to its release version, e.g. ``'0.13.0'``."""
+        match = cls.VERSION_PATTERN.match(token)
+        return match.group(1) if match else None
 
     def read_local_checksum(self) -> None:
         checksum = sum(self.robot_brain.lizard_code.encode()) % 0x10000

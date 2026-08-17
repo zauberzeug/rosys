@@ -12,6 +12,15 @@ from rosys.hardware.lizard_firmware import LizardFirmware
 from rosys.testing import forward
 
 
+def app_image(version: str, project: str = 'lizard') -> bytes:
+    """A minimal ESP32 app image header with an esp_app_desc_t at offset 0x20."""
+    header = bytearray(112)
+    header[32:36] = LizardFirmware.APP_DESC_MAGIC
+    header[48:80] = version.encode().ljust(32, b'\x00')
+    header[80:112] = project.encode().ljust(32, b'\x00')
+    return bytes(header)
+
+
 class VersionCommunicationSimulation(CommunicationSimulation):
 
     def __init__(self) -> None:
@@ -117,7 +126,7 @@ async def test_flash_core_reads_local_version(lizard_firmware: LizardFirmware, n
     """Flashing the core reads the local version by itself if it has not been read yet."""
     monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
     (tmp_path / 'build').mkdir()
-    (tmp_path / 'build' / 'lizard.bin').write_bytes(b'v0.13.0\x00lizard')
+    (tmp_path / 'build' / 'lizard.bin').write_bytes(app_image('v0.13.0'))
     await lizard_firmware.flash_core()
     assert lizard_firmware.local_version == '0.13.0'
     assert not any('version is unknown' in message for message in notifications)
@@ -139,3 +148,44 @@ async def test_version_warning(lizard_firmware: LizardFirmware, notifications: l
     assert task.done()
     assert getattr(lizard_firmware, f'{target}_version') == version.removeprefix('v')
     assert any('not supported' in message for message in notifications) == expect_warning
+
+
+@pytest.mark.parametrize('target', ['core', 'p0'])
+@pytest.mark.parametrize('reported, project, version', [
+    ('v0.13.0', 'lizard', '0.13.0'),                              # release build before project names
+    ('v0.13.0-3-g248f4ed-dirty', 'lizard', '0.13.0'),             # dev build before project names
+    ('lizard v0.13.0', 'lizard', '0.13.0'),                       # release build with project name
+    ('lizard-zz v0.0.2', 'lizard-zz', '0.0.2'),                   # integrator release build
+    ('lizard-zz v0.0.1-6-g69dfddf-dirty', 'lizard-zz', '0.0.1'),  # integrator dev build
+    ('unknown', None, None),                                      # built without git
+])
+async def test_read_version(lizard_firmware: LizardFirmware,
+                            target: str, reported: str, project: str | None, version: str | None) -> None:
+    """Version responses with and without a project name are parsed into project and release version."""
+    communication = lizard_firmware.robot_brain.communication
+    assert isinstance(communication, VersionCommunicationSimulation)
+    setattr(communication, f'{target}_version', reported)
+    await connect(communication)
+    read_version = getattr(lizard_firmware, f'read_{target}_version')
+    task = background_tasks.create(read_version(), name=f'read {target} version')
+    await forward(seconds=3.0)
+    assert task.done()
+    assert getattr(lizard_firmware, f'{target}_version') == version
+    assert getattr(lizard_firmware, f'{target}_project') == project
+
+
+@pytest.mark.parametrize('filename, image, project, version', [
+    ('lizard.bin', app_image('v0.13.0'), 'lizard', '0.13.0'),
+    ('lizard-zz.bin', app_image('v0.0.1-6-g69dfddf', 'lizard-zz'), 'lizard-zz', '0.0.1'),
+    ('lizard.bin', b'not an app image', None, None),
+])
+async def test_read_local_version(lizard_firmware: LizardFirmware, monkeypatch: pytest.MonkeyPatch,
+                                  tmp_path: Path, filename: str, image: bytes,
+                                  project: str | None, version: str | None) -> None:
+    """The local project and version are read from the esp_app_desc_t header, whatever the binary is called."""
+    monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
+    (tmp_path / 'build').mkdir()
+    (tmp_path / 'build' / filename).write_bytes(image)
+    lizard_firmware.read_local_version()
+    assert lizard_firmware.local_version == version
+    assert lizard_firmware.local_project == project
