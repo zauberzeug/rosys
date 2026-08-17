@@ -1,4 +1,4 @@
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
 from pathlib import Path
 
 import pytest
@@ -189,3 +189,21 @@ async def test_read_local_version(lizard_firmware: LizardFirmware, monkeypatch: 
     lizard_firmware.read_local_version()
     assert lizard_firmware.local_version == version
     assert lizard_firmware.local_project == project
+
+
+async def test_read_local_version_skips_other_binaries(lizard_firmware: LizardFirmware,
+                                                       monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    """The firmware is found by its magic word, not by its position among the other binaries of an ESP-IDF build."""
+    monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
+    build_path = tmp_path / 'build'
+    build_path.mkdir()
+    (build_path / 'ota_data_initial.bin').write_bytes(b'\xff' * 8192)
+    (build_path / 'lizard.bin').write_bytes(app_image('v0.13.0'))
+
+    def glob(path: Path, pattern: str) -> Iterator[Path]:
+        assert (path, pattern) == (build_path, '*.bin')
+        return iter([build_path / 'ota_data_initial.bin', build_path / 'lizard.bin'])
+    monkeypatch.setattr(Path, 'glob', glob)  # the real order is unspecified, so pin the one that hid the firmware
+    lizard_firmware.read_local_version()
+    assert lizard_firmware.local_version == '0.13.0'
+    assert lizard_firmware.local_project == 'lizard'

@@ -113,14 +113,16 @@ class LizardFirmware:
                 break
 
     def read_local_version(self) -> None:
-        path = next((self.PATH / 'build').glob('*.bin'), self.PATH / 'build' / 'lizard.bin')
-        with path.open('rb') as f:
-            header = f.read(112)  # image header plus esp_app_desc_t up to the project name
-        if header[32:36] != self.APP_DESC_MAGIC:
-            self.log.error('%s is not an ESP32 app image', path)
+        build_path = self.PATH / 'build'
+        for path in build_path.glob('*.bin'):
+            with path.open('rb') as f:
+                header = f.read(112)  # image header plus esp_app_desc_t up to the project name
+            if header[32:36] != self.APP_DESC_MAGIC:
+                continue  # the build directory also holds non-firmware binaries like ota_data_initial.bin
+            self.local_version = self._parse_version(header[48:80].split(b'\x00', 1)[0].decode('utf-8', 'replace'))
+            self.local_project = header[80:112].split(b'\x00', 1)[0].decode('utf-8', 'replace') or None
             return
-        self.local_version = self._parse_version(header[48:80].split(b'\x00', 1)[0].decode('utf-8', 'replace'))
-        self.local_project = header[80:112].split(b'\x00', 1)[0].decode('utf-8', 'replace') or None
+        self.log.error('No ESP32 app image found in %s', build_path)
 
     async def read_core_version(self) -> None:
         if not self.robot_brain.is_ready:
@@ -200,10 +202,7 @@ class LizardFirmware:
 
     async def flash_core(self) -> None:
         if self.local_version is None:
-            try:
-                self.read_local_version()
-            except FileNotFoundError:
-                pass
+            self.read_local_version()
         if self._refuse_version(self.local_version, 'Flashing Core failed'):
             return
         if not self.robot_brain.is_ready:
