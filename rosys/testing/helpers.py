@@ -60,10 +60,13 @@ async def forward(seconds: float | None = None,
     else:
         raise ValueError('invalid arguments')
 
-    log.info('\033[94m%s\033[0m', msg)
-    while not condition():
+    def check_automation_failure() -> None:
         if fail_on_automation_failure and automator is not None and automator.last_exception is not None:
             raise AssertionError(f'automation failed: {automator.last_exception!r}') from automator.last_exception
+
+    log.info('\033[94m%s\033[0m', msg)
+    check_automation_failure()
+    while not condition():
         if rosys.time() > start_time + timeout:
             raise TimeoutError(f'condition took more than {timeout} s')
         if not run.running_cpu_bound_processes:
@@ -71,6 +74,8 @@ async def forward(seconds: float | None = None,
             await asyncio.sleep(0)
         else:
             await asyncio.sleep(0.01)
+        # an automation can only fail while we sleep, and its failure may satisfy the condition in the same step
+        check_automation_failure()
 
 
 def assert_pose(x: float, y: float, *, deg: float | None = None, position_tolerance: float = 0.1, deg_tolerance: float = 1.0) -> None:
