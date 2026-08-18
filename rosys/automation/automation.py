@@ -20,6 +20,12 @@ class AutomationStopped(BaseException):
     """
 
 
+def in_uninterruptible_section() -> bool:
+    """Whether the currently running automation is inside an ``@uninterruptible`` function."""
+    automation = _CURRENT_AUTOMATION.get()
+    return automation is not None and automation._uninterruptible_depth > 0  # pylint: disable=protected-access
+
+
 def uninterruptible(func: Callable):
     """Decorator to make an async function uninterruptible until it exits.
 

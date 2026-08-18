@@ -63,6 +63,26 @@ async def test_aborting_a_drive(driver: Driver, automator: Automator, robot: Rob
     assert cause == ['an exception occurred in an automation']
 
 
+async def test_first_completed_waits_for_an_uninterruptible_sibling(automator: Automator):
+    """A finished coroutine must not cut short a sibling that is mid-``@uninterruptible``."""
+    events: list[str] = []
+
+    async def quick() -> None:
+        await rosys.sleep(0.2)
+        events.append('quick done')
+
+    @rosys.automation.uninterruptible
+    async def slow() -> None:
+        for _ in range(10):
+            await rosys.sleep(0.1)
+        events.append('slow done')
+
+    automator.start(rosys.automation.parallelize(quick(), slow(), return_when_first_completed=True))
+    await forward(seconds=3.0)
+
+    assert events == ['quick done', 'slow done']
+
+
 async def test_finally_block(automator: Automator):
     events: list[str] = []
 
