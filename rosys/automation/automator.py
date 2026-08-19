@@ -58,7 +58,7 @@ class Automator:
         self.enabled: bool = True
         self.automation: Automation | None = None
         self.last_exception: Exception | None = None
-        """Why the automation that ran most recently failed; ``None`` until one does."""
+        """why the most recent automation failed; reset by ``start()``, even from an ``AUTOMATION_FAILED`` handler"""
 
         if steerer:
             steerer.STEERING_STARTED.subscribe(lambda: self.pause(because='steering started'))

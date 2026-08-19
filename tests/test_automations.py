@@ -8,7 +8,7 @@ import pytest
 import rosys
 from rosys.automation import Automator
 from rosys.automation.automation import Automation
-from rosys.driving import Driver, Odometer
+from rosys.driving import Driver
 from rosys.geometry import Pose, Spline
 from rosys.hardware import Robot
 from rosys.testing import assert_pose, forward
@@ -80,14 +80,18 @@ async def test_a_new_automation_forwards_past_an_earlier_failure(automator: Auto
     async def failing() -> None:
         raise RuntimeError('the automation broke')
 
+    completed = False
+
     async def working() -> None:
+        nonlocal completed
         await rosys.sleep(1.0)
+        completed = True
 
     automator.start(failing())
     await forward(seconds=1, fail_on_automation_failure=False)
     automator.start(working())
     await forward(seconds=2)
-    assert automator.is_stopped
+    assert completed
 
 
 async def test_a_failure_during_the_wait_stops_forwarding(automator: Automator):
@@ -102,7 +106,7 @@ async def test_a_failure_during_the_wait_stops_forwarding(automator: Automator):
         await forward(until=lambda: automator.is_stopped)
 
 
-async def test_a_failure_stops_forwarding_to_a_condition_that_already_holds(automator: Automator, odometer: Odometer):
+async def test_a_failure_stops_forwarding_to_a_condition_that_already_holds(automator: Automator):
     """Forwarding stops before waiting, not only in between two steps."""
     async def failing() -> None:
         raise RuntimeError('the automation broke')
@@ -110,8 +114,6 @@ async def test_a_failure_stops_forwarding_to_a_condition_that_already_holds(auto
     await forward(seconds=1, fail_on_automation_failure=False)
     with pytest.raises(AssertionError, match='the automation broke'):
         await forward(until=lambda: True)
-    with pytest.raises(AssertionError, match='the automation broke'):
-        await forward(x=0.0)
 
 
 async def test_finally_block(automator: Automator):

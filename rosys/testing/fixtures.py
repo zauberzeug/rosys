@@ -19,7 +19,6 @@ from rosys.testing import helpers, log_configuration
 async def rosys_integration() -> AsyncGenerator:
     log_configuration.setup()
     core.loop = asyncio.get_event_loop()
-    _forget_helper_globals()
     rosys.reset_before_test()
     await rosys.startup()
     yield
