@@ -41,6 +41,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
         self.mac = parts[0]
         self.device: MjpegDevice | None = None
+        self._transferred_bytes = 0  # bytes of devices this camera has already retired
 
         self._register_parameter('fps', self._get_fps, self._set_fps, default_value=fps)
         self._register_parameter('resolution', self._get_resolution, self._set_resolution, default_value=resolution)
@@ -59,6 +60,25 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
     def is_connected(self) -> bool:
         return (self.device is not None) and self.device.is_connected
 
+    @property
+    def transferred_bytes(self) -> int:
+        """Bytes read from this camera's MJPEG response bodies, counted before parsing and EXIF removal.
+
+        Monotonic across reconnects, so sampling it (e.g. with ``add_timer_topic``) and taking
+        differences measures the stream. Unlike summing ``Image.byte_size()``, which is the decoded
+        size, this counts what arrived — including frames that were skipped or failed to decode.
+        Response headers and any authentication round trip are not included, so it is a lower bound
+        on what the link carries. Only MJPEG cameras can report it; other backends receive already
+        decoded frames.
+        """
+        return self._transferred_bytes + (self.device.transferred_bytes if self.device is not None else 0)
+
+    def _retire_device(self) -> None:
+        """Drop the current device, keeping the bytes it counted."""
+        if self.device is not None:
+            self._transferred_bytes += self.device.transferred_bytes
+            self.device = None
+
     async def connect(self) -> None:
         if self.is_connected:
             return
@@ -67,6 +87,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             self.log.error('No IP address provided')
             return
 
+        self._retire_device()
         try:
             self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
                                                     password=self.password, on_new_image_data=self._handle_new_image_data)
@@ -81,7 +102,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             return
 
         self.device.shutdown()
-        self.device = None
+        self._retire_device()
 
     async def _handle_new_image_data(self, image_bytes: bytes, timestamp: float) -> None:
         image: Image | None = None
