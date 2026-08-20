@@ -24,17 +24,19 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                  width: int = 800,
                  height: int = 600,
                  fps: int = 10,
+                 reconnect_interval: float = 3.0,
                  **kwargs) -> None:
         super().__init__(id=id,
                          name=name,
                          connect_after_init=connect_after_init,
                          **kwargs)
+        self.reconnect_interval = reconnect_interval
         self._pending_operations = 0
         self.device: UsbDevice | None = None
         self.detect: bool = False
         self.color: str | None = None
 
-        self._register_parameter('auto_exposure', self.get_exposure, self.set_exposure, auto_exposure)
+        self._register_parameter('auto_exposure', self.get_auto_exposure, self.set_auto_exposure, auto_exposure)
         self._register_parameter('exposure', self.get_exposure, self.set_exposure, exposure)
         self._register_parameter('width', self.get_width, self.set_width, width)
         self._register_parameter('height', self.get_height, self.set_height, height)
@@ -43,17 +45,27 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
     def to_dict(self) -> dict[str, Any]:
         return super().to_dict() | {
             name: param.value for name, param in self._parameters.items()
+        } | {
+            'reconnect_interval': self.reconnect_interval,
         }
 
     @property
     def is_connected(self) -> bool:
-        return self.device is not None
+        return self.device is not None and self.device.is_connected
+
+    @property
+    def is_active(self) -> bool:
+        return self.device is not None and self.device.is_active
 
     async def connect(self) -> None:
-        if self.is_connected:
+        if self.is_active:
             return
+        if self.device is not None:
+            await self.disconnect()
 
-        device = UsbDevice.from_uid(self.id, self._handle_new_image_data)
+        device = UsbDevice.from_uid(self.id, self._handle_new_image_data,
+                                    on_connect=self._apply_all_parameters,
+                                    reconnect_interval=self.reconnect_interval)
         if device is None:
             logging.warning('Connecting camera %s: failed', self.id)
             return
@@ -64,16 +76,16 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
-        if not self.is_connected:
+        if self.device is None:
             return
 
         assert self.device is not None
-        await self.device.release_capture()
+        await self.device.shutdown()
         self.device = None
         logging.info('camera %s: disconnected', self.id)
 
     async def _handle_new_image_data(self, image_data: np.ndarray | bytes, timestamp: float) -> None:
-        if not self.is_connected:
+        if self.device is None:
             return None
 
         assert self.device is not None
@@ -117,7 +129,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         self.device.set_width(width)
 
-    def get_width(self) -> int:
+    def get_width(self) -> int | None:
         assert self.device is not None
         return self.device.get_width()
 
@@ -125,7 +137,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         self.device.set_height(height)
 
-    def get_height(self) -> int:
+    def get_height(self) -> int | None:
         assert self.device is not None
         return self.device.get_height()
 
@@ -133,6 +145,6 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         self.device.set_fps(fps)
 
-    def get_fps(self) -> int:
+    def get_fps(self) -> int | None:
         assert self.device is not None
         return self.device.get_fps()

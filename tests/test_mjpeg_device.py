@@ -37,8 +37,8 @@ async def _negotiate_stream(handler: Callable[[httpx.Request], httpx.Response],
                             password: str | None = None) -> httpx.Response | None:
     """Open a stream against a mocked camera and return the negotiated response."""
     async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-        async with open_stream(client, 'http://127.0.0.1/stream', username, password) as response:
-            return response
+        async with open_stream(client, 'http://127.0.0.1/stream', username, password) as result:
+            return result.response
 
 
 @pytest.mark.parametrize('challenge, auth_prefix', [

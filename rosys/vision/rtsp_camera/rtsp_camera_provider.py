@@ -47,7 +47,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
                 self.log.debug('found new camera %s', mac)
                 camera = RtspCamera(mac=mac, fps=self.frame_rate, substream=self.substream, avdec=self.avdec, ip=ip)
                 self.add_camera(camera)
-            if not camera.is_connected:
+            if not camera.is_active:
                 self.log.info('activating authorized camera %s...', camera.id)
                 camera.ip = ip
                 await camera.connect()

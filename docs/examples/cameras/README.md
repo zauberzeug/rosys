@@ -47,6 +47,14 @@ It automatically updates every 0.1 seconds to detect and display new cameras, an
 {! examples/cameras/control.py !}
 ```
 
+## Automatic Reconnection
+
+Cameras can lose their connection due to network glitches, a bad cable or a power hiccup.
+Every camera reconnects on its own: once connected, the underlying device keeps trying to restore its stream every `reconnect_interval` seconds (default 3.0) for as long as the camera stays connected.
+`RtspCamera` and `MjpegCamera` re-open their stream, `UsbCamera` re-opens the video device (even if its `/dev/video*` node changed), and `SimulatedCamera` resumes after a simulated drop.
+Reconnection runs until the camera is disconnected, so `disconnect()` both stops the retries and tears down the device.
+`is_connected` tells whether a camera is streaming right now, while `is_active` tells whether its self-healing device is alive (streaming or waiting to reconnect).
+
 ## Streaming RTSP Cameras
 
 The following example shows how to stream images from an RTSP camera.
