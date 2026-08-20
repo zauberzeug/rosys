@@ -166,7 +166,9 @@ class LizardFirmware:
         return match.group(1) if match else None
 
     def read_local_checksum(self) -> None:
-        checksum = sum(self.robot_brain.lizard_code.encode()) % 0x10000
+        # NOTE: the Core stores one newline-terminated line per '!+' command, which is what configure() sends
+        startup = ''.join(f'{line}\n' for line in self.robot_brain.lizard_code.splitlines())
+        checksum = sum(startup.encode()) % 0x10000
         self.local_checksum = f'{checksum:04x}'
         self.log.info('local checksum: %s', self.local_checksum)
 
@@ -177,8 +179,8 @@ class LizardFirmware:
             return
         deadline = rosys.time() + 5.0
         while rosys.time() < deadline and self.robot_brain.is_ready:
-            if response := await self.robot_brain.send_and_await('core.startup_checksum()', 'checksum:', timeout=1):
-                self.core_checksum = response.split()[-1]
+            if checksum := await self.robot_brain.read_startup_checksum(timeout=1):
+                self.core_checksum = checksum
                 self.log.info('core checksum: %s', self.core_checksum)
                 return
         self.log.error('Could not read startup checksum from Core')
