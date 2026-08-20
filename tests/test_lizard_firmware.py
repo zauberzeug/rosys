@@ -174,18 +174,27 @@ async def test_read_version(lizard_firmware: LizardFirmware,
     assert getattr(lizard_firmware, f'{target}_project') == project
 
 
-@pytest.mark.parametrize('filename, image, project, version', [
-    ('lizard.bin', app_image('v0.13.0'), 'lizard', '0.13.0'),
-    ('lizard-zz.bin', app_image('v0.0.1-6-g69dfddf', 'lizard-zz'), 'lizard-zz', '0.0.1'),
-    ('lizard.bin', b'not an app image', None, None),
+@pytest.mark.parametrize('files, project, version', [
+    ({'lizard.bin': app_image('v0.13.0')}, 'lizard', '0.13.0'),
+    ({'lizard-zz.bin': app_image('v0.0.1-6-g69dfddf', 'lizard-zz')}, 'lizard-zz', '0.0.1'),
+    ({'lizard.bin': b'not an app image'}, None, None),
+    ({}, None, None),
+    ({'bootloader.bin': b'\xff' * 8192, 'lizard.bin': app_image('v0.13.0')}, 'lizard', '0.13.0'),
+    ({'lizard-zz.bin': app_image('v0.0.1', 'lizard-zz'), 'lizard.bin': app_image('v0.13.0')}, 'lizard', '0.13.0'),
 ])
-async def test_read_local_version(lizard_firmware: LizardFirmware, monkeypatch: pytest.MonkeyPatch,
-                                  tmp_path: Path, filename: str, image: bytes,
-                                  project: str | None, version: str | None) -> None:
-    """The local project and version are read from the esp_app_desc_t header, whatever the binary is called."""
+async def test_read_local_version(lizard_firmware: LizardFirmware, monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
+                                  files: dict[str, bytes], project: str | None, version: str | None) -> None:
+    """The local project and version are read from the esp_app_desc_t header of the app image in the build directory.
+
+    Other binaries of an ESP-IDF build are skipped by their missing magic word, ``lizard.bin`` (the file ``flash.py``
+    flashes) takes precedence over other app images, and a previously read version is reset when nothing is found.
+    """
     monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
     (tmp_path / 'build').mkdir()
-    (tmp_path / 'build' / filename).write_bytes(image)
+    for filename, content in files.items():
+        (tmp_path / 'build' / filename).write_bytes(content)
+    lizard_firmware.local_version = '0.12.0'
+    lizard_firmware.local_project = 'lizard'
     lizard_firmware.read_local_version()
     assert lizard_firmware.local_version == version
     assert lizard_firmware.local_project == project
