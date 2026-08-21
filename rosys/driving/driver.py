@@ -24,6 +24,7 @@ class DriveParameters(ModificationContext):
     carrot_distance: float = 0.1
     carrot_step_fraction: float = 0.1
     hook_bending_factor: float = 0.0
+    curvature_feedforward_gain: float = 0.0
     minimum_drive_distance: float = 0.01
     throttle_at_end_distance: float = 0.5
     throttle_at_end_min_speed: float = 0.01
@@ -168,6 +169,7 @@ class Driver:
         hook_offset = Point(x=self.parameters.hook_offset, y=0) * (-1 if flip_hook else 1)
         carrot_offset = Point(x=self.parameters.carrot_offset, y=0)
         carrot = Carrot(spline=spline, offset=carrot_offset)
+        foot = 0.0  # NOTE: advanced monotonically so the feed-forward cannot jump to another lobe of the spline
 
         while True:
             if self._abort:
@@ -187,13 +189,22 @@ class Driver:
 
             turn_angle = eliminate_pi(hook.direction(carrot.offset_point) - self.pose.yaw)
             curvature = np.tan(turn_angle) / hook_offset.x
-            if curvature != 0 and abs(1 / curvature) < self.parameters.minimum_turning_radius:
-                curvature = (-1 if curvature < 0 else 1) / self.parameters.minimum_turning_radius
 
             drive_backward = hook.projected_distance(carrot.offset_point, self.pose.yaw) < 0
             if drive_backward and not self.parameters.can_drive_backwards:
                 drive_backward = False
                 curvature = (-1 if curvature > 0 else 1) / max(self.parameters.minimum_turning_radius, 0.001)
+            elif self.parameters.curvature_feedforward_gain:  # NOTE: no feed-forward during the forced turn above
+                if self.parameters.can_drive_backwards:
+                    foot = spline.closest_point(self.pose.x, self.pose.y, t_min=foot)
+                else:
+                    foot = carrot.t  # NOTE: move_by_foot already projected the pose onto the spline
+                feedforward = self.parameters.curvature_feedforward_gain * spline.curvature(foot) \
+                    * (-1 if flip_hook else 1)
+                if np.isfinite(feedforward):  # NOTE: degenerate splines yield NaN curvature where the derivative vanishes
+                    curvature += feedforward
+            if curvature != 0 and abs(1 / curvature) < self.parameters.minimum_turning_radius:
+                curvature = (-1 if curvature < 0 else 1) / self.parameters.minimum_turning_radius
             linear: float = self.parameters.linear_speed_limit * (-1 if drive_backward else 1)
             t = spline.closest_point(hook.x, hook.y)
             if t >= 1.0 and throttle_at_end:
