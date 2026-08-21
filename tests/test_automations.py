@@ -378,3 +378,28 @@ async def test_uninterruptible(automator: Automator, method: Literal['pause', 's
         automator.stop(because='we can')
     await forward(seconds=2.0)
     assert state['count'] == 20
+
+
+@pytest.mark.parametrize('dx', [2, -2])
+async def test_driving_a_curved_spline_with_curvature_feedforward(driver: Driver, automator: Automator, robot: Robot, dx: float):
+    driver.parameters.curvature_feedforward_gain = 1.0
+    yaw_degrees = 90 if dx > 0 else -90
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=dx, y=2, yaw=np.radians(yaw_degrees)), backward=dx < 0)
+    automator.start(driver.drive_spline(spline, flip_hook=dx < 0))
+    await forward(until=lambda: automator.is_running)
+    await forward(until=lambda: automator.is_stopped)
+    assert_pose(dx, 2, deg=yaw_degrees, position_tolerance=0.035)
+
+
+async def test_curvature_feedforward_is_clamped_to_the_minimum_turning_radius(driver: Driver, automator: Automator, robot: Robot):
+    driver.parameters.curvature_feedforward_gain = 2.0
+    driver.parameters.minimum_turning_radius = 1.0
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=2, yaw=np.radians(90)))
+    automator.start(driver.drive_spline(spline))
+    await forward(until=lambda: automator.is_running)
+    max_curvature = 0.0
+    while not automator.is_stopped:
+        if driver.state is not None:
+            max_curvature = max(max_curvature, abs(driver.state.curvature))
+        await forward(seconds=0.1)
+    assert 0.0 < max_curvature <= 1.0 + 1e-9

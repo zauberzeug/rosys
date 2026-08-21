@@ -28,5 +28,11 @@ You can display a wire frame version of the robot by passing `debug=true` to the
 > It turns the hook 180 degrees to the back of the robot, while preserving the distance `hook_offset` to the robot's coordinate center.
 > This allows the robot to drive backwards to a point behind it instead of turning around and approaching it forwards.
 
+> [!TIP]
+> The carrot mechanism is pure feedback: on a curved spline the robot only steers once an error has built up, so the command trails the path.
+> With `curvature_feedforward_gain` the driver additionally steers the spline's own curvature at the robot's current position up front,
+> leaving the feedback only the disturbances (1.0 matches the path geometry; higher values compensate yaw slip on loose ground).
+> The sum of feedback and feed-forward is limited by `minimum_turning_radius`.
+
 A more complex example can be found in the [RoSys GitHub repository](https://github.com/zauberzeug/rosys/tree/main/examples/obstacles).
 There you can create new obstacles and choose between straight driving or navigation.
