@@ -5,6 +5,7 @@ from asyncio import Task
 from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from typing import ClassVar
 
 import httpx
 
@@ -24,11 +25,8 @@ class CaptureState(enum.Enum):
     """
     CONNECTING = enum.auto()    # loop alive, opening the stream or waiting to reconnect
     STREAMING = enum.auto()     # stream open and delivering frames
-    UNAUTHORIZED = enum.auto()  # camera rejected our credentials; loop gives up
+    UNAUTHORIZED = enum.auto()  # camera rejected our credentials; loop backs off before trying again
     STOPPED = enum.auto()       # shutdown requested; loop gives up
-
-
-_TERMINAL_STATES = (CaptureState.UNAUTHORIZED, CaptureState.STOPPED)
 
 
 def parse_capture_timestamp(part_header: bytes) -> float | None:
@@ -52,8 +50,10 @@ def parse_capture_timestamp(part_header: bytes) -> float | None:
 
 
 class MjpegDevice:
+    UNAUTHORIZED_RECONNECT_INTERVAL: ClassVar[float] = 60.0
+    '''Wait time between attempts while the camera rejects our credentials.'''
 
-    def __init__(self, mac: str, ip: str, *,
+    def __init__(self, mac: str, ip: str | None = None, *,
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
@@ -62,6 +62,7 @@ class MjpegDevice:
                  reconnect_interval: float = 3.0) -> None:
         self._mac = mac
         self._ip = ip
+        self._index = index
         self.log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device.' + self._mac)
 
         self._on_new_image_data = on_new_image_data
@@ -69,14 +70,30 @@ class MjpegDevice:
         self._capture_task: Task | None = None
         self._username = username
         self._password = password
-        url = mac_to_url(mac, ip, index=index)
-        if url is None:
-            raise ValueError(f'could not determine URL for {mac}')
-        self._url = url
         self.reconnect_interval = reconnect_interval
         self._state = CaptureState.CONNECTING
 
         self._start_capture_task()
+
+    @property
+    def ip(self) -> str | None:
+        return self._ip
+
+    @ip.setter
+    def ip(self, ip: str | None) -> None:
+        """Point the device at a new address; the capture loop reopens the stream there."""
+        if ip == self._ip:
+            return
+        self.log.info('address changed to %s', ip)
+        self._ip = ip
+        self.restart_capture()
+
+    @property
+    def url(self) -> str | None:
+        """The stream URL for the current address, or ``None`` while no usable address is known."""
+        if self._ip is None:
+            return None
+        return mac_to_url(self._mac, self._ip, index=self._index)
 
     @property
     def is_connected(self) -> bool:
@@ -90,6 +107,7 @@ class MjpegDevice:
 
     @property
     def authorized(self) -> bool:
+        """Whether the last attempt was not rejected; ``False`` while backing off after a 401."""
         return self._state is not CaptureState.UNAUTHORIZED
 
     def _start_capture_task(self) -> None:
@@ -104,21 +122,36 @@ class MjpegDevice:
     async def _run_capture_task(self) -> None:
         """Keep a single MJPEG session alive, reconnecting after `reconnect_interval` when it ends.
 
-        Runs until `shutdown()` cancels the task or the camera rejects us as unauthorized.
+        Runs until `shutdown()` cancels the task.
         """
         try:
-            while self._state not in _TERMINAL_STATES:
+            while self._state is not CaptureState.STOPPED:
+                # every attempt starts fresh: an earlier rejection says nothing about this one
+                self._state = CaptureState.CONNECTING
                 try:
                     await self._connect_and_stream_images()
                 except Exception:
                     self.log.exception('capture session failed')
-                if self._state in _TERMINAL_STATES:
+                if self._state is CaptureState.STOPPED:
                     break
-                self.log.info('stream ended; reconnecting in %.1f s', self.reconnect_interval)
-                await rosys.sleep(self.reconnect_interval)
+                if self._state is CaptureState.UNAUTHORIZED:
+                    self.log.info('credentials rejected; retrying in %.1f s', self._retry_interval)
+                elif self.url is None:
+                    self.log.debug('no address known; retrying in %.1f s', self._retry_interval)
+                else:
+                    self.log.info('stream ended; reconnecting in %.1f s', self._retry_interval)
+                # a new address restarts the whole task, so no need to cut this wait short
+                await rosys.sleep(self._retry_interval)
         finally:
             if self._capture_task is asyncio.current_task():
                 self._capture_task = None
+
+    @property
+    def _retry_interval(self) -> float:
+        """How long to wait before the next session; a rejected login backs off further than a lost stream."""
+        if self._state is CaptureState.UNAUTHORIZED:
+            return self.UNAUTHORIZED_RECONNECT_INTERVAL
+        return self.reconnect_interval
 
     def restart_capture(self) -> None:
         self.log.debug('Restarting capture task')
@@ -175,16 +208,20 @@ class MjpegDevice:
 
             self.log.debug('Stream ended')
         except httpx.ReadTimeout:
-            self.log.warning('Connection to %s timed out', self._url)
+            self.log.warning('Connection to %s timed out', self.url)
 
     async def _connect_and_stream_images(self) -> None:
-        self.log.debug('Starting capture task for %s', self._url)
+        url = self.url
+        if url is None:
+            self.log.debug('no address known yet; not opening a stream')
+            return
+        self.log.debug('Starting capture task for %s', url)
 
         try:
             async with httpx.AsyncClient() as client:
                 try:
                     await self._prepare_stream()
-                    async with open_stream(client, self._url, self._username, self._password) as result:
+                    async with open_stream(client, url, self._username, self._password) as result:
                         if result.unauthorized:
                             self._state = CaptureState.UNAUTHORIZED
                             return
@@ -203,7 +240,7 @@ class MjpegDevice:
                             except Exception as e:
                                 self.log.error('Error processing image: %s', e)
                 except Exception as e:
-                    self.log.warning('Connection to %s failed. Was something disconnected?\n%s', self._url, e)
+                    self.log.warning('Connection to %s failed. Was something disconnected?\n%s', url, e)
                     raise
         finally:
             if self._state is CaptureState.STREAMING:

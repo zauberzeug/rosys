@@ -13,20 +13,23 @@ class OpenIpcZauberzeugMjpegDevice(MjpegDevice):
     instead of the no-op defaults of the base class.
     """
 
-    def __init__(self, mac: str, ip: str, *,
+    def __init__(self, mac: str, ip: str | None = None, *,
                  username: str | None = None,
                  password: str | None = None,
                  on_new_image_data: Callable[[bytes, float], Awaitable | None],
                  on_connect: Callable[[], Awaitable | None] | None = None) -> None:
-        super().__init__(mac, ip, username=username, password=password,
-                         on_new_image_data=on_new_image_data, on_connect=on_connect)
-
         vendor = mac_to_vendor(mac)
         if vendor != VendorType.OPENIPC_ZAUBERZEUG:
             raise ValueError(f'OpenIpcZauberzeugMjpegDevice can only be used with '
                              f'OPENIPC_ZAUBERZEUG devices. Got {vendor} for mac="{mac}"')
 
-        self.settings_interface = OpenIpcZauberzeugSettingsInterface(ip, username=username, password=password)
+        super().__init__(mac, ip, username=username, password=password,
+                         on_new_image_data=on_new_image_data, on_connect=on_connect)
+
+    @property
+    def settings_interface(self) -> OpenIpcZauberzeugSettingsInterface:
+        assert self.ip is not None, 'settings are only accessed while the stream is running'
+        return OpenIpcZauberzeugSettingsInterface(self.ip, username=self._username, password=self._password)
 
     async def set_fps(self, fps: int) -> None:
         await self.settings_interface.set_mjpeg_fps(fps)

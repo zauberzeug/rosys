@@ -32,17 +32,13 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         self.log = logging.getLogger(f'rosys.vision.mjpeg_camera.{self.id}')
         self.username = username
         self.password = password
-
-        self.ip = ip
         self.reconnect_interval = reconnect_interval
 
-        self.index: int | None = None
         parts = self.id.split('-')
-        if len(parts) == 2 and parts[1].isdigit():
-            self.index = int(parts[1])
-
+        self.index: int | None = int(parts[1]) if len(parts) == 2 and parts[1].isdigit() else None
         self.mac = parts[0]
         self.device: MjpegDevice | None = None
+        self._ip: str | None = ip
 
         self._register_parameter('fps', self._get_fps, self._set_fps, default_value=fps)
         self._register_parameter('resolution', self._get_resolution, self._set_resolution, default_value=resolution)
@@ -64,30 +60,33 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
     @property
     def is_active(self) -> bool:
-        return (self.device is not None) and self.device.is_active
+        return self.device is not None
+
+    @property
+    def ip(self) -> str | None:
+        return self._ip
+
+    @ip.setter
+    def ip(self, ip: str | None) -> None:
+        """Update the discovered address; a running device rebinds to it without being torn down."""
+        self._ip = ip
+        if self.device is not None:
+            self.device.ip = ip
 
     async def connect(self) -> None:
-        if self.is_active:
-            return
         if self.device is not None:
-            await self.disconnect()
-
-        if not self.ip:
-            self.log.error('No IP address provided')
             return
+        await super().connect()
 
-        try:
-            self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
-                                                    password=self.password, on_new_image_data=self._handle_new_image_data,
-                                                    on_connect=self._apply_all_parameters)
-            self.device.reconnect_interval = self.reconnect_interval
-        except ValueError as error:
-            self.log.error('Could not connect to device: %s', error)
-            return
+        self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
+                                                password=self.password, on_new_image_data=self._handle_new_image_data,
+                                                on_connect=self._apply_all_parameters)
+        self.device.reconnect_interval = self.reconnect_interval
 
         await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
+        await super().disconnect()
         if self.device is None:
             return
 

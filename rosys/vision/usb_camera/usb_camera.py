@@ -55,31 +55,22 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
     @property
     def is_active(self) -> bool:
-        return self.device is not None and self.device.is_active
+        return self.device is not None
 
     async def connect(self) -> None:
-        if self.is_active:
-            return
         if self.device is not None:
-            await self.disconnect()
-
-        device = UsbDevice.from_uid(self.id, self._handle_new_image_data,
-                                    on_connect=self._apply_all_parameters,
-                                    reconnect_interval=self.reconnect_interval)
-        if device is None:
-            logging.warning('Connecting camera %s: failed', self.id)
             return
-
-        self.device = device
-        logging.info('Connecting camera %s: succeeded', self.id)
-
-        await self._apply_all_parameters()
+        await super().connect()
+        self.device = UsbDevice(self.id,
+                                on_new_image_data=self._handle_new_image_data,
+                                on_connect=self._apply_all_parameters,
+                                reconnect_interval=self.reconnect_interval)
 
     async def disconnect(self) -> None:
+        await super().disconnect()
         if self.device is None:
             return
 
-        assert self.device is not None
         await self.device.shutdown()
         self.device = None
         logging.info('camera %s: disconnected', self.id)
@@ -87,8 +78,6 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
     async def _handle_new_image_data(self, image_data: np.ndarray | bytes, timestamp: float) -> None:
         if self.device is None:
             return None
-
-        assert self.device is not None
 
         image_array: np.ndarray | None
         if isinstance(image_data, np.ndarray):

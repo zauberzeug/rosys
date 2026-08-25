@@ -11,7 +11,7 @@ from asyncio.subprocess import Process
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Literal
+from typing import ClassVar, Literal
 
 import numpy as np
 from nicegui import background_tasks
@@ -25,8 +25,14 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 
 
 class RtspDevice:
+    UNAUTHORIZED_RECONNECT_INTERVAL: ClassVar[float] = 60.0
+    '''How long to wait between attempts while the camera rejects our credentials.
 
-    def __init__(self, mac: str, ip: str, *,
+    Backing off instead of giving up matters even more here than for HTTP cameras: the rejection is
+    inferred from gstreamer's stderr, so a false positive must not take the camera down for good.
+    '''
+
+    def __init__(self, mac: str, ip: str | None = None, *,
                  substream: int, fps: int, on_new_image_data: Callable[[ImageArray, float], Awaitable | None],
                  on_connect: Callable[[], Awaitable | None] | None = None,
                  avdec: Literal['h264', 'h265'] = 'h264',
@@ -47,21 +53,27 @@ class RtspDevice:
         self.reconnect_interval = reconnect_interval
         self._should_run: bool = True
 
-        vendor_type = mac_to_vendor(mac)
-
         self._settings_interface: JovisionInterface | ArkVisionRtspInterface | OpenIpcZauberzeugSettingsInterface | None = None
+        self._bind_settings_interface()
+
+        self._start_capture_task()
+
+    def _bind_settings_interface(self) -> None:
+        """(Re-)create the vendor settings interface for the current address."""
+        if self._ip is None:
+            self._settings_interface = None
+            return
+        vendor_type = mac_to_vendor(self._mac)
         if vendor_type == VendorType.JOVISION:
-            self._settings_interface = JovisionInterface(ip)
+            self._settings_interface = JovisionInterface(self._ip)
         elif vendor_type == VendorType.ARKVISION:
-            self._settings_interface = ArkVisionRtspInterface(ip)
+            self._settings_interface = ArkVisionRtspInterface(self._ip)
         elif vendor_type == VendorType.OPENIPC_ZAUBERZEUG:
-            self._settings_interface = OpenIpcZauberzeugSettingsInterface(ip)
+            self._settings_interface = OpenIpcZauberzeugSettingsInterface(self._ip)
         else:
+            self._settings_interface = None
             self.log.warning('[%s] No settings interface for vendor type %s', self._mac, vendor_type)
             self.log.warning('[%s] Using default fps of 10', self._mac)
-
-        self.log.info('[%s] Starting VideoStream for %s', self._mac, self.url)
-        self._start_capture_task()
 
     @property
     def is_connected(self) -> bool:
@@ -75,14 +87,32 @@ class RtspDevice:
 
     @property
     def authorized(self) -> bool:
+        """Whether the last attempt was not rejected; ``False`` while backing off after a rejected login."""
         return self._authorized
 
     @property
-    def url(self) -> str:
-        url = mac_to_url(self._mac, self._ip, self._substream)
-        if url is None:
-            raise ValueError(f'could not determine RTSP URL for {self._mac}')
-        return url
+    def ip(self) -> str | None:
+        return self._ip
+
+    @ip.setter
+    def ip(self, ip: str | None) -> None:
+        """Point the device at a new address; the capture loop picks it up for its next session."""
+        if ip == self._ip:
+            return
+        self.log.info('[%s] address changed to %s', self._mac, ip)
+        self._ip = ip
+        self._bind_settings_interface()
+        self._authorized = True  # a rejection was about the previous address
+        if self.is_connected:
+            assert self._capture_process is not None
+            self._capture_process.terminate()
+
+    @property
+    def url(self) -> str | None:
+        """The stream URL for the current address, or ``None`` while no usable address is known."""
+        if self._ip is None:
+            return None
+        return mac_to_url(self._mac, self._ip, self._substream)
 
     async def shutdown(self) -> None:
         self._should_run = False
@@ -123,21 +153,41 @@ class RtspDevice:
     async def _run_capture_task(self) -> None:
         """Keep a single gstreamer session alive, reconnecting after `reconnect_interval` when it ends.
 
-        Runs until `shutdown()` cancels the task or the camera rejects us as unauthorized.
+        Runs until `shutdown()` cancels the task.
         """
         try:
             while self._should_run:
+                # every attempt starts fresh: an earlier rejection says nothing about this one
+                self._authorized = True
                 try:
                     await self._run_gstreamer()
                 except Exception:
                     self.log.exception('[%s] capture session failed', self._mac)
-                if not self._should_run or not self._authorized:
+                if not self._should_run:
                     break
-                self.log.info('[%s] stream ended; reconnecting in %.1f s', self._mac, self.reconnect_interval)
-                await rosys.sleep(self.reconnect_interval)
+                if not self._authorized:
+                    self.log.info('[%s] credentials rejected; retrying in %.1f s',
+                                  self._mac, self.UNAUTHORIZED_RECONNECT_INTERVAL)
+                elif self.url is None:
+                    self.log.debug('[%s] no address known; retrying in %.1f s', self._mac, self.reconnect_interval)
+                else:
+                    self.log.info('[%s] stream ended; reconnecting in %.1f s', self._mac, self.reconnect_interval)
+                await self._wait_before_retry()
         finally:
             if self._capture_task is asyncio.current_task():
                 self._capture_task = None
+
+    async def _wait_before_retry(self) -> None:
+        """Wait `reconnect_interval` before the next session, extending the wait while our login stays rejected.
+
+        Waiting in `reconnect_interval` chunks re-reads the verdict, so a new address ends a long wait
+        early instead of holding on to a verdict that was about the previous address.
+        """
+        await rosys.sleep(self.reconnect_interval)
+        waited = self.reconnect_interval
+        while self._should_run and not self._authorized and waited < self.UNAUTHORIZED_RECONNECT_INTERVAL:
+            await rosys.sleep(self.reconnect_interval)
+            waited += self.reconnect_interval
 
     async def restart_gstreamer(self) -> None:
         await self.shutdown()
@@ -152,12 +202,14 @@ class RtspDevice:
             await result
 
     async def _run_gstreamer(self) -> None:
-        if self._capture_process is not None and self._capture_process.returncode is None:
+        if self.is_connected:
             self.log.warning('[%s] capture process already running', self._mac)
+            return
+        url = self.url
+        if url is None:
             return
 
         async def stream() -> AsyncGenerator[ImageArray, None]:
-            url = self.url
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
             command = f'gst-launch-1.0 --quiet rtspsrc location="{url}" latency=0 protocols=tcp ! rtp{self._avdec}depay ! avdec_{self._avdec} ! videoconvert ! video/x-raw,format=RGB ! queue max-size-buffers=1 leaky=downstream ! gdppay ! fdsink sync=false'

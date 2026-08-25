@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 import logging
 import re
@@ -14,14 +12,12 @@ from .usb_camera_scanner import device_nodes_from_uid
 MJPG = cv2.VideoWriter.fourcc(*'MJPG')
 
 
-def find_video_id(camera_uid: str) -> int | None:
-    device_nodes = device_nodes_from_uid(camera_uid)
-    video_ids = [
-        int(node.strip().removeprefix('/dev/video'))
-        for node in device_nodes
-        if node.startswith('/dev/video')
-    ]
-    return min(video_ids) if video_ids else None
+def find_device_node(camera_uid: str) -> str | None:
+    """Find the lowest-numbered ``/dev/video*`` node of the camera with the given uid."""
+    video_nodes = [node.strip() for node in device_nodes_from_uid(camera_uid) if node.startswith('/dev/video')]
+    if not video_nodes:
+        return None
+    return min(video_nodes, key=lambda node: int(node.removeprefix('/dev/video')))
 
 
 def to_bytes(image: np.ndarray) -> bytes:
@@ -32,14 +28,14 @@ class UsbDevice:
     MAX_READ_FAILURES = 10
     """Number of consecutive failed reads before the capture is considered lost (e.g. unplugged cable)."""
 
-    def __init__(self, uid: str, video_id: int, capture: cv2.VideoCapture, *,
+    def __init__(self, uid: str, *,
                  on_new_image_data: Callable[[np.ndarray | bytes, float], Awaitable | None],
                  on_connect: Callable[[], Awaitable | None] | None = None,
                  reconnect_interval: float = 3.0) -> None:
         self.uid = uid
         self.log = logging.getLogger('rosys.vision.usb_camera.usb_device.' + uid)
-        self._video_id: int = video_id
-        self._capture: cv2.VideoCapture | None = capture
+        self._device_node: str | None = None
+        self._capture: cv2.VideoCapture | None = None
         self._on_new_image_data = on_new_image_data
         self._on_connect = on_connect
         self.reconnect_interval = reconnect_interval
@@ -52,8 +48,6 @@ class UsbDevice:
         self._should_run: bool = True
         self._read_failures: int = 0
         self._capture_task: asyncio.Task | None = None
-
-        self.set_video_format()
 
         self._start_capture_task()
 
@@ -84,26 +78,8 @@ class UsbDevice:
         return self._image_is_jpg
 
     @staticmethod
-    def from_uid(camera_id: str, on_new_image_data: Callable[[np.ndarray | bytes, float], Awaitable | None],
-                 on_connect: Callable[[], Awaitable | None] | None = None,
-                 reconnect_interval: float = 3.0) -> UsbDevice | None:
-        video_id = find_video_id(camera_id)
-        if video_id is None:
-            logging.error('Could not find video device for camera %s', camera_id)
-            return None
-
-        capture = UsbDevice.create_capture(video_id)
-        if capture is None:
-            logging.error('Could not open video device %s', video_id)
-            return None
-
-        return UsbDevice(uid=camera_id, video_id=video_id, capture=capture,
-                         on_new_image_data=on_new_image_data, on_connect=on_connect,
-                         reconnect_interval=reconnect_interval)
-
-    @staticmethod
-    def create_capture(index: int) -> cv2.VideoCapture | None:
-        capture = cv2.VideoCapture(index)
+    def create_capture(device_node: str) -> cv2.VideoCapture | None:
+        capture = cv2.VideoCapture(device_node, cv2.CAP_V4L2)
         if capture is None:
             return None
         capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
@@ -177,16 +153,17 @@ class UsbDevice:
                 await result
 
     async def _open_capture(self) -> None:
-        """Re-find and re-open the capture for this camera."""
+        """Find and open the capture for this camera; leaves ``_capture`` as ``None`` when it is unavailable."""
         await self._release()
-        video_id = await rosys.run.io_bound(find_video_id, self.uid)
-        if video_id is None:
+        device_node = await rosys.run.io_bound(find_device_node, self.uid)
+        if device_node is None:
+            self.log.debug('[%s] no video device found', self.uid)
             return
-        capture = await rosys.run.io_bound(UsbDevice.create_capture, video_id)
+        capture = await rosys.run.io_bound(UsbDevice.create_capture, device_node)
         if capture is None:
             return
-        self.log.info('[%s] connected on /dev/video%d', self.uid, video_id)
-        self._video_id = video_id
+        self.log.info('[%s] connected on %s', self.uid, device_node)
+        self._device_node = device_node
         self._capture = capture
         self._read_failures = 0
         self.set_video_format()
@@ -204,6 +181,7 @@ class UsbDevice:
         if self._capture is not None:
             await rosys.run.io_bound(self._capture.release)
             self._capture = None
+        self._device_node = None
 
     async def shutdown(self) -> None:
         self._should_run = False
@@ -236,7 +214,9 @@ class UsbDevice:
             self._video_formats.add(m.group(1))
 
     async def run_v4l(self, *args) -> str:
-        cmd = ['v4l2-ctl', '-d', str(self._video_id)]
+        if self._device_node is None:
+            return ''
+        cmd = ['v4l2-ctl', '-d', self._device_node]
         cmd.extend(args)
         return await rosys.run.sh(cmd)
 

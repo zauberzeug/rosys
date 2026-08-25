@@ -24,10 +24,12 @@ async def test_usb_camera(rosys_integration):
     if len(connected_uids) == 0:
         pytest.skip('No USB camera detected. This test requires a physical USB camera to be connected.')
     camera = UsbCamera(id=connected_uids[0])
-    await camera.connect()
-    for _ in range(5):
+    await camera.connect()  # the device opens the capture in its own loop, so wait for the first image
+    for _ in range(50):
         await forward(0.1)
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(0.1)
+        if camera.images:
+            break
     assert camera.is_connected
     assert len(camera.images) >= 1
 

@@ -6,21 +6,25 @@ from .vendors import VendorType, mac_to_vendor
 
 
 class MotecMjpegDevice(MjpegDevice):
-    def __init__(self, mac: str, ip: str, *,
+    def __init__(self, mac: str, ip: str | None = None, *,
                  username: str | None = '',
                  password: str | None = '',
                  control_port: int | None = 8885,
                  on_new_image_data: Callable[[bytes, float], Awaitable | None],
                  on_connect: Callable[[], Awaitable | None] | None = None) -> None:
-
-        super().__init__(mac, ip, username=username, password=password,
-                         on_new_image_data=on_new_image_data, on_connect=on_connect)
-
         vendor = mac_to_vendor(mac)
         if vendor != VendorType.MOTEC:
             raise ValueError(f'MotecMjpegDevice can only be used with MOTEC devices. Got {vendor} for mac="{mac}"')
 
-        self.settings_interface = MotecSettingsInterface(ip, port=control_port or 8885)
+        self._control_port = control_port or 8885
+
+        super().__init__(mac, ip, username=username, password=password,
+                         on_new_image_data=on_new_image_data, on_connect=on_connect)
+
+    @property
+    def settings_interface(self) -> MotecSettingsInterface:
+        assert self.ip is not None, 'settings are only accessed while the stream is running'
+        return MotecSettingsInterface(self.ip, port=self._control_port)
 
     async def set_fps(self, fps: int) -> None:
         await self.settings_interface.set_fps(fps)

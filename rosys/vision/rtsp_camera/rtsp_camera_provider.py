@@ -22,7 +22,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
         self.frame_rate = frame_rate
         self.substream = substream
         self.network_interface = network_interface
-        self.avdec = avdec
+        self.avdec: Literal['h264', 'h265'] = avdec
 
         self.log = logging.getLogger('rosys.rtsp_camera_provider')
 
@@ -32,25 +32,27 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
 
     def restore_from_dict(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
-            camera = RtspCamera.from_dict(camera_data)
-            self.add_camera(camera)
+            self.add_camera(RtspCamera.from_dict(camera_data))
 
     @staticmethod
     async def scan_for_cameras(network_interface: str | None = None) -> list[tuple[str, str]]:
         return await find_known_cameras(network_interface=network_interface)
 
     async def update_device_list(self) -> None:
+        """Add cameras for newly discovered devices and rebind known ones whose address changed.
+
+        Connecting is left to the cameras themselves, which keep retrying until they are disconnected.
+        """
         self.log.debug('scanning for cameras...')
         for mac, ip in await find_known_cameras(network_interface=self.network_interface):
             camera = next((c for c in self._cameras.values() if c.mac == mac), None)
             if camera is None:
                 self.log.debug('found new camera %s', mac)
-                camera = RtspCamera(mac=mac, fps=self.frame_rate, substream=self.substream, avdec=self.avdec, ip=ip)
-                self.add_camera(camera)
-            if not camera.is_active:
-                self.log.info('activating authorized camera %s...', camera.id)
+                self.add_camera(RtspCamera(mac=mac, fps=self.frame_rate,
+                                           substream=self.substream, avdec=self.avdec, ip=ip))
+            elif camera.ip != ip:
+                self.log.info('camera %s moved to ip %s', camera.id, ip)
                 camera.ip = ip
-                await camera.connect()
 
         self.log.debug('scanning completed, found %d cameras', len(self._cameras))
 

@@ -11,12 +11,11 @@ def uid_from_device(device: pyudev.Device) -> str | None:
 
 
 def scan_for_connected_devices() -> set[str]:
-    devices = pyudev.Context().list_devices()
-    video_device_ids = {uid_from_device(device) for device in devices if device.subsystem == 'video4linux'}
-    return {uid for uid in video_device_ids if uid is not None}
+    devices = pyudev.Context().list_devices(subsystem='video4linux')
+    return {uid for uid in (uid_from_device(device) for device in devices) if uid is not None}
 
 
 def device_nodes_from_uid(uid: str) -> set[str]:
-    devices = pyudev.Context().list_devices()
+    devices = pyudev.Context().list_devices(subsystem='video4linux')
     matching_devices = [device for device in devices if uid_from_device(device) == uid]
     return {device.device_node for device in matching_devices if device.device_node is not None}

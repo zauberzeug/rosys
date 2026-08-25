@@ -106,7 +106,11 @@ class Camera(abc.ABC):
 
     @property
     def is_active(self) -> bool:
-        """Whether the camera keeps itself connected (streaming or waiting to reconnect)."""
+        """Whether a connection is wanted, i.e. the camera keeps itself connected.
+
+        This holds from ``connect()`` until ``disconnect()``, whether or not the camera can currently
+        be reached, so it distinguishes a camera that is still trying from a deliberately disconnected one.
+        """
         return self.is_connected
 
     @property
@@ -123,10 +127,10 @@ class Camera(abc.ABC):
             self.device_connection_lock.release()
 
     async def connect(self) -> None:  # noqa: B027
-        pass
+        """Create the self-healing device; it keeps retrying until ``disconnect()`` tears it down."""
 
     async def disconnect(self) -> None:  # noqa: B027
-        pass
+        """Tear down the device, which also stops its reconnection attempts."""
 
     async def reconnect(self) -> None:
         await self.disconnect()

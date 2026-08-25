@@ -18,6 +18,8 @@ def add_card(camera: rosys.vision.Camera, container: ui.element) -> None:
                     streams[uid] = ui.interactive_image()
                     ui.label(uid).classes('m-2')
                     with ui.row():
+                        ui.button('connect', on_click=camera.connect) \
+                            .bind_enabled_from(camera, 'is_active', backward=lambda active: not active)
                         ui.button('disconnect', on_click=camera.disconnect) \
                             .bind_enabled_from(camera, 'is_active')
                     if isinstance(camera, rosys.vision.ConfigurableCamera):

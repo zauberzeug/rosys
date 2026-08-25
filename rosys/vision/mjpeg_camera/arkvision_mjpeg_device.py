@@ -8,7 +8,7 @@ from .vendors import VendorType, mac_to_vendor
 class ArkVisionMjpegDevice(MjpegDevice):
     """MJPEG device for Ark Vision ArkCam Basic+ cameras. Includes auto-enable and configuration through the REST API."""
 
-    def __init__(self, mac: str, ip: str, *,
+    def __init__(self, mac: str, ip: str | None = None, *,
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
@@ -18,9 +18,13 @@ class ArkVisionMjpegDevice(MjpegDevice):
         if vendor != VendorType.ARKVISION:
             raise ValueError(
                 f'ArkVisionMjpegDevice can only be used with ARKVISION devices. Got {vendor} for mac="{mac}"')
-        self.settings_interface = ArkVisionSettingsInterface(ip)
         super().__init__(mac, ip, index=index, username=username, password=password,
                          on_new_image_data=on_new_image_data, on_connect=on_connect)
+
+    @property
+    def settings_interface(self) -> ArkVisionSettingsInterface:
+        assert self.ip is not None, 'settings are only accessed while the stream is running'
+        return ArkVisionSettingsInterface(self.ip)
 
     async def _prepare_stream(self) -> None:
         await self.settings_interface.enable_http_mjpeg()

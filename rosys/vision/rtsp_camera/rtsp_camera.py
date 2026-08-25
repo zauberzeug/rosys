@@ -32,7 +32,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.log = logging.getLogger(f'rosys.vision.rtsp_camera.{self.id}')
 
         self.device: RtspDevice | None = None
-        self.ip: str | None = ip
+        self._ip: str | None = ip
         self.reconnect_interval = reconnect_interval
 
         self._register_parameter('substream', self.get_substream, self.set_substream,
@@ -70,7 +70,18 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     @property
     def is_active(self) -> bool:
-        return self.device is not None and self.device.is_active
+        return self.device is not None
+
+    @property
+    def ip(self) -> str | None:
+        return self._ip
+
+    @ip.setter
+    def ip(self, ip: str | None) -> None:
+        """Update the discovered address; a running device rebinds to it without being torn down."""
+        self._ip = ip
+        if self.device is not None:
+            self.device.ip = ip
 
     @property
     def url(self) -> str | None:
@@ -79,14 +90,9 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         return self.device.url
 
     async def connect(self) -> None:
-        if self.is_active:
-            return
         if self.device is not None:
-            await self.disconnect()
-
-        if not self.ip:
-            self.log.error('no IP address provided for camera %s', self.id)
             return
+        await super().connect()
 
         self.device = RtspDevice(mac=self.mac, ip=self.ip,
                                  substream=self.parameters['substream'],
@@ -99,11 +105,11 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
+        await super().disconnect()
         if self.device is None:
             return
-        logging.info('camera %s: disconnect initialized...', self.id)
+        self.log.info('disconnect initialized...')
 
-        assert self.device is not None
         await self.device.shutdown()
         self.device = None
 

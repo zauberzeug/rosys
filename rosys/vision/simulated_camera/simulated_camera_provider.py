@@ -1,5 +1,4 @@
 import warnings
-from collections.abc import AsyncGenerator
 
 from ... import rosys
 from ..camera_provider import CameraProvider
@@ -46,20 +45,8 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera]):
             camera = SimulatedCamera.from_dict(camera_data)
             self.add_camera(camera)
 
-    async def scan_for_cameras(self) -> AsyncGenerator[str, None]:
-        """Simulated device discovery by returning all camera IDs."""
-        for camera in self._cameras.values():
-            yield camera.id
-
     async def update_device_list(self) -> None:
-        async for camera_id in self.scan_for_cameras():
-            camera = self._cameras.get(camera_id)
-            if not camera:
-                camera = SimulatedCamera(id=camera_id, width=640, height=480,
-                                         simulate_failing=self.simulate_failing)
-                self.add_camera(camera)
-            if not camera.is_active:
-                await camera.connect()
+        """Simulated cameras are created explicitly with `add_cameras`, so there is nothing to discover."""
 
     def add_cameras(self, num_cameras: int) -> None:
         for _ in range(num_cameras):
