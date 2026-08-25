@@ -106,11 +106,7 @@ class Camera(abc.ABC):
 
     @property
     def is_active(self) -> bool:
-        """Whether a connection is wanted, i.e. the camera keeps itself connected.
-
-        This holds from ``connect()`` until ``disconnect()``, whether or not the camera can currently
-        be reached, so it distinguishes a camera that is still trying from a deliberately disconnected one.
-        """
+        """Whether a connection is wanted, i.e. whether the camera keeps itself connected."""
         return self.is_connected
 
     @property

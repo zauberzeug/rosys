@@ -54,7 +54,6 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
     async def connect(self) -> None:
         if self.device is not None:
             return
-        await super().connect()
         self.device = SimulatedDevice(id=self.id, size=self.resolution, fps=self.parameters['fps'],
                                       on_new_image=self._add_image,
                                       on_connect=self._apply_all_parameters,
@@ -63,7 +62,6 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
         await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
-        await super().disconnect()
         if self.device is None:
             return
         self.device.shutdown()

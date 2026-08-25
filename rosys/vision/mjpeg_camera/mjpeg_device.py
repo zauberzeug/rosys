@@ -8,9 +8,9 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 import httpx
+from nicegui import background_tasks
 
 from ... import rosys
-from ...rosys import on_startup
 from ..image_processing import remove_exif
 from .vendors import mac_to_url
 
@@ -77,11 +77,11 @@ class MjpegDevice:
 
     @property
     def ip(self) -> str | None:
+        """The address of the camera; assigning a new one makes the capture loop reopen the stream there."""
         return self._ip
 
     @ip.setter
     def ip(self, ip: str | None) -> None:
-        """Point the device at a new address; the capture loop reopens the stream there."""
         if ip == self._ip:
             return
         self.log.info('address changed to %s', ip)
@@ -90,7 +90,7 @@ class MjpegDevice:
 
     @property
     def url(self) -> str | None:
-        """The stream URL for the current address, or ``None`` while no usable address is known."""
+        """The stream URL, or ``None`` when the address is unknown or no URL scheme is known for the mac."""
         if self._ip is None:
             return None
         return mac_to_url(self._mac, self._ip, index=self._index)
@@ -111,13 +111,11 @@ class MjpegDevice:
         return self._state is not CaptureState.UNAUTHORIZED
 
     def _start_capture_task(self) -> None:
-        def create_capture_task() -> None:
-            if self._capture_task is not None and not self._capture_task.done():
-                return
-            self._state = CaptureState.CONNECTING
-            loop = asyncio.get_event_loop()
-            self._capture_task = loop.create_task(self._run_capture_task())
-        on_startup(create_capture_task)
+        if self._capture_task is not None and not self._capture_task.done():
+            self.log.warning('tried to start a capture loop while already running one')
+            return
+        self._state = CaptureState.CONNECTING
+        self._capture_task = background_tasks.create(self._run_capture_task(), name=f'mjpeg capture {self._mac}')
 
     async def _run_capture_task(self) -> None:
         """Keep a single MJPEG session alive, reconnecting after `reconnect_interval` when it ends.
@@ -136,8 +134,11 @@ class MjpegDevice:
                     break
                 if self._state is CaptureState.UNAUTHORIZED:
                     self.log.info('credentials rejected; retrying in %.1f s', self._retry_interval)
-                elif self.url is None:
+                elif self._ip is None:
                     self.log.debug('no address known; retrying in %.1f s', self._retry_interval)
+                elif self.url is None:
+                    self.log.debug('no stream URL for mac "%s"; retrying in %.1f s',
+                                   self._mac, self._retry_interval)
                 else:
                     self.log.info('stream ended; reconnecting in %.1f s', self._retry_interval)
                 # a new address restarts the whole task, so no need to cut this wait short
@@ -213,7 +214,6 @@ class MjpegDevice:
     async def _connect_and_stream_images(self) -> None:
         url = self.url
         if url is None:
-            self.log.debug('no address known yet; not opening a stream')
             return
         self.log.debug('Starting capture task for %s', url)
 
@@ -230,6 +230,9 @@ class MjpegDevice:
                         self._state = CaptureState.STREAMING
                         await self._invoke_on_connect()
                         async for image, capture_time in self._frame_reader(result.response):
+                            if self.url != url:
+                                self.log.info('stream settings changed; reopening the stream')
+                                return
                             if not image:
                                 continue
                             try:

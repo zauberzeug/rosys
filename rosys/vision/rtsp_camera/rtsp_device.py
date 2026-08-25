@@ -28,8 +28,8 @@ class RtspDevice:
     UNAUTHORIZED_RECONNECT_INTERVAL: ClassVar[float] = 60.0
     '''How long to wait between attempts while the camera rejects our credentials.
 
-    Backing off instead of giving up matters even more here than for HTTP cameras: the rejection is
-    inferred from gstreamer's stderr, so a false positive must not take the camera down for good.
+    The rejection is only inferred from gstreamer's stderr, so a false positive must slow the retries
+    down rather than stop them.
     '''
 
     def __init__(self, mac: str, ip: str | None = None, *,
@@ -50,6 +50,8 @@ class RtspDevice:
         self._capture_task: asyncio.Task | None = None
         self._capture_process: Process | None = None
         self._authorized: bool = True
+        self._warned_about_missing_url: bool = False
+        self._warned_about_missing_settings: bool = False
         self.reconnect_interval = reconnect_interval
         self._should_run: bool = True
 
@@ -72,8 +74,10 @@ class RtspDevice:
             self._settings_interface = OpenIpcZauberzeugSettingsInterface(self._ip)
         else:
             self._settings_interface = None
-            self.log.warning('[%s] No settings interface for vendor type %s', self._mac, vendor_type)
-            self.log.warning('[%s] Using default fps of 10', self._mac)
+            if not self._warned_about_missing_settings:  # rebinding on every address change must not spam the log
+                self._warned_about_missing_settings = True
+                self.log.warning('[%s] no settings interface for vendor type %s; keeping the configured fps',
+                                 self._mac, vendor_type)
 
     @property
     def is_connected(self) -> bool:
@@ -92,11 +96,11 @@ class RtspDevice:
 
     @property
     def ip(self) -> str | None:
+        """The address of the camera; assigning a new one makes the capture loop use it for its next session."""
         return self._ip
 
     @ip.setter
     def ip(self, ip: str | None) -> None:
-        """Point the device at a new address; the capture loop picks it up for its next session."""
         if ip == self._ip:
             return
         self.log.info('[%s] address changed to %s', self._mac, ip)
@@ -109,7 +113,7 @@ class RtspDevice:
 
     @property
     def url(self) -> str | None:
-        """The stream URL for the current address, or ``None`` while no usable address is known."""
+        """The stream URL, or ``None`` when the address is unknown or no URL scheme is known for the mac."""
         if self._ip is None:
             return None
         return mac_to_url(self._mac, self._ip, self._substream)
@@ -168,14 +172,28 @@ class RtspDevice:
                 if not self._authorized:
                     self.log.info('[%s] credentials rejected; retrying in %.1f s',
                                   self._mac, self.UNAUTHORIZED_RECONNECT_INTERVAL)
-                elif self.url is None:
+                elif self._ip is None:
                     self.log.debug('[%s] no address known; retrying in %.1f s', self._mac, self.reconnect_interval)
+                elif self.url is None:
+                    self._warn_about_missing_url()
                 else:
                     self.log.info('[%s] stream ended; reconnecting in %.1f s', self._mac, self.reconnect_interval)
                 await self._wait_before_retry()
         finally:
             if self._capture_task is asyncio.current_task():
                 self._capture_task = None
+
+    def _warn_about_missing_url(self) -> None:
+        """Warn once that no URL can be built for this camera.
+
+        The URL scheme follows from the mac, so retrying cannot help; warning on every attempt would
+        only fill the log.
+        """
+        if self._warned_about_missing_url:
+            return
+        self._warned_about_missing_url = True
+        self.log.warning('[%s] no RTSP URL known for vendor %s; this camera cannot be reached',
+                         self._mac, mac_to_vendor(self._mac))
 
     async def _wait_before_retry(self) -> None:
         """Wait `reconnect_interval` before the next session, extending the wait while our login stays rejected.

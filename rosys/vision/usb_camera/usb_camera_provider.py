@@ -38,7 +38,6 @@ class UsbCameraProvider(CameraProvider[UsbCamera]):
         return (await rosys.run.io_bound(scan_for_connected_devices)) or set()
 
     async def update_device_list(self) -> None:
-        """Add cameras for newly discovered devices; known cameras keep themselves connected."""
         for uid in await self.scan_for_cameras():
             if uid not in self._cameras:
                 self.log.info('found new camera "%s"', uid)

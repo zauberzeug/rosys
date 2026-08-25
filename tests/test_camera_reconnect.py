@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, patch
 
 import cv2
@@ -20,7 +21,7 @@ from rosys.vision import (
     UsbCameraProvider,
 )
 from rosys.vision.mjpeg_camera.axis_mjpeg_device import AxisMjpegDevice
-from rosys.vision.mjpeg_camera.mjpeg_device import MjpegDevice
+from rosys.vision.mjpeg_camera.mjpeg_device import CaptureState, MjpegDevice, StreamOpenResult
 from rosys.vision.rtsp_camera.rtsp_device import RtspDevice
 from rosys.vision.simulated_camera.simulated_device import SimulatedDevice
 from rosys.vision.usb_camera.usb_device import UsbDevice
@@ -46,6 +47,34 @@ def stalled_mjpeg_stream():
 def stalled_rtsp_stream():
     """Keep an `RtspDevice` in a single capture session without spawning gstreamer."""
     return patch.object(RtspDevice, '_run_gstreamer', _no_stream)
+
+
+class FakeGstreamerProcess:
+    """Stand-in for the gstreamer process, so a device reports `is_connected` without spawning one."""
+
+    def __init__(self) -> None:
+        self.returncode: int | None = None
+
+    def terminate(self) -> None:
+        self.returncode = -15
+
+    async def wait(self) -> int | None:
+        return self.returncode
+
+
+async def _connected_rtsp_stream(self) -> None:
+    """Stand-in for a gstreamer session that comes up and reapplies parameters, but spawns nothing."""
+    self._capture_process = FakeGstreamerProcess()  # pylint: disable=protected-access
+    try:
+        await self._invoke_on_connect()  # pylint: disable=protected-access
+        await rosys.sleep(60.0)
+    finally:
+        self._capture_process = None  # pylint: disable=protected-access
+
+
+def connected_rtsp_stream():
+    """Keep an `RtspDevice` in a single *connected* capture session without spawning gstreamer."""
+    return patch.object(RtspDevice, '_run_gstreamer', _connected_rtsp_stream)
 
 
 async def forward_until(condition, *, step: float = 0.3, real_step: float = 0.05,
@@ -504,17 +533,67 @@ async def test_mjpeg_device_invokes_on_connect_per_session(rosys_integration):
 
 async def test_rtsp_camera_restarts_stream_on_set_parameters_but_not_on_reapply(rosys_integration):
     camera = RtspCamera(mac=GOODCAM_MAC, ip='192.168.0.5', connect_after_init=False)
-    with stalled_rtsp_stream(), \
+    with connected_rtsp_stream(), \
             patch.object(RtspDevice, 'restart_gstreamer') as restart:
         await camera.connect()
-        assert camera.device is not None
+        # the session reapplies the parameters itself, which only runs the setters while connected
+        await forward_until(lambda: camera.is_connected, message='expected the capture session to come up')
 
-        await camera._apply_all_parameters()  # pylint: disable=protected-access
         restart.assert_not_called()  # a reapply from the device's own capture task must not restart the stream
 
         await camera.set_parameters({'fps': 7})
         restart.assert_called_once()
         await camera.disconnect()
+
+
+async def test_axis_camera_applies_parameters_without_restarting_its_own_session(rosys_integration):
+    sessions = 0
+
+    async def stream(self) -> None:
+        nonlocal sessions
+        sessions += 1
+        self._state = CaptureState.STREAMING  # pylint: disable=protected-access
+        await self._invoke_on_connect()  # pylint: disable=protected-access
+        await rosys.sleep(60.0)
+
+    camera = MjpegCamera(id=AXIS_MAC, ip='192.168.0.5', fps=12, connect_after_init=False)
+    with patch.object(MjpegDevice, '_connect_and_stream_images', stream):
+        await camera.connect()
+        try:
+            await forward_until(lambda: sessions >= 1, message='expected a capture session to start')
+            await forward(2.0)
+            assert sessions == 1, 'expected the reapplied parameters not to restart the capture task'
+            assert camera.device is not None
+            assert 'fps=12' in (camera.device.url or ''), 'expected the requested fps to reach the stream URL'
+        finally:
+            await camera.disconnect()
+
+
+async def test_mjpeg_device_reopens_the_stream_when_its_url_changes(rosys_integration):
+    opened_urls: list[str] = []
+
+    @asynccontextmanager
+    async def open_stream(client, url, username, password):  # pylint: disable=unused-argument
+        opened_urls.append(url)
+        yield StreamOpenResult(object())  # the response only reaches the patched frame reader
+
+    async def endless_frames(self, response):  # pylint: disable=unused-argument
+        while True:
+            await rosys.sleep(0.05)
+            yield b'\xff\xd8' + bytes(32) + b'\xff\xd9', None
+
+    with patch('rosys.vision.mjpeg_camera.mjpeg_device.open_stream', open_stream), \
+            patch.object(MjpegDevice, '_frame_reader', endless_frames):
+        device = AxisMjpegDevice(AXIS_MAC, '192.168.0.5', on_new_image_data=lambda data, timestamp: None)
+        device.reconnect_interval = 0.2
+        try:
+            await forward_until(lambda: len(opened_urls) == 1, message='expected the stream to be opened')
+            await device.set_fps(12)
+            await forward_until(lambda: len(opened_urls) == 2,
+                                message='expected the stream to reopen after the settings changed')
+            assert 'fps=6' in opened_urls[0] and 'fps=12' in opened_urls[1]
+        finally:
+            device.shutdown()
 
 
 async def test_simulated_camera_disconnect_stops_loop(rosys_integration):

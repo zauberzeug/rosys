@@ -76,18 +76,13 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera]):
         return ids_ips
 
     async def update_device_list(self) -> None:
-        """Add cameras for newly discovered devices and rebind known ones whose address changed.
-
-        Connecting is left to the cameras themselves, which keep retrying until they are disconnected.
-        """
         for camera_id, ip in await self.scan_for_cameras():
             camera = self._cameras.get(camera_id)
             if camera is None:
                 self.log.info('found new camera "%s" at ip "%s"', camera_id, ip)
                 self.add_camera(MjpegCamera(id=camera_id, username=self.username,
                                             password=self.password, ip=ip))
-            elif camera.ip != ip:
-                self.log.info('camera "%s" moved to ip "%s"', camera.id, ip)
+            else:
                 camera.ip = ip
 
     async def shutdown(self) -> None:

@@ -39,10 +39,6 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
         return await find_known_cameras(network_interface=network_interface)
 
     async def update_device_list(self) -> None:
-        """Add cameras for newly discovered devices and rebind known ones whose address changed.
-
-        Connecting is left to the cameras themselves, which keep retrying until they are disconnected.
-        """
         self.log.debug('scanning for cameras...')
         for mac, ip in await find_known_cameras(network_interface=self.network_interface):
             camera = next((c for c in self._cameras.values() if c.mac == mac), None)
@@ -50,8 +46,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
                 self.log.debug('found new camera %s', mac)
                 self.add_camera(RtspCamera(mac=mac, fps=self.frame_rate,
                                            substream=self.substream, avdec=self.avdec, ip=ip))
-            elif camera.ip != ip:
-                self.log.info('camera %s moved to ip %s', camera.id, ip)
+            else:
                 camera.ip = ip
 
         self.log.debug('scanning completed, found %d cameras', len(self._cameras))

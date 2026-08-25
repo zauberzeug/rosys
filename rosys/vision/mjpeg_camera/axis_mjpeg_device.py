@@ -1,6 +1,8 @@
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 
+import httpx
+
 from .mjpeg_device import MjpegDevice
 from .vendors import VendorType, mac_to_vendor
 
@@ -21,7 +23,10 @@ class AxisSettings:
 
 
 class AxisMjpegDevice(MjpegDevice):
-    """MJPEG device for AXIS cameras, which take fps, resolution and mirroring as stream URL parameters."""
+    """MJPEG device for AXIS cameras, which take fps, resolution and mirroring as stream URL parameters.
+
+    A changed setting only changes the URL, so it takes effect when the stream is next opened.
+    """
 
     def __init__(self, mac: str, ip: str | None = None, *,
                  index: int | None = None,
@@ -44,31 +49,26 @@ class AxisMjpegDevice(MjpegDevice):
         if url is None:
             return None
         width, height = self.axis_settings.resolution
-        query = '&'.join([
-            f'fps={self.axis_settings.fps}',
-            f'resolution={width}x{height}',
-            f'mirror={1 if self.axis_settings.mirrored else 0}',
-        ])
-        separator = '' if url.endswith('?') else '&'
-        return f'{url}{separator}{query}'
+        return str(httpx.URL(url).copy_merge_params({
+            'fps': self.axis_settings.fps,
+            'resolution': f'{width}x{height}',
+            'mirror': 1 if self.axis_settings.mirrored else 0,
+        }))
 
     async def get_fps(self) -> int:
         return self.axis_settings.fps
 
     async def set_fps(self, fps: int) -> None:
         self.axis_settings.fps = fps
-        self.restart_capture()
 
     async def get_resolution(self) -> tuple[int, int]:
         return self.axis_settings.resolution
 
     async def set_resolution(self, width: int, height: int) -> None:
         self.axis_settings.resolution = (width, height)
-        self.restart_capture()
 
     async def get_mirrored(self) -> bool:
         return self.axis_settings.mirrored
 
     async def set_mirrored(self, mirrored: bool) -> None:
         self.axis_settings.mirrored = mirrored
-        self.restart_capture()

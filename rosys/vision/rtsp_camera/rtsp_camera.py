@@ -74,11 +74,11 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     @property
     def ip(self) -> str | None:
+        """The address of the camera; a running device rebinds to a new one without being torn down."""
         return self._ip
 
     @ip.setter
     def ip(self, ip: str | None) -> None:
-        """Update the discovered address; a running device rebinds to it without being torn down."""
         self._ip = ip
         if self.device is not None:
             self.device.ip = ip
@@ -92,8 +92,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
     async def connect(self) -> None:
         if self.device is not None:
             return
-        await super().connect()
-
         self.device = RtspDevice(mac=self.mac, ip=self.ip,
                                  substream=self.parameters['substream'],
                                  fps=self.parameters['fps'],
@@ -102,10 +100,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                                  avdec=self.parameters['avdec'],
                                  reconnect_interval=self.reconnect_interval)
 
-        await self._apply_all_parameters()
-
     async def disconnect(self) -> None:
-        await super().disconnect()
         if self.device is None:
             return
         self.log.info('disconnect initialized...')

@@ -48,6 +48,7 @@ class UsbDevice:
         self._should_run: bool = True
         self._read_failures: int = 0
         self._capture_task: asyncio.Task | None = None
+        self._unavailable_node: str | None = None
 
         self._start_capture_task()
 
@@ -103,29 +104,38 @@ class UsbDevice:
         """
         try:
             while self._should_run:
+                streamed = False
                 try:
-                    await self._run_capture_session()
+                    streamed = await self._run_capture_session()
                 except Exception:
                     self.log.exception('[%s] capture session failed', self.uid)
                 if not self._should_run:
                     break
-                self.log.info('[%s] capture ended; reconnecting in %.1f s', self.uid, self.reconnect_interval)
+                if streamed:
+                    self.log.info('[%s] capture ended; reconnecting in %.1f s', self.uid, self.reconnect_interval)
+                else:
+                    self.log.debug('[%s] no capture; retrying in %.1f s', self.uid, self.reconnect_interval)
                 await rosys.sleep(self.reconnect_interval)
         finally:
             if self._capture_task is asyncio.current_task():
                 self._capture_task = None
 
-    async def _run_capture_session(self) -> None:
-        """Read frames until the capture is lost, then release it."""
+    async def _run_capture_session(self) -> bool:
+        """Read frames until the capture is lost, then release it.
+
+        Returns whether a capture was open at all.
+        """
+        opened = False
         while self._should_run:
             if self._capture is None or not self._capture.isOpened():
                 await self._open_capture()
                 if self._capture is None:
-                    return
+                    return opened
+            opened = True
 
             read_result = await rosys.run.io_bound(self._capture.read)
             if read_result is None:
-                return
+                return opened
             capture_success, frame = read_result
 
             if not capture_success:
@@ -134,7 +144,7 @@ class UsbDevice:
                     self.log.warning('[%s] releasing capture after %d failed reads',
                                      self.uid, self._read_failures)
                     await self._release()
-                    return
+                    return opened
                 await rosys.sleep(0.01)
                 continue
             self._read_failures = 0
@@ -151,6 +161,7 @@ class UsbDevice:
                 result = self._on_new_image_data(frame, timestamp)
             if isinstance(result, Awaitable):
                 await result
+        return opened
 
     async def _open_capture(self) -> None:
         """Find and open the capture for this camera; leaves ``_capture`` as ``None`` when it is unavailable."""
@@ -161,7 +172,11 @@ class UsbDevice:
             return
         capture = await rosys.run.io_bound(UsbDevice.create_capture, device_node)
         if capture is None:
+            if self._unavailable_node != device_node:
+                self._unavailable_node = device_node
+                self.log.warning('[%s] cannot open %s; another process may be using it', self.uid, device_node)
             return
+        self._unavailable_node = None
         self.log.info('[%s] connected on %s', self.uid, device_node)
         self._device_node = device_node
         self._capture = capture

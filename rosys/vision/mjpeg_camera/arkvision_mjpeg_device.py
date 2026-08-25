@@ -23,7 +23,7 @@ class ArkVisionMjpegDevice(MjpegDevice):
 
     @property
     def settings_interface(self) -> ArkVisionSettingsInterface:
-        assert self.ip is not None, 'settings are only accessed while the stream is running'
+        assert self.ip is not None, 'cannot reach the camera settings without an address'
         return ArkVisionSettingsInterface(self.ip)
 
     async def _prepare_stream(self) -> None:

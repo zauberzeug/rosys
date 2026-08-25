@@ -56,7 +56,7 @@ Reconnection runs until the camera is disconnected, so `disconnect()` both stops
 `is_connected` tells whether a camera is streaming right now, while `is_active` tells whether a connection is wanted at all, i.e. whether the camera keeps trying.
 
 `connect()` always creates that device, even when the camera cannot be reached at all — because its address is not known yet, or no `/dev/video*` node exists.
-Such a camera reports `is_active` without ever becoming `is_connected`, which is how a camera that is still trying differs from one that was deliberately disconnected.
+Such a camera reports `is_active` but not `is_connected`, and starts streaming as soon as the address or the video device appears.
 
 Cameras that reject our credentials are the one case where retrying is throttled instead of continuing at `reconnect_interval`:
 `RtspCamera` and `MjpegCamera` fall back to one attempt per minute, because some cameras answer repeated failed logins by locking the account.
@@ -65,6 +65,7 @@ A camera's own `username` and `password` are read when its device is created, so
 
 Camera providers therefore do not connect or reconnect cameras themselves.
 Their periodic scan only discovers new cameras and hands a changed address (e.g. after a new DHCP lease) to the cameras it already knows, which the running device picks up for its next attempt.
+A newly discovered camera still connects on its own, because `connect_after_init` defaults to `True`.
 A deliberately disconnected camera stays disconnected, even with `auto_scan` enabled.
 
 ## Streaming RTSP Cameras

@@ -30,6 +30,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                          name=name,
                          connect_after_init=connect_after_init,
                          **kwargs)
+        self.log = logging.getLogger(f'rosys.vision.usb_camera.{self.id}')
         self.reconnect_interval = reconnect_interval
         self._pending_operations = 0
         self.device: UsbDevice | None = None
@@ -60,20 +61,18 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
     async def connect(self) -> None:
         if self.device is not None:
             return
-        await super().connect()
         self.device = UsbDevice(self.id,
                                 on_new_image_data=self._handle_new_image_data,
                                 on_connect=self._apply_all_parameters,
                                 reconnect_interval=self.reconnect_interval)
 
     async def disconnect(self) -> None:
-        await super().disconnect()
         if self.device is None:
             return
 
         await self.device.shutdown()
         self.device = None
-        logging.info('camera %s: disconnected', self.id)
+        self.log.info('disconnected')
 
     async def _handle_new_image_data(self, image_data: np.ndarray | bytes, timestamp: float) -> None:
         if self.device is None:

@@ -64,11 +64,11 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
     @property
     def ip(self) -> str | None:
+        """The address of the camera; a running device rebinds to a new one without being torn down."""
         return self._ip
 
     @ip.setter
     def ip(self, ip: str | None) -> None:
-        """Update the discovered address; a running device rebinds to it without being torn down."""
         self._ip = ip
         if self.device is not None:
             self.device.ip = ip
@@ -76,17 +76,12 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
     async def connect(self) -> None:
         if self.device is not None:
             return
-        await super().connect()
-
         self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
                                                 password=self.password, on_new_image_data=self._handle_new_image_data,
                                                 on_connect=self._apply_all_parameters)
         self.device.reconnect_interval = self.reconnect_interval
 
-        await self._apply_all_parameters()
-
     async def disconnect(self) -> None:
-        await super().disconnect()
         if self.device is None:
             return
 

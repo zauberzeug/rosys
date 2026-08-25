@@ -28,7 +28,7 @@ class OpenIpcZauberzeugMjpegDevice(MjpegDevice):
 
     @property
     def settings_interface(self) -> OpenIpcZauberzeugSettingsInterface:
-        assert self.ip is not None, 'settings are only accessed while the stream is running'
+        assert self.ip is not None, 'cannot reach the camera settings without an address'
         return OpenIpcZauberzeugSettingsInterface(self.ip, username=self._username, password=self._password)
 
     async def set_fps(self, fps: int) -> None:
