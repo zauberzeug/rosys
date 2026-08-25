@@ -116,6 +116,28 @@ async def test_a_failure_stops_forwarding_to_a_condition_that_already_holds(auto
         await forward(until=lambda: True)
 
 
+async def test_stopping_an_automation_that_was_started_over_a_running_one(automator: Automator):
+    """``start()`` over a running automation must not orphan the new one (regression test for #461)."""
+    ticks: list[int] = []
+
+    async def counting() -> None:
+        while True:
+            await rosys.sleep(1)
+            ticks.append(1)
+
+    automator.start(counting())
+    await forward(seconds=2)
+    automator.start(counting())
+    await forward(seconds=2)
+    assert automator.automation is not None
+    assert automator.is_running
+    automator.stop(because='test')
+    ticks_at_stop = len(ticks)
+    await forward(seconds=5)
+    assert len(ticks) == ticks_at_stop, 'the automation kept running after stop()'
+    assert automator.is_stopped
+
+
 async def test_finally_block(automator: Automator):
     events: list[str] = []
 
