@@ -18,6 +18,7 @@ dependencies = [
     "tabulate>=0.8.9,<0.9",
     "coloredlogs>=15.0.1,<16",
     "humanize>=4.0.0,<5",
+    "packaging>=26.0",
     "uvloop>=0.17.0",
     "dataclasses-json>=0.5.7,<0.6",
     "suntime>=1.2.5,<2",
@@ -32,19 +33,23 @@ dependencies = [
     "pyudev>=0.21.0",
     "pyquaternion>=0.9.9,<0.10",
     "cairosvg>=2.9.0,<3",  # https://github.com/zauberzeug/rosys/security/dependabot/104
-    "pillow>=12.2.0",  # https://github.com/zauberzeug/rosys/security/dependabot/112
+    "pillow>=12.3.0",  # https://github.com/zauberzeug/rosys/security/dependabot/148
     "lxml>=6.1.0",  # https://github.com/zauberzeug/rosys/security/dependabot/115
     "idna>=3.15",  # https://github.com/zauberzeug/rosys/security/dependabot/122
     "requests>=2.32.4",  # https://github.com/zauberzeug/rosys/security/dependabot/64
     "urllib3>=2.7.0",  # https://github.com/zauberzeug/rosys/security/dependabot/118
     "python-multipart>=0.0.31",  # https://github.com/zauberzeug/rosys/security/dependabot/130
+    "python-engineio>=4.13.2",  # https://github.com/zauberzeug/rosys/security/dependabot/132
+    "python-socketio>=5.16.2",  # https://github.com/zauberzeug/rosys/security/dependabot/134
     "starlette>=1.0.1",  # https://github.com/zauberzeug/rosys/security/dependabot/126
-    "aiohttp>=3.14.0",  # https://github.com/zauberzeug/rosys/security/dependabot/124
+    "aiohttp>=3.14.3",  # https://github.com/zauberzeug/rosys/security/dependabot/152
     "webob>=1.8.10",  # https://github.com/zauberzeug/rosys/security/dependabot/125
     "fonttools>=4.60.2,<5",  # https://github.com/zauberzeug/rosys/security/dependabot/74
     "marshmallow>=3.26.2,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/81
     "pyturbojpeg>=1.8.2,<2",
     "virtualenv>=20.36.1",  # https://github.com/zauberzeug/rosys/security/dependabot/95
+    "mcap>=1.1.0,<2",
+    "zstandard>=0.23.0",  # imported directly in analysis/recording/indexing.py (also a transitive dep of mcap)
 ]
 
 [project.urls]
@@ -64,8 +69,8 @@ dev = [
     "pytest-asyncio>=1.2.0,<2",
     "debugpy>=1.2.1,<2",
     "py-spy>=0.3.10,<0.4",
-    "cryptography>=48.0.1",  # https://github.com/zauberzeug/rosys/security/dependabot/131
-    "sh>=1.14.2,<2",
+    "cryptography>=50.0.0",  # https://github.com/zauberzeug/rosys/security/dependabot/153
+    "sh>=2.2.4,<3",  # https://github.com/zauberzeug/rosys/security/dependabot/135
     "mypy[faster-cache]>=1.15.0,<2.0.0",
     "pylint>=3.2.5,<4",
     "pre-commit>=4.0.1,<5",
@@ -79,9 +84,9 @@ types = [
     "types-tabulate>=0.8.9,<0.9",
 ]
 docs = [
-    "mkdocs==1.5.3",
-    "mkdocs-material",
-    "pymdown-extensions>=10.21.3",  # https://github.com/zauberzeug/rosys/security/dependabot/121
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.7",
+    "pymdown-extensions>=11.0.0",  # https://github.com/zauberzeug/rosys/security/dependabot/149
     "mdx-include",
     "mkdocs-pymdownx-material-extras",
     "mdx-footnotes2",
@@ -116,7 +121,9 @@ python_version = "3.11"
 check_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = ["numpy.*"]
+# numpy's stubs surface ufunc/ndarray typing errors in rosys
+# analysing mcap's sources trips mypy's fatal "source file found twice"
+module = ["numpy.*", "mcap.*"]
 follow_imports = "skip"
 
 [[tool.mypy.overrides]]

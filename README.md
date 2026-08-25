@@ -56,6 +56,35 @@ Modules can depend on other modules which is mostly implemented by passing them 
 
 Modules can register functions via `rosys.on_startup` or `rosys.on_shutdown` as well as repeatedly with a given interval with `rosys.on_repeat`.
 
+The lifetime of such a repetition is derived from the type of the callback:
+a bound method repeats until its object is garbage-collected — the repeater does not keep the object alive, so its owner defines the lifetime of the repetition by storing it;
+a plain function repeats until shutdown.
+Lambdas, capturing closures and partials are rejected because no single lifetime rule fits them.
+
+For a bound method, "storing" means keeping a strong reference to the object:
+a module kept in your robot assembly repeats until shutdown, while a short-lived object stops as soon as it is discarded.
+
+`rosys.on_shutdown` follows the same rule for bound methods — they are held weakly and simply skipped if their object has been discarded — while plain functions, lambdas and other callables are held strongly and run at shutdown.
+
+```python
+class Camera:
+    def __init__(self) -> None:
+        rosys.on_repeat(self.step, 0.1)  # ends when this camera is dropped
+
+    def step(self) -> None:
+        ...
+
+
+cameras: dict[str, Camera] = {}
+cameras['front'] = Camera()  # stored, so it repeats
+del cameras['front']         # dropped, so the repetition ends without leaking
+```
+
+> [!NOTE]
+> `rosys.on_repeat` drives robot-side module behavior and honors simulated time.
+> For page-scoped periodic UI updates use NiceGUI's `ui.timer` instead:
+> it is tied to the client and stops when the page is closed, whereas an object is not kept alive just because the page that created it is still open.
+
 > [!NOTE]
 > Note that NiceGUI's `app` object also provides methods `app.on_startup` and `app.on_shutdown`, but it is recommended to use RoSys' counterparts:
 > `rosys.on_startup` ensures the callback is executed _after_ persistent modules have been loaded from storage.
@@ -72,7 +101,7 @@ Another module can register on `NEW_SENSOR_DATA` and act accordingly when being 
 
 RoSys provides an `Automator` module for running "automations".
 Automations are coroutines that can not only be started and stopped, but also paused and resumed, e.g. using `AutomationControls`.
-Have a look at our [Click-and-drive](examples/click-and-drive/README.md) example.
+Have a look at our [Click-and-drive](https://rosys.io/examples/click-and-drive/) example.
 
 ### Persistence
 
@@ -117,7 +146,7 @@ It is a domain-specific language interpreted by the microcontroller which enable
 RoSys builds upon the open source project [NiceGUI](https://nicegui.io/) and offers many robot-related UI elements.
 NiceGUI is a high-level UI framework for the web.
 This means you can write all UI code in Python and the state is automatically reflected in the browser through WebSockets.
-See any of our [examples](examples/steering/README.md).
+See any of our [examples](https://rosys.io/examples/steering/).
 
 RoSys can also be used with other user interfaces or interaction models if required, for example a completely app-based control through Bluetooth Low Energy with Flutter.
 

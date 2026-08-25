@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 import numpy as np
 from nicegui import Event, ui
 
 from .. import rosys
-from ..driving.driver import PoseProvider
 from ..geometry import Rotation
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot_brain import RobotBrain
+
+if TYPE_CHECKING:
+    from ..driving.driver import PoseProvider
 
 
 @dataclass(slots=True, kw_only=True)

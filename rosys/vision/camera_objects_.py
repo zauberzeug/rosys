@@ -1,3 +1,5 @@
+from typing import Self
+
 import numpy as np
 from nicegui import ui
 from nicegui.elements.scene.scene_object3d import Object3D
@@ -7,14 +9,20 @@ from .. import run
 from .calibratable_camera_provider import CalibratableCameraProvider
 from .camera import CalibratableCamera
 from .camera_projector import CameraProjector
+from .image_processing import validate_jpeg_quality
 
 
 class CameraObjects(Group):
     """This module provides a UI element for displaying cameras in a 3D scene.
 
     It requires a camera provider as a source of cameras as well as a camera projector to show the current images projected on the ground plane.
+    The camera projector can be shared between clients: every visible CameraObjects holds it via acquire()/release(),
+    so it only computes projections while at least one consumer needs them.
+    Hiding this element via ``visible(False)`` also pauses its update timer, so an invisible element causes no load.
     The `px_per_m` argument can be used to scale the camera frustums.
     With `debug=True` camera IDs are shown (default: `False`).
+    The projected images are requested shrunk and at a reduced JPEG quality, because a 3D scene shows
+    them small anyway; `image_quality` raises or lowers that quality (90 is what the routes serve by default).
     """
 
     def __init__(self,
@@ -23,18 +31,49 @@ class CameraObjects(Group):
                  *,
                  px_per_m: float = 10000,
                  debug: bool = False,
-                 interval: float = 1.0
+                 interval: float = 1.0,
+                 image_shrink_factor: int = 2,
+                 image_quality: int = 60,
                  ) -> None:
         super().__init__()
+        validate_jpeg_quality(image_quality)
 
         self.camera_provider = camera_provider
         self.camera_projector = camera_projector
         self.px_per_m = px_per_m
         self.debug = debug
         self.textures: dict[str, Texture] = {}
-        self.image_shrink_factor = 2
+        self.image_shrink_factor = image_shrink_factor
+        self.image_quality = image_quality
 
-        ui.timer(interval, self.update)
+        self._holds_projector = False
+        self._acquire_projector()
+        self._timer = ui.timer(interval, self.update)
+
+    def visible(self, value: bool = True) -> Self:
+        if value:
+            self._acquire_projector()
+            self._timer.activate()
+        else:
+            self._release_projector()
+            self._timer.deactivate()
+        return super().visible(value)
+
+    def __del__(self) -> None:
+        try:
+            self._release_projector()
+        except Exception:
+            pass  # NOTE: finalizers can run during interpreter teardown where anything may be gone already
+
+    def _acquire_projector(self) -> None:
+        if not self._holds_projector:
+            self.camera_projector.acquire()
+            self._holds_projector = True
+
+    def _release_projector(self) -> None:
+        if self._holds_projector:
+            self.camera_projector.release()
+            self._holds_projector = False
 
     @property
     def calibrated_cameras(self) -> dict[str, CalibratableCamera]:
@@ -98,7 +137,7 @@ class CameraObjects(Group):
                 continue
             coordinates = [[point and [point[0], point[1], 0] for point in row] for row in projection.coordinates]
 
-            url = f'{camera.get_image_url(image)}?shrink={self.image_shrink_factor}'
+            url = f'{camera.get_image_url(image)}?shrink={self.image_shrink_factor}&compression={self.image_quality}'
             if image.camera_id not in self.textures:
                 with self:
                     self.textures[image.camera_id] = Texture(url, coordinates).with_name(f'image_{image.id}')

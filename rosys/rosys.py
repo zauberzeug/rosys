@@ -1,11 +1,13 @@
 import asyncio
 import gc
+import inspect
 import logging
 import os
 import signal
 import threading
 import time as pytime
 import warnings
+import weakref
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any, ClassVar, Literal
@@ -43,7 +45,6 @@ class _state:
     start_time: float = 0.0 if is_test else pytime.time()
     time = start_time
     last_time_request: float = start_time
-    exception: BaseException | None = None  # NOTE: used for tests
     startup_finished: bool = False
     is_simulation: bool = False
 
@@ -56,10 +57,6 @@ def is_simulation() -> bool:
 def enter_simulation() -> None:
     """Enter system time simulation mode."""
     _state.is_simulation = True
-
-
-def get_last_exception() -> BaseException | None:
-    return _state.exception
 
 
 notifications: list[Notification] = []
@@ -134,39 +131,122 @@ async def sleep(seconds: float) -> None:
             await asyncio.sleep(0)
 
 
+def _handler_name(handler: Callable) -> str:
+    return getattr(handler, '__qualname__', repr(handler))  # partials and callable instances lack __qualname__
+
+
 def _run_handler(handler: Callable) -> None:
     try:
         result = handler()
         if isinstance(result, Awaitable):
-            tasks.append(background_tasks.create(result, name=handler.__qualname__))
+            task = background_tasks.create(result, name=_handler_name(handler))
+            tasks.append(task)
+            task.add_done_callback(_forget_task)
     except Exception:
-        log.exception('error while starting handler "%s"', handler.__qualname__)
+        log.exception('error while starting handler "%s"', _handler_name(handler))
+
+
+def _forget_task(task: asyncio.Task) -> None:
+    if task in tasks:  # NOTE: shutdown may already have cleared the registry
+        tasks.remove(task)
+
+
+class _WeakHandler:
+    def __init__(self, method: Callable) -> None:
+        self._weak = weakref.WeakMethod(method)
+        self.__qualname__ = method.__qualname__
+
+    @property
+    def alive(self) -> bool:
+        return self._weak() is not None
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        method = self._weak()
+        return None if method is None else method(*args, **kwargs)
+
+
+def _prepare_handler(handler: Callable) -> Callable:
+    """Weaken bound methods so the repetition ends with their object; keep plain functions strong.
+
+    Lambdas, capturing closures, partials and other callables are rejected
+    because no single lifetime behavior can serve their intent.
+    """
+    if inspect.ismethod(handler):
+        try:
+            return _WeakHandler(handler)
+        except TypeError as e:
+            raise TypeError(f'the object behind "{handler.__qualname__}" does not support weak references; '
+                            'add "__weakref__" to its __slots__ or use "weakref_slot=True" for dataclasses') from e
+    if inspect.isfunction(handler):
+        if handler.__name__ == '<lambda>':
+            raise TypeError('lambdas are not supported; '
+                            'pass a bound method (bind arguments as attributes or default parameters) '
+                            'or a plain function to repeat until shutdown')
+        if handler.__closure__:
+            unwrapped = inspect.unwrap(handler)  # NOTE: decorators create closures but only wrap transparently
+            if unwrapped is handler or not inspect.isfunction(unwrapped) or unwrapped.__closure__:
+                raise TypeError(f'"{handler.__qualname__}" captures variables; '
+                                'turn them into attributes of a bound method '
+                                'or default parameters of a plain function')
+        return handler
+    raise TypeError(f'unsupported handler {_handler_name(handler)}; '
+                    'pass a bound method (repeats until its object dies) '
+                    'or a plain function (repeats until shutdown)')
 
 
 class Repeater:
+    """Repeatedly invokes a handler, waiting ``interval`` seconds between invocations.
+
+    The lifetime of the repetition is derived from the type of the handler:
+    a bound method is held weakly and repeats until its object is garbage-collected,
+    a plain function repeats until shutdown.
+    Static methods count as plain functions; class methods are bound to their long-lived class.
+    Lambdas, capturing closures, partials and other callables are rejected with a ``TypeError``.
+    """
+
     tasks: ClassVar[set[asyncio.Task]] = set()
 
     def __init__(self, handler: Callable, interval: float) -> None:
-        self.handler = handler
         self.interval = interval
         self._task: asyncio.Task | None = None
+        self.handler = _prepare_handler(handler)
+        if isinstance(self.handler, _WeakHandler):
+            on_startup(self._warn_if_object_was_never_stored)
+
+    async def _warn_if_object_was_never_stored(self) -> None:
+        # NOTE: an object that is already gone once control returns to the event loop can never have been stored
+        if not self._alive:
+            log.warning('"%s" will never be called because its object has already been garbage-collected; '
+                        'store the object to define the lifetime of the repetition, '
+                        'or use ui.timer for page-scoped UI updates',
+                        _handler_name(self.handler))
+
+    @property
+    def _alive(self) -> bool:
+        return not isinstance(self.handler, _WeakHandler) or self.handler.alive  # strong handlers are always alive
 
     def start(self) -> None:
-        if self.running:
+        if self.running or not self._alive:
             return
         if _state.startup_finished:
             self._task = background_tasks.create(self._repeat())
             self.tasks.add(self._task)
+            self._task.add_done_callback(self._handle_task_done)
         elif self.start not in startup_handlers:
             startup_handlers.append(self.start)
 
+    def _handle_task_done(self, task: asyncio.Task) -> None:
+        self.tasks.discard(task)
+        if self._task is task:  # not a stale callback from a task replaced by a restart
+            self._task = None
+
     async def _repeat(self) -> None:
         await sleep(self.interval)  # NOTE delaying first execution so not all actors rush in at the same time
-        while True:
+        while self._alive:  # a weak handler whose object was collected ends the loop
             start = time()
             try:
                 if is_stopping():
-                    log.info('%s must be stopped', self.handler)
+                    log.info('%s must be stopped', _handler_name(self.handler))
                     break
                 await invoke(self.handler)
                 dt = time() - start
@@ -174,11 +254,11 @@ class Repeater:
                 return
             except Exception:
                 dt = time() - start
-                log.exception('error in "%s"', self.handler.__qualname__)
+                log.exception('error in "%s"', _handler_name(self.handler))
                 if self.interval == 0 and dt < 0.1:
                     delay = 0.1 - dt
                     log.warning(
-                        f'"{self.handler.__qualname__}" would be called to frequently ' +
+                        f'"{_handler_name(self.handler)}" would be called to frequently ' +
                         f'because it only took {dt*1000:.0f} ms; ' +
                         f'delaying this step for {delay*1000:.0f} ms')
                     await sleep(delay)
@@ -186,15 +266,19 @@ class Repeater:
                 await sleep(self.interval - dt)
             except (asyncio.CancelledError, GeneratorExit):
                 return
+        if not self._alive:
+            log.debug('"%s" stops repeating because its object was garbage-collected', _handler_name(self.handler))
 
     def stop(self) -> None:
+        if self.start in startup_handlers:
+            startup_handlers.remove(self.start)  # queued but not yet started: cancel the pending start
         if not self._task:
             return
 
         if not self._task.done():
             self._task.cancel()
 
-        self.tasks.remove(self._task)
+        self.tasks.discard(self._task)
         self._task = None
 
     @property
@@ -208,6 +292,12 @@ class Repeater:
 
 
 def on_repeat(handler: Callable, interval: float) -> Repeater:
+    """Repeatedly call the handler, waiting ``interval`` seconds between invocations (see ``Repeater``).
+
+    A bound method repeats until its object is garbage-collected;
+    the repeater does not keep the object alive, so store it to define the lifetime of the repetition.
+    A plain function repeats until shutdown.
+    """
     repeater = Repeater(handler, interval)
     repeater.start()
     return repeater
@@ -221,7 +311,27 @@ def on_startup(handler: Callable) -> None:
 
 
 def on_shutdown(handler: Callable) -> None:
+    """Call the handler on shutdown; a bound method is held weakly, so a discarded object is not kept alive.
+
+    A bound method whose object does not support weak references is held strongly and a warning is logged.
+    """
+    if inspect.ismethod(handler):
+        try:
+            weak_handler = _WeakHandler(handler)
+        except TypeError:
+            log.warning('"%s" stays alive until shutdown because its object does not support weak references',
+                        handler.__qualname__)
+        else:
+            shutdown_handlers.append(weak_handler)
+            # NOTE: "handler" still references the object, so the finalizer cannot fire before the append above
+            weakref.finalize(handler.__self__, _forget_shutdown_handler, weak_handler)
+            return
     shutdown_handlers.append(handler)
+
+
+def _forget_shutdown_handler(handler: Callable) -> None:
+    if handler in shutdown_handlers:  # NOTE: shutdown may already have cleared the registry
+        shutdown_handlers.remove(handler)
 
 
 async def startup() -> None:
@@ -230,12 +340,13 @@ async def startup() -> None:
 
     _state.startup_finished = True
 
-    for handler in startup_handlers:
+    for handler in list(startup_handlers):  # NOTE: a handler may stop a repeater, removing its pending start
         _run_handler(handler)
+    startup_handlers.clear()  # NOTE: release the handlers so they don't keep their objects alive forever
 
 
 async def _garbage_collection() -> None:
-    if psutil.virtual_memory().free < config.garbage_collection_mbyte_limit * 1_000_000:
+    if psutil.virtual_memory().available < config.garbage_collection_mbyte_limit * 1_000_000:
         log.warning('less than %s mb of memory remaining -> start garbage collection',
                     config.garbage_collection_mbyte_limit)
         gc.collect()
@@ -244,8 +355,8 @@ async def _garbage_collection() -> None:
 
 
 async def shutdown() -> None:
-    for handler in shutdown_handlers:
-        log.debug('invoking shutdown handler "%s"', handler.__qualname__)
+    for handler in list(shutdown_handlers):  # NOTE: a finalizer may drop entries while we await
+        log.debug('invoking shutdown handler "%s"', _handler_name(handler))
         await invoke(handler)
     log.debug('tear down "run" tasks')
     run.tear_down()
@@ -269,7 +380,6 @@ async def shutdown() -> None:
 def reset_before_test() -> None:
     assert is_test
     set_time(0)  # NOTE: in tests we start at zero for better readability
-    _state.exception = None
 
 
 def reset_after_test() -> None:

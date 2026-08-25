@@ -48,26 +48,27 @@ def compare_tracemalloc_snapshots(snapshot, prev_snapshot):
         log.info('%s"\n"%s', trace, usage)
 
 
-def observe_memory_growth(with_tracemalloc: bool = False) -> None:
-    log.info('Observing memory growth')
+class _state:
+    with_tracemalloc = False
     prev_memory: int = 0
     prev_snapshot: tracemalloc.Snapshot | None = None
+
+
+def observe_memory_growth(with_tracemalloc: bool = False) -> None:
+    log.info('Observing memory growth')
+    _state.with_tracemalloc = with_tracemalloc
     if with_tracemalloc:
         tracemalloc.start(10)
+    rosys.on_repeat(_stats, 60.0)
 
-    async def stats() -> None:
-        nonlocal prev_memory
-        nonlocal prev_snapshot
-        gc.collect()
-        growth = get_process_memory() - prev_memory
-        # log.info('==============')
-        log.info("memory growth: %s, now it's %s", bytes2human(growth), get_humanreadable_process_memory())
-        # log.info('==============')
-        prev_memory = get_process_memory()
-        if with_tracemalloc:
-            snapshot = tracemalloc.take_snapshot()
-            if growth > 4 * 1e-6 and prev_snapshot is not None:
-                await run.cpu_bound(compare_tracemalloc_snapshots, snapshot, prev_snapshot)
-            prev_snapshot = snapshot
 
-    rosys.on_repeat(stats, 60.0)
+async def _stats() -> None:
+    gc.collect()
+    growth = get_process_memory() - _state.prev_memory
+    log.info("memory growth: %s, now it's %s", bytes2human(growth), get_humanreadable_process_memory())
+    _state.prev_memory = get_process_memory()
+    if _state.with_tracemalloc:
+        snapshot = tracemalloc.take_snapshot()
+        if growth > 4 * 1e-6 and _state.prev_snapshot is not None:
+            await run.cpu_bound(compare_tracemalloc_snapshots, snapshot, _state.prev_snapshot)
+        _state.prev_snapshot = snapshot

@@ -1,4 +1,5 @@
 import asyncio
+import time
 from typing import Literal
 
 import numpy as np
@@ -6,6 +7,7 @@ import pytest
 
 import rosys
 from rosys.automation import Automator
+from rosys.automation.automation import Automation
 from rosys.driving import Driver
 from rosys.geometry import Pose, Spline
 from rosys.hardware import Robot
@@ -56,9 +58,62 @@ async def test_aborting_a_drive(driver: Driver, automator: Automator, robot: Rob
     await forward(x=1)
     assert_pose(1, 0, deg=0)
     driver.abort()
-    await forward(seconds=1)
+    await forward(seconds=1, fail_on_automation_failure=False)
     assert_pose(1, 0, deg=0)
     assert cause == ['an exception occurred in an automation']
+
+
+async def test_a_raising_automation_stops_forwarding(automator: Automator):
+    """Forwarding stops at the failure instead of stepping through the whole span it was given."""
+    async def run() -> None:
+        raise RuntimeError('the automation broke')
+    automator.start(run())
+    started_at = rosys.time()
+    with pytest.raises(AssertionError, match='the automation broke') as exception_info:
+        await forward(seconds=60)
+    assert rosys.time() - started_at == pytest.approx(0, abs=0.1)
+    assert isinstance(exception_info.value.__cause__, RuntimeError), 'the original failure stays attached'
+
+
+async def test_a_new_automation_forwards_past_an_earlier_failure(automator: Automator):
+    """A failure belongs to the automation that raised it, so the next run forwards freely."""
+    async def failing() -> None:
+        raise RuntimeError('the automation broke')
+
+    completed = False
+
+    async def working() -> None:
+        nonlocal completed
+        await rosys.sleep(1.0)
+        completed = True
+
+    automator.start(failing())
+    await forward(seconds=1, fail_on_automation_failure=False)
+    automator.start(working())
+    await forward(seconds=2)
+    assert completed
+
+
+async def test_a_failure_during_the_wait_stops_forwarding(automator: Automator):
+    """Forwarding stops even when the failure satisfies the condition it is waiting for."""
+    async def failing() -> None:
+        await rosys.sleep(0.5)
+        raise RuntimeError('the automation broke')
+    automator.start(failing())
+    # the automation counts as stopped until its task has started, which would satisfy the condition right away
+    await forward(seconds=0.1)
+    with pytest.raises(AssertionError, match='the automation broke'):
+        await forward(until=lambda: automator.is_stopped)
+
+
+async def test_a_failure_stops_forwarding_to_a_condition_that_already_holds(automator: Automator):
+    """Forwarding stops before waiting, not only in between two steps."""
+    async def failing() -> None:
+        raise RuntimeError('the automation broke')
+    automator.start(failing())
+    await forward(seconds=1, fail_on_automation_failure=False)
+    with pytest.raises(AssertionError, match='the automation broke'):
+        await forward(until=lambda: True)
 
 
 async def test_finally_block(automator: Automator):
@@ -253,8 +308,46 @@ async def test_parallelize_exception(automator: Automator):
         await rosys.automation.parallelize(slow(), fast())
 
     automator.start(run())
-    await forward(seconds=10)
+    await forward(seconds=10, fail_on_automation_failure=False)
     assert failures == ['an exception occurred in an automation: i is 3']
+
+
+async def test_parallelize_suspends_while_all_coroutines_are_parked_on_futures():
+    """``parallelize`` must wait on the coroutines' futures instead of busy-polling the event loop (regression).
+
+    This runs on real time because test-mode ``rosys.sleep`` never parks on a future.
+    """
+    events: list[str] = []
+
+    async def fast() -> None:
+        await asyncio.sleep(0.1)
+        events.append('fast done')
+
+    async def slow() -> None:
+        try:
+            await asyncio.sleep(5.0)
+            events.append('slow done')
+        finally:
+            events.append('slow cleanup')
+
+    cpu_start = time.process_time()
+    wall_start = time.monotonic()
+    await rosys.automation.parallelize(slow(), fast(), return_when_first_completed=True)
+    assert time.monotonic() - wall_start < 1.0, 'should return as soon as the fast coroutine completes'
+    assert time.process_time() - cpu_start < 0.05, 'should suspend instead of burning CPU while waiting'
+    assert events == ['fast done', 'slow cleanup']
+
+
+async def test_automation_can_wrap_a_non_coroutine_awaitable():
+    """``Automation`` must also close awaitables like ``parallelize`` which are not coroutines (regression)."""
+    events: list[str] = []
+
+    async def worker() -> None:
+        await asyncio.sleep(0.01)
+        events.append('done')
+
+    assert await Automation(rosys.automation.parallelize(worker())).run() is None
+    assert events == ['done']
 
 
 @pytest.mark.parametrize('method', ['pause', 'stop'])
