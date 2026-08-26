@@ -75,7 +75,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             if self.device is not None:
                 if self.device.is_active:
                     return
-                await self._tear_down_device()  # a device whose capture loop died is replaced, not kept
+                await self._tear_down_device()
             self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
                                                     password=self.password,
                                                     on_new_image_data=self._handle_new_image_data,
@@ -87,7 +87,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             await self._tear_down_device()
 
     async def _tear_down_device(self) -> None:
-        """Shut the device down and forget it; the caller holds `device_connection_lock`."""
+        """Tear down the device. The caller must hold `device_connection_lock`."""
         if self.device is None:
             return
         self.device.shutdown()

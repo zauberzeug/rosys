@@ -104,7 +104,7 @@ async def forward_until(condition, *, step: float = 0.3, real_step: float = 0.05
 
 
 async def _survives_one_cancellation() -> None:
-    """Stand-in for a capture task that outlives its first cancellation, as one stuck in `cpu_bound` does."""
+    """Stand-in for a capture task that resumes after its first cancellation instead of ending."""
     with suppress(asyncio.CancelledError):
         await asyncio.sleep(60.0)
     await asyncio.sleep(60.0)
@@ -1190,7 +1190,7 @@ async def test_camera_clamps_a_reconnect_interval_that_would_not_wait(rosys_inte
 
 
 async def test_camera_passes_its_reconnect_interval_to_a_replaced_device(rosys_integration):
-    """The interval lives on the camera, so a device created later must still see it."""
+    """The interval belongs to the camera, not to whichever device happens to exist."""
     camera = MjpegCamera(id=GOODCAM_MAC, ip='127.0.0.1:1', connect_after_init=False)
     camera.reconnect_interval = 7.0
     with stalled_mjpeg_stream():
@@ -1203,7 +1203,6 @@ async def test_camera_passes_its_reconnect_interval_to_a_replaced_device(rosys_i
 
 
 def test_retry_delay_grows_and_is_capped():
-    """An unreachable camera must not keep retrying at `reconnect_interval` forever."""
     first = min(retry_delay(1.0, 1) for _ in range(50))
     later = min(retry_delay(1.0, 4) for _ in range(50))
     assert later > first, 'expected the wait to grow while attempts keep failing'
@@ -1236,14 +1235,14 @@ async def test_devices_back_off_while_attempts_keep_failing(rosys_integration):
 
 
 async def test_camera_is_not_active_once_its_capture_loop_died(rosys_integration):
-    """`is_active` must see a dead loop; otherwise the camera reports reconnecting forever."""
+    """Without this, the camera reports `is_reconnecting` forever with nothing running."""
     camera = MjpegCamera(id=GOODCAM_MAC, ip='127.0.0.1:1', connect_after_init=False)
     with stalled_mjpeg_stream():
         await camera.connect()
         try:
             assert camera.is_active
             assert camera.device is not None
-            await cancel_leftover_loops(f'mjpeg capture {GOODCAM_MAC}')  # what a crashing loop leaves behind
+            await cancel_leftover_loops(f'mjpeg capture {GOODCAM_MAC}')  # as a crashing loop would
             assert not camera.is_active, 'expected a camera with a dead capture loop to report is_active False'
             assert not camera.is_reconnecting, 'expected no reconnect state without a loop that could reconnect'
         finally:
@@ -1277,7 +1276,6 @@ async def test_mjpeg_device_state_survives_a_dying_zombie_session(rosys_integrat
 
 
 async def test_rtsp_shutdown_reraises_a_cancellation_of_its_caller(rosys_integration):
-    """A cancellation aimed at the caller of `shutdown()` must not be swallowed by it."""
     with stalled_rtsp_stream():
         device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
                             on_new_image_data=lambda array, timestamp: None)

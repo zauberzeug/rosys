@@ -74,7 +74,7 @@ class UsbDevice:
 
     @property
     def _retry_interval(self) -> float:
-        """How long to wait before the next session; grows while attempts keep failing (see `retry_delay`)."""
+        """How long to wait before the next session; grows while attempts keep failing."""
         return retry_delay(self.reconnect_interval, self._failed_attempts)
 
     @property
@@ -119,7 +119,7 @@ class UsbDevice:
                 self._failed_attempts = 0 if streamed else self._failed_attempts + 1
                 if not self._should_run:
                     break
-                delay = self._retry_interval  # jittered, so log the wait we are about to take
+                delay = self._retry_interval  # jittered, so read it once for both the log and the wait
                 if streamed:
                     self.log.info('[%s] capture ended; reconnecting in %.1f s', self.uid, delay)
                 else:
