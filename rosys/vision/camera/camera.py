@@ -24,8 +24,12 @@ An interval of zero reads as "retry at once", which on a single event loop means
 that never lets anything else run.
 """
 
-MAX_RECONNECT_INTERVAL = 60.0
-"""Longest wait between two connection attempts, i.e. the cap of the back-off."""
+MAX_RECONNECT_INTERVAL = 30.0
+"""Longest wait between two connection attempts, i.e. the cap of the back-off.
+
+It also caps the wait after a camera refused the stream, so a camera that starts answering again is
+picked up within this long at the latest.
+"""
 
 RECONNECT_JITTER = 0.2
 """Relative spread of the wait between two connection attempts."""

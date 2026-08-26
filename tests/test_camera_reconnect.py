@@ -1211,6 +1211,12 @@ def test_retry_delay_grows_and_is_capped():
         'expected the back-off to be capped'
 
 
+def test_no_wait_between_attempts_exceeds_the_cap():
+    """A refused camera must be picked up as soon as it answers again, like any other retry."""
+    assert MjpegDevice.REFUSED_RECONNECT_INTERVAL <= MAX_RECONNECT_INTERVAL
+    assert RtspDevice.UNAUTHORIZED_RECONNECT_INTERVAL <= MAX_RECONNECT_INTERVAL
+
+
 def test_retry_delay_is_jittered_so_cameras_do_not_retry_in_lock_step():
     delays = {retry_delay(3.0) for _ in range(20)}
     assert len(delays) > 1, 'expected jitter, otherwise all cameras retry at the same instant'

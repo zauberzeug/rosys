@@ -10,7 +10,7 @@ import httpx
 from nicegui import background_tasks
 
 from ... import rosys
-from ..camera.camera import clamp_reconnect_interval, retry_delay
+from ..camera.camera import MAX_RECONNECT_INTERVAL, clamp_reconnect_interval, retry_delay
 from ..http import new_async_client
 from ..image_processing import remove_exif
 from .vendors import mac_to_url
@@ -51,7 +51,7 @@ def parse_capture_timestamp(part_header: bytes) -> float | None:
 
 
 class MjpegDevice:
-    REFUSED_RECONNECT_INTERVAL: ClassVar[float] = 60.0
+    REFUSED_RECONNECT_INTERVAL: ClassVar[float] = MAX_RECONNECT_INTERVAL
     '''Wait time between attempts while the camera answers something other than a stream.
 
     It is reachable and has said no, so asking again sooner cannot change the answer, and a rejected
@@ -142,8 +142,8 @@ class MjpegDevice:
     def _set_state(self, state: CaptureState) -> None:
         """Record the state of the calling capture task, ignoring a task that has been replaced.
 
-        The dying and the new task share this attribute, so a zombie must not report its own progress
-        (or its end) as the state of the loop that replaced it (see `_keeps_running`).
+        Several tasks may share this attribute, so a task that no longer owns the loop must not
+        report its own progress, or its end, as the state of the loop that owns it.
         """
         if self._capture_task is not asyncio.current_task():
             return
@@ -170,7 +170,7 @@ class MjpegDevice:
                 self._failed_attempts = 0 if streamed else self._failed_attempts + 1
                 if not self._keeps_running():
                     break
-                delay = self._retry_interval  # jittered, so log the wait we are about to take
+                delay = self._retry_interval  # jittered, so read it once for both the log and the wait
                 if self._state is CaptureState.REFUSED:
                     self.log.info('camera refused the stream; retrying in %.1f s', delay)
                 elif self._ip is None:

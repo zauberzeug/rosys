@@ -18,7 +18,7 @@ from nicegui import background_tasks
 
 from ... import rosys
 from ...vision.image import ImageArray
-from ..camera.camera import clamp_reconnect_interval, retry_delay
+from ..camera.camera import MAX_RECONNECT_INTERVAL, clamp_reconnect_interval, retry_delay
 from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
 from .arkvision_rtsp_interface import ArkVisionRtspInterface
 from .jovision_rtsp_interface import JovisionInterface
@@ -26,7 +26,7 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 
 
 class RtspDevice:
-    UNAUTHORIZED_RECONNECT_INTERVAL: ClassVar[float] = 60.0
+    UNAUTHORIZED_RECONNECT_INTERVAL: ClassVar[float] = MAX_RECONNECT_INTERVAL
     '''How long to wait between attempts while the camera rejects our credentials.
 
     The rejection is only inferred from gstreamer's stderr, so a false positive must slow the retries
@@ -214,7 +214,7 @@ class RtspDevice:
 
     @property
     def _retry_interval(self) -> float:
-        """How long to wait before the next session; grows while attempts keep failing (see `retry_delay`)."""
+        """How long to wait before the next session; grows while attempts keep failing."""
         return retry_delay(self.reconnect_interval, self._failed_attempts)
 
     async def _wait_before_retry(self) -> None:
@@ -332,7 +332,7 @@ class RtspDevice:
             if capture_process is not None and capture_process.returncode is None:
                 self.log.debug('[%s] terminating leftover gstreamer process', self._mac)
                 capture_process.terminate()
-            if self._capture_process is capture_process:  # a restart may have spawned a new process
+            if self._capture_process is capture_process:  # a concurrent session owns its own process
                 self._capture_process = None
         return streamed
 
