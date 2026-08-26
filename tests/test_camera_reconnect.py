@@ -1,4 +1,6 @@
 import asyncio
+import gc
+import weakref
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, patch
 
@@ -644,9 +646,16 @@ async def test_devices_do_not_leak_shutdown_handlers(rosys_integration):
     assert len(rosys_core.shutdown_handlers) == handlers_before_camera + 1, (
         'expected exactly one shutdown handler to be added for a camera instance'
     )
-    latest_handler = rosys_core.shutdown_handlers[-1]
-    assert getattr(latest_handler, '__self__', None) is camera, (
-        'expected camera shutdown handler to be bound to that camera instance'
+    assert rosys_core.shutdown_handlers[-1].__qualname__ == 'SimulatedCamera.disconnect', (
+        'expected the camera to register its own disconnect as the shutdown handler'
+    )
+
+    camera_ref = weakref.ref(camera)
+    del camera
+    gc.collect()
+    assert camera_ref() is None, 'expected the shutdown handler not to keep the camera alive'
+    assert len(rosys_core.shutdown_handlers) == handlers_before_camera, (
+        'expected the handler of a discarded camera to be unregistered'
     )
 
     cycling_camera = SimulatedCamera(id='sim_camera_cycle', fps=10, reconnect_interval=0.2, connect_after_init=False)
