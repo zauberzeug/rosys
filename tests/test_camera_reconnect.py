@@ -26,7 +26,7 @@ from rosys.vision import (
 )
 from rosys.vision.camera.camera import MIN_RECONNECT_INTERVAL
 from rosys.vision.mjpeg_camera.axis_mjpeg_device import AxisMjpegDevice
-from rosys.vision.mjpeg_camera.mjpeg_device import CaptureState, MjpegDevice, StreamOpenResult
+from rosys.vision.mjpeg_camera.mjpeg_device import CaptureState, MjpegDevice
 from rosys.vision.rtsp_camera.rtsp_device import RtspDevice
 from rosys.vision.simulated_camera.simulated_device import SimulatedDevice
 from rosys.vision.usb_camera.usb_device import UsbDevice
@@ -172,11 +172,13 @@ class FlakyMjpegServer:
     """Local HTTP server that serves `frames_per_connection` fake JPEG frames and then drops the connection.
 
     One frame per connection mimics a camera whose stream keeps ending; `None` keeps the stream open.
+    Any `status` other than 200 is answered instead of a stream.
     """
 
-    def __init__(self, frames_per_connection: int | None = 1) -> None:
+    def __init__(self, frames_per_connection: int | None = 1, status: int = 200) -> None:
         self.connections = 0
         self.frames_per_connection = frames_per_connection
+        self.status = status
         self._server: asyncio.Server | None = None
 
     @property
@@ -194,6 +196,11 @@ class FlakyMjpegServer:
                 await asyncio.wait_for(reader.readuntil(b'\r\n\r\n'), timeout=2)
             except Exception:  # reading the request is best-effort
                 pass
+            if self.status != 200:
+                refusal = f'HTTP/1.1 {self.status} refused\r\nContent-Length: 0\r\nConnection: close\r\n\r\n'
+                writer.write(refusal.encode())
+                await writer.drain()
+                return
             writer.write(b'HTTP/1.1 200 OK\r\n'
                          b'Content-Type: multipart/x-mixed-replace; boundary=frame\r\n\r\n')
             sent = 0
@@ -213,41 +220,6 @@ class FlakyMjpegServer:
         self._server.close()
         with suppress(TimeoutError):  # a client still reading must not hold up the test
             await asyncio.wait_for(self._server.wait_closed(), timeout=1)
-
-
-class Unauthorized401Server:
-    """Local HTTP server that always responds 401 and closes the connection."""
-
-    def __init__(self) -> None:
-        self.connections = 0
-        self._server: asyncio.Server | None = None
-
-    @property
-    def port(self) -> int:
-        assert self._server is not None
-        return self._server.sockets[0].getsockname()[1]
-
-    async def start(self) -> None:
-        self._server = await asyncio.start_server(self._handle, '127.0.0.1', 0)
-
-    async def _handle(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
-        self.connections += 1
-        try:
-            try:
-                await asyncio.wait_for(reader.readuntil(b'\r\n\r\n'), timeout=2)
-            except Exception:  # reading the request is best-effort
-                pass
-            writer.write(b'HTTP/1.1 401 Unauthorized\r\n'
-                         b'Content-Length: 0\r\n'
-                         b'Connection: close\r\n\r\n')
-            await writer.drain()
-        finally:
-            writer.close()
-
-    async def stop(self) -> None:
-        assert self._server is not None
-        self._server.close()
-        await self._server.wait_closed()
 
 
 async def test_mjpeg_device_reconnects_after_stream_drops(rosys_integration):
@@ -512,49 +484,85 @@ async def test_rtsp_is_active_distinct_from_is_connected(rosys_integration):
 
 
 async def test_mjpeg_device_backs_off_after_401(rosys_integration):
-    server = Unauthorized401Server()
+    server = FlakyMjpegServer(status=401)
     await server.start()
     device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{server.port}',
                          on_new_image_data=lambda data, timestamp: None,
                          reconnect_interval=0.2)
-    device.UNAUTHORIZED_RECONNECT_INTERVAL = 4.0  # type: ignore[misc]
+    device.REFUSED_RECONNECT_INTERVAL = 4.0  # type: ignore[misc]
     try:
-        await forward_until(lambda: not device.authorized, step=0.2,
-                            message='expected the device to mark itself unauthorized after a 401 response')
+        await forward_until(lambda: device.is_refused, step=0.2,
+                            message='expected the device to mark itself refused after a 401 response')
         assert device.is_active is True, 'expected the capture loop to stay alive while backing off'
-        assert device.is_connected is False, 'expected unauthorized device to remain disconnected'
+        assert device.is_connected is False, 'expected a refused device to remain disconnected'
 
         connections_after_401 = server.connections
-        for _ in range(5):  # well beyond reconnect_interval, still inside the unauthorized back-off
+        for _ in range(5):  # well beyond reconnect_interval, still inside the back-off
             await forward(0.2)
             await asyncio.sleep(0.05)
         assert server.connections == connections_after_401, (
-            'expected the device to throttle its retries after a 401 unauthorized response'
+            'expected the device to throttle its retries after a 401 response'
         )
 
         await forward_until(lambda: server.connections > connections_after_401, step=0.5, attempts=40,
-                            message='expected the device to retry once the unauthorized back-off elapsed')
+                            message='expected the device to retry once the back-off elapsed')
     finally:
         device.shutdown()
         await server.stop()
 
 
+# a camera answers 403 once it has locked our account out, and 503 while its stream slot is taken
+@pytest.mark.parametrize('status', [403, 503])
+async def test_mjpeg_device_backs_off_after_any_refusal(rosys_integration, status: int):
+    server = FlakyMjpegServer(status=status)
+    await server.start()
+    device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{server.port}',
+                         on_new_image_data=lambda data, timestamp: None,
+                         reconnect_interval=0.2)
+    device.REFUSED_RECONNECT_INTERVAL = 4.0  # type: ignore[misc]
+    try:
+        await forward_until(lambda: device.is_refused, step=0.2,
+                            message=f'expected the device to take a {status} as a refusal')
+        connections_after_refusal = server.connections
+        for _ in range(5):  # well beyond reconnect_interval, still inside the back-off
+            await forward(0.2)
+            await asyncio.sleep(0.05)
+        assert server.connections == connections_after_refusal, \
+            f'expected the device to throttle its retries after a {status} response'
+    finally:
+        device.shutdown()
+        await server.stop()
+
+
+async def test_mjpeg_device_reports_an_unreachable_camera_without_a_traceback(vision_log):
+    device = MjpegDevice(GOODCAM_MAC, '127.0.0.1:1',
+                         on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
+    try:
+        await forward_until(lambda: any('cannot reach' in record.getMessage() for record in vision_log.records),
+                            message='expected the device to report that it cannot reach the camera')
+        assert not [record for record in vision_log.records if record.exc_info], (
+            'expected no traceback for a camera that is simply not there'
+        )
+    finally:
+        device.shutdown()
+
+
 async def test_mjpeg_device_retries_at_a_new_address_despite_back_off(rosys_integration):
-    rejecting_server = Unauthorized401Server()
+    rejecting_server = FlakyMjpegServer(status=401)
     new_server = FlakyMjpegServer()
     await rejecting_server.start()
     await new_server.start()
     device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{rejecting_server.port}',
                          on_new_image_data=lambda data, timestamp: None,
                          reconnect_interval=0.2)
-    device.UNAUTHORIZED_RECONNECT_INTERVAL = 600.0  # type: ignore[misc]
+    device.REFUSED_RECONNECT_INTERVAL = 600.0  # type: ignore[misc]
     try:
-        await forward_until(lambda: not device.authorized, step=0.2,
-                            message='expected the device to mark itself unauthorized after a 401 response')
+        await forward_until(lambda: device.is_refused, step=0.2,
+                            message='expected the device to mark itself refused after a 401 response')
 
         device.ip = f'127.0.0.1:{new_server.port}'  # a rejection was about the previous address
         await forward_until(lambda: new_server.connections >= 1, step=0.2,
-                            message='expected an address change to end the unauthorized back-off')
+                            message='expected an address change to end the back-off')
     finally:
         device.shutdown()
         await rejecting_server.stop()
@@ -714,7 +722,7 @@ async def test_mjpeg_device_reopens_the_stream_when_its_url_changes(rosys_integr
     @asynccontextmanager
     async def open_stream(client, url, username, password):  # pylint: disable=unused-argument
         opened_urls.append(url)
-        yield StreamOpenResult(object())  # the response only reaches the patched frame reader
+        yield object()  # the response only reaches the patched frame reader
 
     async def endless_frames(self, response):  # pylint: disable=unused-argument
         while True:
@@ -973,7 +981,7 @@ async def test_mjpeg_camera_is_active_without_known_address(rosys_integration):
 
 async def test_mjpeg_camera_stays_active_while_its_login_is_rejected(rosys_integration):
     """A rejected login does not revoke the wish to be connected, so `connect()` stays a no-op."""
-    server = Unauthorized401Server()
+    server = FlakyMjpegServer(status=401)
     await server.start()
     camera = MjpegCamera(id=GOODCAM_MAC, ip=f'127.0.0.1:{server.port}',
                          connect_after_init=False, reconnect_interval=0.2)
@@ -981,7 +989,7 @@ async def test_mjpeg_camera_stays_active_while_its_login_is_rejected(rosys_integ
     device = camera.device
     assert device is not None
     try:
-        await forward_until(lambda: not device.authorized, step=0.2,
+        await forward_until(lambda: device.is_refused, step=0.2,
                             message='expected the camera to be rejected by the 401 server')
         assert camera.is_active, 'expected a rejected camera to still report that it wants to be connected'
         assert not camera.is_connected

@@ -58,9 +58,10 @@ Reconnection runs until the camera is disconnected, so `disconnect()` both stops
 `connect()` always creates that device, even when the camera cannot be reached at all — because its address is not known yet, or no `/dev/video*` node exists.
 Such a camera reports `is_active` but not `is_connected`, and starts streaming as soon as the address or the video device appears.
 
-Cameras that reject our credentials are the one case where retrying is throttled instead of continuing at `reconnect_interval`:
-`RtspCamera` and `MjpegCamera` fall back to one attempt per minute, because some cameras answer repeated failed logins by locking the account.
-Such a camera stays active and recovers on its own once it accepts the login again; `device.authorized` reports `False` while it backs off.
+A camera that answers without a stream is the one case where retrying is throttled instead of continuing at `reconnect_interval`:
+`RtspCamera` and `MjpegCamera` fall back to one attempt per minute, because the camera is reachable and has said no.
+Asking again a second later cannot change that answer, and some cameras answer repeated failed logins by locking the account.
+Such a camera stays active and recovers on its own once the answer changes.
 A camera's own `username` and `password` are read when its device is created, so use `reconnect()` to retry with changed credentials.
 
 Camera providers therefore do not connect or reconnect cameras themselves.

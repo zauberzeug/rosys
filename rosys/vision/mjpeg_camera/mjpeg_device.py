@@ -4,7 +4,6 @@ import logging
 from asyncio import Task
 from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
 from typing import ClassVar
 
 import httpx
@@ -26,7 +25,7 @@ class CaptureState(enum.Enum):
     """
     CONNECTING = enum.auto()    # loop alive, opening the stream or waiting to reconnect
     STREAMING = enum.auto()     # stream open and delivering frames
-    UNAUTHORIZED = enum.auto()  # camera rejected our credentials; loop backs off before trying again
+    REFUSED = enum.auto()       # camera answered without a stream; loop backs off before trying again
     STOPPED = enum.auto()       # shutdown requested; loop gives up
 
 
@@ -51,8 +50,12 @@ def parse_capture_timestamp(part_header: bytes) -> float | None:
 
 
 class MjpegDevice:
-    UNAUTHORIZED_RECONNECT_INTERVAL: ClassVar[float] = 60.0
-    '''Wait time between attempts while the camera rejects our credentials.'''
+    REFUSED_RECONNECT_INTERVAL: ClassVar[float] = 60.0
+    '''Wait time between attempts while the camera answers something other than a stream.
+
+    It is reachable and has said no, so asking again sooner cannot change the answer, and a rejected
+    login or a rate limit only gets worse for being retried.
+    '''
 
     def __init__(self, mac: str, ip: str | None = None, *,
                  index: int | None = None,
@@ -115,9 +118,9 @@ class MjpegDevice:
         return (self._capture_task is not None) and (not self._capture_task.done())
 
     @property
-    def authorized(self) -> bool:
-        """Whether the last attempt was not rejected; ``False`` while backing off after a 401."""
-        return self._state is not CaptureState.UNAUTHORIZED
+    def is_refused(self) -> bool:
+        """Whether the camera answered the last attempt with something other than a stream."""
+        return self._state is CaptureState.REFUSED
 
     def _start_capture_task(self) -> None:
         if self._capture_task is not None and not self._capture_task.done():
@@ -143,21 +146,25 @@ class MjpegDevice:
             while self._keeps_running():
                 # every attempt starts fresh: an earlier rejection says nothing about this one
                 self._state = CaptureState.CONNECTING
+                reason = 'stream ended'
                 try:
                     await self._connect_and_stream_images()
+                except httpx.HTTPError as e:
+                    reason = f'cannot reach the camera: {e}'
                 except Exception:
                     self.log.exception('capture session failed')
+                    reason = 'capture session failed'
                 if not self._keeps_running():
                     break
-                if self._state is CaptureState.UNAUTHORIZED:
-                    self.log.info('credentials rejected; retrying in %.1f s', self._retry_interval)
+                if self._state is CaptureState.REFUSED:
+                    self.log.info('camera refused the stream; retrying in %.1f s', self._retry_interval)
                 elif self._ip is None:
                     self.log.debug('no address known; retrying in %.1f s', self._retry_interval)
                 elif self.url is None:
                     self.log.debug('no stream URL for mac "%s"; retrying in %.1f s',
                                    self._mac, self._retry_interval)
                 else:
-                    self.log.info('stream ended; reconnecting in %.1f s', self._retry_interval)
+                    self.log.info('%s; reconnecting in %.1f s', reason, self._retry_interval)
                 # a new address restarts the whole task, so no need to cut this wait short
                 await rosys.sleep(self._retry_interval)
         finally:
@@ -166,9 +173,9 @@ class MjpegDevice:
 
     @property
     def _retry_interval(self) -> float:
-        """How long to wait before the next session; a rejected login backs off further than a lost stream."""
-        if self._state is CaptureState.UNAUTHORIZED:
-            return self.UNAUTHORIZED_RECONNECT_INTERVAL
+        """How long to wait before the next session; a refusal backs off further than a lost stream."""
+        if self._state is CaptureState.REFUSED:
+            return self.REFUSED_RECONNECT_INTERVAL
         return self.reconnect_interval
 
     def restart_capture(self) -> None:
@@ -236,34 +243,28 @@ class MjpegDevice:
 
         try:
             async with httpx.AsyncClient() as client:
-                try:
-                    await self._prepare_stream()
-                    async with open_stream(client, url, self._username, self._password) as result:
-                        if result.unauthorized:
-                            self._state = CaptureState.UNAUTHORIZED
+                await self._prepare_stream()
+                async with open_stream(client, url, self._username, self._password) as response:
+                    if response is None:
+                        self._state = CaptureState.REFUSED
+                        return
+                    self._state = CaptureState.STREAMING
+                    await self._invoke_on_connect()
+                    async for image, capture_time in self._frame_reader(response):
+                        if self.url != url:
+                            self.log.info('stream settings changed; reopening the stream')
                             return
-                        if result.response is None:
+                        if not image:
+                            continue
+                        try:
+                            timestamp = capture_time if capture_time is not None else rosys.time()
+                            callback_result = self._on_new_image_data(remove_exif(image), timestamp)
+                            if isinstance(callback_result, Awaitable):
+                                await callback_result
+                        except Exception as e:
+                            self.log.error('Error processing image: %s', e)
+                        if not self._keeps_running():
                             return
-                        self._state = CaptureState.STREAMING
-                        await self._invoke_on_connect()
-                        async for image, capture_time in self._frame_reader(result.response):
-                            if self.url != url:
-                                self.log.info('stream settings changed; reopening the stream')
-                                return
-                            if not image:
-                                continue
-                            try:
-                                timestamp = capture_time if capture_time is not None else rosys.time()
-                                callback_result = self._on_new_image_data(remove_exif(image), timestamp)
-                                if isinstance(callback_result, Awaitable):
-                                    await callback_result
-                            except Exception as e:
-                                self.log.error('Error processing image: %s', e)
-                            if not self._keeps_running():
-                                return
-                except Exception as e:
-                    self.log.warning('Connection to %s failed. Was something disconnected?\n%s', url, e)
-                    raise
         finally:
             if self._keeps_running() and self._state is CaptureState.STREAMING:
                 self._state = CaptureState.CONNECTING
@@ -305,37 +306,26 @@ def auth_for_challenge(www_authenticate: str, username: str, password: str) -> h
     return httpx.BasicAuth(username, password)
 
 
-@dataclass(frozen=True, slots=True)
-class StreamOpenResult:
-    response: httpx.Response | None
-    unauthorized: bool = False
-
-
 @asynccontextmanager
 async def open_stream(client: httpx.AsyncClient, url: str,
-                      username: str | None, password: str | None) -> AsyncIterator[StreamOpenResult]:
+                      username: str | None, password: str | None) -> AsyncIterator[httpx.Response | None]:
     """Negotiate the auth scheme and open the http connection.
 
     Credentials are only sent after the camera has challenged the unauthenticated request with a 401.
-    Yields a :class:`StreamOpenResult` with the live 200 response, or ``None`` if the camera refused the connection.
+    Yields the live 200 response, or ``None`` when the camera answered something else.
     """
     auth: httpx.Auth | None = None
     while True:
         async with client.stream('GET', url, auth=auth) as response:
-            if response.status_code == 401:
-                if auth is None and username is not None and password is not None:
-                    auth = auth_for_challenge(response.headers.get('www-authenticate', ''), username, password)
-                    log.debug('camera at %s challenged with 401, retrying with %s', url, type(auth).__name__)
-                    continue
-                auth_scheme = response.request.headers.get('authorization', '<none>').split(' ', 1)[0]
-                log.error('unauthorized (401) for %s (auth: %s)', url, auth_scheme)
-                yield StreamOpenResult(None, unauthorized=True)
-                return
+            if response.status_code == 401 and auth is None and username is not None and password is not None:
+                auth = auth_for_challenge(response.headers.get('www-authenticate', ''), username, password)
+                log.debug('camera at %s challenged with 401, retrying with %s', url, type(auth).__name__)
+                continue
             if response.status_code != 200:
                 auth_scheme = response.request.headers.get('authorization', '<none>').split(' ', 1)[0]
-                log.error('could not connect to %s (auth: %s): %s %s',
+                log.error('camera at %s refused the stream (auth: %s): %s %s',
                           url, auth_scheme, response.status_code, response.reason_phrase)
-                yield StreamOpenResult(None)
+                yield None
                 return
-            yield StreamOpenResult(response)
+            yield response
             return
