@@ -3,8 +3,9 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
-import httpx
 from httpx import QueryParams
+
+from ..http import new_async_client
 
 
 @dataclass
@@ -68,7 +69,7 @@ class JovisionInterface:
             cmd=json.dumps(cmd),
             _=int(time.time() * 1000),  # current time as a timestamp
         )
-        async with httpx.AsyncClient() as client:
+        async with new_async_client() as client:
             await client.get(self.settings_url, params=params)
 
     async def set_fps(self, stream_id: int, fps: int) -> None:
@@ -118,7 +119,7 @@ class JovisionInterface:
             cmd=json.dumps(cmd),
             _=int(time.time() * 1000),
         )
-        async with httpx.AsyncClient() as client:
+        async with new_async_client() as client:
             response = await client.get(self.settings_url, params=params)
 
         return [
@@ -152,7 +153,7 @@ class JovisionInterface:
         #     'cmd': json.dumps(cmd),
         #     '_': time.time() * 1000,
         # }
-        # async with httpx.AsyncClient() as client:
+        # async with new_async_client() as client:
         #     response = await client.get(self.settings_url, params=params)
 
         # for stream_id, stream in enumerate(response.json()['result']['all']):

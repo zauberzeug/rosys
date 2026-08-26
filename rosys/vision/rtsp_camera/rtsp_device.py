@@ -18,7 +18,7 @@ from nicegui import background_tasks
 
 from ... import rosys
 from ...vision.image import ImageArray
-from ..camera.camera import clamp_reconnect_interval
+from ..camera.camera import clamp_reconnect_interval, retry_delay
 from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
 from .arkvision_rtsp_interface import ArkVisionRtspInterface
 from .jovision_rtsp_interface import JovisionInterface
@@ -55,6 +55,7 @@ class RtspDevice:
         self._warned_about_missing_settings: bool = False
         self.reconnect_interval = reconnect_interval
         self._should_run: bool = True
+        self._failed_attempts: int = 0
 
         self._settings_interface: JovisionInterface | ArkVisionRtspInterface | OpenIpcZauberzeugSettingsInterface | None = None
         self._bind_settings_interface()
@@ -147,11 +148,13 @@ class RtspDevice:
             self.log.debug('[%s] Cancelling gstreamer task', self._mac)
             task.cancel()
             try:
-                await asyncio.wait_for(task, timeout=5)
+                await asyncio.wait_for(asyncio.shield(task), timeout=5)
             except TimeoutError:
                 self.log.warning('[%s] Timeout while waiting for capture task to cancel', self._mac)
                 return
             except asyncio.CancelledError:
+                if not task.cancelled():
+                    raise  # our own caller was cancelled, not the capture task
                 self.log.debug('[%s] Task was successfully cancelled', self._mac)
             else:
                 self.log.debug('[%s] Task finished', self._mac)
@@ -175,21 +178,23 @@ class RtspDevice:
             while self._should_run:
                 # every attempt starts fresh: an earlier rejection says nothing about this one
                 self._authorized = True
+                streamed = False
                 try:
-                    await self._run_gstreamer()
+                    streamed = await self._run_gstreamer()
                 except Exception:
                     self.log.exception('[%s] capture session failed', self._mac)
+                self._failed_attempts = 0 if streamed else self._failed_attempts + 1
                 if not self._should_run:
                     break
                 if not self._authorized:
                     self.log.info('[%s] credentials rejected; retrying in %.1f s',
                                   self._mac, self.UNAUTHORIZED_RECONNECT_INTERVAL)
                 elif self._ip is None:
-                    self.log.debug('[%s] no address known; retrying in %.1f s', self._mac, self.reconnect_interval)
+                    self.log.debug('[%s] no address known; retrying in about %.1f s', self._mac, self._retry_interval)
                 elif self.url is None:
                     self._warn_about_missing_url()
                 else:
-                    self.log.info('[%s] stream ended; reconnecting in %.1f s', self._mac, self.reconnect_interval)
+                    self.log.info('[%s] stream ended; reconnecting in about %.1f s', self._mac, self._retry_interval)
                 await self._wait_before_retry()
         finally:
             if self._capture_task is asyncio.current_task():
@@ -207,6 +212,11 @@ class RtspDevice:
         self.log.warning('[%s] no RTSP URL known for vendor %s; this camera cannot be reached',
                          self._mac, mac_to_vendor(self._mac))
 
+    @property
+    def _retry_interval(self) -> float:
+        """How long to wait before the next session; grows while attempts keep failing (see `retry_delay`)."""
+        return retry_delay(self.reconnect_interval, self._failed_attempts)
+
     async def _wait_before_retry(self) -> None:
         """Wait `reconnect_interval` before the next session, extending the wait while our login stays rejected.
 
@@ -214,10 +224,10 @@ class RtspDevice:
         holding on to a verdict that was about the previous address. The deadline bounds the whole
         wait, whatever the chunk size is.
         """
-        await rosys.sleep(self.reconnect_interval)
-        deadline = rosys.time() + self.UNAUTHORIZED_RECONNECT_INTERVAL - self.reconnect_interval
+        deadline = rosys.time() + self.UNAUTHORIZED_RECONNECT_INTERVAL
+        await rosys.sleep(self._retry_interval)
         while self._should_run and not self._authorized and rosys.time() < deadline:
-            await rosys.sleep(self.reconnect_interval)
+            await rosys.sleep(self._retry_interval)
 
     async def restart_gstreamer(self) -> None:
         await self.shutdown()
@@ -231,15 +241,20 @@ class RtspDevice:
         if isinstance(result, Awaitable):
             await result
 
-    async def _run_gstreamer(self) -> None:
+    async def _run_gstreamer(self) -> bool:
+        """Run a gstreamer session until it ends. Returns whether at least one frame arrived."""
+        streamed = False
         if self.is_connected:
             self.log.warning('[%s] capture process already running', self._mac)
-            return
+            return streamed
         url = self.url
         if url is None:
-            return
+            return streamed
+
+        capture_process: Process | None = None
 
         async def stream() -> AsyncGenerator[ImageArray, None]:
+            nonlocal capture_process
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
             # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
             command = f'gst-launch-1.0 --quiet rtspsrc location="{url}" latency=0 protocols=tcp ! rtp{self._avdec}depay ! avdec_{self._avdec} ! videoconvert ! video/x-raw,format=RGB ! queue max-size-buffers=1 leaky=downstream ! gdppay ! fdsink sync=false'
@@ -252,6 +267,7 @@ class RtspDevice:
             assert process.stdout is not None
             assert process.stderr is not None
             self._capture_process = process
+            capture_process = process
             await self._invoke_on_connect()
 
             width = None
@@ -306,17 +322,19 @@ class RtspDevice:
 
         try:
             async for image in stream():
+                streamed = True
                 timestamp = rosys.time()
                 result = self._on_new_image_data(image, timestamp)
                 if isinstance(result, Awaitable):
                     await result
             self.log.info('[%s] stream ended', self._mac)
         finally:
-            process = self._capture_process
-            if process is not None and process.returncode is None:
+            if capture_process is not None and capture_process.returncode is None:
                 self.log.debug('[%s] terminating leftover gstreamer process', self._mac)
-                process.terminate()
-            self._capture_process = None
+                capture_process.terminate()
+            if self._capture_process is capture_process:  # a restart may have spawned a new process
+                self._capture_process = None
+        return streamed
 
     async def set_fps(self, fps: int) -> None:
         self._fps = fps

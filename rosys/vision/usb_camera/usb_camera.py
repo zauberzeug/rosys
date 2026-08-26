@@ -24,14 +24,12 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                  width: int = 800,
                  height: int = 600,
                  fps: int = 10,
-                 reconnect_interval: float = 3.0,
                  **kwargs) -> None:
         super().__init__(id=id,
                          name=name,
                          connect_after_init=connect_after_init,
                          **kwargs)
         self.log = logging.getLogger(f'rosys.vision.usb_camera.{self.id}')
-        self.reconnect_interval = reconnect_interval
         self._pending_operations = 0
         self.device: UsbDevice | None = None
         self.detect: bool = False
@@ -46,8 +44,6 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
     def to_dict(self) -> dict[str, Any]:
         return super().to_dict() | {
             name: param.value for name, param in self._parameters.items()
-        } | {
-            'reconnect_interval': self.reconnect_interval,
         }
 
     @property
@@ -56,12 +52,14 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
     @property
     def is_active(self) -> bool:
-        return self.device is not None
+        return self.device is not None and self.device.is_active
 
     async def connect(self) -> None:
         async with self._device_connection():
             if self.device is not None:
-                return
+                if self.device.is_active:
+                    return
+                await self._tear_down_device()  # a device whose capture loop died is replaced, not kept
             self.device = UsbDevice(self.id,
                                     on_new_image_data=self._handle_new_image_data,
                                     on_connect=self._apply_all_parameters,
@@ -69,11 +67,15 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
     async def disconnect(self) -> None:
         async with self._device_connection():
-            if self.device is None:
-                return
-            await self.device.shutdown()
-            self.device = None
-            self.log.info('disconnected')
+            await self._tear_down_device()
+
+    async def _tear_down_device(self) -> None:
+        """Shut the device down and forget it; the caller holds `device_connection_lock`."""
+        if self.device is None:
+            return
+        await self.device.shutdown()
+        self.device = None
+        self.log.info('disconnected')
 
     async def _handle_new_image_data(self, image_data: np.ndarray | bytes, timestamp: float) -> None:
         if self.device is None:

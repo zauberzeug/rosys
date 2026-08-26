@@ -10,7 +10,8 @@ import httpx
 from nicegui import background_tasks
 
 from ... import rosys
-from ..camera.camera import clamp_reconnect_interval
+from ..camera.camera import clamp_reconnect_interval, retry_delay
+from ..http import new_async_client
 from ..image_processing import remove_exif
 from .vendors import mac_to_url
 
@@ -76,6 +77,7 @@ class MjpegDevice:
         self._password = password
         self.reconnect_interval = reconnect_interval
         self._state = CaptureState.CONNECTING
+        self._failed_attempts = 0
 
         self._start_capture_task()
 
@@ -137,6 +139,16 @@ class MjpegDevice:
         """
         return self._state is not CaptureState.STOPPED and self._capture_task is asyncio.current_task()
 
+    def _set_state(self, state: CaptureState) -> None:
+        """Record the state of the calling capture task, ignoring a task that has been replaced.
+
+        The dying and the new task share this attribute, so a zombie must not report its own progress
+        (or its end) as the state of the loop that replaced it (see `_keeps_running`).
+        """
+        if self._capture_task is not asyncio.current_task():
+            return
+        self._state = state
+
     async def _run_capture_task(self) -> None:
         """Keep a single MJPEG session alive, reconnecting after `reconnect_interval` when it ends.
 
@@ -145,28 +157,30 @@ class MjpegDevice:
         try:
             while self._keeps_running():
                 # every attempt starts fresh: an earlier rejection says nothing about this one
-                self._state = CaptureState.CONNECTING
+                self._set_state(CaptureState.CONNECTING)
+                streamed = False
                 reason = 'stream ended'
                 try:
-                    await self._connect_and_stream_images()
+                    streamed = await self._connect_and_stream_images()
                 except httpx.HTTPError as e:
                     reason = f'cannot reach the camera: {e}'
                 except Exception:
                     self.log.exception('capture session failed')
                     reason = 'capture session failed'
+                self._failed_attempts = 0 if streamed else self._failed_attempts + 1
                 if not self._keeps_running():
                     break
+                delay = self._retry_interval  # jittered, so log the wait we are about to take
                 if self._state is CaptureState.REFUSED:
-                    self.log.info('camera refused the stream; retrying in %.1f s', self._retry_interval)
+                    self.log.info('camera refused the stream; retrying in %.1f s', delay)
                 elif self._ip is None:
-                    self.log.debug('no address known; retrying in %.1f s', self._retry_interval)
+                    self.log.debug('no address known; retrying in %.1f s', delay)
                 elif self.url is None:
-                    self.log.debug('no stream URL for mac "%s"; retrying in %.1f s',
-                                   self._mac, self._retry_interval)
+                    self.log.debug('no stream URL for mac "%s"; retrying in %.1f s', self._mac, delay)
                 else:
-                    self.log.info('%s; reconnecting in %.1f s', reason, self._retry_interval)
+                    self.log.info('%s; reconnecting in %.1f s', reason, delay)
                 # a new address restarts the whole task, so no need to cut this wait short
-                await rosys.sleep(self._retry_interval)
+                await rosys.sleep(delay)
         finally:
             if self._capture_task is asyncio.current_task():
                 self._capture_task = None
@@ -176,7 +190,7 @@ class MjpegDevice:
         """How long to wait before the next session; a refusal backs off further than a lost stream."""
         if self._state is CaptureState.REFUSED:
             return self.REFUSED_RECONNECT_INTERVAL
-        return self.reconnect_interval
+        return retry_delay(self.reconnect_interval, self._failed_attempts)
 
     def restart_capture(self) -> None:
         self.log.debug('Restarting capture task')
@@ -235,27 +249,30 @@ class MjpegDevice:
         except httpx.ReadTimeout:
             self.log.warning('Connection to %s timed out', self.url)
 
-    async def _connect_and_stream_images(self) -> None:
+    async def _connect_and_stream_images(self) -> bool:
+        """Open a stream and read it until it ends. Returns whether at least one frame arrived."""
+        streamed = False
         url = self.url
         if url is None:
-            return
+            return streamed
         self.log.debug('Starting capture task for %s', url)
 
         try:
-            async with httpx.AsyncClient() as client:
+            async with new_async_client() as client:
                 await self._prepare_stream()
                 async with open_stream(client, url, self._username, self._password) as response:
                     if response is None:
-                        self._state = CaptureState.REFUSED
-                        return
-                    self._state = CaptureState.STREAMING
+                        self._set_state(CaptureState.REFUSED)
+                        return streamed
+                    self._set_state(CaptureState.STREAMING)
                     await self._invoke_on_connect()
                     async for image, capture_time in self._frame_reader(response):
                         if self.url != url:
                             self.log.info('stream settings changed; reopening the stream')
-                            return
+                            return streamed
                         if not image:
                             continue
+                        streamed = True
                         try:
                             timestamp = capture_time if capture_time is not None else rosys.time()
                             callback_result = self._on_new_image_data(remove_exif(image), timestamp)
@@ -264,11 +281,12 @@ class MjpegDevice:
                         except Exception as e:
                             self.log.error('Error processing image: %s', e)
                         if not self._keeps_running():
-                            return
+                            return streamed
         finally:
-            if self._keeps_running() and self._state is CaptureState.STREAMING:
-                self._state = CaptureState.CONNECTING
+            if self._state is CaptureState.STREAMING:
+                self._set_state(CaptureState.CONNECTING)
         self.log.debug('capture session ended')
+        return streamed
 
     def shutdown(self) -> None:
         self.log.debug('Shutting down capture task')

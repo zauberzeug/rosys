@@ -4,6 +4,7 @@ import httpx
 
 from ... import rosys
 from ..camera_provider import CameraProvider
+from ..http import new_async_client
 from ..rtsp_camera.arp_scan import find_cameras
 from .mjpeg_camera import MjpegCamera
 from .vendors import VendorType, mac_to_vendor
@@ -53,7 +54,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera]):
                     httpx.DigestAuth(self.username, self.password)
                 url = f'http://{ip}/axis-cgi/videostatus.cgi'
                 try:
-                    async with httpx.AsyncClient() as client:
+                    async with new_async_client() as client:
                         response = await client.get(url, auth=authentication)
                 except httpx.HTTPError as e:
                     self.log.warning('Error while looking for cameras at axis router (%s): %s', url, e)

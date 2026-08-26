@@ -24,7 +24,6 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
                  fps: int = 10,
                  resolution: tuple[int, int] = (640, 480),
                  mirrored: bool = False,
-                 reconnect_interval: float = 3.0,
                  **kwargs: Any,
                  ) -> None:
         super().__init__(id=id, name=name, connect_after_init=connect_after_init,
@@ -32,7 +31,6 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         self.log = logging.getLogger(f'rosys.vision.mjpeg_camera.{self.id}')
         self.username = username
         self.password = password
-        self.reconnect_interval = reconnect_interval
 
         parts = self.id.split('-')
         self.index: int | None = int(parts[1]) if len(parts) == 2 and parts[1].isdigit() else None
@@ -51,7 +49,6 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             'username': self.username,
             'password': self.password,
             'ip': self.ip,
-            'reconnect_interval': self.reconnect_interval,
         }
 
     @property
@@ -60,7 +57,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
 
     @property
     def is_active(self) -> bool:
-        return self.device is not None
+        return (self.device is not None) and self.device.is_active
 
     @property
     def ip(self) -> str | None:
@@ -76,19 +73,25 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
     async def connect(self) -> None:
         async with self._device_connection():
             if self.device is not None:
-                return
+                if self.device.is_active:
+                    return
+                await self._tear_down_device()  # a device whose capture loop died is replaced, not kept
             self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
                                                     password=self.password,
                                                     on_new_image_data=self._handle_new_image_data,
-                                                    on_connect=self._apply_all_parameters)
-            self.device.reconnect_interval = self.reconnect_interval
+                                                    on_connect=self._apply_all_parameters,
+                                                    reconnect_interval=self.reconnect_interval)
 
     async def disconnect(self) -> None:
         async with self._device_connection():
-            if self.device is None:
-                return
-            self.device.shutdown()
-            self.device = None
+            await self._tear_down_device()
+
+    async def _tear_down_device(self) -> None:
+        """Shut the device down and forget it; the caller holds `device_connection_lock`."""
+        if self.device is None:
+            return
+        self.device.shutdown()
+        self.device = None
 
     async def _handle_new_image_data(self, image_bytes: bytes, timestamp: float) -> None:
         image: Image | None = None

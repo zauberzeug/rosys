@@ -51,9 +51,12 @@ It automatically updates every 0.1 seconds to detect and display new cameras, an
 
 Cameras can lose their connection due to network glitches, a bad cable or a power hiccup.
 Every camera reconnects on its own: once connected, the underlying device keeps trying to restore its stream every `reconnect_interval` seconds (default 3.0) for as long as the camera stays connected.
+The wait is owned by the camera, so it also applies to a device created later, and it is clamped to at least 0.1 s so a misconfigured `0` cannot starve the event loop.
+While attempts keep failing without a single frame, the wait doubles up to one minute and is jittered, so an unreachable camera stops hammering and several cameras that went down together do not retry in lock-step.
 `RtspCamera` and `MjpegCamera` re-open their stream, `UsbCamera` re-opens the video device (even if its `/dev/video*` node changed), and `SimulatedCamera` resumes after a simulated drop.
 Reconnection runs until the camera is disconnected, so `disconnect()` both stops the retries and tears down the device.
 `is_connected` tells whether a camera is streaming right now, while `is_active` tells whether a connection is wanted at all, i.e. whether the camera keeps trying.
+`is_active` follows the device's capture loop rather than the mere existence of a device, so a camera whose loop died reports `is_active == False` and `connect()` replaces the device instead of returning early.
 
 `connect()` always creates that device, even when the camera cannot be reached at all — because its address is not known yet, or no `/dev/video*` node exists.
 Such a camera reports `is_active` but not `is_connected`, and starts streaming as soon as the address or the video device appears.
