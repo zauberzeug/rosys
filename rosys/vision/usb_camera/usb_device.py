@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 
 from ... import rosys
-from ..camera.camera import clamp_reconnect_interval
+from ..camera.camera import clamp_reconnect_interval, retry_delay
 from .usb_camera_scanner import device_nodes_from_uid
 
 MJPG = cv2.VideoWriter.fourcc(*'MJPG')
@@ -50,16 +50,9 @@ class UsbDevice:
         self._read_failures: int = 0
         self._capture_task: asyncio.Task | None = None
         self._unavailable_node: str | None = None
+        self._failed_attempts: int = 0
 
         self._start_capture_task()
-
-    def __del__(self) -> None:
-        self._should_run = False
-        if self._capture_task is not None and not self._capture_task.done():
-            self._capture_task.cancel()
-        if self._capture is not None:
-            self._capture.release()
-            self._capture = None
 
     @property
     def is_connected(self) -> bool:
@@ -78,6 +71,11 @@ class UsbDevice:
     @reconnect_interval.setter
     def reconnect_interval(self, interval: float) -> None:
         self._reconnect_interval = clamp_reconnect_interval(interval, self.log)
+
+    @property
+    def _retry_interval(self) -> float:
+        """How long to wait before the next session; grows while attempts keep failing (see `retry_delay`)."""
+        return retry_delay(self.reconnect_interval, self._failed_attempts)
 
     @property
     def video_formats(self) -> set[str]:
@@ -118,13 +116,15 @@ class UsbDevice:
                     streamed = await self._run_capture_session()
                 except Exception:
                     self.log.exception('[%s] capture session failed', self.uid)
+                self._failed_attempts = 0 if streamed else self._failed_attempts + 1
                 if not self._should_run:
                     break
+                delay = self._retry_interval  # jittered, so log the wait we are about to take
                 if streamed:
-                    self.log.info('[%s] capture ended; reconnecting in %.1f s', self.uid, self.reconnect_interval)
+                    self.log.info('[%s] capture ended; reconnecting in %.1f s', self.uid, delay)
                 else:
-                    self.log.debug('[%s] no capture; retrying in %.1f s', self.uid, self.reconnect_interval)
-                await rosys.sleep(self.reconnect_interval)
+                    self.log.debug('[%s] no capture; retrying in %.1f s', self.uid, delay)
+                await rosys.sleep(delay)
         finally:
             if self._capture_task is asyncio.current_task():
                 self._capture_task = None
@@ -213,11 +213,12 @@ class UsbDevice:
         if task is not None and not task.done():
             task.cancel()
             try:
-                await asyncio.wait_for(task, timeout=5)
+                await asyncio.wait_for(asyncio.shield(task), timeout=5)
             except TimeoutError:
                 self.log.warning('[%s] timeout while waiting for capture task to cancel', self.uid)
             except asyncio.CancelledError:
-                pass
+                if not task.cancelled():
+                    raise  # our own caller was cancelled, not the capture task
         if self._capture_task is task:  # a restart may have started a new loop while we waited
             self._capture_task = None
         await self._release()

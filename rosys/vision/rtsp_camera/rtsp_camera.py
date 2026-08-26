@@ -21,7 +21,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                  bitrate: int = 4096,
                  avdec: Literal['h264', 'h265'] = 'h264',
                  ip: str | None = None,
-                 reconnect_interval: float = 3.0,
                  **kwargs) -> None:
         self.mac = mac
         super().__init__(id=id or f'{mac}-{substream}',
@@ -33,7 +32,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         self.device: RtspDevice | None = None
         self._ip: str | None = ip
-        self.reconnect_interval = reconnect_interval
 
         self._register_parameter('substream', self.get_substream, self.set_substream,
                                  min_value=0, max_value=1, step=1, default_value=substream)
@@ -50,7 +48,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         return super().to_dict() | parameters | {
             'mac': self.mac,
             'ip': self.ip,
-            'reconnect_interval': self.reconnect_interval,
         }
 
     @classmethod
@@ -70,7 +67,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     @property
     def is_active(self) -> bool:
-        return self.device is not None
+        return self.device is not None and self.device.is_active
 
     @property
     def ip(self) -> str | None:
@@ -92,7 +89,9 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
     async def connect(self) -> None:
         async with self._device_connection():
             if self.device is not None:
-                return
+                if self.device.is_active:
+                    return
+                await self._tear_down_device()  # a device whose capture loop died is replaced, not kept
             self.device = RtspDevice(mac=self.mac, ip=self.ip,
                                      substream=self.parameters['substream'],
                                      fps=self.parameters['fps'],
@@ -103,11 +102,15 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
     async def disconnect(self) -> None:
         async with self._device_connection():
-            if self.device is None:
-                return
-            self.log.info('disconnect initialized...')
-            await self.device.shutdown()
-            self.device = None
+            await self._tear_down_device()
+
+    async def _tear_down_device(self) -> None:
+        """Shut the device down and forget it; the caller holds `device_connection_lock`."""
+        if self.device is None:
+            return
+        self.log.info('disconnect initialized...')
+        await self.device.shutdown()
+        self.device = None
 
     async def _handle_new_image_data(self, image_array: ImageArray, timestamp: float) -> None:
         transformed_image_array = process_ndarray_image(image_array, self.rotation, self.crop)

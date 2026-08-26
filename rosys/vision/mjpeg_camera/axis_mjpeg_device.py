@@ -33,7 +33,8 @@ class AxisMjpegDevice(MjpegDevice):
                  username: str | None = None,
                  password: str | None = None,
                  on_new_image_data: Callable[[bytes, float], Awaitable | None],
-                 on_connect: Callable[[], Awaitable | None] | None = None) -> None:
+                 on_connect: Callable[[], Awaitable | None] | None = None,
+                 reconnect_interval: float = 3.0) -> None:
         vendor = mac_to_vendor(mac)
         if vendor != VendorType.AXIS:
             raise ValueError(f'AxisMjpegDevice can only be used with AXIS devices. Got {vendor} for mac="{mac}"')
@@ -41,7 +42,8 @@ class AxisMjpegDevice(MjpegDevice):
         self.axis_settings = AxisSettings(fps=6, resolution=(640, 480), mirrored=False)
 
         super().__init__(mac, ip, index=index, username=username, password=password,
-                         on_new_image_data=on_new_image_data, on_connect=on_connect)
+                         on_new_image_data=on_new_image_data, on_connect=on_connect,
+                         reconnect_interval=reconnect_interval)
 
     @property
     def url(self) -> str | None:

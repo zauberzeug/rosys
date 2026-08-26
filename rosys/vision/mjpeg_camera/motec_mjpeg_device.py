@@ -11,7 +11,8 @@ class MotecMjpegDevice(MjpegDevice):
                  password: str | None = '',
                  control_port: int | None = 8885,
                  on_new_image_data: Callable[[bytes, float], Awaitable | None],
-                 on_connect: Callable[[], Awaitable | None] | None = None) -> None:
+                 on_connect: Callable[[], Awaitable | None] | None = None,
+                 reconnect_interval: float = 3.0) -> None:
         vendor = mac_to_vendor(mac)
         if vendor != VendorType.MOTEC:
             raise ValueError(f'MotecMjpegDevice can only be used with MOTEC devices. Got {vendor} for mac="{mac}"')
@@ -19,7 +20,8 @@ class MotecMjpegDevice(MjpegDevice):
         self._control_port = control_port or 8885
 
         super().__init__(mac, ip, username=username, password=password,
-                         on_new_image_data=on_new_image_data, on_connect=on_connect)
+                         on_new_image_data=on_new_image_data, on_connect=on_connect,
+                         reconnect_interval=reconnect_interval)
 
     @property
     def settings_interface(self) -> MotecSettingsInterface:

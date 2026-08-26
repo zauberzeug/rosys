@@ -12,12 +12,6 @@ def _udev_context() -> pyudev.Context:
     return pyudev.Context()
 
 
-def _video_devices() -> list[pyudev.Device]:
-    # libudev keeps a non-atomic reference count on its context, so concurrent scans must not share it unguarded
-    with _udev_lock:
-        return list(_udev_context().list_devices(subsystem='video4linux'))
-
-
 def uid_from_device(device: pyudev.Device) -> str | None:
     parts = [
         device.get('ID_VENDOR_ID'),
@@ -27,10 +21,21 @@ def uid_from_device(device: pyudev.Device) -> str | None:
     return '-'.join(parts) if all(parts) else device.get('DEVNAME') or None
 
 
+def _scan() -> list[tuple[str | None, str | None]]:
+    """List ``(uid, device node)`` of all video devices.
+
+    libudev keeps a non-atomic reference count on its context, so concurrent scans must not share it
+    unguarded. `pyudev.Device` objects hold a reference to that context and drop it when they are
+    garbage-collected, so none of them may leave the lock; only plain strings do.
+    """
+    with _udev_lock:
+        return [(uid_from_device(device), device.device_node)
+                for device in _udev_context().list_devices(subsystem='video4linux')]
+
+
 def scan_for_connected_devices() -> set[str]:
-    return {uid for uid in (uid_from_device(device) for device in _video_devices()) if uid is not None}
+    return {uid for uid, _ in _scan() if uid is not None}
 
 
 def device_nodes_from_uid(uid: str) -> set[str]:
-    matching_devices = [device for device in _video_devices() if uid_from_device(device) == uid]
-    return {device.device_node for device in matching_devices if device.device_node is not None}
+    return {node for device_uid, node in _scan() if device_uid == uid and node is not None}
