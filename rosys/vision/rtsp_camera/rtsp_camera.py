@@ -90,23 +90,24 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         return self.device.url
 
     async def connect(self) -> None:
-        if self.device is not None:
-            return
-        self.device = RtspDevice(mac=self.mac, ip=self.ip,
-                                 substream=self.parameters['substream'],
-                                 fps=self.parameters['fps'],
-                                 on_new_image_data=self._handle_new_image_data,
-                                 on_connect=self._apply_all_parameters,
-                                 avdec=self.parameters['avdec'],
-                                 reconnect_interval=self.reconnect_interval)
+        async with self._device_connection():
+            if self.device is not None:
+                return
+            self.device = RtspDevice(mac=self.mac, ip=self.ip,
+                                     substream=self.parameters['substream'],
+                                     fps=self.parameters['fps'],
+                                     on_new_image_data=self._handle_new_image_data,
+                                     on_connect=self._apply_all_parameters,
+                                     avdec=self.parameters['avdec'],
+                                     reconnect_interval=self.reconnect_interval)
 
     async def disconnect(self) -> None:
-        if self.device is None:
-            return
-        self.log.info('disconnect initialized...')
-
-        await self.device.shutdown()
-        self.device = None
+        async with self._device_connection():
+            if self.device is None:
+                return
+            self.log.info('disconnect initialized...')
+            await self.device.shutdown()
+            self.device = None
 
     async def _handle_new_image_data(self, image_array: ImageArray, timestamp: float) -> None:
         transformed_image_array = process_ndarray_image(image_array, self.rotation, self.crop)
@@ -156,7 +157,8 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
     async def set_parameters(self, new_values: dict[str, Any]) -> None:
         # NOTE the restart lives here rather than in _apply_parameters: the device invokes _apply_all_parameters
         # from within its own capture task whenever a stream comes up, and a restart would cancel that very task.
-        await super().set_parameters(new_values)
-        if self.is_active:
-            assert self.device is not None
-            await self.device.restart_gstreamer()
+        async with self._device_connection():  # a device that is being torn down must not be restarted
+            await super().set_parameters(new_values)
+            if self.is_active:
+                assert self.device is not None
+                await self.device.restart_gstreamer()

@@ -1,5 +1,6 @@
 import asyncio
 import gc
+import logging
 import weakref
 from collections.abc import Awaitable
 from contextlib import asynccontextmanager, suppress
@@ -99,6 +100,14 @@ async def forward_until(condition, *, step: float = 0.3, real_step: float = 0.05
 JPEG_FRAME = b'\xff\xd8' + bytes(32) + b'\xff\xd9'  # minimal SOI..EOI JPEG marker pair
 
 
+@pytest.fixture
+def vision_log(rosys_integration: None, caplog: pytest.LogCaptureFixture):
+    logger = logging.getLogger('rosys.vision')  # NOTE: the test log configuration disables propagation to the root
+    logger.addHandler(caplog.handler)
+    yield caplog
+    logger.removeHandler(caplog.handler)
+
+
 async def shutdown_device(device) -> None:
     """Shut a device down, whichever of the two shapes its `shutdown` has."""
     result = device.shutdown()
@@ -120,10 +129,16 @@ async def wait_in_real_time(condition, *, step: float = 0.02, attempts: int = 20
     assert condition(), message
 
 
-def live_capture_tasks(mac: str) -> list[asyncio.Task]:
-    """The capture loops a device is running; it names its task, so a replaced loop is visible here."""
-    return [task for task in asyncio.all_tasks()
-            if task.get_name() == f'mjpeg capture {mac}' and not task.done()]
+def live_capture_tasks(name: str) -> list[asyncio.Task]:
+    """The capture loops still running under this task name; a device names its task, so a leftover shows up."""
+    return [task for task in asyncio.all_tasks() if task.get_name() == name and not task.done()]
+
+
+async def cancel_leftover_loops(name: str) -> None:
+    """Keep a failing test from leaving a capture loop behind that would hold up the next one."""
+    for task in live_capture_tasks(name):
+        task.cancel()
+    await asyncio.sleep(0)
 
 
 class SlowFirstDecode:
@@ -156,9 +171,7 @@ async def decode_frame(data: bytes, timestamp: float) -> None:  # pylint: disabl
 class FlakyMjpegServer:
     """Local HTTP server that serves `frames_per_connection` fake JPEG frames and then drops the connection.
 
-    With the default of one frame, each connection mimics a camera whose stream ends, so a device
-    pointed at it must reconnect to receive more frames. `None` keeps the stream open instead, which
-    is what a device needs to stay in a single session.
+    One frame per connection mimics a camera whose stream keeps ending; `None` keeps the stream open.
     """
 
     def __init__(self, frames_per_connection: int | None = 1) -> None:
@@ -572,7 +585,7 @@ async def test_rtsp_device_backs_off_with_a_zero_reconnect_interval(rosys_integr
 
 
 @pytest.mark.parametrize('interval', [0.0, -1.0])
-async def test_devices_never_retry_without_a_delay(rosys_integration, interval: float):
+async def test_devices_never_retry_without_a_delay(vision_log, interval: float):
     devices = [
         MjpegDevice(GOODCAM_MAC, on_new_image_data=lambda data, timestamp: None, reconnect_interval=interval),
         RtspDevice(GOODCAM_MAC, substream=0, fps=5,
@@ -581,12 +594,27 @@ async def test_devices_never_retry_without_a_delay(rosys_integration, interval: 
     ]
     try:
         for device in devices:
-            assert device._retry_interval >= MIN_RECONNECT_INTERVAL, (  # pylint: disable=protected-access
+            assert device.reconnect_interval >= MIN_RECONNECT_INTERVAL, (
                 f'{type(device).__name__} would reconnect without waiting'
             )
+        complaints = [record for record in vision_log.records if 'too short' in record.getMessage()]
+        assert len(complaints) == len(devices), 'expected every device to report the interval it cannot honor'
     finally:
         for device in devices:
             await shutdown_device(device)
+
+
+async def test_a_reconnect_interval_that_can_be_honored_is_kept(vision_log):
+    device = MjpegDevice(GOODCAM_MAC, on_new_image_data=lambda data, timestamp: None, reconnect_interval=2.5)
+    try:
+        assert device.reconnect_interval == 2.5
+        assert not [record for record in vision_log.records if 'too short' in record.getMessage()]
+
+        device.reconnect_interval = 0.0
+        assert device.reconnect_interval == MIN_RECONNECT_INTERVAL, 'expected a later assignment to be held too'
+        assert [record for record in vision_log.records if 'too short' in record.getMessage()]
+    finally:
+        device.shutdown()
 
 
 async def test_rtsp_device_backs_off_after_rejected_login(rosys_integration):
@@ -727,10 +755,9 @@ async def test_mjpeg_device_stops_streaming_when_shut_down_during_a_callback(ros
             frames_after_shutdown = len(frames)
             await asyncio.sleep(0.15)  # a surviving session would deliver several more frames
             assert len(frames) == frames_after_shutdown, 'the capture task kept streaming after shutdown'
-            assert not live_capture_tasks(GOODCAM_MAC), 'the capture task survived shutdown'
+            assert not live_capture_tasks(f'mjpeg capture {GOODCAM_MAC}'), 'the capture task survived shutdown'
         finally:
-            for task in live_capture_tasks(GOODCAM_MAC):
-                task.cancel()
+            await cancel_leftover_loops(f'mjpeg capture {GOODCAM_MAC}')
             await server.stop()
 
 
@@ -743,15 +770,70 @@ async def test_mjpeg_device_keeps_one_capture_loop_across_an_address_change(rosy
         device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{server.port}', on_new_image_data=decode_frame)
         try:
             await wait_in_real_time(decode.started.is_set, message='no frame reached the callback')
-            device.ip = '127.0.0.1:1'  # what a provider does when the camera turns up at another address
+            device.ip = '127.0.0.1:1'  # a provider rebinds the camera to another address
             await wait_in_real_time(decode.finished.is_set, message='the stalled callback never returned')
             await asyncio.sleep(0.1)
-            assert len(live_capture_tasks(GOODCAM_MAC)) == 1, 'the replaced capture loop is still running'
+            assert len(live_capture_tasks(f'mjpeg capture {GOODCAM_MAC}')) == 1, \
+                'the replaced capture loop is still running'
         finally:
             device.shutdown()
-            for task in live_capture_tasks(GOODCAM_MAC):
-                task.cancel()
+            await cancel_leftover_loops(f'mjpeg capture {GOODCAM_MAC}')
             await server.stop()
+
+
+async def _stub_usb_session(self) -> bool:
+    """Stand-in for a capture session that keeps running without touching any hardware."""
+    await rosys.sleep(60.0)
+    return True
+
+
+async def test_rtsp_device_keeps_one_capture_loop_across_concurrent_restarts(rosys_integration):
+    task_name = f'capture {GOODCAM_MAC}'
+    with connected_rtsp_stream():
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: None)
+        try:
+            await forward_until(lambda: device.is_connected, message='expected the capture session to come up')
+            await asyncio.gather(device.restart_gstreamer(), device.restart_gstreamer())
+            await asyncio.sleep(0.05)
+            assert len(live_capture_tasks(task_name)) == 1, \
+                f'expected one capture loop, got {len(live_capture_tasks(task_name))}'
+        finally:
+            await device.shutdown()
+            await cancel_leftover_loops(task_name)
+
+
+async def test_usb_camera_keeps_one_capture_loop_across_concurrent_reconnects(rosys_integration):
+    camera_id = 'usb_reconnect_race'
+    task_name = f'usb capture {camera_id}'
+    with patch.object(UsbDevice, '_run_capture_session', _stub_usb_session):
+        camera = UsbCamera(id=camera_id, connect_after_init=False)
+        try:
+            await camera.connect()
+            await asyncio.sleep(0.05)
+            await asyncio.gather(camera.reconnect(), camera.reconnect())
+            await asyncio.sleep(0.05)
+            assert len(live_capture_tasks(task_name)) == 1, \
+                f'expected one capture loop, got {len(live_capture_tasks(task_name))}'
+        finally:
+            await camera.disconnect()
+            await cancel_leftover_loops(task_name)
+
+
+async def test_rtsp_camera_does_not_restart_a_device_it_is_disconnecting(rosys_integration):
+    task_name = f'capture {GOODCAM_MAC}'
+    camera = RtspCamera(mac=GOODCAM_MAC, ip='192.168.0.5', connect_after_init=False)
+    with connected_rtsp_stream():
+        try:
+            await camera.connect()
+            await forward_until(lambda: camera.is_connected, message='expected the capture session to come up')
+            await asyncio.gather(camera.disconnect(), camera.set_parameters({'fps': 7}))
+            await asyncio.sleep(0.05)
+            assert camera.device is None, 'expected the camera to end up disconnected'
+            assert not live_capture_tasks(task_name), 'a capture loop outlived the disconnect'
+        finally:
+            await camera.disconnect()
+            await cancel_leftover_loops(task_name)
 
 
 async def test_simulated_camera_disconnect_stops_loop(rosys_integration):

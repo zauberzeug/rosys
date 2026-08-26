@@ -19,8 +19,8 @@ logger = logging.getLogger('rosys.vision.camera')
 MIN_RECONNECT_INTERVAL = 0.1
 """Shortest wait between two connection attempts.
 
-A `reconnect_interval` of zero reads as "retry at once", which on a single event loop means a
-capture loop that never lets anything else run, so every device waits at least this long.
+An interval of zero reads as "retry at once", which on a single event loop means a capture loop
+that never lets anything else run.
 """
 
 
@@ -123,6 +123,7 @@ class Camera(abc.ABC):
 
     @asynccontextmanager
     async def _device_connection(self) -> AsyncGenerator[None, None]:
+        """Serialize device creation and tear-down."""
         await self.device_connection_lock.acquire()
         try:
             yield
@@ -167,3 +168,11 @@ class Camera(abc.ABC):
 
     async def capture_image(self) -> None:
         raise DeprecationWarning('The `capture_image()` method has been removed. All cameras should now use callbacks.')
+
+
+def clamp_reconnect_interval(interval: float, log: logging.Logger) -> float:
+    """Hold `interval` to `MIN_RECONNECT_INTERVAL`, saying so when the requested value cannot be honored."""
+    if interval >= MIN_RECONNECT_INTERVAL:
+        return interval
+    log.warning('a reconnect interval of %.2f s is too short; using %.2f s', interval, MIN_RECONNECT_INTERVAL)
+    return MIN_RECONNECT_INTERVAL

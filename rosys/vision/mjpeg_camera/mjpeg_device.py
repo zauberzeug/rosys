@@ -11,7 +11,7 @@ import httpx
 from nicegui import background_tasks
 
 from ... import rosys
-from ..camera.camera import MIN_RECONNECT_INTERVAL
+from ..camera.camera import clamp_reconnect_interval
 from ..image_processing import remove_exif
 from .vendors import mac_to_url
 
@@ -77,6 +77,14 @@ class MjpegDevice:
         self._start_capture_task()
 
     @property
+    def reconnect_interval(self) -> float:
+        return self._reconnect_interval
+
+    @reconnect_interval.setter
+    def reconnect_interval(self, interval: float) -> None:
+        self._reconnect_interval = clamp_reconnect_interval(interval, self.log)
+
+    @property
     def ip(self) -> str | None:
         """The address of the camera; assigning a new one makes the capture loop reopen the stream there."""
         return self._ip
@@ -121,9 +129,8 @@ class MjpegDevice:
     def _keeps_running(self) -> bool:
         """Whether the calling capture task should carry on.
 
-        A shutdown ends it, and so does a restart: `_capture_task` then points at the new task while
-        the old one may still be resuming from an await that swallowed its cancellation, because
-        `rosys.run.cpu_bound` and `io_bound` return ``None`` instead of raising `CancelledError`.
+        A cancelled task can resume instead of ending, because the `rosys.run` helpers turn a
+        cancellation into a ``None`` result; after a restart `_capture_task` is a different task.
         """
         return self._state is not CaptureState.STOPPED and self._capture_task is asyncio.current_task()
 
@@ -162,7 +169,7 @@ class MjpegDevice:
         """How long to wait before the next session; a rejected login backs off further than a lost stream."""
         if self._state is CaptureState.UNAUTHORIZED:
             return self.UNAUTHORIZED_RECONNECT_INTERVAL
-        return max(self.reconnect_interval, MIN_RECONNECT_INTERVAL)
+        return self.reconnect_interval
 
     def restart_capture(self) -> None:
         self.log.debug('Restarting capture task')

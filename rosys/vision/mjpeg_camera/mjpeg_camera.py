@@ -74,19 +74,21 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
             self.device.ip = ip
 
     async def connect(self) -> None:
-        if self.device is not None:
-            return
-        self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
-                                                password=self.password, on_new_image_data=self._handle_new_image_data,
-                                                on_connect=self._apply_all_parameters)
-        self.device.reconnect_interval = self.reconnect_interval
+        async with self._device_connection():
+            if self.device is not None:
+                return
+            self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
+                                                    password=self.password,
+                                                    on_new_image_data=self._handle_new_image_data,
+                                                    on_connect=self._apply_all_parameters)
+            self.device.reconnect_interval = self.reconnect_interval
 
     async def disconnect(self) -> None:
-        if self.device is None:
-            return
-
-        self.device.shutdown()
-        self.device = None
+        async with self._device_connection():
+            if self.device is None:
+                return
+            self.device.shutdown()
+            self.device = None
 
     async def _handle_new_image_data(self, image_bytes: bytes, timestamp: float) -> None:
         image: Image | None = None
