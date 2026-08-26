@@ -117,20 +117,29 @@ class MjpegDevice:
         self._state = CaptureState.CONNECTING
         self._capture_task = background_tasks.create(self._run_capture_task(), name=f'mjpeg capture {self._mac}')
 
+    def _keeps_running(self) -> bool:
+        """Whether the calling capture task should carry on.
+
+        A shutdown ends it, and so does a restart: `_capture_task` then points at the new task while
+        the old one may still be resuming from an await that swallowed its cancellation, because
+        `rosys.run.cpu_bound` and `io_bound` return ``None`` instead of raising `CancelledError`.
+        """
+        return self._state is not CaptureState.STOPPED and self._capture_task is asyncio.current_task()
+
     async def _run_capture_task(self) -> None:
         """Keep a single MJPEG session alive, reconnecting after `reconnect_interval` when it ends.
 
         Runs until `shutdown()` cancels the task.
         """
         try:
-            while self._state is not CaptureState.STOPPED:
+            while self._keeps_running():
                 # every attempt starts fresh: an earlier rejection says nothing about this one
                 self._state = CaptureState.CONNECTING
                 try:
                     await self._connect_and_stream_images()
                 except Exception:
                     self.log.exception('capture session failed')
-                if self._state is CaptureState.STOPPED:
+                if not self._keeps_running():
                     break
                 if self._state is CaptureState.UNAUTHORIZED:
                     self.log.info('credentials rejected; retrying in %.1f s', self._retry_interval)
@@ -242,11 +251,13 @@ class MjpegDevice:
                                     await callback_result
                             except Exception as e:
                                 self.log.error('Error processing image: %s', e)
+                            if not self._keeps_running():
+                                return
                 except Exception as e:
                     self.log.warning('Connection to %s failed. Was something disconnected?\n%s', url, e)
                     raise
         finally:
-            if self._state is CaptureState.STREAMING:
+            if self._keeps_running() and self._state is CaptureState.STREAMING:
                 self._state = CaptureState.CONNECTING
         self.log.debug('capture session ended')
 

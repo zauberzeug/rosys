@@ -1,7 +1,7 @@
 import asyncio
 import gc
 import weakref
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from unittest.mock import AsyncMock, patch
 
 import cv2
@@ -94,15 +94,67 @@ async def forward_until(condition, *, step: float = 0.3, real_step: float = 0.05
     assert condition(), message
 
 
-class FlakyMjpegServer:
-    """Local HTTP server that serves a single fake JPEG frame per connection and then drops it.
+JPEG_FRAME = b'\xff\xd8' + bytes(32) + b'\xff\xd9'  # minimal SOI..EOI JPEG marker pair
 
-    Each connection mimics a camera whose stream ends, so a device pointed at it must reconnect
-    to receive more frames.
+
+async def wait_in_real_time(condition, *, step: float = 0.02, attempts: int = 200,
+                            message: str = 'condition was not met') -> None:
+    """Wait for `condition` without advancing simulated time.
+
+    `forward()` does not advance while a `rosys.run.cpu_bound` call is in flight, so a test that
+    holds one open has to wait in real time.
+    """
+    for _ in range(attempts):
+        if condition():
+            return
+        await asyncio.sleep(step)
+    assert condition(), message
+
+
+def live_capture_tasks(mac: str) -> list[asyncio.Task]:
+    """The capture loops a device is running; it names its task, so a replaced loop is visible here."""
+    return [task for task in asyncio.all_tasks()
+            if task.get_name() == f'mjpeg capture {mac}' and not task.done()]
+
+
+class SlowFirstDecode:
+    """Stand-in for `nicegui.run.cpu_bound` that stalls its first call.
+
+    `rosys.run.cpu_bound` turns a cancellation during the call into a `None` result instead of
+    raising, so this is where a shutdown or an address change lands while a frame is being decoded.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, seconds: float = 0.3) -> None:
+        self.seconds = seconds
+        self.started = asyncio.Event()
+        self.finished = asyncio.Event()
+
+    async def __call__(self, callback, *args, **kwargs):
+        if not self.started.is_set():
+            self.started.set()
+            try:
+                await asyncio.sleep(self.seconds)
+            finally:  # the cancellation arrives here, so the stall ends either way
+                self.finished.set()
+        return callback(*args, **kwargs)
+
+
+async def decode_frame(data: bytes, timestamp: float) -> None:  # pylint: disable=unused-argument
+    """Image callback shaped like `MjpegCamera._handle_new_image_data`, which decodes via `cpu_bound`."""
+    await rosys.run.cpu_bound(len, data)
+
+
+class FlakyMjpegServer:
+    """Local HTTP server that serves `frames_per_connection` fake JPEG frames and then drops the connection.
+
+    With the default of one frame, each connection mimics a camera whose stream ends, so a device
+    pointed at it must reconnect to receive more frames. `None` keeps the stream open instead, which
+    is what a device needs to stay in a single session.
+    """
+
+    def __init__(self, frames_per_connection: int | None = 1) -> None:
         self.connections = 0
+        self.frames_per_connection = frames_per_connection
         self._server: asyncio.Server | None = None
 
     @property
@@ -121,17 +173,24 @@ class FlakyMjpegServer:
             except Exception:  # reading the request is best-effort
                 pass
             writer.write(b'HTTP/1.1 200 OK\r\n'
-                         b'Content-Type: multipart/x-mixed-replace; boundary=frame\r\n'
-                         b'Connection: close\r\n\r\n')
-            writer.write(b'\xff\xd8' + bytes(32) + b'\xff\xd9')  # minimal SOI..EOI JPEG marker pair
-            await writer.drain()
+                         b'Content-Type: multipart/x-mixed-replace; boundary=frame\r\n\r\n')
+            sent = 0
+            while self.frames_per_connection is None or sent < self.frames_per_connection:
+                writer.write(JPEG_FRAME)
+                await writer.drain()
+                sent += 1
+                if self.frames_per_connection is None:
+                    await asyncio.sleep(0.02)
+        except (ConnectionResetError, BrokenPipeError):
+            pass  # the device closed the stream
         finally:
             writer.close()
 
     async def stop(self) -> None:
         assert self._server is not None
         self._server.close()
-        await self._server.wait_closed()
+        with suppress(TimeoutError):  # a client still reading must not hold up the test
+            await asyncio.wait_for(self._server.wait_closed(), timeout=1)
 
 
 class Unauthorized401Server:
@@ -596,6 +655,53 @@ async def test_mjpeg_device_reopens_the_stream_when_its_url_changes(rosys_integr
             assert 'fps=6' in opened_urls[0] and 'fps=12' in opened_urls[1]
         finally:
             device.shutdown()
+
+
+async def test_mjpeg_device_stops_streaming_when_shut_down_during_a_callback(rosys_integration):
+    server = FlakyMjpegServer(frames_per_connection=None)
+    await server.start()
+    frames: list[bytes] = []
+    decode = SlowFirstDecode()
+
+    async def handle_image(data: bytes, timestamp: float) -> None:
+        await decode_frame(data, timestamp)
+        frames.append(data)
+
+    with patch('nicegui.run.cpu_bound', decode):
+        device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{server.port}', on_new_image_data=handle_image)
+        try:
+            await wait_in_real_time(decode.started.is_set, message='no frame reached the callback')
+            device.shutdown()
+            await wait_in_real_time(decode.finished.is_set, message='the stalled callback never returned')
+            await asyncio.sleep(0.05)  # let the frame that was in flight finish
+            frames_after_shutdown = len(frames)
+            await asyncio.sleep(0.15)  # a surviving session would deliver several more frames
+            assert len(frames) == frames_after_shutdown, 'the capture task kept streaming after shutdown'
+            assert not live_capture_tasks(GOODCAM_MAC), 'the capture task survived shutdown'
+        finally:
+            for task in live_capture_tasks(GOODCAM_MAC):
+                task.cancel()
+            await server.stop()
+
+
+async def test_mjpeg_device_keeps_one_capture_loop_across_an_address_change(rosys_integration):
+    server = FlakyMjpegServer(frames_per_connection=None)
+    await server.start()
+    decode = SlowFirstDecode()
+
+    with patch('nicegui.run.cpu_bound', decode):
+        device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{server.port}', on_new_image_data=decode_frame)
+        try:
+            await wait_in_real_time(decode.started.is_set, message='no frame reached the callback')
+            device.ip = '127.0.0.1:1'  # what a provider does when the camera turns up at another address
+            await wait_in_real_time(decode.finished.is_set, message='the stalled callback never returned')
+            await asyncio.sleep(0.1)
+            assert len(live_capture_tasks(GOODCAM_MAC)) == 1, 'the replaced capture loop is still running'
+        finally:
+            device.shutdown()
+            for task in live_capture_tasks(GOODCAM_MAC):
+                task.cancel()
+            await server.stop()
 
 
 async def test_simulated_camera_disconnect_stops_loop(rosys_integration):
