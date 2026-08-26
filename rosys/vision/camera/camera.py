@@ -16,6 +16,13 @@ from ..image_route import create_image_route
 
 logger = logging.getLogger('rosys.vision.camera')
 
+MIN_RECONNECT_INTERVAL = 0.1
+"""Shortest wait between two connection attempts.
+
+A `reconnect_interval` of zero reads as "retry at once", which on a single event loop means a
+capture loop that never lets anything else run, so every device waits at least this long.
+"""
+
 
 class Camera(abc.ABC):
     IMAGE_HISTORY_LENGTH: ClassVar[int] = 16

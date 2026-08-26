@@ -1,6 +1,7 @@
 import asyncio
 import gc
 import weakref
+from collections.abc import Awaitable
 from contextlib import asynccontextmanager, suppress
 from unittest.mock import AsyncMock, patch
 
@@ -22,6 +23,7 @@ from rosys.vision import (
     UsbCamera,
     UsbCameraProvider,
 )
+from rosys.vision.camera.camera import MIN_RECONNECT_INTERVAL
 from rosys.vision.mjpeg_camera.axis_mjpeg_device import AxisMjpegDevice
 from rosys.vision.mjpeg_camera.mjpeg_device import CaptureState, MjpegDevice, StreamOpenResult
 from rosys.vision.rtsp_camera.rtsp_device import RtspDevice
@@ -95,6 +97,13 @@ async def forward_until(condition, *, step: float = 0.3, real_step: float = 0.05
 
 
 JPEG_FRAME = b'\xff\xd8' + bytes(32) + b'\xff\xd9'  # minimal SOI..EOI JPEG marker pair
+
+
+async def shutdown_device(device) -> None:
+    """Shut a device down, whichever of the two shapes its `shutdown` has."""
+    result = device.shutdown()
+    if isinstance(result, Awaitable):
+        await result
 
 
 async def wait_in_real_time(condition, *, step: float = 0.02, attempts: int = 200,
@@ -537,6 +546,47 @@ async def test_mjpeg_device_retries_at_a_new_address_despite_back_off(rosys_inte
         device.shutdown()
         await rejecting_server.stop()
         await new_server.stop()
+
+
+async def test_rtsp_device_backs_off_with_a_zero_reconnect_interval(rosys_integration):
+    sessions = 0
+
+    async def unauthorized_gstreamer(self) -> None:
+        nonlocal sessions
+        sessions += 1
+        self._authorized = False  # pylint: disable=protected-access
+
+    with patch.object(RtspDevice, '_run_gstreamer', unauthorized_gstreamer):
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: None,
+                            reconnect_interval=0.0)
+        device.UNAUTHORIZED_RECONNECT_INTERVAL = 1.0  # type: ignore[misc]
+        try:
+            await forward(0.5)
+            assert sessions == 1, f'expected the device to throttle its retries, got {sessions} sessions'
+
+            await forward(1.0)
+            assert sessions >= 2, 'expected the back-off to end instead of holding the loop forever'
+        finally:
+            await device.shutdown()
+
+
+@pytest.mark.parametrize('interval', [0.0, -1.0])
+async def test_devices_never_retry_without_a_delay(rosys_integration, interval: float):
+    devices = [
+        MjpegDevice(GOODCAM_MAC, on_new_image_data=lambda data, timestamp: None, reconnect_interval=interval),
+        RtspDevice(GOODCAM_MAC, substream=0, fps=5,
+                   on_new_image_data=lambda data, timestamp: None, reconnect_interval=interval),
+        UsbDevice('no-such-camera', on_new_image_data=lambda data, timestamp: None, reconnect_interval=interval),
+    ]
+    try:
+        for device in devices:
+            assert device._retry_interval >= MIN_RECONNECT_INTERVAL, (  # pylint: disable=protected-access
+                f'{type(device).__name__} would reconnect without waiting'
+            )
+    finally:
+        for device in devices:
+            await shutdown_device(device)
 
 
 async def test_rtsp_device_backs_off_after_rejected_login(rosys_integration):

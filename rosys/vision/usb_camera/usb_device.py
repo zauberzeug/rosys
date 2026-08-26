@@ -7,6 +7,7 @@ import cv2
 import numpy as np
 
 from ... import rosys
+from ..camera.camera import MIN_RECONNECT_INTERVAL
 from .usb_camera_scanner import device_nodes_from_uid
 
 MJPG = cv2.VideoWriter.fourcc(*'MJPG')
@@ -71,6 +72,11 @@ class UsbDevice:
         return self._capture_task is not None and not self._capture_task.done()
 
     @property
+    def _retry_interval(self) -> float:
+        """How long to wait before the next session, never short enough to retry without a pause."""
+        return max(self.reconnect_interval, MIN_RECONNECT_INTERVAL)
+
+    @property
     def video_formats(self) -> set[str]:
         return self._video_formats
 
@@ -112,10 +118,10 @@ class UsbDevice:
                 if not self._should_run:
                     break
                 if streamed:
-                    self.log.info('[%s] capture ended; reconnecting in %.1f s', self.uid, self.reconnect_interval)
+                    self.log.info('[%s] capture ended; reconnecting in %.1f s', self.uid, self._retry_interval)
                 else:
-                    self.log.debug('[%s] no capture; retrying in %.1f s', self.uid, self.reconnect_interval)
-                await rosys.sleep(self.reconnect_interval)
+                    self.log.debug('[%s] no capture; retrying in %.1f s', self.uid, self._retry_interval)
+                await rosys.sleep(self._retry_interval)
         finally:
             if self._capture_task is asyncio.current_task():
                 self._capture_task = None

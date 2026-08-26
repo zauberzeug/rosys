@@ -11,6 +11,7 @@ import httpx
 from nicegui import background_tasks
 
 from ... import rosys
+from ..camera.camera import MIN_RECONNECT_INTERVAL
 from ..image_processing import remove_exif
 from .vendors import mac_to_url
 
@@ -161,7 +162,7 @@ class MjpegDevice:
         """How long to wait before the next session; a rejected login backs off further than a lost stream."""
         if self._state is CaptureState.UNAUTHORIZED:
             return self.UNAUTHORIZED_RECONNECT_INTERVAL
-        return self.reconnect_interval
+        return max(self.reconnect_interval, MIN_RECONNECT_INTERVAL)
 
     def restart_capture(self) -> None:
         self.log.debug('Restarting capture task')

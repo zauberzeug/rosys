@@ -18,6 +18,7 @@ from nicegui import background_tasks
 
 from ... import rosys
 from ...vision.image import ImageArray
+from ..camera.camera import MIN_RECONNECT_INTERVAL
 from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
 from .arkvision_rtsp_interface import ArkVisionRtspInterface
 from .jovision_rtsp_interface import JovisionInterface
@@ -173,11 +174,11 @@ class RtspDevice:
                     self.log.info('[%s] credentials rejected; retrying in %.1f s',
                                   self._mac, self.UNAUTHORIZED_RECONNECT_INTERVAL)
                 elif self._ip is None:
-                    self.log.debug('[%s] no address known; retrying in %.1f s', self._mac, self.reconnect_interval)
+                    self.log.debug('[%s] no address known; retrying in %.1f s', self._mac, self._retry_interval)
                 elif self.url is None:
                     self._warn_about_missing_url()
                 else:
-                    self.log.info('[%s] stream ended; reconnecting in %.1f s', self._mac, self.reconnect_interval)
+                    self.log.info('[%s] stream ended; reconnecting in %.1f s', self._mac, self._retry_interval)
                 await self._wait_before_retry()
         finally:
             if self._capture_task is asyncio.current_task():
@@ -195,17 +196,22 @@ class RtspDevice:
         self.log.warning('[%s] no RTSP URL known for vendor %s; this camera cannot be reached',
                          self._mac, mac_to_vendor(self._mac))
 
+    @property
+    def _retry_interval(self) -> float:
+        """How long to wait before the next session, never short enough to retry without a pause."""
+        return max(self.reconnect_interval, MIN_RECONNECT_INTERVAL)
+
     async def _wait_before_retry(self) -> None:
         """Wait `reconnect_interval` before the next session, extending the wait while our login stays rejected.
 
         Waiting in `reconnect_interval` chunks re-reads the verdict, so a new address ends a long wait
-        early instead of holding on to a verdict that was about the previous address.
+        early instead of holding on to a verdict that was about the previous address. The deadline bounds
+        the whole wait, however short the chunks are.
         """
-        await rosys.sleep(self.reconnect_interval)
-        waited = self.reconnect_interval
-        while self._should_run and not self._authorized and waited < self.UNAUTHORIZED_RECONNECT_INTERVAL:
-            await rosys.sleep(self.reconnect_interval)
-            waited += self.reconnect_interval
+        await rosys.sleep(self._retry_interval)
+        deadline = rosys.time() + self.UNAUTHORIZED_RECONNECT_INTERVAL - self._retry_interval
+        while self._should_run and not self._authorized and rosys.time() < deadline:
+            await rosys.sleep(self._retry_interval)
 
     async def restart_gstreamer(self) -> None:
         await self.shutdown()
