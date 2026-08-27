@@ -158,9 +158,12 @@ class Spline:
     def curvature(self, t: float | np.ndarray) -> float | np.ndarray:
         x_ = self.gx(t)
         y_ = self.gy(t)
-        x__ = self.ggx(t)
-        y__ = self.ggy(t)
-        return (x_ * y__ - y_ * x__) / (x_**2 + y_**2)**(3/2)
+        numerator = x_ * self.ggy(t) - y_ * self.ggx(t)
+        denominator = (x_**2 + y_**2)**(3/2)
+        if isinstance(t, np.ndarray):
+            with np.errstate(divide='ignore', invalid='ignore'):
+                return np.where(denominator == 0, 0.0, numerator / denominator)
+        return numerator / denominator if denominator else 0.0  # NOTE: a degenerate spline is a straight chord
 
     def max_curvature(self, t_min: float = 0.0, t_max: float = 1.0) -> float:
         poly = [

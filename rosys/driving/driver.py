@@ -25,6 +25,7 @@ class DriveParameters(ModificationContext):
     carrot_step_fraction: float = 0.1
     hook_bending_factor: float = 0.0
     curvature_feedforward_gain: float = 0.0
+    curvature_feedforward_limit: float = 5.0
     minimum_drive_distance: float = 0.01
     throttle_at_end_distance: float = 0.5
     throttle_at_end_min_speed: float = 0.01
@@ -199,14 +200,15 @@ class Driver:
                     foot = spline.closest_point(self.pose.x, self.pose.y, t_min=foot)
                 else:
                     foot = carrot.t  # NOTE: move_by_foot already projected the pose onto the spline
-                feedforward = self.parameters.curvature_feedforward_gain * spline.curvature(foot) \
-                    * (-1 if flip_hook else 1)
-                if np.isfinite(feedforward):  # NOTE: degenerate splines yield NaN curvature where the derivative vanishes
-                    curvature += feedforward
+                feedforward = self.parameters.curvature_feedforward_gain * spline.curvature(foot)
+                limit = self.parameters.curvature_feedforward_limit
+                # NOTE: near-degenerate splines have huge curvature near their endpoints, which would stall the drive
+                feedforward = min(max(feedforward, -limit), limit)
+                curvature += feedforward * np.sign(hook_offset.x)
             if curvature != 0 and abs(1 / curvature) < self.parameters.minimum_turning_radius:
                 curvature = (-1 if curvature < 0 else 1) / self.parameters.minimum_turning_radius
             linear: float = self.parameters.linear_speed_limit * (-1 if drive_backward else 1)
-            t = spline.closest_point(hook.x, hook.y)
+            t = spline.closest_point(hook.x, hook.y, t_min=foot)
             if t >= 1.0 and throttle_at_end:
                 target_distance = self.pose.projected_distance(spline.pose(1.0))
                 throttle_distance = self.parameters.throttle_at_end_distance
