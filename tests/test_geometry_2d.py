@@ -81,5 +81,7 @@ def test_spline_curvature_of_degenerate_splines():
     assert spline.curvature(0.0) == 0.0  # NOTE: the derivative vanishes here; the chord itself is straight
     assert spline.curvature(0.5) == 0.0
     assert np.all(spline.curvature(np.array([0.0, 0.5, 1.0])) == 0.0)
+    assert np.isinf(spline.max_curvature())  # NOTE: planners must keep rejecting degenerate splines as unhealthy
     zero_length = Spline.from_points(Point(x=1, y=1), Point(x=1, y=1))
     assert zero_length.curvature(0.5) == 0.0  # NOTE: plain-float coefficients must not raise ZeroDivisionError
+    assert np.isinf(zero_length.max_curvature())

@@ -170,7 +170,7 @@ class Driver:
         hook_offset = Point(x=self.parameters.hook_offset, y=0) * (-1 if flip_hook else 1)
         carrot_offset = Point(x=self.parameters.carrot_offset, y=0)
         carrot = Carrot(spline=spline, offset=carrot_offset)
-        foot = 0.0  # NOTE: advanced monotonically so the feed-forward cannot jump to another lobe of the spline
+        foot = 0.0  # NOTE: advanced monotonically so the feed-forward cannot fall back to an earlier lobe of the spline
 
         while True:
             if self._abort:
@@ -204,11 +204,11 @@ class Driver:
                 limit = self.parameters.curvature_feedforward_limit
                 # NOTE: near-degenerate splines have huge curvature near their endpoints, which would stall the drive
                 feedforward = min(max(feedforward, -limit), limit)
-                curvature += feedforward * np.sign(hook_offset.x)
+                curvature += feedforward * (-1 if flip_hook else 1)
             if curvature != 0 and abs(1 / curvature) < self.parameters.minimum_turning_radius:
                 curvature = (-1 if curvature < 0 else 1) / self.parameters.minimum_turning_radius
             linear: float = self.parameters.linear_speed_limit * (-1 if drive_backward else 1)
-            t = spline.closest_point(hook.x, hook.y, t_min=foot)
+            t = spline.closest_point(hook.x, hook.y)
             if t >= 1.0 and throttle_at_end:
                 target_distance = self.pose.projected_distance(spline.pose(1.0))
                 throttle_distance = self.parameters.throttle_at_end_distance

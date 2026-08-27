@@ -161,8 +161,7 @@ class Spline:
         numerator = x_ * self.ggy(t) - y_ * self.ggx(t)
         denominator = (x_**2 + y_**2)**(3/2)
         if isinstance(t, np.ndarray):
-            with np.errstate(divide='ignore', invalid='ignore'):
-                return np.where(denominator == 0, 0.0, numerator / denominator)
+            return np.divide(numerator, denominator, out=np.zeros_like(numerator), where=denominator != 0)
         return numerator / denominator if denominator else 0.0  # NOTE: a degenerate spline is a straight chord
 
     def max_curvature(self, t_min: float = 0.0, t_max: float = 1.0) -> float:
@@ -189,6 +188,9 @@ class Spline:
         roots = np.roots(poly)
         t = np.array([t0 for t0 in roots if np.isreal(t0) and t_min < t0 < t_max] + [t_min, t_max])
 
+        gradient = np.real(self.gx(t))**2 + np.real(self.gy(t))**2
+        if np.any(gradient == 0):
+            return np.inf  # NOTE: where the derivative vanishes the spline is degenerate, i.e. an infinitely sharp cusp
         k = np.real(self.curvature(t))
         idx = np.argmax(np.abs(k))
         return k[idx]
