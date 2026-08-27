@@ -1,6 +1,7 @@
+import numpy as np
 import pytest
 
-from rosys.geometry import Line, LineSegment, Point, Pose, PoseStep, Rectangle
+from rosys.geometry import Line, LineSegment, Point, Pose, PoseStep, Rectangle, Spline
 from rosys.testing import approx
 
 
@@ -73,3 +74,14 @@ def test_rectangle_contains_point():
     assert not rectangle.contains(out2)
     assert rectangle.contains(in1)
     assert rectangle.contains(in2)
+
+
+def test_spline_curvature_of_degenerate_splines():
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=1, yaw=0), control_dist=0)
+    assert spline.curvature(0.0) == 0.0  # NOTE: the derivative vanishes here; the chord itself is straight
+    assert spline.curvature(0.5) == 0.0
+    assert np.all(spline.curvature(np.array([0.0, 0.5, 1.0])) == 0.0)
+    assert np.isinf(spline.max_curvature())  # NOTE: planners must keep rejecting degenerate splines as unhealthy
+    zero_length = Spline.from_points(Point(x=1, y=1), Point(x=1, y=1))
+    assert zero_length.curvature(0.5) == 0.0  # NOTE: plain-float coefficients must not raise ZeroDivisionError
+    assert np.isinf(zero_length.max_curvature())

@@ -39,9 +39,10 @@ async def test_driving_a_spline(driver: Driver, automator: Automator, robot: Rob
     assert_pose(dx, 1, deg=0, position_tolerance=0.035)
 
 
-@pytest.mark.parametrize('dx', [2, -2])
-async def test_driving_a_curved_spline(driver: Driver, automator: Automator, robot: Robot, dx: float):
+@pytest.mark.parametrize(('dx', 'gain'), [(2, 0.0), (-2, 0.0), (-2, 1.0)])
+async def test_driving_a_curved_spline(driver: Driver, automator: Automator, robot: Robot, dx: float, gain: float):
     assert_pose(0, 0, deg=0)
+    driver.parameters.curvature_feedforward_gain = gain
     yaw_degrees = 90 if dx > 0 else -90
     spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=dx, y=2, yaw=np.radians(yaw_degrees)), backward=dx < 0)
     automator.start(driver.drive_spline(spline, flip_hook=dx < 0))
@@ -378,3 +379,68 @@ async def test_uninterruptible(automator: Automator, method: Literal['pause', 's
         automator.stop(because='we can')
     await forward(seconds=2.0)
     assert state['count'] == 20
+
+
+@pytest.mark.parametrize(('gain', 'max_allowed_cross_track'), [(0.0, 0.05), (1.0, 0.005)])
+async def test_curvature_feedforward_improves_tracking(driver: Driver, automator: Automator, robot: Robot,
+                                                       gain: float, max_allowed_cross_track: float):
+    driver.parameters.curvature_feedforward_gain = gain
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=2, yaw=np.radians(90)))
+    automator.start(driver.drive_spline(spline))
+    await forward(until=lambda: automator.is_running)
+    max_cross_track = 0.0
+
+    def is_stopped() -> bool:
+        nonlocal max_cross_track
+        foot = spline.closest_point(driver.pose.x, driver.pose.y)
+        max_cross_track = max(max_cross_track, driver.pose.distance(spline.pose(foot)))
+        return automator.is_stopped
+    await forward(until=is_stopped)
+    assert max_cross_track < max_allowed_cross_track
+
+
+async def test_curvature_feedforward_is_clamped_to_the_minimum_turning_radius(driver: Driver, automator: Automator,
+                                                                              robot: Robot):
+    driver.parameters.curvature_feedforward_gain = 4.0
+    driver.parameters.minimum_turning_radius = 1.0
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=2, yaw=np.radians(90)))
+    automator.start(driver.drive_spline(spline))
+    await forward(until=lambda: automator.is_running)
+    max_curvature = 0.0
+
+    def is_stopped() -> bool:
+        nonlocal max_curvature
+        if driver.state is not None:
+            max_curvature = max(max_curvature, abs(driver.state.curvature))
+        return automator.is_stopped
+    await forward(until=is_stopped)
+    assert max_curvature == pytest.approx(1 / driver.parameters.minimum_turning_radius)
+
+
+async def test_curvature_feedforward_handles_degenerate_splines(driver: Driver, automator: Automator, robot: Robot):
+    driver.parameters.curvature_feedforward_gain = 1.0
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=2, yaw=np.radians(90)), control_dist=0)
+    automator.start(driver.drive_spline(spline))
+    await forward(until=lambda: automator.is_running)
+    await forward(until=lambda: automator.is_stopped)
+    assert_pose(2, 2, deg=45, position_tolerance=0.035)  # NOTE: the degenerate spline is a straight chord
+
+
+async def test_curvature_feedforward_is_bounded_for_near_degenerate_splines(driver: Driver, automator: Automator,
+                                                                            robot: Robot):
+    driver.parameters.curvature_feedforward_gain = 1.0
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=2, yaw=np.radians(90)), control_dist=0.01)
+    automator.start(driver.drive_spline(spline))
+    await forward(until=lambda: automator.is_running)
+    await forward(until=lambda: automator.is_stopped)  # NOTE: an unbounded feed-forward would stall the drive here
+    assert_pose(2, 2, position_tolerance=0.05)
+
+
+async def test_curvature_feedforward_without_driving_backwards(driver: Driver, automator: Automator, robot: Robot):
+    driver.parameters.can_drive_backwards = False
+    driver.parameters.curvature_feedforward_gain = 1.0
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=2, yaw=np.radians(90)))
+    automator.start(driver.drive_spline(spline))
+    await forward(until=lambda: automator.is_running)
+    await forward(until=lambda: automator.is_stopped)
+    assert_pose(2, 2, deg=90, position_tolerance=0.035)

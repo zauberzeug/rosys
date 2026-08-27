@@ -85,6 +85,17 @@ def test_grow_map(shape: Prism) -> None:
     assert planner.obstacle_map.grid.bbox == pytest.approx((-2.4, -2.4, 8.6, 5.8))
 
 
+def test_turning_in_place_is_planned_as_shunting_maneuver(shape: Prism) -> None:
+    planner = DelaunayPlanner(shape.outline)
+    start = Pose(x=0, y=0, yaw=0)
+    goal = Pose(x=0, y=0, yaw=np.deg2rad(90))
+    planner.update_map([], [], [start, goal], time.time() + 3.0)
+    path = planner.search(start, goal)
+    assert path is not None
+    assert all(segment.spline.start.distance(segment.spline.end) > 0.1 for segment in path), \
+        'a zero-length spline cannot turn the robot toward the goal yaw'
+
+
 async def test_overlapping_commands(path_planner: PathPlanner) -> None:
     await forward(1.0)
 
