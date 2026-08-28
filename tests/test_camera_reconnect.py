@@ -327,16 +327,19 @@ async def test_mjpeg_camera_passes_reconnect_interval_to_device(rosys_integratio
 class FakeCapture:
     """Minimal stand-in for cv2.VideoCapture that can simulate a disconnected device."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, failing_reads: bool = False) -> None:
         self._opened = True
         self._frame = np.zeros((48, 64, 3), dtype=np.uint8)
         self.props: dict = {}
+        self.failing_reads = failing_reads
+        self.reads = 0
 
     def isOpened(self) -> bool:  # cv2 API name
         return self._opened
 
     def read(self):
-        if not self._opened:
+        self.reads += 1
+        if not self._opened or self.failing_reads:
             return False, None
         return True, self._frame
 
@@ -387,6 +390,50 @@ async def test_usb_device_reconnects_after_disconnect(rosys_integration):
                 await forward(0.3)
                 await asyncio.sleep(0.02)
             assert len(captures) == captures_at_shutdown, 'device kept reopening after shutdown'
+        finally:
+            await device.shutdown()
+
+
+async def test_usb_device_releases_a_capture_that_only_fails_to_read(rosys_integration):
+    """A cable pulled mid-stream leaves an opened capture whose reads fail; the session must end."""
+    captures: list[FakeCapture] = []
+
+    def make_capture(_device_node: str) -> FakeCapture:
+        capture = FakeCapture(failing_reads=True)
+        captures.append(capture)
+        return capture
+
+    with patch.object(UsbDevice, 'create_capture', make_capture), \
+            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
+        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.3)
+        try:
+            await forward_until(lambda: captures and captures[0].reads >= UsbDevice.MAX_READ_FAILURES,
+                                step=0.1, real_step=0.02, attempts=30,
+                                message='device did not keep reading a capture whose reads fail')
+            assert not device.is_connected, 'expected the capture to be released after the failed reads'
+            assert captures[0].reads == UsbDevice.MAX_READ_FAILURES, \
+                'expected the capture to be released as soon as the failures reach the limit'
+
+            await forward_until(lambda: len(captures) > 1, real_step=0.02,
+                                message='device did not try to reopen its capture')
+        finally:
+            await device.shutdown()
+
+
+async def test_usb_device_backs_off_while_no_frame_arrives(rosys_integration):
+    """An opened capture is no success: without a frame the wait has to keep growing."""
+    def make_capture(_device_node: str) -> FakeCapture:
+        return FakeCapture(failing_reads=True)
+
+    with patch.object(UsbDevice, 'create_capture', make_capture), \
+            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
+        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
+        try:
+            await forward_until(lambda: device._failed_attempts >= 2,  # pylint: disable=protected-access
+                                step=0.1, real_step=0.02, attempts=40,
+                                message='device treated an opened capture without frames as a success')
+            # pylint: disable=protected-access
+            assert device._retry_interval > 0.2, 'expected the wait to grow while no frame arrives'
         finally:
             await device.shutdown()
 

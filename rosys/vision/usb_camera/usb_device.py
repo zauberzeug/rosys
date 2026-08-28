@@ -132,19 +132,18 @@ class UsbDevice:
     async def _run_capture_session(self) -> bool:
         """Read frames until the capture is lost, then release it.
 
-        Returns whether a capture was open at all.
+        Returns whether at least one frame was delivered.
         """
-        opened = False
+        streamed = False
         while self._should_run:
             if self._capture is None or not self._capture.isOpened():
                 await self._open_capture()
                 if self._capture is None:
-                    return opened
-            opened = True
+                    return streamed
 
             read_result = await rosys.run.io_bound(self._capture.read)
             if read_result is None:
-                return opened
+                return streamed
             capture_success, frame = read_result
 
             if not capture_success:
@@ -153,7 +152,7 @@ class UsbDevice:
                     self.log.warning('[%s] releasing capture after %d failed reads',
                                      self.uid, self._read_failures)
                     await self._release()
-                    return opened
+                    return streamed
                 await rosys.sleep(0.01)
                 continue
             self._read_failures = 0
@@ -168,9 +167,10 @@ class UsbDevice:
                 # convert bgr to rgb
                 frame = frame[:, :, ::-1]
                 result = self._on_new_image_data(frame, timestamp)
+            streamed = True
             if isinstance(result, Awaitable):
                 await result
-        return opened
+        return streamed
 
     async def _open_capture(self) -> None:
         """Find and open the capture for this camera; leaves ``_capture`` as ``None`` when it is unavailable."""
