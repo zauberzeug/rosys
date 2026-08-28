@@ -1,6 +1,5 @@
 import warnings
 
-from ... import rosys
 from ..camera_provider import CameraProvider
 from .simulated_camera import SimulatedCamera
 
@@ -10,17 +9,11 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera]):
 
     In the current implementation the images only contain the camera ID and the current time.
     """
-    SCAN_INTERVAL = 10
 
-    def __init__(self, *,
-                 simulate_failing: bool = False,
-                 auto_scan: bool = True) -> None:
+    def __init__(self, *, simulate_failing: bool = False) -> None:
         super().__init__()
 
         self.simulate_failing = simulate_failing
-
-        if auto_scan:
-            rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
     @property
     def simulate_device_failure(self) -> bool:
@@ -33,12 +26,6 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera]):
         warnings.warn('`simulate_device_failure` is deprecated, use `simulate_failing` instead.',
                       DeprecationWarning, stacklevel=2)
         self.simulate_failing = value
-
-    def backup_to_dict(self) -> dict:
-        cameras = {}
-        for camera in self._cameras.values():
-            cameras[camera.id] = camera.to_dict()
-        return {}
 
     def restore_from_dict(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():

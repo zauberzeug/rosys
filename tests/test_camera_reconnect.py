@@ -932,7 +932,7 @@ async def test_simulated_camera_disconnect_stops_loop(rosys_integration):
 
 
 def test_simulate_device_failure_deprecated_alias(rosys_integration):
-    provider = SimulatedCameraProvider(auto_scan=False, simulate_failing=True)
+    provider = SimulatedCameraProvider(simulate_failing=True)
 
     with pytest.warns(DeprecationWarning):
         deprecated_value = provider.simulate_device_failure
@@ -1223,7 +1223,7 @@ async def test_usb_provider_leaves_disconnected_camera_alone(rosys_integration):
 
 
 async def test_simulated_provider_leaves_disconnected_camera_alone(rosys_integration):
-    provider = SimulatedCameraProvider(auto_scan=False)
+    provider = SimulatedCameraProvider()
     camera = SimulatedCamera(id='sim', connect_after_init=False)
     provider.add_camera(camera)
     await camera.connect()
