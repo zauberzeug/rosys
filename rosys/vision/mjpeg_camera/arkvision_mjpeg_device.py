@@ -1,7 +1,7 @@
 from collections.abc import Awaitable, Callable
 
 from .arkvision_settings_interface import ArkVisionSettingsInterface
-from .mjpeg_device import MjpegDevice
+from .mjpeg_device import CameraAddressUnknown, MjpegDevice
 from .vendors import VendorType, mac_to_vendor
 
 
@@ -25,7 +25,8 @@ class ArkVisionMjpegDevice(MjpegDevice):
 
     @property
     def settings_interface(self) -> ArkVisionSettingsInterface:
-        assert self.ip is not None, 'cannot reach the camera settings without an address'
+        if self.ip is None:
+            raise CameraAddressUnknown(f'cannot reach the settings of {self._mac} without an address')
         return ArkVisionSettingsInterface(self.ip)
 
     async def _prepare_stream(self) -> None:

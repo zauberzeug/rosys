@@ -1,7 +1,7 @@
 from collections.abc import Awaitable, Callable
 
 from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
-from .mjpeg_device import MjpegDevice
+from .mjpeg_device import CameraAddressUnknown, MjpegDevice
 from .vendors import VendorType, mac_to_vendor
 
 
@@ -30,7 +30,8 @@ class OpenIpcZauberzeugMjpegDevice(MjpegDevice):
 
     @property
     def settings_interface(self) -> OpenIpcZauberzeugSettingsInterface:
-        assert self.ip is not None, 'cannot reach the camera settings without an address'
+        if self.ip is None:
+            raise CameraAddressUnknown(f'cannot reach the settings of {self._mac} without an address')
         return OpenIpcZauberzeugSettingsInterface(self.ip, username=self._username, password=self._password)
 
     async def set_fps(self, fps: int) -> None:

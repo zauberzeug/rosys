@@ -18,12 +18,12 @@ from .vendors import mac_to_url
 log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device')
 
 
-class CaptureState(enum.Enum):
-    """State of the self-healing capture loop.
+class CameraAddressUnknown(Exception):
+    """Raised when the camera settings are used before discovery has found an address."""
 
-    Modelling the loop as a single state (instead of separate ``should_run``/``streaming``/``authorized``
-    flags) keeps only the valid combinations representable.
-    """
+
+class CaptureState(enum.Enum):
+    """State of the self-healing capture loop."""
     CONNECTING = enum.auto()    # loop alive, opening the stream or waiting to reconnect
     STREAMING = enum.auto()     # stream open and delivering frames
     REFUSED = enum.auto()       # camera answered without a stream; loop backs off before trying again
@@ -162,6 +162,8 @@ class MjpegDevice:
                 reason = 'stream ended'
                 try:
                     streamed = await self._connect_and_stream_images()
+                except CameraAddressUnknown:
+                    reason = 'no address known yet'
                 except httpx.HTTPError as e:
                     reason = f'cannot reach the camera: {e}'
                 except Exception:

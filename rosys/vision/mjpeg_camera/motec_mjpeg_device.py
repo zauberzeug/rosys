@@ -1,6 +1,6 @@
 from collections.abc import Awaitable, Callable
 
-from .mjpeg_device import MjpegDevice
+from .mjpeg_device import CameraAddressUnknown, MjpegDevice
 from .motec_settings_interface import MotecSettingsInterface
 from .vendors import VendorType, mac_to_vendor
 
@@ -25,7 +25,8 @@ class MotecMjpegDevice(MjpegDevice):
 
     @property
     def settings_interface(self) -> MotecSettingsInterface:
-        assert self.ip is not None, 'cannot reach the camera settings without an address'
+        if self.ip is None:
+            raise CameraAddressUnknown(f'cannot reach the settings of {self._mac} without an address')
         return MotecSettingsInterface(self.ip, port=self._control_port)
 
     async def set_fps(self, fps: int) -> None:

@@ -25,8 +25,9 @@ from rosys.vision import (
     UsbCamera,
     UsbCameraProvider,
 )
+from rosys.vision.mjpeg_camera.arkvision_mjpeg_device import ArkVisionMjpegDevice
 from rosys.vision.mjpeg_camera.axis_mjpeg_device import AxisMjpegDevice
-from rosys.vision.mjpeg_camera.mjpeg_device import CaptureState, MjpegDevice
+from rosys.vision.mjpeg_camera.mjpeg_device import CameraAddressUnknown, CaptureState, MjpegDevice
 from rosys.vision.reconnect import (
     MAX_RECONNECT_INTERVAL,
     MIN_RECONNECT_INTERVAL,
@@ -43,6 +44,8 @@ GOODCAM_MAC = '2c:6f:51:00:00:01'
 
 # A MAC that maps to AXIS, whose stream settings are part of the URL rather than a settings interface.
 AXIS_MAC = '00:40:8c:00:00:01'
+
+ARKVISION_MAC = '18:fd:cb:00:00:01'
 
 
 async def _no_stream(self) -> None:
@@ -1347,6 +1350,32 @@ async def test_rtsp_shutdown_reraises_a_cancellation_of_its_caller(rosys_integra
             for task in asyncio.all_tasks():
                 if task.get_name() == f'capture {GOODCAM_MAC}':
                     task.cancel()
+
+
+def test_settings_of_a_camera_without_an_address_raise_a_domain_error():
+    device = ArkVisionMjpegDevice.__new__(ArkVisionMjpegDevice)
+    device._mac = ARKVISION_MAC  # pylint: disable=protected-access
+    device._ip = None  # pylint: disable=protected-access
+    with pytest.raises(CameraAddressUnknown):
+        _ = device.settings_interface
+
+
+async def test_mjpeg_device_reports_a_missing_address_without_a_traceback(rosys_integration, vision_log):
+    async def unknown_address(self) -> None:
+        raise CameraAddressUnknown('no address')
+
+    with patch.object(MjpegDevice, '_connect_and_stream_images', unknown_address):
+        device = MjpegDevice(GOODCAM_MAC, '127.0.0.1:1', on_new_image_data=lambda data, timestamp: None,
+                             reconnect_interval=0.2)
+        try:
+            await forward_until(lambda: any('no address known yet' in record.getMessage()
+                                            for record in vision_log.records),
+                                step=0.1, real_step=0.02,
+                                message='device did not report the missing address')
+            assert not [record for record in vision_log.records if record.exc_info], \
+                'expected a missing address to be reported without a traceback'
+        finally:
+            device.shutdown()
 
 
 async def test_a_device_being_torn_down_is_not_restarted(rosys_integration):
