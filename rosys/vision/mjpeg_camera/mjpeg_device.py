@@ -1,18 +1,13 @@
-import asyncio
-import enum
 import logging
-from asyncio import Task
 from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
-from typing import ClassVar
 
 import httpx
-from nicegui import background_tasks
 
 from ... import rosys
+from ..capture_device import CaptureDevice, CaptureState
 from ..http import new_async_client
 from ..image_processing import remove_exif
-from ..reconnect import MAX_RECONNECT_INTERVAL, clamp_reconnect_interval, retry_delay
 from .vendors import mac_to_url
 
 log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device')
@@ -20,14 +15,6 @@ log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device')
 
 class CameraAddressUnknown(Exception):
     """Raised when the camera settings are used before discovery has found an address."""
-
-
-class CaptureState(enum.Enum):
-    """State of the self-healing capture loop."""
-    CONNECTING = enum.auto()    # loop alive, opening the stream or waiting to reconnect
-    STREAMING = enum.auto()     # stream open and delivering frames
-    REFUSED = enum.auto()       # camera answered without a stream; loop backs off before trying again
-    STOPPED = enum.auto()       # shutdown requested; loop gives up
 
 
 def parse_capture_timestamp(part_header: bytes) -> float | None:
@@ -50,13 +37,7 @@ def parse_capture_timestamp(part_header: bytes) -> float | None:
         return None
 
 
-class MjpegDevice:
-    REFUSED_RECONNECT_INTERVAL: ClassVar[float] = MAX_RECONNECT_INTERVAL
-    '''Wait time between attempts while the camera answers something other than a stream.
-
-    It is reachable and has said no, so asking again sooner cannot change the answer, and a rejected
-    login or a rate limit only gets worse for being retried.
-    '''
+class MjpegDevice(CaptureDevice):
 
     def __init__(self, mac: str, ip: str | None = None, *,
                  index: int | None = None,
@@ -65,29 +46,18 @@ class MjpegDevice:
                  on_new_image_data: Callable[[bytes, float], Awaitable | None],
                  on_connect: Callable[[], Awaitable | None] | None = None,
                  reconnect_interval: float = 3.0) -> None:
+        super().__init__(name=mac,
+                         log=logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device.' + mac),
+                         reconnect_interval=reconnect_interval)
         self._mac = mac
         self._ip = ip
         self._index = index
-        self.log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device.' + self._mac)
-
         self._on_new_image_data = on_new_image_data
         self._on_connect = on_connect
-        self._capture_task: Task | None = None
         self._username = username
         self._password = password
-        self.reconnect_interval = reconnect_interval
-        self._state = CaptureState.CONNECTING
-        self._failed_attempts = 0
 
         self._start_capture_task()
-
-    @property
-    def reconnect_interval(self) -> float:
-        return self._reconnect_interval
-
-    @reconnect_interval.setter
-    def reconnect_interval(self, interval: float) -> None:
-        self._reconnect_interval = clamp_reconnect_interval(interval, self.log)
 
     @property
     def ip(self) -> str | None:
@@ -109,95 +79,21 @@ class MjpegDevice:
             return None
         return mac_to_url(self._mac, self._ip, index=self._index)
 
-    @property
-    def is_connected(self) -> bool:
-        """Whether the MJPEG stream is currently delivering frames."""
-        return self._state is CaptureState.STREAMING
+    def _retry_reason(self) -> str | None:
+        if self._ip is None:
+            return 'no address known'
+        if self.url is None:
+            return f'no stream URL for mac "{self._mac}"'
+        if self.is_refused:
+            return 'camera refused the stream'
+        return None
 
-    @property
-    def is_active(self) -> bool:
-        """Whether the self-healing capture loop is alive (streaming or waiting to reconnect)."""
-        return (self._capture_task is not None) and (not self._capture_task.done())
-
-    @property
-    def is_refused(self) -> bool:
-        """Whether the camera answered the last attempt with something other than a stream."""
-        return self._state is CaptureState.REFUSED
-
-    def _start_capture_task(self) -> None:
-        if self._capture_task is not None and not self._capture_task.done():
-            self.log.warning('tried to start a capture loop while already running one')
-            return
-        self._state = CaptureState.CONNECTING
-        self._capture_task = background_tasks.create(self._run_capture_task(), name=f'mjpeg capture {self._mac}')
-
-    def _keeps_running(self) -> bool:
-        """Whether the calling capture task should carry on.
-
-        A cancelled task can resume instead of ending, because the `rosys.run` helpers turn a
-        cancellation into a ``None`` result; after a restart `_capture_task` is a different task.
-        """
-        return self._state is not CaptureState.STOPPED and self._capture_task is asyncio.current_task()
-
-    def _set_state(self, state: CaptureState) -> None:
-        """Record the state of the calling capture task, ignoring a task that has been replaced.
-
-        Several tasks may share this attribute, so a task that no longer owns the loop must not
-        report its own progress, or its end, as the state of the loop that owns it.
-        """
-        if self._capture_task is not asyncio.current_task():
-            return
-        self._state = state
-
-    async def _run_capture_task(self) -> None:
-        """Keep a single MJPEG session alive, reconnecting after `reconnect_interval` when it ends.
-
-        Runs until `shutdown()` cancels the task.
-        """
-        try:
-            while self._keeps_running():
-                # every attempt starts fresh: an earlier rejection says nothing about this one
-                self._set_state(CaptureState.CONNECTING)
-                streamed = False
-                reason = 'stream ended'
-                try:
-                    streamed = await self._connect_and_stream_images()
-                except CameraAddressUnknown:
-                    reason = 'no address known yet'
-                except httpx.HTTPError as e:
-                    reason = f'cannot reach the camera: {e}'
-                except Exception:
-                    self.log.exception('capture session failed')
-                    reason = 'capture session failed'
-                self._failed_attempts = 0 if streamed else self._failed_attempts + 1
-                if not self._keeps_running():
-                    break
-                delay = self._retry_interval  # jittered, so read it once for both the log and the wait
-                if self._state is CaptureState.REFUSED:
-                    self.log.info('camera refused the stream; retrying in %.1f s', delay)
-                elif self._ip is None:
-                    self.log.debug('no address known; retrying in %.1f s', delay)
-                elif self.url is None:
-                    self.log.debug('no stream URL for mac "%s"; retrying in %.1f s', self._mac, delay)
-                else:
-                    self.log.info('%s; reconnecting in %.1f s', reason, delay)
-                # a new address restarts the whole task, so no need to cut this wait short
-                await rosys.sleep(delay)
-        finally:
-            if self._capture_task is asyncio.current_task():
-                self._capture_task = None
-
-    @property
-    def _retry_interval(self) -> float:
-        """How long to wait before the next session; a refusal backs off further than a lost stream."""
-        if self._state is CaptureState.REFUSED:
-            return self.REFUSED_RECONNECT_INTERVAL
-        return retry_delay(self.reconnect_interval, self._failed_attempts)
-
-    def restart_capture(self) -> None:
-        self.log.debug('Restarting capture task')
-        self.shutdown()
-        self._start_capture_task()
+    def _describe_session_error(self, error: Exception) -> str:
+        if isinstance(error, CameraAddressUnknown):
+            return 'no address known yet'
+        if isinstance(error, httpx.HTTPError):
+            return f'cannot reach the camera: {error}'
+        return super()._describe_session_error(error)
 
     async def _invoke_on_connect(self) -> None:
         """Notify the owner that a capture session has been (re-)established, e.g. to reapply camera parameters."""
@@ -251,7 +147,7 @@ class MjpegDevice:
         except httpx.ReadTimeout:
             self.log.warning('Connection to %s timed out', self.url)
 
-    async def _connect_and_stream_images(self) -> bool:
+    async def _run_session(self) -> bool:
         """Open a stream and read it until it ends. Returns whether at least one frame arrived."""
         streamed = False
         url = self.url
@@ -259,43 +155,32 @@ class MjpegDevice:
             return streamed
         self.log.debug('Starting capture task for %s', url)
 
-        try:
-            async with new_async_client() as client:
-                await self._prepare_stream()
-                async with open_stream(client, url, self._username, self._password) as response:
-                    if response is None:
-                        self._set_state(CaptureState.REFUSED)
+        async with new_async_client() as client:
+            await self._prepare_stream()
+            async with open_stream(client, url, self._username, self._password) as response:
+                if response is None:
+                    self._set_state(CaptureState.REFUSED)
+                    return streamed
+                self._set_state(CaptureState.STREAMING)
+                await self._invoke_on_connect()
+                async for image, capture_time in self._frame_reader(response):
+                    if self.url != url:
+                        self.log.info('stream settings changed; reopening the stream')
                         return streamed
-                    self._set_state(CaptureState.STREAMING)
-                    await self._invoke_on_connect()
-                    async for image, capture_time in self._frame_reader(response):
-                        if self.url != url:
-                            self.log.info('stream settings changed; reopening the stream')
-                            return streamed
-                        if not image:
-                            continue
-                        streamed = True
-                        try:
-                            timestamp = capture_time if capture_time is not None else rosys.time()
-                            callback_result = self._on_new_image_data(remove_exif(image), timestamp)
-                            if isinstance(callback_result, Awaitable):
-                                await callback_result
-                        except Exception as e:
-                            self.log.error('Error processing image: %s', e)
-                        if not self._keeps_running():
-                            return streamed
-        finally:
-            if self._state is CaptureState.STREAMING:
-                self._set_state(CaptureState.CONNECTING)
+                    if not image:
+                        continue
+                    streamed = True
+                    try:
+                        timestamp = capture_time if capture_time is not None else rosys.time()
+                        callback_result = self._on_new_image_data(remove_exif(image), timestamp)
+                        if isinstance(callback_result, Awaitable):
+                            await callback_result
+                    except Exception as e:
+                        self.log.error('Error processing image: %s', e)
+                    if not self._keeps_running():
+                        return streamed
         self.log.debug('capture session ended')
         return streamed
-
-    def shutdown(self) -> None:
-        self.log.debug('Shutting down capture task')
-        self._state = CaptureState.STOPPED
-        if self._capture_task is not None:
-            self._capture_task.cancel()
-            self._capture_task = None
 
     async def get_fps(self) -> int | None:
         return None

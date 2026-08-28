@@ -1,3 +1,4 @@
+import logging
 import random
 from collections.abc import Awaitable, Callable
 
@@ -7,10 +8,14 @@ import PIL.ImageDraw
 
 from ... import rosys
 from ...geometry import Point
+from ..capture_device import CaptureDevice, CaptureState
 from ..image import Image, ImageSize
 
+MEAN_TIME_TO_FAILURE = 30.0
+"""Average seconds a simulated stream survives while `simulate_failing` is set."""
 
-class SimulatedDevice:
+
+class SimulatedDevice(CaptureDevice):
 
     def __init__(self,
                  id: str,  # pylint: disable=redefined-builtin
@@ -22,53 +27,40 @@ class SimulatedDevice:
                  fps: float = 30.0,
                  reconnect_interval: float = 3.0,
                  simulate_failing: bool = False) -> None:
+        super().__init__(name=id,
+                         log=logging.getLogger('rosys.vision.simulated_camera.simulated_device.' + id),
+                         reconnect_interval=reconnect_interval)
         self._id = id
         self._size = size
         self.color = color
         self._on_new_image = on_new_image
         self._on_connect = on_connect
-        self.reconnect_interval = reconnect_interval
         self.simulate_failing = simulate_failing
-        self._connected: bool = True
-        self._last_connect_time: float = rosys.time()
-        self._disconnect_time: float | None = None
+        self._frame_interval = 1.0 / fps
 
-        self._repeater = rosys.on_repeat(self._step, interval=1.0 / fps)
-
-    @property
-    def is_connected(self) -> bool:
-        return self._connected
-
-    @property
-    def is_active(self) -> bool:
-        """Whether the self-healing loop is alive (streaming or waiting to reconnect)."""
-        return self._repeater.running
+        self._start_capture_task()
+        self._state = CaptureState.STREAMING  # a simulated camera is reachable the moment it exists
 
     def disconnect(self) -> None:
         """Simulate a connection loss (e.g. a bad cable); the device reconnects itself after `reconnect_interval`."""
-        if not self._connected:
-            return
-        self._connected = False
-        self._disconnect_time = rosys.time()
+        if self._state is CaptureState.STREAMING:
+            self._state = CaptureState.CONNECTING
 
-    def shutdown(self) -> None:
-        """Stop the image loop; the device no longer reconnects on its own."""
-        self._repeater.stop()
-
-    async def _step(self) -> None:
-        if not self._connected:
-            assert self._disconnect_time is not None
-            if rosys.time() - self._disconnect_time >= self.reconnect_interval:
-                self._connected = True
-                self._last_connect_time = rosys.time()
-                self._disconnect_time = None
-                await self._invoke_on_connect()
-            return
-        if self.simulate_failing and \
-                random.random() < (rosys.time() - self._last_connect_time) / 30.0 * self._repeater.interval:
-            self.disconnect()
-            return
-        await self._create_image()
+    async def _run_session(self) -> bool:
+        streamed = False
+        self._set_state(CaptureState.STREAMING)
+        await self._invoke_on_connect()
+        session_start = rosys.time()
+        while self._keeps_running() and self.is_connected:
+            await rosys.sleep(self._frame_interval)
+            if not self.is_connected:
+                break
+            if self.simulate_failing and \
+                    random.random() < (rosys.time() - session_start) / MEAN_TIME_TO_FAILURE * self._frame_interval:
+                return streamed
+            await self._create_image()
+            streamed = True
+        return streamed
 
     async def _create_image(self) -> None:
         timestamp = rosys.time()
@@ -90,10 +82,10 @@ class SimulatedDevice:
             await result
 
     def set_fps(self, fps: float) -> None:
-        self._repeater.interval = 1.0 / fps
+        self._frame_interval = 1.0 / fps
 
     def get_fps(self) -> float:
-        return 1.0 / self._repeater.interval
+        return 1.0 / self._frame_interval
 
 
 def _create_image_data(id: str, size: ImageSize, color: str, timestamp: float) -> Image:  # pylint: disable=redefined-builtin
