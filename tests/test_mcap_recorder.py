@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 from mcap.reader import make_reader
 
+import rosys
 from rosys.analysis.recording import McapRecorder, TopicSchema
 
 NS = 1_000_000_000
@@ -667,3 +668,80 @@ async def test_start_deletes_old_recordings_over_budget(mcap_dir: Path) -> None:
     remaining = {path.name for path in mcap_dir.glob('*.mcap')}
     assert 'old_0.mcap' not in remaining  # oldest deleted to satisfy the budget
     assert 'old_2.mcap' in remaining  # newest kept
+
+
+async def test_duration_based_rotation(mcap_dir: Path) -> None:
+    """A file older than max_file_duration is rotated as soon as the next message is written."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start()
+
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder._flush()
+    rosys.set_time(rosys.time() + 61)
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=61 * NS)
+    recorder.log_message('/test', _json({'value': 2}), timestamp_ns=62 * NS)
+    await recorder.stop()
+
+    files = sorted(mcap_dir.glob('*.mcap'))
+    assert len(files) == 2, f'Expected duration rotation, got {len(files)} file(s)'
+    assert sum(_message_count(path) for path in files) == 3
+
+
+async def test_split_finalizes_current_file_and_keeps_recording(mcap_dir: Path) -> None:
+    """split() files away everything recorded so far and the recording continues seamlessly."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start()
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=NS)
+
+    finalized = await recorder.split()
+
+    assert finalized is not None
+    assert _values(finalized) == [0, 1]
+    assert recorder.is_recording
+    assert recorder.current_recording is not None
+    assert recorder.current_recording != finalized
+
+    recorder.log_message('/test', _json({'value': 2}), timestamp_ns=2 * NS)
+    await recorder.stop()
+    second = next(path for path in mcap_dir.glob('*.mcap') if path != finalized)
+    assert _values(second) == [2]
+
+
+async def test_split_without_messages_keeps_the_growing_file(mcap_dir: Path) -> None:
+    """split() refuses to churn an empty file into an empty recording."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start()
+    live = recorder.current_recording
+
+    assert await recorder.split() is None
+    assert recorder.is_recording
+    assert recorder.current_recording == live
+
+
+async def test_split_while_stopped_returns_none(mcap_dir: Path) -> None:
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    assert await recorder.split() is None
+
+
+async def test_disk_budget_deletes_renamed_recordings_last(mcap_dir: Path) -> None:
+    """The budget evicts auto-named files (oldest first) before touching a renamed recording."""
+    kept = mcap_dir / 'failure_20200101_000000_000000.mcap'
+    kept.write_bytes(os.urandom(60 * 1024))
+    os.utime(kept, (0, 0))  # the oldest file of all, yet renamed -> deleted last
+    for i in range(2):
+        path = mcap_dir / f'2020010{i + 1}_000000_000000.mcap'
+        path.write_bytes(os.urandom(60 * 1024))
+        os.utime(path, (i + 1, i + 1))
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.12, auto_start=False)  # ~126 KiB budget
+
+    recorder.start()
+    await recorder.stop()  # empty -> new file discarded
+
+    remaining = {path.name for path in mcap_dir.glob('*.mcap')}
+    assert kept.name in remaining
+    assert '20200101_000000_000000.mcap' not in remaining  # oldest auto-named file paid for the budget
+    assert '20200102_000000_000000.mcap' in remaining
