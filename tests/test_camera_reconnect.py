@@ -1222,6 +1222,13 @@ def test_retry_delay_is_jittered_so_cameras_do_not_retry_in_lock_step():
     assert all(MIN_RECONNECT_INTERVAL <= delay <= MAX_RECONNECT_INTERVAL for delay in delays)
 
 
+def test_a_configured_interval_is_never_undercut():
+    """The configured interval is the shortest wait a camera asked for, so jitter may only extend it."""
+    delays = [retry_delay(3.0) for _ in range(200)]
+    assert min(delays) >= 3.0, 'expected jitter never to retry sooner than configured'
+    assert max(delays) <= 3.0 * (1 + RECONNECT_JITTER)
+
+
 async def test_devices_back_off_while_attempts_keep_failing(rosys_integration):
     device = MjpegDevice(GOODCAM_MAC, '127.0.0.1:1', on_new_image_data=lambda data, timestamp: None,
                          reconnect_interval=0.2)
