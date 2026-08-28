@@ -47,6 +47,7 @@ class UsbDevice:
         self._video_formats: set[str] = set()
         self._image_is_jpg: bool = False
         self._should_run: bool = True
+        self._shutting_down: bool = False
         self._read_failures: int = 0
         self._capture_task: asyncio.Task | None = None
         self._unavailable_node: str | None = None
@@ -97,6 +98,9 @@ class UsbDevice:
         return capture
 
     def _start_capture_task(self) -> None:
+        if self._shutting_down:
+            self.log.warning('[%s] not starting a capture loop while the device is being torn down', self.uid)
+            return
         if self._capture_task is not None and not self._capture_task.done():
             self.log.warning('[%s] capture loop already running', self.uid)
             return
@@ -209,6 +213,13 @@ class UsbDevice:
 
     async def shutdown(self) -> None:
         self._should_run = False
+        self._shutting_down = True
+        try:
+            await self._shut_down()
+        finally:
+            self._shutting_down = False
+
+    async def _shut_down(self) -> None:
         task = self._capture_task
         if task is not None and not task.done():
             task.cancel()

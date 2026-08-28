@@ -55,6 +55,7 @@ class RtspDevice:
         self._warned_about_missing_settings: bool = False
         self.reconnect_interval = reconnect_interval
         self._should_run: bool = True
+        self._shutting_down: bool = False
         self._failed_attempts: int = 0
 
         self._settings_interface: JovisionInterface | ArkVisionRtspInterface | OpenIpcZauberzeugSettingsInterface | None = None
@@ -130,6 +131,13 @@ class RtspDevice:
 
     async def shutdown(self) -> None:
         self._should_run = False
+        self._shutting_down = True
+        try:
+            await self._shut_down()
+        finally:
+            self._shutting_down = False
+
+    async def _shut_down(self) -> None:
         process = self._capture_process
         if process is not None:
             self.log.debug('[%s] Terminating gstreamer process', self._mac)
@@ -163,6 +171,9 @@ class RtspDevice:
 
     def _start_capture_task(self) -> None:
         self.log.debug('[%s] Starting capture loop', self._mac)
+        if self._shutting_down:
+            self.log.warning('[%s] not starting a capture loop while the device is being torn down', self._mac)
+            return
         if self._capture_task is not None and not self._capture_task.done():
             self.log.warning('[%s] capture loop already running', self._mac)
             return

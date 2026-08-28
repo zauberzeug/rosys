@@ -1347,3 +1347,19 @@ async def test_rtsp_shutdown_reraises_a_cancellation_of_its_caller(rosys_integra
             for task in asyncio.all_tasks():
                 if task.get_name() == f'capture {GOODCAM_MAC}':
                     task.cancel()
+
+
+async def test_a_device_being_torn_down_is_not_restarted(rosys_integration):
+    """`shutdown()` awaits its capture task, so a restart landing in that window must not revive it."""
+    with stalled_rtsp_stream():
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: None)
+        await asyncio.sleep(0)
+        assert device.is_active
+
+        async def restart_while_shutting_down() -> None:
+            await asyncio.sleep(0)
+            device._start_capture_task()  # pylint: disable=protected-access
+
+        await asyncio.gather(device.shutdown(), restart_while_shutting_down())
+        assert not device.is_active, 'expected the device to stay down while it was being torn down'
