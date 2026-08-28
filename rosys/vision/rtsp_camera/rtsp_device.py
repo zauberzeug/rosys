@@ -18,8 +18,8 @@ from nicegui import background_tasks
 
 from ... import rosys
 from ...vision.image import ImageArray
-from ..camera.camera import MAX_RECONNECT_INTERVAL, clamp_reconnect_interval, retry_delay
 from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
+from ..reconnect import MAX_RECONNECT_INTERVAL, clamp_reconnect_interval, retry_delay
 from .arkvision_rtsp_interface import ArkVisionRtspInterface
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor

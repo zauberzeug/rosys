@@ -25,14 +25,14 @@ from rosys.vision import (
     UsbCamera,
     UsbCameraProvider,
 )
-from rosys.vision.camera.camera import (
+from rosys.vision.mjpeg_camera.axis_mjpeg_device import AxisMjpegDevice
+from rosys.vision.mjpeg_camera.mjpeg_device import CaptureState, MjpegDevice
+from rosys.vision.reconnect import (
     MAX_RECONNECT_INTERVAL,
     MIN_RECONNECT_INTERVAL,
     RECONNECT_JITTER,
     retry_delay,
 )
-from rosys.vision.mjpeg_camera.axis_mjpeg_device import AxisMjpegDevice
-from rosys.vision.mjpeg_camera.mjpeg_device import CaptureState, MjpegDevice
 from rosys.vision.rtsp_camera.rtsp_device import RtspDevice
 from rosys.vision.simulated_camera.simulated_device import SimulatedDevice
 from rosys.vision.usb_camera.usb_device import UsbDevice

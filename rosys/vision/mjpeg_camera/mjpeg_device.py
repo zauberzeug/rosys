@@ -10,9 +10,9 @@ import httpx
 from nicegui import background_tasks
 
 from ... import rosys
-from ..camera.camera import MAX_RECONNECT_INTERVAL, clamp_reconnect_interval, retry_delay
 from ..http import new_async_client
 from ..image_processing import remove_exif
+from ..reconnect import MAX_RECONNECT_INTERVAL, clamp_reconnect_interval, retry_delay
 from .vendors import mac_to_url
 
 log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device')

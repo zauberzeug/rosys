@@ -7,7 +7,7 @@ import cv2
 import numpy as np
 
 from ... import rosys
-from ..camera.camera import clamp_reconnect_interval, retry_delay
+from ..reconnect import clamp_reconnect_interval, retry_delay
 from .usb_camera_scanner import device_nodes_from_uid
 
 MJPG = cv2.VideoWriter.fourcc(*'MJPG')
