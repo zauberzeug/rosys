@@ -28,6 +28,9 @@ from rosys.vision import (
 from rosys.vision.mjpeg_camera.arkvision_mjpeg_device import ArkVisionMjpegDevice
 from rosys.vision.mjpeg_camera.axis_mjpeg_device import AxisMjpegDevice
 from rosys.vision.mjpeg_camera.mjpeg_device import CameraAddressUnknown, CaptureState, MjpegDevice
+from rosys.vision.mjpeg_camera.mjpeg_device_factory import MjpegDeviceFactory
+from rosys.vision.mjpeg_camera.motec_mjpeg_device import MotecMjpegDevice
+from rosys.vision.mjpeg_camera.openipc_zauberzeug_mjpeg_device import OpenIpcZauberzeugMjpegDevice
 from rosys.vision.reconnect import (
     MAX_RECONNECT_INTERVAL,
     MIN_RECONNECT_INTERVAL,
@@ -36,7 +39,7 @@ from rosys.vision.reconnect import (
 )
 from rosys.vision.rtsp_camera.rtsp_device import RtspDevice
 from rosys.vision.simulated_camera.simulated_device import SimulatedDevice
-from rosys.vision.usb_camera.usb_device import UsbDevice
+from rosys.vision.usb_camera.usb_device import UsbDevice, find_device_node
 
 # A MAC that maps to a "GOODCAM" URL in both the RTSP and MJPEG vendor tables.
 # GOODCAM needs no settings interface, so the device is constructed without any network access.
@@ -45,7 +48,12 @@ GOODCAM_MAC = '2c:6f:51:00:00:01'
 # A MAC that maps to AXIS, whose stream settings are part of the URL rather than a settings interface.
 AXIS_MAC = '00:40:8c:00:00:01'
 
+MOTEC_MAC = '2c:26:5f:00:00:01'
 ARKVISION_MAC = '18:fd:cb:00:00:01'
+OPENIPC_ZAUBERZEUG_MAC = '7a:7a:21:00:00:01'
+
+# A MAC no vendor table knows, so no stream URL can be built for it.
+UNKNOWN_VENDOR_MAC = '02:00:00:00:00:01'
 
 
 async def _no_stream(self) -> None:
@@ -1350,6 +1358,49 @@ async def test_rtsp_shutdown_reraises_a_cancellation_of_its_caller(rosys_integra
             for task in asyncio.all_tasks():
                 if task.get_name() == f'capture {GOODCAM_MAC}':
                     task.cancel()
+
+
+@pytest.mark.parametrize('nodes, expected', [
+    ({'/dev/video2', '/dev/video10', '/dev/video1'}, '/dev/video1'),
+    ({'/dev/video7'}, '/dev/video7'),
+    ({'/dev/media0', '/dev/video3'}, '/dev/video3'),
+    ({'/dev/media0'}, None),
+    (set(), None),
+])
+def test_find_device_node_picks_the_lowest_numbered_video_node(nodes: set[str], expected: str | None):
+    with patch('rosys.vision.usb_camera.usb_device.device_nodes_from_uid', return_value=nodes):
+        assert find_device_node('fakecam') == expected
+
+
+@pytest.mark.parametrize('mac, expected_type', [
+    (AXIS_MAC, AxisMjpegDevice),
+    (MOTEC_MAC, MotecMjpegDevice),
+    (ARKVISION_MAC, ArkVisionMjpegDevice),
+    (OPENIPC_ZAUBERZEUG_MAC, OpenIpcZauberzeugMjpegDevice),
+    (GOODCAM_MAC, MjpegDevice),
+    (UNKNOWN_VENDOR_MAC, MjpegDevice),
+])
+async def test_mjpeg_device_factory_builds_the_vendor_device(rosys_integration, mac: str, expected_type: type):
+    with stalled_mjpeg_stream():
+        device = MjpegDeviceFactory.create(mac, '127.0.0.1:1',
+                                           on_new_image_data=lambda data, timestamp: None,
+                                           reconnect_interval=4.0)
+        try:
+            assert type(device) is expected_type
+            assert device.reconnect_interval == 4.0, 'expected the factory to forward the reconnect interval'
+        finally:
+            device.shutdown()
+
+
+async def test_mjpeg_device_factory_warns_about_an_unknown_vendor(rosys_integration, vision_log):
+    with stalled_mjpeg_stream():
+        device = MjpegDeviceFactory.create(UNKNOWN_VENDOR_MAC, '127.0.0.1:1',
+                                           on_new_image_data=lambda data, timestamp: None)
+        try:
+            assert [record for record in vision_log.records if 'no stream URL known' in record.getMessage()], \
+                'expected the factory to say that this camera cannot be reached'
+        finally:
+            device.shutdown()
 
 
 def test_settings_of_a_camera_without_an_address_raise_a_domain_error():
