@@ -19,6 +19,16 @@ async def test_simulated_camera(rosys_integration):
     assert camera.images[0].size.height == 600
 
 
+async def test_changing_simulated_camera_resolution_while_connected(rosys_integration):
+    camera = SimulatedCamera(id='test_cam', resolution=(800, 600), fps=1)
+    await camera.connect()
+    await camera.set_parameters({'resolution': (100, 50)})
+    await forward(1.1)
+    assert camera.latest_captured_image is not None
+    assert camera.latest_captured_image.size.width == 100
+    assert camera.latest_captured_image.size.height == 50
+
+
 async def test_usb_camera(rosys_integration):
     if platform.system() != 'Linux':
         pytest.skip('UsbCamera is only supported on Linux.')
