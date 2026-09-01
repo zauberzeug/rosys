@@ -59,6 +59,31 @@ async def test_storing_simulated_camera_as_dict(rosys_integration, base_camera_p
     assert restored_camera.parameters == camera.parameters
 
 
+def test_simulated_camera_backward_compat(rosys_integration):
+    camera = SimulatedCamera.from_dict({
+        'id': 'test_cam',
+        'connect_after_init': False,
+        'width': 808,
+        'height': 606,
+        'color': '#010101',
+        'fps': 1,
+    })
+    assert camera.parameters['resolution'] == (808, 606)
+
+
+def test_usb_camera_backward_compat(rosys_integration):
+    camera = UsbCamera.from_dict({
+        'id': 'test_cam',
+        'connect_after_init': False,
+        'auto_exposure': True,
+        'exposure': 0.01,
+        'width': 808,
+        'height': 606,
+        'fps': 5,
+    })
+    assert camera.parameters['resolution'] == (808, 606)
+
+
 def test_storing_transformable_camera_as_dict(rosys_integration, base_camera_parameters):
     camera = TransformableCamera(crop=Rectangle(x=10, y=10, width=100, height=100),
                                  rotation=90, **base_camera_parameters)

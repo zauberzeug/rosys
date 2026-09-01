@@ -1,4 +1,5 @@
 import logging
+import warnings
 from typing import Any
 
 import numpy as np
@@ -42,6 +43,16 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         return super().to_dict() | {
             name: param.value for name, param in self._parameters.items()
         }
+
+    @classmethod
+    def args_from_dict(cls, data: dict[str, Any]) -> dict:
+        data = super().args_from_dict(data)
+        if 'width' in data and 'height' in data:
+            warnings.warn('Persisted camera dicts with "width" and "height" are deprecated '
+                          'and will be removed in a future version. Use "resolution" instead.',
+                          DeprecationWarning, stacklevel=2)
+            data['resolution'] = (data.pop('width'), data.pop('height'))
+        return data
 
     @property
     def is_connected(self) -> bool:
