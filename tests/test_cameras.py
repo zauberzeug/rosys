@@ -10,7 +10,7 @@ from rosys.vision import RtspCamera, RtspCameraProvider, SimulatedCamera, UsbCam
 
 
 async def test_simulated_camera(rosys_integration):
-    camera = SimulatedCamera(id='test_cam', width=800, height=600, fps=1)
+    camera = SimulatedCamera(id='test_cam', resolution=(800, 600), fps=1)
     await camera.connect()
     assert camera.is_connected
     await forward(1.1)

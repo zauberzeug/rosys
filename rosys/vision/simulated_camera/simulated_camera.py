@@ -13,8 +13,7 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
                  id: str,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
-                 width: int = 800,
-                 height: int = 600,
+                 resolution: tuple[int, int] = (800, 600),
                  color: str | None = None,
                  fps: int = 5,
                  **kwargs,
@@ -24,7 +23,7 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
                          connect_after_init=connect_after_init,
                          **kwargs)
         self.device: SimulatedDevice | None = None
-        self.resolution = ImageSize(width=width, height=height)
+        self._register_parameter('resolution', self._get_resolution, self._set_resolution, resolution)
         self._register_parameter('color', self._get_color, self._set_color,
                                  color or f'#{random.randint(0, 0xffffff):06x}')
         self._register_parameter('fps', self._get_fps, self._set_fps,
@@ -32,9 +31,6 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
 
     def to_dict(self) -> dict:
         return super().to_dict() | {
-            'width': self.resolution.width,
-            'height': self.resolution.height,
-        } | {
             name: param.value for name, param in self._parameters.items()
         }
 
@@ -44,12 +40,21 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
 
     async def connect(self) -> None:
         if not self.is_connected:
-            self.device = SimulatedDevice(id=self.id, size=self.resolution, fps=self.parameters['fps'],
-                                          on_new_image=self._add_image)
+            width, height = self.parameters['resolution']
+            self.device = SimulatedDevice(id=self.id, size=ImageSize(width=width, height=height),
+                                          fps=self.parameters['fps'], on_new_image=self._add_image)
             await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
         self.device = None
+
+    def _set_resolution(self, value: tuple[int, int]) -> None:
+        assert self.device is not None
+        self.device.size = ImageSize(width=value[0], height=value[1])
+
+    def _get_resolution(self) -> tuple[int, int]:
+        assert self.device is not None
+        return (self.device.size.width, self.device.size.height)
 
     def _set_color(self, value: str) -> None:
         assert self.device is not None
