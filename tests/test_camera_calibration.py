@@ -495,26 +495,38 @@ def _distorted_calibration() -> Calibration:
     return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 
 
-def test_scale_and_crop():
-    """Scaling to a higher-resolution stream and cropping only rescales and shifts projected pixels."""
+def test_scale():
+    """Scaling to a higher-resolution stream only rescales projected pixels."""
     calibration = _distorted_calibration()
-    scaled = calibration.scale_and_crop(size=ImageSize(width=2560, height=1920),
-                                        crop=Rectangle(x=600, y=400, width=1280, height=720))
+    scaled = calibration.scale(ImageSize(width=2560, height=1920))
     world_point = Point3d(x=0.45, y=0.1, z=0.0)
     original_pixel = calibration.project_to_image(world_point)
     scaled_pixel = scaled.project_to_image(world_point)
     assert original_pixel is not None
     assert scaled_pixel is not None
-    approx(scaled_pixel.x, original_pixel.x * 2 - 600)
-    approx(scaled_pixel.y, original_pixel.y * 2 - 400)
-    assert scaled.intrinsics.size == ImageSize(width=1280, height=720)
+    approx(scaled_pixel.x, original_pixel.x * 2)
+    approx(scaled_pixel.y, original_pixel.y * 2)
+    assert scaled.intrinsics.size == ImageSize(width=2560, height=1920)
 
 
-def test_scale_and_crop_round_trip():
-    """A pixel in the cropped image projects onto the same ground point as in the original."""
+def test_crop():
+    """Cropping only shifts projected pixels by the crop offset."""
     calibration = _distorted_calibration()
-    scaled = calibration.scale_and_crop(size=ImageSize(width=2560, height=1920),
-                                        crop=Rectangle(x=600, y=400, width=1280, height=720))
+    cropped = calibration.crop(Rectangle(x=300, y=200, width=640, height=480))
+    world_point = Point3d(x=0.45, y=0.1, z=0.0)
+    original_pixel = calibration.project_to_image(world_point)
+    cropped_pixel = cropped.project_to_image(world_point)
+    assert original_pixel is not None
+    assert cropped_pixel is not None
+    approx(cropped_pixel.x, original_pixel.x - 300)
+    approx(cropped_pixel.y, original_pixel.y - 200)
+    assert cropped.intrinsics.size == ImageSize(width=640, height=480)
+
+
+def test_scale_then_crop_round_trip():
+    """A pixel in the scaled and cropped image projects onto the same ground point as in the original."""
+    calibration = _distorted_calibration()
+    scaled = calibration.scale(ImageSize(width=2560, height=1920)).crop(Rectangle(x=600, y=400, width=1280, height=720))
     world_point = Point3d(x=0.45, y=0.1, z=0.0)
     scaled_pixel = scaled.project_to_image(world_point)
     assert scaled_pixel is not None
@@ -523,12 +535,10 @@ def test_scale_and_crop_round_trip():
     approx(projected.tuple, world_point.tuple, abs=1e-4)
 
 
-def test_scale_and_crop_rejects_invalid_crops():
+def test_crop_rejects_invalid_crops():
     """Fractional coordinates would desync from the integer pixel crop; out-of-bounds crops would be clamped."""
     calibration = _distorted_calibration()
     with pytest.raises(ValueError, match='integer'):
-        calibration.scale_and_crop(size=ImageSize(width=2560, height=1920),
-                                   crop=Rectangle(x=600.5, y=400, width=1280, height=720))
+        calibration.crop(Rectangle(x=600.5, y=400, width=640, height=480))
     with pytest.raises(ValueError, match='inside'):
-        calibration.scale_and_crop(size=ImageSize(width=2560, height=1920),
-                                   crop=Rectangle(x=1400, y=400, width=1280, height=720))
+        calibration.crop(Rectangle(x=700, y=400, width=640, height=480))
