@@ -14,18 +14,18 @@ from enum import Enum
 from typing import ClassVar, Literal
 
 import numpy as np
-from nicegui import background_tasks
 
 from ... import rosys
 from ...vision.image import ImageArray
+from ..capture_device import CaptureDevice
 from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
-from ..reconnect import MAX_RECONNECT_INTERVAL, clamp_reconnect_interval, retry_delay
+from ..reconnect import MAX_RECONNECT_INTERVAL
 from .arkvision_rtsp_interface import ArkVisionRtspInterface
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
 
 
-class RtspDevice:
+class RtspDevice(CaptureDevice):
     UNAUTHORIZED_RECONNECT_INTERVAL: ClassVar[float] = MAX_RECONNECT_INTERVAL
     '''How long to wait between attempts while the camera rejects our credentials.
 
@@ -38,9 +38,11 @@ class RtspDevice:
                  on_connect: Callable[[], Awaitable | None] | None = None,
                  avdec: Literal['h264', 'h265'] = 'h264',
                  reconnect_interval: float = 3.0) -> None:
+        super().__init__(name=mac,
+                         log=logging.getLogger('rosys.vision.rtsp_camera.rtsp_device.' + mac),
+                         reconnect_interval=reconnect_interval)
         self._mac = mac
         self._ip = ip
-        self.log = logging.getLogger('rosys.vision.rtsp_camera.rtsp_device.' + self._mac)
 
         self._fps = fps
         self._substream = substream
@@ -48,15 +50,10 @@ class RtspDevice:
         self._on_connect = on_connect
         self._avdec: Literal['h264', 'h265'] = self._clamp_avdec(avdec)
 
-        self._capture_task: asyncio.Task | None = None
         self._capture_process: Process | None = None
         self._authorized: bool = True
         self._warned_about_missing_url: bool = False
         self._warned_about_missing_settings: bool = False
-        self.reconnect_interval = reconnect_interval
-        self._should_run: bool = True
-        self._shutting_down: bool = False
-        self._failed_attempts: int = 0
 
         self._settings_interface: JovisionInterface | ArkVisionRtspInterface | OpenIpcZauberzeugSettingsInterface | None = None
         self._bind_settings_interface()
@@ -83,22 +80,9 @@ class RtspDevice:
                                  self._mac, vendor_type)
 
     @property
-    def reconnect_interval(self) -> float:
-        return self._reconnect_interval
-
-    @reconnect_interval.setter
-    def reconnect_interval(self, interval: float) -> None:
-        self._reconnect_interval = clamp_reconnect_interval(interval, self.log)
-
-    @property
     def is_connected(self) -> bool:
         """Whether the gstreamer stream is currently running."""
         return self._capture_process is not None and self._capture_process.returncode is None
-
-    @property
-    def is_active(self) -> bool:
-        """Whether the self-healing capture loop is alive (streaming or waiting to reconnect)."""
-        return self._capture_task is not None and not self._capture_task.done()
 
     @property
     def authorized(self) -> bool:
@@ -129,87 +113,24 @@ class RtspDevice:
             return None
         return mac_to_url(self._mac, self._ip, self._substream)
 
-    async def shutdown(self) -> None:
-        self._should_run = False
-        self._shutting_down = True
-        try:
-            await self._shut_down()
-        finally:
-            self._shutting_down = False
-
-    async def _shut_down(self) -> None:
+    async def _tear_down_session(self) -> None:
         process = self._capture_process
-        if process is not None:
-            self.log.debug('[%s] Terminating gstreamer process', self._mac)
-            process.terminate()
-            try:
-                await asyncio.wait_for(process.wait(), timeout=5)
-            except TimeoutError:
-                self.log.warning('[%s] Timeout while waiting for gstreamer process to terminate', self._mac)
-            else:
-                self.log.debug('[%s] Successfully shut down process (code %s)',
-                               self._mac, process.returncode if process.returncode is not None else 'None')
-                if self._capture_process is process:
-                    self._capture_process = None
-        task = self._capture_task
-        if task is not None and not task.done():
-            self.log.debug('[%s] Cancelling gstreamer task', self._mac)
-            task.cancel()
-            try:
-                await asyncio.wait_for(asyncio.shield(task), timeout=5)
-            except TimeoutError:
-                self.log.warning('[%s] Timeout while waiting for capture task to cancel', self._mac)
-                return
-            except asyncio.CancelledError:
-                if not task.cancelled():
-                    raise  # our own caller was cancelled, not the capture task
-                self.log.debug('[%s] Task was successfully cancelled', self._mac)
-            else:
-                self.log.debug('[%s] Task finished', self._mac)
-        if self._capture_task is task:  # a restart may have started a new loop while we waited
-            self._capture_task = None
+        if process is None:
+            return
+        self.log.debug('[%s] Terminating gstreamer process', self._mac)
+        process.terminate()
+        try:
+            await asyncio.wait_for(process.wait(), timeout=5)
+        except TimeoutError:
+            self.log.warning('[%s] Timeout while waiting for gstreamer process to terminate', self._mac)
+        else:
+            if self._capture_process is process:
+                self._capture_process = None
 
     def _start_capture_task(self) -> None:
-        self.log.debug('[%s] Starting capture loop', self._mac)
-        if self._shutting_down:
-            self.log.warning('[%s] not starting a capture loop while the device is being torn down', self._mac)
-            return
-        if self._capture_task is not None and not self._capture_task.done():
-            self.log.warning('[%s] capture loop already running', self._mac)
-            return
-        self._should_run = True
-        self._capture_task = background_tasks.create(self._run_capture_task(), name=f'capture {self._mac}')
-
-    async def _run_capture_task(self) -> None:
-        """Keep a single gstreamer session alive, reconnecting after `reconnect_interval` when it ends.
-
-        Runs until `shutdown()` cancels the task.
-        """
-        try:
-            while self._should_run:
-                # every attempt starts fresh: an earlier rejection says nothing about this one
-                self._authorized = True
-                streamed = False
-                try:
-                    streamed = await self._run_gstreamer()
-                except Exception:
-                    self.log.exception('[%s] capture session failed', self._mac)
-                self._failed_attempts = 0 if streamed else self._failed_attempts + 1
-                if not self._should_run:
-                    break
-                if not self._authorized:
-                    self.log.info('[%s] credentials rejected; retrying in %.1f s',
-                                  self._mac, self.UNAUTHORIZED_RECONNECT_INTERVAL)
-                elif self._ip is None:
-                    self.log.debug('[%s] no address known; retrying in about %.1f s', self._mac, self._retry_interval)
-                elif self.url is None:
-                    self._warn_about_missing_url()
-                else:
-                    self.log.info('[%s] stream ended; reconnecting in about %.1f s', self._mac, self._retry_interval)
-                await self._wait_before_retry()
-        finally:
-            if self._capture_task is asyncio.current_task():
-                self._capture_task = None
+        # every attempt starts fresh: an earlier rejection says nothing about this one
+        self._authorized = True
+        super()._start_capture_task()
 
     def _warn_about_missing_url(self) -> None:
         """Warn once that no URL can be built for this camera.
@@ -223,21 +144,26 @@ class RtspDevice:
         self.log.warning('[%s] no RTSP URL known for vendor %s; this camera cannot be reached',
                          self._mac, mac_to_vendor(self._mac))
 
-    @property
-    def _retry_interval(self) -> float:
-        """How long to wait before the next session; grows while attempts keep failing."""
-        return retry_delay(self.reconnect_interval, self._failed_attempts)
+    def _retry_reason(self) -> str | None:
+        if not self._authorized:
+            return 'credentials rejected'
+        if self._ip is None:
+            return 'no address known'
+        if self.url is None:
+            self._warn_about_missing_url()
+            return 'no stream URL known'
+        return None
 
-    async def _wait_before_retry(self) -> None:
-        """Wait `reconnect_interval` before the next session, extending the wait while our login stays rejected.
+    async def _wait_before_retry(self, delay: float) -> None:
+        """Extend the wait while our login stays rejected.
 
         Waiting in chunks re-reads the verdict, so a new address ends a long wait early instead of
         holding on to a verdict that was about the previous address. The deadline bounds the whole
         wait, whatever the chunk size is.
         """
         deadline = rosys.time() + self.UNAUTHORIZED_RECONNECT_INTERVAL
-        await rosys.sleep(self._retry_interval)
-        while self._should_run and not self._authorized and rosys.time() < deadline:
+        await rosys.sleep(delay)
+        while self._keeps_running() and not self._authorized and rosys.time() < deadline:
             await rosys.sleep(self._retry_interval)
 
     async def restart_gstreamer(self) -> None:
@@ -252,7 +178,7 @@ class RtspDevice:
         if isinstance(result, Awaitable):
             await result
 
-    async def _run_gstreamer(self) -> bool:
+    async def _run_session(self) -> bool:
         """Run a gstreamer session until it ends. Returns whether at least one frame arrived."""
         streamed = False
         if self.is_connected:

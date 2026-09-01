@@ -69,7 +69,7 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
         """Tear down the device. The caller must hold `device_connection_lock`."""
         if self.device is None:
             return
-        self.device.shutdown()
+        await self.device.shutdown()
         self.device = None
 
     def _set_color(self, value: str) -> None:

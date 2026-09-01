@@ -1,4 +1,3 @@
-import asyncio
 import logging
 import re
 from collections.abc import Awaitable, Callable
@@ -7,7 +6,7 @@ import cv2
 import numpy as np
 
 from ... import rosys
-from ..reconnect import clamp_reconnect_interval, retry_delay
+from ..capture_device import CaptureDevice
 from .usb_camera_scanner import device_nodes_from_uid
 
 MJPG = cv2.VideoWriter.fourcc(*'MJPG')
@@ -25,7 +24,7 @@ def to_bytes(image: np.ndarray) -> bytes:
     return image.tobytes()
 
 
-class UsbDevice:
+class UsbDevice(CaptureDevice):
     MAX_READ_FAILURES = 10
     """Number of consecutive failed reads before the capture is considered lost (e.g. unplugged cable)."""
 
@@ -33,25 +32,22 @@ class UsbDevice:
                  on_new_image_data: Callable[[np.ndarray | bytes, float], Awaitable | None],
                  on_connect: Callable[[], Awaitable | None] | None = None,
                  reconnect_interval: float = 3.0) -> None:
+        super().__init__(name=uid,
+                         log=logging.getLogger('rosys.vision.usb_camera.usb_device.' + uid),
+                         reconnect_interval=reconnect_interval)
         self.uid = uid
-        self.log = logging.getLogger('rosys.vision.usb_camera.usb_device.' + uid)
         self._device_node: str | None = None
         self._capture: cv2.VideoCapture | None = None
         self._on_new_image_data = on_new_image_data
         self._on_connect = on_connect
-        self.reconnect_interval = reconnect_interval
         self._exposure_min: int = 0
         self._exposure_max: int = 0
         self._exposure_default: int = 0
         self._has_manual_exposure: bool = False
         self._video_formats: set[str] = set()
         self._image_is_jpg: bool = False
-        self._should_run: bool = True
-        self._shutting_down: bool = False
         self._read_failures: int = 0
-        self._capture_task: asyncio.Task | None = None
         self._unavailable_node: str | None = None
-        self._failed_attempts: int = 0
 
         self._start_capture_task()
 
@@ -59,24 +55,6 @@ class UsbDevice:
     def is_connected(self) -> bool:
         """Whether a working capture is currently open (False while a lost capture is being reconnected)."""
         return self._capture is not None
-
-    @property
-    def is_active(self) -> bool:
-        """Whether the self-healing capture loop is alive (capturing or waiting to reconnect)."""
-        return self._capture_task is not None and not self._capture_task.done()
-
-    @property
-    def reconnect_interval(self) -> float:
-        return self._reconnect_interval
-
-    @reconnect_interval.setter
-    def reconnect_interval(self, interval: float) -> None:
-        self._reconnect_interval = clamp_reconnect_interval(interval, self.log)
-
-    @property
-    def _retry_interval(self) -> float:
-        """How long to wait before the next session; grows while attempts keep failing."""
-        return retry_delay(self.reconnect_interval, self._failed_attempts)
 
     @property
     def video_formats(self) -> set[str]:
@@ -97,49 +75,13 @@ class UsbDevice:
             return None
         return capture
 
-    def _start_capture_task(self) -> None:
-        if self._shutting_down:
-            self.log.warning('[%s] not starting a capture loop while the device is being torn down', self.uid)
-            return
-        if self._capture_task is not None and not self._capture_task.done():
-            self.log.warning('[%s] capture loop already running', self.uid)
-            return
-        self._should_run = True
-        self._capture_task = rosys.background_tasks.create(
-            self._run_capture_task(), name=f'usb capture {self.uid}')
-
-    async def _run_capture_task(self) -> None:
-        """Keep a single capture session alive, reconnecting after `reconnect_interval` when it ends.
-
-        Runs until `shutdown()` cancels the task.
-        """
-        try:
-            while self._should_run:
-                streamed = False
-                try:
-                    streamed = await self._run_capture_session()
-                except Exception:
-                    self.log.exception('[%s] capture session failed', self.uid)
-                self._failed_attempts = 0 if streamed else self._failed_attempts + 1
-                if not self._should_run:
-                    break
-                delay = self._retry_interval  # jittered, so read it once for both the log and the wait
-                if streamed:
-                    self.log.info('[%s] capture ended; reconnecting in %.1f s', self.uid, delay)
-                else:
-                    self.log.debug('[%s] no capture; retrying in %.1f s', self.uid, delay)
-                await rosys.sleep(delay)
-        finally:
-            if self._capture_task is asyncio.current_task():
-                self._capture_task = None
-
-    async def _run_capture_session(self) -> bool:
+    async def _run_session(self) -> bool:
         """Read frames until the capture is lost, then release it.
 
         Returns whether at least one frame was delivered.
         """
         streamed = False
-        while self._should_run:
+        while self._keeps_running():
             if self._capture is None or not self._capture.isOpened():
                 await self._open_capture()
                 if self._capture is None:
@@ -211,27 +153,7 @@ class UsbDevice:
             self._capture = None
         self._device_node = None
 
-    async def shutdown(self) -> None:
-        self._should_run = False
-        self._shutting_down = True
-        try:
-            await self._shut_down()
-        finally:
-            self._shutting_down = False
-
-    async def _shut_down(self) -> None:
-        task = self._capture_task
-        if task is not None and not task.done():
-            task.cancel()
-            try:
-                await asyncio.wait_for(asyncio.shield(task), timeout=5)
-            except TimeoutError:
-                self.log.warning('[%s] timeout while waiting for capture task to cancel', self.uid)
-            except asyncio.CancelledError:
-                if not task.cancelled():
-                    raise  # our own caller was cancelled, not the capture task
-        if self._capture_task is task:  # a restart may have started a new loop while we waited
-            self._capture_task = None
+    async def _tear_down_session(self) -> None:
         await self._release()
 
     async def load_value_ranges(self) -> None:

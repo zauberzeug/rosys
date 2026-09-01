@@ -90,7 +90,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         """Tear down the device. The caller must hold `device_connection_lock`."""
         if self.device is None:
             return
-        self.device.shutdown()
+        await self.device.shutdown()
         self.device = None
 
     async def _handle_new_image_data(self, image_bytes: bytes, timestamp: float) -> None:
