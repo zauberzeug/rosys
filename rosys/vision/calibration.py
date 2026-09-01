@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import TypeAlias, cast, overload
@@ -186,7 +187,7 @@ class Calibration:
         coordinates) stay valid.
 
         :param size: the size the image is scaled to (same field of view)
-        :return: a new calibration matching the scaled image (sharing this calibration's extrinsics)
+        :return: a new independent calibration matching the scaled image
         """
         scale_x = size.width / self.intrinsics.size.width
         scale_y = size.height / self.intrinsics.size.height
@@ -199,9 +200,9 @@ class Calibration:
         intrinsics = Intrinsics(model=self.intrinsics.model,
                                 matrix=scaled_matrix,
                                 distortion=list(self.intrinsics.distortion),
-                                omnidir_params=self.intrinsics.omnidir_params,
+                                omnidir_params=deepcopy(self.intrinsics.omnidir_params),
                                 size=ImageSize(width=size.width, height=size.height))
-        return Calibration(intrinsics=intrinsics, extrinsics=self.extrinsics)
+        return Calibration(intrinsics=intrinsics, extrinsics=deepcopy(self.extrinsics))
 
     def crop(self, crop: Rectangle) -> Calibration:
         """Derive the calibration for an image that is cropped to ``crop``.
@@ -209,7 +210,7 @@ class Calibration:
         The crop only shifts the principal point; the distortion coefficients stay valid.
 
         :param crop: the region cut out of the image, in pixel coordinates
-        :return: a new calibration matching the cropped image (sharing this calibration's extrinsics)
+        :return: a new independent calibration matching the cropped image
         :raises ValueError: if the crop has fractional coordinates or reaches beyond the image
         """
         if any(value != int(value) for value in crop.tuple):
@@ -226,9 +227,9 @@ class Calibration:
         intrinsics = Intrinsics(model=self.intrinsics.model,
                                 matrix=cropped_matrix,
                                 distortion=list(self.intrinsics.distortion),
-                                omnidir_params=self.intrinsics.omnidir_params,
+                                omnidir_params=deepcopy(self.intrinsics.omnidir_params),
                                 size=ImageSize(width=int(crop.width), height=int(crop.height)))
-        return Calibration(intrinsics=intrinsics, extrinsics=self.extrinsics)
+        return Calibration(intrinsics=intrinsics, extrinsics=deepcopy(self.extrinsics))
 
     @overload
     def project_to_image(self, coordinates: Point3d) -> Point | None:

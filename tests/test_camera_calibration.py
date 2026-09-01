@@ -487,9 +487,14 @@ def test_distort_points_fisheye(crop: bool):
     assert np.allclose(points, redistorted_points, atol=1e-6)
 
 
-def _distorted_calibration() -> Calibration:
-    intrinsics = Intrinsics(matrix=[[720.0, 0.0, 660.0], [0.0, 720.0, 500.0], [0.0, 0.0, 1.0]],
-                            distortion=[-0.35, 0.15, 0.001, -0.002, -0.03],
+def _distorted_calibration(camera_model: CameraModel = CameraModel.PINHOLE) -> Calibration:
+    distortion = [-0.35, 0.15, 0.001, -0.002, -0.03] if camera_model == CameraModel.PINHOLE else \
+        [-0.05, 0.01, -0.002, 0.001]
+    omnidir_params = OmnidirParameters(xi=0.8) if camera_model == CameraModel.OMNIDIRECTIONAL else None
+    intrinsics = Intrinsics(model=camera_model,
+                            matrix=[[720.0, 0.0, 660.0], [0.0, 720.0, 500.0], [0.0, 0.0, 1.0]],
+                            distortion=distortion,
+                            omnidir_params=omnidir_params,
                             size=ImageSize(width=1280, height=960))
     extrinsics = Pose3d(x=0.3, y=0.0, z=0.6, rotation=Rotation.from_euler(np.pi, 0.0, 0.0))
     return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
@@ -523,9 +528,10 @@ def test_crop():
     assert cropped.intrinsics.size == ImageSize(width=640, height=480)
 
 
-def test_scale_then_crop_round_trip():
+@pytest.mark.parametrize('camera_model', [CameraModel.PINHOLE, CameraModel.FISHEYE, CameraModel.OMNIDIRECTIONAL])
+def test_scale_then_crop_round_trip(camera_model: CameraModel):
     """A pixel in the scaled and cropped image projects onto the same ground point as in the original."""
-    calibration = _distorted_calibration()
+    calibration = _distorted_calibration(camera_model)
     scaled = calibration.scale(ImageSize(width=2560, height=1920)).crop(Rectangle(x=600, y=400, width=1280, height=720))
     world_point = Point3d(x=0.45, y=0.1, z=0.0)
     scaled_pixel = scaled.project_to_image(world_point)
