@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from ..geometry import Frame3d, Point, Point3d, Pose3d, Rotation
+from ..geometry import Frame3d, Point, Point3d, Pose3d, Rectangle, Rotation
 from .image import Image, ImageSize
 
 FloatArray: TypeAlias = NDArray[np.float32] | NDArray[np.float64]
@@ -177,6 +177,37 @@ class Calibration:
                             rotation=rotation).in_frame(frame)
 
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
+
+    def scale_and_crop(self, *, size: ImageSize, crop: Rectangle) -> Calibration:
+        """Derive the calibration for an image that is scaled to ``size`` and then cropped to ``crop``.
+
+        Assumes this calibration and the scaled image share the same field of view, so the camera
+        matrix scales with the resolution while the distortion coefficients (defined in normalized
+        coordinates) stay valid. The crop only shifts the principal point.
+
+        :param size: the size the image is scaled to before cropping (same field of view)
+        :param crop: the region cut out of the scaled image, in scaled pixel coordinates
+        :return: a new calibration matching the cropped image (sharing this calibration's extrinsics)
+        :raises ValueError: if the crop has fractional coordinates or reaches beyond the scaled image
+        """
+        if any(value != int(value) for value in crop.tuple):
+            raise ValueError(f'crop must have integer coordinates, got {crop}')
+        if crop.x < 0 or crop.y < 0 or crop.x + crop.width > size.width or crop.y + crop.height > size.height:
+            raise ValueError(f'crop {crop} must lie inside the scaled image size {size}')
+        scale_x = size.width / self.intrinsics.size.width
+        scale_y = size.height / self.intrinsics.size.height
+        matrix = self.intrinsics.matrix
+        scaled_matrix = [
+            [matrix[0][0] * scale_x, matrix[0][1] * scale_x, matrix[0][2] * scale_x - crop.x],
+            [0.0, matrix[1][1] * scale_y, matrix[1][2] * scale_y - crop.y],
+            [0.0, 0.0, 1.0],
+        ]
+        intrinsics = Intrinsics(model=self.intrinsics.model,
+                                matrix=scaled_matrix,
+                                distortion=list(self.intrinsics.distortion),
+                                omnidir_params=self.intrinsics.omnidir_params,
+                                size=ImageSize(width=int(crop.width), height=int(crop.height)))
+        return Calibration(intrinsics=intrinsics, extrinsics=self.extrinsics)
 
     @overload
     def project_to_image(self, coordinates: Point3d) -> Point | None:
