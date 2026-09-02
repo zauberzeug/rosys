@@ -32,15 +32,11 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         self.username = username
         self.password = password
 
-        self.ip = ip
-
-        self.index: int | None = None
         parts = self.id.split('-')
-        if len(parts) == 2 and parts[1].isdigit():
-            self.index = int(parts[1])
-
+        self.index: int | None = int(parts[1]) if len(parts) == 2 and parts[1].isdigit() else None
         self.mac = parts[0]
         self.device: MjpegDevice | None = None
+        self._ip: str | None = ip
 
         self._register_parameter('fps', self._get_fps, self._set_fps, default_value=fps)
         self._register_parameter('resolution', self._get_resolution, self._set_resolution, default_value=resolution)
@@ -59,28 +55,42 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
     def is_connected(self) -> bool:
         return (self.device is not None) and self.device.is_connected
 
+    @property
+    def is_active(self) -> bool:
+        return (self.device is not None) and self.device.is_active
+
+    @property
+    def ip(self) -> str | None:
+        """The address of the camera; a running device rebinds to a new one without being torn down."""
+        return self._ip
+
+    @ip.setter
+    def ip(self, ip: str | None) -> None:
+        self._ip = ip
+        if self.device is not None:
+            self.device.ip = ip
+
     async def connect(self) -> None:
-        if self.is_connected:
-            return
-
-        if not self.ip:
-            self.log.error('No IP address provided')
-            return
-
-        try:
+        async with self._device_connection():
+            if self.device is not None:
+                if self.device.is_active:
+                    return
+                await self._tear_down_device()
             self.device = MjpegDeviceFactory.create(self.mac, self.ip, index=self.index, username=self.username,
-                                                    password=self.password, on_new_image_data=self._handle_new_image_data)
-        except ValueError as error:
-            self.log.error('Could not connect to device: %s', error)
-            return
-
-        await self._apply_all_parameters()
+                                                    password=self.password,
+                                                    on_new_image_data=self._handle_new_image_data,
+                                                    on_connect=self._apply_all_parameters,
+                                                    reconnect_interval=self.reconnect_interval)
 
     async def disconnect(self) -> None:
+        async with self._device_connection():
+            await self._tear_down_device()
+
+    async def _tear_down_device(self) -> None:
+        """Tear down the device. The caller must hold `device_connection_lock`."""
         if self.device is None:
             return
-
-        self.device.shutdown()
+        await self.device.shutdown()
         self.device = None
 
     async def _handle_new_image_data(self, image_bytes: bytes, timestamp: float) -> None:
