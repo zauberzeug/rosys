@@ -13,6 +13,7 @@ from nicegui import Event
 from ... import rosys
 from ..image import Image
 from ..image_route import create_image_route
+from ..reconnect import MIN_RECONNECT_INTERVAL, clamp_reconnect_interval
 
 logger = logging.getLogger('rosys.vision.camera')
 
@@ -32,11 +33,14 @@ class Camera(abc.ABC):
                  streaming: bool | None = None,
                  polling_interval: float | None = None,
                  base_path_overwrite: str | None = None,
+                 reconnect_interval: float = 3.0,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.id: str = id
         self.name = name or self.id
         self.connect_after_init = connect_after_init
+        self._reconnect_interval = MIN_RECONNECT_INTERVAL
+        self.reconnect_interval = reconnect_interval
         self.images: deque[Image] = deque(maxlen=Camera.IMAGE_HISTORY_LENGTH)
         self.base_path: str = f'images/{base_path_overwrite or id}'
 
@@ -53,6 +57,16 @@ class Camera(abc.ABC):
 
         if connect_after_init:
             rosys.on_startup(self.connect)
+        rosys.on_shutdown(self.disconnect)
+
+    @property
+    def reconnect_interval(self) -> float:
+        """Seconds the device waits before reopening a stream that ended."""
+        return self._reconnect_interval
+
+    @reconnect_interval.setter
+    def reconnect_interval(self, interval: float) -> None:
+        self._reconnect_interval = clamp_reconnect_interval(interval, logger)
 
     @property
     def streaming(self) -> bool:
@@ -88,6 +102,7 @@ class Camera(abc.ABC):
             'name': self.name,
             'connect_after_init': self.connect_after_init,
             'base_path_overwrite': base_path_id if base_path_id != self.id else None,
+            'reconnect_interval': self.reconnect_interval,
         }
 
     @classmethod
@@ -100,11 +115,21 @@ class Camera(abc.ABC):
 
     @property
     def is_connected(self) -> bool:
-        """To be interpreted as "ready to capture images"."""
+        """Whether the camera is currently streaming or capturing images."""
         return False
+
+    @property
+    def is_active(self) -> bool:
+        """Whether a connection is wanted, i.e. whether the camera keeps itself connected."""
+        return self.is_connected
+
+    @property
+    def is_reconnecting(self) -> bool:
+        return self.is_active and not self.is_connected
 
     @asynccontextmanager
     async def _device_connection(self) -> AsyncGenerator[None, None]:
+        """Serialize device creation and tear-down."""
         await self.device_connection_lock.acquire()
         try:
             yield
@@ -112,10 +137,14 @@ class Camera(abc.ABC):
             self.device_connection_lock.release()
 
     async def connect(self) -> None:  # noqa: B027
-        pass
+        """Create the self-healing device; it keeps retrying until ``disconnect()`` tears it down.
+
+        A camera without a device of its own, such as one replaying recorded images, needs no
+        implementation, so this is not abstract.
+        """
 
     async def disconnect(self) -> None:  # noqa: B027
-        pass
+        """Tear down the device, which also stops its reconnection attempts."""
 
     async def reconnect(self) -> None:
         await self.disconnect()

@@ -1,17 +1,20 @@
-import asyncio
 import logging
-from asyncio import Task
 from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
 from contextlib import asynccontextmanager
 
 import httpx
 
 from ... import rosys
-from ...rosys import on_startup
+from ..capture_device import CaptureDevice, CaptureState
+from ..http import new_async_client
 from ..image_processing import remove_exif
 from .vendors import mac_to_url
 
 log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device')
+
+
+class CameraAddressUnknown(Exception):
+    """Raised when the camera settings are used before discovery has found an address."""
 
 
 def parse_capture_timestamp(part_header: bytes) -> float | None:
@@ -34,42 +37,71 @@ def parse_capture_timestamp(part_header: bytes) -> float | None:
         return None
 
 
-class MjpegDevice:
+class MjpegDevice(CaptureDevice):
 
-    def __init__(self, mac: str, ip: str, *,
+    def __init__(self, mac: str, ip: str | None = None, *,
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
+                 on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 on_connect: Callable[[], Awaitable | None] | None = None,
+                 reconnect_interval: float = 3.0) -> None:
+        super().__init__(name=mac,
+                         log=logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device.' + mac),
+                         reconnect_interval=reconnect_interval)
         self._mac = mac
         self._ip = ip
-        self.log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device.' + self._mac)
-
+        self._index = index
         self._on_new_image_data = on_new_image_data
-        self._capture_task: Task | None = None
+        self._on_connect = on_connect
         self._username = username
         self._password = password
-        url = mac_to_url(mac, ip, index=index)
-        if url is None:
-            raise ValueError(f'could not determine URL for {mac}')
-        self._url = url
 
-        self.start_capture_task()
+        self._start_capture_task()
 
     @property
-    def is_connected(self) -> bool:
-        return (self._capture_task is not None) and (not self._capture_task.done())
+    def ip(self) -> str | None:
+        """The address of the camera; assigning a new one makes the capture loop reopen the stream there."""
+        return self._ip
 
-    def start_capture_task(self) -> None:
-        def create_capture_task() -> None:
-            loop = asyncio.get_event_loop()
-            self._capture_task = loop.create_task(self.run_capture_task())
-        on_startup(create_capture_task)
+    @ip.setter
+    def ip(self, ip: str | None) -> None:
+        if ip == self._ip:
+            return
+        self.log.info('address changed to %s', ip)
+        self._ip = ip
+        self.restart_capture()
 
-    def restart_capture(self) -> None:
-        self.log.debug('Restarting capture task')
-        self.shutdown()
-        self.start_capture_task()
+    @property
+    def url(self) -> str | None:
+        """The stream URL, or ``None`` when the address is unknown or no URL scheme is known for the mac."""
+        if self._ip is None:
+            return None
+        return mac_to_url(self._mac, self._ip, index=self._index)
+
+    def _retry_reason(self) -> str | None:
+        if self._ip is None:
+            return 'no address known'
+        if self.url is None:
+            return f'no stream URL for mac "{self._mac}"'
+        if self.is_refused:
+            return 'camera refused the stream'
+        return None
+
+    def _describe_session_error(self, error: Exception) -> str:
+        if isinstance(error, CameraAddressUnknown):
+            return 'no address known yet'
+        if isinstance(error, httpx.HTTPError):
+            return f'cannot reach the camera: {error}'
+        return super()._describe_session_error(error)
+
+    async def _invoke_on_connect(self) -> None:
+        """Notify the owner that a capture session has been (re-)established, e.g. to reapply camera parameters."""
+        if self._on_connect is None:
+            return
+        result = self._on_connect()
+        if isinstance(result, Awaitable):
+            await result
 
     async def _prepare_stream(self) -> None:
         """Hook executed right before the MJPEG stream is opened (and on every restart).
@@ -113,38 +145,39 @@ class MjpegDevice:
 
             self.log.debug('Stream ended')
         except httpx.ReadTimeout:
-            self.log.warning('Connection to %s timed out', self._url)
+            self.log.warning('Connection to %s timed out', self.url)
 
-    async def run_capture_task(self) -> None:
-        self.log.debug('Starting capture task for %s', self._url)
+    async def _run_session(self) -> None:
+        """Open a stream and read it until it ends."""
+        url = self.url
+        if url is None:
+            return
+        self.log.debug('Starting capture task for %s', url)
 
-        async with httpx.AsyncClient() as client:
-            try:
-                await self._prepare_stream()
-                async with open_stream(client, self._url, self._username, self._password) as response:
-                    if response is not None:
-                        async for image, capture_time in self._frame_reader(response):
-                            if not image:
-                                continue
-                            try:
-                                timestamp = capture_time if capture_time is not None else rosys.time()
-                                result = self._on_new_image_data(remove_exif(image), timestamp)
-                                if isinstance(result, Awaitable):
-                                    await result
-                            except Exception as e:
-                                self.log.error('Error processing image: %s', e)
-            except Exception as e:
-                self.log.warning('Connection to %s failed. Was something disconnected?\n%s', self._url, e)
-                raise
-
-        self.log.warning('Capture task stopped')
-        self._capture_task = None
-
-    def shutdown(self) -> None:
-        self.log.debug('Shutting down capture task')
-        if self._capture_task is not None:
-            self._capture_task.cancel()
-            self._capture_task = None
+        async with new_async_client() as client:
+            await self._prepare_stream()
+            async with open_stream(client, url, self._username, self._password) as response:
+                if response is None:
+                    self._set_state(CaptureState.REFUSED)
+                    return
+                self._set_state(CaptureState.STREAMING)
+                await self._invoke_on_connect()
+                async for image, capture_time in self._frame_reader(response):
+                    if self.url != url:
+                        self.log.info('stream settings changed; reopening the stream')
+                        return
+                    if not image:
+                        continue
+                    try:
+                        timestamp = capture_time if capture_time is not None else rosys.time()
+                        callback_result = self._on_new_image_data(remove_exif(image), timestamp)
+                        if isinstance(callback_result, Awaitable):
+                            await callback_result
+                    except Exception as e:
+                        self.log.error('Error processing image: %s', e)
+                    if not self._keeps_running():
+                        return
+        self.log.debug('capture session ended')
 
     async def get_fps(self) -> int | None:
         return None
@@ -181,7 +214,7 @@ async def open_stream(client: httpx.AsyncClient, url: str,
     """Negotiate the auth scheme and open the http connection.
 
     Credentials are only sent after the camera has challenged the unauthenticated request with a 401.
-    Yields the live 200 response, or ``None`` if the camera refused the connection.
+    Yields the live 200 response, or ``None`` when the camera answered something else.
     """
     auth: httpx.Auth | None = None
     while True:
@@ -192,7 +225,7 @@ async def open_stream(client: httpx.AsyncClient, url: str,
                 continue
             if response.status_code != 200:
                 auth_scheme = response.request.headers.get('authorization', '<none>').split(' ', 1)[0]
-                log.error('could not connect to %s (auth: %s): %s %s',
+                log.error('camera at %s refused the stream (auth: %s): %s %s',
                           url, auth_scheme, response.status_code, response.reason_phrase)
                 yield None
                 return

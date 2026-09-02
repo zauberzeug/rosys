@@ -1,7 +1,7 @@
 from collections.abc import Awaitable, Callable
 
 from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
-from .mjpeg_device import MjpegDevice
+from .mjpeg_device import CameraAddressUnknown, MjpegDevice
 from .vendors import VendorType, mac_to_vendor
 
 
@@ -13,18 +13,26 @@ class OpenIpcZauberzeugMjpegDevice(MjpegDevice):
     instead of the no-op defaults of the base class.
     """
 
-    def __init__(self, mac: str, ip: str, *,
+    def __init__(self, mac: str, ip: str | None = None, *,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
-        super().__init__(mac, ip, username=username, password=password, on_new_image_data=on_new_image_data)
-
+                 on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 on_connect: Callable[[], Awaitable | None] | None = None,
+                 reconnect_interval: float = 3.0) -> None:
         vendor = mac_to_vendor(mac)
         if vendor != VendorType.OPENIPC_ZAUBERZEUG:
             raise ValueError(f'OpenIpcZauberzeugMjpegDevice can only be used with '
                              f'OPENIPC_ZAUBERZEUG devices. Got {vendor} for mac="{mac}"')
 
-        self.settings_interface = OpenIpcZauberzeugSettingsInterface(ip, username=username, password=password)
+        super().__init__(mac, ip, username=username, password=password,
+                         on_new_image_data=on_new_image_data, on_connect=on_connect,
+                         reconnect_interval=reconnect_interval)
+
+    @property
+    def settings_interface(self) -> OpenIpcZauberzeugSettingsInterface:
+        if self.ip is None:
+            raise CameraAddressUnknown(f'cannot reach the settings of {self._mac} without an address')
+        return OpenIpcZauberzeugSettingsInterface(self.ip, username=self._username, password=self._password)
 
     async def set_fps(self, fps: int) -> None:
         await self.settings_interface.set_mjpeg_fps(fps)

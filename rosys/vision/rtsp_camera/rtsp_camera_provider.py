@@ -22,7 +22,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
         self.frame_rate = frame_rate
         self.substream = substream
         self.network_interface = network_interface
-        self.avdec = avdec
+        self.avdec: Literal['h264', 'h265'] = avdec
 
         self.log = logging.getLogger('rosys.rtsp_camera_provider')
 
@@ -32,8 +32,7 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
 
     def restore_from_dict(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
-            camera = RtspCamera.from_dict(camera_data)
-            self.add_camera(camera)
+            self.add_camera(RtspCamera.from_dict(camera_data))
 
     @staticmethod
     async def scan_for_cameras(network_interface: str | None = None) -> list[tuple[str, str]]:
@@ -45,12 +44,10 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
             camera = next((c for c in self._cameras.values() if c.mac == mac), None)
             if camera is None:
                 self.log.debug('found new camera %s', mac)
-                camera = RtspCamera(mac=mac, fps=self.frame_rate, substream=self.substream, avdec=self.avdec, ip=ip)
-                self.add_camera(camera)
-            if not camera.is_connected:
-                self.log.info('activating authorized camera %s...', camera.id)
+                self.add_camera(RtspCamera(mac=mac, fps=self.frame_rate,
+                                           substream=self.substream, avdec=self.avdec, ip=ip))
+            else:
                 camera.ip = ip
-                await camera.connect()
 
         self.log.debug('scanning completed, found %d cameras', len(self._cameras))
 
