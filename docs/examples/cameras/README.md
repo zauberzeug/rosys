@@ -47,6 +47,30 @@ It automatically updates every 0.1 seconds to detect and display new cameras, an
 {! examples/cameras/control.py !}
 ```
 
+## Automatic Reconnection
+
+Cameras can lose their connection due to network glitches, a bad cable or a power hiccup.
+Every camera reconnects on its own: once connected, the underlying device keeps trying to restore its stream every `reconnect_interval` seconds (default 3.0) for as long as the camera stays connected.
+The wait is owned by the camera, so it also applies to a device created later, and it is clamped to at least 0.1 s so a misconfigured `0` cannot starve the event loop.
+`RtspCamera` and `MjpegCamera` re-open their stream, `UsbCamera` re-opens the video device (even if its `/dev/video*` node changed), and `SimulatedCamera` resumes after a simulated drop.
+Reconnection runs until the camera is disconnected, so `disconnect()` both stops the retries and tears down the device.
+`is_connected` tells whether a camera is streaming right now, while `is_active` tells whether a connection is wanted at all, i.e. whether the camera keeps trying.
+`is_active` follows the device's capture loop rather than the mere existence of a device, so a camera whose loop died reports `is_active == False` and `connect()` replaces the device instead of returning early.
+
+`connect()` always creates that device, even when the camera cannot be reached at all — because its address is not known yet, or no `/dev/video*` node exists.
+Such a camera reports `is_active` but not `is_connected`, and starts streaming as soon as the address or the video device appears.
+
+A camera that answers without a stream is the one case where retrying is throttled instead of continuing at `reconnect_interval`:
+`RtspCamera` and `MjpegCamera` fall back to one attempt every 30 seconds, because the camera is reachable and has said no.
+Asking again a second later cannot change that answer, and some cameras answer repeated failed logins by locking the account.
+Such a camera stays active and recovers on its own once the answer changes.
+A camera's own `username` and `password` are read when its device is created, so use `reconnect()` to retry with changed credentials.
+
+Camera providers therefore do not connect or reconnect cameras themselves.
+Their periodic scan only discovers new cameras and hands a changed address (e.g. after a new DHCP lease) to the cameras it already knows, which the running device picks up for its next attempt.
+A newly discovered camera still connects on its own, because `connect_after_init` defaults to `True`.
+A deliberately disconnected camera stays disconnected, even with `auto_scan` enabled.
+
 ## Streaming RTSP Cameras
 
 The following example shows how to stream images from an RTSP camera.
