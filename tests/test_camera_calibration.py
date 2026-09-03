@@ -530,6 +530,41 @@ def test_intrinsics_scale_and_crop_leave_original_untouched():
     assert intrinsics.omnidir_params.xi == 0.8
 
 
+def _assert_same_intrinsics(a: Intrinsics, b: Intrinsics) -> None:
+    assert a.model == b.model
+    assert np.allclose(a.matrix, b.matrix)
+    assert np.allclose(a.distortion, b.distortion)
+    assert a.omnidir_params == b.omnidir_params
+    assert a.size == b.size
+
+
+@pytest.mark.parametrize('camera_model', [CameraModel.PINHOLE, CameraModel.FISHEYE, CameraModel.OMNIDIRECTIONAL])
+def test_scale_up_and_down_restores_intrinsics(camera_model: CameraModel):
+    """Scaling to another size and back yields the original intrinsics."""
+    intrinsics = _distorted_calibration(camera_model).intrinsics
+    restored = intrinsics.scale(ImageSize(width=1920, height=1920)).scale(intrinsics.size)
+    _assert_same_intrinsics(restored, intrinsics)
+
+
+def test_two_crops_equal_one_combined_crop():
+    """Cropping twice is the same as cropping once with the offsets added up."""
+    intrinsics = _distorted_calibration().intrinsics
+    first = intrinsics.crop(Rectangle(x=300, y=200, width=800, height=600))
+    twice = first.crop(Rectangle(x=100, y=50, width=640, height=480))
+    once = intrinsics.crop(Rectangle(x=400, y=250, width=640, height=480))
+    _assert_same_intrinsics(twice, once)
+
+
+def test_scale_and_crop_commute():
+    """Cropping the scaled image equals scaling the cropped image, when the crop is scaled along."""
+    intrinsics = _distorted_calibration().intrinsics
+    scaled = intrinsics.scale(ImageSize(width=2560, height=1920))
+    scale_then_crop = scaled.crop(Rectangle(x=600, y=400, width=1280, height=960))
+    cropped = intrinsics.crop(Rectangle(x=300, y=200, width=640, height=480))
+    crop_then_scale = cropped.scale(ImageSize(width=1280, height=960))
+    _assert_same_intrinsics(scale_then_crop, crop_then_scale)
+
+
 def test_crop():
     """Cropping only shifts projected pixels by the crop offset."""
     calibration = _distorted_calibration()
