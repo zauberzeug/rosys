@@ -33,6 +33,7 @@ from .mcap_recorder import (
     RecordingInfo,
     RecordingSource,
     TopicSchema,
+    is_auto_named,
 )
 from .paths import DOWNLOAD_PATH, PAGE_PATH
 from .recordings_page_ import RecordingsPage
@@ -62,6 +63,7 @@ __all__ = [
     'image_annotations',
     'imu',
     'integer',
+    'is_auto_named',
     'is_indexed',
     'location_fix',
     'number',
