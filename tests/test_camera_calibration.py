@@ -503,7 +503,8 @@ def _distorted_calibration(camera_model: CameraModel = CameraModel.PINHOLE) -> C
 def test_scale():
     """Scaling to a higher-resolution stream only rescales projected pixels."""
     calibration = _distorted_calibration()
-    scaled = calibration.scale(ImageSize(width=2560, height=1920))
+    scaled = Calibration(intrinsics=calibration.intrinsics.scale(ImageSize(width=2560, height=1920)),
+                         extrinsics=calibration.extrinsics)
     world_point = Point3d(x=0.45, y=0.1, z=0.0)
     original_pixel = calibration.project_to_image(world_point)
     scaled_pixel = scaled.project_to_image(world_point)
@@ -568,7 +569,8 @@ def test_scale_and_crop_commute():
 def test_crop():
     """Cropping only shifts projected pixels by the crop offset."""
     calibration = _distorted_calibration()
-    cropped = calibration.crop(Rectangle(x=300, y=200, width=640, height=480))
+    cropped = Calibration(intrinsics=calibration.intrinsics.crop(Rectangle(x=300, y=200, width=640, height=480)),
+                          extrinsics=calibration.extrinsics)
     world_point = Point3d(x=0.45, y=0.1, z=0.0)
     original_pixel = calibration.project_to_image(world_point)
     cropped_pixel = cropped.project_to_image(world_point)
@@ -583,7 +585,9 @@ def test_crop():
 def test_scale_then_crop_round_trip(camera_model: CameraModel):
     """A pixel in the scaled and cropped image projects onto the same ground point as in the original."""
     calibration = _distorted_calibration(camera_model)
-    scaled = calibration.scale(ImageSize(width=2560, height=1920)).crop(Rectangle(x=600, y=400, width=1280, height=720))
+    intrinsics = calibration.intrinsics.scale(ImageSize(width=2560, height=1920)) \
+        .crop(Rectangle(x=600, y=400, width=1280, height=720))
+    scaled = Calibration(intrinsics=intrinsics, extrinsics=calibration.extrinsics)
     world_point = Point3d(x=0.45, y=0.1, z=0.0)
     scaled_pixel = scaled.project_to_image(world_point)
     assert scaled_pixel is not None
@@ -594,8 +598,8 @@ def test_scale_then_crop_round_trip(camera_model: CameraModel):
 
 def test_crop_rejects_invalid_crops():
     """Fractional coordinates would desync from the integer pixel crop; out-of-bounds crops would be clamped."""
-    calibration = _distorted_calibration()
+    intrinsics = _distorted_calibration().intrinsics
     with pytest.raises(ValueError, match='integer'):
-        calibration.crop(Rectangle(x=600.5, y=400, width=640, height=480))
+        intrinsics.crop(Rectangle(x=600.5, y=400, width=640, height=480))
     with pytest.raises(ValueError, match='inside'):
-        calibration.crop(Rectangle(x=700, y=400, width=640, height=480))
+        intrinsics.crop(Rectangle(x=700, y=400, width=640, height=480))

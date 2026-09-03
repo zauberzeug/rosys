@@ -227,27 +227,6 @@ class Calibration:
 
         return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
 
-    def scale(self, size: ImageSize) -> Calibration:
-        """Derive the calibration for an image that is scaled to ``size``.
-
-        See :meth:`Intrinsics.scale`. The extrinsics are copied unchanged, because scaling the image does not move the camera.
-
-        :param size: the size the image is scaled to (same field of view)
-        :return: a new independent calibration matching the scaled image
-        """
-        return Calibration(intrinsics=self.intrinsics.scale(size), extrinsics=deepcopy(self.extrinsics))
-
-    def crop(self, crop: Rectangle) -> Calibration:
-        """Derive the calibration for an image that is cropped to ``crop``.
-
-        See :meth:`Intrinsics.crop`. The extrinsics are copied unchanged, because cropping the image does not move the camera.
-
-        :param crop: the region cut out of the image, in pixel coordinates
-        :return: a new independent calibration matching the cropped image
-        :raises ValueError: if the crop has fractional coordinates or reaches beyond the image
-        """
-        return Calibration(intrinsics=self.intrinsics.crop(crop), extrinsics=deepcopy(self.extrinsics))
-
     @overload
     def project_to_image(self, coordinates: Point3d) -> Point | None:
         """Project a 3D point to the image plane.
