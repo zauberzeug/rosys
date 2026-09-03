@@ -29,12 +29,13 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                          name=name,
                          connect_after_init=connect_after_init,
                          **kwargs)
+        self.log = logging.getLogger(f'rosys.vision.usb_camera.{self.id}')
         self._pending_operations = 0
         self.device: UsbDevice | None = None
         self.detect: bool = False
         self.color: str | None = None
 
-        self._register_parameter('auto_exposure', self.get_exposure, self.set_exposure, auto_exposure)
+        self._register_parameter('auto_exposure', self.get_auto_exposure, self.set_auto_exposure, auto_exposure)
         self._register_parameter('exposure', self.get_exposure, self.set_exposure, exposure)
         self._register_parameter('width', self.get_width, self.set_width, width)
         self._register_parameter('height', self.get_height, self.set_height, height)
@@ -47,36 +48,38 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
 
     @property
     def is_connected(self) -> bool:
-        return self.device is not None
+        return self.device is not None and self.device.is_connected
+
+    @property
+    def is_active(self) -> bool:
+        return self.device is not None and self.device.is_active
 
     async def connect(self) -> None:
-        if self.is_connected:
-            return
-
-        device = UsbDevice.from_uid(self.id, self._handle_new_image_data)
-        if device is None:
-            logging.warning('Connecting camera %s: failed', self.id)
-            return
-
-        self.device = device
-        logging.info('Connecting camera %s: succeeded', self.id)
-
-        await self._apply_all_parameters()
+        async with self._device_connection():
+            if self.device is not None:
+                if self.device.is_active:
+                    return
+                await self._tear_down_device()
+            self.device = UsbDevice(self.id,
+                                    on_new_image_data=self._handle_new_image_data,
+                                    on_connect=self._apply_all_parameters,
+                                    reconnect_interval=self.reconnect_interval)
 
     async def disconnect(self) -> None:
-        if not self.is_connected:
-            return
+        async with self._device_connection():
+            await self._tear_down_device()
 
-        assert self.device is not None
-        await self.device.release_capture()
+    async def _tear_down_device(self) -> None:
+        """Tear down the device. The caller must hold `device_connection_lock`."""
+        if self.device is None:
+            return
+        await self.device.shutdown()
         self.device = None
-        logging.info('camera %s: disconnected', self.id)
+        self.log.info('disconnected')
 
     async def _handle_new_image_data(self, image_data: np.ndarray | bytes, timestamp: float) -> None:
-        if not self.is_connected:
+        if self.device is None:
             return None
-
-        assert self.device is not None
 
         image_array: np.ndarray | None
         if isinstance(image_data, np.ndarray):
@@ -117,7 +120,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         self.device.set_width(width)
 
-    def get_width(self) -> int:
+    def get_width(self) -> int | None:
         assert self.device is not None
         return self.device.get_width()
 
@@ -125,7 +128,7 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         self.device.set_height(height)
 
-    def get_height(self) -> int:
+    def get_height(self) -> int | None:
         assert self.device is not None
         return self.device.get_height()
 
@@ -133,6 +136,6 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         self.device.set_fps(fps)
 
-    def get_fps(self) -> int:
+    def get_fps(self) -> int | None:
         assert self.device is not None
         return self.device.get_fps()

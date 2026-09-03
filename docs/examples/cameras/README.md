@@ -47,6 +47,20 @@ It automatically updates every 0.1 seconds to detect and display new cameras, an
 {! examples/cameras/control.py !}
 ```
 
+## Automatic Reconnection
+
+Cameras can lose their connection due to network glitches, a bad cable or a power hiccup.
+Every camera reconnects on its own: once connected, the underlying device keeps trying to restore its stream every `reconnect_interval` seconds (default 3.0) for as long as the camera stays connected.
+Reconnection runs until the camera is disconnected, so `disconnect()` both stops the retries and tears down the device connection.
+`is_connected` tells whether a camera is streaming right now, while `is_active` tells whether a connection is wanted at all, i.e. whether the camera keeps trying to reconnect.
+
+`connect()` always creates a Device, even when the camera cannot be reached at all — because its address is not known yet, or no `/dev/video*` node exists.
+Such a camera reports `is_active` but not `is_connected`, and starts streaming as soon as the address or the video device appears.
+
+Camera providers therefore do not reconnect cameras themselves.
+A newly discovered camera still connects on its own, because `connect_after_init` defaults to `True`.
+A deliberately disconnected camera stays disconnected, even with `auto_scan` enabled.
+
 ## Streaming RTSP Cameras
 
 The following example shows how to stream images from an RTSP camera.
