@@ -31,7 +31,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.log = logging.getLogger(f'rosys.vision.rtsp_camera.{self.id}')
 
         self.device: RtspDevice | None = None
-        self.ip: str | None = ip
+        self._ip: str | None = ip
 
         self._register_parameter('substream', self.get_substream, self.set_substream,
                                  min_value=0, max_value=1, step=1, default_value=substream)
@@ -66,35 +66,49 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         return self.device is not None and self.device.is_connected
 
     @property
-    def url(self) -> str | None:
-        if not self.is_connected:
-            return None
-        assert self.device is not None
+    def is_active(self) -> bool:
+        return self.device is not None and self.device.is_active
 
+    @property
+    def ip(self) -> str | None:
+        """The address of the camera; a running device rebinds to a new one without being torn down."""
+        return self._ip
+
+    @ip.setter
+    def ip(self, ip: str | None) -> None:
+        self._ip = ip
+        if self.device is not None:
+            self.device.ip = ip
+
+    @property
+    def url(self) -> str | None:
+        if self.device is None:
+            return None
         return self.device.url
 
     async def connect(self) -> None:
-        if self.is_connected:
-            return
-
-        if not self.ip:
-            self.log.error('no IP address provided for camera %s', self.id)
-            return
-
-        self.device = RtspDevice(mac=self.mac, ip=self.ip,
-                                 substream=self.parameters['substream'],
-                                 fps=self.parameters['fps'],
-                                 on_new_image_data=self._handle_new_image_data,
-                                 avdec=self.parameters['avdec'])
-
-        await self._apply_all_parameters()
+        async with self._device_connection():
+            if self.device is not None:
+                if self.device.is_active:
+                    return
+                await self._tear_down_device()
+            self.device = RtspDevice(mac=self.mac, ip=self.ip,
+                                     substream=self.parameters['substream'],
+                                     fps=self.parameters['fps'],
+                                     on_new_image_data=self._handle_new_image_data,
+                                     on_connect=self._apply_all_parameters,
+                                     avdec=self.parameters['avdec'],
+                                     reconnect_interval=self.reconnect_interval)
 
     async def disconnect(self) -> None:
-        if not self.is_connected:
-            return
-        logging.info('camera %s: disconnect initialized...', self.id)
+        async with self._device_connection():
+            await self._tear_down_device()
 
-        assert self.device is not None
+    async def _tear_down_device(self) -> None:
+        """Tear down the device. The caller must hold `device_connection_lock`."""
+        if self.device is None:
+            return
+        self.log.info('disconnect initialized...')
         await self.device.shutdown()
         self.device = None
 
@@ -143,8 +157,11 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         self.device.set_avdec(avdec)
 
-    async def _apply_parameters(self, new_values: dict[str, Any], force_set: bool = False) -> None:
-        await super()._apply_parameters(new_values, force_set)
-        if self.is_connected:
-            assert self.device is not None
-            await self.device.restart_gstreamer()
+    async def set_parameters(self, new_values: dict[str, Any]) -> None:
+        # NOTE the restart lives here rather than in _apply_parameters: the device invokes _apply_all_parameters
+        # from within its own capture task whenever a stream comes up, and a restart would cancel that very task.
+        async with self._device_connection():  # a device that is being torn down must not be restarted
+            await super().set_parameters(new_values)
+            if self.is_active:
+                assert self.device is not None
+                await self.device.restart_gstreamer()

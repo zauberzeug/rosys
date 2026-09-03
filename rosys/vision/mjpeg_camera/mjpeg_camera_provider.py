@@ -38,8 +38,7 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera]):
     def restore_from_dict(self, data: dict[str, dict]) -> None:
         for camera_data in data.get('cameras', {}).values():
             self.log.debug('restoring camera: %s', camera_data)
-            camera = MjpegCamera.from_dict(camera_data)
-            self.add_camera(camera)
+            self.add_camera(MjpegCamera.from_dict(camera_data))
 
     async def scan_for_cameras(self) -> list[tuple[str, str]]:
         self.log.debug('scanning for cameras...')
@@ -79,15 +78,13 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera]):
 
     async def update_device_list(self) -> None:
         for camera_id, ip in await self.scan_for_cameras():
-            if camera_id not in self._cameras:
+            camera = self._cameras.get(camera_id)
+            if camera is None:
                 self.log.info('found new camera "%s" at ip "%s"', camera_id, ip)
                 self.add_camera(MjpegCamera(id=camera_id, username=self.username,
-                                password=self.password, ip=ip))
-            camera = self._cameras[camera_id]
-            if not camera.is_connected:
-                self.log.info('activating camera "%s" at ip "%s" ...', camera.id, ip)
+                                            password=self.password, ip=ip))
+            else:
                 camera.ip = ip
-                await camera.connect()
 
     async def shutdown(self) -> None:
         for camera in self._cameras.values():

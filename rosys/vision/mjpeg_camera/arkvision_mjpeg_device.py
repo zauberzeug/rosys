@@ -1,25 +1,33 @@
 from collections.abc import Awaitable, Callable
 
 from .arkvision_settings_interface import ArkVisionSettingsInterface
-from .mjpeg_device import MjpegDevice
+from .mjpeg_device import CameraAddressUnknown, MjpegDevice
 from .vendors import VendorType, mac_to_vendor
 
 
 class ArkVisionMjpegDevice(MjpegDevice):
     """MJPEG device for Ark Vision ArkCam Basic+ cameras. Includes auto-enable and configuration through the REST API."""
 
-    def __init__(self, mac: str, ip: str, *,
+    def __init__(self, mac: str, ip: str | None = None, *,
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
+                 on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 on_connect: Callable[[], Awaitable | None] | None = None,
+                 reconnect_interval: float = 3.0) -> None:
         vendor = mac_to_vendor(mac)
         if vendor != VendorType.ARKVISION:
             raise ValueError(
                 f'ArkVisionMjpegDevice can only be used with ARKVISION devices. Got {vendor} for mac="{mac}"')
-        self.settings_interface = ArkVisionSettingsInterface(ip)
         super().__init__(mac, ip, index=index, username=username, password=password,
-                         on_new_image_data=on_new_image_data)
+                         on_new_image_data=on_new_image_data, on_connect=on_connect,
+                         reconnect_interval=reconnect_interval)
+
+    @property
+    def settings_interface(self) -> ArkVisionSettingsInterface:
+        if self.ip is None:
+            raise CameraAddressUnknown(f'cannot reach the settings of {self._mac} without an address')
+        return ArkVisionSettingsInterface(self.ip)
 
     async def _prepare_stream(self) -> None:
         await self.settings_interface.enable_http_mjpeg()
