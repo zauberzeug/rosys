@@ -66,6 +66,54 @@ class Intrinsics:
             size=ImageSize(width=width, height=height),
         )
 
+    def scale(self, size: ImageSize) -> Intrinsics:
+        """Derive the intrinsics for an image that is scaled to ``size``.
+
+        Assumes the original and the scaled image share the same field of view, so the camera matrix scales with
+        the resolution while the distortion coefficients (defined in normalized coordinates) stay valid.
+
+        :param size: the size the image is scaled to (same field of view)
+        :return: new independent intrinsics matching the scaled image
+        """
+        scale_x = size.width / self.size.width
+        scale_y = size.height / self.size.height
+        matrix = self.matrix
+        scaled_matrix = [
+            [matrix[0][0] * scale_x, matrix[0][1] * scale_x, matrix[0][2] * scale_x],
+            [0.0, matrix[1][1] * scale_y, matrix[1][2] * scale_y],
+            [0.0, 0.0, 1.0],
+        ]
+        return Intrinsics(model=self.model,
+                          matrix=scaled_matrix,
+                          distortion=list(self.distortion),
+                          omnidir_params=deepcopy(self.omnidir_params),
+                          size=ImageSize(width=size.width, height=size.height))
+
+    def crop(self, crop: Rectangle) -> Intrinsics:
+        """Derive the intrinsics for an image that is cropped to ``crop``.
+
+        The crop only shifts the principal point; the distortion coefficients stay valid.
+
+        :param crop: the region cut out of the image, in pixel coordinates
+        :return: new independent intrinsics matching the cropped image
+        :raises ValueError: if the crop has fractional coordinates or reaches beyond the image
+        """
+        if any(value != int(value) for value in crop.tuple):
+            raise ValueError(f'crop must have integer coordinates, got {crop}')
+        if crop.x < 0 or crop.y < 0 or crop.x + crop.width > self.size.width or crop.y + crop.height > self.size.height:
+            raise ValueError(f'crop {crop} must lie inside the image size {self.size}')
+        matrix = self.matrix
+        cropped_matrix = [
+            [matrix[0][0], matrix[0][1], matrix[0][2] - crop.x],
+            [0.0, matrix[1][1], matrix[1][2] - crop.y],
+            [0.0, 0.0, 1.0],
+        ]
+        return Intrinsics(model=self.model,
+                          matrix=cropped_matrix,
+                          distortion=list(self.distortion),
+                          omnidir_params=deepcopy(self.omnidir_params),
+                          size=ImageSize(width=int(crop.width), height=int(crop.height)))
+
 
 log = logging.getLogger('rosys.vision.calibration')
 
@@ -182,54 +230,23 @@ class Calibration:
     def scale(self, size: ImageSize) -> Calibration:
         """Derive the calibration for an image that is scaled to ``size``.
 
-        Assumes this calibration and the scaled image share the same field of view, so the camera
-        matrix scales with the resolution while the distortion coefficients (defined in normalized
-        coordinates) stay valid.
+        See :meth:`Intrinsics.scale`. The extrinsics are copied unchanged, because scaling the image does not move the camera.
 
         :param size: the size the image is scaled to (same field of view)
         :return: a new independent calibration matching the scaled image
         """
-        scale_x = size.width / self.intrinsics.size.width
-        scale_y = size.height / self.intrinsics.size.height
-        matrix = self.intrinsics.matrix
-        scaled_matrix = [
-            [matrix[0][0] * scale_x, matrix[0][1] * scale_x, matrix[0][2] * scale_x],
-            [0.0, matrix[1][1] * scale_y, matrix[1][2] * scale_y],
-            [0.0, 0.0, 1.0],
-        ]
-        intrinsics = Intrinsics(model=self.intrinsics.model,
-                                matrix=scaled_matrix,
-                                distortion=list(self.intrinsics.distortion),
-                                omnidir_params=deepcopy(self.intrinsics.omnidir_params),
-                                size=ImageSize(width=size.width, height=size.height))
-        return Calibration(intrinsics=intrinsics, extrinsics=deepcopy(self.extrinsics))
+        return Calibration(intrinsics=self.intrinsics.scale(size), extrinsics=deepcopy(self.extrinsics))
 
     def crop(self, crop: Rectangle) -> Calibration:
         """Derive the calibration for an image that is cropped to ``crop``.
 
-        The crop only shifts the principal point; the distortion coefficients stay valid.
+        See :meth:`Intrinsics.crop`. The extrinsics are copied unchanged, because cropping the image does not move the camera.
 
         :param crop: the region cut out of the image, in pixel coordinates
         :return: a new independent calibration matching the cropped image
         :raises ValueError: if the crop has fractional coordinates or reaches beyond the image
         """
-        if any(value != int(value) for value in crop.tuple):
-            raise ValueError(f'crop must have integer coordinates, got {crop}')
-        size = self.intrinsics.size
-        if crop.x < 0 or crop.y < 0 or crop.x + crop.width > size.width or crop.y + crop.height > size.height:
-            raise ValueError(f'crop {crop} must lie inside the image size {size}')
-        matrix = self.intrinsics.matrix
-        cropped_matrix = [
-            [matrix[0][0], matrix[0][1], matrix[0][2] - crop.x],
-            [0.0, matrix[1][1], matrix[1][2] - crop.y],
-            [0.0, 0.0, 1.0],
-        ]
-        intrinsics = Intrinsics(model=self.intrinsics.model,
-                                matrix=cropped_matrix,
-                                distortion=list(self.intrinsics.distortion),
-                                omnidir_params=deepcopy(self.intrinsics.omnidir_params),
-                                size=ImageSize(width=int(crop.width), height=int(crop.height)))
-        return Calibration(intrinsics=intrinsics, extrinsics=deepcopy(self.extrinsics))
+        return Calibration(intrinsics=self.intrinsics.crop(crop), extrinsics=deepcopy(self.extrinsics))
 
     @overload
     def project_to_image(self, coordinates: Point3d) -> Point | None:

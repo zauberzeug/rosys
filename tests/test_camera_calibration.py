@@ -514,6 +514,22 @@ def test_scale():
     assert scaled.intrinsics.size == ImageSize(width=2560, height=1920)
 
 
+def test_intrinsics_scale_and_crop_leave_original_untouched():
+    """Scaling and cropping intrinsics leave the original untouched."""
+    intrinsics = _distorted_calibration(CameraModel.OMNIDIRECTIONAL).intrinsics
+    scaled = intrinsics.scale(ImageSize(width=2560, height=1920))
+    cropped = intrinsics.crop(Rectangle(x=300, y=200, width=640, height=480))
+    assert scaled.matrix[0][0] == 1440.0
+    assert cropped.matrix[0][2] == 360.0
+    scaled.distortion[0] = 0.0
+    assert cropped.omnidir_params is not None
+    cropped.omnidir_params.xi = 0.0
+    assert intrinsics.matrix[0][0] == 720.0
+    assert intrinsics.distortion[0] == -0.05
+    assert intrinsics.omnidir_params is not None
+    assert intrinsics.omnidir_params.xi == 0.8
+
+
 def test_crop():
     """Cropping only shifts projected pixels by the crop offset."""
     calibration = _distorted_calibration()
