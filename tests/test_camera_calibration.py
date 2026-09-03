@@ -3,10 +3,10 @@ import copy
 import numpy as np
 import pytest
 
-from rosys.geometry import Point, Point3d, Pose3d
+from rosys.geometry import Point, Point3d, Pose3d, Rectangle, Rotation
 from rosys.geometry.object3d import frame_registry
 from rosys.testing import approx
-from rosys.vision import CalibratableCamera, Calibration, Image
+from rosys.vision import CalibratableCamera, Calibration, Image, ImageSize, Intrinsics
 from rosys.vision.calibration import CameraModel, OmnidirParameters
 
 
@@ -485,3 +485,121 @@ def test_distort_points_fisheye(crop: bool):
     undistorted_points = cam.calibration.undistort_points(points, crop=crop)
     redistorted_points = cam.calibration.distort_points(undistorted_points, crop=crop)
     assert np.allclose(points, redistorted_points, atol=1e-6)
+
+
+def _distorted_calibration(camera_model: CameraModel = CameraModel.PINHOLE) -> Calibration:
+    distortion = [-0.35, 0.15, 0.001, -0.002, -0.03] if camera_model == CameraModel.PINHOLE else \
+        [-0.05, 0.01, -0.002, 0.001]
+    omnidir_params = OmnidirParameters(xi=0.8) if camera_model == CameraModel.OMNIDIRECTIONAL else None
+    intrinsics = Intrinsics(model=camera_model,
+                            matrix=[[720.0, 0.0, 660.0], [0.0, 720.0, 500.0], [0.0, 0.0, 1.0]],
+                            distortion=distortion,
+                            omnidir_params=omnidir_params,
+                            size=ImageSize(width=1280, height=960))
+    extrinsics = Pose3d(x=0.3, y=0.0, z=0.6, rotation=Rotation.from_euler(np.pi, 0.0, 0.0))
+    return Calibration(intrinsics=intrinsics, extrinsics=extrinsics)
+
+
+def test_scale():
+    """Scaling to a higher-resolution stream only rescales projected pixels."""
+    calibration = _distorted_calibration()
+    scaled = Calibration(intrinsics=calibration.intrinsics.scale(ImageSize(width=2560, height=1920)),
+                         extrinsics=calibration.extrinsics)
+    world_point = Point3d(x=0.45, y=0.1, z=0.0)
+    original_pixel = calibration.project_to_image(world_point)
+    scaled_pixel = scaled.project_to_image(world_point)
+    assert original_pixel is not None
+    assert scaled_pixel is not None
+    approx(scaled_pixel.x, original_pixel.x * 2)
+    approx(scaled_pixel.y, original_pixel.y * 2)
+    assert scaled.intrinsics.size == ImageSize(width=2560, height=1920)
+
+
+def test_intrinsics_scale_and_crop_leave_original_untouched():
+    """Scaling and cropping intrinsics leave the original untouched."""
+    intrinsics = _distorted_calibration(CameraModel.OMNIDIRECTIONAL).intrinsics
+    scaled = intrinsics.scale(ImageSize(width=2560, height=1920))
+    cropped = intrinsics.crop(Rectangle(x=300, y=200, width=640, height=480))
+    assert scaled.matrix[0][0] == 1440.0
+    assert cropped.matrix[0][2] == 360.0
+    scaled.distortion[0] = 0.0
+    assert cropped.omnidir_params is not None
+    cropped.omnidir_params.xi = 0.0
+    assert intrinsics.matrix[0][0] == 720.0
+    assert intrinsics.distortion[0] == -0.05
+    assert intrinsics.omnidir_params is not None
+    assert intrinsics.omnidir_params.xi == 0.8
+
+
+def _assert_same_intrinsics(a: Intrinsics, b: Intrinsics) -> None:
+    assert a.model == b.model
+    assert np.allclose(a.matrix, b.matrix)
+    assert np.allclose(a.distortion, b.distortion)
+    assert a.omnidir_params == b.omnidir_params
+    assert a.size == b.size
+
+
+@pytest.mark.parametrize('camera_model', [CameraModel.PINHOLE, CameraModel.FISHEYE, CameraModel.OMNIDIRECTIONAL])
+def test_scale_up_and_down_restores_intrinsics(camera_model: CameraModel):
+    """Scaling to another size and back yields the original intrinsics."""
+    intrinsics = _distorted_calibration(camera_model).intrinsics
+    restored = intrinsics.scale(ImageSize(width=1920, height=1920)).scale(intrinsics.size)
+    _assert_same_intrinsics(restored, intrinsics)
+
+
+def test_two_crops_equal_one_combined_crop():
+    """Cropping twice is the same as cropping once with the offsets added up."""
+    intrinsics = _distorted_calibration().intrinsics
+    first = intrinsics.crop(Rectangle(x=300, y=200, width=800, height=600))
+    twice = first.crop(Rectangle(x=100, y=50, width=640, height=480))
+    once = intrinsics.crop(Rectangle(x=400, y=250, width=640, height=480))
+    _assert_same_intrinsics(twice, once)
+
+
+def test_scale_and_crop_commute():
+    """Cropping the scaled image equals scaling the cropped image, when the crop is scaled along."""
+    intrinsics = _distorted_calibration().intrinsics
+    scaled = intrinsics.scale(ImageSize(width=2560, height=1920))
+    scale_then_crop = scaled.crop(Rectangle(x=600, y=400, width=1280, height=960))
+    cropped = intrinsics.crop(Rectangle(x=300, y=200, width=640, height=480))
+    crop_then_scale = cropped.scale(ImageSize(width=1280, height=960))
+    _assert_same_intrinsics(scale_then_crop, crop_then_scale)
+
+
+def test_crop():
+    """Cropping only shifts projected pixels by the crop offset."""
+    calibration = _distorted_calibration()
+    cropped = Calibration(intrinsics=calibration.intrinsics.crop(Rectangle(x=300, y=200, width=640, height=480)),
+                          extrinsics=calibration.extrinsics)
+    world_point = Point3d(x=0.45, y=0.1, z=0.0)
+    original_pixel = calibration.project_to_image(world_point)
+    cropped_pixel = cropped.project_to_image(world_point)
+    assert original_pixel is not None
+    assert cropped_pixel is not None
+    approx(cropped_pixel.x, original_pixel.x - 300)
+    approx(cropped_pixel.y, original_pixel.y - 200)
+    assert cropped.intrinsics.size == ImageSize(width=640, height=480)
+
+
+@pytest.mark.parametrize('camera_model', [CameraModel.PINHOLE, CameraModel.FISHEYE, CameraModel.OMNIDIRECTIONAL])
+def test_scale_then_crop_round_trip(camera_model: CameraModel):
+    """A pixel in the scaled and cropped image projects onto the same ground point as in the original."""
+    calibration = _distorted_calibration(camera_model)
+    intrinsics = calibration.intrinsics.scale(ImageSize(width=2560, height=1920)) \
+        .crop(Rectangle(x=600, y=400, width=1280, height=720))
+    scaled = Calibration(intrinsics=intrinsics, extrinsics=calibration.extrinsics)
+    world_point = Point3d(x=0.45, y=0.1, z=0.0)
+    scaled_pixel = scaled.project_to_image(world_point)
+    assert scaled_pixel is not None
+    projected = scaled.project_from_image(scaled_pixel)
+    assert projected is not None
+    approx(projected.tuple, world_point.tuple, abs=1e-4)
+
+
+def test_crop_rejects_invalid_crops():
+    """Fractional coordinates would desync from the integer pixel crop; out-of-bounds crops would be clamped."""
+    intrinsics = _distorted_calibration().intrinsics
+    with pytest.raises(ValueError, match='integer'):
+        intrinsics.crop(Rectangle(x=600.5, y=400, width=640, height=480))
+    with pytest.raises(ValueError, match='inside'):
+        intrinsics.crop(Rectangle(x=700, y=400, width=640, height=480))
