@@ -1,15 +1,11 @@
 from contextlib import nullcontext
 
-from nicegui.elements.scene.scene_object3d import Object3D
-from nicegui.elements.scene.scene_objects import Curve
+from nicegui.elements.scene.objects import Curve, Group
 
 from ..driving import PathSegment
 
 
-class PathObject(Object3D):
-
-    def __init__(self) -> None:
-        super().__init__('group')
+class PathObject(Group):
 
     def update(self, path: list[PathSegment], height: float = 0) -> None:
         for obj in list(self.scene.objects.values()):

@@ -68,7 +68,7 @@ def format_video_name(video: Path) -> tuple[str, str]:
 
 
 async def get_all_videos() -> dict[str, list[Path]]:
-    all_videos = sorted(await run.io_bound(VIDEO_FILES.glob, '*.mp4'), reverse=True)
+    all_videos = sorted(await run.io_bound(VIDEO_FILES.glob, '*.mp4') or [], reverse=True)
     video_date_dict: dict[str, list[Path]] = defaultdict(list)
     for video in all_videos:
         video_date = video.stem.split('_')[0]

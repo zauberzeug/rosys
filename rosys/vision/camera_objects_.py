@@ -2,8 +2,8 @@ from typing import Self
 
 import numpy as np
 from nicegui import ui
+from nicegui.elements.scene.objects import Cylinder, Group, Text, Texture
 from nicegui.elements.scene.scene_object3d import Object3D
-from nicegui.elements.scene.scene_objects import Cylinder, Group, Text, Texture
 
 from .. import run
 from .calibratable_camera_provider import CalibratableCameraProvider

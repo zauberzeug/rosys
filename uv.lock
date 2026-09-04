@@ -1231,18 +1231,6 @@ wheels = [
 ]
 
 [[package]]
-name = "lxml-html-clean"
-version = "0.4.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "lxml" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/9a/a4/5c62acfacd69ff4f5db395100f5cfb9b54e7ac8c69a235e4e939fd13f021/lxml_html_clean-0.4.4.tar.gz", hash = "sha256:58f39a9d632711202ed1d6d0b9b47a904e306c85de5761543b90e3e3f736acfb", size = 23899, upload-time = "2026-02-27T09:35:52.911Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d9/76/7ffc1d3005cf7749123bc47cb3ea343cd97b0ac2211bab40f57283577d0e/lxml_html_clean-0.4.4-py3-none-any.whl", hash = "sha256:ce2ef506614ecb85ee1c5fe0a2aa45b06a19514ec7949e9c8f34f06925cfabcb", size = 14565, upload-time = "2026-02-27T09:35:51.86Z" },
-]
-
-[[package]]
 name = "lz4"
 version = "4.4.5"
 source = { registry = "https://pypi.org/simple" }
@@ -1788,7 +1776,7 @@ wheels = [
 
 [[package]]
 name = "nicegui"
-version = "3.13.0"
+version = "3.16.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -1802,8 +1790,6 @@ dependencies = [
     { name = "ifaddr" },
     { name = "itsdangerous" },
     { name = "jinja2" },
-    { name = "lxml" },
-    { name = "lxml-html-clean" },
     { name = "markdown2" },
     { name = "orjson", marker = "platform_machine != 'i386' and platform_machine != 'i686' and platform_python_implementation != 'PyPy'" },
     { name = "pydantic-core" },
@@ -1818,9 +1804,9 @@ dependencies = [
     { name = "uvicorn", extra = ["standard"] },
     { name = "watchfiles" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/90/a2/61a865fe4fb25b9fc15510f15d110406a12498fcba309518ac86ae6878d6/nicegui-3.13.0.tar.gz", hash = "sha256:340ea81a9e5e9a94365492ccde249c55e3619d05b73b60dff9424b79a264a8f6", size = 19612421, upload-time = "2026-06-09T12:35:10.433Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/df/09/c610d775f9a28c9d2962f185ff592376bace368b5ef0fe0b91f1205f3a26/nicegui-3.16.0.tar.gz", hash = "sha256:602c9c67b5063d14c47f88fd025b82a4e797e9a9b233113f6bbabbc6cdf196a2", size = 19886000, upload-time = "2026-08-12T15:18:32.543Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a3/9c/ba25bdc2043854173365ffd29f34649eb59b705030e6c8bb154db30b472c/nicegui-3.13.0-py3-none-any.whl", hash = "sha256:06facff080828ff3da2855a33dcfca08ceb922138ac2c79d6ed021a9e949fab8", size = 20196229, upload-time = "2026-06-09T12:35:06.272Z" },
+    { url = "https://files.pythonhosted.org/packages/16/da/2234c7c9c42caac9e20c61704461c4020bd350c618896e148d147f0e15ee/nicegui-3.16.0-py3-none-any.whl", hash = "sha256:5cff8b534e58404b8228d0ef9e41fc610d106bb146844de09abbfc1f24fb5163", size = 8588168, upload-time = "2026-08-12T15:18:28.781Z" },
 ]
 
 [[package]]
@@ -2755,7 +2741,7 @@ requires-dist = [
     { name = "matplotlib", specifier = ">=3.7.2,<4" },
     { name = "mcap", specifier = ">=1.1.0,<2" },
     { name = "networkx", specifier = ">=2.6.2,<3" },
-    { name = "nicegui", specifier = ">=3.13.0,<4" },
+    { name = "nicegui", specifier = ">=3.16.0,<4" },
     { name = "numpy", specifier = "<3.0.0" },
     { name = "objgraph", specifier = ">=3.6.1,<4" },
     { name = "opencv-contrib-python", specifier = ">=4.12.0.88,<4.13.0.0" },
