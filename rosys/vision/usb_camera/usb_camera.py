@@ -4,6 +4,7 @@ from typing import Any
 import numpy as np
 
 from ... import rosys
+from ...helpers.deprecation import deprecated_param
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image
@@ -14,6 +15,8 @@ from .usb_device import UsbDevice
 
 class UsbCamera(ConfigurableCamera, TransformableCamera):
 
+    @deprecated_param('width')
+    @deprecated_param('height', stacklevel=3)
     def __init__(self,
                  *,
                  id: str,  # pylint: disable=redefined-builtin
@@ -21,8 +24,9 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                  connect_after_init: bool = True,
                  auto_exposure: bool = True,
                  exposure: float = 0.01,
-                 width: int = 800,
-                 height: int = 600,
+                 resolution: tuple[int, int] = (800, 600),
+                 width: int | None = None,
+                 height: int | None = None,
                  fps: int = 10,
                  **kwargs) -> None:
         super().__init__(id=id,
@@ -34,16 +38,24 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self.detect: bool = False
         self.color: str | None = None
 
+        if width is not None or height is not None:
+            resolution = (width or resolution[0], height or resolution[1])
         self._register_parameter('auto_exposure', self.get_exposure, self.set_exposure, auto_exposure)
         self._register_parameter('exposure', self.get_exposure, self.set_exposure, exposure)
-        self._register_parameter('width', self.get_width, self.set_width, width)
-        self._register_parameter('height', self.get_height, self.set_height, height)
+        self._register_parameter('resolution', self.get_resolution, self.set_resolution, resolution)
         self._register_parameter('fps', self.get_fps, self.set_fps, fps)
 
     def to_dict(self) -> dict[str, Any]:
         return super().to_dict() | {
             name: param.value for name, param in self._parameters.items()
         }
+
+    @classmethod
+    def args_from_dict(cls, data: dict[str, Any]) -> dict:
+        data = super().args_from_dict(data)
+        if 'width' in data and 'height' in data:
+            data['resolution'] = (data.pop('width'), data.pop('height'))
+        return data
 
     @property
     def is_connected(self) -> bool:
@@ -113,21 +125,14 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         assert self.device is not None
         return self.device.get_exposure()
 
-    def set_width(self, width: int) -> None:
+    def set_resolution(self, resolution: tuple[int, int]) -> None:
         assert self.device is not None
-        self.device.set_width(width)
+        self.device.set_width(resolution[0])
+        self.device.set_height(resolution[1])
 
-    def get_width(self) -> int:
+    def get_resolution(self) -> tuple[int, int]:
         assert self.device is not None
-        return self.device.get_width()
-
-    def set_height(self, height: int) -> None:
-        assert self.device is not None
-        self.device.set_height(height)
-
-    def get_height(self) -> int:
-        assert self.device is not None
-        return self.device.get_height()
+        return (self.device.get_width(), self.device.get_height())
 
     def set_fps(self, fps: int) -> None:
         assert self.device is not None
