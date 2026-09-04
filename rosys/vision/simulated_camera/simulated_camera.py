@@ -1,5 +1,6 @@
 import random
 
+from ...helpers.deprecation import deprecated_param
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import ImageSize
@@ -8,12 +9,16 @@ from .simulated_device import SimulatedDevice
 
 class SimulatedCamera(ConfigurableCamera, TransformableCamera):
 
+    @deprecated_param('width')
+    @deprecated_param('height', stacklevel=3)
     def __init__(self,
                  *,
                  id: str,  # pylint: disable=redefined-builtin
                  name: str | None = None,
                  connect_after_init: bool = True,
                  resolution: tuple[int, int] = (800, 600),
+                 width: int | None = None,
+                 height: int | None = None,
                  color: str | None = None,
                  fps: int = 5,
                  **kwargs,
@@ -23,6 +28,8 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
                          connect_after_init=connect_after_init,
                          **kwargs)
         self.device: SimulatedDevice | None = None
+        if width is not None or height is not None:
+            resolution = (width or resolution[0], height or resolution[1])
         self._register_parameter('resolution', self._get_resolution, self._set_resolution, resolution)
         self._register_parameter('color', self._get_color, self._set_color,
                                  color or f'#{random.randint(0, 0xffffff):06x}')
@@ -33,6 +40,13 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
         return super().to_dict() | {
             name: param.value for name, param in self._parameters.items()
         }
+
+    @classmethod
+    def args_from_dict(cls, data: dict) -> dict:
+        data = super().args_from_dict(data)
+        if 'width' in data and 'height' in data:
+            data['resolution'] = (data.pop('width'), data.pop('height'))
+        return data
 
     @property
     def is_connected(self) -> bool:

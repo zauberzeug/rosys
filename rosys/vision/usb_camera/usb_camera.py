@@ -4,6 +4,7 @@ from typing import Any
 import numpy as np
 
 from ... import rosys
+from ...helpers.deprecation import deprecated_param
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image
@@ -14,6 +15,8 @@ from .usb_device import UsbDevice
 
 class UsbCamera(ConfigurableCamera, TransformableCamera):
 
+    @deprecated_param('width')
+    @deprecated_param('height', stacklevel=3)
     def __init__(self,
                  *,
                  id: str,  # pylint: disable=redefined-builtin
@@ -22,6 +25,8 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                  auto_exposure: bool = True,
                  exposure: float = 0.01,
                  resolution: tuple[int, int] = (800, 600),
+                 width: int | None = None,
+                 height: int | None = None,
                  fps: int = 10,
                  **kwargs) -> None:
         super().__init__(id=id,
@@ -33,6 +38,8 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self.detect: bool = False
         self.color: str | None = None
 
+        if width is not None or height is not None:
+            resolution = (width or resolution[0], height or resolution[1])
         self._register_parameter('auto_exposure', self.get_exposure, self.set_exposure, auto_exposure)
         self._register_parameter('exposure', self.get_exposure, self.set_exposure, exposure)
         self._register_parameter('resolution', self.get_resolution, self.set_resolution, resolution)
@@ -42,6 +49,13 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         return super().to_dict() | {
             name: param.value for name, param in self._parameters.items()
         }
+
+    @classmethod
+    def args_from_dict(cls, data: dict[str, Any]) -> dict:
+        data = super().args_from_dict(data)
+        if 'width' in data and 'height' in data:
+            data['resolution'] = (data.pop('width'), data.pop('height'))
+        return data
 
     @property
     def is_connected(self) -> bool:
