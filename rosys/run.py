@@ -27,16 +27,7 @@ log = logging.getLogger('rosys.run')
 
 
 async def io_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R | None:
-    if is_stopping():
-        return None
-    try:
-        return await run.io_bound(callback, *args, **kwargs)
-    except RuntimeError as e:
-        if 'cannot schedule new futures after shutdown' not in str(e):
-            raise
-    except asyncio.exceptions.CancelledError:
-        pass
-    return None
+    return await run.io_bound(callback, *args, **kwargs)
 
 
 def awaitable(func: Callable) -> Callable:
@@ -51,14 +42,7 @@ async def cpu_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs)
     if is_stopping():
         return None
     with cpu():
-        try:
-            return await run.cpu_bound(callback, *args, **kwargs)
-        except RuntimeError as e:
-            if 'cannot schedule new futures after shutdown' not in str(e):
-                raise
-        except asyncio.exceptions.CancelledError:
-            pass
-    return None
+        return await run.cpu_bound(callback, *args, **kwargs)
 
 
 @contextmanager
