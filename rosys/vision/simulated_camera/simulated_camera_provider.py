@@ -52,7 +52,7 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera]):
         async for camera_id in self.scan_for_cameras():
             camera = self._cameras.get(camera_id)
             if not camera:
-                camera = SimulatedCamera(id=camera_id, width=640, height=480)
+                camera = SimulatedCamera(id=camera_id, resolution=(640, 480))
                 self.add_camera(camera)
 
             if not camera.is_connected:
@@ -69,4 +69,4 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera]):
     def add_cameras(self, num_cameras: int) -> None:
         for _ in range(num_cameras):
             new_id = f'cam{len(self._cameras)}'
-            self.add_camera(SimulatedCamera(id=new_id, width=640, height=480))
+            self.add_camera(SimulatedCamera(id=new_id, resolution=(640, 480)))

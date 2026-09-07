@@ -19,7 +19,7 @@ class SimulatedDevice:
                  color: str = '#ffffff',
                  fps: float = 30.0) -> None:
         self._id = id
-        self._size = size
+        self.size = size
         self.color = color
         self._on_new_image = on_new_image
         self._creation_time: float = rosys.time()
@@ -34,9 +34,9 @@ class SimulatedDevice:
         timestamp = rosys.time()
         image: Image
         if rosys.is_test:
-            image = _create_simple_image(self._id, self._size, self.color, timestamp)
+            image = _create_simple_image(self._id, self.size, self.color, timestamp)
         else:
-            image = _create_image_data(self._id, self._size, self.color, timestamp)
+            image = _create_image_data(self._id, self.size, self.color, timestamp)
         result = self._on_new_image(image)
         if isinstance(result, Awaitable):
             await result
