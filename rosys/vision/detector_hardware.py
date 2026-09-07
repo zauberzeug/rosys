@@ -18,7 +18,7 @@ from .detections import (
     PointDetection,
     SegmentationDetection,
 )
-from .detector import Autoupload, Detector, DetectorException, DetectorInfo, ModelVersioningInfo
+from .detector import Autoupload, Detector, DetectorException, DetectorInfo, ImageState, ModelVersioningInfo
 from .image import Image
 
 
@@ -87,7 +87,8 @@ class DetectorHardware(Detector):
                      tags: list[str] | None = None,
                      source: str | None = None,
                      creation_date: datetime | str | None = None,
-                     annotations: Annotations | None = None) -> None:
+                     annotations: Annotations | None = None,
+                     state: ImageState | None = None) -> None:
 
         if not self.is_connected:
             self.log.error('Upload failed: detector is not connected')
@@ -104,6 +105,7 @@ class DetectorHardware(Detector):
                 'source': source,
                 'tags': tags or [],
                 'creation_date': _creation_date_to_isoformat(creation_date),
+                'state': state.value if state else None,
             }
 
             if detections := image.get_detections(self.name):
