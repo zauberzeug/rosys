@@ -1,3 +1,5 @@
+import logging
+import random
 from collections.abc import Awaitable, Callable
 
 import numpy as np
@@ -6,46 +8,70 @@ import PIL.ImageDraw
 
 from ... import rosys
 from ...geometry import Point
+from ..capture_device import CaptureDevice, CaptureState
 from ..image import Image, ImageSize
 
+MEAN_TIME_TO_FAILURE = 30.0
+"""Average seconds a simulated stream survives while `simulate_failing` is set."""
 
-class SimulatedDevice:
+
+class SimulatedDevice(CaptureDevice):
 
     def __init__(self,
                  id: str,  # pylint: disable=redefined-builtin
                  *,
                  size: ImageSize,
                  on_new_image: Callable[[Image], Awaitable | None],
+                 on_connect: Callable[[], Awaitable | None] | None = None,
                  color: str = '#ffffff',
-                 fps: float = 30.0) -> None:
+                 fps: float = 30.0,
+                 reconnect_interval: float = 3.0,
+                 simulate_failing: bool = False) -> None:
+        super().__init__(name=id,
+                         log=logging.getLogger('rosys.vision.simulated_camera.simulated_device.' + id),
+                         on_connect=on_connect,
+                         reconnect_interval=reconnect_interval)
         self._id = id
-        self._size = size
+        self.size = size
         self.color = color
         self._on_new_image = on_new_image
-        self._creation_time: float = rosys.time()
+        self.simulate_failing = simulate_failing
+        self._frame_interval = 1.0 / fps
 
-        self._repeater = rosys.on_repeat(self._create_image, interval=1.0 / fps)
+        self._start_capture_task()
+        self._state = CaptureState.STREAMING  # a simulated camera is reachable the moment it exists
 
-    @property
-    def creation_time(self) -> float:
-        return self._creation_time
+    def simulate_connection_loss(self) -> None:
+        """Drop the stream as a bad cable would; the device reconnects itself after `reconnect_interval`."""
+        if self._state is CaptureState.STREAMING:
+            self._state = CaptureState.CONNECTING
+
+    async def _run_session(self) -> None:
+        await self._enter_streaming()
+        while self._keeps_running() and self.is_connected:
+            await rosys.sleep(self._frame_interval)
+            if not self.is_connected:
+                break
+            if self.simulate_failing and random.random() < self._frame_interval / MEAN_TIME_TO_FAILURE:
+                return
+            await self._create_image()
 
     async def _create_image(self) -> None:
         timestamp = rosys.time()
         image: Image
         if rosys.is_test:
-            image = _create_simple_image(self._id, self._size, self.color, timestamp)
+            image = _create_simple_image(self._id, self.size, self.color, timestamp)
         else:
-            image = _create_image_data(self._id, self._size, self.color, timestamp)
+            image = _create_image_data(self._id, self.size, self.color, timestamp)
         result = self._on_new_image(image)
         if isinstance(result, Awaitable):
             await result
 
     def set_fps(self, fps: float) -> None:
-        self._repeater.interval = 1.0 / fps
+        self._frame_interval = 1.0 / fps
 
     def get_fps(self) -> float:
-        return 1.0 / self._repeater.interval
+        return 1.0 / self._frame_interval
 
 
 def _create_image_data(id: str, size: ImageSize, color: str, timestamp: float) -> Image:  # pylint: disable=redefined-builtin

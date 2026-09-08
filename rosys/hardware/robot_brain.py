@@ -23,7 +23,11 @@ class RobotBrain:
     If the offset changes significantly, a notification is sent and the offset history is cleared.
     """
 
-    def __init__(self, communication: Communication, *, enable_esp_on_startup: bool = True, use_espresso: bool = False, heartbeat_interval: float | None = None) -> None:
+    def __init__(self, communication: Communication, *,
+                 enable_esp_on_startup: bool = True,
+                 use_espresso: bool = False,
+                 heartbeat_interval: float | None = None,
+                 supported_lizard_versions: str | None = None) -> None:
         """
         Initialize the RobotBrain and connect to the microcontroller.
 
@@ -31,6 +35,9 @@ class RobotBrain:
         :param enable_esp_on_startup: Whether to enable the ESP on startup (default: ``True``)
         :param use_espresso: Whether to use the new espresso.py for controlling the ESP instead of the old flash.py (default: ``False``)
         :param heartbeat_interval: If not ``None``, the interval in seconds at which to send heartbeat messages to the ESP (default: ``None``)
+        :param supported_lizard_versions: PEP 440 version specifier restricting which Lizard versions can be
+            downloaded and flashed, e.g. ``'<0.14.0'`` (default: ``None``, all versions are supported)
+        :raises InvalidSpecifier: When ``supported_lizard_versions`` is not a valid version specifier
         """
         self.ESP_CONNECTED = Event[[]]()
         """ESP has been connected and Lizard is ready to use"""
@@ -45,7 +52,7 @@ class RobotBrain:
 
         self.communication = communication
         self.lizard_code = ''
-        self.lizard_firmware = LizardFirmware(self)
+        self.lizard_firmware = LizardFirmware(self, supported_versions=supported_lizard_versions)
         self.ESP_CONNECTED.subscribe(self._check_lizard_code)
 
         self.waiting_list: dict[str, str | None] = {}
@@ -105,23 +112,23 @@ class RobotBrain:
             online_update_button = ui.button(on_click=online_update).props('icon=file_download flat round dense') \
                 .tooltip('Download and flash online version to Core and P0 microcontrollers')
         with ui.row().classes('items-center'):
-            ui.label().bind_text_from(self.lizard_firmware, 'local_version', backward=lambda x: f'Local: {x or "?"}')
+            ui.label().bind_text_from(self.lizard_firmware, 'local_description', backward=lambda x: f'Local: {x}')
             local_update_button = ui.button(on_click=local_update).props('icon=file_download flat round dense') \
                 .tooltip('Flash local version to Core and P0 microcontrollers')
         with ui.row().classes('items-center'):
-            ui.label().bind_text_from(self.lizard_firmware, 'core_version', backward=lambda x: f'Core: {x or "?"}')
+            ui.label().bind_text_from(self.lizard_firmware, 'core_description', backward=lambda x: f'Core: {x}')
             configure_button = ui.button(on_click=self.configure).props('icon=build flat round dense') \
                 .tooltip('Configure microcontrollers')
         with ui.row().classes('items-center'):
-            ui.label().bind_text_from(self.lizard_firmware, 'p0_version', backward=lambda x: f'P0: {x or "?"}')
+            ui.label().bind_text_from(self.lizard_firmware, 'p0_description', backward=lambda x: f'P0: {x}')
 
         def update_visibility() -> None:
             online_update_button.visible = \
                 self.lizard_firmware.selected_online_version != self.lizard_firmware.core_version or \
                 self.lizard_firmware.selected_online_version != self.lizard_firmware.p0_version
             local_update_button.visible = \
-                self.lizard_firmware.local_version != self.lizard_firmware.core_version or \
-                self.lizard_firmware.local_version != self.lizard_firmware.p0_version
+                self.lizard_firmware.local_description != self.lizard_firmware.core_description or \
+                self.lizard_firmware.local_description != self.lizard_firmware.p0_description
             configure_button.visible = self.lizard_firmware.checksums_match is False
         ui.timer(1.0, update_visibility)
 
@@ -368,8 +375,8 @@ class EspNotReadyException(Exception):
 
 def augment(line: str) -> str:
     checksum = 0
-    for c in line:
-        checksum ^= ord(c)
+    for byte in line.encode():
+        checksum ^= byte
     return f'{line}@{checksum:02x}'
 
 
@@ -378,11 +385,14 @@ def check(line: str | None) -> str:
         return ''
     if line[-3:-2] != '@':
         return ''
-    check_ = int(line[-2:], 16)
-    line = line[:-3]
     checksum = 0
-    for c in line:
-        checksum ^= ord(c)
+    try:
+        check_ = int(line[-2:], 16)
+        line = line[:-3]
+        for byte in line.encode():
+            checksum ^= byte
+    except ValueError:
+        return ''
     if checksum != check_:
         return ''
     return line

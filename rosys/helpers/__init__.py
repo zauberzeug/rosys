@@ -2,6 +2,7 @@ import functools
 import inspect
 import logging
 import logging.config
+import multiprocessing
 import os
 import sys
 import time
@@ -119,7 +120,9 @@ def is_stopping() -> bool:
 
 
 def is_test() -> bool:
-    return 'pytest' in sys.modules
+    # a spawned worker re-imports the test runner's entry point without being the process under test;
+    # it is renamed before rosys is imported into it, while `parent_process()` is only set afterwards
+    return 'pytest' in sys.modules and multiprocessing.current_process().name == 'MainProcess'
 
 
 # https://stackoverflow.com/a/52582536/3419103

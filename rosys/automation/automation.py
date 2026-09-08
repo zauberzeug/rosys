@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import functools
 import logging
-from collections.abc import Callable, Coroutine, Generator
+from collections.abc import Awaitable, Callable, Generator
 from contextvars import ContextVar
 from typing import Any
 
@@ -48,7 +48,7 @@ class Automation:
     """
 
     def __init__(self,
-                 coro: Coroutine,
+                 coro: Awaitable,
                  exception_handler: Callable | None = None,
                  on_complete: Callable | None = None) -> None:
         self.log = logging.getLogger('rosys.automation')
@@ -85,10 +85,10 @@ class Automation:
         return await self
 
     def __await__(self) -> Generator[Any, None, Any | None]:
+        coro_iter = self.coro.__await__()
         token = _CURRENT_AUTOMATION.set(self)  # bind this Automation instance into the task context
         try:
             self._is_waited = True
-            coro_iter = self.coro.__await__()
             iter_send, iter_throw = coro_iter.send, coro_iter.throw
             send: Callable = iter_send
             message: Any = None
@@ -128,7 +128,7 @@ class Automation:
         finally:
             self._is_waited = False
             _CURRENT_AUTOMATION.reset(token)
-            self.coro.close()
+            coro_iter.close()  # close the iterator, not self.coro: awaitables like parallelize are not coroutines
         return None
 
     def pause(self) -> None:

@@ -14,12 +14,19 @@ from .timelapse_recorder import TimelapseRecorder
 from .tracking import track
 from .videos_page_ import VideosPage as videos_page
 
+# NOTE: imported last because the recording package pulls in rosys.hardware, whose
+# import chain loops back to rosys.analysis.track — which must be bound by then.
+from . import recording  # isort: skip
+from .recording import McapRecorder  # isort: skip
+from .recording import RecordingsPage as recordings_page  # isort: skip
+
 __all__ = [
     'AsyncioMonitor',
     'AsyncioWarnings',
     'Day',
     'KpiChart',
     'KpiLogger',
+    'McapRecorder',
     'MemoryMiddleware',
     'Month',
     'NetworkMonitor',
@@ -33,6 +40,8 @@ __all__ = [
     'logs_page',
     'objgraph_page',
     'profile_button',
+    'recording',
+    'recordings_page',
     'str_to_date',
     'track',
     'videos_page',

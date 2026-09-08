@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import TypeAlias, cast, overload
@@ -9,7 +10,7 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from ..geometry import Frame3d, Point, Point3d, Pose3d, Rotation
+from ..geometry import Frame3d, Point, Point3d, Pose3d, Rectangle, Rotation
 from .image import Image, ImageSize
 
 FloatArray: TypeAlias = NDArray[np.float32] | NDArray[np.float64]
@@ -64,6 +65,54 @@ class Intrinsics:
             distortion=distortion or [0.0, 0.0, 0.0, 0.0, 0.0],
             size=ImageSize(width=width, height=height),
         )
+
+    def scale(self, size: ImageSize) -> Intrinsics:
+        """Derive the intrinsics for an image that is scaled to ``size``.
+
+        Assumes the original and the scaled image share the same field of view, so the camera matrix scales with
+        the resolution while the distortion coefficients (defined in normalized coordinates) stay valid.
+
+        :param size: the size the image is scaled to (same field of view)
+        :return: new independent intrinsics matching the scaled image
+        """
+        scale_x = size.width / self.size.width
+        scale_y = size.height / self.size.height
+        matrix = self.matrix
+        scaled_matrix = [
+            [matrix[0][0] * scale_x, matrix[0][1] * scale_x, matrix[0][2] * scale_x],
+            [0.0, matrix[1][1] * scale_y, matrix[1][2] * scale_y],
+            [0.0, 0.0, 1.0],
+        ]
+        return Intrinsics(model=self.model,
+                          matrix=scaled_matrix,
+                          distortion=list(self.distortion),
+                          omnidir_params=deepcopy(self.omnidir_params),
+                          size=ImageSize(width=size.width, height=size.height))
+
+    def crop(self, crop: Rectangle) -> Intrinsics:
+        """Derive the intrinsics for an image that is cropped to ``crop``.
+
+        The crop only shifts the principal point; the distortion coefficients stay valid.
+
+        :param crop: the region cut out of the image, in pixel coordinates
+        :return: new independent intrinsics matching the cropped image
+        :raises ValueError: if the crop has fractional coordinates or reaches beyond the image
+        """
+        if any(value != int(value) for value in crop.tuple):
+            raise ValueError(f'crop must have integer coordinates, got {crop}')
+        if crop.x < 0 or crop.y < 0 or crop.x + crop.width > self.size.width or crop.y + crop.height > self.size.height:
+            raise ValueError(f'crop {crop} must lie inside the image size {self.size}')
+        matrix = self.matrix
+        cropped_matrix = [
+            [matrix[0][0], matrix[0][1], matrix[0][2] - crop.x],
+            [0.0, matrix[1][1], matrix[1][2] - crop.y],
+            [0.0, 0.0, 1.0],
+        ]
+        return Intrinsics(model=self.model,
+                          matrix=cropped_matrix,
+                          distortion=list(self.distortion),
+                          omnidir_params=deepcopy(self.omnidir_params),
+                          size=ImageSize(width=int(crop.width), height=int(crop.height)))
 
 
 log = logging.getLogger('rosys.vision.calibration')

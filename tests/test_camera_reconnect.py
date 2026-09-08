@@ -1,0 +1,1401 @@
+import asyncio
+import gc
+import logging
+import os
+import signal
+import weakref
+from contextlib import asynccontextmanager, nullcontext, suppress
+from unittest.mock import AsyncMock, patch
+
+import cv2
+import numpy as np
+import pytest
+from nicegui import background_tasks
+
+import rosys
+import rosys.rosys as rosys_core
+from rosys.geometry import Rectangle
+from rosys.testing import forward
+from rosys.vision import (
+    ImageSize,
+    MjpegCamera,
+    MjpegCameraProvider,
+    RtspCamera,
+    RtspCameraProvider,
+    SimulatedCamera,
+    SimulatedCameraProvider,
+    UsbCamera,
+    UsbCameraProvider,
+)
+from rosys.vision.mjpeg_camera.arkvision_mjpeg_device import ArkVisionMjpegDevice
+from rosys.vision.mjpeg_camera.axis_mjpeg_device import AxisMjpegDevice
+from rosys.vision.mjpeg_camera.mjpeg_device import CameraAddressUnknown, CaptureState, MjpegDevice
+from rosys.vision.mjpeg_camera.mjpeg_device_factory import MjpegDeviceFactory
+from rosys.vision.mjpeg_camera.motec_mjpeg_device import MotecMjpegDevice
+from rosys.vision.mjpeg_camera.openipc_zauberzeug_mjpeg_device import OpenIpcZauberzeugMjpegDevice
+from rosys.vision.reconnect import MAX_RECONNECT_INTERVAL, MIN_RECONNECT_INTERVAL
+from rosys.vision.rtsp_camera.rtsp_device import GDPPACKET_FORMAT, GDPPayloadType, RtspDevice
+from rosys.vision.simulated_camera.simulated_device import SimulatedDevice
+from rosys.vision.usb_camera.usb_device import UsbDevice, find_device_node
+
+# GOODCAM has a URL in both the RTSP and MJPEG vendor tables and no settings interface, so no network access
+GOODCAM_MAC = '2c:6f:51:00:00:01'
+
+# A MAC that maps to AXIS, whose stream settings are part of the URL rather than a settings interface.
+AXIS_MAC = '00:40:8c:00:00:01'
+
+MOTEC_MAC = '2c:26:5f:00:00:01'
+ARKVISION_MAC = '18:fd:cb:00:00:01'
+OPENIPC_ZAUBERZEUG_MAC = '7a:7a:21:00:00:01'
+
+# A MAC no vendor table knows, so no stream URL can be built for it.
+UNKNOWN_VENDOR_MAC = '02:00:00:00:00:01'
+
+
+async def _no_stream(self) -> None:
+    """Stand-in for a capture session that never delivers a frame and never ends on its own."""
+    await rosys.sleep(60.0)
+
+
+def stalled_mjpeg_stream():
+    """Keep an `MjpegDevice` in a single capture session without touching the network."""
+    return patch.object(MjpegDevice, '_run_session', _no_stream)
+
+
+def stalled_rtsp_stream():
+    """Keep an `RtspDevice` in a single capture session without spawning gstreamer."""
+    return patch.object(RtspDevice, '_run_session', _no_stream)
+
+
+class FakeGstreamerProcess:
+    """Stand-in for the gstreamer process; the test feeds its stdout with GDP packets."""
+
+    def __init__(self) -> None:
+        self.stdout = asyncio.StreamReader()
+        self.stderr = asyncio.StreamReader()
+        self.returncode: int | None = None
+        self.pid = 4711
+
+    def terminate(self) -> None:
+        self.returncode = -15
+        self.stdout.feed_eof()
+        self.stderr.feed_eof()
+
+    async def wait(self) -> int | None:
+        return self.returncode
+
+
+def gdp_packet(payload_type: GDPPayloadType, payload: bytes) -> bytes:
+    return GDPPACKET_FORMAT.pack(1, b'\x00', payload_type.value, len(payload), 0, 0, 0, 0, 0, bytes(14), 0, 0) + payload
+
+
+async def _connected_rtsp_stream(self) -> None:
+    """Stand-in for a gstreamer session that delivers frames and reapplies parameters, but spawns nothing."""
+    await self._enter_streaming()  # pylint: disable=protected-access
+    await rosys.sleep(60.0)
+
+
+def connected_rtsp_stream():
+    """Keep an `RtspDevice` in a single *connected* capture session without spawning gstreamer."""
+    return patch.object(RtspDevice, '_run_session', _connected_rtsp_stream)
+
+
+async def forward_until(condition, *, step: float = 0.3, real_step: float = 0.05,
+                        attempts: int = 20, message: str = 'condition was not met') -> None:
+    """Advance simulated time in steps, yielding real time between them, until `condition` holds."""
+    # forward(until=...) only yields via asyncio.sleep(0), too little for loopback sockets or io_bound threads
+    for _ in range(attempts):
+        if condition():
+            return
+        await forward(step)
+        await asyncio.sleep(real_step)
+    assert condition(), message
+
+
+async def _survives_one_cancellation() -> None:
+    """Stand-in for a capture task that resumes after its first cancellation instead of ending."""
+    with suppress(asyncio.CancelledError):
+        await asyncio.sleep(60.0)
+    await asyncio.sleep(60.0)
+
+
+JPEG_FRAME = b'\xff\xd8' + bytes(32) + b'\xff\xd9'  # minimal SOI..EOI JPEG marker pair
+
+DECODABLE_JPEG_FRAME = cv2.imencode('.jpg', np.zeros((8, 8, 3), dtype=np.uint8))[1].tobytes()
+
+
+@pytest.fixture
+def vision_log(rosys_integration: None, caplog: pytest.LogCaptureFixture):
+    logger = logging.getLogger('rosys.vision')  # NOTE: the test log configuration disables propagation to the root
+    logger.addHandler(caplog.handler)
+    yield caplog
+    logger.removeHandler(caplog.handler)
+
+
+async def wait_in_real_time(condition, *, step: float = 0.02, attempts: int = 200,
+                            message: str = 'condition was not met') -> None:
+    """Wait for `condition` without advancing simulated time, e.g. while a `cpu_bound` call blocks `forward()`."""
+    for _ in range(attempts):
+        if condition():
+            return
+        await asyncio.sleep(step)
+    assert condition(), message
+
+
+async def wait_for_capture_process(condition, *, message: str = 'condition was not met') -> None:
+    """Wait for `condition`, which an `MjpegCamera` meets only once its spawned capture process reports back."""
+    await wait_in_real_time(condition, step=0.05, attempts=400, message=message)
+
+
+def kill_capture_process(camera: MjpegCamera) -> None:
+    """End the capture process the way a crash would."""
+    assert camera.device is not None and camera.device.pid is not None
+    os.kill(camera.device.pid, signal.SIGKILL)
+
+
+def live_capture_tasks(name: str) -> list[asyncio.Task]:
+    """The capture loops still running under this task name; a device names its task, so a leftover shows up."""
+    return [task for task in asyncio.all_tasks() if task.get_name() == name and not task.done()]
+
+
+async def cancel_leftover_loops(name: str) -> None:
+    """Cancel the capture loops under this name and wait for them to end, as a crashing loop leaves them."""
+    tasks = live_capture_tasks(name)
+    for task in tasks:
+        task.cancel()
+    for task in tasks:
+        with suppress(asyncio.CancelledError):
+            await task
+
+
+class SlowFirstDecode:
+    """Stand-in for `nicegui.run.cpu_bound` that stalls its first call."""
+
+    def __init__(self, seconds: float = 0.3) -> None:
+        self.seconds = seconds
+        self.started = asyncio.Event()
+        self.finished = asyncio.Event()
+
+    async def __call__(self, callback, *args, **kwargs):
+        if not self.started.is_set():
+            self.started.set()
+            try:
+                await asyncio.sleep(self.seconds)
+            finally:  # the cancellation arrives here, so the stall ends either way
+                self.finished.set()
+        return callback(*args, **kwargs)
+
+
+async def decode_frame(data: bytes, timestamp: float) -> None:  # pylint: disable=unused-argument
+    """Image callback shaped like `MjpegCamera._handle_new_image_data`, which decodes via `cpu_bound`."""
+    await rosys.run.cpu_bound(len, data)
+
+
+class FlakyMjpegServer:
+    """Local HTTP server that drops the connection after `frames_per_connection` fake JPEG frames (``None``: never)."""
+
+    def __init__(self, frames_per_connection: int | None = 1, status: int = 200, frame: bytes = JPEG_FRAME) -> None:
+        self.connections = 0
+        self.frames_per_connection = frames_per_connection
+        self.status = status
+        self.frame = frame
+        self._server: asyncio.Server | None = None
+
+    @property
+    def port(self) -> int:
+        assert self._server is not None
+        return self._server.sockets[0].getsockname()[1]
+
+    async def start(self) -> None:
+        self._server = await asyncio.start_server(self._handle, '127.0.0.1', 0)
+
+    async def _handle(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
+        self.connections += 1
+        try:
+            try:
+                await asyncio.wait_for(reader.readuntil(b'\r\n\r\n'), timeout=2)
+            except Exception:  # reading the request is best-effort
+                pass
+            if self.status != 200:
+                refusal = f'HTTP/1.1 {self.status} refused\r\nContent-Length: 0\r\nConnection: close\r\n\r\n'
+                writer.write(refusal.encode())
+                await writer.drain()
+                return
+            writer.write(b'HTTP/1.1 200 OK\r\n'
+                         b'Content-Type: multipart/x-mixed-replace; boundary=frame\r\n\r\n')
+            sent = 0
+            while self.frames_per_connection is None or sent < self.frames_per_connection:
+                writer.write(self.frame)
+                await writer.drain()
+                sent += 1
+                if self.frames_per_connection is None:
+                    await asyncio.sleep(0.02)
+        except (ConnectionResetError, BrokenPipeError):
+            pass  # the device closed the stream
+        finally:
+            writer.close()
+
+    async def stop(self) -> None:
+        assert self._server is not None
+        self._server.close()
+        with suppress(TimeoutError):  # a client still reading must not hold up the test
+            await asyncio.wait_for(self._server.wait_closed(), timeout=1)
+
+
+async def test_mjpeg_device_reconnects_after_stream_drops(rosys_integration):
+    server = FlakyMjpegServer()
+    await server.start()
+    frames: list[bytes] = []
+    device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{server.port}',
+                         on_new_image_data=lambda data, timestamp: frames.append(data))
+    device.reconnect_interval = 0.2
+    try:
+        await forward_until(lambda: server.connections >= 3, attempts=60,
+                            message='device did not reconnect')
+        await forward_until(lambda: len(frames) >= 3, attempts=60,
+                            message='no frames received across reconnects')
+
+        await device.shutdown()
+        await asyncio.sleep(0.1)
+        assert not device.is_connected
+        connections_at_shutdown = server.connections
+        for _ in range(5):
+            await forward(0.3)
+            await asyncio.sleep(0.05)
+        assert server.connections == connections_at_shutdown, 'device kept reconnecting after shutdown'
+    finally:
+        await device.shutdown()
+        await server.stop()
+
+
+async def test_rtsp_device_reconnects_until_shutdown(rosys_integration):
+    sessions = 0
+
+    async def fake_gstreamer(self) -> None:
+        nonlocal sessions
+        sessions += 1
+        await rosys.sleep(0.05)  # simulate a short-lived stream that ends on its own
+
+    with patch.object(RtspDevice, '_run_session', fake_gstreamer):
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: None,
+                            reconnect_interval=0.2)
+        await forward(2.0)
+        assert sessions >= 3, f'device did not reconnect (only {sessions} sessions)'
+        assert device.is_active  # loop alive; is_connected is False here because the stubbed session delivers no frame
+
+        await device.shutdown()
+        assert not device.is_active
+        sessions_at_shutdown = sessions
+        await forward(2.0)
+        assert sessions == sessions_at_shutdown, 'device kept reconnecting after shutdown'
+
+
+@pytest.mark.parametrize('make_camera', [
+    lambda: RtspCamera(mac='aa:bb:cc:dd:ee:ff', reconnect_interval=12.5, connect_after_init=False),
+    lambda: MjpegCamera(id='test_cam', ip='192.168.1.1', reconnect_interval=12.5, connect_after_init=False),
+    lambda: UsbCamera(id='cam', reconnect_interval=12.5, connect_after_init=False),
+    lambda: SimulatedCamera(id='sim', reconnect_interval=12.5, connect_after_init=False),
+])
+def test_camera_persists_reconnect_interval(rosys_integration, make_camera):
+    camera = make_camera()
+    data = camera.to_dict()
+    assert data['reconnect_interval'] == 12.5
+    assert type(camera).from_dict(data).reconnect_interval == 12.5
+
+
+@pytest.mark.parametrize('make_camera, offline', [
+    (lambda: RtspCamera(mac=GOODCAM_MAC, ip='192.168.0.5', connect_after_init=False), stalled_rtsp_stream),
+    (lambda: MjpegCamera(id=GOODCAM_MAC, ip='127.0.0.1:1', connect_after_init=False), nullcontext),
+    (lambda: UsbCamera(id='cam', connect_after_init=False),
+     lambda: patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value=None)),
+    (lambda: SimulatedCamera(id='sim', connect_after_init=False), nullcontext),
+])
+async def test_camera_forwards_reconnect_interval_to_a_live_device(rosys_integration, make_camera, offline):
+    with offline():
+        camera = make_camera()
+        await camera.connect()
+        try:
+            assert camera.device is not None
+            camera.reconnect_interval = 7.5
+            assert camera.device.reconnect_interval == 7.5
+        finally:
+            await camera.disconnect()
+
+
+class FakeCapture:
+    """Minimal stand-in for cv2.VideoCapture that can simulate a disconnected device."""
+
+    def __init__(self, *, failing_reads: bool = False) -> None:
+        self._opened = True
+        self._frame = np.zeros((48, 64, 3), dtype=np.uint8)
+        self.props: dict = {}
+        self.failing_reads = failing_reads
+        self.reads = 0
+
+    def isOpened(self) -> bool:  # cv2 API name
+        return self._opened
+
+    def read(self):
+        self.reads += 1
+        if not self._opened or self.failing_reads:
+            return False, None
+        return True, self._frame
+
+    def release(self) -> None:
+        self._opened = False
+
+    def get(self, prop) -> float:
+        return self.props.get(prop, 0.0)
+
+    def set(self, prop, value) -> bool:
+        self.props[prop] = value
+        return True
+
+
+async def test_usb_device_reconnects_after_disconnect(rosys_integration):
+    captures: list[FakeCapture] = []
+
+    def make_capture(_device_node: str) -> FakeCapture:
+        capture = FakeCapture()
+        captures.append(capture)
+        return capture
+
+    frames: list = []
+    with patch.object(UsbDevice, 'create_capture', make_capture), \
+            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
+        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: frames.append(data),
+                           reconnect_interval=0.3)
+        try:
+            await forward_until(lambda: bool(frames), step=0.1, real_step=0.02, attempts=15,
+                                message='device did not capture any frames')
+            assert device.is_connected
+            captures_before = len(captures)
+
+            captures[-1].release()  # simulate a bad cable: the capture dies
+            await forward_until(lambda: len(captures) > captures_before, real_step=0.02,
+                                message='device did not reopen its capture')
+            assert device.is_connected
+
+            frames_after_reconnect = len(frames)
+            await forward_until(lambda: len(frames) > frames_after_reconnect,
+                                step=0.1, real_step=0.02, attempts=10,
+                                message='frames did not resume after reconnect')
+
+            await device.shutdown()
+            assert not device.is_connected
+            captures_at_shutdown = len(captures)
+            for _ in range(5):
+                await forward(0.3)
+                await asyncio.sleep(0.02)
+            assert len(captures) == captures_at_shutdown, 'device kept reopening after shutdown'
+        finally:
+            await device.shutdown()
+
+
+async def test_usb_device_releases_a_capture_that_only_fails_to_read(rosys_integration):
+    """A cable pulled mid-stream leaves an opened capture whose reads fail; the session must end."""
+    captures: list[FakeCapture] = []
+
+    def make_capture(_device_node: str) -> FakeCapture:
+        capture = FakeCapture(failing_reads=True)
+        captures.append(capture)
+        return capture
+
+    with patch.object(UsbDevice, 'create_capture', make_capture), \
+            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
+        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.3)
+        try:
+            await forward_until(lambda: captures and captures[0].reads >= UsbDevice.MAX_READ_FAILURES,
+                                step=0.1, real_step=0.02, attempts=30,
+                                message='device did not keep reading a capture whose reads fail')
+            assert not device.is_connected, 'expected the capture to be released after the failed reads'
+            assert captures[0].reads == UsbDevice.MAX_READ_FAILURES, \
+                'expected the capture to be released as soon as the failures reach the limit'
+
+            await forward_until(lambda: len(captures) > 1, real_step=0.02,
+                                message='device did not try to reopen its capture')
+        finally:
+            await device.shutdown()
+
+
+async def test_usb_camera_reapplies_parameters_after_reconnect(rosys_integration):
+    captures: list[FakeCapture] = []
+
+    def make_capture(_device_node: str) -> FakeCapture:
+        capture = FakeCapture()
+        captures.append(capture)
+        return capture
+
+    with patch.object(UsbDevice, 'create_capture', make_capture), \
+            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
+        camera = UsbCamera(id='fakecam', resolution=(640, 480), fps=5,
+                           connect_after_init=False, reconnect_interval=0.3)
+        await camera.connect()
+        try:
+            await forward_until(lambda: bool(captures) and cv2.CAP_PROP_FRAME_WIDTH in captures[0].props,
+                                step=0.1, real_step=0.02,
+                                message='device did not open a capture and apply parameters')
+            assert captures[0].props[cv2.CAP_PROP_FRAME_WIDTH] == 640, 'parameters were not applied on connect'
+
+            captures[-1].release()  # simulate a bad cable: the capture dies
+            await forward_until(lambda: len(captures) > 1 and cv2.CAP_PROP_FPS in captures[-1].props,
+                                real_step=0.02,
+                                message='device did not reopen its capture and reapply parameters')
+            assert captures[-1].props[cv2.CAP_PROP_FRAME_WIDTH] == 640, 'width was not reapplied after reconnect'
+            assert captures[-1].props[cv2.CAP_PROP_FRAME_HEIGHT] == 480, 'height was not reapplied after reconnect'
+            assert captures[-1].props[cv2.CAP_PROP_FPS] == 5, 'fps was not reapplied after reconnect'
+        finally:
+            await camera.disconnect()
+
+
+async def test_simulated_camera_reconnects_after_disconnect(rosys_integration):
+    camera = SimulatedCamera(id='sim', resolution=(64, 48), fps=10, reconnect_interval=0.5)
+    await camera.connect()
+    assert camera.device is not None
+    await forward(0.5)
+    assert camera.images, 'no images while connected'
+
+    camera.device.simulate_connection_loss()
+    assert not camera.device.is_connected
+    count_at_disconnect = len(camera.images)
+    await forward(0.3)  # shorter than reconnect_interval -> still disconnected
+    assert not camera.device.is_connected
+    assert len(camera.images) == count_at_disconnect, 'images kept arriving while disconnected'
+
+    await forward(0.5)  # now past reconnect_interval since the disconnect
+    assert camera.device.is_connected
+    await forward(0.3)
+    assert len(camera.images) > count_at_disconnect, 'images did not resume after reconnect'
+
+
+async def test_simulated_camera_reapplies_parameters_after_reconnect(rosys_integration):
+    camera = SimulatedCamera(id='sim', resolution=(64, 48), fps=10, color='#123456', reconnect_interval=0.5)
+    await camera.connect()
+    assert camera.device is not None
+    await forward(0.5)
+
+    camera.device.simulate_connection_loss()
+    await camera.set_parameters({'color': '#654321'})  # while disconnected, the new value only reaches the cache
+    assert camera.device.color == '#123456'
+
+    await forward(1.0)  # the device reconnects itself and the camera reapplies its parameters
+    assert camera.device.is_connected
+    assert camera.device.color == '#654321'
+
+
+async def test_simulated_camera_passes_params_to_device(rosys_integration):
+    camera = SimulatedCamera(id='sim', reconnect_interval=9.0, simulate_failing=True)
+    await camera.connect()
+    assert camera.device is not None
+    assert camera.device.reconnect_interval == 9.0
+    assert camera.device.simulate_failing is True
+    await camera.disconnect()
+
+
+async def test_mjpeg_device_backs_off_after_401(rosys_integration):
+    server = FlakyMjpegServer(status=401)
+    await server.start()
+    device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{server.port}',
+                         on_new_image_data=lambda data, timestamp: None,
+                         reconnect_interval=0.2)
+    device.REFUSED_RECONNECT_INTERVAL = 4.0  # type: ignore[misc]
+    try:
+        await forward_until(lambda: device.is_refused, step=0.2,
+                            message='expected the device to mark itself refused after a 401 response')
+        assert device.is_active is True, 'expected the capture loop to stay alive while backing off'
+        assert device.is_connected is False, 'expected a refused device to remain disconnected'
+
+        connections_after_401 = server.connections
+        for _ in range(5):  # well beyond reconnect_interval, still inside the back-off
+            await forward(0.2)
+            await asyncio.sleep(0.05)
+        assert server.connections == connections_after_401, (
+            'expected the device to throttle its retries after a 401 response'
+        )
+
+        await forward_until(lambda: server.connections > connections_after_401, step=0.5, attempts=40,
+                            message='expected the device to retry once the back-off elapsed')
+    finally:
+        await device.shutdown()
+        await server.stop()
+
+
+async def test_mjpeg_device_reports_an_unreachable_camera_without_a_traceback(vision_log):
+    device = MjpegDevice(GOODCAM_MAC, '127.0.0.1:1',
+                         on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
+    try:
+        await forward_until(lambda: any('cannot reach' in record.getMessage() for record in vision_log.records),
+                            message='expected the device to report that it cannot reach the camera')
+        assert not [record for record in vision_log.records if record.exc_info], (
+            'expected no traceback for a camera that is simply not there'
+        )
+    finally:
+        await device.shutdown()
+
+
+async def test_mjpeg_device_retries_at_a_new_address_despite_back_off(rosys_integration):
+    rejecting_server = FlakyMjpegServer(status=401)
+    new_server = FlakyMjpegServer()
+    await rejecting_server.start()
+    await new_server.start()
+    device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{rejecting_server.port}',
+                         on_new_image_data=lambda data, timestamp: None,
+                         reconnect_interval=0.2)
+    device.REFUSED_RECONNECT_INTERVAL = 600.0  # type: ignore[misc]
+    try:
+        await forward_until(lambda: device.is_refused, step=0.2,
+                            message='expected the device to mark itself refused after a 401 response')
+
+        device.ip = f'127.0.0.1:{new_server.port}'  # a rejection was about the previous address
+        await forward_until(lambda: new_server.connections >= 1, step=0.2,
+                            message='expected an address change to end the back-off')
+    finally:
+        await device.shutdown()
+        await rejecting_server.stop()
+        await new_server.stop()
+
+
+async def test_a_reconnect_interval_that_can_be_honored_is_kept(vision_log):
+    device = MjpegDevice(GOODCAM_MAC, on_new_image_data=lambda data, timestamp: None, reconnect_interval=2.5)
+    try:
+        assert device.reconnect_interval == 2.5
+        assert not [record for record in vision_log.records if 'too short' in record.getMessage()]
+
+        device.reconnect_interval = 0.0
+        assert device.reconnect_interval == MIN_RECONNECT_INTERVAL, 'expected a later assignment to be held too'
+        assert [record for record in vision_log.records if 'too short' in record.getMessage()]
+    finally:
+        await device.shutdown()
+
+
+async def test_rtsp_device_backs_off_after_rejected_login(rosys_integration):
+    sessions = 0
+
+    async def unauthorized_gstreamer(self) -> None:
+        nonlocal sessions
+        sessions += 1
+        self._set_state(CaptureState.REFUSED)  # pylint: disable=protected-access
+
+    with patch.object(RtspDevice, '_run_session', unauthorized_gstreamer):
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: None,
+                            reconnect_interval=0.2)
+        device.REFUSED_RECONNECT_INTERVAL = 4.0  # type: ignore[misc]
+        try:
+            await forward(0.5)
+            assert sessions == 1, f'expected the device to throttle its retries, got {sessions} sessions'
+            assert device.is_refused, 'expected the device to mark itself refused'
+            assert device.is_active is True, 'expected the capture loop to stay alive while backing off'
+
+            await forward(4.0)
+            assert sessions >= 2, 'expected the device to retry once the unauthorized back-off elapsed'
+
+            device.ip = '192.168.0.6'  # a rejection was about the previous address
+            sessions_at_address_change = sessions
+            await forward(0.5)
+            assert sessions > sessions_at_address_change, (
+                'expected an address change to end the unauthorized back-off'
+            )
+        finally:
+            await device.shutdown()
+
+
+async def test_mjpeg_device_invokes_on_connect_per_session(rosys_integration):
+    server = FlakyMjpegServer()
+    await server.start()
+    connect_calls = 0
+
+    def count_connect() -> None:
+        nonlocal connect_calls
+        connect_calls += 1
+
+    device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{server.port}',
+                         on_new_image_data=lambda data, timestamp: None,
+                         on_connect=count_connect,
+                         reconnect_interval=0.2)
+    try:
+        await forward_until(lambda: connect_calls >= 3,
+                            message='on_connect was not invoked for each new stream')
+    finally:
+        await device.shutdown()
+        await server.stop()
+
+
+async def test_mjpeg_device_keeps_streaming_when_on_connect_fails(rosys_integration, vision_log):
+    server = FlakyMjpegServer(frames_per_connection=None)
+    await server.start()
+    frames: list[bytes] = []
+
+    def failing_on_connect() -> None:
+        raise RuntimeError('settings endpoint down')
+
+    device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{server.port}',
+                         on_new_image_data=lambda data, timestamp: frames.append(data),
+                         on_connect=failing_on_connect,
+                         reconnect_interval=0.2)
+    try:
+        await forward_until(lambda: len(frames) >= 3, message='expected frames despite the failing on_connect')
+        assert server.connections == 1, 'expected the failing on_connect not to end the session'
+        assert [record for record in vision_log.records if 'on_connect callback failed' in record.getMessage()]
+    finally:
+        await device.shutdown()
+        await server.stop()
+
+
+async def test_rtsp_device_is_connected_once_the_first_frame_arrives(rosys_integration):
+    process = FakeGstreamerProcess()
+    frames: list = []
+    connect_calls = 0
+
+    def count_connect() -> None:
+        nonlocal connect_calls
+        connect_calls += 1
+
+    with patch('asyncio.create_subprocess_exec', AsyncMock(return_value=process)):
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: frames.append(array),
+                            on_connect=count_connect)
+        try:
+            await asyncio.sleep(0.05)
+            assert device.is_active
+            assert not device.is_connected, 'expected no connection while gstreamer has not delivered a frame'
+            assert connect_calls == 0, 'expected on_connect to wait for the first frame'
+
+            process.stdout.feed_data(gdp_packet(GDPPayloadType.CAPS, b'video/x-raw, width=(int)2, height=(int)2'))
+            process.stdout.feed_data(gdp_packet(GDPPayloadType.BUFFER, bytes(2 * 2 * 3)))
+            await wait_in_real_time(lambda: len(frames) == 1, message='expected the frame to reach the callback')
+            assert device.is_connected
+            assert connect_calls == 1
+        finally:
+            await device.shutdown()
+        assert not device.is_connected
+
+
+async def test_rtsp_camera_restarts_stream_on_set_parameters_but_not_on_reapply(rosys_integration):
+    camera = RtspCamera(mac=GOODCAM_MAC, ip='192.168.0.5', connect_after_init=False)
+    with connected_rtsp_stream(), \
+            patch.object(RtspDevice, 'restart_gstreamer') as restart:
+        await camera.connect()
+        # the session reapplies the parameters itself, which only runs the setters while connected
+        await forward_until(lambda: camera.is_connected, message='expected the capture session to come up')
+
+        restart.assert_not_called()  # a reapply from the device's own capture task must not restart the stream
+
+        await camera.set_parameters({'fps': 7})
+        restart.assert_called_once()
+        await camera.disconnect()
+
+
+async def test_axis_camera_applies_parameters_without_restarting_its_own_session(rosys_integration):
+    server = FlakyMjpegServer(frames_per_connection=None, frame=DECODABLE_JPEG_FRAME)
+    await server.start()
+    camera = MjpegCamera(id=AXIS_MAC, ip=f'127.0.0.1:{server.port}', fps=12, connect_after_init=False)
+    await camera.connect()
+    try:
+        await wait_for_capture_process(lambda: camera.is_connected, message='expected the stream to open')
+        await asyncio.sleep(0.5)  # time for the reapplied parameters to reach the device
+        assert server.connections == 1, 'expected the reapplied parameters not to reopen the stream'
+        assert camera.device is not None
+        assert 'fps=12' in (camera.device.url or ''), 'expected the requested fps to reach the stream URL'
+
+        await camera.set_parameters({'fps': 15})
+        await wait_for_capture_process(lambda: server.connections == 2,
+                                       message='expected a changed parameter to reopen the stream')
+        assert camera.parameters['fps'] == 15, 'expected the parameter cache to follow the device'
+        assert 'fps=15' in (camera.device.url or '')
+    finally:
+        await camera.disconnect()
+        await server.stop()
+
+
+async def test_mjpeg_camera_receives_decoded_frames_from_its_capture_process(rosys_integration):
+    server = FlakyMjpegServer(frames_per_connection=None, frame=DECODABLE_JPEG_FRAME)
+    await server.start()
+    camera = MjpegCamera(id=GOODCAM_MAC, ip=f'127.0.0.1:{server.port}', connect_after_init=False,
+                         crop=Rectangle(x=0, y=0, width=6, height=4), rotation=90)
+    await camera.connect()
+    try:
+        await wait_for_capture_process(lambda: len(camera.images) >= 3, message='expected decoded frames')
+        image = camera.images[-1]
+        assert image.camera_id == camera.id
+        assert image.array.shape == (6, 4, 3), 'expected the frame to be cropped, then rotated'
+        assert camera.is_connected
+
+        camera.rotate_clockwise()
+        await wait_for_capture_process(lambda: camera.images[-1].array.shape == (4, 6, 3),
+                                       message='expected the running capture to pick up the new rotation')
+    finally:
+        await camera.disconnect()
+        await server.stop()
+    assert not camera.is_active
+
+
+async def test_mjpeg_device_reopens_the_stream_when_its_url_changes(rosys_integration):
+    opened_urls: list[str] = []
+
+    @asynccontextmanager
+    async def open_stream(client, url, username, password):  # pylint: disable=unused-argument
+        opened_urls.append(url)
+        yield object()  # the response only reaches the patched frame reader
+
+    async def endless_frames(self, response):  # pylint: disable=unused-argument
+        while True:
+            await rosys.sleep(0.05)
+            yield b'\xff\xd8' + bytes(32) + b'\xff\xd9', None
+
+    with patch('rosys.vision.mjpeg_camera.mjpeg_device.open_stream', open_stream), \
+            patch.object(MjpegDevice, '_frame_reader', endless_frames):
+        device = AxisMjpegDevice(AXIS_MAC, '192.168.0.5', on_new_image_data=lambda data, timestamp: None)
+        device.reconnect_interval = 0.2
+        try:
+            await forward_until(lambda: len(opened_urls) == 1, message='expected the stream to be opened')
+            await device.set_fps(12)
+            await forward_until(lambda: len(opened_urls) == 2,
+                                message='expected the stream to reopen after the settings changed')
+            assert 'fps=6' in opened_urls[0] and 'fps=12' in opened_urls[1]
+        finally:
+            await device.shutdown()
+
+
+async def test_mjpeg_device_stops_streaming_when_shut_down_during_a_callback(rosys_integration):
+    server = FlakyMjpegServer(frames_per_connection=None)
+    await server.start()
+    frames: list[bytes] = []
+    decode = SlowFirstDecode()
+
+    async def handle_image(data: bytes, timestamp: float) -> None:
+        await decode_frame(data, timestamp)
+        frames.append(data)
+
+    with patch('nicegui.run.cpu_bound', decode):
+        device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{server.port}', on_new_image_data=handle_image)
+        try:
+            await wait_in_real_time(decode.started.is_set, message='no frame reached the callback')
+            await device.shutdown()
+            await wait_in_real_time(decode.finished.is_set, message='the stalled callback never returned')
+            await asyncio.sleep(0.05)  # let the frame that was in flight finish
+            frames_after_shutdown = len(frames)
+            await asyncio.sleep(0.15)  # a surviving session would deliver several more frames
+            assert len(frames) == frames_after_shutdown, 'the capture task kept streaming after shutdown'
+            assert not live_capture_tasks(f'capture {GOODCAM_MAC}'), 'the capture task survived shutdown'
+        finally:
+            await cancel_leftover_loops(f'capture {GOODCAM_MAC}')
+            await server.stop()
+
+
+async def test_mjpeg_device_keeps_one_capture_loop_across_an_address_change(rosys_integration):
+    server = FlakyMjpegServer(frames_per_connection=None)
+    await server.start()
+    decode = SlowFirstDecode()
+
+    with patch('nicegui.run.cpu_bound', decode):
+        device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{server.port}', on_new_image_data=decode_frame)
+        try:
+            await wait_in_real_time(decode.started.is_set, message='no frame reached the callback')
+            device.ip = '127.0.0.1:1'  # a provider rebinds the camera to another address
+            await wait_in_real_time(decode.finished.is_set, message='the stalled callback never returned')
+            await asyncio.sleep(0.1)
+            assert len(live_capture_tasks(f'capture {GOODCAM_MAC}')) == 1, \
+                'the replaced capture loop is still running'
+        finally:
+            await device.shutdown()
+            await cancel_leftover_loops(f'capture {GOODCAM_MAC}')
+            await server.stop()
+
+
+async def _stub_usb_session(self) -> bool:
+    """Stand-in for a capture session that keeps running without touching any hardware."""
+    await rosys.sleep(60.0)
+    return True
+
+
+async def test_rtsp_device_keeps_one_capture_loop_across_concurrent_restarts(rosys_integration):
+    task_name = f'capture {GOODCAM_MAC}'
+    with connected_rtsp_stream():
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: None)
+        try:
+            await forward_until(lambda: device.is_connected, message='expected the capture session to come up')
+            await asyncio.gather(device.restart_gstreamer(), device.restart_gstreamer())
+            await asyncio.sleep(0.05)
+            assert len(live_capture_tasks(task_name)) == 1, \
+                f'expected one capture loop, got {len(live_capture_tasks(task_name))}'
+        finally:
+            await device.shutdown()
+            await cancel_leftover_loops(task_name)
+
+
+async def test_usb_camera_keeps_one_capture_loop_across_concurrent_reconnects(rosys_integration):
+    camera_id = 'usb_reconnect_race'
+    task_name = f'capture {camera_id}'
+    with patch.object(UsbDevice, '_run_session', _stub_usb_session):
+        camera = UsbCamera(id=camera_id, connect_after_init=False)
+        try:
+            await camera.connect()
+            await asyncio.sleep(0.05)
+            await asyncio.gather(camera.reconnect(), camera.reconnect())
+            await asyncio.sleep(0.05)
+            assert len(live_capture_tasks(task_name)) == 1, \
+                f'expected one capture loop, got {len(live_capture_tasks(task_name))}'
+        finally:
+            await camera.disconnect()
+            await cancel_leftover_loops(task_name)
+
+
+async def test_rtsp_camera_does_not_restart_a_device_it_is_disconnecting(rosys_integration):
+    task_name = f'capture {GOODCAM_MAC}'
+    camera = RtspCamera(mac=GOODCAM_MAC, ip='192.168.0.5', connect_after_init=False)
+    with connected_rtsp_stream():
+        try:
+            await camera.connect()
+            await forward_until(lambda: camera.is_connected, message='expected the capture session to come up')
+            await asyncio.gather(camera.disconnect(), camera.set_parameters({'fps': 7}))
+            await asyncio.sleep(0.05)
+            assert camera.device is None, 'expected the camera to end up disconnected'
+            assert not live_capture_tasks(task_name), 'a capture loop outlived the disconnect'
+        finally:
+            await camera.disconnect()
+            await cancel_leftover_loops(task_name)
+
+
+async def test_simulated_camera_disconnect_stops_loop(rosys_integration):
+    camera = SimulatedCamera(id='sim_stop', resolution=(64, 48), fps=10, reconnect_interval=0.2)
+    await camera.connect()
+    await forward(0.4)
+    assert camera.images, 'expected simulated camera to produce images while connected'
+
+    device = camera.device
+    assert device is not None, 'expected simulated camera to have a device after connect'
+    await camera.disconnect()
+    assert camera.device is None, 'expected camera.disconnect() to clear camera.device reference'
+    assert device.is_active is False, 'expected old device loop to stop when camera disconnects'
+
+    image_count_after_disconnect = len(camera.images)
+    for _ in range(6):
+        await forward(0.3)
+    assert len(camera.images) == image_count_after_disconnect, 'expected no new images after camera disconnect'
+
+
+def test_simulate_device_failure_deprecated_alias(rosys_integration):
+    provider = SimulatedCameraProvider(simulate_failing=True)
+
+    with pytest.warns(DeprecationWarning):
+        deprecated_value = provider.simulate_device_failure
+    assert deprecated_value is True, 'expected deprecated alias getter to proxy simulate_failing=True'
+
+    with pytest.warns(DeprecationWarning):
+        provider.simulate_device_failure = False
+    assert provider.simulate_failing is False, 'expected deprecated alias setter to update simulate_failing'
+
+
+def test_simulated_provider_accepts_deprecated_auto_scan(rosys_integration):
+    with pytest.warns(DeprecationWarning):
+        SimulatedCameraProvider(auto_scan=False)
+
+
+async def test_devices_do_not_leak_shutdown_handlers(rosys_integration):
+    handlers_before_device = len(rosys_core.shutdown_handlers)
+    device = SimulatedDevice(id='sim_device_no_shutdown_hook',
+                             size=ImageSize(width=64, height=48),
+                             on_new_image=lambda image: None,
+                             fps=10)
+    try:
+        assert len(rosys_core.shutdown_handlers) == handlers_before_device, (
+            'expected direct device construction to avoid registering shutdown handlers'
+        )
+    finally:
+        await device.shutdown()
+
+    handlers_before_camera = len(rosys_core.shutdown_handlers)
+    camera = SimulatedCamera(id='sim_camera_shutdown_hook', connect_after_init=False)
+    assert len(rosys_core.shutdown_handlers) == handlers_before_camera + 1, (
+        'expected exactly one shutdown handler to be added for a camera instance'
+    )
+    assert rosys_core.shutdown_handlers[-1].__qualname__ == 'SimulatedCamera.disconnect', (
+        'expected the camera to register its own disconnect as the shutdown handler'
+    )
+
+    camera_ref = weakref.ref(camera)
+    del camera
+    gc.collect()
+    assert camera_ref() is None, 'expected the shutdown handler not to keep the camera alive'
+    assert len(rosys_core.shutdown_handlers) == handlers_before_camera, (
+        'expected the handler of a discarded camera to be unregistered'
+    )
+
+    cycling_camera = SimulatedCamera(id='sim_camera_cycle', fps=10, reconnect_interval=0.2, connect_after_init=False)
+    await cycling_camera.connect()
+    await forward(0.3)
+    handlers_before_cycles = len(rosys_core.shutdown_handlers)
+
+    for _ in range(3):
+        await cycling_camera.disconnect()
+        await forward(0.1)
+        await cycling_camera.connect()
+        await forward(0.3)
+
+    assert len(rosys_core.shutdown_handlers) == handlers_before_cycles, (
+        'expected repeated connect/disconnect cycles to avoid adding more shutdown handlers'
+    )
+    await cycling_camera.disconnect()
+
+
+async def test_is_active_tracks_connect_and_disconnect(rosys_integration):
+    camera = SimulatedCamera(id='sim', connect_after_init=False)
+    assert camera.is_active is False
+    await camera.connect()
+    assert camera.is_active is True
+    await camera.disconnect()
+    assert camera.is_active is False
+
+
+async def test_axis_device_derives_url_from_its_settings(rosys_integration):
+    with stalled_mjpeg_stream():
+        device = AxisMjpegDevice(AXIS_MAC, '192.168.0.5', index=1,
+                                 on_new_image_data=lambda data, timestamp: None)
+        try:
+            assert device.url is not None
+            assert 'camera=1' in device.url
+            assert 'fps=6' in device.url and 'resolution=640x480' in device.url and 'mirror=0' in device.url
+
+            await device.set_fps(12)
+            await device.set_resolution(1280, 720)
+            await device.set_mirrored(True)
+            assert device.url is not None
+            assert 'fps=12' in device.url and 'resolution=1280x720' in device.url and 'mirror=1' in device.url
+            assert device.url.count('fps=') == 1, 'expected the URL to be rebuilt rather than appended to'
+        finally:
+            await device.shutdown()
+
+
+async def test_axis_device_url_follows_address_and_keeps_settings(rosys_integration):
+    with stalled_mjpeg_stream():
+        device = AxisMjpegDevice(AXIS_MAC, on_new_image_data=lambda data, timestamp: None)
+        try:
+            assert device.url is None, 'expected no URL while the address is unknown'
+            assert device.is_active, 'expected the capture loop to run even without an address'
+
+            await device.set_fps(12)
+            device.ip = '192.168.0.5'
+            assert device.url is not None and '192.168.0.5' in device.url
+            assert 'fps=12' in device.url, 'expected the stream settings to survive the address change'
+            assert device.is_active
+        finally:
+            await device.shutdown()
+
+
+async def test_mjpeg_camera_is_active_without_known_address(rosys_integration):
+    """A camera that cannot reach its device yet still reports that a connection is wanted."""
+    camera = MjpegCamera(id=GOODCAM_MAC, connect_after_init=False)
+    await camera.connect()
+    try:
+        assert camera.device is not None, 'expected connect() to create a device even without an address'
+        assert camera.device.url is None, 'expected no stream URL while the address is unknown'
+        assert camera.is_active, 'expected the camera to report that it wants to be connected'
+        assert not camera.is_connected
+        assert camera.is_reconnecting
+    finally:
+        await camera.disconnect()
+
+
+async def test_mjpeg_camera_stays_active_while_its_login_is_rejected(rosys_integration):
+    """A rejected login does not revoke the wish to be connected, so `connect()` stays a no-op."""
+    server = FlakyMjpegServer(status=401)
+    await server.start()
+    camera = MjpegCamera(id=GOODCAM_MAC, ip=f'127.0.0.1:{server.port}',
+                         connect_after_init=False, reconnect_interval=0.2)
+    await camera.connect()
+    device = camera.device
+    assert device is not None
+    try:
+        await wait_for_capture_process(lambda: device.is_refused,
+                                       message='expected the camera to be rejected by the 401 server')
+        assert camera.is_active, 'expected a rejected camera to still report that it wants to be connected'
+        assert not camera.is_connected
+        assert camera.is_reconnecting
+    finally:
+        await camera.disconnect()
+    assert not camera.is_active, 'expected only disconnect() to end the wish to be connected'
+
+
+async def test_rtsp_camera_is_active_without_known_address(rosys_integration):
+    camera = RtspCamera(mac=GOODCAM_MAC, connect_after_init=False)
+    await camera.connect()
+    try:
+        assert camera.device is not None, 'expected connect() to create a device even without an address'
+        assert camera.url is None, 'expected no stream URL while the address is unknown'
+        assert camera.is_active, 'expected the camera to report that it wants to be connected'
+        assert not camera.is_connected
+    finally:
+        await camera.disconnect()
+
+
+async def test_usb_device_waits_quietly_for_a_missing_video_device(vision_log):
+    vision_log.set_level(logging.DEBUG, logger='rosys.vision')
+    with patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value=None):
+        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
+        try:
+            await forward_until(lambda: any('retrying' in record.getMessage() for record in vision_log.records),
+                                message='expected the device to say why it is waiting')
+            retry_records = [record for record in vision_log.records if 'retrying' in record.getMessage()]
+            assert all('no video device found' in record.getMessage() for record in retry_records)
+            assert all(record.levelno == logging.DEBUG for record in retry_records), \
+                'expected a missing video device to be logged at DEBUG only'
+        finally:
+            await device.shutdown()
+
+
+async def test_usb_device_warns_once_about_a_busy_video_device(vision_log):
+    with patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'), \
+            patch.object(UsbDevice, 'create_capture', lambda _device_node: None):
+        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
+        try:
+            await forward_until(lambda: sum('retrying' in record.getMessage() for record in vision_log.records) >= 2,
+                                message='expected at least two attempts to open the busy device')
+            retry_records = [record for record in vision_log.records if 'retrying' in record.getMessage()]
+            assert all('cannot open /dev/video0' in record.getMessage() for record in retry_records)
+            assert all(record.levelno == logging.INFO for record in retry_records)
+            assert sum('another process' in record.getMessage() for record in vision_log.records) == 1, \
+                'expected the hint about another process exactly once'
+        finally:
+            await device.shutdown()
+
+
+async def test_usb_camera_is_active_without_video_device(rosys_integration):
+    with patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value=None):
+        camera = UsbCamera(id='fakecam', connect_after_init=False, reconnect_interval=0.3)
+        await camera.connect()
+        try:
+            await forward(0.5)
+            assert camera.is_active, 'expected the camera to keep retrying while no video device exists'
+            assert not camera.is_connected
+        finally:
+            await camera.disconnect()
+
+
+async def test_mjpeg_provider_adds_and_connects_new_camera(rosys_integration):
+    provider = MjpegCameraProvider(auto_scan=False)
+    with patch.object(provider, 'scan_for_cameras', AsyncMock(return_value=[(GOODCAM_MAC, '127.0.0.1:1')])):
+        await provider.update_device_list()
+    camera = provider.cameras[GOODCAM_MAC]
+    await asyncio.sleep(0.05)  # let the camera's own connect task run
+    assert camera.is_active, 'expected a discovered camera to connect on its own'
+    assert camera.ip == '127.0.0.1:1'
+    await camera.disconnect()
+
+
+async def test_mjpeg_provider_rebinds_moved_camera(rosys_integration):
+    provider = MjpegCameraProvider(auto_scan=False)
+    camera = MjpegCamera(id=GOODCAM_MAC, ip='127.0.0.1:1', connect_after_init=False)
+    provider.add_camera(camera)
+    await camera.connect()
+    assert camera.is_active
+    old_device = camera.device
+
+    with patch.object(provider, 'scan_for_cameras', AsyncMock(return_value=[(GOODCAM_MAC, '127.0.0.1:2')])):
+        await provider.update_device_list()
+
+    assert camera.ip == '127.0.0.1:2'
+    assert camera.device is old_device, 'expected the device to be rebound rather than torn down'
+    await wait_for_capture_process(lambda: '127.0.0.1:2' in (camera.device.url or ''),
+                                   message='expected the device to pick up the new address')
+    assert camera.is_active
+    await camera.disconnect()
+
+
+async def test_mjpeg_provider_supplies_ip_to_pending_camera(rosys_integration):
+    provider = MjpegCameraProvider(auto_scan=False)
+    camera = MjpegCamera(id=GOODCAM_MAC, connect_after_init=False)
+    provider.add_camera(camera)
+    await camera.connect()  # no IP known yet, so the device has nothing to open
+    assert camera.is_active
+    assert camera.device is not None and camera.device.url is None
+
+    with patch.object(provider, 'scan_for_cameras', AsyncMock(return_value=[(GOODCAM_MAC, '127.0.0.1:1')])):
+        await provider.update_device_list()
+
+    assert camera.ip == '127.0.0.1:1'
+    await wait_for_capture_process(lambda: '127.0.0.1:1' in (camera.device.url or ''),
+                                   message='expected the device to pick up the discovered address')
+    assert camera.is_active
+    await camera.disconnect()
+
+
+async def test_mjpeg_provider_leaves_disconnected_camera_alone(rosys_integration):
+    provider = MjpegCameraProvider(auto_scan=False)
+    camera = MjpegCamera(id=GOODCAM_MAC, ip='127.0.0.1:1', connect_after_init=False)
+    provider.add_camera(camera)
+    await camera.connect()
+    await camera.disconnect()
+
+    with patch.object(provider, 'scan_for_cameras', AsyncMock(return_value=[(GOODCAM_MAC, '127.0.0.1:2')])):
+        await provider.update_device_list()
+
+    assert camera.ip == '127.0.0.1:2', 'expected the provider to record the new address'
+    assert not camera.is_active, 'expected the provider to leave a deliberately disconnected camera alone'
+
+
+async def test_rtsp_provider_rebinds_moved_camera(rosys_integration):
+    with stalled_rtsp_stream():
+        provider = RtspCameraProvider(auto_scan=False)
+        camera = RtspCamera(mac=GOODCAM_MAC, ip='192.168.0.5', connect_after_init=False)
+        provider.add_camera(camera)
+        await camera.connect()
+        assert camera.is_active
+        old_device = camera.device
+
+        with patch('rosys.vision.rtsp_camera.rtsp_camera_provider.find_known_cameras',
+                   AsyncMock(return_value=[(GOODCAM_MAC, '192.168.0.6')])):
+            await provider.update_device_list()
+
+        assert camera.ip == '192.168.0.6'
+        assert camera.device is old_device, 'expected the device to be rebound rather than torn down'
+        assert camera.device is not None and '192.168.0.6' in (camera.device.url or '')
+        assert camera.is_active
+        await camera.disconnect()
+
+
+async def test_usb_camera_connects_once_video_device_appears(rosys_integration):
+    device_node: str | None = None
+
+    with patch('rosys.vision.usb_camera.usb_device.find_device_node', lambda _uid: device_node), \
+            patch.object(UsbDevice, 'create_capture', lambda _device_node: FakeCapture()):
+        camera = UsbCamera(id='fakecam', connect_after_init=False, reconnect_interval=0.3)
+        await camera.connect()  # no video device node available yet
+        try:
+            await forward(0.5)
+            assert camera.is_active and not camera.is_connected
+
+            device_node = '/dev/video0'  # the node shows up, e.g. after the cable was plugged back in
+            await forward_until(lambda: camera.is_connected, real_step=0.02,
+                                message='expected the device to connect on its own once the node appeared')
+        finally:
+            await camera.disconnect()
+
+
+async def test_usb_provider_adds_camera_for_new_device(rosys_integration):
+    provider = UsbCameraProvider(auto_scan=False)
+    with patch.object(UsbCameraProvider, 'scan_for_cameras', AsyncMock(return_value={'fakecam'})), \
+            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'), \
+            patch.object(UsbDevice, 'create_capture', lambda _device_node: FakeCapture()):
+        await provider.update_device_list()
+        camera = provider.cameras['fakecam']
+        await asyncio.sleep(0.05)  # let the camera's own connect task run
+        assert camera.is_active, 'expected a discovered camera to connect on its own'
+        await camera.disconnect()
+
+
+async def test_usb_provider_leaves_disconnected_camera_alone(rosys_integration):
+    with patch.object(UsbCameraProvider, 'scan_for_cameras', AsyncMock(return_value={'fakecam'})), \
+            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'), \
+            patch.object(UsbDevice, 'create_capture', lambda _device_node: FakeCapture()):
+        provider = UsbCameraProvider(auto_scan=False)
+        camera = UsbCamera(id='fakecam', connect_after_init=False)
+        provider.add_camera(camera)
+        await camera.connect()
+        assert camera.is_active
+        await camera.disconnect()
+
+        await provider.update_device_list()
+        assert not camera.is_active, 'expected the provider to leave a deliberately disconnected camera alone'
+
+
+async def test_simulated_provider_leaves_disconnected_camera_alone(rosys_integration):
+    provider = SimulatedCameraProvider()
+    camera = SimulatedCamera(id='sim', connect_after_init=False)
+    provider.add_camera(camera)
+    await camera.connect()
+    await camera.disconnect()
+
+    await provider.update_device_list()
+    assert not camera.is_active, 'expected the provider to leave a deliberately disconnected camera alone'
+
+
+async def test_camera_clamps_a_reconnect_interval_that_would_not_wait(rosys_integration):
+    for interval in (0.0, -1.0):
+        camera = SimulatedCamera(id='sim', reconnect_interval=interval, connect_after_init=False)
+        assert camera.reconnect_interval == MIN_RECONNECT_INTERVAL, 'expected the camera to clamp the interval'
+
+
+async def test_camera_passes_its_reconnect_interval_to_its_device(rosys_integration):
+    """The interval belongs to the camera, not to whichever device happens to exist."""
+    camera = MjpegCamera(id=GOODCAM_MAC, ip='127.0.0.1:1', connect_after_init=False)
+    camera.reconnect_interval = 7.0
+    await camera.connect()
+    try:
+        assert camera.device is not None
+        assert camera.device.reconnect_interval == 7.0
+        camera.reconnect_interval = 9.0
+        assert camera.device.reconnect_interval == 9.0, 'expected a live device to follow the camera'
+    finally:
+        await camera.disconnect()
+
+
+def test_no_wait_between_attempts_exceeds_the_cap():
+    """A refused camera must be picked up as soon as it answers again, like any other retry."""
+    assert MjpegDevice.REFUSED_RECONNECT_INTERVAL <= MAX_RECONNECT_INTERVAL
+    assert RtspDevice.REFUSED_RECONNECT_INTERVAL <= MAX_RECONNECT_INTERVAL
+
+
+async def test_camera_is_not_active_once_its_capture_process_died(rosys_integration):
+    """Without this, the camera reports `is_reconnecting` forever with nothing running."""
+    camera = MjpegCamera(id=GOODCAM_MAC, ip='127.0.0.1:1', connect_after_init=False)
+    await camera.connect()
+    try:
+        assert camera.is_active
+        kill_capture_process(camera)
+        await wait_for_capture_process(lambda: not camera.is_active,
+                                       message='expected a camera with a dead capture process to report is_active False')
+        assert not camera.is_reconnecting, 'expected no reconnect state without a process that could reconnect'
+    finally:
+        await camera.disconnect()
+
+
+async def test_camera_connect_replaces_a_device_whose_process_died(rosys_integration):
+    camera = MjpegCamera(id=GOODCAM_MAC, ip='127.0.0.1:1', connect_after_init=False)
+    await camera.connect()
+    try:
+        dead_device = camera.device
+        kill_capture_process(camera)
+        await wait_for_capture_process(lambda: not camera.is_active, message='expected the process to end')
+
+        await camera.connect()
+        assert camera.device is not dead_device, 'expected connect() to replace the dead device'
+        assert camera.is_active
+    finally:
+        await camera.disconnect()
+
+
+async def test_mjpeg_device_state_survives_a_dying_zombie_session(rosys_integration):
+    """A replaced capture task must not report its own end as the state of the loop that replaced it."""
+    device = MjpegDevice(GOODCAM_MAC, '127.0.0.1:1', on_new_image_data=lambda data, timestamp: None)
+    try:
+        device._state = CaptureState.STREAMING  # pylint: disable=protected-access
+        device._set_state(CaptureState.CONNECTING)  # pylint: disable=protected-access
+        assert device.is_connected, 'expected a foreign task not to change the state of the live loop'
+    finally:
+        await device.shutdown()
+
+
+async def test_a_capture_task_that_ignores_its_cancellation_keeps_the_device_active(rosys_integration):
+    """Otherwise `connect()` would start a second loop next to the one that is still running."""
+    with stalled_rtsp_stream():
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: None)
+        device.CANCEL_TIMEOUT = 0.05  # type: ignore[misc]
+        try:
+            await cancel_leftover_loops(f'capture {GOODCAM_MAC}')
+            device._capture_task = background_tasks.create(  # pylint: disable=protected-access
+                _survives_one_cancellation(), name=f'capture {GOODCAM_MAC}')
+            await asyncio.sleep(0)
+
+            await device.shutdown()
+            assert device.is_active, 'expected the device to stay active while its capture task is still running'
+        finally:
+            await cancel_leftover_loops(f'capture {GOODCAM_MAC}')
+
+
+async def test_rtsp_shutdown_reraises_a_cancellation_of_its_caller(rosys_integration):
+    with stalled_rtsp_stream():
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: None)
+        try:
+            device._capture_task = background_tasks.create(  # pylint: disable=protected-access
+                _survives_one_cancellation(), name=f'capture {GOODCAM_MAC}')
+            await asyncio.sleep(0)
+
+            caller = background_tasks.create(device.shutdown(), name='shutdown caller')
+            await asyncio.sleep(0)
+            caller.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await caller
+        finally:
+            for task in asyncio.all_tasks():
+                if task.get_name() == f'capture {GOODCAM_MAC}':
+                    task.cancel()
+
+
+@pytest.mark.parametrize('nodes, expected', [
+    ({'/dev/video2', '/dev/video10', '/dev/video1'}, '/dev/video1'),
+    ({'/dev/video7'}, '/dev/video7'),
+    ({'/dev/media0', '/dev/video3'}, '/dev/video3'),
+    ({'/dev/media0'}, None),
+    (set(), None),
+])
+def test_find_device_node_picks_the_lowest_numbered_video_node(nodes: set[str], expected: str | None):
+    with patch('rosys.vision.usb_camera.usb_device.device_nodes_from_uid', return_value=nodes):
+        assert find_device_node('fakecam') == expected
+
+
+@pytest.mark.parametrize('mac, expected_type', [
+    (AXIS_MAC, AxisMjpegDevice),
+    (MOTEC_MAC, MotecMjpegDevice),
+    (ARKVISION_MAC, ArkVisionMjpegDevice),
+    (OPENIPC_ZAUBERZEUG_MAC, OpenIpcZauberzeugMjpegDevice),
+    (GOODCAM_MAC, MjpegDevice),
+    (UNKNOWN_VENDOR_MAC, MjpegDevice),
+])
+async def test_mjpeg_device_factory_builds_the_vendor_device(rosys_integration, mac: str, expected_type: type):
+    with stalled_mjpeg_stream():
+        device = MjpegDeviceFactory.create(mac, '127.0.0.1:1',
+                                           on_new_image_data=lambda data, timestamp: None,
+                                           reconnect_interval=4.0)
+        try:
+            assert type(device) is expected_type
+            assert device.reconnect_interval == 4.0, 'expected the factory to forward the reconnect interval'
+        finally:
+            await device.shutdown()
+
+
+async def test_mjpeg_device_factory_warns_about_an_unknown_vendor(rosys_integration, vision_log):
+    with stalled_mjpeg_stream():
+        device = MjpegDeviceFactory.create(UNKNOWN_VENDOR_MAC, '127.0.0.1:1',
+                                           on_new_image_data=lambda data, timestamp: None)
+        try:
+            assert [record for record in vision_log.records if 'no stream URL known' in record.getMessage()], \
+                'expected the factory to say that this camera cannot be reached'
+        finally:
+            await device.shutdown()
+
+
+def test_settings_of_a_camera_without_an_address_raise_a_domain_error():
+    device = ArkVisionMjpegDevice.__new__(ArkVisionMjpegDevice)
+    device._mac = ARKVISION_MAC  # pylint: disable=protected-access
+    device._ip = None  # pylint: disable=protected-access
+    with pytest.raises(CameraAddressUnknown):
+        _ = device.settings_interface
+
+
+async def test_mjpeg_device_reports_a_missing_address_without_a_traceback(rosys_integration, vision_log):
+    async def unknown_address(self) -> None:
+        raise CameraAddressUnknown('no address')
+
+    with patch.object(MjpegDevice, '_run_session', unknown_address):
+        device = MjpegDevice(GOODCAM_MAC, '127.0.0.1:1', on_new_image_data=lambda data, timestamp: None,
+                             reconnect_interval=0.2)
+        try:
+            await forward_until(lambda: any('no address known yet' in record.getMessage()
+                                            for record in vision_log.records),
+                                step=0.1, real_step=0.02,
+                                message='device did not report the missing address')
+            assert not [record for record in vision_log.records if record.exc_info], \
+                'expected a missing address to be reported without a traceback'
+        finally:
+            await device.shutdown()
+
+
+async def test_a_device_being_torn_down_is_not_restarted(rosys_integration):
+    """`shutdown()` awaits its capture task, so a restart landing in that window must not revive it."""
+    with stalled_rtsp_stream():
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: None)
+        await asyncio.sleep(0)
+        assert device.is_active
+
+        async def restart_while_shutting_down() -> None:
+            await asyncio.sleep(0)
+            device._start_capture_task()  # pylint: disable=protected-access
+
+        await asyncio.gather(device.shutdown(), restart_while_shutting_down())
+        assert not device.is_active, 'expected the device to stay down while it was being torn down'

@@ -1,0 +1,233 @@
+from __future__ import annotations
+
+from collections.abc import Callable
+from datetime import UTC, date, datetime, timedelta, timezone
+from pathlib import Path
+
+from fastapi import status
+from fastapi.responses import FileResponse, JSONResponse, Response
+from nicegui import app, ui
+
+from ... import rosys
+from .mcap_recorder import McapRecorder, RecordingInfo
+from .paths import DOWNLOAD_PATH, PAGE_PATH
+
+_MAX_TIMEZONE_OFFSET_MINUTES = 24 * 60  # reject offsets beyond ±24 h from untrusted client JavaScript
+
+
+class RecordingsPage:
+    """Lists the MCAP recordings for download and deletion.
+
+    The list refreshes whenever the recorder starts a new recording or stops one,
+    can be filtered by date, and offers rebuilding the index of crash-orphaned
+    (unindexed) recordings. All filesystem access (glob, stat, index check) runs
+    off the event loop via ``rosys.run.io_bound``; the render reads only a cached
+    snapshot, so opening the page never blocks the loop on disk I/O.
+
+    A download endpoint at ``DOWNLOAD_PATH/{name}`` serves finished recordings over
+    HTTP (basename only, refusing the live file with 409 and missing files with 404),
+    so recordings can be fetched without scp.
+    """
+
+    def __init__(self, recorder: McapRecorder, *, header: Callable[[], None] | None = None) -> None:
+        """Register the recordings page and its download endpoint on the nicegui app.
+
+        :param recorder: the recorder whose recordings this page lists, manages, and serves.
+        :param header: optional callback rendered once at the top of the page before the
+            content (e.g. a shared application header or navigation); ``None`` renders no header.
+        """
+        self.recorder = recorder
+        self.header = header
+
+        @ui.page(PAGE_PATH)
+        async def page() -> None:
+            if self.header is not None:
+                self.header()
+            await self.content()
+
+        @app.get(f'{DOWNLOAD_PATH}/{{name}}')
+        def download_recording(name: str) -> Response:
+            return _download_response(recorder, name)
+
+    async def content(self) -> None:
+        recorder = self.recorder
+        local_tz = await _browser_timezone()  # show times in the viewer's local zone (files stay UTC)
+        infos: list[RecordingInfo] = []  # cached snapshot, refreshed off the loop by reload()
+
+        def _in_range(info: RecordingInfo) -> bool:
+            value = date_input.value
+            if not value:
+                return True
+            parts = [part.strip() for part in value.split(' - ')]
+            try:
+                start, end = date.fromisoformat(parts[0]), date.fromisoformat(parts[-1])
+            except ValueError:
+                return True
+            recorded = datetime.fromtimestamp(info.mtime, tz=local_tz).date()
+            return start <= recorded <= end
+
+        @ui.refreshable
+        def recordings_list() -> None:
+            reindex_button.set_enabled(any(not info.indexed and not info.is_live for info in infos))
+            visible = [info for info in infos if _in_range(info)]
+            if not visible:
+                ui.label('No recordings.').classes('text-grey p-4')
+                return
+            with ui.column().classes('w-full gap-1'):
+                for info in visible:
+                    _recording_row(info)
+
+        def _recording_row(info: RecordingInfo) -> None:
+            modified = datetime.fromtimestamp(info.mtime, tz=local_tz).strftime('%Y-%m-%d %H:%M:%S')
+            with ui.row().classes('w-full items-center justify-between border-b py-1'):
+                with ui.column().classes('gap-0'):
+                    with ui.row().classes('items-center gap-1'):
+                        ui.label(info.path.name).classes('font-mono')
+                        if info.is_live:
+                            ui.badge('recording').props('color=red')
+                        elif not info.indexed:
+                            ui.badge('unindexed').props('color=orange')
+                    ui.label(f'{modified} · {info.size / 1_048_576:.1f} MB').classes('text-xs text-grey')
+                with ui.row().classes('gap-1'):
+                    if not info.is_live:
+                        ui.button(icon='edit', on_click=lambda p=info.path: _rename(p)) \
+                            .props('flat dense').tooltip('rename')
+                    download = ui.button(icon='download',
+                                         on_click=lambda p=info.path: ui.download(p)).props('flat dense')
+                    if not info.indexed:
+                        download.disable()
+                        download.tooltip('available once the recording is stopped or reindexed')
+                    if not info.is_live:  # the live file cannot be deleted (writer holds it open)
+                        ui.button(icon='delete', on_click=lambda p=info.path: _delete(p)).props('flat dense color=red')
+
+        async def reload() -> None:
+            infos[:] = await rosys.run.io_bound(recorder.scan_recordings) or []  # None on shutdown
+            recordings_list.refresh()
+
+        async def _delete(path: Path) -> None:
+            if not await _confirm_dialog(f'Delete recording {path.name}?'):
+                return
+            await rosys.run.io_bound(recorder.delete_recording, path)  # unlink off the loop
+            await reload()
+
+        async def _reindex() -> None:
+            reindex_button.disable()  # block a second concurrent rebuild (double-click or same client)
+            try:
+                await recorder.reindex_unindexed()
+            finally:
+                await reload()  # refreshes the list, which recomputes the button's enabled state
+
+        async def _delete_all() -> None:
+            if not await _confirm_dialog('Delete all recordings?'):
+                return
+            await rosys.run.io_bound(recorder.delete_all_recordings)  # unlink + glob off the loop
+            await reload()
+
+        async def _rename(path: Path) -> None:
+            with ui.dialog() as dialog, ui.card():
+                ui.label(f'Rename {path.name}')
+                name_input = ui.input('New name', value=path.stem).classes('w-full')
+                with ui.row():
+                    ui.button('Cancel', on_click=dialog.close).props('flat')
+                    ui.button('Rename', on_click=lambda: dialog.submit(name_input.value))
+            new_name = await dialog
+            if new_name:
+                renamed = await rosys.run.io_bound(recorder.rename_recording, path, new_name)  # off the loop
+                if renamed is None:
+                    rosys.notify(f'Could not rename {path.name} (name already in use or invalid)', type='negative')
+                await reload()
+
+        with ui.row().classes('w-full items-center gap-2'):
+            date_input = ui.date_input('Date range', range_input=True, on_change=recordings_list.refresh)
+            ui.space()
+            reindex_button = ui.button(icon='build', on_click=_reindex) \
+                .props('flat dense').tooltip('rebuild the index of unindexed recordings')
+            ui.button(icon='delete_sweep', on_click=_delete_all) \
+                .props('flat dense color=red').tooltip('delete all recordings')
+            ui.button(icon='refresh', on_click=reload).props('flat dense')
+        with ui.scroll_area().classes('w-full').style('max-height: 75vh'):
+            recordings_list()
+
+        def _change_token() -> tuple[tuple[Path, ...], Path | None]:
+            """A cheap change token — the recording paths plus the live file.
+
+            Both accessors glob the output directory, so this runs off the event loop.
+            """
+            return tuple(recorder.recordings), recorder.current_recording
+
+        async def sync_if_changed() -> None:
+            # Picks up start/stop, size-based rotation, and external add/remove. The
+            # change token globs the directory, so it is computed off the loop (matching
+            # the class docstring); only an actual change triggers the fuller stat/index
+            # scan in reload(). A client-scoped timer (auto-removed on disconnect) avoids
+            # subscribing to the process-lifetime recorder, so handlers don't accumulate
+            # across page visits, and reloading only on a change keeps it off idle ticks.
+            token = await rosys.run.io_bound(_change_token)
+            if token is None:
+                return  # recorder shut down mid-scan
+            live = next((info.path for info in infos if info.is_live), None)
+            if token != (tuple(info.path for info in infos), live):
+                await reload()
+
+        ui.timer(0.1, reload, once=True)  # populate the snapshot off the loop after the page is built
+        ui.timer(2.0, sync_if_changed)
+
+
+def _download_response(recorder: McapRecorder, name: str) -> Response:
+    """Build the HTTP response for a recording download request.
+
+    Serves a finished recording by basename only (no path traversal), refusing the
+    live file with 409 and anything missing, non-``.mcap``, or containing a NUL byte
+    with 404.
+
+    :param recorder: the recorder whose output directory holds the recordings.
+    :param name: the requested recording name from the URL (reduced to its basename).
+    :return: a :class:`FileResponse` for a valid recording, else a JSON error response.
+    """
+    if '\x00' in name:  # a NUL byte makes is_file() raise ValueError -> reject up front (else an unhandled 500)
+        return _not_found()
+    file_path = recorder.output_dir / Path(name).name  # basename only, no path traversal
+    if file_path.suffix != '.mcap':  # never serve transient *.mcap.reindex temp files
+        return _not_found()
+    if file_path == recorder.current_recording:
+        return JSONResponse(content={'status': 'error', 'message': 'Recording is currently being written'},
+                            status_code=status.HTTP_409_CONFLICT)
+    if not file_path.is_file():
+        return _not_found()
+    return FileResponse(file_path, media_type='application/octet-stream', filename=file_path.name)
+
+
+def _not_found() -> JSONResponse:
+    """A 404 JSON response for a missing or unservable recording."""
+    return JSONResponse(content={'status': 'error', 'message': 'Recording not found'},
+                        status_code=status.HTTP_404_NOT_FOUND)
+
+
+async def _browser_timezone() -> timezone:
+    """The connected client's timezone, from its UTC offset; falls back to UTC.
+
+    The offset comes from untrusted client JavaScript, so it is coerced to a number
+    and clamped to a sane range; anything non-numeric, out of range, or slow to
+    arrive falls back to UTC rather than breaking the page for that client.
+    """
+    try:
+        await ui.context.client.connected()
+        offset_minutes = await ui.run_javascript('new Date().getTimezoneOffset()')
+        minutes = max(-_MAX_TIMEZONE_OFFSET_MINUTES, min(_MAX_TIMEZONE_OFFSET_MINUTES, float(offset_minutes)))
+        return timezone(timedelta(minutes=-minutes))
+    except (TimeoutError, TypeError, ValueError):
+        return UTC
+
+
+async def _confirm_dialog(message: str) -> bool:
+    """Show a modal yes/no dialog and return whether the user confirmed.
+
+    :param message: the question shown in the dialog.
+    :return: ``True`` if the user confirmed, ``False`` if they cancelled or closed it.
+    """
+    with ui.dialog() as dialog, ui.card():
+        ui.label(message)
+        with ui.row():
+            ui.button('Cancel', on_click=lambda: dialog.submit(False)).props('flat')
+            ui.button('OK', on_click=lambda: dialog.submit(True))
+    return bool(await dialog)

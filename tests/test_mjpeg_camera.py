@@ -4,7 +4,7 @@ import pytest
 import pytest_asyncio
 
 from rosys.vision import MjpegCamera, MjpegCameraProvider
-from rosys.vision.mjpeg_camera.motec_mjpeg_device import MotecMjpegDevice
+from rosys.vision.mjpeg_camera.motec_settings_interface import MotecSettingsInterface
 from rosys.vision.mjpeg_camera.vendors import VendorType, mac_to_vendor
 
 
@@ -20,9 +20,15 @@ async def test_mjpeg_camera(rosys_integration):
     uid, ip = connected_uids[0]
     camera = MjpegCamera(id=uid, ip=ip, connect_after_init=False)
     await camera.connect()
-    await asyncio.sleep(0.5)
-    assert camera.is_connected
-    assert len(camera.images) >= 1
+    try:
+        for _ in range(100):  # the capture process needs a moment to start
+            if camera.images:
+                break
+            await asyncio.sleep(0.1)
+        assert camera.is_connected
+        assert len(camera.images) >= 1
+    finally:
+        await camera.disconnect()
 
 
 @pytest_asyncio.fixture()
@@ -38,16 +44,10 @@ async def motec_settings_interface(rosys_integration):
 
     for mac, ip in connected_uids:
         if mac_to_vendor(mac) == VendorType.MOTEC:
-            camera = MjpegCamera(id=mac, connect_after_init=False, ip=ip)
-            await camera.connect()
+            yield MotecSettingsInterface(ip, port=8885)
             break
     else:
         pytest.skip('No MOTEC camera detected. This test requires a physical MOTEC camera on the local network.')
-
-    assert camera.device is not None
-    assert isinstance(camera.device, MotecMjpegDevice)
-    assert camera.device.settings_interface is not None
-    yield camera.device
 
 
 async def test_fps(motec_settings_interface):

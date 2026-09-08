@@ -11,6 +11,8 @@ class VendorType(Enum):
     OPENIPC_ZAUBERZEUG = 7
     GOODCAM = 8
     ARKVISION = 9
+    HIKVISION = 10
+    HI3510 = 11
     OTHER = -1
 
 
@@ -21,12 +23,15 @@ mac_prefix_to_vendor: dict[str, VendorType] = {
     'd4:43:0e': VendorType.DAHUA,
     'fc:5f:49': VendorType.DAHUA,
     '30:dd:aa': VendorType.DAHUA,
+    '40:7a:a4': VendorType.DAHUA,
     'ec:71:db': VendorType.REOLINK,
     '6c:f1:7e': VendorType.UNIARCH,
     'f0:00:06': VendorType.ANJOY,
     '7a:7a:21': VendorType.OPENIPC_ZAUBERZEUG,
     '2c:6f:51': VendorType.GOODCAM,
     '18:fd:cb': VendorType.ARKVISION,  # NOTE: prefix observed on a single ArkCam Basic+ mini; may need expanding
+    '28:57:be': VendorType.HIKVISION,  # Hangzhou Hikvision (also OEMs TruVision and many rebrands)
+    '00:af:a5': VendorType.HI3510,  # HiSilicon hi3510 firmware family (EasyN/Wanscam/Sricam/... rebrands)
 }
 
 
@@ -50,6 +55,10 @@ def _vendor_to_url(vendor_type: VendorType, ip: str, substream: int) -> str | No
             return f'rtsp://root:Adminadmin@{ip}{path}'
         case VendorType.ARKVISION:
             return f'rtsp://{ip}:8554/h264'  # no auth; no separate substream
+        case VendorType.HIKVISION:
+            return f'rtsp://admin:Adminadmin@{ip}/Streaming/Channels/10{2 if substream else 1}'
+        case VendorType.HI3510:
+            return f'rtsp://admin:admin@{ip}/1{2 if substream else 1}'
         case VendorType.OTHER:
             return None
     raise AssertionError('unreachable')  # Just for mypy
