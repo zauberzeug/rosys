@@ -50,7 +50,7 @@ It automatically updates every 0.1 seconds to detect and display new cameras, an
 ## Automatic Reconnection
 
 Cameras can lose their connection due to network glitches, a bad cable or a power hiccup.
-Every camera reconnects on its own: once connected, the underlying device keeps trying to restore its stream every `reconnect_interval` seconds (default 3.0) for as long as the camera stays connected.
+Every camera reconnects on its own: after `connect()`, the underlying device keeps trying to restore its stream every `reconnect_interval` seconds (default 3.0) for as long as the camera stays active.
 Reconnection runs until the camera is disconnected, so `disconnect()` both stops the retries and tears down the device connection.
 `is_connected` tells whether a camera is streaming right now, while `is_active` tells whether a connection is wanted at all, i.e. whether the camera keeps trying to reconnect.
 
