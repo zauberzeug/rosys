@@ -25,6 +25,9 @@ class CaptureDevice(abc.ABC):
     REFUSED_RECONNECT_INTERVAL: ClassVar[float] = MAX_RECONNECT_INTERVAL
     """Wait between attempts while the camera answers something other than a stream."""
 
+    CANCEL_TIMEOUT: ClassVar[float] = 5.0
+    """Seconds `shutdown()` waits for the capture task to end."""
+
     def __init__(self, *, name: str, log: logging.Logger,
                  on_connect: Callable[[], Awaitable | None] | None = None,
                  reconnect_interval: float = 3.0) -> None:
@@ -161,9 +164,11 @@ class CaptureDevice(abc.ABC):
         if task is not None and not task.done():
             task.cancel()
             try:
-                await asyncio.wait_for(asyncio.shield(task), timeout=5)
+                await asyncio.wait_for(asyncio.shield(task), timeout=self.CANCEL_TIMEOUT)
             except TimeoutError:
-                self.log.warning('[%s] timeout while waiting for capture task to cancel', self._name)
+                self.log.error('[%s] capture task did not end within %.1f s; it stays active',
+                               self._name, self.CANCEL_TIMEOUT)
+                return
             except asyncio.CancelledError:
                 if not task.cancelled():
                     raise  # our own caller was cancelled, not the capture task

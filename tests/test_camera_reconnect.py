@@ -823,6 +823,24 @@ async def test_mjpeg_device_state_survives_a_dying_zombie_session(rosys_integrat
         await device.shutdown()
 
 
+async def test_a_capture_task_that_ignores_its_cancellation_keeps_the_device_active(rosys_integration):
+    """Otherwise `connect()` would start a second loop next to the one that is still running."""
+    with stalled_rtsp_stream():
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: None)
+        device.CANCEL_TIMEOUT = 0.05  # type: ignore[misc]
+        try:
+            await cancel_leftover_loops(f'capture {GOODCAM_MAC}')
+            device._capture_task = background_tasks.create(  # pylint: disable=protected-access
+                _survives_one_cancellation(), name=f'capture {GOODCAM_MAC}')
+            await asyncio.sleep(0)
+
+            await device.shutdown()
+            assert device.is_active, 'expected the device to stay active while its capture task is still running'
+        finally:
+            await cancel_leftover_loops(f'capture {GOODCAM_MAC}')
+
+
 async def test_rtsp_shutdown_reraises_a_cancellation_of_its_caller(rosys_integration):
     with stalled_rtsp_stream():
         device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
