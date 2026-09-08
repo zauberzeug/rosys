@@ -48,13 +48,11 @@ class SimulatedDevice(CaptureDevice):
 
     async def _run_session(self) -> None:
         await self._enter_streaming()
-        session_start = rosys.time()
         while self._keeps_running() and self.is_connected:
             await rosys.sleep(self._frame_interval)
             if not self.is_connected:
                 break
-            if self.simulate_failing and \
-                    random.random() < (rosys.time() - session_start) / MEAN_TIME_TO_FAILURE * self._frame_interval:
+            if self.simulate_failing and random.random() < self._frame_interval / MEAN_TIME_TO_FAILURE:
                 return
             await self._create_image()
 
