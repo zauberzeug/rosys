@@ -850,6 +850,11 @@ def test_simulate_device_failure_deprecated_alias(rosys_integration):
     assert provider.simulate_failing is False, 'expected deprecated alias setter to update simulate_failing'
 
 
+def test_simulated_provider_accepts_deprecated_auto_scan(rosys_integration):
+    with pytest.warns(DeprecationWarning):
+        SimulatedCameraProvider(auto_scan=False)
+
+
 async def test_devices_do_not_leak_shutdown_handlers(rosys_integration):
     handlers_before_device = len(rosys_core.shutdown_handlers)
     device = SimulatedDevice(id='sim_device_no_shutdown_hook',

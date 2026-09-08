@@ -1,5 +1,6 @@
 import warnings
 
+from ...helpers.deprecation import deprecated_param
 from ..camera_provider import CameraProvider
 from .simulated_camera import SimulatedCamera
 
@@ -10,7 +11,10 @@ class SimulatedCameraProvider(CameraProvider[SimulatedCamera]):
     In the current implementation the images only contain the camera ID and the current time.
     """
 
-    def __init__(self, *, simulate_failing: bool = False) -> None:
+    @deprecated_param('auto_scan')
+    def __init__(self, *,
+                 simulate_failing: bool = False,
+                 auto_scan: bool = True) -> None:  # pylint: disable=unused-argument
         super().__init__()
 
         self.simulate_failing = simulate_failing
