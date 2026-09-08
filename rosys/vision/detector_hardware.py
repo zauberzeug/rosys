@@ -103,7 +103,7 @@ class DetectorHardware(Detector):
             metadata: dict[str, Any] = {
                 'source': source,
                 'tags': tags or [],
-                'creation_date': _creation_date_to_isoformat(creation_date),
+                'created': _creation_date_to_isoformat(creation_date),
             }
 
             if detections := image.get_detections(self.name):
