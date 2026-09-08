@@ -6,28 +6,6 @@ from nicegui import ui
 import rosys.vision
 
 
-def add_card(camera: rosys.vision.Camera, container: ui.element) -> None:
-    uid = camera.id
-    if uid not in streams:
-        with container:
-            camera_card = ui.card().tight()
-            camera_cards[uid] = camera_card
-            print(f'adding card for {uid}')
-            with camera_grid:
-                with camera_card:
-                    streams[uid] = ui.interactive_image()
-                    ui.label(uid).classes('m-2')
-                    with ui.row():
-                        ui.button('connect', on_click=camera.connect) \
-                            .bind_enabled_from(camera, 'is_active', backward=lambda active: not active)
-                        ui.button('disconnect', on_click=camera.disconnect) \
-                            .bind_enabled_from(camera, 'is_active')
-                    if isinstance(camera, rosys.vision.ConfigurableCamera):
-                        create_camera_settings_panel(camera)
-
-    streams[uid].set_source(camera.get_latest_image_url())
-
-
 def resolution_to_str(resolution: tuple[int, int] | None) -> str | None:
     return f'{resolution[0]}x{resolution[1]}' if resolution else None
 
@@ -98,30 +76,45 @@ def create_camera_settings_panel(camera: rosys.vision.ConfigurableCamera) -> Non
                     ui.color_picker(on_pick=lambda e: camera.set_parameters({'color': e.color}))
 
 
-def update_camera_cards() -> None:
-    providers: list[rosys.vision.CameraProvider] = [
-        rtsp_camera_provider,
-        mjpeg_camera_provider,
-        usb_camera_provider,
-        simulated_camera_provider,
-    ]
-    for provider in providers:
-        for camera in provider.cameras.values():
-            add_card(camera, camera_grid)
+def root() -> None:
+    streams: dict[str, ui.interactive_image] = {}
+    camera_grid = ui.row()
+
+    def add_card(camera: rosys.vision.Camera) -> None:
+        uid = camera.id
+        if uid not in streams:
+            print(f'adding card for {uid}')
+            with camera_grid, ui.card().tight():
+                streams[uid] = ui.interactive_image()
+                ui.label(uid).classes('m-2')
+                with ui.row():
+                    ui.button('connect', on_click=camera.connect) \
+                        .bind_enabled_from(camera, 'is_active', backward=lambda active: not active)
+                    ui.button('disconnect', on_click=camera.disconnect) \
+                        .bind_enabled_from(camera, 'is_active')
+                if isinstance(camera, rosys.vision.ConfigurableCamera):
+                    create_camera_settings_panel(camera)
+
+        streams[uid].set_source(camera.get_latest_image_url())
+
+    def update_camera_cards() -> None:
+        for provider in providers:
+            for camera in provider.cameras.values():
+                add_card(camera)
+
+    ui.timer(0.1, update_camera_cards)
 
 
 logging.basicConfig(level=logging.INFO)
-streams: dict[str, ui.interactive_image] = {}
-camera_cards: dict[str, ui.card] = {}
-camera_grid = ui.row()
 
-rtsp_camera_provider = rosys.vision.RtspCameraProvider()
-mjpeg_camera_provider = rosys.vision.MjpegCameraProvider()
-usb_camera_provider = rosys.vision.UsbCameraProvider()
 simulated_camera_provider = rosys.vision.SimulatedCameraProvider()
-
-ui.timer(0.1, update_camera_cards)
-
 simulated_camera_provider.add_cameras(1)
+providers: list[rosys.vision.CameraProvider] = [
+    rosys.vision.RtspCameraProvider(),
+    rosys.vision.MjpegCameraProvider(),
+    rosys.vision.UsbCameraProvider(),
+    simulated_camera_provider,
+]
 
-ui.run(title='RoSys', port=8080)
+# without a root function, NiceGUI re-executes this script per page and creates the providers again
+ui.run(root, title='RoSys', port=8080)
