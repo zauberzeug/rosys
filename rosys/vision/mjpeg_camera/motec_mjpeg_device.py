@@ -1,24 +1,33 @@
 from collections.abc import Awaitable, Callable
 
-from .mjpeg_device import MjpegDevice
+from .mjpeg_device import CameraAddressUnknown, MjpegDevice
 from .motec_settings_interface import MotecSettingsInterface
 from .vendors import VendorType, mac_to_vendor
 
 
 class MotecMjpegDevice(MjpegDevice):
-    def __init__(self, mac: str, ip: str, *,
+    def __init__(self, mac: str, ip: str | None = None, *,
                  username: str | None = '',
                  password: str | None = '',
                  control_port: int | None = 8885,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None]) -> None:
-
-        super().__init__(mac, ip, username=username, password=password, on_new_image_data=on_new_image_data)
-
+                 on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 on_connect: Callable[[], Awaitable | None] | None = None,
+                 reconnect_interval: float = 3.0) -> None:
         vendor = mac_to_vendor(mac)
         if vendor != VendorType.MOTEC:
             raise ValueError(f'MotecMjpegDevice can only be used with MOTEC devices. Got {vendor} for mac="{mac}"')
 
-        self.settings_interface = MotecSettingsInterface(ip, port=control_port or 8885)
+        self._control_port = control_port or 8885
+
+        super().__init__(mac, ip, username=username, password=password,
+                         on_new_image_data=on_new_image_data, on_connect=on_connect,
+                         reconnect_interval=reconnect_interval)
+
+    @property
+    def settings_interface(self) -> MotecSettingsInterface:
+        if self.ip is None:
+            raise CameraAddressUnknown(f'cannot reach the settings of {self._mac} without an address')
+        return MotecSettingsInterface(self.ip, port=self._control_port)
 
     async def set_fps(self, fps: int) -> None:
         await self.settings_interface.set_fps(fps)
