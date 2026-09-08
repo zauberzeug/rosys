@@ -5,7 +5,6 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 from nicegui import background_tasks
-from rosys.vision.reconnect import MAX_RECONNECT_INTERVAL, MIN_RECONNECT_INTERVAL
 
 import rosys
 from rosys.testing import forward
@@ -16,6 +15,7 @@ from rosys.vision.mjpeg_camera.mjpeg_device import CameraAddressUnknown, Capture
 from rosys.vision.mjpeg_camera.mjpeg_device_factory import MjpegDeviceFactory
 from rosys.vision.mjpeg_camera.motec_mjpeg_device import MotecMjpegDevice
 from rosys.vision.mjpeg_camera.openipc_zauberzeug_mjpeg_device import OpenIpcZauberzeugMjpegDevice
+from rosys.vision.reconnect import MAX_RECONNECT_INTERVAL, MIN_RECONNECT_INTERVAL
 from rosys.vision.rtsp_camera.rtsp_device import RtspDevice
 
 # A MAC that maps to a "GOODCAM" URL in both the RTSP and MJPEG vendor tables.
