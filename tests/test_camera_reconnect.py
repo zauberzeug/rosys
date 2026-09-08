@@ -16,7 +16,7 @@ from rosys.vision.mjpeg_camera.mjpeg_device_factory import MjpegDeviceFactory
 from rosys.vision.mjpeg_camera.motec_mjpeg_device import MotecMjpegDevice
 from rosys.vision.mjpeg_camera.openipc_zauberzeug_mjpeg_device import OpenIpcZauberzeugMjpegDevice
 from rosys.vision.reconnect import MAX_RECONNECT_INTERVAL, MIN_RECONNECT_INTERVAL
-from rosys.vision.rtsp_camera.rtsp_device import RtspDevice
+from rosys.vision.rtsp_camera.rtsp_device import GDPPACKET_FORMAT, GDPPayloadType, RtspDevice
 
 # GOODCAM has a URL in both the RTSP and MJPEG vendor tables and no settings interface, so no network access
 GOODCAM_MAC = '2c:6f:51:00:00:01'
@@ -48,26 +48,31 @@ def stalled_rtsp_stream():
 
 
 class FakeGstreamerProcess:
-    """Stand-in for the gstreamer process, so a device reports `is_connected` without spawning one."""
+    """Stand-in for the gstreamer process; the test feeds its stdout with GDP packets."""
 
     def __init__(self) -> None:
+        self.stdout = asyncio.StreamReader()
+        self.stderr = asyncio.StreamReader()
         self.returncode: int | None = None
+        self.pid = 4711
 
     def terminate(self) -> None:
         self.returncode = -15
+        self.stdout.feed_eof()
+        self.stderr.feed_eof()
 
     async def wait(self) -> int | None:
         return self.returncode
 
 
+def gdp_packet(payload_type: GDPPayloadType, payload: bytes) -> bytes:
+    return GDPPACKET_FORMAT.pack(1, b'\x00', payload_type.value, len(payload), 0, 0, 0, 0, 0, bytes(14), 0, 0) + payload
+
+
 async def _connected_rtsp_stream(self) -> None:
-    """Stand-in for a gstreamer session that comes up and reapplies parameters, but spawns nothing."""
-    self._capture_process = FakeGstreamerProcess()  # pylint: disable=protected-access
-    try:
-        await self._invoke_on_connect()  # pylint: disable=protected-access
-        await rosys.sleep(60.0)
-    finally:
-        self._capture_process = None  # pylint: disable=protected-access
+    """Stand-in for a gstreamer session that delivers frames and reapplies parameters, but spawns nothing."""
+    await self._enter_streaming()  # pylint: disable=protected-access
+    await rosys.sleep(60.0)
 
 
 def connected_rtsp_stream():
@@ -243,7 +248,7 @@ async def test_rtsp_device_reconnects_until_shutdown(rosys_integration):
                             reconnect_interval=0.2)
         await forward(2.0)
         assert sessions >= 3, f'device did not reconnect (only {sessions} sessions)'
-        assert device.is_active  # loop alive; is_connected is False here because the stubbed gstreamer opens no process
+        assert device.is_active  # loop alive; is_connected is False here because the stubbed session delivers no frame
 
         await device.shutdown()
         assert not device.is_active
@@ -413,6 +418,35 @@ async def test_mjpeg_device_keeps_streaming_when_on_connect_fails(rosys_integrat
         await server.stop()
 
 
+async def test_rtsp_device_is_connected_once_the_first_frame_arrives(rosys_integration):
+    process = FakeGstreamerProcess()
+    frames: list = []
+    connect_calls = 0
+
+    def count_connect() -> None:
+        nonlocal connect_calls
+        connect_calls += 1
+
+    with patch('asyncio.create_subprocess_exec', AsyncMock(return_value=process)):
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: frames.append(array),
+                            on_connect=count_connect)
+        try:
+            await asyncio.sleep(0.05)
+            assert device.is_active
+            assert not device.is_connected, 'expected no connection while gstreamer has not delivered a frame'
+            assert connect_calls == 0, 'expected on_connect to wait for the first frame'
+
+            process.stdout.feed_data(gdp_packet(GDPPayloadType.CAPS, b'video/x-raw, width=(int)2, height=(int)2'))
+            process.stdout.feed_data(gdp_packet(GDPPayloadType.BUFFER, bytes(2 * 2 * 3)))
+            await wait_in_real_time(lambda: len(frames) == 1, message='expected the frame to reach the callback')
+            assert device.is_connected
+            assert connect_calls == 1
+        finally:
+            await device.shutdown()
+        assert not device.is_connected
+
+
 async def test_rtsp_camera_restarts_stream_on_set_parameters_but_not_on_reapply(rosys_integration):
     camera = RtspCamera(mac=GOODCAM_MAC, ip='192.168.0.5', connect_after_init=False)
     with connected_rtsp_stream(), \
@@ -434,8 +468,7 @@ async def test_axis_camera_applies_parameters_without_restarting_its_own_session
     async def stream(self) -> None:
         nonlocal sessions
         sessions += 1
-        self._state = CaptureState.STREAMING  # pylint: disable=protected-access
-        await self._invoke_on_connect()  # pylint: disable=protected-access
+        await self._enter_streaming()  # pylint: disable=protected-access
         await rosys.sleep(60.0)
 
     camera = MjpegCamera(id=AXIS_MAC, ip='192.168.0.5', fps=12, connect_after_init=False)

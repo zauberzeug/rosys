@@ -73,9 +73,6 @@ class CaptureDevice(abc.ABC):
     async def _enter_streaming(self) -> None:
         """Enter STREAMING and notify the owner."""
         self._set_state(CaptureState.STREAMING)
-        await self._invoke_on_connect()
-
-    async def _invoke_on_connect(self) -> None:
         if self._on_connect is None:
             return
         try:

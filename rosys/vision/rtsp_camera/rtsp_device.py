@@ -72,10 +72,6 @@ class RtspDevice(CaptureDevice):
                                  self._mac, vendor_type)
 
     @property
-    def is_connected(self) -> bool:
-        return self._capture_process is not None and self._capture_process.returncode is None
-
-    @property
     def authorized(self) -> bool:
         return not self.is_refused
 
@@ -138,7 +134,7 @@ class RtspDevice(CaptureDevice):
 
     async def _run_session(self) -> None:
         """Run a gstreamer session until it ends."""
-        if self.is_connected:
+        if self._capture_process is not None and self._capture_process.returncode is None:
             self.log.warning('[%s] capture process already running', self._mac)
             return
         url = self.url
@@ -162,7 +158,6 @@ class RtspDevice(CaptureDevice):
             assert process.stderr is not None
             self._capture_process = process
             capture_process = process
-            await self._invoke_on_connect()
 
             width = None
             height = None
@@ -220,6 +215,8 @@ class RtspDevice(CaptureDevice):
                 result = self._on_new_image_data(image, timestamp)
                 if isinstance(result, Awaitable):
                     await result
+                if not self.is_connected:
+                    await self._enter_streaming()
             self.log.info('[%s] stream ended', self._mac)
         finally:
             if capture_process is not None and capture_process.returncode is None:
