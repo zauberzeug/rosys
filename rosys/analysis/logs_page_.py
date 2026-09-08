@@ -50,11 +50,16 @@ class LogsPage:
 
 
 async def _find_log_files(logs_dir: Path) -> list[Path]:
-    def glob_logs() -> list[Path]:
-        return [*logs_dir.glob('*.log'), *logs_dir.glob('*.log.*')]
-    logs = await run.io_bound(glob_logs) or []
-    paths = list({p.resolve(): p for p in logs}.values())
-    return sorted(paths, key=lambda p: p.stat().st_mtime, reverse=True)
+    def scan() -> list[Path]:
+        paths = {p.resolve(): p for p in [*logs_dir.glob('*.log'), *logs_dir.glob('*.log.*')]}
+        modified_at: dict[Path, float] = {}
+        for path in paths.values():
+            try:
+                modified_at[path] = path.stat().st_mtime
+            except FileNotFoundError:
+                continue
+        return sorted(modified_at, key=modified_at.__getitem__, reverse=True)
+    return await run.io_bound(scan) or []
 
 
 def _file_info(path: Path) -> str:

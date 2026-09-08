@@ -40,7 +40,7 @@ def awaitable(func: Callable) -> Callable:
 
 async def cpu_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R | None:
     if is_stopping():
-        return None
+        return None  # NiceGUI raises 'Process pool not set up.' while stopping, before its own shutdown guard runs
     with cpu():
         return await run.cpu_bound(callback, *args, **kwargs)
 
