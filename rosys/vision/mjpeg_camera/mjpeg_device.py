@@ -79,13 +79,13 @@ class MjpegDevice(CaptureDevice):
             return None
         return mac_to_url(self._mac, self._ip, index=self._index)
 
-    def _retry_reason(self) -> str | None:
+    def _retry_reason(self) -> tuple[int, str] | None:
         if self._ip is None:
-            return 'no address known'
+            return logging.DEBUG, 'no address known'
         if self.url is None:
-            return f'no stream URL for mac "{self._mac}"'
+            return logging.DEBUG, f'no stream URL for mac "{self._mac}"'
         if self.is_refused:
-            return 'camera refused the stream'
+            return logging.INFO, 'camera refused the stream'
         return None
 
     def _describe_session_error(self, error: Exception) -> str:

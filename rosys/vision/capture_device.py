@@ -71,8 +71,8 @@ class CaptureDevice(abc.ABC):
     async def _tear_down_session(self) -> None:  # noqa: B027
         """Release whatever the running session holds, so `shutdown()` leaves nothing behind."""
 
-    def _retry_reason(self) -> str | None:
-        """Why the next attempt is being delayed, when the device knows better than "the stream ended"."""
+    def _retry_reason(self) -> tuple[int, str] | None:
+        """Log level and reason for delaying the next attempt, when the device knows better than "the stream ended"."""
         return None
 
     def _start_capture_task(self) -> None:
@@ -119,7 +119,8 @@ class CaptureDevice(abc.ABC):
                 if not self._keeps_running():
                     break
                 delay = self._retry_interval
-                self.log.info('[%s] %s; retrying in %.1f s', self._name, self._retry_reason() or reason, delay)
+                level, reason = self._retry_reason() or (logging.INFO, reason)
+                self.log.log(level, '[%s] %s; retrying in %.1f s', self._name, reason, delay)
                 await rosys.sleep(delay)
         finally:
             if self._capture_task is asyncio.current_task():

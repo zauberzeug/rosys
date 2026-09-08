@@ -127,14 +127,14 @@ class RtspDevice(CaptureDevice):
         self.log.warning('[%s] no RTSP URL known for vendor %s; this camera cannot be reached',
                          self._mac, mac_to_vendor(self._mac))
 
-    def _retry_reason(self) -> str | None:
+    def _retry_reason(self) -> tuple[int, str] | None:
         if self.is_refused:
-            return 'credentials rejected'
+            return logging.INFO, 'credentials rejected'
         if self._ip is None:
-            return 'no address known'
+            return logging.DEBUG, 'no address known'
         if self.url is None:
             self._warn_about_missing_url()
-            return 'no stream URL known'
+            return logging.DEBUG, 'no stream URL known'
         return None
 
     async def restart_gstreamer(self) -> None:
