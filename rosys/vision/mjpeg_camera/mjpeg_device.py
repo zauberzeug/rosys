@@ -88,18 +88,17 @@ class MjpegDevice(CaptureDevice):
         """
 
     async def _run_session(self) -> None:
-        """Have the worker open the stream and consume its frames until it ends."""
+        """Have a worker process open the stream and consume its frames until it ends."""
         url = self.url
         if url is None:
             return
         self.log.debug('Starting capture task for %s', url)
 
         await self._prepare_stream()
-        worker = await self._live_worker()
-        worker.start_stream(url, self._username, self._password)
+        self._worker = MjpegStreamWorker(self._mac, url, self._username, self._password)
         try:
             while True:
-                message = await worker.receive()
+                message = await self._worker.receive()
                 if isinstance(message, StreamOpened):
                     await self._enter_streaming()
                 elif isinstance(message, StreamEnded):
@@ -113,15 +112,7 @@ class MjpegDevice(CaptureDevice):
                     if not self._keeps_running():
                         return
         finally:
-            worker.stop_stream()
-
-    async def _live_worker(self) -> MjpegStreamWorker:
-        if self._worker is not None and not self._worker.is_alive:
-            await self._worker.shutdown()
-            self._worker = None
-        if self._worker is None:
-            self._worker = MjpegStreamWorker(self._mac)
-        return self._worker
+            await self._tear_down_session()
 
     def _end_session(self, url: str, message: StreamEnded) -> None:
         match message.reason:
@@ -145,11 +136,10 @@ class MjpegDevice(CaptureDevice):
             self.log.error('Error processing image: %s', e)
 
     async def _tear_down_session(self) -> None:
-        worker = self._worker
-        if worker is None:
+        if self._worker is None:
             return
+        await self._worker.shutdown()
         self._worker = None
-        await worker.shutdown()
 
     async def get_fps(self) -> int | None:
         return None

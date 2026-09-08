@@ -101,7 +101,7 @@ def connected_rtsp_stream():
 async def forward_until(condition, *, step: float = 0.3, real_step: float = 0.05,
                         attempts: int = 100, message: str = 'condition was not met') -> None:
     """Advance simulated time in steps, yielding real time between them, until `condition` holds."""
-    # attempts cover the second or two an MJPEG device needs to spawn its stream worker
+    # attempts cover the second every MJPEG session needs to spawn its stream worker
     # forward(until=...) only yields via asyncio.sleep(0), too little for loopback sockets or io_bound threads
     for _ in range(attempts):
         if condition():
