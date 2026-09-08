@@ -987,6 +987,37 @@ async def test_rtsp_camera_is_active_without_known_address(rosys_integration):
         await camera.disconnect()
 
 
+async def test_usb_device_waits_quietly_for_a_missing_video_device(vision_log):
+    vision_log.set_level(logging.DEBUG, logger='rosys.vision')
+    with patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value=None):
+        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
+        try:
+            await forward_until(lambda: any('retrying' in record.getMessage() for record in vision_log.records),
+                                message='expected the device to say why it is waiting')
+            retry_records = [record for record in vision_log.records if 'retrying' in record.getMessage()]
+            assert all('no video device found' in record.getMessage() for record in retry_records)
+            assert all(record.levelno == logging.DEBUG for record in retry_records), \
+                'expected a missing video device to be logged at DEBUG only'
+        finally:
+            await device.shutdown()
+
+
+async def test_usb_device_warns_once_about_a_busy_video_device(vision_log):
+    with patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'), \
+            patch.object(UsbDevice, 'create_capture', lambda _device_node: None):
+        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
+        try:
+            await forward_until(lambda: sum('retrying' in record.getMessage() for record in vision_log.records) >= 2,
+                                message='expected at least two attempts to open the busy device')
+            retry_records = [record for record in vision_log.records if 'retrying' in record.getMessage()]
+            assert all('cannot open /dev/video0' in record.getMessage() for record in retry_records)
+            assert all(record.levelno == logging.INFO for record in retry_records)
+            assert sum('another process' in record.getMessage() for record in vision_log.records) == 1, \
+                'expected the hint about another process exactly once'
+        finally:
+            await device.shutdown()
+
+
 async def test_usb_camera_is_active_without_video_device(rosys_integration):
     with patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value=None):
         camera = UsbCamera(id='fakecam', connect_after_init=False, reconnect_interval=0.3)

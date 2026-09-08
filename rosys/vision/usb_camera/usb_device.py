@@ -91,8 +91,6 @@ class UsbDevice(CaptureDevice):
             if not capture_success:
                 self._read_failures += 1
                 if self._read_failures >= self.MAX_READ_FAILURES:
-                    self.log.warning('[%s] releasing capture after %d failed reads',
-                                     self.uid, self._read_failures)
                     await self._release()
                     return
                 await rosys.sleep(0.01)
@@ -115,12 +113,15 @@ class UsbDevice(CaptureDevice):
     async def _open_capture(self) -> None:
         """Find and open the capture for this camera; leaves ``_capture`` as ``None`` when it is unavailable."""
         await self._release()
+        self._read_failures = 0
         device_node = await rosys.run.io_bound(find_device_node, self.uid)
         if device_node is None:
-            self.log.debug('[%s] no video device found', self.uid)
+            self._unavailable_node = None
             return
         capture = await rosys.run.io_bound(UsbDevice.create_capture, device_node)
         if capture is None:
+            if not self._keeps_running():
+                return
             if self._unavailable_node != device_node:
                 self._unavailable_node = device_node
                 self.log.warning('[%s] cannot open %s; another process may be using it', self.uid, device_node)
@@ -129,7 +130,6 @@ class UsbDevice(CaptureDevice):
         self.log.info('[%s] connected on %s', self.uid, device_node)
         self._device_node = device_node
         self._capture = capture
-        self._read_failures = 0
         self.set_video_format()
         await self._enter_streaming()
 
@@ -141,6 +141,13 @@ class UsbDevice(CaptureDevice):
 
     async def _tear_down_session(self) -> None:
         await self._release()
+
+    def _retry_reason(self) -> tuple[int, str]:
+        if self._read_failures >= self.MAX_READ_FAILURES:
+            return logging.WARNING, f'released the capture after {self._read_failures} failed reads'
+        if self._unavailable_node is not None:
+            return logging.INFO, f'cannot open {self._unavailable_node}'
+        return logging.DEBUG, 'no video device found'
 
     async def load_value_ranges(self) -> None:
         output = await self.run_v4l('--all')
