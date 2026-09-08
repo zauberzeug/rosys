@@ -364,17 +364,17 @@ async def test_rtsp_device_backs_off_after_rejected_login(rosys_integration):
     async def unauthorized_gstreamer(self) -> None:
         nonlocal sessions
         sessions += 1
-        self._authorized = False  # pylint: disable=protected-access
+        self._set_state(CaptureState.REFUSED)  # pylint: disable=protected-access
 
     with patch.object(RtspDevice, '_run_session', unauthorized_gstreamer):
         device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
                             on_new_image_data=lambda array, timestamp: None,
                             reconnect_interval=0.2)
-        device.UNAUTHORIZED_RECONNECT_INTERVAL = 4.0  # type: ignore[misc]
+        device.REFUSED_RECONNECT_INTERVAL = 4.0  # type: ignore[misc]
         try:
             await forward(0.5)
             assert sessions == 1, f'expected the device to throttle its retries, got {sessions} sessions'
-            assert device.authorized is False, 'expected the device to mark itself unauthorized'
+            assert device.is_refused, 'expected the device to mark itself refused'
             assert device.is_active is True, 'expected the capture loop to stay alive while backing off'
 
             await forward(4.0)
@@ -742,7 +742,7 @@ async def test_camera_passes_its_reconnect_interval_to_a_replaced_device(rosys_i
 def test_no_wait_between_attempts_exceeds_the_cap():
     """A refused camera must be picked up as soon as it answers again, like any other retry."""
     assert MjpegDevice.REFUSED_RECONNECT_INTERVAL <= MAX_RECONNECT_INTERVAL
-    assert RtspDevice.UNAUTHORIZED_RECONNECT_INTERVAL <= MAX_RECONNECT_INTERVAL
+    assert RtspDevice.REFUSED_RECONNECT_INTERVAL <= MAX_RECONNECT_INTERVAL
 
 
 async def test_camera_is_not_active_once_its_capture_loop_died(rosys_integration):

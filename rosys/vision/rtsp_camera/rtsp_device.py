@@ -11,27 +11,20 @@ from asyncio.subprocess import Process
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import ClassVar, Literal
+from typing import Literal
 
 import numpy as np
 
 from ... import rosys
 from ...vision.image import ImageArray
-from ..capture_device import CaptureDevice
+from ..capture_device import CaptureDevice, CaptureState
 from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
-from ..reconnect import MAX_RECONNECT_INTERVAL
 from .arkvision_rtsp_interface import ArkVisionRtspInterface
 from .jovision_rtsp_interface import JovisionInterface
 from .vendors import VendorType, mac_to_url, mac_to_vendor
 
 
 class RtspDevice(CaptureDevice):
-    UNAUTHORIZED_RECONNECT_INTERVAL: ClassVar[float] = MAX_RECONNECT_INTERVAL
-    '''How long to wait between attempts while the camera rejects our credentials.
-
-    The rejection is only inferred from gstreamer's stderr, so a false positive must slow the retries
-    down rather than stop them.
-    '''
 
     def __init__(self, mac: str, ip: str | None = None, *,
                  substream: int, fps: int, on_new_image_data: Callable[[ImageArray, float], Awaitable | None],
@@ -51,7 +44,6 @@ class RtspDevice(CaptureDevice):
         self._avdec: Literal['h264', 'h265'] = self._clamp_avdec(avdec)
 
         self._capture_process: Process | None = None
-        self._authorized: bool = True
         self._warned_about_missing_url: bool = False
         self._warned_about_missing_settings: bool = False
 
@@ -86,8 +78,7 @@ class RtspDevice(CaptureDevice):
 
     @property
     def authorized(self) -> bool:
-        """Whether the last attempt was not rejected; ``False`` while backing off after a rejected login."""
-        return self._authorized
+        return not self.is_refused
 
     @property
     def ip(self) -> str | None:
@@ -101,10 +92,7 @@ class RtspDevice(CaptureDevice):
         self.log.info('[%s] address changed to %s', self._mac, ip)
         self._ip = ip
         self._bind_settings_interface()
-        self._authorized = True  # a rejection was about the previous address
-        if self.is_connected:
-            assert self._capture_process is not None
-            self._capture_process.terminate()
+        self.restart_capture()
 
     @property
     def url(self) -> str | None:
@@ -127,11 +115,6 @@ class RtspDevice(CaptureDevice):
             if self._capture_process is process:
                 self._capture_process = None
 
-    def _start_capture_task(self) -> None:
-        # every attempt starts fresh: an earlier rejection says nothing about this one
-        self._authorized = True
-        super()._start_capture_task()
-
     def _warn_about_missing_url(self) -> None:
         """Warn once that no URL can be built for this camera.
 
@@ -145,7 +128,7 @@ class RtspDevice(CaptureDevice):
                          self._mac, mac_to_vendor(self._mac))
 
     def _retry_reason(self) -> str | None:
-        if not self._authorized:
+        if self.is_refused:
             return 'credentials rejected'
         if self._ip is None:
             return 'no address known'
@@ -153,18 +136,6 @@ class RtspDevice(CaptureDevice):
             self._warn_about_missing_url()
             return 'no stream URL known'
         return None
-
-    async def _wait_before_retry(self, delay: float) -> None:
-        """Extend the wait while our login stays rejected.
-
-        Waiting in chunks re-reads the verdict, so a new address ends a long wait early instead of
-        holding on to a verdict that was about the previous address. The deadline bounds the whole
-        wait, whatever the chunk size is.
-        """
-        deadline = rosys.time() + self.UNAUTHORIZED_RECONNECT_INTERVAL
-        await rosys.sleep(delay)
-        while self._keeps_running() and not self._authorized and rosys.time() < deadline:
-            await rosys.sleep(self._retry_interval)
 
     async def restart_gstreamer(self) -> None:
         await self.shutdown()
@@ -253,8 +224,8 @@ class RtspDevice(CaptureDevice):
                 self.log.error('gstreamer process %s exited with code %s.\nstderr: %s',
                                process.pid, return_code, error_message)
 
-                if 'Unauthorized' in error_message:
-                    self._authorized = False
+                if 'Unauthorized' in error_message:  # inferred from stderr only, so back off rather than give up
+                    self._set_state(CaptureState.REFUSED)
 
         try:
             async for image in stream():

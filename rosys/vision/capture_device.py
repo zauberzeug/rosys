@@ -120,7 +120,7 @@ class CaptureDevice(abc.ABC):
                     break
                 delay = self._retry_interval
                 self.log.info('[%s] %s; retrying in %.1f s', self._name, self._retry_reason() or reason, delay)
-                await self._wait_before_retry(delay)
+                await rosys.sleep(delay)
         finally:
             if self._capture_task is asyncio.current_task():
                 self._capture_task = None
@@ -134,9 +134,6 @@ class CaptureDevice(abc.ABC):
     def _retry_interval(self) -> float:
         """How long to wait before the next session; a refusal backs off further than a lost stream."""
         return self.REFUSED_RECONNECT_INTERVAL if self.is_refused else self.reconnect_interval
-
-    async def _wait_before_retry(self, delay: float) -> None:
-        await rosys.sleep(delay)
 
     def restart_capture(self) -> None:
         """Give up the running session and start a new one, e.g. after the camera moved."""
