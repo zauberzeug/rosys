@@ -2,15 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import re
 import shlex
 import signal
-import struct
 import subprocess
 from asyncio.subprocess import Process
 from collections.abc import AsyncGenerator, Awaitable, Callable
-from dataclasses import dataclass
-from enum import Enum
 from typing import Literal
 
 import numpy as np
@@ -18,6 +14,7 @@ from nicegui import background_tasks
 
 from ... import rosys
 from ...vision.image import ImageArray
+from ..gstreamer import GDPPacket, GDPPayloadType, parse_caps_dimensions
 from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
 from .arkvision_rtsp_interface import ArkVisionRtspInterface
 from .jovision_rtsp_interface import JovisionInterface
@@ -143,16 +140,7 @@ class RtspDevice:
 
                 if packet.payload_type == GDPPayloadType.CAPS:
                     cap_text = packet.payload.decode('utf-8', 'ignore')
-
-                    w = GDP_CAPS_WIDTH_REGEX.search(cap_text)
-                    h = GDP_CAPS_HEIGHT_REGEX.search(cap_text)
-
-                    assert w is not None and h is not None
-                    assert len(w.groups()) == 1
-                    assert len(h.groups()) == 1
-
-                    width = int(w.group(1))
-                    height = int(h.group(1))
+                    width, height = parse_caps_dimensions(cap_text)
 
                 elif packet.payload_type == GDPPayloadType.BUFFER:
                     assert width is not None and height is not None
@@ -229,32 +217,3 @@ class RtspDevice:
             self.log.warning('[%s] ArkVision cameras only provide H.264; forcing avdec to "h264"', self._mac)
             return 'h264'
         return avdec
-
-
-class GDPPayloadType(Enum):
-    NONE = 0
-    BUFFER = 1
-    CAPS = 2
-    EVENT_NONE = 3
-
-
-# See https://maemo.org/api_refs/5.0/5.0-final/gstreamer-libs-0.10/gstreamer-libs-gstdataprotocol.html for header format
-GDPPACKET_FORMAT = struct.Struct('>HcxHIQQQQH14sHH')
-GDP_CAPS_WIDTH_REGEX = re.compile(r'width=\(int\)\s*(\d+)')
-GDP_CAPS_HEIGHT_REGEX = re.compile(r'height=\(int\)\s*(\d+)')
-GDP_HEADER_SIZE = 62
-
-
-@dataclass(slots=True, kw_only=True)
-class GDPPacket:
-    payload_type: GDPPayloadType
-    payload: bytes
-
-    @staticmethod
-    async def read(stream: asyncio.StreamReader) -> GDPPacket:
-        header_bytes = await stream.readexactly(GDP_HEADER_SIZE)
-        _version, _flags, gdp_type, length, *_ = GDPPACKET_FORMAT.unpack(header_bytes)
-        return GDPPacket(
-            payload_type=GDPPayloadType(gdp_type) if gdp_type < 3 else GDPPayloadType.EVENT_NONE,
-            payload=await stream.readexactly(length),
-        )

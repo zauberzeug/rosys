@@ -40,7 +40,7 @@ By adding a `Joystick` and `KeyboardControl` the robot is ready to go for remote
 
 The following example creates a web interface for controlling multiple camera types.
 It displays cameras in a grid, showing their live feeds along with controls to connect/disconnect and adjust settings like FPS, quality, exposure, and color.
-The demo supports RTSP, MJPEG, USB, and simulated cameras.
+The demo supports RTSP, MJPEG, USB, GMSL, and simulated cameras.
 It automatically updates every 0.1 seconds to detect and display new cameras, and initializes with one simulated camera.
 
 ```python
@@ -54,3 +54,10 @@ The following example shows how to stream images from an RTSP camera.
 ```python
 {! examples/cameras/streams.py !}
 ```
+
+## GMSL Cameras on NVIDIA Jetson
+
+GMSL2/FPD-Link cameras (e.g. a global-shutter camera on a Jetson GMSL carrier board) are accessed through NVIDIA's Argus stack via `nvarguscamerasrc`, so the hardware ISP performs debayering, white balance and tone mapping.
+Each camera is identified by its Argus `sensor_id` (the GMSL port on the board), and exposure and gain can either run on the ISP's auto algorithms or be pinned to fixed values for long-exposure capture.
+This requires a Jetson with the accelerated GStreamer stack (`gst-launch-1.0` with `nvarguscamerasrc`) and the vendor's GMSL driver installed.
+GMSL cameras are registered explicitly by their Argus `sensor_id` (the GMSL port); there is no auto-discovery, as shown in the control example above.
