@@ -2,6 +2,7 @@ import abc
 import asyncio
 import enum
 import logging
+from collections.abc import Awaitable, Callable
 from typing import ClassVar
 
 from nicegui import background_tasks
@@ -24,9 +25,12 @@ class CaptureDevice(abc.ABC):
     REFUSED_RECONNECT_INTERVAL: ClassVar[float] = MAX_RECONNECT_INTERVAL
     """Wait between attempts while the camera answers something other than a stream."""
 
-    def __init__(self, *, name: str, log: logging.Logger, reconnect_interval: float = 3.0) -> None:
+    def __init__(self, *, name: str, log: logging.Logger,
+                 on_connect: Callable[[], Awaitable | None] | None = None,
+                 reconnect_interval: float = 3.0) -> None:
         self._name = name
         self.log = log
+        self._on_connect = on_connect
         self.reconnect_interval = reconnect_interval
         self._state = CaptureState.CONNECTING
         self._capture_task: asyncio.Task | None = None
@@ -65,6 +69,21 @@ class CaptureDevice(abc.ABC):
     def _retry_reason(self) -> tuple[int, str] | None:
         """Log level and reason for delaying the next attempt, if the device knows one."""
         return None
+
+    async def _enter_streaming(self) -> None:
+        """Enter STREAMING and notify the owner."""
+        self._set_state(CaptureState.STREAMING)
+        await self._invoke_on_connect()
+
+    async def _invoke_on_connect(self) -> None:
+        if self._on_connect is None:
+            return
+        try:
+            result = self._on_connect()
+            if isinstance(result, Awaitable):
+                await result
+        except Exception as e:
+            self.log.warning('[%s] on_connect callback failed: %s', self._name, e)
 
     def _start_capture_task(self) -> None:
         if self._shutting_down:

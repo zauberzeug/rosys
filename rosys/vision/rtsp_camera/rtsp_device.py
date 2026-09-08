@@ -33,6 +33,7 @@ class RtspDevice(CaptureDevice):
                  reconnect_interval: float = 3.0) -> None:
         super().__init__(name=mac,
                          log=logging.getLogger('rosys.vision.rtsp_camera.rtsp_device.' + mac),
+                         on_connect=on_connect,
                          reconnect_interval=reconnect_interval)
         self._mac = mac
         self._ip = ip
@@ -40,7 +41,6 @@ class RtspDevice(CaptureDevice):
         self._fps = fps
         self._substream = substream
         self._on_new_image_data = on_new_image_data
-        self._on_connect = on_connect
         self._avdec: Literal['h264', 'h265'] = self._clamp_avdec(avdec)
 
         self._capture_process: Process | None = None
@@ -135,14 +135,6 @@ class RtspDevice(CaptureDevice):
     async def restart_gstreamer(self) -> None:
         await self.shutdown()
         self._start_capture_task()
-
-    async def _invoke_on_connect(self) -> None:
-        """Notify the owner that a capture session has been (re-)established, e.g. to reapply camera parameters."""
-        if self._on_connect is None:
-            return
-        result = self._on_connect()
-        if isinstance(result, Awaitable):
-            await result
 
     async def _run_session(self) -> None:
         """Run a gstreamer session until it ends."""

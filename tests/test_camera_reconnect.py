@@ -392,6 +392,27 @@ async def test_mjpeg_device_invokes_on_connect_per_session(rosys_integration):
         await server.stop()
 
 
+async def test_mjpeg_device_keeps_streaming_when_on_connect_fails(rosys_integration, vision_log):
+    server = FlakyMjpegServer(frames_per_connection=None)
+    await server.start()
+    frames: list[bytes] = []
+
+    def failing_on_connect() -> None:
+        raise RuntimeError('settings endpoint down')
+
+    device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{server.port}',
+                         on_new_image_data=lambda data, timestamp: frames.append(data),
+                         on_connect=failing_on_connect,
+                         reconnect_interval=0.2)
+    try:
+        await forward_until(lambda: len(frames) >= 3, message='expected frames despite the failing on_connect')
+        assert server.connections == 1, 'expected the failing on_connect not to end the session'
+        assert [record for record in vision_log.records if 'on_connect callback failed' in record.getMessage()]
+    finally:
+        await device.shutdown()
+        await server.stop()
+
+
 async def test_rtsp_camera_restarts_stream_on_set_parameters_but_not_on_reapply(rosys_integration):
     camera = RtspCamera(mac=GOODCAM_MAC, ip='192.168.0.5', connect_after_init=False)
     with connected_rtsp_stream(), \

@@ -48,12 +48,12 @@ class MjpegDevice(CaptureDevice):
                  reconnect_interval: float = 3.0) -> None:
         super().__init__(name=mac,
                          log=logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_device.' + mac),
+                         on_connect=on_connect,
                          reconnect_interval=reconnect_interval)
         self._mac = mac
         self._ip = ip
         self._index = index
         self._on_new_image_data = on_new_image_data
-        self._on_connect = on_connect
         self._username = username
         self._password = password
 
@@ -94,14 +94,6 @@ class MjpegDevice(CaptureDevice):
         if isinstance(error, httpx.HTTPError):
             return f'cannot reach the camera: {error}'
         return super()._describe_session_error(error)
-
-    async def _invoke_on_connect(self) -> None:
-        """Notify the owner that a capture session has been (re-)established, e.g. to reapply camera parameters."""
-        if self._on_connect is None:
-            return
-        result = self._on_connect()
-        if isinstance(result, Awaitable):
-            await result
 
     async def _prepare_stream(self) -> None:
         """Hook executed right before the MJPEG stream is opened (and on every restart).
@@ -160,8 +152,7 @@ class MjpegDevice(CaptureDevice):
                 if response is None:
                     self._set_state(CaptureState.REFUSED)
                     return
-                self._set_state(CaptureState.STREAMING)
-                await self._invoke_on_connect()
+                await self._enter_streaming()
                 async for image, capture_time in self._frame_reader(response):
                     if self.url != url:
                         self.log.info('stream settings changed; reopening the stream')
