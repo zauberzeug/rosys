@@ -22,12 +22,11 @@ def uid_from_device(device: pyudev.Device) -> str | None:
 
 
 def _scan() -> list[tuple[str | None, str | None]]:
-    """List ``(uid, device node)`` of all video devices.
+    """List ``(uid, device node)`` of all video devices."""
 
-    libudev keeps a non-atomic reference count on its context, so concurrent scans must not share it
-    unguarded. `pyudev.Device` objects hold a reference to that context and drop it when they are
-    garbage-collected, so none of them may leave the lock; only plain strings do.
-    """
+    # libudev keeps a non-atomic reference count on its context, so concurrent scans must not share it
+    # unguarded. `pyudev.Device` objects hold a reference to that context and drop it when they are
+    # garbage-collected, so none of them may leave the lock; only plain strings do.
     with _udev_lock:
         return [(uid_from_device(device), device.device_node)
                 for device in _udev_context().list_devices(subsystem='video4linux')]
