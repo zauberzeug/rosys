@@ -71,7 +71,6 @@ class SimulatedCamera(ConfigurableCamera, TransformableCamera):
                                           on_connect=self._apply_all_parameters,
                                           reconnect_interval=self.reconnect_interval,
                                           simulate_failing=self.simulate_failing)
-            await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
         async with self._device_connection():
