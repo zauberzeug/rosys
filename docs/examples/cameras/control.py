@@ -116,5 +116,4 @@ providers: list[rosys.vision.CameraProvider] = [
     simulated_camera_provider,
 ]
 
-# without a root function, NiceGUI re-executes this script per page and creates the providers again
 ui.run(root, title='RoSys', port=8080)
