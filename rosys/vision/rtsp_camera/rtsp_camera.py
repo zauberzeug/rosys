@@ -32,6 +32,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         self.device: RtspDevice | None = None
         self.ip: str | None = ip
+        self._last_image_timestamp: float | None = None
 
         self._register_parameter('substream', self.get_substream, self.set_substream,
                                  min_value=0, max_value=1, step=1, default_value=substream)
@@ -102,6 +103,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         transformed_image_array = process_ndarray_image(image_array, self.rotation, self.crop)
         image = Image.from_array(transformed_image_array, camera_id=self.id, time=timestamp)
         self._add_image(image)
+        self._last_image_timestamp = timestamp
 
     async def set_fps(self, fps: int) -> None:
         assert self.device is not None
