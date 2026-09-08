@@ -23,10 +23,7 @@ class AxisSettings:
 
 
 class AxisMjpegDevice(MjpegDevice):
-    """MJPEG device for AXIS cameras, which take fps, resolution and mirroring as stream URL parameters.
-
-    A changed setting only changes the URL, so it takes effect when the stream is next opened.
-    """
+    """MJPEG device for AXIS cameras, which take fps, resolution and mirroring as stream URL parameters."""
 
     def __init__(self, mac: str, ip: str | None = None, *,
                  index: int | None = None,

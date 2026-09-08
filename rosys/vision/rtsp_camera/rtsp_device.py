@@ -73,7 +73,6 @@ class RtspDevice(CaptureDevice):
 
     @property
     def is_connected(self) -> bool:
-        """Whether the gstreamer stream is currently running."""
         return self._capture_process is not None and self._capture_process.returncode is None
 
     @property
@@ -116,11 +115,7 @@ class RtspDevice(CaptureDevice):
                 self._capture_process = None
 
     def _warn_about_missing_url(self) -> None:
-        """Warn once that no URL can be built for this camera.
-
-        The URL scheme follows from the mac, so retrying cannot help; warning on every attempt would
-        only fill the log.
-        """
+        """Warn once that no URL can be built for this camera."""
         if self._warned_about_missing_url:
             return
         self._warned_about_missing_url = True

@@ -12,26 +12,17 @@ from .reconnect import MAX_RECONNECT_INTERVAL, clamp_reconnect_interval
 
 class CaptureState(enum.Enum):
     """State of a self-healing capture loop."""
-    CONNECTING = enum.auto()    # loop alive, opening the stream or waiting to reconnect
-    STREAMING = enum.auto()     # stream open and delivering frames
-    REFUSED = enum.auto()       # camera answered without a stream; loop backs off before trying again
-    STOPPED = enum.auto()       # shutdown requested; loop gives up
+    CONNECTING = enum.auto()  # includes waiting to reconnect
+    STREAMING = enum.auto()
+    REFUSED = enum.auto()  # camera answered without a stream; loop backs off before trying again
+    STOPPED = enum.auto()
 
 
 class CaptureDevice(abc.ABC):
-    """A camera device that keeps its own capture session alive.
-
-    The loop runs one session at a time and waits `reconnect_interval` after a session that ended,
-    until `shutdown()` tears it down. Subclasses supply the session in `_run_session()` and say how
-    the camera is reached; everything about staying alive lives here.
-    """
+    """A camera device that keeps its own capture session alive."""
 
     REFUSED_RECONNECT_INTERVAL: ClassVar[float] = MAX_RECONNECT_INTERVAL
-    """Wait between attempts while the camera answers something other than a stream.
-
-    It is reachable and has said no, so asking again sooner cannot change the answer, and a rejected
-    login or a rate limit only gets worse for being retried.
-    """
+    """Wait between attempts while the camera answers something other than a stream."""
 
     def __init__(self, *, name: str, log: logging.Logger, reconnect_interval: float = 3.0) -> None:
         self._name = name
@@ -72,7 +63,7 @@ class CaptureDevice(abc.ABC):
         """Release whatever the running session holds, so `shutdown()` leaves nothing behind."""
 
     def _retry_reason(self) -> tuple[int, str] | None:
-        """Log level and reason for delaying the next attempt, when the device knows better than "the stream ended"."""
+        """Log level and reason for delaying the next attempt, if the device knows one."""
         return None
 
     def _start_capture_task(self) -> None:
@@ -86,19 +77,12 @@ class CaptureDevice(abc.ABC):
         self._capture_task = background_tasks.create(self._run_capture_task(), name=f'capture {self._name}')
 
     def _keeps_running(self) -> bool:
-        """Whether the calling capture task should carry on.
-
-        A cancelled task can resume instead of ending, because the `rosys.run` helpers turn a
-        cancellation into a ``None`` result; after a restart `_capture_task` is a different task.
-        """
+        """Whether the calling capture task should carry on."""
+        # a cancelled task can resume: the rosys.run helpers turn a cancellation into a None result
         return self._state is not CaptureState.STOPPED and self._capture_task is asyncio.current_task()
 
     def _set_state(self, state: CaptureState) -> None:
-        """Record the state of the calling capture task, ignoring a task that has been replaced.
-
-        Several tasks may share this attribute, so a task that no longer owns the loop must not
-        report its own progress, or its end, as the state of the loop that owns it.
-        """
+        """Record the state of the calling capture task, ignoring a task that has been replaced."""
         if self._capture_task is not asyncio.current_task():
             return
         self._state = state
@@ -133,7 +117,6 @@ class CaptureDevice(abc.ABC):
 
     @property
     def _retry_interval(self) -> float:
-        """How long to wait before the next session; a refusal backs off further than a lost stream."""
         return self.REFUSED_RECONNECT_INTERVAL if self.is_refused else self.reconnect_interval
 
     def restart_capture(self) -> None:

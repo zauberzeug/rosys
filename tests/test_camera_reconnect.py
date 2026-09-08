@@ -18,8 +18,7 @@ from rosys.vision.mjpeg_camera.openipc_zauberzeug_mjpeg_device import OpenIpcZau
 from rosys.vision.reconnect import MAX_RECONNECT_INTERVAL, MIN_RECONNECT_INTERVAL
 from rosys.vision.rtsp_camera.rtsp_device import RtspDevice
 
-# A MAC that maps to a "GOODCAM" URL in both the RTSP and MJPEG vendor tables.
-# GOODCAM needs no settings interface, so the device is constructed without any network access.
+# GOODCAM has a URL in both the RTSP and MJPEG vendor tables and no settings interface, so no network access
 GOODCAM_MAC = '2c:6f:51:00:00:01'
 
 # A MAC that maps to AXIS, whose stream settings are part of the URL rather than a settings interface.
@@ -78,11 +77,8 @@ def connected_rtsp_stream():
 
 async def forward_until(condition, *, step: float = 0.3, real_step: float = 0.05,
                         attempts: int = 20, message: str = 'condition was not met') -> None:
-    """Advance simulated time in steps, yielding real time between them, until `condition` holds.
-
-    `rosys.testing.forward(until=...)` only yields via `asyncio.sleep(0)`, so it can exhaust its
-    timeout before real loopback sockets or `io_bound` threads have made any progress.
-    """
+    """Advance simulated time in steps, yielding real time between them, until `condition` holds."""
+    # forward(until=...) only yields via asyncio.sleep(0), too little for loopback sockets or io_bound threads
     for _ in range(attempts):
         if condition():
             return
@@ -111,11 +107,7 @@ def vision_log(rosys_integration: None, caplog: pytest.LogCaptureFixture):
 
 async def wait_in_real_time(condition, *, step: float = 0.02, attempts: int = 200,
                             message: str = 'condition was not met') -> None:
-    """Wait for `condition` without advancing simulated time.
-
-    `forward()` does not advance while a `rosys.run.cpu_bound` call is in flight, so a test that
-    holds one open has to wait in real time.
-    """
+    """Wait for `condition` without advancing simulated time, e.g. while a `cpu_bound` call blocks `forward()`."""
     for _ in range(attempts):
         if condition():
             return
@@ -129,10 +121,7 @@ def live_capture_tasks(name: str) -> list[asyncio.Task]:
 
 
 async def cancel_leftover_loops(name: str) -> None:
-    """Cancel the capture loops under this name and wait for them to end, as a crashing loop leaves them.
-
-    Also keeps a failing test from leaving a loop behind that would hold up the next one.
-    """
+    """Cancel the capture loops under this name and wait for them to end, as a crashing loop leaves them."""
     tasks = live_capture_tasks(name)
     for task in tasks:
         task.cancel()
@@ -142,11 +131,7 @@ async def cancel_leftover_loops(name: str) -> None:
 
 
 class SlowFirstDecode:
-    """Stand-in for `nicegui.run.cpu_bound` that stalls its first call.
-
-    `rosys.run.cpu_bound` turns a cancellation during the call into a `None` result instead of
-    raising, so this is where a shutdown or an address change lands while a frame is being decoded.
-    """
+    """Stand-in for `nicegui.run.cpu_bound` that stalls its first call."""
 
     def __init__(self, seconds: float = 0.3) -> None:
         self.seconds = seconds
@@ -169,11 +154,7 @@ async def decode_frame(data: bytes, timestamp: float) -> None:  # pylint: disabl
 
 
 class FlakyMjpegServer:
-    """Local HTTP server that serves `frames_per_connection` fake JPEG frames and then drops the connection.
-
-    One frame per connection mimics a camera whose stream keeps ending; `None` keeps the stream open.
-    Any `status` other than 200 is answered instead of a stream.
-    """
+    """Local HTTP server that drops the connection after `frames_per_connection` fake JPEG frames (``None``: never)."""
 
     def __init__(self, frames_per_connection: int | None = 1, status: int = 200) -> None:
         self.connections = 0

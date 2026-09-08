@@ -137,11 +137,7 @@ class Camera(abc.ABC):
             self.device_connection_lock.release()
 
     async def connect(self) -> None:  # noqa: B027
-        """Create the self-healing device; it keeps retrying until ``disconnect()`` tears it down.
-
-        A camera without a device of its own, such as one replaying recorded images, needs no
-        implementation, so this is not abstract.
-        """
+        """Create the self-healing device; it keeps retrying until ``disconnect()`` tears it down."""
 
     async def disconnect(self) -> None:  # noqa: B027
         """Tear down the device, which also stops its reconnection attempts."""

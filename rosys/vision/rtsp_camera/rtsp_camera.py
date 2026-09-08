@@ -158,8 +158,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self.device.set_avdec(avdec)
 
     async def set_parameters(self, new_values: dict[str, Any]) -> None:
-        # NOTE the restart lives here rather than in _apply_parameters: the device invokes _apply_all_parameters
-        # from within its own capture task whenever a stream comes up, and a restart would cancel that very task.
+        # not in _apply_parameters: the device calls _apply_all_parameters from the capture task a restart would cancel
         async with self._device_connection():  # a device that is being torn down must not be restarted
             await super().set_parameters(new_values)
             if self.is_active:
