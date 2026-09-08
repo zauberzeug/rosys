@@ -8,7 +8,7 @@ from ...helpers.deprecation import deprecated_param
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image
-from ..image_processing import process_jpeg_image, process_ndarray_image
+from ..image_processing import decode_jpeg_image, process_jpeg_image, process_ndarray_image
 from ..image_rotation import ImageRotation
 from .usb_device import UsbDevice
 
@@ -73,6 +73,9 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
         self.device = device
         logging.info('Connecting camera %s: succeeded', self.id)
 
+        await device.load_value_ranges()
+        device.set_video_format()
+
         await self._apply_all_parameters()
 
     async def disconnect(self) -> None:
@@ -97,7 +100,10 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
             else:
                 image_array = image_data
         else:
-            image_array = await rosys.run.cpu_bound(process_jpeg_image, image_data, self.rotation, self.crop)
+            if self.crop or self.rotation != ImageRotation.NONE:
+                image_array = await rosys.run.cpu_bound(process_jpeg_image, image_data, self.rotation, self.crop)
+            else:
+                image_array = await rosys.run.io_bound(decode_jpeg_image, image_data)
 
         if image_array is None:
             return
