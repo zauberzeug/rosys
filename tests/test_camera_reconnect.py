@@ -2,7 +2,7 @@ import asyncio
 import gc
 import logging
 import weakref
-from contextlib import asynccontextmanager, suppress
+from contextlib import asynccontextmanager, nullcontext, suppress
 from unittest.mock import AsyncMock, patch
 
 import cv2
@@ -285,6 +285,25 @@ def test_camera_persists_reconnect_interval(rosys_integration, make_camera):
     data = camera.to_dict()
     assert data['reconnect_interval'] == 12.5
     assert type(camera).from_dict(data).reconnect_interval == 12.5
+
+
+@pytest.mark.parametrize('make_camera, offline', [
+    (lambda: RtspCamera(mac=GOODCAM_MAC, ip='192.168.0.5', connect_after_init=False), stalled_rtsp_stream),
+    (lambda: MjpegCamera(id=GOODCAM_MAC, ip='192.168.0.5', connect_after_init=False), stalled_mjpeg_stream),
+    (lambda: UsbCamera(id='cam', connect_after_init=False),
+     lambda: patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value=None)),
+    (lambda: SimulatedCamera(id='sim', connect_after_init=False), nullcontext),
+])
+async def test_camera_forwards_reconnect_interval_to_a_live_device(rosys_integration, make_camera, offline):
+    with offline():
+        camera = make_camera()
+        await camera.connect()
+        try:
+            assert camera.device is not None
+            camera.reconnect_interval = 7.5
+            assert camera.device.reconnect_interval == 7.5
+        finally:
+            await camera.disconnect()
 
 
 class FakeCapture:

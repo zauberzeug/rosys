@@ -70,10 +70,6 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         if self.device is not None:
             self.device.ip = ip
 
-    def _apply_reconnect_interval(self) -> None:
-        if self.device is not None:
-            self.device.reconnect_interval = self.reconnect_interval
-
     async def connect(self) -> None:
         async with self._device_connection():
             if self.device is not None:
