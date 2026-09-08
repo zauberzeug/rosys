@@ -3,7 +3,7 @@ import asyncio
 import enum
 import logging
 from collections.abc import Awaitable, Callable
-from typing import ClassVar, Protocol
+from typing import ClassVar
 
 from nicegui import background_tasks
 
@@ -17,19 +17,6 @@ class CaptureState(enum.Enum):
     STREAMING = enum.auto()
     REFUSED = enum.auto()  # camera answered without a stream; loop backs off before trying again
     STOPPED = enum.auto()
-
-
-class CameraDevice(Protocol):
-    """What a camera needs from the device keeping its stream alive, in this or another process."""
-    reconnect_interval: float
-
-    @property
-    def is_connected(self) -> bool: ...
-
-    @property
-    def is_active(self) -> bool: ...
-
-    async def shutdown(self) -> None: ...
 
 
 class CaptureDevice(abc.ABC):
@@ -59,10 +46,6 @@ class CaptureDevice(abc.ABC):
     @reconnect_interval.setter
     def reconnect_interval(self, interval: float) -> None:
         self._reconnect_interval = clamp_reconnect_interval(interval, self.log)
-
-    @property
-    def state(self) -> CaptureState:
-        return self._state
 
     @property
     def is_connected(self) -> bool:

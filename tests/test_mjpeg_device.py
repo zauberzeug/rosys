@@ -3,7 +3,7 @@ from collections.abc import Callable
 import httpx
 import pytest
 
-from rosys.vision.mjpeg_camera.mjpeg_device import open_stream, parse_capture_timestamp
+from rosys.vision.mjpeg_camera.mjpeg_stream_worker import open_stream, parse_capture_timestamp, split_frames
 
 
 def test_parses_x_timestamp():
@@ -31,43 +31,48 @@ def test_uses_last_header_when_multiple_present():
     assert parse_capture_timestamp(header) == 2.0
 
 
-async def _negotiate_stream(handler: Callable[[httpx.Request], httpx.Response],
-                            *,
-                            username: str | None = None,
-                            password: str | None = None) -> httpx.Response | None:
-    """Open a stream against a mocked camera and return the negotiated response."""
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-        async with open_stream(client, 'http://127.0.0.1/stream', username, password) as response:
-            return response
+def test_yields_the_newest_complete_frame_per_chunk_with_its_capture_time():
+    jpeg = b'\xff\xd8' + bytes(8) + b'\xff\xd9'
+    stream = (b'--frame\r\nX-Timestamp: 1.5\r\n\r\n' + jpeg + b'\r\n--frame\r\nX-Timestamp: 2.0\r\n\r\n' + jpeg[:5],
+              jpeg[5:] + b'\r\n--frame\r\nX-Timestamp: 3.0\r\n\r\n' + jpeg,
+              b'\r\n--frame\r\nContent-Type: image/jpeg\r\n\r\n' + jpeg)
+    assert list(split_frames(stream)) == [(jpeg, 1.5), (jpeg, 3.0), (jpeg, None)]
+
+
+def _negotiate_stream(handler: Callable[[httpx.Request], httpx.Response],
+                      *,
+                      username: str | None = None,
+                      password: str | None = None) -> int:
+    """Open a stream against a mocked camera and return the status of the negotiated response."""
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        with open_stream(client, 'http://127.0.0.1/stream', username, password) as response:
+            return response.status_code
 
 
 @pytest.mark.parametrize('challenge, auth_prefix', [
     ('Digest realm="cam", nonce="abc"', 'Digest '),
     ('Basic realm="cam"', 'Basic '),
 ])
-async def test_answers_challenge_with_matching_auth(challenge: str, auth_prefix: str) -> None:
+def test_answers_challenge_with_matching_auth(challenge: str, auth_prefix: str) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.headers.get('authorization', '').startswith(auth_prefix):
             return httpx.Response(200)
         return httpx.Response(401, headers={'www-authenticate': challenge})
 
-    response = await _negotiate_stream(handler, username='user', password='secret')
-    assert response is not None and response.status_code == 200
+    assert _negotiate_stream(handler, username='user', password='secret') == 200
 
 
-async def test_sends_no_credentials_when_not_challenged() -> None:
+def test_sends_no_credentials_when_not_challenged() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert 'authorization' not in request.headers
         return httpx.Response(200)
 
-    response = await _negotiate_stream(handler, username='user', password='secret')
-    assert response is not None and response.status_code == 200
+    assert _negotiate_stream(handler, username='user', password='secret') == 200
 
 
-async def test_sends_no_credentials_without_username_and_password() -> None:
+def test_sends_no_credentials_without_username_and_password() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert 'authorization' not in request.headers
         return httpx.Response(401, headers={'www-authenticate': 'Basic realm="cam"'})
 
-    response = await _negotiate_stream(handler)
-    assert response is None
+    assert _negotiate_stream(handler) == 401
