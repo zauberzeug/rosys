@@ -80,10 +80,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         if self.device is not None:
             self.device.ip = ip
 
-    def _apply_reconnect_interval(self) -> None:
-        if self.device is not None:
-            self.device.reconnect_interval = self.reconnect_interval
-
     @property
     def url(self) -> str | None:
         if self.device is None:

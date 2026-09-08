@@ -11,6 +11,7 @@ from typing import Any, ClassVar, Self
 from nicegui import Event
 
 from ... import rosys
+from ..capture_device import CaptureDevice
 from ..image import Image
 from ..image_route import create_image_route
 from ..reconnect import MIN_RECONNECT_INTERVAL, clamp_reconnect_interval
@@ -39,6 +40,7 @@ class Camera(abc.ABC):
         self.id: str = id
         self.name = name or self.id
         self.connect_after_init = connect_after_init
+        self.device: CaptureDevice | None = None
         self._reconnect_interval = MIN_RECONNECT_INTERVAL
         self.reconnect_interval = reconnect_interval
         self.images: deque[Image] = deque(maxlen=Camera.IMAGE_HISTORY_LENGTH)
@@ -69,8 +71,10 @@ class Camera(abc.ABC):
         self._reconnect_interval = clamp_reconnect_interval(interval, logger)
         self._apply_reconnect_interval()
 
-    def _apply_reconnect_interval(self) -> None:  # noqa: B027
+    def _apply_reconnect_interval(self) -> None:
         """Forward `reconnect_interval` to a live device."""
+        if self.device is not None:
+            self.device.reconnect_interval = self.reconnect_interval
 
     @property
     def streaming(self) -> bool:
