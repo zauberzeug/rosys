@@ -26,6 +26,7 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
                  mirrored: bool = False,
                  **kwargs: Any,
                  ) -> None:
+        self.device: MjpegDevice | None = None
         super().__init__(id=id, name=name, connect_after_init=connect_after_init,
                          base_path_overwrite=base_path_overwrite, **kwargs)
         self.log = logging.getLogger(f'rosys.vision.mjpeg_camera.{self.id}')
@@ -35,7 +36,6 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         parts = self.id.split('-')
         self.index: int | None = int(parts[1]) if len(parts) == 2 and parts[1].isdigit() else None
         self.mac = parts[0]
-        self.device: MjpegDevice | None = None
         self._ip: str | None = ip
 
         self._register_parameter('fps', self._get_fps, self._set_fps, default_value=fps)
@@ -69,6 +69,10 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         self._ip = ip
         if self.device is not None:
             self.device.ip = ip
+
+    def _apply_reconnect_interval(self) -> None:
+        if self.device is not None:
+            self.device.reconnect_interval = self.reconnect_interval
 
     async def connect(self) -> None:
         async with self._device_connection():

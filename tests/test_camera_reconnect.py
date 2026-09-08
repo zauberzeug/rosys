@@ -761,7 +761,7 @@ async def test_camera_clamps_a_reconnect_interval_that_would_not_wait(rosys_inte
         assert camera.reconnect_interval == MIN_RECONNECT_INTERVAL, 'expected the camera to clamp the interval'
 
 
-async def test_camera_passes_its_reconnect_interval_to_a_replaced_device(rosys_integration):
+async def test_camera_passes_its_reconnect_interval_to_its_device(rosys_integration):
     """The interval belongs to the camera, not to whichever device happens to exist."""
     camera = MjpegCamera(id=GOODCAM_MAC, ip='127.0.0.1:1', connect_after_init=False)
     camera.reconnect_interval = 7.0
@@ -770,6 +770,8 @@ async def test_camera_passes_its_reconnect_interval_to_a_replaced_device(rosys_i
         try:
             assert camera.device is not None
             assert camera.device.reconnect_interval == 7.0
+            camera.reconnect_interval = 9.0
+            assert camera.device.reconnect_interval == 9.0, 'expected a live device to follow the camera'
         finally:
             await camera.disconnect()
 

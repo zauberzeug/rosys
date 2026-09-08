@@ -23,6 +23,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
                  ip: str | None = None,
                  **kwargs) -> None:
         self.mac = mac
+        self.device: RtspDevice | None = None
         super().__init__(id=id or f'{mac}-{substream}',
                          name=name,
                          connect_after_init=connect_after_init,
@@ -30,7 +31,6 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
 
         self.log = logging.getLogger(f'rosys.vision.rtsp_camera.{self.id}')
 
-        self.device: RtspDevice | None = None
         self._ip: str | None = ip
 
         self._register_parameter('substream', self.get_substream, self.set_substream,
@@ -79,6 +79,10 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         self._ip = ip
         if self.device is not None:
             self.device.ip = ip
+
+    def _apply_reconnect_interval(self) -> None:
+        if self.device is not None:
+            self.device.reconnect_interval = self.reconnect_interval
 
     @property
     def url(self) -> str | None:

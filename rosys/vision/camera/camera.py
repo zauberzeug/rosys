@@ -67,6 +67,10 @@ class Camera(abc.ABC):
     @reconnect_interval.setter
     def reconnect_interval(self, interval: float) -> None:
         self._reconnect_interval = clamp_reconnect_interval(interval, logger)
+        self._apply_reconnect_interval()
+
+    def _apply_reconnect_interval(self) -> None:  # noqa: B027
+        """Forward `reconnect_interval` to a live device."""
 
     @property
     def streaming(self) -> bool:
