@@ -31,7 +31,6 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera]):
         self.network_interface = network_interface
 
         self.log = logging.getLogger('rosys.mjpeg_camera_provider')
-        rosys.on_shutdown(self.shutdown)
         if auto_scan:
             rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
@@ -85,7 +84,3 @@ class MjpegCameraProvider(CameraProvider[MjpegCamera]):
                                             password=self.password, ip=ip))
             else:
                 camera.ip = ip
-
-    async def shutdown(self) -> None:
-        for camera in self._cameras.values():
-            await camera.disconnect()

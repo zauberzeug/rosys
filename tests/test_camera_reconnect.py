@@ -679,7 +679,7 @@ async def test_mjpeg_provider_adds_and_connects_new_camera(rosys_integration):
         await asyncio.sleep(0.05)  # let the camera's own connect task run
         assert camera.is_active, 'expected a discovered camera to connect on its own'
         assert camera.ip == '127.0.0.1:1'
-        await provider.shutdown()
+        await camera.disconnect()
 
 
 async def test_mjpeg_provider_rebinds_moved_camera(rosys_integration):
@@ -698,7 +698,7 @@ async def test_mjpeg_provider_rebinds_moved_camera(rosys_integration):
         assert camera.device is old_device, 'expected the device to be rebound rather than torn down'
         assert camera.device is not None and '127.0.0.1:2' in (camera.device.url or '')
         assert camera.is_active
-        await provider.shutdown()
+        await camera.disconnect()
 
 
 async def test_mjpeg_provider_supplies_ip_to_pending_camera(rosys_integration):
@@ -717,7 +717,7 @@ async def test_mjpeg_provider_supplies_ip_to_pending_camera(rosys_integration):
         assert camera.device is not None and '127.0.0.1:1' in (camera.device.url or ''), \
             'expected the device to pick up the discovered address'
         assert camera.is_active
-        await provider.shutdown()
+        await camera.disconnect()
 
 
 async def test_mjpeg_provider_leaves_disconnected_camera_alone(rosys_integration):
@@ -752,7 +752,7 @@ async def test_rtsp_provider_rebinds_moved_camera(rosys_integration):
         assert camera.device is old_device, 'expected the device to be rebound rather than torn down'
         assert camera.device is not None and '192.168.0.6' in (camera.device.url or '')
         assert camera.is_active
-        await provider.shutdown()
+        await camera.disconnect()
 
 
 async def test_camera_clamps_a_reconnect_interval_that_would_not_wait(rosys_integration):

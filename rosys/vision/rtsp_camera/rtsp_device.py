@@ -72,10 +72,6 @@ class RtspDevice(CaptureDevice):
                                  self._mac, vendor_type)
 
     @property
-    def authorized(self) -> bool:
-        return not self.is_refused
-
-    @property
     def ip(self) -> str | None:
         """The address of the camera; assigning a new one makes the capture loop use it for its next session."""
         return self._ip

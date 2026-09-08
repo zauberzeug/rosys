@@ -112,7 +112,7 @@ class RtspCamera(ConfigurableCamera, TransformableCamera):
         """Tear down the device. The caller must hold `device_connection_lock`."""
         if self.device is None:
             return
-        self.log.info('disconnect initialized...')
+        self.log.debug('tearing down the device')
         await self.device.shutdown()
         self.device = None
 

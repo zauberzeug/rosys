@@ -26,7 +26,6 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
 
         self.log = logging.getLogger('rosys.rtsp_camera_provider')
 
-        rosys.on_shutdown(self.shutdown)
         if auto_scan:
             rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
@@ -50,7 +49,3 @@ class RtspCameraProvider(CameraProvider[RtspCamera]):
                 camera.ip = ip
 
         self.log.debug('scanning completed, found %d cameras', len(self._cameras))
-
-    async def shutdown(self) -> None:
-        for camera in self._cameras.values():
-            await camera.disconnect()
