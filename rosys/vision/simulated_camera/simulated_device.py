@@ -41,8 +41,8 @@ class SimulatedDevice(CaptureDevice):
         self._start_capture_task()
         self._state = CaptureState.STREAMING  # a simulated camera is reachable the moment it exists
 
-    def disconnect(self) -> None:
-        """Simulate a connection loss (e.g. a bad cable); the device reconnects itself after `reconnect_interval`."""
+    def simulate_connection_loss(self) -> None:
+        """Drop the stream as a bad cable would; the device reconnects itself after `reconnect_interval`."""
         if self._state is CaptureState.STREAMING:
             self._state = CaptureState.CONNECTING
 

@@ -439,7 +439,7 @@ async def test_simulated_camera_reconnects_after_disconnect(rosys_integration):
     await forward(0.5)
     assert camera.images, 'no images while connected'
 
-    camera.device.disconnect()  # simulate a bad cable
+    camera.device.simulate_connection_loss()
     assert not camera.device.is_connected
     count_at_disconnect = len(camera.images)
     await forward(0.3)  # shorter than reconnect_interval -> still disconnected
@@ -458,7 +458,7 @@ async def test_simulated_camera_reapplies_parameters_after_reconnect(rosys_integ
     assert camera.device is not None
     await forward(0.5)
 
-    camera.device.disconnect()  # simulate a bad cable
+    camera.device.simulate_connection_loss()
     await camera.set_parameters({'color': '#654321'})  # while disconnected, the new value only reaches the cache
     assert camera.device.color == '#123456'
 
