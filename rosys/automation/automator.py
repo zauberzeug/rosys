@@ -63,9 +63,11 @@ class Automator:
         if steerer:
             steerer.STEERING_STARTED.subscribe(lambda: self.pause(because='steering started'))
 
-        self.AUTOMATION_PAUSED.subscribe(lambda _: self._handle_interrupt())
-        self.AUTOMATION_STOPPED.subscribe(lambda _: self._handle_interrupt(stop=True))
-        self.AUTOMATION_FAILED.subscribe(lambda _: self._handle_interrupt(stop=True))
+        # NOTE: ``Event.emit`` runs these lambdas synchronously, so ``self.automation`` is captured while it is still
+        # the automation the event refers to -- even if ``start()`` replaces it before the coroutine actually runs
+        self.AUTOMATION_PAUSED.subscribe(lambda _: self._handle_interrupt(self.automation))
+        self.AUTOMATION_STOPPED.subscribe(lambda _: self._handle_interrupt(self.automation, stop=True))
+        self.AUTOMATION_FAILED.subscribe(lambda _: self._handle_interrupt(self.automation, stop=True))
 
         rosys.on_shutdown(self._stop_on_shutdown)
 
@@ -92,16 +94,16 @@ class Automator:
     def is_pausing(self) -> bool:
         return self.automation is not None and self.automation.is_pausing
 
-    async def _handle_interrupt(self, *, stop: bool = False) -> None:
-        assert self.automation is not None
-        while self.automation.is_running:
+    async def _handle_interrupt(self, automation: Automation | None, *, stop: bool = False) -> None:
+        assert automation is not None
+        while automation.is_running:
             await rosys.sleep(0.1)
         if self._on_interrupt:
             if asyncio.iscoroutinefunction(self._on_interrupt):
                 await self._on_interrupt()
             else:
                 self._on_interrupt()
-        if stop:
+        if stop and self.automation is automation:
             self.automation = None
 
     def start(self, coro: Coroutine | None = None, *, paused: bool = False) -> None:
