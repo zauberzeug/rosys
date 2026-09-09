@@ -394,7 +394,7 @@ class Calibration:
         K = np.array(self.intrinsics.matrix, dtype=np.float64).reshape((3, 3))
         D = np.array(self.intrinsics.distortion, dtype=np.float64)
         if self.intrinsics.model == CameraModel.PINHOLE:
-            undistorted = cv2.undistortPointsIter(image_points, K, D, None, None,
+            undistorted = cv2.undistortPointsIter(image_points, K, D, np.eye(3), np.eye(3),
                                                   UNDISTORTION_TERMINATION_CRITERIA)
         elif self.intrinsics.model == CameraModel.FISHEYE:
             undistorted = cv2.fisheye.undistortPoints(image_points, K, D,
