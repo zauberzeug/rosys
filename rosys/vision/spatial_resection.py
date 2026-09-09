@@ -56,15 +56,12 @@ class SpatialResection:
         D_zeros: np.ndarray = np.zeros((1, 5), dtype=np.float64)
 
         # Decide on algorithm
-        def is_planar(points: np.ndarray) -> bool:
-            centered = points.reshape(-1, 3) - points.reshape(-1, 3).mean(axis=0)
-            _, s, _ = np.linalg.svd(centered, full_matrices=False)
-            return s[-1] / max(s[0], 1e-12) < 1e-3
+        plane_frame = _fit_plane_frame(object_points)
 
         if algorithm is None:
             # Automatic selection
             num_points = object_points.shape[0]
-            if num_points >= 4 and is_planar(object_points):
+            if num_points >= 4 and plane_frame is not None:
                 method_flag = cv2.SOLVEPNP_IPPE
             elif num_points >= 6:
                 method_flag = cv2.SOLVEPNP_EPNP
@@ -103,10 +100,24 @@ class SpatialResection:
             rvec_init = None
             tvec_init = None
 
+        # IPPE only solves points on the z = 0 plane, so give it the object points in their own plane's frame
+        solve_in_plane_frame = method_flag == cv2.SOLVEPNP_IPPE and plane_frame is not None
+        if solve_in_plane_frame:
+            assert plane_frame is not None
+            plane_rotation, plane_centroid = plane_frame
+            solve_points = ((object_points.reshape(-1, 3) - plane_centroid) @ plane_rotation.T).reshape(-1, 1, 3)
+        else:
+            solve_points = object_points
+
         ok, rvec, tvec = cv2.solvePnP(
-            object_points, image_points_undist, K_undist, D_zeros,
+            solve_points, image_points_undist, K_undist, D_zeros,
             rvec_init, tvec_init, use_guess, int(method_flag)
         )
+        if ok and solve_in_plane_frame:
+            rmat = np.asarray(cv2.Rodrigues(rvec)[0], dtype=np.float64) @ plane_rotation
+            translation = np.asarray(tvec, dtype=np.float64).reshape(3) - rmat @ plane_centroid
+            rvec = np.asarray(cv2.Rodrigues(rmat)[0], dtype=np.float64)
+            tvec = np.ascontiguousarray(translation).reshape(3, 1)
         if not ok:
             # Fallback to ITERATIVE
             ok, rvec, tvec = cv2.solvePnP(
@@ -272,3 +283,18 @@ class SpatialResection:
                 for x, y, z in world_lines[:, :3] + world_lines[:, 3:] * res.x[7:, None]
             ],
         )
+
+
+def _fit_plane_frame(points: np.ndarray) -> tuple[np.ndarray, np.ndarray] | None:
+    """Find a right-handed frame whose z = 0 plane holds the given points.
+
+    :param points: The points in object space, shape (n, 3) or (n, 1, 3)
+    :return: The rotation from object space into the plane frame and the centroid it is anchored at,
+        or ``None`` if the points are not coplanar
+    """
+    centroid = points.reshape(-1, 3).mean(axis=0)
+    _, s, vt = np.linalg.svd(points.reshape(-1, 3) - centroid, full_matrices=False)
+    if s[-1] / max(s[0], 1e-12) >= 1e-3:
+        return None
+    rotation = vt if np.linalg.det(vt) > 0 else vt * np.array([[1.0], [1.0], [-1.0]])
+    return rotation, centroid
