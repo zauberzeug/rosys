@@ -15,6 +15,13 @@ from .image import Image, ImageSize
 
 FloatArray: TypeAlias = NDArray[np.float32] | NDArray[np.float64]
 
+UNDISTORTION_TERMINATION_CRITERIA = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_MAX_ITER, 200, 1e-10)
+"""Termination criteria for the iterative undistortion of image points.
+
+OpenCV's default is five fixed iterations without a convergence check,
+which leaves rational distortion models tens of pixels off at the image border.
+"""
+
 
 class CameraModel(StrEnum):
     PINHOLE = 'pinhole'
@@ -384,16 +391,18 @@ class Calibration:
 
     def _points_to_rays(self, image_points: np.ndarray) -> np.ndarray:
         """Convert image points to rays in homogeneous coordinates with respect to the camera coordinate frame."""
-        K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
-        D = np.array(self.intrinsics.distortion)
+        K = np.array(self.intrinsics.matrix, dtype=np.float64).reshape((3, 3))
+        D = np.array(self.intrinsics.distortion, dtype=np.float64)
         if self.intrinsics.model == CameraModel.PINHOLE:
-            undistorted = cv2.undistortPoints(image_points, K, D)
+            undistorted = cv2.undistortPointsIter(image_points, K, D, None, None,
+                                                  UNDISTORTION_TERMINATION_CRITERIA)
         elif self.intrinsics.model == CameraModel.FISHEYE:
-            undistorted = cv2.fisheye.undistortPoints(image_points, K, D)
+            undistorted = cv2.fisheye.undistortPoints(image_points, K, D,
+                                                      criteria=UNDISTORTION_TERMINATION_CRITERIA)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
-            R: FloatArray = self.intrinsics.omnidir_params.rotation.matrix.astype(np.float32)
-            xi = np.array(self.intrinsics.omnidir_params.xi, dtype=np.float32)
+            R: FloatArray = self.intrinsics.omnidir_params.rotation.matrix.astype(np.float64)
+            xi = np.array(self.intrinsics.omnidir_params.xi, dtype=np.float64)
             undistorted = cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R)
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
