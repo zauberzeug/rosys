@@ -491,7 +491,7 @@ def test_distort_points_pinhole(distortion: list[float]):
     points = np.array([[100, 100], [200, 200], [300, 300], [400, 400]], dtype=np.float32)
     undistorted_points = cam.calibration.undistort_points(points)
     redistorted_points = cam.calibration.distort_points(undistorted_points)
-    assert np.allclose(points, redistorted_points, atol=0.4)
+    assert np.allclose(points, redistorted_points, atol=1e-3)
 
 
 @pytest.mark.parametrize('crop', [True, False])

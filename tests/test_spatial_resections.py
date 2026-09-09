@@ -140,6 +140,6 @@ def test_spatial_resection_with_a_rational_distortion_model():
                                                                        image_points=image_points)
 
     assert result.success
-    assert np.allclose(result.camera_pose.point_3d.array, cam.calibration.extrinsics.point_3d.array, atol=0.0005)
+    assert np.allclose(result.camera_pose.point_3d.array, cam.calibration.extrinsics.point_3d.array, atol=1e-6)
     assert np.allclose(result.camera_pose.rotation.quaternion,
-                       cam.calibration.extrinsics.rotation.quaternion, atol=0.0005)
+                       cam.calibration.extrinsics.rotation.quaternion, atol=1e-6)

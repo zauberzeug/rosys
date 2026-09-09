@@ -16,11 +16,7 @@ from .image import Image, ImageSize
 FloatArray: TypeAlias = NDArray[np.float32] | NDArray[np.float64]
 
 UNDISTORTION_TERMINATION_CRITERIA = (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_MAX_ITER, 200, 1e-10)
-"""Termination criteria for the iterative undistortion of image points.
-
-OpenCV's default is five fixed iterations without a convergence check,
-which leaves rational distortion models tens of pixels off at the image border.
-"""
+"""OpenCV's default of five fixed iterations leaves rational distortion models off at the image border."""
 
 
 class CameraModel(StrEnum):
@@ -485,7 +481,6 @@ class Calibration:
     @overload
     def distort_points(self, image_points: list[Point], *, crop: bool = False) -> list[Point]:
         """Distort a list of image points.
-        Note: For pinhole models the redistortion can be off by more than 1px for large distortions.
 
         :param image_points: The list of image points to distort.
         :param crop: Whether cropping is applied to the image during distortion.
@@ -495,7 +490,6 @@ class Calibration:
     @overload
     def distort_points(self, image_points: FloatArray, *, crop: bool = False) -> FloatArray:
         """Apply lens distortion to image points using the camera calibration.
-        Note: For pinhole models the redistortion can be off by more than 1px for large distortions.
 
         :param image_points: (Nx2) The image points to distort.
         :param crop: Whether cropping is applied to the image during distortion.
