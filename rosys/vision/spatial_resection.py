@@ -37,8 +37,8 @@ class SpatialResection:
         :param world_points: The 3D coordinates of the points in object space, shape (n, 3)
         :param image_points: The 2D coordinates of the points in the image, shape (n, 2)
         :param algorithm: PnP algorithm flag or name (e.g., 'ITERATIVE', 'EPNP', 'P3P', 'AP3P', 'IPPE'). If None, choose automatically.
-        :param p0: Initial position of the camera (optional)
-        :param r0: Initial rotation of the camera (optional)
+        :param p0: Initial position of the camera, used by the ITERATIVE algorithm only (optional)
+        :param r0: Initial rotation of the camera, used by the ITERATIVE algorithm only (optional)
 
         :return: The result of the spatial resection
         """
@@ -100,24 +100,33 @@ class SpatialResection:
             rvec_init = None
             tvec_init = None
 
-        # IPPE only solves points on the z = 0 plane, so give it the object points in their own plane's frame
-        solve_in_plane_frame = method_flag == cv2.SOLVEPNP_IPPE and plane_frame is not None
-        if solve_in_plane_frame:
-            assert plane_frame is not None
-            plane_rotation, plane_centroid = plane_frame
-            solve_points = ((object_points.reshape(-1, 3) - plane_centroid) @ plane_rotation.T).reshape(-1, 1, 3)
-        else:
-            solve_points = object_points
+        def mean_reprojection_error(rvec: np.ndarray, tvec: np.ndarray) -> float:
+            projected, _ = cv2.projectPoints(object_points, rvec, tvec, K_undist, D_zeros)
+            residuals = np.asarray(projected, dtype=np.float64).reshape(-1, 2) - image_points_undist.reshape(-1, 2)
+            return float(np.mean(np.abs(residuals)))
 
-        ok, rvec, tvec = cv2.solvePnP(
-            solve_points, image_points_undist, K_undist, D_zeros,
-            rvec_init, tvec_init, use_guess, int(method_flag)
-        )
-        if ok and solve_in_plane_frame:
-            rmat = np.asarray(cv2.Rodrigues(rvec)[0], dtype=np.float64) @ plane_rotation
-            translation = np.asarray(tvec, dtype=np.float64).reshape(3) - rmat @ plane_centroid
-            rvec = np.asarray(cv2.Rodrigues(rmat)[0], dtype=np.float64)
-            tvec = np.ascontiguousarray(translation).reshape(3, 1)
+        if method_flag == cv2.SOLVEPNP_IPPE and plane_frame is not None:
+            # OpenCV's IPPE only solves a plane whose z axis points away from the camera, which the fit cannot know
+            plane_rotation, plane_centroid = plane_frame
+            candidates: list[tuple[float, np.ndarray, np.ndarray]] = []
+            for rotation in (plane_rotation, np.diag([1.0, -1.0, -1.0]) @ plane_rotation):
+                plane_points = ((object_points.reshape(-1, 3) - plane_centroid) @ rotation.T).reshape(-1, 1, 3)
+                ok, rvec, tvec = cv2.solvePnP(plane_points, image_points_undist, K_undist, D_zeros,
+                                              None, None, False, int(cv2.SOLVEPNP_IPPE))
+                if not ok or not np.isfinite(rvec).all() or not np.isfinite(tvec).all():
+                    continue
+                rmat = np.asarray(cv2.Rodrigues(rvec)[0], dtype=np.float64) @ rotation
+                tvec = (np.asarray(tvec, dtype=np.float64).reshape(3) - rmat @ plane_centroid).reshape(3, 1)
+                rvec = np.asarray(cv2.Rodrigues(rmat)[0], dtype=np.float64)
+                candidates.append((mean_reprojection_error(rvec, tvec), rvec, tvec))
+            ok = bool(candidates)
+            if ok:
+                _, rvec, tvec = min(candidates, key=lambda candidate: candidate[0])
+        else:
+            ok, rvec, tvec = cv2.solvePnP(
+                object_points, image_points_undist, K_undist, D_zeros,
+                rvec_init, tvec_init, use_guess, int(method_flag)
+            )
         if not ok:
             # Fallback to ITERATIVE
             ok, rvec, tvec = cv2.solvePnP(
@@ -142,17 +151,10 @@ class SpatialResection:
         tvec_arr = np.asarray(tvec, dtype=np.float64).reshape(3)
         C = (-rmat.T @ tvec_arr).reshape(3)
 
-        # Compute reprojection error on all observations (undistorted domain)
-        proj_all, _ = cv2.projectPoints(object_points, rvec, tvec, K_undist, D_zeros)
-        proj_all_np = np.asarray(proj_all, dtype=np.float64).reshape(-1, 2)
-        img_all_np = image_points_undist.reshape(-1, 2)
-        residuals_all = proj_all_np - img_all_np
-        avg_reproj_error = float(np.mean(np.abs(residuals_all)))
-
         return SpatialResectionResult(
             success=True,
             iterations=1,
-            average_reprojection_error=avg_reproj_error,
+            average_reprojection_error=mean_reprojection_error(rvec, tvec),
             camera_pose=Pose3d(x=float(C[0]), y=float(C[1]), z=float(C[2]), rotation=Rwc),
             running_variables=[],
             estimated_points_on_lines=[],
