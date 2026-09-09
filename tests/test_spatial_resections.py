@@ -118,3 +118,39 @@ def test_spatial_resection_with_line_points(parallel_lines: bool):
     # Check the estimated object space points on lines
     for line_point, world_point in zip(result.estimated_points_on_lines, world_points, strict=False):
         assert np.allclose(line_point.array, world_point, atol=5)
+
+
+@pytest.mark.parametrize('algorithm', (None, 'IPPE'))
+@pytest.mark.parametrize('tilt', (0.0, 30.0))
+@pytest.mark.parametrize('offset', (0.0, 0.8))
+@pytest.mark.parametrize('shift', (0.0, 0.15))
+@pytest.mark.parametrize('grid_shape', ((6, 6), (6, 5)))
+def test_spatial_resection_with_planar_points(grid_shape: tuple[int, int], shift: float, offset: float, tilt: float,
+                                              algorithm: str | None):
+    """Test the spatial resection with a flat target whose plane is offset and tilted against z = 0.
+
+    The target is a square or an oblong grid, centred under the camera or shifted sideways.
+    The camera hovers 0.6 m above the target, whatever plane the target sits on.
+    """
+    cam = CalibratableCamera(id='1')
+    cam.set_perfect_calibration(width=1920, height=1080, distortion=[0.0, 0.0, 0.0, 0.0, 0.0],
+                                x=0.1, y=0.2, z=offset + 0.6)
+    assert cam.calibration is not None
+
+    columns, rows = grid_shape
+    grid = np.array([[x, y, 0.0] for x in np.linspace(-0.2, 0.2, columns) for y in np.linspace(-0.2, 0.2, rows)])
+    rotation = np.array(Rotation.from_euler(0.0, np.deg2rad(tilt), 0.0).matrix)
+    world_points = grid @ rotation.T + np.array([shift, 0.0, offset])
+    image_points = cam.calibration.project_to_image(world_points)
+
+    result = SpatialResection(cam.calibration.intrinsics).pnp_with_lsa(
+        world_points=world_points,
+        image_points=image_points,
+        algorithm=algorithm,
+    )
+
+    assert result.success
+    ground_truth_translation = cam.calibration.extrinsics.point_3d
+    ground_truth_rotation = cam.calibration.extrinsics.rotation
+    assert np.allclose(result.camera_pose.point_3d.array, ground_truth_translation.array, atol=0.001)
+    assert np.allclose(result.camera_pose.rotation.quaternion, ground_truth_rotation.quaternion, atol=0.001)
