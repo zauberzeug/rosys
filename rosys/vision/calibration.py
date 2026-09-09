@@ -450,17 +450,21 @@ class Calibration:
 
         image_points = image_points.reshape(-1, 1, 2)
 
-        K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
-        D = np.array(self.intrinsics.distortion)
+        K = np.array(self.intrinsics.matrix, dtype=np.float64).reshape((3, 3))
+        D = np.array(self.intrinsics.distortion, dtype=np.float64)
 
         if self.intrinsics.model == CameraModel.PINHOLE:
             if crop:
                 log.warning('Cropping is not yet supported for pinhole cameras')
             new_K = self.get_undistorted_camera_matrix(crop=False)
-            return cast(FloatArray, cv2.undistortPoints(image_points, K, D, P=new_K, R=np.eye(3)).reshape(-1, 2))
+            undistorted = cv2.undistortPointsIter(image_points, K, D, np.eye(3), new_K,
+                                                  UNDISTORTION_TERMINATION_CRITERIA)
+            return cast(FloatArray, undistorted.reshape(-1, 2))
         elif self.intrinsics.model == CameraModel.FISHEYE:
             new_K = self.get_undistorted_camera_matrix(crop=crop)
-            return cast(FloatArray, cv2.fisheye.undistortPoints(image_points, K, D, P=new_K).reshape(-1, 2))
+            undistorted = cv2.fisheye.undistortPoints(image_points, K, D, P=new_K,
+                                                      criteria=UNDISTORTION_TERMINATION_CRITERIA)
+            return cast(FloatArray, undistorted.reshape(-1, 2))
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
             R = np.array(self.intrinsics.omnidir_params.rotation, dtype=np.float32)
