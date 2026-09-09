@@ -509,6 +509,18 @@ def test_distort_points_fisheye(crop: bool):
     assert np.allclose(points, redistorted_points, atol=1e-6)
 
 
+def test_undistort_points_omnidirectional():
+    """Undistorts image points through an omnidirectional calibration with a rotated inner frame."""
+    calibration = _distorted_calibration(CameraModel.OMNIDIRECTIONAL)
+    assert calibration.intrinsics.omnidir_params is not None
+    calibration.intrinsics.omnidir_params.rotation = Rotation.from_euler(0.1, 0.2, 0.3)
+
+    undistorted = calibration.undistort_points(np.array([[100.0, 100.0], [640.0, 480.0], [1200.0, 900.0]]))
+
+    assert undistorted.shape == (3, 2)
+    assert np.isfinite(undistorted).all()
+
+
 def _distorted_calibration(camera_model: CameraModel = CameraModel.PINHOLE) -> Calibration:
     distortion = [-0.35, 0.15, 0.001, -0.002, -0.03] if camera_model == CameraModel.PINHOLE else \
         [-0.05, 0.01, -0.002, 0.001]

@@ -467,8 +467,8 @@ class Calibration:
             return cast(FloatArray, undistorted.reshape(-1, 2))
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
-            R = np.array(self.intrinsics.omnidir_params.rotation, dtype=np.float32)
-            xi = np.array(self.intrinsics.omnidir_params.xi, dtype=np.float32)
+            R: FloatArray = self.intrinsics.omnidir_params.rotation.matrix.astype(np.float64)
+            xi = np.array(self.intrinsics.omnidir_params.xi, dtype=np.float64)
             return cast(FloatArray, cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R).reshape(-1, 2))
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
