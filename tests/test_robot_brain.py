@@ -7,10 +7,11 @@ from nicegui import background_tasks
 import rosys
 from rosys.hardware import RobotBrain, RobotHardware
 from rosys.hardware.communication import Communication
-from rosys.hardware.robot_brain import augment, check
+from rosys.hardware.robot_brain import MAX_CONFIGURE_ATTEMPTS, augment, check
 from rosys.testing import forward
 
 MISMATCH_MESSAGE = 'Lizard startup code is outdated'
+MATCHING = 'matching'  # NOTE: placeholder for the checksum of the actual Lizard code, which is only known in the test
 
 
 class CommunicationSimulation(Communication):
@@ -20,6 +21,7 @@ class CommunicationSimulation(Communication):
         self.incoming: deque[str] = deque()
         self.sent: list[str] = []
         self.startup_checksum = ''
+        self.startup_checksums: deque[str | None] = deque()  # NOTE: ``None`` simulates a missing response
 
     @classmethod
     def is_possible(cls) -> bool:
@@ -29,14 +31,18 @@ class CommunicationSimulation(Communication):
         line = msg.rsplit('@', 1)[0]
         self.sent.append(line)
         if line == 'core.startup_checksum()':
-            self.incoming.append(f'checksum: {self.startup_checksum}')
+            checksum = self.startup_checksums.popleft() if self.startup_checksums else self.startup_checksum
+            if checksum is not None:
+                self.incoming.append(f'checksum: {checksum}')
 
     async def read(self) -> str | None:
         return augment(self.incoming.popleft()) if self.incoming else None
 
 
 def matching_checksum(robot_brain: RobotBrain) -> str:
-    return f'{sum(robot_brain.lizard_code.encode()) % 0x10000:04x}'
+    robot_brain.lizard_firmware.read_local_checksum()
+    assert robot_brain.lizard_firmware.local_checksum is not None
+    return robot_brain.lizard_firmware.local_checksum
 
 
 async def connect(communication: CommunicationSimulation) -> None:
@@ -100,11 +106,83 @@ async def test_check_runs_again_after_configuring(robot_brain: RobotBrain) -> No
     assert robot_brain.lizard_firmware.checksums_match is True
 
 
-async def test_local_checksum_is_computed_over_utf8_bytes(robot_brain: RobotBrain) -> None:
+@pytest.mark.parametrize('checksums, reason', [
+    (['ffff', MATCHING], None),
+    (['ffff'] * MAX_CONFIGURE_ATTEMPTS, 'checksum mismatch (ffff instead of'),
+    ([None] * MAX_CONFIGURE_ATTEMPTS, 'no checksum received'),
+], ids=['retry_then_match', 'repeated_mismatch', 'no_response'])
+async def test_configure_verifies_startup_checksum(robot_brain: RobotBrain,
+                                                   checksums: list[str | None], reason: str | None) -> None:
+    notifications: list[str] = []
+    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
+    communication = robot_brain.communication
+    assert isinstance(communication, CommunicationSimulation)
+    communication.startup_checksum = matching_checksum(robot_brain)
+    await connect(communication)
+    communication.startup_checksums.append('0000')  # NOTE: consumed by the pre-loop drain in configure()
+    communication.startup_checksums.extend(matching_checksum(robot_brain) if checksum == MATCHING else checksum
+                                           for checksum in checksums)
+    task = background_tasks.create(robot_brain.configure(), name='configure')
+    await forward(seconds=15.0)
+    assert communication.sent.count('!-') == len(checksums)
+    assert communication.sent.count('!.') == (0 if reason else 1), 'only a verified script may be persisted'
+    assert communication.sent.count('core.restart()') == 1, \
+        'restart applies the persisted script -- or restores it into RAM after a failed upload'
+    assert task.result() == (reason is None)
+    assert any(f'Configuring Lizard failed: {reason}' in message for message in notifications) == (reason is not None)
+
+
+async def test_startup_checksum_requests_are_serialized(robot_brain: RobotBrain) -> None:
+    communication = robot_brain.communication
+    assert isinstance(communication, CommunicationSimulation)
+    communication.startup_checksum = matching_checksum(robot_brain)
+    await connect(communication)
+    requests = communication.sent.count('core.startup_checksum()')
+    communication.startup_checksums.append(None)  # NOTE: leave the first request without a response
+    first = background_tasks.create(robot_brain.read_startup_checksum(timeout=2.0), name='first')
+    second = background_tasks.create(robot_brain.read_startup_checksum(timeout=2.0), name='second')
+    await forward(seconds=1.0)
+    assert communication.sent.count('core.startup_checksum()') == requests + 1, \
+        'a second request must not compete for the shared "checksum:" response slot'
+    await forward(seconds=5.0)
+    assert first.result() is None
+    assert second.result() == matching_checksum(robot_brain), 'the waiting request should still get its own response'
+
+
+async def test_configure_does_not_deadlock_with_the_startup_check(robot_brain: RobotBrain) -> None:
+    communication = robot_brain.communication
+    assert isinstance(communication, CommunicationSimulation)
+    communication.startup_checksum = matching_checksum(robot_brain)
+    await connect(communication)
+    await robot_brain.restart()
+    task = background_tasks.create(robot_brain.configure(), name='configure')
+    communication.incoming.append('core 5000')  # NOTE: the Core reconnects and triggers _check_lizard_code
+    await forward(seconds=10.0)
+    assert task.result() is True, 'waiting for the serialized checksum request must not stall a good upload'
+    assert communication.sent.count('!.') == 1
+
+
+async def test_configure_without_a_trailing_newline(robot_brain: RobotBrain) -> None:
+    robot_brain.lizard_code = 'core.debug = true'
+    communication = robot_brain.communication
+    assert isinstance(communication, CommunicationSimulation)
+    communication.startup_checksum = matching_checksum(robot_brain)
+    await connect(communication)
+    task = background_tasks.create(robot_brain.configure(), name='configure')
+    await forward(seconds=2.0)
+    assert task.result() is True
+    assert communication.sent.count('!.') == 1
+
+
+async def test_local_checksum_matches_what_lizard_stores(robot_brain: RobotBrain) -> None:
     robot_brain.lizard_code = 'grün'
     robot_brain.lizard_firmware.read_local_checksum()
-    # NOTE: Lizard sums the raw bytes of the stored startup script (0x67 + 0x72 + 0xc3 + 0xbc + 0x6e = 0x02c6)
-    assert robot_brain.lizard_firmware.local_checksum == '02c6'
+    # NOTE: Lizard sums the raw bytes of the stored startup script, one newline-terminated line per '!+' command
+    # (0x67 + 0x72 + 0xc3 + 0xbc + 0x6e + 0x0a = 0x02d0)
+    assert robot_brain.lizard_firmware.local_checksum == '02d0'
+    robot_brain.lizard_code = 'grün\n'
+    robot_brain.lizard_firmware.read_local_checksum()
+    assert robot_brain.lizard_firmware.local_checksum == '02d0', 'a trailing newline must not change the checksum'
 
 
 @pytest.mark.parametrize('line, checksum', [

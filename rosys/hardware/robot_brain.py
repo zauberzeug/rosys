@@ -10,6 +10,7 @@ from .esp_pins import EspPins
 from .lizard_firmware import LizardFirmware
 
 CLOCK_OFFSET_HISTORY_LENGTH = 100
+MAX_CONFIGURE_ATTEMPTS = 3
 
 
 class RobotBrain:
@@ -69,6 +70,7 @@ class RobotBrain:
         self.esp_pins_p0 = EspPins(name='p0', robot_brain=self)
 
         self._esp_lock = asyncio.Lock()
+        self._checksum_lock = asyncio.Lock()
 
     @property
     def clock_offset(self) -> float | None:
@@ -91,18 +93,16 @@ class RobotBrain:
             if version_select.options:
                 version_select.value = version_select.options[0]
 
-        async def online_update() -> None:
-            await self.lizard_firmware.download()
-            await self.lizard_firmware.flash_core()
-            await self.restart()
-            await self.configure()
-            await self.lizard_firmware.flash_p0()
-
         async def local_update() -> None:
             await self.lizard_firmware.flash_core()
             await self.restart()
-            await self.configure()
+            if not await self.configure():
+                return
             await self.lizard_firmware.flash_p0()
+
+        async def online_update() -> None:
+            await self.lizard_firmware.download()
+            await local_update()
 
         with ui.row().classes('items-center'):
             version_select = ui.select([], label='Lizard Version').style('min-width: 140px;') \
@@ -181,14 +181,54 @@ class RobotBrain:
             return
         await self.send('core.keep_alive()')
 
-    async def configure(self) -> None:
+    async def configure(self) -> bool:
+        """Write the Lizard startup script to the microcontroller and restart it.
+
+        The transferred script is verified before it is persisted, so a lossy connection
+        cannot leave a corrupt script in the microcontroller's storage.
+
+        :return: whether the script was transferred, verified and persisted
+        """
         rosys.notify('Configuring Lizard...')
-        await self.send('!-', force=True)
-        for line in self.lizard_code.splitlines():
-            await self.send(f'!+{line}', force=True)
+        self.lizard_firmware.read_local_checksum()
+        await self.read_startup_checksum(timeout=1.0, force=True)  # drain any stale checksum: response
+        for _ in range(MAX_CONFIGURE_ATTEMPTS):
+            await self.send('!-', force=True)
+            for line in self.lizard_code.splitlines():
+                await self.send(f'!+{line}', force=True)
+            checksum = await self.read_startup_checksum(timeout=3.0, force=True)
+            if checksum == self.lizard_firmware.local_checksum:
+                break
+            reason = 'no checksum received' if checksum is None else \
+                f'checksum mismatch ({checksum} instead of {self.lizard_firmware.local_checksum})'
+        else:
+            rosys.notify(f'Configuring Lizard failed: {reason}.', 'negative', log_level=logging.ERROR)
+            # NOTE: restart to reload the persisted script into RAM; otherwise core.startup_checksum() would keep
+            # reporting the unpersisted upload and the startup check could show a false "checksums match"
+            await self.restart()
+            return False
         await self.send('!.', force=True)
         await self.restart()
         rosys.notify('Lizard configured successfully.', 'positive')
+        return True
+
+    async def read_startup_checksum(self, *, timeout: float = 3.0, force: bool = False) -> str | None:
+        """Read the checksum of the startup script that the microcontroller currently holds.
+
+        Requests are serialized, because responses are matched by their ``checksum:`` prefix and would
+        otherwise be delivered to whichever concurrent request happens to wake up first.
+        The timeout must be finite, because an unanswered request would hold the lock
+        and stall all future requests, including the ones sent by ``configure()``.
+
+        :param timeout: Response timeout
+        :param force: Whether to send the message even if the ESP is not ready
+        :return: The checksum, or ``None`` if the timeout is reached or the ESP is not ready
+        """
+        async with self._checksum_lock:
+            if not self.is_ready and not force:
+                return None  # NOTE: the ESP may have gone away while we were waiting for the lock
+            response = await self.send_and_await('core.startup_checksum()', 'checksum:', timeout=timeout, force=force)
+        return response.split()[-1] if response else None
 
     async def restart(self) -> None:
         await self.send('core.restart()', force=True)
