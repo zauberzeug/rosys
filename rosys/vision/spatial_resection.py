@@ -55,9 +55,9 @@ class SpatialResection:
         image_points_undist = calibration.undistort_points(image_points.astype(np.float64).reshape(-1, 1, 2))
         D_zeros: np.ndarray = np.zeros((1, 5), dtype=np.float64)
 
-        # Decide on algorithm
         plane_frame = _fit_plane_frame(object_points)
 
+        # Decide on algorithm
         if algorithm is None:
             # Automatic selection
             num_points = object_points.shape[0]
