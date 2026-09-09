@@ -1,7 +1,6 @@
 import asyncio
 import enum
 import logging
-import multiprocessing
 import threading
 from collections import deque
 from collections.abc import Generator, Iterable, Iterator
@@ -12,11 +11,8 @@ from multiprocessing.connection import Connection
 import httpx
 
 from ..http import new_client
-from ..image import ImageArray
 from ..image_processing import decode_jpeg_image, remove_exif
-
-# spawn, not fork (which is broken for Python), regardless of the global start method (see path planning, #19)
-SPAWN_CONTEXT = multiprocessing.get_context('spawn')
+from .frame_transport import FRAME_TRANSPORT, SPAWN_CONTEXT, Frame
 
 log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_stream_worker')
 
@@ -34,12 +30,6 @@ class StreamOpened:
 
 
 @dataclass(slots=True, kw_only=True)
-class Frame:
-    array: ImageArray
-    capture_time: float | None
-
-
-@dataclass(slots=True, kw_only=True)
 class StreamEnded:
     reason: EndReason
     detail: str = ''
@@ -54,7 +44,7 @@ class MjpegStreamWorker:
         self._messages: deque[StreamOpened | Frame | StreamEnded] = deque()
         self._message_arrived = asyncio.Event()
 
-        self._output, output_child = SPAWN_CONTEXT.Pipe(duplex=False)
+        self._output, output_child = FRAME_TRANSPORT.pipe()
         self._process = SPAWN_CONTEXT.Process(target=_run_worker, args=(url, username, password, output_child),
                                               name=f'mjpeg stream {name}', daemon=True)
         self._process.start()
@@ -80,7 +70,7 @@ class MjpegStreamWorker:
     def _read_messages(self) -> None:
         while True:
             try:
-                message = self._output.recv()
+                message = FRAME_TRANSPORT.receive(self._output)
             except (EOFError, OSError):
                 message = None
             try:
@@ -176,7 +166,7 @@ def _open_stream(client: httpx.Client, url: str,
 
 
 def _run_worker(url: str, username: str | None, password: str | None, output: Connection) -> None:
-    def send(message: StreamOpened | Frame | StreamEnded) -> None:
+    def send(message: StreamOpened | StreamEnded) -> None:
         output.send(message)
 
     try:
@@ -190,7 +180,7 @@ def _run_worker(url: str, username: str | None, password: str | None, output: Co
             for jpeg, capture_time in _split_frames(response.iter_bytes()):
                 array = decode_jpeg_image(remove_exif(jpeg))
                 if array is not None:
-                    send(Frame(array=array, capture_time=capture_time))
+                    FRAME_TRANSPORT.send_frame(output, Frame(array=array, capture_time=capture_time))
         send(StreamEnded(reason=EndReason.ENDED))
     except (BrokenPipeError, OSError):
         return  # the parent is gone

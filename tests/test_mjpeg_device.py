@@ -1,8 +1,16 @@
 from collections.abc import Callable
 
 import httpx
+import numpy as np
 import pytest
 
+from rosys.vision.mjpeg_camera.frame_transport import (
+    FRAME_TRANSPORT,
+    Frame,
+    FrameTransport,
+    MemfdFrameTransport,
+    PickledFrameTransport,
+)
 from rosys.vision.mjpeg_camera.mjpeg_stream_worker import _open_stream, _parse_capture_timestamp, _split_frames
 
 
@@ -76,3 +84,27 @@ def test_sends_no_credentials_without_username_and_password() -> None:
         return httpx.Response(401, headers={'www-authenticate': 'Basic realm="cam"'})
 
     assert _negotiate_stream(handler) == 401
+
+
+@pytest.mark.parametrize('transport', [
+    PickledFrameTransport(),
+    pytest.param(MemfdFrameTransport(), marks=pytest.mark.skipif(
+        not MemfdFrameTransport.is_available(), reason='no memfd')),
+])
+def test_frames_and_other_messages_survive_the_transport(transport: FrameTransport) -> None:
+    reader, writer = transport.pipe()
+    array = np.random.default_rng(0).integers(0, 255, size=(4, 6, 3), dtype=np.uint8)
+    transport.send_frame(writer, Frame(array=array, capture_time=1.5))
+    writer.send('not a frame')
+    writer.close()
+
+    frame = transport.receive(reader)
+    assert isinstance(frame, Frame)
+    assert frame.capture_time == 1.5
+    assert np.array_equal(frame.array, array)
+    assert transport.receive(reader) == 'not a frame'
+
+
+def test_the_platform_transport_is_chosen() -> None:
+    expected = MemfdFrameTransport if MemfdFrameTransport.is_available() else PickledFrameTransport
+    assert isinstance(FRAME_TRANSPORT, expected)
