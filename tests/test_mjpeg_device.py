@@ -4,14 +4,14 @@ import httpx
 import numpy as np
 import pytest
 
-from rosys.vision.mjpeg_camera.frame_transport import (
-    FRAME_TRANSPORT,
-    Frame,
-    FrameTransport,
-    MemfdFrameTransport,
-    PickledFrameTransport,
-)
 from rosys.vision.mjpeg_camera.mjpeg_stream_worker import _open_stream, _parse_capture_timestamp, _split_frames
+from rosys.vision.mjpeg_camera.stream_channel import (
+    Frame,
+    memfd_is_available,
+    open_channel,
+    open_memfd_channel,
+    open_pickled_channel,
+)
 
 
 def test_parses_x_timestamp():
@@ -86,25 +86,24 @@ def test_sends_no_credentials_without_username_and_password() -> None:
     assert _negotiate_stream(handler) == 401
 
 
-@pytest.mark.parametrize('transport', [
-    PickledFrameTransport(),
-    pytest.param(MemfdFrameTransport(), marks=pytest.mark.skipif(
-        not MemfdFrameTransport.is_available(), reason='no memfd')),
+@pytest.mark.parametrize('open_channel_', [
+    open_pickled_channel,
+    pytest.param(open_memfd_channel, marks=pytest.mark.skipif(not memfd_is_available(), reason='no memfd')),
 ])
-def test_frames_and_other_messages_survive_the_transport(transport: FrameTransport) -> None:
-    reader, writer = transport.pipe()
+def test_frames_and_other_messages_survive_the_channel(open_channel_) -> None:
+    receiver, sender = open_channel_()
     array = np.random.default_rng(0).integers(0, 255, size=(4, 6, 3), dtype=np.uint8)
-    transport.send_frame(writer, Frame(array=array, capture_time=1.5))
-    writer.send('not a frame')
-    writer.close()
+    sender.send(Frame(array=array, capture_time=1.5))
+    sender.send('not a frame')
+    sender.close()
 
-    frame = transport.receive(reader)
+    frame = receiver.receive()
     assert isinstance(frame, Frame)
     assert frame.capture_time == 1.5
     assert np.array_equal(frame.array, array)
-    assert transport.receive(reader) == 'not a frame'
+    assert receiver.receive() == 'not a frame'
+    receiver.close()
 
 
-def test_the_platform_transport_is_chosen() -> None:
-    expected = MemfdFrameTransport if MemfdFrameTransport.is_available() else PickledFrameTransport
-    assert isinstance(FRAME_TRANSPORT, expected)
+def test_the_platform_channel_is_chosen() -> None:
+    assert open_channel is (open_memfd_channel if memfd_is_available() else open_pickled_channel)

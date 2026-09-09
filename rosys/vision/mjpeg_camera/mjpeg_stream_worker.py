@@ -1,38 +1,26 @@
 import asyncio
-import enum
 import logging
 import threading
 from collections import deque
 from collections.abc import Generator, Iterable, Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass
-from multiprocessing.connection import Connection
 
 import httpx
 
 from ..http import new_client
 from ..image_processing import decode_jpeg_image, remove_exif
-from .frame_transport import FRAME_TRANSPORT, SPAWN_CONTEXT, Frame
+from .stream_channel import (
+    SPAWN_CONTEXT,
+    EndReason,
+    Frame,
+    Message,
+    MessageSender,
+    StreamEnded,
+    StreamOpened,
+    open_channel,
+)
 
 log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_stream_worker')
-
-
-class EndReason(enum.Enum):
-    ENDED = enum.auto()
-    REFUSED = enum.auto()  # the camera answered something other than a stream
-    UNREACHABLE = enum.auto()  # http error
-    FAILED = enum.auto()  # anything else, including the worker dying
-
-
-@dataclass(slots=True)
-class StreamOpened:
-    pass
-
-
-@dataclass(slots=True, kw_only=True)
-class StreamEnded:
-    reason: EndReason
-    detail: str = ''
 
 
 class MjpegStreamWorker:
@@ -41,17 +29,17 @@ class MjpegStreamWorker:
     def __init__(self, name: str, url: str, username: str | None, password: str | None) -> None:
         self._loop = asyncio.get_running_loop()
         self.log = logging.getLogger(f'rosys.vision.mjpeg_camera.mjpeg_stream_worker.{name}')
-        self._messages: deque[StreamOpened | Frame | StreamEnded] = deque()
+        self._messages: deque[Message] = deque()
         self._message_arrived = asyncio.Event()
 
-        self._output, output_child = FRAME_TRANSPORT.pipe()
-        self._process = SPAWN_CONTEXT.Process(target=_run_worker, args=(url, username, password, output_child),
+        self._receiver, sender = open_channel()
+        self._process = SPAWN_CONTEXT.Process(target=_run_worker, args=(url, username, password, sender),
                                               name=f'mjpeg stream {name}', daemon=True)
         self._process.start()
-        output_child.close()  # the child holds the only writing end now, so the reader sees EOF when it exits
+        sender.close()  # the child holds the only sending end now, so the receiver sees EOF when it exits
         threading.Thread(target=self._read_messages, daemon=True, name=f'mjpeg stream reader {name}').start()
 
-    async def receive(self) -> StreamOpened | Frame | StreamEnded:
+    async def receive(self) -> Message:
         while not self._messages:
             self._message_arrived.clear()
             await self._message_arrived.wait()
@@ -65,12 +53,12 @@ class MjpegStreamWorker:
             self.log.warning('stream worker did not end; killing it')
             self._process.kill()
             await self._loop.run_in_executor(None, self._process.join, 1.0)
-        self._output.close()
+        self._receiver.close()
 
     def _read_messages(self) -> None:
         while True:
             try:
-                message = FRAME_TRANSPORT.receive(self._output)
+                message = self._receiver.receive()
             except (EOFError, OSError):
                 message = None
             try:
@@ -80,7 +68,7 @@ class MjpegStreamWorker:
             if message is None:
                 return
 
-    def _handle_incoming_message(self, message: StreamOpened | Frame | StreamEnded | None) -> None:
+    def _handle_incoming_message(self, message: Message | None) -> None:
         if message is None:
             message = StreamEnded(reason=EndReason.FAILED, detail='the stream worker exited')
         if isinstance(message, Frame) and self._messages and isinstance(self._messages[-1], Frame):
@@ -165,10 +153,8 @@ def _open_stream(client: httpx.Client, url: str,
             return
 
 
-def _run_worker(url: str, username: str | None, password: str | None, output: Connection) -> None:
-    def send(message: StreamOpened | StreamEnded) -> None:
-        output.send(message)
-
+def _run_worker(url: str, username: str | None, password: str | None, sender: MessageSender) -> None:
+    send = sender.send
     try:
         with new_client() as client, _open_stream(client, url, username, password) as response:
             if response.status_code != 200:
@@ -180,7 +166,7 @@ def _run_worker(url: str, username: str | None, password: str | None, output: Co
             for jpeg, capture_time in _split_frames(response.iter_bytes()):
                 array = decode_jpeg_image(remove_exif(jpeg))
                 if array is not None:
-                    FRAME_TRANSPORT.send_frame(output, Frame(array=array, capture_time=capture_time))
+                    send(Frame(array=array, capture_time=capture_time))
         send(StreamEnded(reason=EndReason.ENDED))
     except (BrokenPipeError, OSError):
         return  # the parent is gone

@@ -6,7 +6,8 @@ import httpx
 from ... import rosys
 from ..capture_device import CaptureDevice, CaptureState
 from ..image import ImageArray
-from .mjpeg_stream_worker import EndReason, Frame, MjpegStreamWorker, StreamEnded, StreamOpened
+from .mjpeg_stream_worker import MjpegStreamWorker
+from .stream_channel import EndReason, Frame, StreamEnded, StreamOpened
 from .vendors import mac_to_url
 
 ImageDataHandler = Callable[[ImageArray, float], Awaitable | None]
