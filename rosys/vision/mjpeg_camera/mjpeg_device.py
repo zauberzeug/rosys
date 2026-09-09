@@ -102,7 +102,8 @@ class MjpegDevice(CaptureDevice):
                 if isinstance(message, StreamOpened):
                     await self._enter_streaming()
                 elif isinstance(message, StreamEnded):
-                    self._end_session(url, message)
+                    if self._keeps_running():  # a worker torn down by shutdown() ends its session on purpose
+                        self._end_session(url, message)
                     return
                 else:
                     if self.url != url:
