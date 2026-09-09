@@ -47,7 +47,6 @@ class SpatialResection:
         if np.isnan(world_points).any() or np.isnan(image_points).any():
             raise ValueError('Points contain NaNs')
 
-        # Prepare calibration and undistort image observations for a unified pinhole model
         calibration = Calibration(intrinsics=self.intrinsics)
         K_undist = calibration.get_undistorted_camera_matrix()
 
@@ -57,9 +56,7 @@ class SpatialResection:
 
         plane_frame = _fit_plane_frame(object_points)
 
-        # Decide on algorithm
         if algorithm is None:
-            # Automatic selection
             num_points = object_points.shape[0]
             if num_points >= 4 and plane_frame is not None:
                 method_flag = cv2.SOLVEPNP_IPPE
@@ -90,7 +87,6 @@ class SpatialResection:
         else:
             raise TypeError('Algorithm must be int, str or None')
 
-        # Run PnP on undistorted points with zero distortion and K_undist
         use_guess = p0 is not None and r0 is not None
         if use_guess:
             assert p0 is not None and r0 is not None
@@ -128,7 +124,6 @@ class SpatialResection:
                 rvec_init, tvec_init, use_guess, int(method_flag)
             )
         if not ok:
-            # Fallback to ITERATIVE
             ok, rvec, tvec = cv2.solvePnP(
                 object_points, image_points_undist, K_undist, D_zeros,
                 rvec_init, tvec_init, use_guess, int(cv2.SOLVEPNP_ITERATIVE)
