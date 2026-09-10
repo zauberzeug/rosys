@@ -383,7 +383,8 @@ def test_rational_projection_round_trip_across_the_whole_image():
                             matrix=[[1450.0, 0.0, 1290.0], [0.0, 1450.0, 960.0], [0.0, 0.0, 1.0]],
                             distortion=[0.982, 1.568, 0.0, 0.0, 0.107, 1.328, 1.939, 0.578,
                                         0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-                            size=ImageSize(width=2560, height=1920))
+                            size=ImageSize(width=2560, height=1920),
+                            undistortion_iterations=200)
     calibration = Calibration(intrinsics=intrinsics,
                               extrinsics=Pose3d(x=0.1, y=0.2, z=1.0, rotation=Rotation.from_euler(np.pi, 0.0, 0.0)))
     image_points = np.array([[x, y]
@@ -487,6 +488,7 @@ def test_distort_points_pinhole(distortion: list[float]):
 
     cam.calibration.intrinsics.distortion = distortion
     cam.calibration.intrinsics.model = CameraModel.PINHOLE
+    cam.calibration.intrinsics.undistortion_iterations = 200
 
     points = np.array([[100, 100], [200, 200], [300, 300], [400, 400]], dtype=np.float32)
     undistorted_points = cam.calibration.undistort_points(points)

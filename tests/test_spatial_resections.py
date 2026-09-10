@@ -130,6 +130,7 @@ def test_spatial_resection_with_a_rational_distortion_model():
                                 distortion=[0.982, 1.568, 0.0, 0.0, 0.107, 1.328, 1.939, 0.578,
                                             0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
     assert cam.calibration is not None
+    cam.calibration.intrinsics.undistortion_iterations = 200
 
     world_points = np.array([[x, y, 0.0]
                              for x in np.linspace(-0.8, 0.8, 9)
