@@ -375,6 +375,29 @@ def test_omnidirectional_project_from_behind():
     assert cam.calibration.project_to_image(Point3d(x=0, y=-1, z=1)) is not None
 
 
+def test_rational_projection_round_trip_across_the_whole_image():
+    """Drives a grid over the entire image of a strongly distorting rational model, corners included,
+    and pins that every pixel reaches the ground plane and comes back onto itself.
+    """
+    intrinsics = Intrinsics(model=CameraModel.PINHOLE,
+                            matrix=[[1450.0, 0.0, 1290.0], [0.0, 1450.0, 960.0], [0.0, 0.0, 1.0]],
+                            distortion=[0.982, 1.568, 0.0, 0.0, 0.107, 1.328, 1.939, 0.578,
+                                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                            size=ImageSize(width=2560, height=1920),
+                            undistortion_iterations=200)
+    calibration = Calibration(intrinsics=intrinsics,
+                              extrinsics=Pose3d(x=0.1, y=0.2, z=1.0, rotation=Rotation.from_euler(np.pi, 0.0, 0.0)))
+    image_points = np.array([[x, y]
+                             for x in np.linspace(0, 2559, 20)
+                             for y in np.linspace(0, 1919, 20)], dtype=np.float64)
+
+    ground_points = calibration.project_from_image(image_points)
+    assert not np.isnan(ground_points).any()
+
+    reprojected_points = calibration.project_to_image(ground_points)
+    assert np.max(np.linalg.norm(reprojected_points - image_points, axis=1)) < 0.01
+
+
 def test_undistort_points():
     """Test """
     cam, _ = demo_data()
@@ -465,11 +488,12 @@ def test_distort_points_pinhole(distortion: list[float]):
 
     cam.calibration.intrinsics.distortion = distortion
     cam.calibration.intrinsics.model = CameraModel.PINHOLE
+    cam.calibration.intrinsics.undistortion_iterations = 200
 
     points = np.array([[100, 100], [200, 200], [300, 300], [400, 400]], dtype=np.float32)
     undistorted_points = cam.calibration.undistort_points(points)
     redistorted_points = cam.calibration.distort_points(undistorted_points)
-    assert np.allclose(points, redistorted_points, atol=0.4)
+    assert np.allclose(points, redistorted_points, atol=1e-3)
 
 
 @pytest.mark.parametrize('crop', [True, False])
@@ -485,6 +509,18 @@ def test_distort_points_fisheye(crop: bool):
     undistorted_points = cam.calibration.undistort_points(points, crop=crop)
     redistorted_points = cam.calibration.distort_points(undistorted_points, crop=crop)
     assert np.allclose(points, redistorted_points, atol=1e-6)
+
+
+def test_undistort_points_omnidirectional():
+    """Undistorts image points through an omnidirectional calibration with a rotated inner frame."""
+    calibration = _distorted_calibration(CameraModel.OMNIDIRECTIONAL)
+    assert calibration.intrinsics.omnidir_params is not None
+    calibration.intrinsics.omnidir_params.rotation = Rotation.from_euler(0.1, 0.2, 0.3)
+
+    undistorted = calibration.undistort_points(np.array([[100.0, 100.0], [640.0, 480.0], [1200.0, 900.0]]))
+
+    assert undistorted.shape == (3, 2)
+    assert np.isfinite(undistorted).all()
 
 
 def _distorted_calibration(camera_model: CameraModel = CameraModel.PINHOLE) -> Calibration:

@@ -118,3 +118,29 @@ def test_spatial_resection_with_line_points(parallel_lines: bool):
     # Check the estimated object space points on lines
     for line_point, world_point in zip(result.estimated_points_on_lines, world_points, strict=False):
         assert np.allclose(line_point.array, world_point, atol=5)
+
+
+def test_spatial_resection_with_a_rational_distortion_model():
+    """Resects a camera pose from a noise-free planar target seen through a strongly distorting rational model,
+    with observations reaching the border of the image.
+    """
+    cam = CalibratableCamera(id='1')
+    cam.set_perfect_calibration(width=2560, height=1920, focal_length=1450,
+                                x=0.1, y=0.2, z=1.0,
+                                distortion=[0.982, 1.568, 0.0, 0.0, 0.107, 1.328, 1.939, 0.578,
+                                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    assert cam.calibration is not None
+    cam.calibration.intrinsics.undistortion_iterations = 200
+
+    world_points = np.array([[x, y, 0.0]
+                             for x in np.linspace(-0.8, 0.8, 9)
+                             for y in np.linspace(-0.6, 0.6, 7)])
+    image_points = cam.calibration.project_to_image(world_points)
+
+    result = SpatialResection(cam.calibration.intrinsics).pnp_with_lsa(world_points=world_points,
+                                                                       image_points=image_points)
+
+    assert result.success
+    assert np.allclose(result.camera_pose.point_3d.array, cam.calibration.extrinsics.point_3d.array, atol=1e-6)
+    assert np.allclose(result.camera_pose.rotation.quaternion,
+                       cam.calibration.extrinsics.rotation.quaternion, atol=1e-6)
