@@ -18,8 +18,10 @@ def add_card(camera: rosys.vision.Camera, container: ui.element) -> None:
                     streams[uid] = ui.interactive_image()
                     ui.label(uid).classes('m-2')
                     with ui.row():
+                        ui.button('connect', on_click=camera.connect) \
+                            .bind_enabled_from(camera, 'is_active', backward=lambda active: not active)
                         ui.button('disconnect', on_click=camera.disconnect) \
-                            .bind_enabled_from(camera, 'is_connected')
+                            .bind_enabled_from(camera, 'is_active')
                     if isinstance(camera, rosys.vision.ConfigurableCamera):
                         create_camera_settings_panel(camera)
 
@@ -39,7 +41,7 @@ def create_camera_settings_panel(camera: rosys.vision.ConfigurableCamera) -> Non
     camera_parameters = camera.get_capabilities()
     parameter_names = [parameter.name for parameter in camera_parameters]
     with ui.expansion('Settings').classes('w-full') \
-            .bind_enabled_from(camera, 'is_connected'):
+            .bind_enabled_from(camera, 'is_active'):
         if isinstance(camera, rosys.vision.RtspCamera):
             ui.label('URL') \
                 .bind_text_from(camera, 'url',

@@ -104,9 +104,11 @@ class DetectorHardware(Detector):
             metadata: dict[str, Any] = {
                 'source': source,
                 'tags': tags or [],
-                'creation_date': _creation_date_to_isoformat(creation_date),
                 'state': state.value if state else None,
             }
+            # NOTE: unlike detect, the node parses this dict as ImageMetadata; absent `created` falls back to its time
+            if (created := _creation_date_to_isoformat(creation_date)) is not None:
+                metadata['created'] = created
 
             if detections := image.get_detections(self.name):
                 detections_dict = detections.to_dict()
