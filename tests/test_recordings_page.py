@@ -110,7 +110,7 @@ def test_download_404_for_name_with_nul_byte(recorder: McapRecorder) -> None:
 def _info(name: str, *, mtime: float = 0.0, size: int = 0) -> RecordingInfo:
     """A snapshot of a recording, as the page's scan hands it to the grouping.
 
-    :param name: the file name the grouping reads the run key off.
+    :param name: the file name the grouping reads the run off.
     :param mtime: the modification time shown in the list.
     :param size: the file size shown in the list.
     :return: the snapshot to group.

@@ -825,7 +825,7 @@ async def test_a_start_while_the_previous_recording_is_finalized_is_refused(mcap
 
 
 async def test_every_file_of_a_recording_carries_the_metadata(mcap_dir: Path) -> None:
-    """A rotated segment is as self-explaining as the first one."""
+    """A rotated part is as self-explaining as the first one."""
     recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
     recorder.add_topic('/test', _schema())
     recorder.start(name='run', metadata={'mission': 'Implement Demo', 'run_id': 42})

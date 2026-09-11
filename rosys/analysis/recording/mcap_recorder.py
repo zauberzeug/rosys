@@ -202,9 +202,9 @@ class McapRecorder:
         self.max_queued_bytes = int(max_queued_bytes)
 
         self.RECORDING_STARTED = Event[Path]()
-        """a recording file has been opened (argument: path); emitted per file, including on size rotation"""
+        """a recording file has been opened (argument: path); emitted per file, including on every rotation"""
         self.RECORDING_STOPPED = Event[Path]()
-        """a recording file has been finalized (argument: path); emitted per file, including on size rotation"""
+        """a recording file has been finalized (argument: path); emitted per file, including on every rotation"""
 
         self._declared_topics: set[str] = set()
         self._selected_topics: set[str] | None = None
@@ -819,7 +819,7 @@ class McapRecorder:
 
         Emits ``RECORDING_STOPPED`` for the finalized file and ``RECORDING_STARTED`` for the
         new one, loop-safely, so per-file consumers (upload/post-processing) see every file of
-        a long session — not just the first and last. The events are therefore per-file.
+        a long run — not just the first and last. The events are therefore per-file.
         """
         assert self._file is not None
         finalized = self._file_path

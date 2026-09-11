@@ -13,7 +13,7 @@ from ... import rosys
 from .mcap_recorder import _OWN_NAME, McapRecorder, RecordingInfo
 from .paths import DOWNLOAD_PATH, PAGE_PATH
 
-RIGHT_INSET = 'var(--nicegui-default-padding)'  # clears Quasar's 10 px thumb and keeps the page's rhythm
+_RIGHT_INSET = 'var(--nicegui-default-padding)'  # clears Quasar's 10 px thumb and keeps the page's rhythm
 
 _MAX_TIMEZONE_OFFSET_MINUTES = 24 * 60  # reject offsets beyond ±24 h from untrusted client JavaScript
 
@@ -226,7 +226,7 @@ class RecordingsPage:
                 await reload()
 
         with ui.column().classes('w-full gap-2'):
-            with ui.row().classes('w-full items-center gap-2').style(f'padding-right: {RIGHT_INSET}'):
+            with ui.row().classes('w-full items-center gap-2').style(f'padding-right: {_RIGHT_INSET}'):
                 date_input = ui.date_input('Date range', range_input=True, on_change=recordings_list.refresh)
                 ui.space()
                 reindex_button = ui.button(icon='build', on_click=_reindex) \
@@ -236,7 +236,7 @@ class RecordingsPage:
                 ui.button(icon='refresh', on_click=reload).props('flat dense')
             # the page already insets its content; the scroll area would add a second one, only for the list
             # Quasar swaps in the active style once a thumb shows, so both carry the same padding
-            content_padding = f'padding-left: 0; padding-right: {RIGHT_INSET}'
+            content_padding = f'padding-left: 0; padding-right: {_RIGHT_INSET}'
             with ui.scroll_area().classes('w-full') \
                     .props(f'content-style="{content_padding}" content-active-style="{content_padding}"') \
                     .style('max-height: 75vh'):
@@ -250,7 +250,7 @@ class RecordingsPage:
             return tuple(recorder.recordings), recorder.current_recording, recorder.merging
 
         async def sync_if_changed() -> None:
-            # Picks up start/stop, size-based rotation, and external add/remove. The
+            # Picks up start/stop, rotation, merges and external add/remove. The
             # change token globs the directory, so it is computed off the loop (matching
             # the class docstring); only an actual change triggers the fuller stat/index
             # scan in reload(). A client-scoped timer (auto-removed on disconnect) avoids
