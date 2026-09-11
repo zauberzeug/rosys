@@ -96,10 +96,11 @@ class MjpegDevice(CaptureDevice):
         self.log.debug('Starting capture task for %s', url)
 
         await self._prepare_stream()
-        self._worker = MjpegStreamWorker(self._mac, url, self._username, self._password)
+        worker = MjpegStreamWorker(self._mac, url, self._username, self._password)
+        self._worker = worker
         try:
             while True:
-                message = await self._worker.receive()
+                message = await worker.receive()
                 if isinstance(message, StreamOpened):
                     await self._enter_streaming()
                 elif isinstance(message, StreamEnded):
@@ -114,7 +115,9 @@ class MjpegDevice(CaptureDevice):
                     if not self._keeps_running():
                         return
         finally:
-            await self._tear_down_session()
+            await worker.shutdown()
+            if self._worker is worker:
+                self._worker = None
 
     def _end_session(self, url: str, message: StreamEnded) -> None:
         match message.reason:
@@ -138,10 +141,12 @@ class MjpegDevice(CaptureDevice):
             self.log.error('Error processing image: %s', e)
 
     async def _tear_down_session(self) -> None:
-        if self._worker is None:
+        worker = self._worker
+        if worker is None:
             return
-        await self._worker.shutdown()
-        self._worker = None
+        await worker.shutdown()
+        if self._worker is worker:
+            self._worker = None
 
     async def get_fps(self) -> int | None:
         return None

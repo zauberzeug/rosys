@@ -1,6 +1,7 @@
 import asyncio
 import gc
 import logging
+import multiprocessing
 import weakref
 from contextlib import nullcontext, suppress
 from unittest.mock import AsyncMock, patch
@@ -142,6 +143,11 @@ async def wait_in_real_time(condition, *, step: float = 0.02, attempts: int = 20
 def live_capture_tasks(name: str) -> list[asyncio.Task]:
     """The capture loops still running under this task name; a device names its task, so a leftover shows up."""
     return [task for task in asyncio.all_tasks() if task.get_name() == name and not task.done()]
+
+
+def live_stream_workers(name: str) -> list[multiprocessing.process.BaseProcess]:
+    """The stream worker processes still alive under this process name."""
+    return [process for process in multiprocessing.active_children() if process.name == name]
 
 
 async def cancel_leftover_loops(name: str) -> None:
@@ -773,6 +779,27 @@ async def test_mjpeg_device_keeps_one_capture_loop_across_an_address_change(rosy
             await device.shutdown()
             await cancel_leftover_loops(f'capture {GOODCAM_MAC}')
             await server.stop()
+
+
+async def test_mjpeg_device_reopens_its_worker_at_a_new_address(rosys_integration):
+    first = FlakyMjpegServer(frames_per_connection=None)
+    await first.start()
+    second = FlakyMjpegServer(frames_per_connection=None)
+    await second.start()
+    worker_name = f'mjpeg stream {GOODCAM_MAC}'
+    device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{first.port}', on_new_image_data=decode_frame)
+    try:
+        await wait_in_real_time(lambda: device.is_connected, message='expected the first stream to be opened')
+        device.ip = f'127.0.0.1:{second.port}'
+        await wait_in_real_time(lambda: device.is_connected and second.connections >= 1, attempts=500,
+                                message='expected the stream to be reopened at the new address')
+        assert len(live_stream_workers(worker_name)) == 1, 'expected exactly one stream worker to be alive'
+    finally:
+        await device.shutdown()
+        await cancel_leftover_loops(f'capture {GOODCAM_MAC}')
+        await first.stop()
+        await second.stop()
+    await wait_in_real_time(lambda: not live_stream_workers(worker_name), message='a stream worker outlived the device')
 
 
 async def _stub_usb_session(self) -> bool:
