@@ -31,6 +31,7 @@ class MjpegStreamWorker:
         self.log = logging.getLogger(f'rosys.vision.mjpeg_camera.mjpeg_stream_worker.{name}')
         self._messages: deque[Message] = deque()
         self._message_arrived = asyncio.Event()
+        self._closing = False
 
         self._receiver, sender = open_channel()
         self._process = SPAWN_CONTEXT.Process(target=_run_worker, args=(url, username, password, sender),
@@ -46,6 +47,7 @@ class MjpegStreamWorker:
         return self._messages.popleft()
 
     async def shutdown(self) -> None:
+        self._closing = True
         if self._process.is_alive():
             self._process.terminate()
             await self._loop.run_in_executor(None, self._process.join, 5.0)
@@ -70,7 +72,10 @@ class MjpegStreamWorker:
 
     def _handle_incoming_message(self, message: Message | None) -> None:
         if message is None:
-            message = StreamEnded(reason=EndReason.FAILED, detail='the stream worker exited')
+            if self._closing:
+                message = StreamEnded(reason=EndReason.ENDED)
+            else:
+                message = StreamEnded(reason=EndReason.FAILED, detail='the stream worker exited')
         if isinstance(message, Frame) and self._messages and isinstance(self._messages[-1], Frame):
             self._messages[-1] = message  # a frame nobody has picked up yet is stale
         else:

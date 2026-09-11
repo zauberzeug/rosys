@@ -30,8 +30,10 @@ from rosys.vision.mjpeg_camera.arkvision_mjpeg_device import ArkVisionMjpegDevic
 from rosys.vision.mjpeg_camera.axis_mjpeg_device import AxisMjpegDevice
 from rosys.vision.mjpeg_camera.mjpeg_device import CameraAddressUnknown, CaptureState, MjpegDevice
 from rosys.vision.mjpeg_camera.mjpeg_device_factory import MjpegDeviceFactory
+from rosys.vision.mjpeg_camera.mjpeg_stream_worker import MjpegStreamWorker
 from rosys.vision.mjpeg_camera.motec_mjpeg_device import MotecMjpegDevice
 from rosys.vision.mjpeg_camera.openipc_zauberzeug_mjpeg_device import OpenIpcZauberzeugMjpegDevice
+from rosys.vision.mjpeg_camera.stream_channel import EndReason, Message, StreamEnded, StreamOpened
 from rosys.vision.reconnect import MAX_RECONNECT_INTERVAL, MIN_RECONNECT_INTERVAL
 from rosys.vision.rtsp_camera.rtsp_device import GDPPACKET_FORMAT, GDPPayloadType, RtspDevice
 from rosys.vision.simulated_camera.simulated_device import SimulatedDevice
@@ -176,6 +178,25 @@ class SlowFirstDecode:
             finally:  # the cancellation arrives here, so the stall ends either way
                 self.finished.set()
         return callback(*args, **kwargs)
+
+
+class LateOpeningStreamWorker:
+    """Stand-in for `MjpegStreamWorker` whose stream opens right as the device begins to shut it down."""
+
+    def __init__(self, *args) -> None:
+        self._messages: list[Message] = [StreamOpened(),
+                                         StreamEnded(reason=EndReason.FAILED, detail='the stream worker exited')]
+        self._closing = asyncio.Event()
+
+    async def receive(self) -> Message:
+        await self._closing.wait()
+        return self._messages.pop(0)
+
+    async def shutdown(self) -> None:
+        if self._closing.is_set():
+            return
+        self._closing.set()
+        await asyncio.sleep(0)  # the real worker joins its process in the executor here
 
 
 async def decode_frame(data: np.ndarray, timestamp: float) -> None:  # pylint: disable=unused-argument
@@ -759,6 +780,47 @@ async def test_mjpeg_device_stops_streaming_when_shut_down_during_a_callback(ros
         finally:
             await cancel_leftover_loops(f'capture {GOODCAM_MAC}')
             await server.stop()
+
+
+async def test_mjpeg_device_ignores_a_stream_that_opens_while_it_is_shutting_down(vision_log):
+    connect_calls = 0
+
+    def count_connect() -> None:
+        nonlocal connect_calls
+        connect_calls += 1
+
+    with patch('rosys.vision.mjpeg_camera.mjpeg_device.MjpegStreamWorker', LateOpeningStreamWorker):
+        device = MjpegDevice(GOODCAM_MAC, '127.0.0.1:1', on_new_image_data=lambda data, timestamp: None,
+                             on_connect=count_connect)
+        try:
+            await wait_in_real_time(lambda: device._worker is not None,  # pylint: disable=protected-access
+                                    message='expected the capture task to start its worker')
+            await device.shutdown()
+            assert not device.is_connected
+            assert device._state is CaptureState.STOPPED  # pylint: disable=protected-access
+            assert connect_calls == 0, 'on_connect fired for a device that was being shut down'
+            assert not [record for record in vision_log.records if record.levelno >= logging.ERROR], (
+                'expected no error from a stream that opened during shutdown'
+            )
+        finally:
+            await device.shutdown()
+            await cancel_leftover_loops(f'capture {GOODCAM_MAC}')
+
+
+async def test_mjpeg_stream_worker_reports_its_shutdown_as_a_normal_end(rosys_integration):
+    server = FlakyMjpegServer(frames_per_connection=None)
+    await server.start()
+    worker = MjpegStreamWorker(GOODCAM_MAC, f'http://127.0.0.1:{server.port}/', None, None)
+    try:
+        assert isinstance(await worker.receive(), StreamOpened)
+        await worker.shutdown()
+        message = await worker.receive()
+        while not isinstance(message, StreamEnded):
+            message = await worker.receive()
+        assert message.reason is EndReason.ENDED
+    finally:
+        await worker.shutdown()
+        await server.stop()
 
 
 async def test_mjpeg_device_keeps_one_capture_loop_across_an_address_change(rosys_integration):
