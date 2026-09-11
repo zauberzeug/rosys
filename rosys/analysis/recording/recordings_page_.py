@@ -14,7 +14,7 @@ from .mcap_recorder import McapRecorder, RecordingInfo
 from .merging import merge_recordings
 from .paths import DOWNLOAD_PATH, PAGE_PATH
 
-SCROLLBAR_WIDTH = '10px'  # Quasar's vertical thumb; the buttons would sit under it otherwise
+RIGHT_INSET = 'var(--nicegui-default-padding)'  # clears Quasar's 10 px thumb and keeps the page's rhythm
 
 _MAX_TIMEZONE_OFFSET_MINUTES = 24 * 60  # reject offsets beyond ±24 h from untrusted client JavaScript
 
@@ -234,7 +234,7 @@ class RecordingsPage:
                 await reload()
 
         with ui.column().classes('w-full gap-2'):
-            with ui.row().classes('w-full items-center gap-2').style(f'padding-right: {SCROLLBAR_WIDTH}'):
+            with ui.row().classes('w-full items-center gap-2').style(f'padding-right: {RIGHT_INSET}'):
                 date_input = ui.date_input('Date range', range_input=True, on_change=recordings_list.refresh)
                 ui.space()
                 reindex_button = ui.button(icon='build', on_click=_reindex) \
@@ -244,7 +244,7 @@ class RecordingsPage:
                 ui.button(icon='refresh', on_click=reload).props('flat dense')
             # the page already insets its content; the scroll area would add a second one, only for the list
             # Quasar swaps in the active style once a thumb shows, so both carry the same padding
-            content_padding = f'padding-left: 0; padding-right: {SCROLLBAR_WIDTH}'
+            content_padding = f'padding-left: 0; padding-right: {RIGHT_INSET}'
             with ui.scroll_area().classes('w-full') \
                     .props(f'content-style="{content_padding}" content-active-style="{content_padding}"') \
                     .style('max-height: 75vh'):
