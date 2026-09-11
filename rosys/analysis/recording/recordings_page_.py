@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import re
+import asyncio
 from collections.abc import Callable
 from datetime import UTC, date, datetime, timedelta, timezone
 from pathlib import Path
@@ -10,27 +10,24 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from nicegui import app, ui
 
 from ... import rosys
-from .mcap_recorder import McapRecorder, RecordingInfo
-from .merging import merge_recordings
+from .mcap_recorder import _OWN_NAME, McapRecorder, RecordingInfo
 from .paths import DOWNLOAD_PATH, PAGE_PATH
 
 RIGHT_INSET = 'var(--nicegui-default-padding)'  # clears Quasar's 10 px thumb and keeps the page's rhythm
 
 _MAX_TIMEZONE_OFFSET_MINUTES = 24 * 60  # reject offsets beyond ±24 h from untrusted client JavaScript
 
-_RUN_PART = re.compile(r'(?P<run>.+_run\d+)_\d+\.mcap')  # one part of a run, e.g. 20260911_052815_run0002_01.mcap
-
 
 class RecordingsPage:
     """Lists the MCAP recordings for download and deletion.
 
     A long recording rotates into many files, so the parts of one run are listed as a
-    single entry that expands into its parts; a file without a run name stays a row of
-    its own. The list refreshes whenever the recorder starts a new recording or stops
-    one, can be filtered by date, and offers rebuilding the index of crash-orphaned
-    (unindexed) recordings. All filesystem access (glob, stat, index check) runs
-    off the event loop via ``rosys.run.io_bound``; the render reads only a cached
-    snapshot, so opening the page never blocks the loop on disk I/O.
+    single entry that expands into its parts and can be merged into one recording; any
+    other file stays a row of its own. The list refreshes whenever the recorder starts a
+    new recording or stops one, can be filtered by date, and offers rebuilding the index
+    of crash-orphaned (unindexed) recordings. All filesystem access (glob, stat, index
+    check) runs off the event loop via ``rosys.run.io_bound``; the render reads only a
+    cached snapshot, so opening the page never blocks the loop on disk I/O.
 
     A download endpoint at ``DOWNLOAD_PATH/{name}`` serves finished recordings over
     HTTP (basename only, refusing the live file with 409 and missing files with 404),
@@ -75,53 +72,55 @@ class RecordingsPage:
             return start <= recorded <= end
 
         expanded_runs: set[str] = set()  # survives the refresh, which redraws the whole list
-        merging_runs: set[str] = set()
+        shown_merges: set[str] = set()  # merges in progress as last rendered, so the sync notices another client's
 
         @ui.refreshable
         def recordings_list() -> None:
             reindex_button.set_enabled(any(not info.indexed and not info.is_live for info in infos))
-            visible = [info for info in infos if _in_range(info)]
-            if not visible:
+            shown_merges.clear()
+            shown_merges.update(recorder.merging)
+            entries = [(run, parts) for run, parts in _group_by_run(infos) if any(_in_range(part) for part in parts)]
+            if not entries:
                 ui.label('No recordings.').classes('text-grey p-4')
                 return
             with ui.column().classes('w-full gap-1'):
-                for key, parts in _group_by_run(visible):
-                    if key is None or len(parts) == 1:
+                for run, parts in entries:
+                    if run is None or len(parts) == 1:
                         _recording_row(parts[0])
                     else:
-                        _run_row(key, parts)
+                        _run_row(run, parts)
 
-        def _run_row(key: str, parts: list[RecordingInfo]) -> None:
+        def _run_row(run: str, parts: list[RecordingInfo]) -> None:
             """Render the files of one run as one entry that expands into its parts.
 
             The entry keeps the shape of a single recording's row, so a run and a lone
             recording sit on the same edges; only the parts inside are indented.
 
-            :param key: the name the run's files share.
+            :param run: the name the run's files share.
             :param parts: the run's files, newest first.
             """
             first = datetime.fromtimestamp(min(part.mtime for part in parts), tz=local_tz)
             last = datetime.fromtimestamp(max(part.mtime for part in parts), tz=local_tz)
             size = sum(part.size for part in parts)
-            is_expanded = key in expanded_runs
+            is_expanded = run in expanded_runs
 
             def toggle() -> None:
-                expanded_runs.symmetric_difference_update({key})
+                expanded_runs.symmetric_difference_update({run})
                 recordings_list.refresh()
 
             with ui.row().classes('w-full items-center justify-between border-b py-1'):
                 with ui.column().classes('gap-0'):
                     with ui.row().classes('items-center gap-1'):
-                        ui.label(key).classes('font-mono')
+                        ui.label(run).classes('font-mono')
                         if any(part.is_live for part in parts):
                             ui.badge('recording').props('color=red')
                     ui.label(f'{first:%Y-%m-%d %H:%M:%S} - {last:%H:%M:%S} · '
                              f'{size / 1_048_576:.1f} MB · {len(parts)} parts').classes('text-xs text-grey')
                 with ui.row().classes('gap-1'):
-                    if key in merging_runs:
+                    if _merged_name(run) in recorder.merging:
                         ui.spinner(size='sm').tooltip('merging this run into one recording')
                     elif not any(part.is_live for part in parts):
-                        ui.button(icon='merge', on_click=lambda k=key, p=list(parts): _start_merge(k, p)) \
+                        ui.button(icon='merge', on_click=lambda r=run, p=list(parts): _merge_run(r, p)) \
                             .props('flat dense').tooltip('merge this run into one recording')
                     ui.button(icon='expand_less' if is_expanded else 'expand_more', on_click=toggle) \
                         .props('flat dense').tooltip('show the files of this run')
@@ -160,41 +159,32 @@ class RecordingsPage:
                     if not info.is_live:  # the live file cannot be deleted (writer holds it open)
                         ui.button(icon='delete', on_click=lambda p=info.path: _delete(p)).props('flat dense color=red')
 
-        def _start_merge(key: str, parts: list[RecordingInfo]) -> None:
+        async def _merge_run(run: str, parts: list[RecordingInfo]) -> None:
             """Merge a run in the background, so closing the page does not cancel it.
 
-            :param key: the run whose files are merged.
-            :param parts: the run's files.
+            :param run: the run whose files are merged.
+            :param parts: the run's files, newest first.
             """
-            merging_runs.add(key)
+            rosys.background_tasks.create(_merge(run, [part.path for part in reversed(parts)]), name=f'merge {run}')
+            await asyncio.sleep(0)  # lets the merge claim its name, so the list shows it in progress
             recordings_list.refresh()
-            rosys.background_tasks.create(_merge_run(key, parts), name=f'merge {key}')
 
-        async def _merge_run(key: str, parts: list[RecordingInfo]) -> None:
-            """Write the run's files into one recording and drop the parts once it is written.
+        async def _merge(run: str, sources: list[Path]) -> None:
+            """Merge the run's files and tell how it went.
 
-            The merge writes beside the recordings under a name the list ignores, and only a
-            finished file takes the target name, so a merge in progress never shows up as a
-            recording and an interruption leaves the parts untouched.
-
-            :param key: the run whose files are merged.
-            :param parts: the run's files.
+            :param run: the run whose files are merged.
+            :param sources: the run's files, oldest first.
             """
-            target = recorder.output_dir / f'{key}_merged.mcap'  # never reads as one of the recorder's own files
-            unfinished = recorder.output_dir / f'{key}.mcap.part'  # not a *.mcap, so the list ignores it
-            sources = sorted(part.path for part in parts)
             try:
-                count = await rosys.run.io_bound(merge_recordings, sources, unfinished)
-                if not count:
-                    raise RuntimeError('the merge wrote no messages')
-                await rosys.run.io_bound(_replace_sources, unfinished, target, sources)
-                rosys.notify(f'Merged {len(sources)} files into {target.name}', type='positive')
+                target = await recorder.merge(sources, _merged_name(run))
             except Exception as e:
-                unfinished.unlink(missing_ok=True)
-                rosys.notify(f'Could not merge {key}: {e}', type='negative')
-            finally:
-                merging_runs.discard(key)
-                await reload()
+                rosys.notify(f'Could not merge {run}: {e}', type='negative')
+            else:
+                if target is None:
+                    rosys.notify(f'Nothing to merge in {run}', type='warning')
+                else:
+                    rosys.notify(f'Merged {len(sources)} files into {target.name}', type='positive')
+            await reload()
 
         async def reload() -> None:
             infos[:] = await rosys.run.io_bound(recorder.scan_recordings) or []  # None on shutdown
@@ -252,12 +242,12 @@ class RecordingsPage:
                     .style('max-height: 75vh'):
                 recordings_list()
 
-        def _change_token() -> tuple[tuple[Path, ...], Path | None]:
-            """A cheap change token — the recording paths plus the live file.
+        def _change_token() -> tuple[tuple[Path, ...], Path | None, frozenset[str]]:
+            """A cheap change token — the recording paths, the live file and the merges in progress.
 
             Both accessors glob the output directory, so this runs off the event loop.
             """
-            return tuple(recorder.recordings), recorder.current_recording
+            return tuple(recorder.recordings), recorder.current_recording, recorder.merging
 
         async def sync_if_changed() -> None:
             # Picks up start/stop, size-based rotation, and external add/remove. The
@@ -270,7 +260,7 @@ class RecordingsPage:
             if token is None:
                 return  # recorder shut down mid-scan
             live = next((info.path for info in infos if info.is_live), None)
-            if token != (tuple(info.path for info in infos), live):
+            if token != (tuple(info.path for info in infos), live, frozenset(shown_merges)):
                 await reload()
 
         ui.timer(0.1, reload, once=True)  # populate the snapshot off the loop after the page is built
@@ -278,38 +268,36 @@ class RecordingsPage:
 
 
 def _group_by_run(infos: list[RecordingInfo]) -> list[tuple[str | None, list[RecordingInfo]]]:
-    """Group the files that belong to the same run, keeping the given order.
+    """Group the files that belong to the same run, keeping the order of their newest file.
 
-    A run's files are the ones the recorder numbered apart while rotating; every
-    other file (an old recording, a preserved failure, a renamed one) forms an
-    entry of its own.
+    A run's files are the parts the recorder numbered apart while rotating; every other
+    file (a renamed, merged or preserved recording) forms an entry of its own.
 
     :param infos: the recordings to group, in display order.
-    :return: one entry per run key, each with the run's files in the given order;
-        ``None`` as the key for a file that belongs to no run.
+    :return: one entry per run with its parts, the highest part number first; ``None`` as the
+        run for a file that belongs to no run.
     """
     entries: list[tuple[str | None, list[RecordingInfo]]] = []
-    runs: dict[str, list[RecordingInfo]] = {}
+    runs: dict[str, list[tuple[int, RecordingInfo]]] = {}
     for info in infos:
-        key = _run_key(info.path)
-        if key is None:
+        match = _OWN_NAME.fullmatch(info.path.name)
+        if match is None or match.group('run') is None:
             entries.append((None, [info]))
-        elif key in runs:
-            runs[key].append(info)
-        else:
-            runs[key] = [info]
-            entries.append((key, runs[key]))
+            continue
+        run = match.group('run')
+        if run not in runs:
+            runs[run] = []
+            entries.append((run, []))
+        runs[run].append((int(match.group('part')), info))
+    for run, parts in entries:
+        if run is not None:
+            parts.extend(info for _, info in sorted(runs[run], key=lambda numbered: numbered[0], reverse=True))
     return entries
 
 
-def _run_key(path: Path) -> str | None:
-    """The name the files of one run share — everything up to the part number.
-
-    :param path: the recording to read the run key off.
-    :return: the shared name, or ``None`` if the file is not a numbered part of a run.
-    """
-    match = _RUN_PART.fullmatch(path.name)
-    return match.group('run') if match is not None else None
+def _merged_name(run: str) -> str:
+    """The name a run takes once merged, which never reads as one of the recorder's own files."""
+    return f'{run}_merged'
 
 
 def _download_response(recorder: McapRecorder, name: str) -> Response:
@@ -370,18 +358,3 @@ async def _confirm_dialog(message: str) -> bool:
             ui.button('Cancel', on_click=lambda: dialog.submit(False)).props('flat')
             ui.button('OK', on_click=lambda: dialog.submit(True))
     return bool(await dialog)
-
-
-def _replace_sources(unfinished: Path, target: Path, sources: list[Path]) -> None:
-    """Put the merged recording in place and drop the files it was made of.
-
-    The rename happens before the deletion, so an interruption leaves the sources
-    untouched rather than a gap.
-
-    :param unfinished: the file the merge wrote.
-    :param target: the name the merged recording takes.
-    :param sources: the recordings the merge consumed.
-    """
-    unfinished.replace(target)
-    for path in sources:
-        path.unlink(missing_ok=True)

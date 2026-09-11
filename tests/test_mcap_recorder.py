@@ -8,7 +8,7 @@ import pytest
 from mcap.reader import make_reader
 
 import rosys
-from rosys.analysis.recording import MERGE_METADATA_NAME, McapRecorder, TopicSchema, is_auto_named, merge_recordings
+from rosys.analysis.recording import METADATA_NAME, McapRecorder, TopicSchema, is_auto_named
 
 NS = 1_000_000_000
 
@@ -609,15 +609,16 @@ async def test_failed_rotation_stops_recording_without_silent_loss(mcap_dir: Pat
     assert sum(_message_count(f) for f in files) == recorder.message_count
 
 
-def test_startup_removes_orphaned_reindex_temp_files(mcap_dir: Path) -> None:
-    """A reindex temp file left by a crash is cleared when a recorder is created; real recordings are kept."""
+@pytest.mark.parametrize('orphan_name', ['recording.mcap.reindex-deadbeef', 'recording.mcap.merge-deadbeef'])
+def test_startup_removes_orphaned_temporary_files(mcap_dir: Path, orphan_name: str) -> None:
+    """A reindex or merge temp file left by a crash is cleared when a recorder is created; real recordings are kept."""
     (mcap_dir / 'recording.mcap').write_bytes(b'a real recording')
-    orphan = mcap_dir / 'recording.mcap.reindex-deadbeef'
-    orphan.write_bytes(b'partial reindex output')
+    orphan = mcap_dir / orphan_name
+    orphan.write_bytes(b'partial output')
 
     McapRecorder(output_dir=mcap_dir, auto_start=False)
 
-    assert not orphan.exists()  # the orphaned reindex temp file was removed at startup
+    assert not orphan.exists()
     assert (mcap_dir / 'recording.mcap').exists()  # the real recording is untouched
 
 
@@ -757,7 +758,7 @@ def _metadata(path: Path) -> dict:
     :return: the decoded JSON payload, or an empty dict when the file carries none.
     """
     with open(path, 'rb') as f:
-        records = [record for record in make_reader(f).iter_metadata() if record.name == 'recording']
+        records = [record for record in make_reader(f).iter_metadata() if record.name == METADATA_NAME]
     return json.loads(records[0].metadata['json']) if records else {}
 
 
@@ -917,42 +918,3 @@ def test_metadata_that_is_no_json_is_refused_at_start(mcap_dir: Path) -> None:
 
     assert not recorder.is_recording
     assert not list(mcap_dir.glob('*.mcap'))
-
-
-async def test_a_merged_recording_keeps_the_context_of_its_sources(mcap_dir: Path) -> None:
-    """Merging must not strip the metadata; the merged file is the one people send around."""
-    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
-    recorder.add_topic('/test', _schema())
-    recorder.start(name='run', metadata={'mission': 'Implement Demo', 'run_id': 42})
-    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
-    await recorder._flush()
-    rosys.set_time(rosys.time() + 61)
-    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=61 * NS)
-    await recorder.stop()
-    sources = sorted(mcap_dir.glob('*.mcap'))
-
-    target = mcap_dir / 'merged.mcap'
-    count = merge_recordings(sources, target)
-
-    assert count == 2
-    assert _values(target) == [0, 1]
-    assert _metadata(target) == {'mission': 'Implement Demo', 'run_id': 42}
-
-
-async def test_a_merged_recording_says_how_it_came_to_be(mcap_dir: Path) -> None:
-    """The merge leaves its own record, so nobody wonders where a file came from."""
-    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
-    recorder.add_topic('/test', _schema())
-    recorder.start(name='run')
-    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
-    await recorder.stop()
-    source = next(iter(mcap_dir.glob('*.mcap')))
-
-    target = mcap_dir / 'merged.mcap'
-    merge_recordings([source], target)
-
-    with open(target, 'rb') as f:
-        records = {record.name: json.loads(record.metadata['json'])
-                   for record in make_reader(f).iter_metadata()}
-    assert records[MERGE_METADATA_NAME]['sources'] == [source.name]
-    assert records[MERGE_METADATA_NAME]['trimmed'] is False

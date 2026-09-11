@@ -6,7 +6,7 @@ from fastapi import status
 from fastapi.responses import FileResponse, JSONResponse
 
 from rosys.analysis.recording import McapRecorder, RecordingInfo, TopicSchema
-from rosys.analysis.recording.recordings_page_ import _download_response, _group_by_run, _replace_sources
+from rosys.analysis.recording.recordings_page_ import _download_response, _group_by_run
 
 # The download endpoint is registered as a closure on the global nicegui ``app`` once per
 # RecordingsPage instance (path-matched first-registration-wins), and exercising it over HTTP
@@ -125,6 +125,23 @@ def test_the_parts_of_a_run_form_one_entry() -> None:
     assert _group_by_run(parts) == [('20260911_052815_000000_run0002', parts)]
 
 
+def test_a_run_recorded_without_a_name_forms_one_entry_too() -> None:
+    """A run named after its start time alone is grouped like a named one."""
+    parts = [_info('20260911_052815_123456_02.mcap'), _info('20260911_052815_123456_01.mcap')]
+
+    assert _group_by_run(parts) == [('20260911_052815_123456', parts)]
+
+
+def test_the_parts_of_a_run_are_ordered_by_their_number() -> None:
+    """Part 100 follows part 99, however the names sort as text or the files were touched."""
+    names = ['20260911_052815_000000_mission_100.mcap', '20260911_052815_000000_mission_09.mcap',
+             '20260911_052815_000000_mission_11.mcap']
+
+    [(_, parts)] = _group_by_run([_info(name) for name in names])
+
+    assert [part.path.name for part in parts] == [names[0], names[2], names[1]]
+
+
 def test_runs_stay_apart_and_keep_their_order() -> None:
     """Each run gets its own entry, in the order its newest file appears in the list."""
     newer = _info('20260911_052815_000000_run0002_01.mcap')
@@ -137,28 +154,11 @@ def test_runs_stay_apart_and_keep_their_order() -> None:
 
 
 @pytest.mark.parametrize('name', ['20260911_052815_000000_run0002_failure.mcap',  # preserved around a failure
-                                  '20260911_052815_123456_01.mcap',  # recorded without a run name
                                   '20260911_052815_000000_run0002_merged.mcap',  # the merged file of a run
+                                  '20260911_052815_123456.mcap',  # a single unnumbered file
                                   'weeding on the north field.mcap'])  # renamed by hand
 def test_a_file_without_a_part_number_stays_on_its_own(name: str) -> None:
     """Anything the recorder did not number apart as a run's part keeps its own entry."""
     info = _info(name)
 
     assert _group_by_run([info]) == [(None, [info])]
-
-
-def test_a_merge_only_takes_the_run_name_once_it_is_complete(tmp_path: Path) -> None:
-    """A merge in progress must not look like a recording, and the parts go only after it lands."""
-    unfinished = tmp_path / 'run.mcap.part'
-    unfinished.write_bytes(b'merged')
-    sources = [tmp_path / 'run_01.mcap', tmp_path / 'run_02.mcap']
-    for source in sources:
-        source.write_bytes(b'part')
-
-    assert sorted(path.name for path in tmp_path.glob('*.mcap')) == ['run_01.mcap', 'run_02.mcap']
-
-    _replace_sources(unfinished, tmp_path / 'run.mcap', sources)
-
-    assert (tmp_path / 'run.mcap').read_bytes() == b'merged'
-    assert not unfinished.exists()
-    assert not any(source.exists() for source in sources)
