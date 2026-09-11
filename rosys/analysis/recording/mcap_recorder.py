@@ -46,9 +46,11 @@ _DEFAULT_PAYLOAD_BYTES = 1024
 
 _DROP_WARNING_INTERVAL = 10.0  # seconds between 'queue full' warnings, so drops do not spam the log
 
-_AUTO_NAME = re.compile(r'\d{8}_\d{6}(_\w+)*_\d+\.mcap')  # the numbered names _open_new_file generates
+_TIMESTAMP_FORMAT = r'%Y%m%d_%H%M%S_%f'  # microseconds -> unique per run
 
-TIMESTAMP_FORMAT = r'%Y%m%d_%H%M%S_%f'  # microseconds -> unique per recording
+_OWN_NAME = re.compile(r'(?P<run>\d{8}_\d{6}_\d{6}(?:_.+)?)_(?P<part>\d{2,})\.mcap|\d{8}_\d{6}_\d{6}\.mcap')
+"""A file the recorder wrote: part ``<part>`` of the run ``<timestamp>`` or ``<timestamp>_<name>``, or a bare
+``<timestamp>.mcap`` recorded as a single unnumbered file."""
 
 METADATA_NAME = 'recording'  # the MCAP metadata record holding the caller's context as JSON
 
@@ -56,15 +58,25 @@ METADATA_NAME = 'recording'  # the MCAP metadata record holding the caller's con
 def is_auto_named(path: Path | str) -> bool:
     """Whether a recording is one the recorder wrote itself.
 
-    Every file the recorder writes ends in a part number, so a name without one exists
-    because someone or something made it deliberately — a renamed recording, a merged
-    run, a file preserved around a failure. The disk budget deletes the recorder's own
-    files first and those kept files only when they alone exceed the budget.
+    The recorder names every part ``<run>_<part>.mcap``, the run starting with the time it
+    started, so any other name exists because someone or something made it deliberately — a
+    renamed recording, a merged run, a file preserved around a failure. The disk budget
+    deletes the recorder's own files first.
 
     :param path: the recording file to test.
     :return: ``True`` if the file name is one the recorder generated.
     """
-    return _AUTO_NAME.fullmatch(Path(path).name) is not None
+    return _OWN_NAME.fullmatch(Path(path).name) is not None
+
+
+def _check_file_name(name: str) -> None:
+    """Refuse a name that is not a plain file name, so no recording lands outside the output directory.
+
+    :param name: the name to check.
+    :raises ValueError: if the name is empty, whitespace or dots only, or contains a path separator.
+    """
+    if Path(name).name != name or not name.strip('.').strip():
+        raise ValueError(f'not a plain file name: {name!r}')
 
 
 class _QueuedMessage(NamedTuple):
@@ -219,8 +231,8 @@ class McapRecorder:
         self._lock = threading.Lock()  # serializes writer access; may be held for a full write
         self._queue_lock = threading.Lock()  # guards queue mutation only; held for microseconds
         self._sources: list[RecordingSource] = []
-        self._session_name: str | None = None
-        self._session_metadata: dict | None = None
+        self._run_name: str = ''
+        self._run_metadata: str | None = None  # JSON, serialized once at start
         self._part_index: int = 0
         self._loop: asyncio.AbstractEventLoop | None = None  # captured at start for loop-safe emits
         self._message_count: int = 0
@@ -355,6 +367,8 @@ class McapRecorder:
         :param path: the recording to rename.
         :param new_name: the desired name (reduced to a bare ``.mcap`` filename).
         :return: the new path, or ``None`` if the rename was rejected or the target exists.
+        :raises ValueError: if the new name reads as one of the recorder's own files, which the
+            disk budget would delete first.
         """
         path = Path(path)
         if path.parent != self.output_dir or not path.exists() or path == self.current_recording:
@@ -367,6 +381,9 @@ class McapRecorder:
             target = target.with_suffix('.mcap')
         if target == path:
             return None
+        if is_auto_named(target):
+            raise ValueError(f'{target.name} reads as a file the recorder wrote itself, '
+                             'which its disk budget deletes first')
         try:
             os.link(path, target)  # atomic: fails if the target exists, so a racing rename cannot clobber a recording
         except OSError:
@@ -424,7 +441,7 @@ class McapRecorder:
             source.start()
 
     def start(self, topics: Collection[str] | None = None, *,
-              name: str | None = None, metadata: dict | None = None) -> None:
+              name: str | None = None, metadata: dict | None = None) -> str | None:
         """Start a new recording.
 
         :param topics: record only these topics; all others are dropped (default: record
@@ -432,21 +449,28 @@ class McapRecorder:
             recording started is picked up as soon as it exists. The selection lasts for
             this recording; the next ``start()`` records everything again unless a new
             selection is passed.
-        :param name: base name for this recording's files, which are numbered
-            ``<name>_01.mcap``, ``<name>_02.mcap``, ... as they rotate, so the files of one
-            recording sort and read as a unit (default: a timestamp).
-        :param metadata: written into every file of this recording as a JSON metadata
-            record, so a segment carries the context it was recorded in.
+        :param name: appended to the start time to name the run, ``<timestamp>_<name>``
+            (default: the start time alone). The run's parts are numbered ``<run>_01.mcap``,
+            ``<run>_02.mcap``, ... as they rotate, so they sort and read as a unit.
+        :param metadata: written into every part of this run as a JSON metadata record, so a
+            part carries the context it was recorded in.
+        :return: the name of the run, or ``None`` if a recording is already running.
+        :raises ValueError: if ``name`` is not a plain file name.
+        :raises TypeError: if ``metadata`` cannot be serialized to JSON.
         """
         if self._is_recording:
-            return
+            return None
+        if name is not None:
+            _check_file_name(name)
+        run_metadata = json.dumps(metadata) if metadata is not None else None
         try:
             self._loop = asyncio.get_running_loop()  # captured for loop-safe emits from the writer thread
         except RuntimeError:
             self._loop = None  # started outside a running loop (e.g. a synchronous test)
         self._selected_topics = set(topics) if topics is not None else None
-        self._session_name = name or datetime.now(tz=UTC).strftime(TIMESTAMP_FORMAT)
-        self._session_metadata = metadata
+        timestamp = datetime.now(tz=UTC).strftime(_TIMESTAMP_FORMAT)
+        self._run_name = f'{timestamp}_{name}' if name is not None else timestamp
+        self._run_metadata = run_metadata
         self._part_index = 0
         self._message_count = 0
         self._dropped_message_count = 0
@@ -467,6 +491,7 @@ class McapRecorder:
             source.start()
         self.log.info('started MCAP recording: %s', self._file_path)
         self.RECORDING_STARTED.emit(self._file_path)
+        return self._run_name
 
     async def stop(self) -> None:
         """Stop recording, drain the queue, and finalize the file off the event loop.
@@ -727,13 +752,12 @@ class McapRecorder:
         if self._file is not None:  # never overwrite or leak a still-open file (defensive against a double open)
             self._close_file()
         self._part_index += 1
-        name = self._session_name or datetime.now(tz=UTC).strftime(TIMESTAMP_FORMAT)
-        self._file_path = self.output_dir / f'{name}_{self._part_index:02d}.mcap'
+        self._file_path = self.output_dir / f'{self._run_name}_{self._part_index:02d}.mcap'
         self._file = open(self._file_path, 'wb')  # pylint: disable=consider-using-with
         self._writer = Writer(self._file, compression=CompressionType.ZSTD, chunk_size=self.chunk_size)
         self._writer.start(profile=self.profile, library=self.library)
-        if self._session_metadata is not None:  # per file: a rotated segment must carry it too
-            self._writer.add_metadata(METADATA_NAME, {'json': json.dumps(self._session_metadata)})
+        if self._run_metadata is not None:  # per part: a rotated part must carry it too
+            self._writer.add_metadata(METADATA_NAME, {'json': self._run_metadata})
         self._file_started_at = rosys.time()
         self._file_message_count = 0
         self._topics.clear()

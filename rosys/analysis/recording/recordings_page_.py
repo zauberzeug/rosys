@@ -180,7 +180,7 @@ class RecordingsPage:
             :param key: the run whose files are merged.
             :param parts: the run's files.
             """
-            target = recorder.output_dir / f'{key}.mcap'
+            target = recorder.output_dir / f'{key}_merged.mcap'  # never reads as one of the recorder's own files
             unfinished = recorder.output_dir / f'{key}.mcap.part'  # not a *.mcap, so the list ignores it
             sources = sorted(part.path for part in parts)
             try:
@@ -228,9 +228,11 @@ class RecordingsPage:
                     ui.button('Rename', on_click=lambda: dialog.submit(name_input.value))
             new_name = await dialog
             if new_name:
-                renamed = await rosys.run.io_bound(recorder.rename_recording, path, new_name)  # off the loop
-                if renamed is None:
-                    rosys.notify(f'Could not rename {path.name} (name already in use or invalid)', type='negative')
+                try:
+                    if await rosys.run.io_bound(recorder.rename_recording, path, new_name) is None:  # off the loop
+                        raise ValueError('name already in use or invalid')
+                except ValueError as e:
+                    rosys.notify(f'Could not rename {path.name}: {e}', type='negative')
                 await reload()
 
         with ui.column().classes('w-full gap-2'):

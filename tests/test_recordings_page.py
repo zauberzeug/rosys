@@ -120,25 +120,25 @@ def _info(name: str, *, mtime: float = 0.0, size: int = 0) -> RecordingInfo:
 
 def test_the_parts_of_a_run_form_one_entry() -> None:
     """The numbered files of one run are grouped under the name they share."""
-    parts = [_info('20260911_052815_run0002_02.mcap'), _info('20260911_052815_run0002_01.mcap')]
+    parts = [_info('20260911_052815_000000_run0002_02.mcap'), _info('20260911_052815_000000_run0002_01.mcap')]
 
-    assert _group_by_run(parts) == [('20260911_052815_run0002', parts)]
+    assert _group_by_run(parts) == [('20260911_052815_000000_run0002', parts)]
 
 
 def test_runs_stay_apart_and_keep_their_order() -> None:
     """Each run gets its own entry, in the order its newest file appears in the list."""
-    newer = _info('20260911_052815_run0002_01.mcap')
-    older = [_info('20260910_120000_run0001_02.mcap'), _info('20260910_120000_run0001_01.mcap')]
+    newer = _info('20260911_052815_000000_run0002_01.mcap')
+    older = [_info('20260910_120000_000000_run0001_02.mcap'), _info('20260910_120000_000000_run0001_01.mcap')]
 
     assert _group_by_run([newer, *older]) == [
-        ('20260911_052815_run0002', [newer]),
-        ('20260910_120000_run0001', older),
+        ('20260911_052815_000000_run0002', [newer]),
+        ('20260910_120000_000000_run0001', older),
     ]
 
 
-@pytest.mark.parametrize('name', ['20260911_052815_run0002_failure.mcap',  # preserved around a failure
+@pytest.mark.parametrize('name', ['20260911_052815_000000_run0002_failure.mcap',  # preserved around a failure
                                   '20260911_052815_123456_01.mcap',  # recorded without a run name
-                                  '20260911_052815_run0002.mcap',  # the merged file of a run
+                                  '20260911_052815_000000_run0002_merged.mcap',  # the merged file of a run
                                   'weeding on the north field.mcap'])  # renamed by hand
 def test_a_file_without_a_part_number_stays_on_its_own(name: str) -> None:
     """Anything the recorder did not number apart as a run's part keeps its own entry."""
