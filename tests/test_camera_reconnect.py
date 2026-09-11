@@ -2,7 +2,7 @@ import asyncio
 import gc
 import logging
 import weakref
-from contextlib import asynccontextmanager, nullcontext, suppress
+from contextlib import nullcontext, suppress
 from unittest.mock import AsyncMock, patch
 
 import cv2
@@ -12,6 +12,7 @@ from nicegui import background_tasks
 
 import rosys
 import rosys.rosys as rosys_core
+from rosys.geometry import Rectangle
 from rosys.testing import forward
 from rosys.vision import (
     ImageSize,
@@ -98,8 +99,9 @@ def connected_rtsp_stream():
 
 
 async def forward_until(condition, *, step: float = 0.3, real_step: float = 0.05,
-                        attempts: int = 20, message: str = 'condition was not met') -> None:
+                        attempts: int = 200, message: str = 'condition was not met') -> None:
     """Advance simulated time in steps, yielding real time between them, until `condition` holds."""
+    # attempts cover the second or more every MJPEG session needs to spawn its stream worker
     # forward(until=...) only yields via asyncio.sleep(0), too little for loopback sockets or io_bound threads
     for _ in range(attempts):
         if condition():
@@ -116,7 +118,7 @@ async def _survives_one_cancellation() -> None:
     await asyncio.sleep(60.0)
 
 
-JPEG_FRAME = b'\xff\xd8' + bytes(32) + b'\xff\xd9'  # minimal SOI..EOI JPEG marker pair
+JPEG_FRAME = cv2.imencode('.jpg', np.zeros((8, 8, 3), dtype=np.uint8))[1].tobytes()
 
 
 @pytest.fixture
@@ -170,8 +172,8 @@ class SlowFirstDecode:
         return callback(*args, **kwargs)
 
 
-async def decode_frame(data: bytes, timestamp: float) -> None:  # pylint: disable=unused-argument
-    """Image callback shaped like `MjpegCamera._handle_new_image_data`, which decodes via `cpu_bound`."""
+async def decode_frame(data: np.ndarray, timestamp: float) -> None:  # pylint: disable=unused-argument
+    """Image callback that hands the frame to a `cpu_bound` call, like a camera's processing would."""
     await rosys.run.cpu_bound(len, data)
 
 
@@ -233,9 +235,9 @@ async def test_mjpeg_device_reconnects_after_stream_drops(rosys_integration):
                          on_new_image_data=lambda data, timestamp: frames.append(data))
     device.reconnect_interval = 0.2
     try:
-        await forward_until(lambda: server.connections >= 3, attempts=60,
+        await forward_until(lambda: server.connections >= 3,
                             message='device did not reconnect')
-        await forward_until(lambda: len(frames) >= 3, attempts=60,
+        await forward_until(lambda: len(frames) >= 3,
                             message='no frames received across reconnects')
 
         await device.shutdown()
@@ -497,7 +499,7 @@ async def test_mjpeg_device_backs_off_after_401(rosys_integration):
             'expected the device to throttle its retries after a 401 response'
         )
 
-        await forward_until(lambda: server.connections > connections_after_401, step=0.5, attempts=40,
+        await forward_until(lambda: server.connections > connections_after_401, step=0.5,
                             message='expected the device to retry once the back-off elapsed')
     finally:
         await device.shutdown()
@@ -693,30 +695,38 @@ async def test_axis_camera_applies_parameters_without_restarting_its_own_session
 
 
 async def test_mjpeg_device_reopens_the_stream_when_its_url_changes(rosys_integration):
-    opened_urls: list[str] = []
+    server = FlakyMjpegServer(frames_per_connection=None)
+    await server.start()
+    device = AxisMjpegDevice(AXIS_MAC, f'127.0.0.1:{server.port}', on_new_image_data=lambda data, timestamp: None)
+    device.reconnect_interval = 0.2
+    try:
+        await forward_until(lambda: device.is_connected, message='expected the stream to be opened')
+        assert server.connections == 1
+        await device.set_fps(12)
+        await forward_until(lambda: server.connections == 2,
+                            message='expected the stream to reopen after the settings changed')
+        assert 'fps=12' in (device.url or '')
+    finally:
+        await device.shutdown()
+        await server.stop()
 
-    @asynccontextmanager
-    async def open_stream(client, url, username, password):  # pylint: disable=unused-argument
-        opened_urls.append(url)
-        yield object()  # the response only reaches the patched frame reader
 
-    async def endless_frames(self, response):  # pylint: disable=unused-argument
-        while True:
-            await rosys.sleep(0.05)
-            yield b'\xff\xd8' + bytes(32) + b'\xff\xd9', None
-
-    with patch('rosys.vision.mjpeg_camera.mjpeg_device.open_stream', open_stream), \
-            patch.object(MjpegDevice, '_frame_reader', endless_frames):
-        device = AxisMjpegDevice(AXIS_MAC, '192.168.0.5', on_new_image_data=lambda data, timestamp: None)
-        device.reconnect_interval = 0.2
-        try:
-            await forward_until(lambda: len(opened_urls) == 1, message='expected the stream to be opened')
-            await device.set_fps(12)
-            await forward_until(lambda: len(opened_urls) == 2,
-                                message='expected the stream to reopen after the settings changed')
-            assert 'fps=6' in opened_urls[0] and 'fps=12' in opened_urls[1]
-        finally:
-            await device.shutdown()
+async def test_mjpeg_camera_receives_frames_decoded_by_the_stream_worker(rosys_integration):
+    server = FlakyMjpegServer(frames_per_connection=None)
+    await server.start()
+    camera = MjpegCamera(id=GOODCAM_MAC, ip=f'127.0.0.1:{server.port}', connect_after_init=False,
+                         crop=Rectangle(x=0, y=0, width=6, height=4), rotation=90)
+    await camera.connect()
+    try:
+        await forward_until(lambda: len(camera.images) >= 3, message='expected decoded frames')
+        image = camera.images[-1]
+        assert image.camera_id == camera.id
+        assert image.array.shape == (6, 4, 3), 'expected the frame to be cropped, then rotated'
+        assert camera.is_connected
+    finally:
+        await camera.disconnect()
+        await server.stop()
+    assert not camera.is_active
 
 
 async def test_mjpeg_device_stops_streaming_when_shut_down_during_a_callback(rosys_integration):

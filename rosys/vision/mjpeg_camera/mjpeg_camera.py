@@ -1,11 +1,9 @@
 import logging
 from typing import Any
 
-from ... import rosys
 from ..camera import ConfigurableCamera, TransformableCamera
-from ..image import Image
-from ..image_processing import process_jpeg_image
-from ..image_rotation import ImageRotation
+from ..image import Image, ImageArray
+from ..image_processing import process_ndarray_image
 from .mjpeg_device import MjpegDevice
 from .mjpeg_device_factory import MjpegDeviceFactory
 
@@ -93,17 +91,9 @@ class MjpegCamera(TransformableCamera, ConfigurableCamera):
         await self.device.shutdown()
         self.device = None
 
-    async def _handle_new_image_data(self, image_bytes: bytes, timestamp: float) -> None:
-        image: Image | None = None
-        if self.crop or self.rotation != ImageRotation.NONE:
-            image_array = await rosys.run.cpu_bound(process_jpeg_image, image_bytes, self.rotation, self.crop)
-            if image_array is not None:
-                image = Image.from_array(image_array, camera_id=self.id, time=timestamp)
-        else:
-            image = await rosys.run.cpu_bound(Image.from_jpeg_bytes, image_bytes, camera_id=self.id, time=timestamp)
-
-        if image is not None:
-            self._add_image(image)
+    async def _handle_new_image_data(self, image_array: ImageArray, timestamp: float) -> None:
+        transformed_image_array = process_ndarray_image(image_array, self.rotation, self.crop)
+        self._add_image(Image.from_array(transformed_image_array, camera_id=self.id, time=timestamp))
 
     async def _set_fps(self, fps: int) -> None:
         assert self.device is not None

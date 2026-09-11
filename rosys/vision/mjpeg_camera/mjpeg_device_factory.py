@@ -3,7 +3,7 @@ from collections.abc import Awaitable, Callable
 
 from .arkvision_mjpeg_device import ArkVisionMjpegDevice
 from .axis_mjpeg_device import AxisMjpegDevice
-from .mjpeg_device import MjpegDevice
+from .mjpeg_device import ImageDataHandler, MjpegDevice
 from .motec_mjpeg_device import MotecMjpegDevice
 from .openipc_zauberzeug_mjpeg_device import OpenIpcZauberzeugMjpegDevice
 from .vendors import VendorType, mac_to_vendor
@@ -18,7 +18,7 @@ class MjpegDeviceFactory:
                username: str | None = None,
                password: str | None = None,
                control_port: int | None = None,
-               on_new_image_data: Callable[[bytes, float], Awaitable | None],
+               on_new_image_data: ImageDataHandler,
                on_connect: Callable[[], Awaitable | None] | None = None,
                reconnect_interval: float = 3.0) -> MjpegDevice:
 

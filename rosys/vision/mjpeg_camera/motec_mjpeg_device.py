@@ -1,6 +1,7 @@
+
 from collections.abc import Awaitable, Callable
 
-from .mjpeg_device import CameraAddressUnknown, MjpegDevice
+from .mjpeg_device import CameraAddressUnknown, ImageDataHandler, MjpegDevice
 from .motec_settings_interface import MotecSettingsInterface
 from .vendors import VendorType, mac_to_vendor
 
@@ -10,7 +11,7 @@ class MotecMjpegDevice(MjpegDevice):
                  username: str | None = '',
                  password: str | None = '',
                  control_port: int | None = 8885,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 on_new_image_data: ImageDataHandler,
                  on_connect: Callable[[], Awaitable | None] | None = None,
                  reconnect_interval: float = 3.0) -> None:
         vendor = mac_to_vendor(mac)

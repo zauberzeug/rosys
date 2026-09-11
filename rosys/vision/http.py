@@ -16,3 +16,8 @@ def _ssl_context() -> ssl.SSLContext:
 def new_async_client(*, timeout: float | None = DEFAULT_TIMEOUT, **kwargs) -> httpx.AsyncClient:
     """Create an `httpx.AsyncClient` with a shared SSL context and an explicit timeout."""
     return httpx.AsyncClient(verify=_ssl_context(), timeout=timeout, **kwargs)
+
+
+def new_client(*, timeout: float | None = DEFAULT_TIMEOUT, **kwargs) -> httpx.Client:
+    """Create an `httpx.Client` with a shared SSL context and an explicit timeout."""
+    return httpx.Client(verify=_ssl_context(), timeout=timeout, **kwargs)
