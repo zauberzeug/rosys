@@ -146,7 +146,9 @@ class RecordingsPage:
                 ui.button(icon='delete_sweep', on_click=_delete_all) \
                     .props('flat dense color=red').tooltip('delete all recordings')
                 ui.button(icon='refresh', on_click=reload).props('flat dense')
-            with ui.scroll_area().classes('w-full').style('max-height: 75vh'):
+            with ui.scroll_area().classes('w-full') \
+                    .props('content-style="padding: 0"') \
+                    .style('max-height: 75vh'):  # the page already pads; a second inset misaligns the list
                 recordings_list()
 
         def _change_token() -> tuple[tuple[Path, ...], Path | None]:
