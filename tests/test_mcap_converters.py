@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import math
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,6 +14,7 @@ from nicegui.page import page
 
 from rosys.analysis.recording import (
     Converter,
+    McapLogHandler,
     McapRecorder,
     TopicSchema,
     add_event_topic,
@@ -829,3 +831,62 @@ async def test_event_subscription_survives_client_deletion(mcap_dir: Path) -> No
 
     _, message = _read(_only_file(mcap_dir))[0]
     assert message['pose']['position']['x'] == 3.0
+
+
+def _recording_logger(recorder: McapRecorder) -> logging.Logger:
+    """A logger whose lines the given recorder records, with no handler left from an earlier test.
+
+    :param recorder: the recorder the log handler writes to.
+    :return: the logger to log through.
+    """
+    logger = logging.getLogger('rosys.test.recording')
+    logger.setLevel(logging.DEBUG)
+    logger.handlers.clear()
+    logger.addHandler(McapLogHandler(recorder))
+    return logger
+
+
+async def test_log_lines_are_recorded(mcap_dir: Path) -> None:
+    """A line logged while the handler is attached lands in the recording as a foxglove.Log message."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    logger = _recording_logger(recorder)
+    recorder.start()
+
+    logger.warning('found %d weeds', 3)
+    await recorder.stop()
+    logger.handlers.clear()
+
+    schema_name, message = _read(_only_file(mcap_dir))[0]
+    assert schema_name == 'foxglove.Log'
+    assert message['message'] == 'found 3 weeds'
+    assert message['level'] == 3  # foxglove WARNING
+    assert message['name'] == 'rosys.test.recording'
+    assert message['file'] == 'test_mcap_converters.py'
+
+
+async def test_log_levels_map_onto_foxglove(mcap_dir: Path) -> None:
+    """Foxglove colours and filters a line by its level, so every Python level needs its counterpart."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    logger = _recording_logger(recorder)
+    recorder.start()
+
+    for level in (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL):
+        logger.log(level, 'a line')
+    await recorder.stop()
+    logger.handlers.clear()
+
+    assert [message['level'] for _, message in _read(_only_file(mcap_dir))] == [1, 2, 3, 4, 5]
+
+
+async def test_the_recorders_own_log_stays_out_of_the_recording(mcap_dir: Path) -> None:
+    """The recorder logs from inside its queue lock, so recording its own lines would deadlock it."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.log.setLevel(logging.DEBUG)
+    recorder.log.addHandler(McapLogHandler(recorder))
+    recorder.start()
+
+    recorder.log_message('/unknown', b'{}')  # makes the recorder log about the unknown topic
+    await recorder.stop()
+    recorder.log.handlers.clear()
+
+    assert not list(mcap_dir.glob('*.mcap'))  # nothing recorded at all -> the empty recording was discarded

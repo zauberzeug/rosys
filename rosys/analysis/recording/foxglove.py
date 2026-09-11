@@ -11,9 +11,10 @@ lives in :mod:`.converters`.
 from __future__ import annotations
 
 import base64
+import logging
 import math
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 from ...geometry import Pose, Velocity
 from ...hardware.bms_state import BmsState
@@ -441,6 +442,90 @@ def imu() -> Converter:
         }
 
     return custom_message('ImuMeasurement', schema, build)
+
+
+# --------------------------------------------------------------------------- #
+# Log messages
+# --------------------------------------------------------------------------- #
+
+_FOXGLOVE_LOG_LEVELS = ((logging.CRITICAL, 5), (logging.ERROR, 4), (logging.WARNING, 3),
+                        (logging.INFO, 2), (logging.DEBUG, 1))  # foxglove.LogLevel; anything below DEBUG is UNKNOWN
+
+
+class LogEntry(NamedTuple):
+    """One log line, taken off a :class:`logging.LogRecord` before it is queued.
+
+    The message is rendered where the line is logged, so the recording holds what the line
+    said at that moment rather than what its arguments hold once the writer gets to it.
+    """
+    level: int
+    message: str
+    name: str
+    file: str
+    line: int
+
+
+def log() -> Converter:
+    """``LogEntry`` -> ``foxglove.Log`` (what Foxglove's Logs panel renders)."""
+    schema = {
+        'type': 'object',
+        'properties': {
+            'timestamp': _TIME_SCHEMA, 'level': {'type': 'integer'}, 'message': {'type': 'string'},
+            'name': {'type': 'string'}, 'file': {'type': 'string'}, 'line': {'type': 'integer'},
+        },
+    }
+
+    def build(entry: LogEntry, timestamp_ns: int) -> dict:
+        return {'timestamp': _foxglove_time(timestamp_ns), 'level': entry.level, 'message': entry.message,
+                'name': entry.name, 'file': entry.file, 'line': entry.line}
+
+    return custom_message('foxglove.Log', schema, build)
+
+
+class McapLogHandler(logging.Handler):
+    """Writes what a logger logs into the recording, so a recording explains itself.
+
+    Attach it to the loggers whose lines belong in the recording, never to the root logger:
+    every library logging anywhere would end up in the file. Handling a record is a message
+    render plus an enqueue — the JSON encoding runs on the recorder's writer thread — and it
+    happens wherever the line is logged, which may be any thread.
+    """
+
+    def __init__(self, recorder: McapRecorder, topic: str = '/log') -> None:
+        """Register the log topic on ``recorder``.
+
+        :param recorder: the recorder the log lines are written to.
+        :param topic: the topic the lines are recorded on.
+        """
+        super().__init__()
+        self._recorder = recorder
+        self._topic = topic
+        self._converter = log()
+        recorder.add_topic(topic, self._converter.schema)
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if not self._recorder.accepts(self._topic):
+            return
+        if record.name == self._recorder.log.name:
+            return  # the recorder logs from inside its queue lock, so recording its own lines would deadlock
+        try:
+            entry = LogEntry(_log_level(record.levelno), record.getMessage(),
+                             record.name, record.filename, record.lineno)
+            self._recorder.log_message(self._topic, entry, encode=self._converter.encode)
+        except Exception:
+            self.handleError(record)  # recording a log line must never break the logging it records
+
+
+def _log_level(levelno: int) -> int:
+    """Map a Python log level onto foxglove's.
+
+    :param levelno: the numeric level of the log record.
+    :return: the foxglove log level, ``0`` (UNKNOWN) for anything below DEBUG.
+    """
+    for threshold, level in _FOXGLOVE_LOG_LEVELS:
+        if levelno >= threshold:
+            return level
+    return 0
 
 
 # --------------------------------------------------------------------------- #

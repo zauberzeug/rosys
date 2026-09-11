@@ -12,6 +12,8 @@ from .converters import (
     text,
 )
 from .foxglove import (
+    LogEntry,
+    McapLogHandler,
     add_pose_topic,
     battery_state,
     camera_calibration,
@@ -22,6 +24,7 @@ from .foxglove import (
     image_annotations,
     imu,
     location_fix,
+    log,
     pose_in_frame,
     transform_3d,
     velocity,
@@ -45,6 +48,8 @@ __all__ = [
     'NANOSECONDS_PER_SECOND',
     'PAGE_PATH',
     'Converter',
+    'LogEntry',
+    'McapLogHandler',
     'McapRecorder',
     'RecordingInfo',
     'RecordingSource',
@@ -68,6 +73,7 @@ __all__ = [
     'is_auto_named',
     'is_indexed',
     'location_fix',
+    'log',
     'merge_recordings',
     'number',
     'pose_in_frame',
