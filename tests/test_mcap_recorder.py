@@ -7,7 +7,7 @@ import pytest
 from mcap.reader import make_reader
 
 import rosys
-from rosys.analysis.recording import McapRecorder, TopicSchema
+from rosys.analysis.recording import McapRecorder, TopicSchema, is_auto_named
 
 NS = 1_000_000_000
 
@@ -745,3 +745,59 @@ async def test_disk_budget_deletes_renamed_recordings_last(mcap_dir: Path) -> No
     assert kept.name in remaining
     assert '20200101_000000_000000.mcap' not in remaining  # oldest auto-named file paid for the budget
     assert '20200102_000000_000000.mcap' in remaining
+
+
+def _metadata(path: Path) -> dict:
+    """Read the recording's metadata record back.
+
+    :param path: the MCAP file to read.
+    :return: the decoded JSON payload, or an empty dict when the file carries none.
+    """
+    with open(path, 'rb') as f:
+        records = [record for record in make_reader(f).iter_metadata() if record.name == 'recording']
+    return json.loads(records[0].metadata['json']) if records else {}
+
+
+async def test_the_files_of_one_recording_share_a_name_and_are_numbered(mcap_dir: Path) -> None:
+    """Rotation keeps the caller's name and numbers the parts, so a run reads as a unit."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start(name='20260911_054956_run0042')
+
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder._flush()
+    rosys.set_time(rosys.time() + 61)
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=61 * NS)
+    await recorder.stop()
+
+    assert [path.name for path in sorted(mcap_dir.glob('*.mcap'))] == \
+        ['20260911_054956_run0042_01.mcap', '20260911_054956_run0042_02.mcap']
+
+
+async def test_every_file_of_a_recording_carries_the_metadata(mcap_dir: Path) -> None:
+    """A rotated segment is as self-explaining as the first one."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start(name='run', metadata={'mission': 'Implement Demo', 'run_id': 42})
+
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder._flush()
+    rosys.set_time(rosys.time() + 61)
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=61 * NS)
+    await recorder.stop()
+
+    files = sorted(mcap_dir.glob('*.mcap'))
+    assert len(files) == 2
+    for path in files:
+        assert _metadata(path) == {'mission': 'Implement Demo', 'run_id': 42}
+
+
+async def test_a_named_recording_stays_within_the_disk_budget(mcap_dir: Path) -> None:
+    """A name from the caller does not turn its files into keepers the budget spares."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start(name='20260911_054956_run0042')
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder.stop()
+
+    assert all(is_auto_named(path) for path in mcap_dir.glob('*.mcap'))

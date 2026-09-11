@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
 import re
@@ -45,7 +46,11 @@ _DEFAULT_PAYLOAD_BYTES = 1024
 
 _DROP_WARNING_INTERVAL = 10.0  # seconds between 'queue full' warnings, so drops do not spam the log
 
-_AUTO_NAME = re.compile(r'\d{8}_\d{6}_\d{6}\.mcap')  # the timestamp names _open_new_file generates
+_AUTO_NAME = re.compile(r'\d{8}_\d{6}(_\w+)*\.mcap')  # the timestamped names _open_new_file generates
+
+TIMESTAMP_FORMAT = r'%Y%m%d_%H%M%S_%f'  # microseconds -> unique per recording
+
+METADATA_NAME = 'recording'  # the MCAP metadata record holding the caller's context as JSON
 
 
 def is_auto_named(path: Path | str) -> bool:
@@ -212,6 +217,9 @@ class McapRecorder:
         self._lock = threading.Lock()  # serializes writer access; may be held for a full write
         self._queue_lock = threading.Lock()  # guards queue mutation only; held for microseconds
         self._sources: list[RecordingSource] = []
+        self._session_name: str | None = None
+        self._session_metadata: dict | None = None
+        self._part_index: int = 0
         self._loop: asyncio.AbstractEventLoop | None = None  # captured at start for loop-safe emits
         self._message_count: int = 0
         self._file_message_count: int = 0
@@ -413,7 +421,8 @@ class McapRecorder:
         if self._is_recording:
             source.start()
 
-    def start(self, topics: Collection[str] | None = None) -> None:
+    def start(self, topics: Collection[str] | None = None, *,
+              name: str | None = None, metadata: dict | None = None) -> None:
         """Start a new recording.
 
         :param topics: record only these topics; all others are dropped (default: record
@@ -421,6 +430,11 @@ class McapRecorder:
             recording started is picked up as soon as it exists. The selection lasts for
             this recording; the next ``start()`` records everything again unless a new
             selection is passed.
+        :param name: base name for this recording's files, which are numbered
+            ``<name>_01.mcap``, ``<name>_02.mcap``, ... as they rotate, so the files of one
+            recording sort and read as a unit (default: a timestamp).
+        :param metadata: written into every file of this recording as a JSON metadata
+            record, so a segment carries the context it was recorded in.
         """
         if self._is_recording:
             return
@@ -429,6 +443,9 @@ class McapRecorder:
         except RuntimeError:
             self._loop = None  # started outside a running loop (e.g. a synchronous test)
         self._selected_topics = set(topics) if topics is not None else None
+        self._session_name = name or datetime.now(tz=UTC).strftime(TIMESTAMP_FORMAT)
+        self._session_metadata = metadata
+        self._part_index = 0
         self._message_count = 0
         self._dropped_message_count = 0
         with self._queue_lock:  # drop any backlog left by a previously aborted recording
@@ -741,11 +758,14 @@ class McapRecorder:
     def _open_new_file(self) -> None:
         if self._file is not None:  # never overwrite or leak a still-open file (defensive against a double open)
             self._close_file()
-        timestamp = datetime.now(tz=UTC).strftime('%Y%m%d_%H%M%S_%f')  # microseconds -> unique per file
-        self._file_path = self.output_dir / f'{timestamp}.mcap'
+        self._part_index += 1
+        name = self._session_name or datetime.now(tz=UTC).strftime(TIMESTAMP_FORMAT)
+        self._file_path = self.output_dir / f'{name}_{self._part_index:02d}.mcap'
         self._file = open(self._file_path, 'wb')  # pylint: disable=consider-using-with
         self._writer = Writer(self._file, compression=CompressionType.ZSTD, chunk_size=self.chunk_size)
         self._writer.start(profile=self.profile, library=self.library)
+        if self._session_metadata is not None:  # per file: a rotated segment must carry it too
+            self._writer.add_metadata(METADATA_NAME, {'json': json.dumps(self._session_metadata)})
         self._file_started_at = rosys.time()
         self._file_message_count = 0
         self._topics.clear()
