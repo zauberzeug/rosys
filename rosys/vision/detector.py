@@ -27,13 +27,14 @@ class Autoupload(Enum):
 
 
 class ImageState(Enum):
-    """Target state for an uploaded image in the Learning Loop"""
+    """Target state for an image when uploaded to the Learning Loop"""
 
+    BACKLOG = 'backlog'
     INBOX = 'inbox'
-    """State for images that should enter the annotation pipeline"""
-
+    ANNOTATE = 'annotate'
+    REVIEW = 'review'
+    COMPLETE = 'complete'
     TRASH = 'trash'
-    """State for images that should be archived without entering the annotation pipeline"""
 
 
 class DetectorException(Exception):
@@ -144,7 +145,7 @@ class Detector(abc.ABC):
         If the image has detections, they are also uploaded.
 
         The `state` determines which state the image enters the Learning Loop in,
-        for example ``ImageState.TRASH`` to archive it without annotating it.
+        for example ``ImageState.TRASH``.
         If it is omitted, the Learning Loop applies its own default.
 
         :raises DetectorException: if the upload fails.
