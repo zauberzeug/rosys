@@ -137,16 +137,17 @@ class RecordingsPage:
                     rosys.notify(f'Could not rename {path.name} (name already in use or invalid)', type='negative')
                 await reload()
 
-        with ui.row().classes('w-full items-center gap-2'):
-            date_input = ui.date_input('Date range', range_input=True, on_change=recordings_list.refresh)
-            ui.space()
-            reindex_button = ui.button(icon='build', on_click=_reindex) \
-                .props('flat dense').tooltip('rebuild the index of unindexed recordings')
-            ui.button(icon='delete_sweep', on_click=_delete_all) \
-                .props('flat dense color=red').tooltip('delete all recordings')
-            ui.button(icon='refresh', on_click=reload).props('flat dense')
-        with ui.scroll_area().classes('w-full').style('max-height: 75vh'):
-            recordings_list()
+        with ui.column().classes('w-full gap-2'):  # one column, so controls and list keep the same insets
+            with ui.row().classes('w-full items-center gap-2'):
+                date_input = ui.date_input('Date range', range_input=True, on_change=recordings_list.refresh)
+                ui.space()
+                reindex_button = ui.button(icon='build', on_click=_reindex) \
+                    .props('flat dense').tooltip('rebuild the index of unindexed recordings')
+                ui.button(icon='delete_sweep', on_click=_delete_all) \
+                    .props('flat dense color=red').tooltip('delete all recordings')
+                ui.button(icon='refresh', on_click=reload).props('flat dense')
+            with ui.scroll_area().classes('w-full').style('max-height: 75vh'):
+                recordings_list()
 
         def _change_token() -> tuple[tuple[Path, ...], Path | None]:
             """A cheap change token — the recording paths plus the live file.
