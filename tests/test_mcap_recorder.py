@@ -7,7 +7,7 @@ import pytest
 from mcap.reader import make_reader
 
 import rosys
-from rosys.analysis.recording import McapRecorder, TopicSchema, is_auto_named
+from rosys.analysis.recording import MERGE_METADATA_NAME, McapRecorder, TopicSchema, is_auto_named, merge_recordings
 
 NS = 1_000_000_000
 
@@ -801,3 +801,42 @@ async def test_a_named_recording_stays_within_the_disk_budget(mcap_dir: Path) ->
     await recorder.stop()
 
     assert all(is_auto_named(path) for path in mcap_dir.glob('*.mcap'))
+
+
+async def test_a_merged_recording_keeps_the_context_of_its_sources(mcap_dir: Path) -> None:
+    """Merging must not strip the metadata; the merged file is the one people send around."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start(name='run', metadata={'mission': 'Implement Demo', 'run_id': 42})
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder._flush()
+    rosys.set_time(rosys.time() + 61)
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=61 * NS)
+    await recorder.stop()
+    sources = sorted(mcap_dir.glob('*.mcap'))
+
+    target = mcap_dir / 'merged.mcap'
+    count = merge_recordings(sources, target)
+
+    assert count == 2
+    assert _values(target) == [0, 1]
+    assert _metadata(target) == {'mission': 'Implement Demo', 'run_id': 42}
+
+
+async def test_a_merged_recording_says_how_it_came_to_be(mcap_dir: Path) -> None:
+    """The merge leaves its own record, so nobody wonders where a file came from."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start(name='run')
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder.stop()
+    source = next(iter(mcap_dir.glob('*.mcap')))
+
+    target = mcap_dir / 'merged.mcap'
+    merge_recordings([source], target)
+
+    with open(target, 'rb') as f:
+        records = {record.name: json.loads(record.metadata['json'])
+                   for record in make_reader(f).iter_metadata()}
+    assert records[MERGE_METADATA_NAME]['sources'] == [source.name]
+    assert records[MERGE_METADATA_NAME]['trimmed'] is False

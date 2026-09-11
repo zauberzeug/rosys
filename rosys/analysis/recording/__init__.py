@@ -35,11 +35,13 @@ from .mcap_recorder import (
     TopicSchema,
     is_auto_named,
 )
+from .merging import MERGE_METADATA_NAME, merge_recordings
 from .paths import DOWNLOAD_PATH, PAGE_PATH
 from .recordings_page_ import RecordingsPage
 
 __all__ = [
     'DOWNLOAD_PATH',
+    'MERGE_METADATA_NAME',
     'NANOSECONDS_PER_SECOND',
     'PAGE_PATH',
     'Converter',
@@ -66,6 +68,7 @@ __all__ = [
     'is_auto_named',
     'is_indexed',
     'location_fix',
+    'merge_recordings',
     'number',
     'pose_in_frame',
     'register',
