@@ -505,6 +505,27 @@ async def test_simulated_camera_passes_params_to_device(rosys_integration):
     await camera.disconnect()
 
 
+async def test_mjpeg_device_reconnects_when_its_reader_fails(vision_log):
+    server = FlakyMjpegServer(frames_per_connection=None)
+    await server.start()
+    device = MjpegDevice(GOODCAM_MAC, f'127.0.0.1:{server.port}',
+                         on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
+    try:
+        await wait_in_real_time(lambda: device.is_connected, message='expected the stream to be opened')
+        receiver_type = type(device._worker._receiver)  # pylint: disable=protected-access
+        with patch.object(receiver_type, 'receive', side_effect=RuntimeError('received 0 items of ancdata')):
+            await wait_in_real_time(lambda: not device.is_connected,
+                                    message='expected the failing reader to end the session')
+        await forward_until(lambda: server.connections >= 2 and device.is_connected,
+                            message='expected the device to reconnect after its reader failed')
+        assert any('receiving from the stream worker failed: RuntimeError: received 0 items of ancdata'
+                   in record.getMessage() for record in vision_log.records), 'expected the failure to be reported'
+    finally:
+        await device.shutdown()
+        await cancel_leftover_loops(f'capture {GOODCAM_MAC}')
+        await server.stop()
+
+
 async def test_mjpeg_device_backs_off_after_401(rosys_integration):
     server = FlakyMjpegServer(status=401)
     await server.start()

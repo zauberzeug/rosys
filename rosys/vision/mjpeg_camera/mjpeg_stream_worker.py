@@ -59,15 +59,20 @@ class MjpegStreamWorker:
 
     def _read_messages(self) -> None:
         while True:
+            message: Message | None
             try:
                 message = self._receiver.receive()
             except (EOFError, OSError):
                 message = None
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                self.log.exception('receiving from the stream worker failed')
+                message = StreamEnded(reason=EndReason.FAILED,
+                                      detail=f'receiving from the stream worker failed: {type(e).__name__}: {e}')
             try:
                 self._loop.call_soon_threadsafe(self._handle_incoming_message, message)
             except RuntimeError:
                 return  # the loop is closed
-            if message is None:
+            if message is None or isinstance(message, StreamEnded):
                 return
 
     def _handle_incoming_message(self, message: Message | None) -> None:
