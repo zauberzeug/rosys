@@ -136,8 +136,9 @@ class McapRecorder:
     Peak disk usage is ``max_total_size_mb + max_file_size_mb``: the budget is enforced only
     before a file is opened, so the currently growing file can exceed it by up to one file's
     worth. The budget deletes the recorder's own files (oldest first) before touching kept
-    ones, so a recording filed away to be kept survives until kept files alone exceed the
-    budget.
+    ones — renamed, merged or otherwise filed-away recordings (see :func:`is_auto_named`).
+    Kept files have a bound of their own, ``max_kept_size_mb``, so they cannot squeeze the
+    rolling window of the recorder's own files down to nothing.
 
     Messages are enqueued from the event loop (cheap, non-blocking) and written to disk by a
     single background consumer via ``rosys.run.io_bound`` so that encoding, ZSTD compression
@@ -169,6 +170,7 @@ class McapRecorder:
         max_file_size_mb: float = 100,
         max_file_duration: float | None = None,
         max_total_size_mb: float = 1000,
+        max_kept_size_mb: float = 500,
         chunk_size: int = 1_048_576,
         flush_interval: float = 1.0,
         profile: str = 'rosys',
@@ -190,6 +192,9 @@ class McapRecorder:
             exceed the budget. Peak disk usage is therefore ``max_total_size_mb + max_file_size_mb``
             (the budget is enforced only before a file is opened, so the growing file can
             exceed it by up to one file's worth).
+        :param max_kept_size_mb: bound for the kept recordings within the budget; beyond it the
+            oldest kept ones are deleted before a new file is opened. The newest kept recording
+            is spared however large it is: it is the one just filed away.
         :param chunk_size: MCAP chunk size in bytes (larger chunks compress better and flush
             less often).
         :param flush_interval: seconds between background flushes of the queue to disk.
@@ -207,6 +212,7 @@ class McapRecorder:
         self.max_file_size = int(max_file_size_mb * 1_048_576)
         self.max_file_duration = max_file_duration
         self.max_total_size = int(max_total_size_mb * 1_048_576)
+        self.max_kept_size = int(max_kept_size_mb * 1_048_576)
         self.chunk_size = chunk_size
         self.profile = profile
         self.library = library
@@ -361,9 +367,8 @@ class McapRecorder:
         The currently-recording file cannot be renamed (the writer holds it open).
         ``new_name`` is reduced to a bare filename and given a ``.mcap`` suffix;
         empty, whitespace-only or dots-only names are rejected (they would escape
-        the output directory) by returning ``None``. A renamed recording is deleted
-        by the disk budget only when kept files alone exceed it (see
-        :func:`is_auto_named`).
+        the output directory) by returning ``None``. A renamed recording counts as kept
+        (see :func:`is_auto_named` and ``max_kept_size_mb``).
 
         :param path: the recording to rename.
         :param new_name: the desired name (reduced to a bare ``.mcap`` filename).
@@ -814,20 +819,30 @@ class McapRecorder:
         self._emit_on_loop(self.RECORDING_STARTED.emit, self._file_path)
 
     def _enforce_disk_budget(self) -> None:
-        file_stats: list[tuple[Path, int, float]] = []
+        """Delete the oldest recordings until kept files fit ``max_kept_size`` and all fit ``max_total_size``."""
+        own: list[tuple[Path, int, float]] = []
+        kept: list[tuple[Path, int, float]] = []
         for path in self.output_dir.glob('*.mcap'):
             try:
                 stat = path.stat()
             except FileNotFoundError:
                 continue  # vanished concurrently (e.g. deleted from the recordings page)
-            file_stats.append((path, stat.st_size, stat.st_mtime))
-        file_stats.sort(key=lambda item: (not is_auto_named(item[0]), item[2]))  # own files oldest first, kept last
-        total = sum(size for _, size, _ in file_stats)
-        while total > self.max_total_size and file_stats:
-            oldest, size, _ = file_stats.pop(0)
-            oldest.unlink(missing_ok=True)
-            total -= size
-            self.log.info('deleted old recording: %s (freed %.1f MB)', oldest.name, size / 1_048_576)
+            (own if is_auto_named(path) else kept).append((path, stat.st_size, stat.st_mtime))
+        own.sort(key=lambda item: item[2])
+        kept.sort(key=lambda item: item[2])
+        deleted: list[tuple[Path, int, float]] = []
+        kept_size = sum(size for _, size, _ in kept)
+        while kept_size > self.max_kept_size and len(kept) > 1:  # the newest kept file is the one just filed away
+            deleted.append(kept.pop(0))
+            kept_size -= deleted[-1][1]
+        remaining = own + kept
+        total = sum(size for _, size, _ in remaining)
+        while total > self.max_total_size and remaining:
+            deleted.append(remaining.pop(0))
+            total -= deleted[-1][1]
+        for path, size, _ in deleted:
+            path.unlink(missing_ok=True)
+            self.log.info('deleted old recording: %s (freed %.1f MB)', path.name, size / 1_048_576)
 
     def _cleanup_orphaned_reindex_files(self) -> None:
         """Remove reindex temp files left by a crash mid-rebuild. Run once at construction, never during operation.

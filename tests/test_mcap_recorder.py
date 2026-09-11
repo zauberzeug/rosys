@@ -712,6 +712,24 @@ async def test_disk_budget_deletes_kept_recordings_last(mcap_dir: Path, kept_nam
     assert '20200101_000000_000000_run0002_02.mcap' in remaining
 
 
+async def test_kept_recordings_beyond_their_bound_roll_away_oldest_first(mcap_dir: Path) -> None:
+    """Kept files cannot eat the rolling window; the newest kept file stays however large it is."""
+    kept_sizes = {'oldest kept.mcap': 60, 'older kept.mcap': 60, 'newest kept.mcap': 150}  # KiB
+    own_names = ['20200101_000000_000000_01.mcap', '20200101_000000_000000_02.mcap']
+    for age, (name, size) in enumerate(kept_sizes.items()):
+        (mcap_dir / name).write_bytes(os.urandom(size * 1024))
+        os.utime(mcap_dir / name, (age, age))
+    for age, name in enumerate(own_names, start=len(kept_sizes)):
+        (mcap_dir / name).write_bytes(os.urandom(60 * 1024))
+        os.utime(mcap_dir / name, (age, age))
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.3, max_kept_size_mb=0.12, auto_start=False)
+
+    recorder.start()
+    await recorder.stop()  # empty -> new file discarded
+
+    assert {path.name for path in mcap_dir.glob('*.mcap')} == {'newest kept.mcap', *own_names}
+
+
 _LONG_NAME = '_'.join(['word'] * 60)
 
 
