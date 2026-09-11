@@ -491,40 +491,6 @@ class McapRecorder:
             if file_path is not None:
                 self.RECORDING_STOPPED.emit(file_path)
 
-    async def split(self) -> Path | None:
-        """Finalize the current file and continue recording into a fresh one.
-
-        Lets callers file away the data recorded so far (e.g. after a failure) without
-        interrupting the recording: the queue is drained and the file rotated off the event
-        loop, emitting ``RECORDING_STOPPED`` for the finalized file and ``RECORDING_STARTED``
-        for the new one. A file that holds no messages yet is left growing instead of being
-        churned into an empty recording.
-
-        :return: the finalized file, or ``None`` when not recording or nothing was recorded
-            into the current file yet.
-        """
-        if not self._is_recording:
-            return None
-        return await asyncio.to_thread(self._split)
-
-    def _split(self) -> Path | None:
-        """Drain the queue and rotate. Runs off the loop; takes ``_lock``.
-
-        :return: the finalized file, or ``None`` if the current file holds no messages or
-            the recorder hard-stopped during the drain.
-        """
-        with self._lock:
-            with self._queue_lock:  # brief: only the swap, not the write
-                batch, self._queue = self._queue, []
-                self._queued_bytes = 0
-            self._write_messages(batch)
-            if self._writer is None or self._file_message_count == 0:
-                return None
-            finalized = self._file_path
-            if not self._rotate_file(dropped_on_failure=0):
-                return None
-        return finalized
-
     def log_message(self, topic: str, data: Any, *,
                     encode: Callable[[Any, int], bytes | None] | None = None,
                     timestamp_ns: int | None = None) -> None:

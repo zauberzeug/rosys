@@ -688,45 +688,6 @@ async def test_duration_based_rotation(mcap_dir: Path) -> None:
     assert sum(_message_count(path) for path in files) == 3
 
 
-async def test_split_finalizes_current_file_and_keeps_recording(mcap_dir: Path) -> None:
-    """split() files away everything recorded so far and the recording continues seamlessly."""
-    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
-    recorder.add_topic('/test', _schema())
-    recorder.start()
-    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
-    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=NS)
-
-    finalized = await recorder.split()
-
-    assert finalized is not None
-    assert _values(finalized) == [0, 1]
-    assert recorder.is_recording
-    assert recorder.current_recording is not None
-    assert recorder.current_recording != finalized
-
-    recorder.log_message('/test', _json({'value': 2}), timestamp_ns=2 * NS)
-    await recorder.stop()
-    second = next(path for path in mcap_dir.glob('*.mcap') if path != finalized)
-    assert _values(second) == [2]
-
-
-async def test_split_without_messages_keeps_the_growing_file(mcap_dir: Path) -> None:
-    """split() refuses to churn an empty file into an empty recording."""
-    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
-    recorder.add_topic('/test', _schema())
-    recorder.start()
-    live = recorder.current_recording
-
-    assert await recorder.split() is None
-    assert recorder.is_recording
-    assert recorder.current_recording == live
-
-
-async def test_split_while_stopped_returns_none(mcap_dir: Path) -> None:
-    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
-    assert await recorder.split() is None
-
-
 @pytest.mark.parametrize('kept_name', ['weeding on the north field.mcap',  # renamed by hand
                                        '20200101_000000_run0001.mcap',  # the merged file of a run
                                        '20200101_000000_run0001_failure.mcap'])  # preserved around a failure
