@@ -137,8 +137,11 @@ class RecordingsPage:
                     rosys.notify(f'Could not rename {path.name} (name already in use or invalid)', type='negative')
                 await reload()
 
-        with ui.column().classes('w-full gap-2'):  # one column, so controls and list keep the same insets
-            with ui.row().classes('w-full items-center gap-2'):
+        with ui.column().classes('w-full gap-2'):
+            # the scroll area pads its content, so the controls take the same inset and both edges line up
+            with ui.row().classes('w-full items-center gap-2') \
+                    .style('padding-left: var(--nicegui-default-padding); '
+                           'padding-right: var(--nicegui-default-padding)'):
                 date_input = ui.date_input('Date range', range_input=True, on_change=recordings_list.refresh)
                 ui.space()
                 reindex_button = ui.button(icon='build', on_click=_reindex) \
@@ -146,9 +149,7 @@ class RecordingsPage:
                 ui.button(icon='delete_sweep', on_click=_delete_all) \
                     .props('flat dense color=red').tooltip('delete all recordings')
                 ui.button(icon='refresh', on_click=reload).props('flat dense')
-            with ui.scroll_area().classes('w-full') \
-                    .props('content-style="padding: 0"') \
-                    .style('max-height: 75vh'):  # the page already pads; a second inset misaligns the list
+            with ui.scroll_area().classes('w-full').style('max-height: 75vh'):
                 recordings_list()
 
         def _change_token() -> tuple[tuple[Path, ...], Path | None]:
