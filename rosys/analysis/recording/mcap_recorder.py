@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
+import re
 import threading
 from collections.abc import Callable, Collection
 from datetime import UTC, datetime
@@ -14,35 +16,55 @@ from nicegui import Event, ui
 
 from ... import rosys
 from .indexing import is_indexed, reindex
+from .merging import METADATA_NAME, STAGING_GLOB, merge_into_place
 from .paths import PAGE_PATH
 
 NANOSECONDS_PER_SECOND = 1_000_000_000
 
 MAX_QUEUED_MESSAGES = 10_000
-"""Cap on the number of unwritten messages held in memory (see also :data:`MAX_QUEUED_BYTES`).
+"""Cap on the number of unwritten messages held in memory, a few seconds of backlog at a robot's topic mix.
 
-At the mix of high-rate topics a robot records (camera frames plus sensors) this is a few
-seconds of backlog, which comfortably absorbs a slow flush. A message-count cap alone does
-not bound memory, though: a queued camera frame holds a full uncompressed image (JPEG
-encoding is deferred to the writer), so 10k frames could be many gigabytes. The byte cap
-:data:`MAX_QUEUED_BYTES` bounds the actual footprint; whichever limit is hit first drops
-the oldest messages (see :meth:`McapRecorder.log_message`) so a stuck writer cannot grow
-the queue until the process runs out of memory.
+A count alone does not bound memory: a queued camera frame holds a full uncompressed image,
+so :data:`MAX_QUEUED_BYTES` caps the footprint too. Whichever limit is hit first drops the
+oldest messages, so a stuck writer cannot grow the queue until the process runs out of memory.
 """
 
 MAX_QUEUED_BYTES = 256 * 1_048_576
-"""Cap on the approximate memory footprint of unwritten messages (256 MB).
+"""Cap on the approximate memory footprint of unwritten messages (256 MB), see :data:`MAX_QUEUED_MESSAGES`.
 
-Enforced alongside :data:`MAX_QUEUED_MESSAGES`; the oldest messages are dropped when
-either limit is exceeded, so a stalled writer cannot grow the queue until the process runs
-out of memory. This matters on an 8 GB Jetson, where 10k raw VGA-to-HD camera frames would
-be tens of gigabytes — far past the count cap yet fatal to memory.
+On an 8 GB Jetson, 10k raw camera frames would be tens of gigabytes — far below the count cap, yet fatal.
 """
 
 _DEFAULT_PAYLOAD_BYTES = 1024
 """Assumed size of a payload whose footprint cannot be measured (a small sensor value)."""
 
 _DROP_WARNING_INTERVAL = 10.0  # seconds between 'queue full' warnings, so drops do not spam the log
+
+_TIMESTAMP_FORMAT = r'%Y%m%d_%H%M%S_%f'  # microseconds -> unique per run
+
+# part <part> of the run <timestamp> or <timestamp>_<name>, or a single unnumbered <timestamp>.mcap
+_OWN_NAME = re.compile(r'(?P<run>\d{8}_\d{6}_\d{6}(?:_.+)?)_(?P<part>\d{2,})\.mcap|\d{8}_\d{6}_\d{6}\.mcap')
+
+
+def is_auto_named(path: Path | str) -> bool:
+    """Whether a recording is one the recorder wrote itself: ``<run>_<part>.mcap``, the run named by its start.
+
+    Any other name was given deliberately (a renamed, merged or preserved recording); the budget keeps it longer.
+
+    :param path: the recording file to test.
+    :return: ``True`` if the file name is one the recorder generated.
+    """
+    return _OWN_NAME.fullmatch(Path(path).name) is not None
+
+
+def _check_file_name(name: str) -> None:
+    """Refuse a name that is not a plain file name, so no recording lands outside the output directory.
+
+    :param name: the name to check.
+    :raises ValueError: if the name is empty, whitespace or dots only, or contains a path separator.
+    """
+    if Path(name).name != name or not name.strip('.').strip():
+        raise ValueError(f'not a plain file name: {name!r}')
 
 
 class _QueuedMessage(NamedTuple):
@@ -98,9 +120,11 @@ class RecordingSource(Protocol):
 class McapRecorder:
     """Records sensor data to MCAP files for replay and analysis in Foxglove Studio.
 
-    Supports automatic file rotation by size and disk budget enforcement. Peak disk usage is
-    ``max_total_size_mb + max_file_size_mb``: the budget is enforced only before a file is
-    opened, so the currently growing file can exceed it by up to one file's worth.
+    Supports automatic file rotation by size and duration, and disk budget enforcement.
+    Peak disk usage is ``max_total_size_mb + max_file_size_mb``: the budget is enforced only
+    before a file is opened, so the currently growing file can exceed it by up to one file's
+    worth. The budget deletes the recorder's own files (oldest first) before kept ones (see
+    :func:`is_auto_named`), which have a bound of their own so they cannot eat the rolling window.
 
     Messages are enqueued from the event loop (cheap, non-blocking) and written to disk by a
     single background consumer via ``rosys.run.io_bound`` so that encoding, ZSTD compression
@@ -130,7 +154,9 @@ class McapRecorder:
         *,
         output_dir: Path | str = '~/.rosys/mcap',
         max_file_size_mb: float = 100,
+        max_file_duration: float | None = None,
         max_total_size_mb: float = 1000,
+        max_kept_size_mb: float = 500,
         chunk_size: int = 1_048_576,
         flush_interval: float = 1.0,
         profile: str = 'rosys',
@@ -143,10 +169,14 @@ class McapRecorder:
 
         :param output_dir: directory recordings are written to (created if missing).
         :param max_file_size_mb: on-disk size at which the active file is rotated to a new one.
-        :param max_total_size_mb: disk budget for the directory; the oldest recordings are
-            deleted before a new file is opened to stay under it. Peak disk usage is therefore
-            ``max_total_size_mb + max_file_size_mb`` (the budget is enforced only before a file
-            is opened, so the growing file can exceed it by up to one file's worth).
+        :param max_file_duration: seconds after which the active file is rotated to a new one
+            (default: no duration-based rotation). Checked as messages are written, so an idle
+            recording only rotates once data flows again.
+        :param max_total_size_mb: disk budget for the directory; the oldest recordings are deleted before
+            a new file is opened to stay under it, the recorder's own numbered files first. Peak disk usage
+            is therefore ``max_total_size_mb + max_file_size_mb``, as the growing file is not counted.
+        :param max_kept_size_mb: bound for kept recordings within the budget; beyond it the oldest are
+            deleted, sparing the newest (the one just filed away) however large it is.
         :param chunk_size: MCAP chunk size in bytes (larger chunks compress better and flush
             less often).
         :param flush_interval: seconds between background flushes of the queue to disk.
@@ -162,7 +192,9 @@ class McapRecorder:
         self.output_dir = Path(output_dir).expanduser()
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.max_file_size = int(max_file_size_mb * 1_048_576)
+        self.max_file_duration = max_file_duration
         self.max_total_size = int(max_total_size_mb * 1_048_576)
+        self.max_kept_size = int(max_kept_size_mb * 1_048_576)
         self.chunk_size = chunk_size
         self.profile = profile
         self.library = library
@@ -170,9 +202,9 @@ class McapRecorder:
         self.max_queued_bytes = int(max_queued_bytes)
 
         self.RECORDING_STARTED = Event[Path]()
-        """a recording file has been opened (argument: path); emitted per file, including on size rotation"""
+        """a recording file has been opened (argument: path); emitted per file, including on every rotation"""
         self.RECORDING_STOPPED = Event[Path]()
-        """a recording file has been finalized (argument: path); emitted per file, including on size rotation"""
+        """a recording file has been finalized (argument: path); emitted per file, including on every rotation"""
 
         self._declared_topics: set[str] = set()
         self._selected_topics: set[str] | None = None
@@ -187,16 +219,23 @@ class McapRecorder:
         self._lock = threading.Lock()  # serializes writer access; may be held for a full write
         self._queue_lock = threading.Lock()  # guards queue mutation only; held for microseconds
         self._sources: list[RecordingSource] = []
+        self._run_name: str = ''
+        self._run_metadata: str | None = None  # JSON, serialized once at start
+        self._part_index: int = 0
         self._loop: asyncio.AbstractEventLoop | None = None  # captured at start for loop-safe emits
         self._message_count: int = 0
+        self._file_message_count: int = 0
+        self._file_started_at: float = 0.0
         self._dropped_message_count: int = 0
         self._last_drop_warning: float = float('-inf')
         self._is_recording: bool = False
+        self._is_stopping: bool = False  # stop() is finalizing the last part; start() is refused meanwhile
         self._warned_topics: set[str] = set()
         self._warned_converter_topics: set[tuple[str, str]] = set()
         self._disk_stats = _DiskStats(0, 0, 0)
+        self._merging: set[str] = set()
 
-        self._cleanup_orphaned_reindex_files()
+        self._remove_orphaned_temporary_files()
         if auto_start:
             rosys.on_startup(self.start)
         rosys.on_repeat(self._flush, flush_interval)
@@ -251,6 +290,11 @@ class McapRecorder:
     def current_recording(self) -> Path | None:
         """The file currently being written (unindexed until stopped), else None."""
         return self._file_path if self._is_recording else None
+
+    @property
+    def merging(self) -> frozenset[str]:
+        """The names of the recordings being merged right now (see :meth:`merge`)."""
+        return frozenset(self._merging)
 
     def accepts(self, topic: str) -> bool:
         """Whether a message on ``topic`` would currently be recorded.
@@ -308,14 +352,14 @@ class McapRecorder:
     def rename_recording(self, path: Path | str, new_name: str) -> Path | None:
         """Rename a recording within the output directory; returns the new path or None.
 
-        The currently-recording file cannot be renamed (the writer holds it open).
-        ``new_name`` is reduced to a bare filename and given a ``.mcap`` suffix;
-        empty, whitespace-only or dots-only names are rejected (they would escape
-        the output directory) by returning ``None``.
+        The currently-recording file cannot be renamed (the writer holds it open). Empty,
+        whitespace-only or dots-only names would escape the output directory and are rejected.
+        A renamed recording counts as kept (see :func:`is_auto_named`).
 
         :param path: the recording to rename.
         :param new_name: the desired name (reduced to a bare ``.mcap`` filename).
         :return: the new path, or ``None`` if the rename was rejected or the target exists.
+        :raises ValueError: if the new name reads as one of the recorder's own files.
         """
         path = Path(path)
         if path.parent != self.output_dir or not path.exists() or path == self.current_recording:
@@ -328,6 +372,9 @@ class McapRecorder:
             target = target.with_suffix('.mcap')
         if target == path:
             return None
+        if is_auto_named(target):
+            raise ValueError(f'{target.name} reads as a file the recorder wrote itself, '
+                             'which its disk budget deletes first')
         try:
             os.link(path, target)  # atomic: fails if the target exists, so a racing rename cannot clobber a recording
         except OSError:
@@ -352,6 +399,45 @@ class McapRecorder:
             recovered = await rosys.run.io_bound(reindex, path)
             if recovered is not None:
                 self.log.info('reindexed %s (%d messages recovered)', path.name, recovered)
+
+    async def merge(self, sources: list[Path], name: str, *, start_time_ns: int = 0) -> Path | None:
+        """Merge finished recordings into the kept recording ``<name>.mcap``, deleting them once it is in place.
+
+        Runs off the loop; a failed merge leaves the sources untouched (see :func:`~.merging.merge_into_place`),
+        a source that cannot be deleted afterwards is only logged.
+
+        :param sources: finished recordings in the output directory, oldest first.
+        :param name: the name of the merged recording, without ``.mcap``.
+        :param start_time_ns: messages logged before this time are dropped (default: keep all).
+        :return: the merged recording, or ``None`` if no message was left to merge (the sources are kept).
+        :raises ValueError: if ``name`` is no plain file name or reads as the recorder's own, or a
+            source is no finished recording in the output directory.
+        :raises FileExistsError: if ``<name>.mcap`` exists or is being merged already.
+        :raises RuntimeError: if the app shut down before the merge ran; the sources are kept.
+        """
+        _check_file_name(name)
+        target = self.output_dir / f'{name}.mcap'
+        if is_auto_named(target):
+            raise ValueError(f'{target.name} reads as a file the recorder wrote itself, which its budget deletes first')
+        if not sources or any(source.parent != self.output_dir or source == self.current_recording
+                              for source in sources):
+            raise ValueError('only finished recordings in the output directory can be merged')
+        if name in self._merging or target.exists():
+            raise FileExistsError(f'{target.name} exists or is being merged already')
+        self._merging.add(name)
+        try:
+            result = await rosys.run.io_bound(merge_into_place, sources, target, start_time_ns=start_time_ns)
+        finally:
+            self._merging.discard(name)
+        if result is None:
+            raise RuntimeError('the merge did not run, the app is shutting down')
+        count, undeleted = result
+        if not count:
+            return None
+        self.log.info('merged %d recordings into %s (%d messages)', len(sources), target.name, count)
+        if undeleted:
+            self.log.warning('merged into %s, but could not delete %s', target.name, [path.name for path in undeleted])
+        return target
 
     def add_topic(self, topic: str, schema: TopicSchema) -> None:
         """Register a topic with its schema and encoding.
@@ -384,7 +470,8 @@ class McapRecorder:
         if self._is_recording:
             source.start()
 
-    def start(self, topics: Collection[str] | None = None) -> None:
+    def start(self, topics: Collection[str] | None = None, *,
+              name: str | None = None, metadata: dict | None = None) -> str | None:
         """Start a new recording.
 
         :param topics: record only these topics; all others are dropped (default: record
@@ -392,24 +479,39 @@ class McapRecorder:
             recording started is picked up as soon as it exists. The selection lasts for
             this recording; the next ``start()`` records everything again unless a new
             selection is passed.
+        :param name: appended to the start time to name the run, ``<timestamp>_<name>``
+            (default: the start time alone). The run's parts are numbered ``<run>_01.mcap``,
+            ``<run>_02.mcap``, ... as they rotate, so they sort and read as a unit.
+        :param metadata: written into every part of this run as a JSON metadata record, so a
+            part carries the context it was recorded in.
+        :return: the name of the run, or ``None`` if a recording is already running or the
+            previous one is still being finalized.
+        :raises ValueError: if ``name`` is not a plain file name.
+        :raises TypeError: if ``metadata`` cannot be serialized to JSON.
         """
         if self._is_recording:
-            return
+            return None
+        if self._is_stopping:
+            self.log.warning('not starting a recording while the previous one is still being finalized')
+            return None
+        if name is not None:
+            _check_file_name(name)
+        run_metadata = json.dumps(metadata) if metadata is not None else None
         try:
             self._loop = asyncio.get_running_loop()  # captured for loop-safe emits from the writer thread
         except RuntimeError:
             self._loop = None  # started outside a running loop (e.g. a synchronous test)
         self._selected_topics = set(topics) if topics is not None else None
+        timestamp = datetime.now(tz=UTC).strftime(_TIMESTAMP_FORMAT)
+        self._run_name = f'{timestamp}_{name}' if name is not None else timestamp
+        self._run_metadata = run_metadata
+        self._part_index = 0
         self._message_count = 0
         self._dropped_message_count = 0
         with self._queue_lock:  # drop any backlog left by a previously aborted recording
             self._queue.clear()
             self._queued_bytes = 0
-        # Budget enforcement and opening the file run on the loop here because start must
-        # synchronously establish the recording before returning (callers read
-        # current_recording and receive RECORDING_STARTED immediately). start is a rare
-        # user/lifecycle action; the hot periodic-flush path enforces the budget off the
-        # loop in the io_bound writer (see _write_batch -> _write_messages -> _rotate).
+        # on the loop: callers read current_recording right after start; rotations enforce it off the loop
         self._enforce_disk_budget()
         with self._lock:
             self._open_new_file()
@@ -419,6 +521,7 @@ class McapRecorder:
             source.start()
         self.log.info('started MCAP recording: %s', self._file_path)
         self.RECORDING_STARTED.emit(self._file_path)
+        return self._run_name
 
     async def stop(self) -> None:
         """Stop recording, drain the queue, and finalize the file off the event loop.
@@ -427,21 +530,26 @@ class McapRecorder:
         the MCAP file, which can take seconds for a large backlog; it runs on a worker thread
         via :func:`asyncio.to_thread` — deliberately not ``rosys.run.io_bound``, which refuses
         work once the app is stopping (and ``stop`` is wired to ``rosys.on_shutdown``) — so it
-        never blocks the event loop. An empty recording (e.g. from rapid toggling) is discarded;
-        otherwise ``RECORDING_STOPPED`` is emitted on the loop with the finalized path.
+        never blocks the event loop; ``start()`` is refused meanwhile. A final part without
+        messages is discarded, otherwise ``RECORDING_STOPPED`` is emitted with its path.
         """
         if not self._is_recording:
             return
         self._is_recording = False
-        self._stop_sources()
-        file_path = await asyncio.to_thread(self._drain_and_close)
-        if file_path is not None and self._message_count == 0:
-            file_path.unlink(missing_ok=True)  # discard empty recordings (e.g. from rapid toggling)
+        self._is_stopping = True
+        try:
+            self._stop_sources()
+            file_path, file_message_count = await asyncio.to_thread(self._drain_and_close)
+        finally:
+            self._is_stopping = False
+        if file_path is None:
+            return
+        if file_message_count == 0:
+            file_path.unlink(missing_ok=True)
             self.log.info('discarded empty recording: %s', file_path.name)
         else:
-            self.log.info('stopped MCAP recording (%d messages total)', self._message_count)
-            if file_path is not None:
-                self.RECORDING_STOPPED.emit(file_path)
+            self.log.info('stopped MCAP recording: %s', file_path.name)
+            self.RECORDING_STOPPED.emit(file_path)
 
     def log_message(self, topic: str, data: Any, *,
                     encode: Callable[[Any, int], bytes | None] | None = None,
@@ -469,36 +577,37 @@ class McapRecorder:
         with self._queue_lock:  # microsecond hold; never blocks behind a write
             self._queue.append(_QueuedMessage(topic, data, encode, timestamp_ns, size))
             self._queued_bytes += size
-            self._enforce_queue_cap()
+            warn = self._enforce_queue_cap()
+        if warn:  # outside the lock: a log handler may record the line, which enqueues again
+            self.log.warning('recording queue full (cap %d messages / %d MB); dropping oldest — disk cannot keep up '
+                             '(%d dropped so far)', self.max_queued_messages, self.max_queued_bytes // 1_048_576,
+                             self._dropped_message_count)
 
-    def _enforce_queue_cap(self) -> None:
+    def _enforce_queue_cap(self) -> bool:
         """Drop the oldest queued messages when the disk cannot keep up. Caller holds ``_queue_lock``.
 
-        Bounds memory by both message count (:attr:`max_queued_messages`) and approximate
-        payload bytes (:attr:`max_queued_bytes`) — a queued camera frame is a full
-        uncompressed image, so the count cap alone would not stop the queue from growing to
-        many gigabytes. The oldest messages are dropped until the queue is under both limits;
-        the drop is logged at most once per ``_DROP_WARNING_INTERVAL`` so a persistent stall
-        does not flood the log.
+        The oldest messages are dropped until the queue is under both :attr:`max_queued_messages`
+        and :attr:`max_queued_bytes` (see :data:`MAX_QUEUED_BYTES`).
+
+        :return: whether the drop is due to be logged, at most once per ``_DROP_WARNING_INTERVAL``.
         """
         if len(self._queue) <= self.max_queued_messages and self._queued_bytes <= self.max_queued_bytes:
-            return
+            return False
         drop = max(0, len(self._queue) - self.max_queued_messages)
         freed = sum(self._queue[i].size for i in range(drop))
         while drop < len(self._queue) and self._queued_bytes - freed > self.max_queued_bytes:
             freed += self._queue[drop].size
             drop += 1
         if drop == 0:
-            return
+            return False
         del self._queue[:drop]
         self._queued_bytes -= freed
         self._dropped_message_count += drop
         now = rosys.time()
-        if now - self._last_drop_warning >= _DROP_WARNING_INTERVAL:
-            self.log.warning('recording queue full (cap %d messages / %d MB); dropping oldest — disk cannot keep up '
-                             '(%d dropped so far)', self.max_queued_messages, self.max_queued_bytes // 1_048_576,
-                             self._dropped_message_count)
-            self._last_drop_warning = now
+        if now - self._last_drop_warning < _DROP_WARNING_INTERVAL:
+            return False
+        self._last_drop_warning = now
+        return True
 
     async def _flush(self) -> None:
         if not self._is_recording or not self._queue:
@@ -513,14 +622,13 @@ class McapRecorder:
                 self._queued_bytes = 0
             self._write_messages(batch)
 
-    def _drain_and_close(self) -> Path | None:
+    def _drain_and_close(self) -> tuple[Path | None, int]:
         """Write everything still queued and finalize the file. Runs off the loop; takes ``_lock``.
 
-        Used by ``stop()``. The final drain may rotate, so the finalized path is read after
-        writing. ``_close_file`` runs in a ``finally`` so even a raising write still finalizes
-        (never leaks) the open file.
+        The final drain may rotate, so the path is read after writing; ``_close_file`` runs in a
+        ``finally`` so even a raising write still finalizes the open file.
 
-        :return: the path of the finalized file, or ``None`` if no file was open.
+        :return: the finalized file (``None`` if none was open) and the number of messages it holds.
         """
         with self._lock:
             try:
@@ -529,9 +637,9 @@ class McapRecorder:
                     self._queued_bytes = 0
                 self._write_messages(batch)
             finally:
-                file_path = self._file_path
+                file_path = None if self._file is None else self._file_path
                 self._close_file()
-        return file_path
+        return file_path, self._file_message_count
 
     def _write_messages(self, batch: list[_QueuedMessage]) -> None:
         """Encode and write a batch of messages. Caller must hold ``_lock``; runs on the writer thread.
@@ -561,6 +669,10 @@ class McapRecorder:
                 continue
             if data is None:
                 continue  # converter chose to skip this value
+            assert self._file is not None
+            if self._file.tell() >= self.max_file_size or self._file_is_expired():  # rotate only for a message
+                if not self._rotate_file(dropped_on_failure=len(batch) - index):
+                    return
             if message.topic not in self._topics:
                 self._register_topic(message.topic, schema)
             assert self._writer is not None
@@ -571,10 +683,11 @@ class McapRecorder:
                 publish_time=message.timestamp_ns,
             )
             self._message_count += 1
-            assert self._file is not None
-            if self._file.tell() >= self.max_file_size:
-                if not self._rotate_file(dropped_on_failure=len(batch) - index - 1):
-                    return
+            self._file_message_count += 1
+
+    def _file_is_expired(self) -> bool:
+        """Whether the current file has been open longer than ``max_file_duration``."""
+        return self.max_file_duration is not None and rosys.time() - self._file_started_at >= self.max_file_duration
 
     def warn_converter_failure(self, topic: str, stage: str) -> None:
         """Log a converter failure once per topic and stage, so one bad message never floods the log.
@@ -673,11 +786,15 @@ class McapRecorder:
     def _open_new_file(self) -> None:
         if self._file is not None:  # never overwrite or leak a still-open file (defensive against a double open)
             self._close_file()
-        timestamp = datetime.now(tz=UTC).strftime('%Y%m%d_%H%M%S_%f')  # microseconds -> unique per file
-        self._file_path = self.output_dir / f'{timestamp}.mcap'
+        self._part_index += 1
+        self._file_path = self.output_dir / f'{self._run_name}_{self._part_index:02d}.mcap'
         self._file = open(self._file_path, 'wb')  # pylint: disable=consider-using-with
         self._writer = Writer(self._file, compression=CompressionType.ZSTD, chunk_size=self.chunk_size)
         self._writer.start(profile=self.profile, library=self.library)
+        if self._run_metadata is not None:  # per part: a rotated part must carry it too
+            self._writer.add_metadata(METADATA_NAME, {'json': self._run_metadata})
+        self._file_started_at = rosys.time()
+        self._file_message_count = 0
         self._topics.clear()
         # add_topic mutates _schemas lock-free from the loop, and start() may replace
         # _selected_topics; snapshot both so this writer-thread iteration cannot race them.
@@ -702,7 +819,7 @@ class McapRecorder:
 
         Emits ``RECORDING_STOPPED`` for the finalized file and ``RECORDING_STARTED`` for the
         new one, loop-safely, so per-file consumers (upload/post-processing) see every file of
-        a long session — not just the first and last. The events are therefore per-file.
+        a long run — not just the first and last. The events are therefore per-file.
         """
         assert self._file is not None
         finalized = self._file_path
@@ -716,34 +833,44 @@ class McapRecorder:
         self._emit_on_loop(self.RECORDING_STARTED.emit, self._file_path)
 
     def _enforce_disk_budget(self) -> None:
-        file_stats: list[tuple[Path, int, float]] = []
+        """Delete the oldest recordings until kept files fit ``max_kept_size`` and all fit ``max_total_size``."""
+        own: list[tuple[Path, int, float]] = []
+        kept: list[tuple[Path, int, float]] = []
         for path in self.output_dir.glob('*.mcap'):
             try:
                 stat = path.stat()
             except FileNotFoundError:
                 continue  # vanished concurrently (e.g. deleted from the recordings page)
-            file_stats.append((path, stat.st_size, stat.st_mtime))
-        file_stats.sort(key=lambda item: item[2])  # oldest first
-        total = sum(size for _, size, _ in file_stats)
-        while total > self.max_total_size and file_stats:
-            oldest, size, _ = file_stats.pop(0)
-            oldest.unlink(missing_ok=True)
-            total -= size
-            self.log.info('deleted old recording: %s (freed %.1f MB)', oldest.name, size / 1_048_576)
+            (own if is_auto_named(path) else kept).append((path, stat.st_size, stat.st_mtime))
+        own.sort(key=lambda item: item[2])
+        kept.sort(key=lambda item: item[2])
+        deleted: list[tuple[Path, int, float]] = []
+        kept_size = sum(size for _, size, _ in kept)
+        while kept_size > self.max_kept_size and len(kept) > 1:  # the newest kept file is the one just filed away
+            deleted.append(kept.pop(0))
+            kept_size -= deleted[-1][1]
+        remaining = own + kept
+        total = sum(size for _, size, _ in remaining)
+        while total > self.max_total_size and remaining:
+            deleted.append(remaining.pop(0))
+            total -= deleted[-1][1]
+        for path, size, _ in deleted:
+            path.unlink(missing_ok=True)
+            self.log.info('deleted old recording: %s (freed %.1f MB)', path.name, size / 1_048_576)
 
-    def _cleanup_orphaned_reindex_files(self) -> None:
-        """Remove reindex temp files left by a crash mid-rebuild. Run once at construction, never during operation.
+    def _remove_orphaned_temporary_files(self) -> None:
+        """Remove reindex and merge temp files left by a crash. Run once at construction, never during operation.
 
-        A live reindex writes to the same ``*.mcap.reindex-*`` name; deleting it mid-run would
-        destroy the recovery, so this must not run from the periodic disk-budget path. Orphans
-        are otherwise invisible to the budget, scan and UI (they do not match the ``*.mcap`` glob).
+        Deleting one mid-run would destroy the result, so this never runs from the disk-budget path.
+        Orphans are otherwise invisible to the budget, scan and UI (they do not match ``*.mcap``).
         """
-        for path in self.output_dir.glob('*.mcap.reindex*'):
-            try:
-                path.unlink()
-                self.log.warning('removed orphaned reindex temp file: %s', path.name)
-            except OSError:
-                pass
+        for pattern in ('*.mcap.reindex*', STAGING_GLOB):
+            for path in self.output_dir.glob(pattern):
+                try:
+                    path.unlink()
+                    self.log.warning('removed orphaned temporary file: %s', path.name)
+                except OSError:
+                    pass
 
     def developer_ui(self) -> None:
         """Developer panel: auto-refreshing stats, start/stop buttons, and a topic selection.
