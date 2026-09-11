@@ -26,6 +26,17 @@ class Autoupload(Enum):
     """Upload mode where every processed image is uploaded"""
 
 
+class ImageState(Enum):
+    """Target state for an image when uploaded to the Learning Loop"""
+
+    BACKLOG = 'backlog'
+    INBOX = 'inbox'
+    ANNOTATE = 'annotate'
+    REVIEW = 'review'
+    COMPLETE = 'complete'
+    TRASH = 'trash'
+
+
 class DetectorException(Exception):
     """An exception that is raised by a detector."""
 
@@ -126,11 +137,16 @@ class Detector(abc.ABC):
                      source: str | None = None,
                      creation_date: datetime | str | None = None,
                      annotations: Annotations | None = None,
+                     state: ImageState | None = None,
                      ) -> None:
         """Uploads an image (and its annotations) to the Learning Loop.
 
         The parameters `tags`, `source`, and `creation_date` are added as metadata.
         If the image has detections, they are also uploaded.
+
+        The `state` determines which state the image enters the Learning Loop in,
+        for example ``ImageState.TRASH``.
+        If it is omitted, the Learning Loop applies its own default.
 
         :raises DetectorException: if the upload fails.
         """
