@@ -878,15 +878,21 @@ async def test_log_levels_map_onto_foxglove(mcap_dir: Path) -> None:
     assert [message['level'] for _, message in _read(_only_file(mcap_dir))] == [1, 2, 3, 4, 5]
 
 
-async def test_the_recorders_own_log_stays_out_of_the_recording(mcap_dir: Path) -> None:
-    """The recorder logs from inside its queue lock, so recording its own lines would deadlock it."""
+async def test_the_recorders_own_warning_about_a_full_queue_is_recorded(mcap_dir: Path) -> None:
+    """The recorder's own lines are recorded too, the one it logs while dropping queued messages included."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
-    recorder.log.setLevel(logging.DEBUG)
-    recorder.log.addHandler(McapLogHandler(recorder))
+    recorder.max_queued_messages = 3
+    handler = McapLogHandler(recorder)
+    recorder.log.addHandler(handler)
+    recorder.add_topic('/test', TopicSchema('Test', b'{}', 'jsonschema', 'json'))
     recorder.start()
+    try:
+        for _ in range(5):
+            recorder.log_message('/test', b'{}')
+        await recorder.stop()
+    finally:
+        recorder.log.removeHandler(handler)
 
-    recorder.log_message('/unknown', b'{}')  # makes the recorder log about the unknown topic
-    await recorder.stop()
-    recorder.log.handlers.clear()
-
-    assert not list(mcap_dir.glob('*.mcap'))  # nothing recorded at all -> the empty recording was discarded
+    log_lines = [message['message'] for schema_name, message in _read(_only_file(mcap_dir))
+                 if schema_name == 'foxglove.Log']
+    assert any(line.startswith('recording queue full') for line in log_lines)

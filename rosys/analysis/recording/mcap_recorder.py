@@ -241,6 +241,7 @@ class McapRecorder:
         self._dropped_message_count: int = 0
         self._last_drop_warning: float = float('-inf')
         self._is_recording: bool = False
+        self._is_stopping: bool = False  # stop() is finalizing the last part; start() is refused meanwhile
         self._warned_topics: set[str] = set()
         self._warned_converter_topics: set[tuple[str, str]] = set()
         self._disk_stats = _DiskStats(0, 0, 0)
@@ -454,11 +455,15 @@ class McapRecorder:
             ``<run>_02.mcap``, ... as they rotate, so they sort and read as a unit.
         :param metadata: written into every part of this run as a JSON metadata record, so a
             part carries the context it was recorded in.
-        :return: the name of the run, or ``None`` if a recording is already running.
+        :return: the name of the run, or ``None`` if a recording is already running or the
+            previous one is still being finalized.
         :raises ValueError: if ``name`` is not a plain file name.
         :raises TypeError: if ``metadata`` cannot be serialized to JSON.
         """
         if self._is_recording:
+            return None
+        if self._is_stopping:
+            self.log.warning('not starting a recording while the previous one is still being finalized')
             return None
         if name is not None:
             _check_file_name(name)
@@ -500,21 +505,27 @@ class McapRecorder:
         the MCAP file, which can take seconds for a large backlog; it runs on a worker thread
         via :func:`asyncio.to_thread` — deliberately not ``rosys.run.io_bound``, which refuses
         work once the app is stopping (and ``stop`` is wired to ``rosys.on_shutdown``) — so it
-        never blocks the event loop. An empty recording (e.g. from rapid toggling) is discarded;
-        otherwise ``RECORDING_STOPPED`` is emitted on the loop with the finalized path.
+        never blocks the event loop. ``start()`` is refused until the drain is done. A final
+        part without messages (e.g. from rapid toggling) is discarded; otherwise
+        ``RECORDING_STOPPED`` is emitted on the loop with the finalized path.
         """
         if not self._is_recording:
             return
         self._is_recording = False
-        self._stop_sources()
-        file_path = await asyncio.to_thread(self._drain_and_close)
-        if file_path is not None and self._message_count == 0:
-            file_path.unlink(missing_ok=True)  # discard empty recordings (e.g. from rapid toggling)
+        self._is_stopping = True
+        try:
+            self._stop_sources()
+            file_path, file_message_count = await asyncio.to_thread(self._drain_and_close)
+        finally:
+            self._is_stopping = False
+        if file_path is None:
+            return
+        if file_message_count == 0:
+            file_path.unlink(missing_ok=True)
             self.log.info('discarded empty recording: %s', file_path.name)
         else:
-            self.log.info('stopped MCAP recording (%d messages total)', self._message_count)
-            if file_path is not None:
-                self.RECORDING_STOPPED.emit(file_path)
+            self.log.info('stopped MCAP recording: %s', file_path.name)
+            self.RECORDING_STOPPED.emit(file_path)
 
     def log_message(self, topic: str, data: Any, *,
                     encode: Callable[[Any, int], bytes | None] | None = None,
@@ -542,36 +553,40 @@ class McapRecorder:
         with self._queue_lock:  # microsecond hold; never blocks behind a write
             self._queue.append(_QueuedMessage(topic, data, encode, timestamp_ns, size))
             self._queued_bytes += size
-            self._enforce_queue_cap()
+            warn = self._enforce_queue_cap()
+        if warn:  # outside the lock: a log handler may record the line, which enqueues again
+            self.log.warning('recording queue full (cap %d messages / %d MB); dropping oldest — disk cannot keep up '
+                             '(%d dropped so far)', self.max_queued_messages, self.max_queued_bytes // 1_048_576,
+                             self._dropped_message_count)
 
-    def _enforce_queue_cap(self) -> None:
+    def _enforce_queue_cap(self) -> bool:
         """Drop the oldest queued messages when the disk cannot keep up. Caller holds ``_queue_lock``.
 
         Bounds memory by both message count (:attr:`max_queued_messages`) and approximate
         payload bytes (:attr:`max_queued_bytes`) — a queued camera frame is a full
         uncompressed image, so the count cap alone would not stop the queue from growing to
-        many gigabytes. The oldest messages are dropped until the queue is under both limits;
-        the drop is logged at most once per ``_DROP_WARNING_INTERVAL`` so a persistent stall
-        does not flood the log.
+        many gigabytes. The oldest messages are dropped until the queue is under both limits.
+
+        :return: whether the drop is due to be logged, at most once per ``_DROP_WARNING_INTERVAL``
+            so a persistent stall does not flood the log.
         """
         if len(self._queue) <= self.max_queued_messages and self._queued_bytes <= self.max_queued_bytes:
-            return
+            return False
         drop = max(0, len(self._queue) - self.max_queued_messages)
         freed = sum(self._queue[i].size for i in range(drop))
         while drop < len(self._queue) and self._queued_bytes - freed > self.max_queued_bytes:
             freed += self._queue[drop].size
             drop += 1
         if drop == 0:
-            return
+            return False
         del self._queue[:drop]
         self._queued_bytes -= freed
         self._dropped_message_count += drop
         now = rosys.time()
-        if now - self._last_drop_warning >= _DROP_WARNING_INTERVAL:
-            self.log.warning('recording queue full (cap %d messages / %d MB); dropping oldest — disk cannot keep up '
-                             '(%d dropped so far)', self.max_queued_messages, self.max_queued_bytes // 1_048_576,
-                             self._dropped_message_count)
-            self._last_drop_warning = now
+        if now - self._last_drop_warning < _DROP_WARNING_INTERVAL:
+            return False
+        self._last_drop_warning = now
+        return True
 
     async def _flush(self) -> None:
         if not self._is_recording or not self._queue:
@@ -586,14 +601,15 @@ class McapRecorder:
                 self._queued_bytes = 0
             self._write_messages(batch)
 
-    def _drain_and_close(self) -> Path | None:
+    def _drain_and_close(self) -> tuple[Path | None, int]:
         """Write everything still queued and finalize the file. Runs off the loop; takes ``_lock``.
 
         Used by ``stop()``. The final drain may rotate, so the finalized path is read after
         writing. ``_close_file`` runs in a ``finally`` so even a raising write still finalizes
         (never leaks) the open file.
 
-        :return: the path of the finalized file, or ``None`` if no file was open.
+        :return: the path of the finalized file (``None`` if no file was open) and the number of
+            messages it holds.
         """
         with self._lock:
             try:
@@ -602,9 +618,9 @@ class McapRecorder:
                     self._queued_bytes = 0
                 self._write_messages(batch)
             finally:
-                file_path = self._file_path
+                file_path = None if self._file is None else self._file_path
                 self._close_file()
-        return file_path
+        return file_path, self._file_message_count
 
     def _write_messages(self, batch: list[_QueuedMessage]) -> None:
         """Encode and write a batch of messages. Caller must hold ``_lock``; runs on the writer thread.
@@ -634,6 +650,10 @@ class McapRecorder:
                 continue
             if data is None:
                 continue  # converter chose to skip this value
+            assert self._file is not None
+            if self._file.tell() >= self.max_file_size or self._file_is_expired():  # rotate only for a message
+                if not self._rotate_file(dropped_on_failure=len(batch) - index):
+                    return
             if message.topic not in self._topics:
                 self._register_topic(message.topic, schema)
             assert self._writer is not None
@@ -645,10 +665,6 @@ class McapRecorder:
             )
             self._message_count += 1
             self._file_message_count += 1
-            assert self._file is not None
-            if self._file.tell() >= self.max_file_size or self._file_is_expired():
-                if not self._rotate_file(dropped_on_failure=len(batch) - index - 1):
-                    return
 
     def _file_is_expired(self) -> bool:
         """Whether the current file has been open longer than ``max_file_duration``."""

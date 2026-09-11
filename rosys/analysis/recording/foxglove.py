@@ -485,10 +485,11 @@ def log() -> Converter:
 class McapLogHandler(logging.Handler):
     """Writes what a logger logs into the recording, so a recording explains itself.
 
-    Attach it to the loggers whose lines belong in the recording, never to the root logger:
-    every library logging anywhere would end up in the file. Handling a record is a message
-    render plus an enqueue — the JSON encoding runs on the recorder's writer thread — and it
-    happens wherever the line is logged, which may be any thread.
+    Attach it to the loggers whose lines belong in the recording, the recorder's own included,
+    but never to the root logger: every library logging anywhere would end up in the file.
+    Handling a record is a message render plus an enqueue — the JSON encoding runs on the
+    recorder's writer thread — and it happens wherever the line is logged, which may be any
+    thread.
     """
 
     def __init__(self, recorder: McapRecorder, topic: str = '/log') -> None:
@@ -506,8 +507,6 @@ class McapLogHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
         if not self._recorder.accepts(self._topic):
             return
-        if record.name == self._recorder.log.name:
-            return  # the recorder logs from inside its queue lock, so recording its own lines would deadlock
         try:
             entry = LogEntry(_log_level(record.levelno), record.getMessage(),
                              record.name, record.filename, record.lineno)

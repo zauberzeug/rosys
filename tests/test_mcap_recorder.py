@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import threading
 from pathlib import Path
 
 import pytest
@@ -752,11 +753,56 @@ async def test_the_files_of_one_recording_share_a_name_and_are_numbered(mcap_dir
     await recorder._flush()
     rosys.set_time(rosys.time() + 61)
     recorder.log_message('/test', _json({'value': 1}), timestamp_ns=61 * NS)
-    recorder.log_message('/test', _json({'value': 2}), timestamp_ns=62 * NS)
     await recorder.stop()
 
     assert run is not None and run.endswith('_run0042')
     assert [path.name for path in sorted(mcap_dir.glob('*.mcap'))] == [f'{run}_01.mcap', f'{run}_02.mcap']
+
+
+async def test_a_rotation_leaves_no_part_without_messages(mcap_dir: Path) -> None:
+    """A part is opened only for a message to write into it, so no part of a run ends up empty."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start()
+
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder._flush()
+    rosys.set_time(rosys.time() + 61)
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=61 * NS)
+    await recorder._flush()
+    rosys.set_time(rosys.time() + 61)
+    await recorder.stop()
+
+    assert [_values(path) for path in sorted(mcap_dir.glob('*.mcap'))] == [[0], [1]]
+
+
+async def test_a_start_while_the_previous_recording_is_finalized_is_refused(mcap_dir: Path) -> None:
+    """The finished recording stays intact and no second one begins behind its back."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    draining = threading.Event()
+    release = threading.Event()
+
+    def slow_encode(value: int, _timestamp_ns: int) -> bytes:
+        draining.set()
+        release.wait(timeout=5)
+        return _json({'value': value})
+
+    recorder.start(name='first')
+    for i in range(3):
+        recorder.log_message('/test', i, encode=slow_encode, timestamp_ns=i * NS)
+    stopping = asyncio.create_task(recorder.stop())
+    while not draining.is_set():
+        await asyncio.sleep(0.01)
+
+    run = recorder.start(name='second')
+    release.set()
+    await stopping
+
+    assert run is None
+    assert not recorder.is_recording
+    assert [(path.name.endswith('_first_01.mcap'), _values(path)) for path in recorder.recordings] == \
+        [(True, [0, 1, 2])]
 
 
 async def test_every_file_of_a_recording_carries_the_metadata(mcap_dir: Path) -> None:
