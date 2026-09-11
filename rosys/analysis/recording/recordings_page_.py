@@ -241,8 +241,9 @@ class RecordingsPage:
                     .props('flat dense color=red').tooltip('delete all recordings')
                 ui.button(icon='refresh', on_click=reload).props('flat dense')
             # the page already insets its content; the scroll area would add a second one, only for the list
+            content_padding = 'padding-left: 0; padding-right: 0'  # Quasar swaps in the active style once a thumb shows
             with ui.scroll_area().classes('w-full') \
-                    .props('content-style="padding-left: 0; padding-right: 0"') \
+                    .props(f'content-style="{content_padding}" content-active-style="{content_padding}"') \
                     .style('max-height: 75vh'):
                 recordings_list()
 
