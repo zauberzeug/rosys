@@ -136,7 +136,7 @@ def test_runs_stay_apart_and_keep_their_order() -> None:
     ]
 
 
-@pytest.mark.parametrize('name', ['failure_20260911_052815_123456.mcap',  # preserved around a failure
+@pytest.mark.parametrize('name', ['20260911_052815_run0002_failure.mcap',  # preserved around a failure
                                   '20260911_052815_123456_01.mcap',  # recorded without a run name
                                   '20260911_052815_run0002.mcap',  # the merged file of a run
                                   'weeding on the north field.mcap'])  # renamed by hand

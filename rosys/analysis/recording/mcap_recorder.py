@@ -46,7 +46,7 @@ _DEFAULT_PAYLOAD_BYTES = 1024
 
 _DROP_WARNING_INTERVAL = 10.0  # seconds between 'queue full' warnings, so drops do not spam the log
 
-_AUTO_NAME = re.compile(r'\d{8}_\d{6}(_\w+)*\.mcap')  # the timestamped names _open_new_file generates
+_AUTO_NAME = re.compile(r'\d{8}_\d{6}(_\w+)*_\d+\.mcap')  # the numbered names _open_new_file generates
 
 TIMESTAMP_FORMAT = r'%Y%m%d_%H%M%S_%f'  # microseconds -> unique per recording
 
@@ -54,14 +54,15 @@ METADATA_NAME = 'recording'  # the MCAP metadata record holding the caller's con
 
 
 def is_auto_named(path: Path | str) -> bool:
-    """Whether a recording still carries its generated timestamp name.
+    """Whether a recording is one the recorder wrote itself.
 
-    Renaming a recording (see :meth:`McapRecorder.rename_recording`) marks it as worth
-    keeping: the disk budget deletes auto-named files first and renamed ones only when
-    those alone exceed the budget.
+    Every file the recorder writes ends in a part number, so a name without one exists
+    because someone or something made it deliberately — a renamed recording, a merged
+    run, a file preserved around a failure. The disk budget deletes the recorder's own
+    files first and those kept files only when they alone exceed the budget.
 
     :param path: the recording file to test.
-    :return: ``True`` if the file name is a generated timestamp name.
+    :return: ``True`` if the file name is one the recorder generated.
     """
     return _AUTO_NAME.fullmatch(Path(path).name) is not None
 
@@ -122,8 +123,9 @@ class McapRecorder:
     Supports automatic file rotation by size and duration, and disk budget enforcement.
     Peak disk usage is ``max_total_size_mb + max_file_size_mb``: the budget is enforced only
     before a file is opened, so the currently growing file can exceed it by up to one file's
-    worth. The budget deletes auto-named files (oldest first) before touching renamed ones,
-    so a recording renamed to be kept survives until kept files alone exceed the budget.
+    worth. The budget deletes the recorder's own files (oldest first) before touching kept
+    ones, so a recording filed away to be kept survives until kept files alone exceed the
+    budget.
 
     Messages are enqueued from the event loop (cheap, non-blocking) and written to disk by a
     single background consumer via ``rosys.run.io_bound`` so that encoding, ZSTD compression
@@ -171,9 +173,9 @@ class McapRecorder:
             (default: no duration-based rotation). Checked as messages are written, so an idle
             recording only rotates once data flows again.
         :param max_total_size_mb: disk budget for the directory; the oldest recordings are
-            deleted before a new file is opened to stay under it. Auto-named (timestamped)
-            files go first; renamed recordings are deleted only when they alone exceed the
-            budget. Peak disk usage is therefore ``max_total_size_mb + max_file_size_mb``
+            deleted before a new file is opened to stay under it. The recorder's own
+            numbered files go first; kept recordings are deleted only when they alone
+            exceed the budget. Peak disk usage is therefore ``max_total_size_mb + max_file_size_mb``
             (the budget is enforced only before a file is opened, so the growing file can
             exceed it by up to one file's worth).
         :param chunk_size: MCAP chunk size in bytes (larger chunks compress better and flush
@@ -347,7 +349,7 @@ class McapRecorder:
         ``new_name`` is reduced to a bare filename and given a ``.mcap`` suffix;
         empty, whitespace-only or dots-only names are rejected (they would escape
         the output directory) by returning ``None``. A renamed recording is deleted
-        by the disk budget only when renamed files alone exceed it (see
+        by the disk budget only when kept files alone exceed it (see
         :func:`is_auto_named`).
 
         :param path: the recording to rename.
@@ -813,7 +815,7 @@ class McapRecorder:
             except FileNotFoundError:
                 continue  # vanished concurrently (e.g. deleted from the recordings page)
             file_stats.append((path, stat.st_size, stat.st_mtime))
-        file_stats.sort(key=lambda item: (not is_auto_named(item[0]), item[2]))  # auto-named oldest first, renamed last
+        file_stats.sort(key=lambda item: (not is_auto_named(item[0]), item[2]))  # own files oldest first, kept last
         total = sum(size for _, size, _ in file_stats)
         while total > self.max_total_size and file_stats:
             oldest, size, _ = file_stats.pop(0)

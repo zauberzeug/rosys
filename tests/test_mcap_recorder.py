@@ -727,13 +727,16 @@ async def test_split_while_stopped_returns_none(mcap_dir: Path) -> None:
     assert await recorder.split() is None
 
 
-async def test_disk_budget_deletes_renamed_recordings_last(mcap_dir: Path) -> None:
-    """The budget evicts auto-named files (oldest first) before touching a renamed recording."""
-    kept = mcap_dir / 'failure_20200101_000000_000000.mcap'
+@pytest.mark.parametrize('kept_name', ['weeding on the north field.mcap',  # renamed by hand
+                                       '20200101_000000_run0001.mcap',  # the merged file of a run
+                                       '20200101_000000_run0001_failure.mcap'])  # preserved around a failure
+async def test_disk_budget_deletes_kept_recordings_last(mcap_dir: Path, kept_name: str) -> None:
+    """The budget evicts the recorder's own numbered files (oldest first) before anything kept."""
+    kept = mcap_dir / kept_name
     kept.write_bytes(os.urandom(60 * 1024))
-    os.utime(kept, (0, 0))  # the oldest file of all, yet renamed -> deleted last
+    os.utime(kept, (0, 0))  # the oldest file of all, yet not the recorder's own -> deleted last
     for i in range(2):
-        path = mcap_dir / f'2020010{i + 1}_000000_000000.mcap'
+        path = mcap_dir / f'20200101_000000_run0002_0{i + 1}.mcap'
         path.write_bytes(os.urandom(60 * 1024))
         os.utime(path, (i + 1, i + 1))
     recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.12, auto_start=False)  # ~126 KiB budget
@@ -743,8 +746,8 @@ async def test_disk_budget_deletes_renamed_recordings_last(mcap_dir: Path) -> No
 
     remaining = {path.name for path in mcap_dir.glob('*.mcap')}
     assert kept.name in remaining
-    assert '20200101_000000_000000.mcap' not in remaining  # oldest auto-named file paid for the budget
-    assert '20200102_000000_000000.mcap' in remaining
+    assert '20200101_000000_run0002_01.mcap' not in remaining  # the oldest of the recorder's own paid for the budget
+    assert '20200101_000000_run0002_02.mcap' in remaining
 
 
 def _metadata(path: Path) -> dict:
