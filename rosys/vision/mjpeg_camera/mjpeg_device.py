@@ -4,6 +4,7 @@ from collections.abc import Awaitable, Callable
 import httpx
 
 from ... import rosys
+from ...helpers import invoke
 from ..capture_device import CaptureDevice, CaptureState, ImageDataHandler
 from .mjpeg_stream_worker import MjpegStreamWorker
 from .stream_channel import EndReason, Frame, StreamEnded, StreamOpened
@@ -131,9 +132,7 @@ class MjpegDevice(CaptureDevice):
     async def _deliver(self, frame: Frame) -> None:
         timestamp = frame.capture_time if frame.capture_time is not None else rosys.time()
         try:
-            callback_result = self._on_new_image_data(frame.array, timestamp)
-            if isinstance(callback_result, Awaitable):
-                await callback_result
+            await invoke(self._on_new_image_data, frame.array, timestamp)
         except Exception as e:  # pylint: disable=broad-exception-caught
             self.log.error('Error processing image: %s', e)
 
