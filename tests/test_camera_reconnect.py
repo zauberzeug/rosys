@@ -1049,7 +1049,7 @@ async def test_axis_device_derives_url_from_its_settings(rosys_integration):
         try:
             assert device.url is not None
             assert 'camera=1' in device.url
-            assert 'fps=6' in device.url and 'resolution=640x480' in device.url and 'mirror=0' in device.url
+            assert 'fps=10' in device.url and 'resolution=640x480' in device.url and 'mirror=0' in device.url
 
             await device.set_fps(12)
             await device.set_resolution(1280, 720)

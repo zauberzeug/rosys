@@ -36,7 +36,7 @@ class AxisMjpegDevice(MjpegDevice):
         if vendor != VendorType.AXIS:
             raise ValueError(f'AxisMjpegDevice can only be used with AXIS devices. Got {vendor} for mac="{mac}"')
 
-        self.axis_settings = AxisSettings(fps=6, resolution=(640, 480), mirrored=False)
+        self.axis_settings = AxisSettings(fps=10, resolution=(640, 480), mirrored=False)
 
         super().__init__(mac, ip, index=index, username=username, password=password,
                          on_new_image_data=on_new_image_data, on_connect=on_connect,
