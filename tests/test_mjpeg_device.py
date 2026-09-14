@@ -13,6 +13,7 @@ import pytest
 
 from rosys.vision.mjpeg_camera.mjpeg_stream_worker import (
     MjpegStreamWorker,
+    StreamEndedError,
     _open_stream,
     _parse_capture_timestamp,
     _run_worker,
@@ -25,7 +26,6 @@ from rosys.vision.mjpeg_camera.stream_channel import (
     MemfdReceiver,
     Message,
     StreamEnded,
-    StreamOpened,
     open_channel,
     open_memfd_channel,
     open_pickled_channel,
@@ -135,7 +135,7 @@ def test_reports_a_stream_that_stops_sending_data_as_stalled() -> None:
         raise httpx.ReadTimeout('timed out')
 
     messages = _run_worker_against(lambda request: httpx.Response(200, content=stalling_body()))
-    assert messages == [StreamOpened(), StreamEnded(reason=EndReason.STALLED)]
+    assert messages == [StreamEnded(reason=EndReason.STALLED)]
 
 
 def test_reports_a_camera_that_does_not_answer_as_unreachable() -> None:
@@ -211,23 +211,38 @@ class _IdleProcess:
         pass
 
 
-async def test_stream_worker_keeps_only_the_newest_frame_while_the_loop_is_busy() -> None:
-    frames = [Frame(array=np.zeros((1, 1, 3), dtype=np.uint8), capture_time=float(i)) for i in range(5)]
-    receiver = _ScriptedReceiver([StreamOpened(), *frames])
+def _worker_reading(receiver: _ScriptedReceiver) -> MjpegStreamWorker:
+    """Create a worker whose reader thread drains the given receiver instead of a spawned process."""
     with patch('rosys.vision.mjpeg_camera.mjpeg_stream_worker.open_channel', return_value=(receiver, _RecordingSender())), \
             patch('rosys.vision.mjpeg_camera.mjpeg_stream_worker.SPAWN_CONTEXT',
                   SimpleNamespace(Process=lambda **kwargs: _IdleProcess())):
-        worker = MjpegStreamWorker('cam', 'http://127.0.0.1/stream', None, None)
-    assert receiver.drained.wait(timeout=1), 'expected the reader thread to drain the stub without the loop running'
-    pending = list(worker._messages)  # pylint: disable=protected-access
-    assert len(pending) <= 3
-    assert [message for message in pending if isinstance(message, Frame)] == [frames[-1]]  # by identity
+        return MjpegStreamWorker('cam', 'http://127.0.0.1/stream', None, None)
 
-    assert await worker.receive() == StreamOpened()
-    assert await worker.receive() is frames[-1]
-    ended = await worker.receive()
-    assert isinstance(ended, StreamEnded)
-    assert ended.reason is EndReason.FAILED
+
+def _frame(capture_time: float) -> Frame:
+    return Frame(array=np.zeros((1, 1, 3), dtype=np.uint8), capture_time=capture_time)
+
+
+async def test_stream_worker_keeps_only_the_newest_frame_while_the_loop_is_busy() -> None:
+    frames = [_frame(float(i)) for i in range(5)]
+    receiver = _ScriptedReceiver(list(frames))
+    worker = _worker_reading(receiver)
+    assert receiver.drained.wait(timeout=1), 'expected the reader thread to drain the stub without the loop running'
+    assert worker._pending is frames[-1]  # pylint: disable=protected-access
+
+    received = []
+    with pytest.raises(StreamEndedError) as end:
+        async for frame in worker.frames():
+            received.append(frame)
+    assert received == [frames[-1]]  # by identity
+    assert end.value.reason is EndReason.FAILED
+    await worker.shutdown()
+
+
+async def test_stream_worker_ends_quietly_when_the_camera_closes_the_stream() -> None:
+    frame = _frame(1.0)
+    worker = _worker_reading(_ScriptedReceiver([frame, StreamEnded(reason=EndReason.ENDED)]))
+    assert [received async for received in worker.frames()] == [frame]  # by identity
     await worker.shutdown()
 
 

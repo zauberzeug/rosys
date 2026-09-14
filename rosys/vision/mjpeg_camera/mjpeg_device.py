@@ -6,8 +6,8 @@ import httpx
 from ... import rosys
 from ...helpers import invoke
 from ..capture_device import CaptureDevice, CaptureState, ImageDataHandler
-from .mjpeg_stream_worker import MjpegStreamWorker
-from .stream_channel import EndReason, Frame, StreamEnded, StreamOpened
+from .mjpeg_stream_worker import MjpegStreamWorker, StreamEndedError
+from .stream_channel import EndReason, Frame
 from .vendors import mac_to_url
 
 
@@ -96,38 +96,34 @@ class MjpegDevice(CaptureDevice):
         worker = MjpegStreamWorker(self._mac, url, self._username, self._password)
         self._worker = worker
         try:
-            while True:
-                message = await worker.receive()
+            async for frame in worker.frames():
                 if not self._keeps_running():
                     return
-                if isinstance(message, StreamOpened):
+                if not self.is_connected:
                     await self._enter_streaming()
-                elif isinstance(message, StreamEnded):
-                    self._end_session(url, message)
+                if self.url != url:
+                    self.log.info('stream settings changed; reopening the stream')
                     return
-                else:
-                    if self.url != url:
-                        self.log.info('stream settings changed; reopening the stream')
-                        return
-                    await self._deliver(message)
+                await self._deliver(frame)
+        except StreamEndedError as end:
+            if self._keeps_running():
+                self._end_session(url, end)
         finally:
             await worker.shutdown()
             if self._worker is worker:
                 self._worker = None
 
-    def _end_session(self, url: str, message: StreamEnded) -> None:
-        match message.reason:
-            case EndReason.ENDED:
-                self.log.debug('capture session ended')
+    def _end_session(self, url: str, end: StreamEndedError) -> None:
+        match end.reason:
             case EndReason.REFUSED:
-                self.log.error('camera at %s refused the stream: %s', url, message.detail)
+                self.log.error('camera at %s refused the stream: %s', url, end.detail)
                 self._set_state(CaptureState.REFUSED)
             case EndReason.UNREACHABLE:
-                raise CameraUnreachable(message.detail)
+                raise CameraUnreachable(end.detail)
             case EndReason.STALLED:
                 self.log.warning('camera at %s stopped sending data', url)
             case EndReason.FAILED:
-                raise RuntimeError(message.detail)
+                raise RuntimeError(end.detail)
 
     async def _deliver(self, frame: Frame) -> None:
         timestamp = frame.capture_time if frame.capture_time is not None else rosys.time()

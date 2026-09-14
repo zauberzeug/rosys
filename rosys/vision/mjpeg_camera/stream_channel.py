@@ -24,11 +24,6 @@ class EndReason(enum.Enum):
     FAILED = enum.auto()  # anything else, including the worker dying
 
 
-@dataclass(slots=True)
-class StreamOpened:
-    pass
-
-
 @dataclass(slots=True, kw_only=True)
 class Frame:
     array: ImageArray
@@ -41,7 +36,7 @@ class StreamEnded:
     detail: str = ''
 
 
-Message = StreamOpened | Frame | StreamEnded
+Message = Frame | StreamEnded
 
 
 class MessageSender(Protocol):

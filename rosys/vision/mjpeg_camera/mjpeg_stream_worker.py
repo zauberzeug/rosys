@@ -1,8 +1,7 @@
 import asyncio
 import logging
 import threading
-from collections import deque
-from collections.abc import Generator, Iterable, Iterator
+from collections.abc import AsyncIterator, Generator, Iterable, Iterator
 from contextlib import contextmanager
 
 import httpx
@@ -16,11 +15,19 @@ from .stream_channel import (
     Message,
     MessageSender,
     StreamEnded,
-    StreamOpened,
     open_channel,
 )
 
 log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_stream_worker')
+
+
+class StreamEndedError(Exception):
+    """The stream ended for a reason other than the camera closing it."""
+
+    def __init__(self, reason: EndReason, detail: str = '') -> None:
+        super().__init__(detail or reason.name)
+        self.reason = reason
+        self.detail = detail
 
 
 class MjpegStreamWorker:
@@ -29,8 +36,9 @@ class MjpegStreamWorker:
     def __init__(self, name: str, url: str, username: str | None, password: str | None) -> None:
         self._loop = asyncio.get_running_loop()
         self.log = logging.getLogger(f'rosys.vision.mjpeg_camera.mjpeg_stream_worker.{name}')
-        self._messages: deque[Message] = deque()
-        self._messages_lock = threading.Lock()
+        self._pending: Frame | None = None
+        self._end: StreamEnded | None = None
+        self._lock = threading.Lock()
         self._message_arrived = asyncio.Event()
         self._closing = False
 
@@ -41,13 +49,21 @@ class MjpegStreamWorker:
         sender.close()  # the child holds the only sending end now, so the receiver sees EOF when it exits
         threading.Thread(target=self._read_messages, daemon=True, name=f'mjpeg stream reader {name}').start()
 
-    async def receive(self) -> Message:
+    async def frames(self) -> AsyncIterator[Frame]:
+        """Yield frames until the camera closes the stream; raise StreamEndedError for any other end."""
         while True:
             self._message_arrived.clear()
-            with self._messages_lock:
-                if self._messages:
-                    return self._messages.popleft()
-            await self._message_arrived.wait()
+            with self._lock:
+                frame, self._pending = self._pending, None
+                end = self._end
+            if frame is not None:
+                yield frame
+            elif end is None:
+                await self._message_arrived.wait()
+            elif end.reason is EndReason.ENDED:
+                return
+            else:
+                raise StreamEndedError(end.reason, end.detail)
 
     async def shutdown(self) -> None:
         self._closing = True
@@ -71,11 +87,11 @@ class MjpegStreamWorker:
                 self.log.exception('receiving from the stream worker failed')
                 message = StreamEnded(reason=EndReason.FAILED,
                                       detail=f'receiving from the stream worker failed: {type(e).__name__}: {e}')
-            with self._messages_lock:
-                if isinstance(message, Frame) and self._messages and isinstance(self._messages[-1], Frame):
-                    self._messages[-1] = message  # a frame nobody has picked up yet is stale
+            with self._lock:
+                if isinstance(message, Frame):
+                    self._pending = message
                 else:
-                    self._messages.append(message)
+                    self._end = message
             try:
                 self._loop.call_soon_threadsafe(self._message_arrived.set)  # an asyncio.Event is not thread-safe
             except RuntimeError:
@@ -175,7 +191,6 @@ def _run_worker(url: str, username: str | None, password: str | None, sender: Me
                 detail = f'{response.status_code} {response.reason_phrase} (auth: {auth_scheme})'
                 send(StreamEnded(reason=EndReason.REFUSED, detail=detail))
                 return
-            send(StreamOpened())
             for jpeg, capture_time in _split_frames(response.iter_bytes()):
                 array = decode_jpeg_image(remove_exif(jpeg))
                 if array is not None:
