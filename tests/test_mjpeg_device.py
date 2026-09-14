@@ -1,6 +1,7 @@
 import errno
 import sys
 from collections.abc import Callable, Iterator
+from multiprocessing.connection import Connection
 from unittest.mock import patch
 
 import cv2
@@ -20,8 +21,6 @@ from rosys.vision.mjpeg_camera.stream_channel import (
     Memfd,
     MemfdReceiver,
     Message,
-    PickledReceiver,
-    PickledSender,
     StreamEnded,
     StreamOpened,
     open_channel,
@@ -190,19 +189,19 @@ def test_frames_and_other_messages_survive_the_channel(open_channel_) -> None:
     sender.send('not a frame')
     sender.close()
 
-    frame = receiver.receive()
+    frame = receiver.recv()
     assert isinstance(frame, Frame)
     assert frame.capture_time == 1.5
     assert np.array_equal(frame.array, array)
-    assert receiver.receive() == 'not a frame'
+    assert receiver.recv() == 'not a frame'
     receiver.close()
 
 
 def test_falls_back_to_the_pickled_channel_without_memfd() -> None:
     with patch('rosys.vision.mjpeg_camera.stream_channel.Memfd', side_effect=OSError):
         receiver, sender = open_channel()
-    assert isinstance(receiver, PickledReceiver)
-    assert isinstance(sender, PickledSender)
+    assert isinstance(receiver, Connection)
+    assert isinstance(sender, Connection)
 
 
 @pytest.mark.skipif(not _memfd_is_available(), reason='no memfd')

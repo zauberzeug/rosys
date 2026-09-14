@@ -515,7 +515,7 @@ async def test_mjpeg_device_reconnects_when_its_reader_fails(vision_log):
     try:
         await wait_in_real_time(lambda: device.is_connected, message='expected the stream to be opened')
         receiver_type = type(device._worker._receiver)  # pylint: disable=protected-access
-        with patch.object(receiver_type, 'receive', side_effect=RuntimeError('received 0 items of ancdata')):
+        with patch.object(receiver_type, 'recv', side_effect=RuntimeError('received 0 items of ancdata')):
             await wait_in_real_time(lambda: not device.is_connected,
                                     message='expected the failing reader to end the session')
         await forward_until(lambda: server.connections >= 2 and device.is_connected,

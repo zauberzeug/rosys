@@ -61,7 +61,7 @@ class MjpegStreamWorker:
         while True:
             message: Message | None
             try:
-                message = self._receiver.receive()
+                message = self._receiver.recv()
             except (EOFError, OSError):
                 message = None
                 if not self._closing:

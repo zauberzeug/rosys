@@ -55,41 +55,17 @@ class MessageSender(Protocol):
 
 class MessageReceiver(Protocol):
 
-    def receive(self) -> Message:
+    def recv(self) -> Message:
         ...
 
     def close(self) -> None:
         ...
-
-
-class PickledSender:
-    """Frames cross as pickled arrays; works everywhere at the cost of copying the pixels twice."""
-
-    def __init__(self, connection: Connection) -> None:
-        self._connection = connection
-
-    def send(self, message: Message) -> None:
-        self._connection.send(message)
-
-    def close(self) -> None:
-        self._connection.close()
-
-
-class PickledReceiver:
-
-    def __init__(self, connection: Connection) -> None:
-        self._connection = connection
-
-    def receive(self) -> Message:
-        return self._connection.recv()
-
-    def close(self) -> None:
-        self._connection.close()
 
 
 def open_pickled_channel() -> tuple[MessageReceiver, MessageSender]:
+    """Frames cross as pickled arrays; works everywhere at the cost of copying the pixels twice."""
     reader, writer = SPAWN_CONTEXT.Pipe(duplex=False)
-    return PickledReceiver(reader), PickledSender(writer)
+    return reader, writer
 
 
 @dataclass(slots=True, kw_only=True)
@@ -154,7 +130,7 @@ class MemfdReceiver:
     def __init__(self, connection: Connection) -> None:
         self._connection = connection
 
-    def receive(self) -> Message:
+    def recv(self) -> Message:
         message = self._connection.recv()
         if not isinstance(message, _FrameHeader):
             return message
