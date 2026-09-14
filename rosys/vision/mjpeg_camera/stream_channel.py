@@ -5,6 +5,7 @@ import mmap
 import multiprocessing
 import os
 import sys
+from collections.abc import Callable
 from dataclasses import dataclass
 from multiprocessing import reduction
 from multiprocessing.connection import Connection
@@ -100,39 +101,46 @@ class _FrameHeader:
     capture_time: float | None
 
 
-def _memfd_create(name: str) -> int:
-    if hasattr(os, 'memfd_create'):
-        return os.memfd_create(name)  # pylint: disable=no-member
-    # some Python builds (e.g. the ones uv installs) lack the os function, while the libc call is there anyway
-    libc = ctypes.CDLL(None, use_errno=True)
-    fd: int = libc.memfd_create(name.encode(), 0)
-    if fd < 0:
-        errno = ctypes.get_errno()
-        raise OSError(errno, os.strerror(errno))
-    return fd
+class Memfd:
+    """Create anonymous memory files, resolving the system call once and checking that it works."""
 
+    def __init__(self) -> None:
+        self.create: Callable[[str], int]
+        if hasattr(os, 'memfd_create'):
+            self.create = os.memfd_create  # pylint: disable=no-member
+        else:
+            # some Python builds (e.g. the ones uv installs) lack the os function, while the libc call is there anyway
+            libc = ctypes.CDLL(None, use_errno=True)
+            libc.memfd_create.argtypes = [ctypes.c_char_p, ctypes.c_uint]
+            libc.memfd_create.restype = ctypes.c_int
+            self._libc_create = libc.memfd_create
+            self.create = self._create_via_libc
+        os.close(self.create('rosys-probe'))
 
-def memfd_is_available() -> bool:
-    if sys.platform != 'linux':
-        return False
-    try:
-        os.close(_memfd_create('rosys-probe'))
-    except (OSError, AttributeError):
-        return False
-    return True
+    def _create_via_libc(self, name: str) -> int:
+        fd: int = self._libc_create(name.encode(), 0)
+        if fd < 0:
+            errno = ctypes.get_errno()
+            raise OSError(errno, os.strerror(errno))
+        return fd
+
+    # a ctypes function is not picklable, and the sender travels to the spawned worker as a process argument
+    def __reduce__(self) -> tuple[type['Memfd'], tuple[()]]:
+        return (Memfd, ())
 
 
 class MemfdSender:
     """Frames cross as memfd file descriptors, so the receiver maps the pixels instead of copying them."""
 
-    def __init__(self, connection: Connection) -> None:
+    def __init__(self, connection: Connection, memfd: Memfd) -> None:
         self._connection = connection
+        self._memfd = memfd
 
     def send(self, message: Message) -> None:
         if not isinstance(message, Frame):
             self._connection.send(message)
             return
-        fd = _memfd_create('rosys-frame')
+        fd = self._memfd.create('rosys-frame')
         try:
             os.write(fd, np.ascontiguousarray(message.array).data)
             self._connection.send(_FrameHeader(shape=message.array.shape, capture_time=message.capture_time))
@@ -165,10 +173,16 @@ class MemfdReceiver:
         self._connection.close()
 
 
-def open_memfd_channel() -> tuple[MessageReceiver, MessageSender]:
+def open_memfd_channel(memfd: Memfd) -> tuple[MessageReceiver, MessageSender]:
     reader, writer = SPAWN_CONTEXT.Pipe(duplex=True)  # a socket pair, which can carry file descriptors
-    return MemfdReceiver(reader), MemfdSender(writer)
+    return MemfdReceiver(reader), MemfdSender(writer, memfd)
 
 
-open_channel = open_memfd_channel if memfd_is_available() else open_pickled_channel
-"""Create the (receiver, sender) pair of the fastest channel this platform supports."""
+def open_channel() -> tuple[MessageReceiver, MessageSender]:
+    """Create the (receiver, sender) pair of the fastest channel this platform supports."""
+    if sys.platform == 'linux':
+        try:
+            return open_memfd_channel(Memfd())
+        except (OSError, AttributeError):
+            pass
+    return open_pickled_channel()

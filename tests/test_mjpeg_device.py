@@ -1,4 +1,5 @@
 import errno
+import sys
 from collections.abc import Callable, Iterator
 from unittest.mock import patch
 
@@ -16,10 +17,13 @@ from rosys.vision.mjpeg_camera.mjpeg_stream_worker import (
 from rosys.vision.mjpeg_camera.stream_channel import (
     EndReason,
     Frame,
+    Memfd,
+    MemfdReceiver,
     Message,
+    PickledReceiver,
+    PickledSender,
     StreamEnded,
     StreamOpened,
-    memfd_is_available,
     open_channel,
     open_memfd_channel,
     open_pickled_channel,
@@ -164,9 +168,20 @@ def test_reports_an_os_error_while_sending_a_frame() -> None:
     assert last.detail.startswith('OSError: ')
 
 
+def _memfd_is_available() -> bool:
+    if sys.platform != 'linux':
+        return False
+    try:
+        Memfd()
+    except (OSError, AttributeError):
+        return False
+    return True
+
+
 @pytest.mark.parametrize('open_channel_', [
     open_pickled_channel,
-    pytest.param(open_memfd_channel, marks=pytest.mark.skipif(not memfd_is_available(), reason='no memfd')),
+    pytest.param(lambda: open_memfd_channel(Memfd()),
+                 marks=pytest.mark.skipif(not _memfd_is_available(), reason='no memfd')),
 ])
 def test_frames_and_other_messages_survive_the_channel(open_channel_) -> None:
     receiver, sender = open_channel_()
@@ -183,5 +198,14 @@ def test_frames_and_other_messages_survive_the_channel(open_channel_) -> None:
     receiver.close()
 
 
-def test_the_platform_channel_is_chosen() -> None:
-    assert open_channel is (open_memfd_channel if memfd_is_available() else open_pickled_channel)
+def test_falls_back_to_the_pickled_channel_without_memfd() -> None:
+    with patch('rosys.vision.mjpeg_camera.stream_channel.Memfd', side_effect=OSError):
+        receiver, sender = open_channel()
+    assert isinstance(receiver, PickledReceiver)
+    assert isinstance(sender, PickledSender)
+
+
+@pytest.mark.skipif(not _memfd_is_available(), reason='no memfd')
+def test_prefers_the_memfd_channel() -> None:
+    receiver, _ = open_channel()
+    assert isinstance(receiver, MemfdReceiver)
