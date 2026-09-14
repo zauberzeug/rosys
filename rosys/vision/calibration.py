@@ -44,7 +44,6 @@ class Intrinsics:
     :param rotation: An inner rotation matrix, useful for visual-inertial calibration or omnidirectional projection.
     :param size: The size of the image.
     :param undistortion_iterations: Upper bound for the fixed-point iteration that inverts a pinhole distortion model;
-        OpenCV's 5 leave rational models off by pixels at the image border, 200 converge.
     """
     model: CameraModel = CameraModel.PINHOLE
     matrix: list[list[float]]
