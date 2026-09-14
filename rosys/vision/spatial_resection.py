@@ -304,7 +304,8 @@ def _solve_ippe(object_points: np.ndarray,
         tvec = (np.asarray(tvec, dtype=np.float64).reshape(3) - rmat @ plane_centroid).reshape(3, 1)
         rvec = np.asarray(cv2.Rodrigues(rmat)[0], dtype=np.float64)
         error = _mean_reprojection_error(object_points, image_points, camera_matrix, rvec, tvec)
-        candidates.append((error, rvec, tvec))
+        if np.isfinite(error):
+            candidates.append((error, rvec, tvec))
     if not candidates:
         return False, np.full((3, 1), np.nan), np.full((3, 1), np.nan)
     _, rvec, tvec = min(candidates, key=lambda candidate: candidate[0])
