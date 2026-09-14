@@ -4,14 +4,10 @@ from collections.abc import Awaitable, Callable
 import httpx
 
 from ... import rosys
-from ..capture_device import CaptureDevice, CaptureState
-from ..image import ImageArray
+from ..capture_device import CaptureDevice, CaptureState, ImageDataHandler
 from .mjpeg_stream_worker import MjpegStreamWorker
 from .stream_channel import EndReason, Frame, StreamEnded, StreamOpened
 from .vendors import mac_to_url
-
-ImageDataHandler = Callable[[ImageArray, float], Awaitable | None]
-"""Receives a decoded frame together with its capture timestamp."""
 
 
 class CameraAddressUnknown(Exception):
