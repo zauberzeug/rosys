@@ -104,7 +104,7 @@ class SpatialResection:
                 object_points, image_points_undist, K_undist, _NO_DISTORTION,
                 rvec_init, tvec_init, use_guess, int(method_flag)
             )
-        if not ok:
+        if not ok and (use_guess or object_points.shape[0] >= 6):  # ITERATIVE without a guess needs 6 points
             ok, rvec, tvec = cv2.solvePnP(
                 object_points, image_points_undist, K_undist, _NO_DISTORTION,
                 rvec_init, tvec_init, use_guess, int(cv2.SOLVEPNP_ITERATIVE)
