@@ -855,6 +855,23 @@ async def test_mjpeg_stream_worker_reports_its_shutdown_as_a_normal_end(rosys_in
         await server.stop()
 
 
+async def test_mjpeg_stream_worker_names_the_exit_code_of_its_dead_process(rosys_integration):
+    server = FlakyMjpegServer(frames_per_connection=None)
+    await server.start()
+    worker = MjpegStreamWorker(GOODCAM_MAC, f'http://127.0.0.1:{server.port}/', None, None)
+    try:
+        assert isinstance(await worker.receive(), StreamOpened)
+        worker._process.kill()  # pylint: disable=protected-access
+        message = await worker.receive()
+        while not isinstance(message, StreamEnded):
+            message = await worker.receive()
+        assert message.reason is EndReason.FAILED
+        assert 'code -9' in message.detail
+    finally:
+        await worker.shutdown()
+        await server.stop()
+
+
 async def test_mjpeg_device_keeps_one_capture_loop_across_an_address_change(rosys_integration):
     server = FlakyMjpegServer(frames_per_connection=None)
     await server.start()

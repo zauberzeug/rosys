@@ -64,6 +64,8 @@ class MjpegStreamWorker:
                 message = self._receiver.receive()
             except (EOFError, OSError):
                 message = None
+                if not self._closing:
+                    self._process.join(1.0)  # the exit code is only known once the child is reaped
             except Exception as e:  # pylint: disable=broad-exception-caught
                 self.log.exception('receiving from the stream worker failed')
                 message = StreamEnded(reason=EndReason.FAILED,
@@ -80,7 +82,8 @@ class MjpegStreamWorker:
             if self._closing:
                 message = StreamEnded(reason=EndReason.ENDED)
             else:
-                message = StreamEnded(reason=EndReason.FAILED, detail='the stream worker exited')
+                message = StreamEnded(reason=EndReason.FAILED,
+                                      detail=f'the stream worker exited with code {self._process.exitcode}')
         if isinstance(message, Frame) and self._messages and isinstance(self._messages[-1], Frame):
             self._messages[-1] = message  # a frame nobody has picked up yet is stale
         else:
