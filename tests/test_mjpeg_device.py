@@ -1,7 +1,9 @@
 import errno
 import sys
+import threading
 from collections.abc import Callable, Iterator
 from multiprocessing.connection import Connection
+from types import SimpleNamespace
 from unittest.mock import patch
 
 import cv2
@@ -10,6 +12,7 @@ import numpy as np
 import pytest
 
 from rosys.vision.mjpeg_camera.mjpeg_stream_worker import (
+    MjpegStreamWorker,
     _open_stream,
     _parse_capture_timestamp,
     _run_worker,
@@ -175,6 +178,57 @@ def _memfd_is_available() -> bool:
     except (OSError, AttributeError):
         return False
     return True
+
+
+class _ScriptedReceiver:
+    """Hand out the given messages, then report EOF and flag that everything was read."""
+
+    def __init__(self, messages: list[Message]) -> None:
+        self._messages = iter(messages)
+        self.drained = threading.Event()
+
+    def recv(self) -> Message:
+        try:
+            return next(self._messages)
+        except StopIteration:
+            self.drained.set()
+            raise EOFError from None
+
+    def close(self) -> None:
+        pass
+
+
+class _IdleProcess:
+    exitcode = 0
+
+    def start(self) -> None:
+        pass
+
+    def is_alive(self) -> bool:
+        return False
+
+    def join(self, timeout: float | None = None) -> None:
+        pass
+
+
+async def test_stream_worker_keeps_only_the_newest_frame_while_the_loop_is_busy() -> None:
+    frames = [Frame(array=np.zeros((1, 1, 3), dtype=np.uint8), capture_time=float(i)) for i in range(5)]
+    receiver = _ScriptedReceiver([StreamOpened(), *frames])
+    with patch('rosys.vision.mjpeg_camera.mjpeg_stream_worker.open_channel', return_value=(receiver, _RecordingSender())), \
+            patch('rosys.vision.mjpeg_camera.mjpeg_stream_worker.SPAWN_CONTEXT',
+                  SimpleNamespace(Process=lambda **kwargs: _IdleProcess())):
+        worker = MjpegStreamWorker('cam', 'http://127.0.0.1/stream', None, None)
+    assert receiver.drained.wait(timeout=1), 'expected the reader thread to drain the stub without the loop running'
+    pending = list(worker._messages)  # pylint: disable=protected-access
+    assert len(pending) <= 3
+    assert [message for message in pending if isinstance(message, Frame)] == [frames[-1]]  # by identity
+
+    assert await worker.receive() == StreamOpened()
+    assert await worker.receive() is frames[-1]
+    ended = await worker.receive()
+    assert isinstance(ended, StreamEnded)
+    assert ended.reason is EndReason.FAILED
+    await worker.shutdown()
 
 
 @pytest.mark.parametrize('open_channel_', [

@@ -30,6 +30,7 @@ class MjpegStreamWorker:
         self._loop = asyncio.get_running_loop()
         self.log = logging.getLogger(f'rosys.vision.mjpeg_camera.mjpeg_stream_worker.{name}')
         self._messages: deque[Message] = deque()
+        self._messages_lock = threading.Lock()
         self._message_arrived = asyncio.Event()
         self._closing = False
 
@@ -41,10 +42,12 @@ class MjpegStreamWorker:
         threading.Thread(target=self._read_messages, daemon=True, name=f'mjpeg stream reader {name}').start()
 
     async def receive(self) -> Message:
-        while not self._messages:
+        while True:
             self._message_arrived.clear()
+            with self._messages_lock:
+                if self._messages:
+                    return self._messages.popleft()
             await self._message_arrived.wait()
-        return self._messages.popleft()
 
     async def shutdown(self) -> None:
         self._closing = True
@@ -59,36 +62,33 @@ class MjpegStreamWorker:
 
     def _read_messages(self) -> None:
         while True:
-            message: Message | None
+            message: Message
             try:
                 message = self._receiver.recv()
             except (EOFError, OSError):
-                message = None
-                if not self._closing:
-                    self._process.join(1.0)  # the exit code is only known once the child is reaped
+                message = self._end_of_stream()
             except Exception as e:  # pylint: disable=broad-exception-caught
                 self.log.exception('receiving from the stream worker failed')
                 message = StreamEnded(reason=EndReason.FAILED,
                                       detail=f'receiving from the stream worker failed: {type(e).__name__}: {e}')
+            with self._messages_lock:
+                if isinstance(message, Frame) and self._messages and isinstance(self._messages[-1], Frame):
+                    self._messages[-1] = message  # a frame nobody has picked up yet is stale
+                else:
+                    self._messages.append(message)
             try:
-                self._loop.call_soon_threadsafe(self._handle_incoming_message, message)
+                self._loop.call_soon_threadsafe(self._message_arrived.set)  # an asyncio.Event is not thread-safe
             except RuntimeError:
                 return  # the loop is closed
-            if message is None or isinstance(message, StreamEnded):
+            if isinstance(message, StreamEnded):
                 return
 
-    def _handle_incoming_message(self, message: Message | None) -> None:
-        if message is None:
-            if self._closing:
-                message = StreamEnded(reason=EndReason.ENDED)
-            else:
-                message = StreamEnded(reason=EndReason.FAILED,
-                                      detail=f'the stream worker exited with code {self._process.exitcode}')
-        if isinstance(message, Frame) and self._messages and isinstance(self._messages[-1], Frame):
-            self._messages[-1] = message  # a frame nobody has picked up yet is stale
-        else:
-            self._messages.append(message)
-        self._message_arrived.set()
+    def _end_of_stream(self) -> StreamEnded:
+        if self._closing:
+            return StreamEnded(reason=EndReason.ENDED)
+        self._process.join(1.0)  # the exit code is only known once the child is reaped
+        return StreamEnded(reason=EndReason.FAILED,
+                           detail=f'the stream worker exited with code {self._process.exitcode}')
 
 
 def _parse_capture_timestamp(part_header: bytes) -> float | None:
