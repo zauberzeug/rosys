@@ -228,7 +228,7 @@ async def test_stream_worker_keeps_only_the_newest_frame_while_the_loop_is_busy(
     receiver = _ScriptedReceiver(list(frames))
     worker = _worker_reading(receiver)
     assert receiver.drained.wait(timeout=1), 'expected the reader thread to drain the stub without the loop running'
-    assert worker._pending is frames[-1]  # pylint: disable=protected-access
+    assert worker._inbox.frame is frames[-1]  # pylint: disable=protected-access
 
     received = []
     with pytest.raises(StreamEndedError) as end:
