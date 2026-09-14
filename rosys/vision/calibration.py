@@ -43,14 +43,14 @@ class Intrinsics:
     :param xi: The omnidirectional camera parameter xi (only for ``CameraModel.OMNIDIRECTIONAL``).
     :param rotation: An inner rotation matrix, useful for visual-inertial calibration or omnidirectional projection.
     :param size: The size of the image.
-    :param undistortion_iterations: Upper bound for the fixed-point iteration that inverts a pinhole distortion model;
+    :param undistortion_iterations: Upper bound for the fixed-point iteration that inverts a pinhole distortion model.
     """
     model: CameraModel = CameraModel.PINHOLE
     matrix: list[list[float]]
     distortion: list[float]
     omnidir_params: OmnidirParameters | None = None
     size: ImageSize
-    undistortion_iterations: int = 5
+    undistortion_iterations: int = 200
 
     @staticmethod
     def create_default(width: int = 800,
