@@ -31,27 +31,35 @@ class StreamEndedError(Exception):
 
 
 class _Inbox:
-    """Hand-over from the reader thread to the loop: the newest frame not yet taken, and how the stream ended."""
+    """Hand-over from the reader thread to the loop: the newest frame not yet taken, how the stream ended, the wake."""
 
-    def __init__(self) -> None:
+    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
+        self._loop = loop
         self._lock = threading.Lock()
+        self._arrived = asyncio.Event()
         self.frame: Frame | None = None
         self.end: StreamEnded | None = None
 
     def put(self, message: Message) -> None:
+        """Store the message and wake the loop side; raises RuntimeError once the loop is closed."""
         with self._lock:
             if isinstance(message, Frame):
                 self.frame = message
             else:
                 self.end = message
+        self._loop.call_soon_threadsafe(self._arrived.set)  # an asyncio.Event is not thread-safe
 
-    def take(self) -> Frame | StreamEnded | None:
-        """Hand out the pending frame, else the end, else nothing."""
-        with self._lock:
-            if self.frame is not None:
-                frame, self.frame = self.frame, None
-                return frame
-            return self.end
+    async def take(self) -> Frame | StreamEnded:
+        """Wait for and hand out the pending frame, else the end."""
+        while True:
+            self._arrived.clear()
+            with self._lock:
+                if self.frame is not None:
+                    frame, self.frame = self.frame, None
+                    return frame
+                if self.end is not None:
+                    return self.end
+            await self._arrived.wait()
 
 
 class MjpegStreamWorker:
@@ -60,8 +68,7 @@ class MjpegStreamWorker:
     def __init__(self, name: str, url: str, username: str | None, password: str | None) -> None:
         self._loop = asyncio.get_running_loop()
         self.log = logging.getLogger(f'rosys.vision.mjpeg_camera.mjpeg_stream_worker.{name}')
-        self._inbox = _Inbox()
-        self._message_arrived = asyncio.Event()
+        self._inbox = _Inbox(self._loop)
         self._closing = False
 
         self._receiver, sender = open_channel()
@@ -74,12 +81,9 @@ class MjpegStreamWorker:
     async def frames(self) -> AsyncIterator[Frame]:
         """Yield frames until the camera closes the stream; raise StreamEndedError for any other end."""
         while True:
-            self._message_arrived.clear()
-            match self._inbox.take():
+            match await self._inbox.take():
                 case Frame() as frame:
                     yield frame
-                case None:
-                    await self._message_arrived.wait()
                 case StreamEnded(reason=EndReason.ENDED):
                     return
                 case StreamEnded() as end:
@@ -107,9 +111,8 @@ class MjpegStreamWorker:
                 self.log.exception('receiving from the stream worker failed')
                 message = StreamEnded(reason=EndReason.FAILED,
                                       detail=f'receiving from the stream worker failed: {type(e).__name__}: {e}')
-            self._inbox.put(message)
             try:
-                self._loop.call_soon_threadsafe(self._message_arrived.set)  # an asyncio.Event is not thread-safe
+                self._inbox.put(message)
             except RuntimeError:
                 return  # the loop is closed
             if isinstance(message, StreamEnded):
