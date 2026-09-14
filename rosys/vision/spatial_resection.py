@@ -7,6 +7,8 @@ from scipy.optimize import least_squares
 from rosys.geometry import Point3d, Pose3d, Rotation
 from rosys.vision.calibration import Calibration, Intrinsics
 
+_NO_DISTORTION: np.ndarray = np.zeros((1, 5), dtype=np.float64)
+
 
 @dataclass(slots=True, kw_only=True)
 class SpatialResectionResult:
@@ -52,7 +54,6 @@ class SpatialResection:
 
         object_points: np.ndarray = world_points.astype(np.float64).reshape(-1, 1, 3)
         image_points_undist = calibration.undistort_points(image_points.astype(np.float64).reshape(-1, 1, 2))
-        D_zeros: np.ndarray = np.zeros((1, 5), dtype=np.float64)
 
         plane_frame = _fit_plane_frame(object_points)
 
@@ -96,36 +97,16 @@ class SpatialResection:
             rvec_init = None
             tvec_init = None
 
-        def mean_reprojection_error(rvec: np.ndarray, tvec: np.ndarray) -> float:
-            projected, _ = cv2.projectPoints(object_points, rvec, tvec, K_undist, D_zeros)
-            residuals = np.asarray(projected, dtype=np.float64).reshape(-1, 2) - image_points_undist.reshape(-1, 2)
-            return float(np.mean(np.abs(residuals)))
-
         if method_flag == cv2.SOLVEPNP_IPPE and plane_frame is not None:
-            # OpenCV's IPPE only solves a plane whose z axis points away from the camera, which the fit cannot know
-            plane_rotation, plane_centroid = plane_frame
-            candidates: list[tuple[float, np.ndarray, np.ndarray]] = []
-            for rotation in (plane_rotation, np.diag([1.0, -1.0, -1.0]) @ plane_rotation):
-                plane_points = ((object_points.reshape(-1, 3) - plane_centroid) @ rotation.T).reshape(-1, 1, 3)
-                ok, rvec, tvec = cv2.solvePnP(plane_points, image_points_undist, K_undist, D_zeros,
-                                              None, None, False, int(cv2.SOLVEPNP_IPPE))
-                if not ok or not np.isfinite(rvec).all() or not np.isfinite(tvec).all():
-                    continue
-                rmat = np.asarray(cv2.Rodrigues(rvec)[0], dtype=np.float64) @ rotation
-                tvec = (np.asarray(tvec, dtype=np.float64).reshape(3) - rmat @ plane_centroid).reshape(3, 1)
-                rvec = np.asarray(cv2.Rodrigues(rmat)[0], dtype=np.float64)
-                candidates.append((mean_reprojection_error(rvec, tvec), rvec, tvec))
-            ok = bool(candidates)
-            if ok:
-                _, rvec, tvec = min(candidates, key=lambda candidate: candidate[0])
+            ok, rvec, tvec = _solve_ippe(object_points, image_points_undist, K_undist, plane_frame)
         else:
             ok, rvec, tvec = cv2.solvePnP(
-                object_points, image_points_undist, K_undist, D_zeros,
+                object_points, image_points_undist, K_undist, _NO_DISTORTION,
                 rvec_init, tvec_init, use_guess, int(method_flag)
             )
         if not ok:
             ok, rvec, tvec = cv2.solvePnP(
-                object_points, image_points_undist, K_undist, D_zeros,
+                object_points, image_points_undist, K_undist, _NO_DISTORTION,
                 rvec_init, tvec_init, use_guess, int(cv2.SOLVEPNP_ITERATIVE)
             )
         if not ok:
@@ -138,7 +119,7 @@ class SpatialResection:
                 estimated_points_on_lines=[],
             )
 
-        cv2.solvePnPRefineLM(object_points, image_points_undist, K_undist, D_zeros, rvec, tvec)
+        cv2.solvePnPRefineLM(object_points, image_points_undist, K_undist, _NO_DISTORTION, rvec, tvec)
 
         Rwc = Rotation.from_rvec(rvec).T
         # Ensure types are numpy arrays so the `@` operator is type-safe for static checkers
@@ -149,7 +130,8 @@ class SpatialResection:
         return SpatialResectionResult(
             success=True,
             iterations=1,
-            average_reprojection_error=mean_reprojection_error(rvec, tvec),
+            average_reprojection_error=_mean_reprojection_error(
+                object_points, image_points_undist, K_undist, rvec, tvec),
             camera_pose=Pose3d(x=float(C[0]), y=float(C[1]), z=float(C[2]), rotation=Rwc),
             running_variables=[],
             estimated_points_on_lines=[],
@@ -295,3 +277,45 @@ def _fit_plane_frame(points: np.ndarray) -> tuple[np.ndarray, np.ndarray] | None
         return None
     rotation = vt if np.linalg.det(vt) > 0 else vt * np.array([[1.0], [1.0], [-1.0]])
     return rotation, centroid
+
+
+def _solve_ippe(object_points: np.ndarray,
+                image_points: np.ndarray,
+                camera_matrix: np.ndarray,
+                plane_frame: tuple[np.ndarray, np.ndarray]) -> tuple[bool, np.ndarray, np.ndarray]:
+    """Solve the PnP problem for coplanar points with OpenCV's IPPE.
+    This function is a wrapper around openCV. It solves the problem twice to avoid issues from the wrong plane orientation.
+
+    :param object_points: The 3D coordinates of the coplanar points in object space, shape (n, 1, 3)
+    :param image_points: The undistorted 2D coordinates of the points in the image, shape (n, 1, 2)
+    :param camera_matrix: The camera matrix of the undistorted image
+    :param plane_frame: The plane frame of the object points as returned by ``_fit_plane_frame``
+    :return: Success flag, rotation vector and translation vector in object space, like ``cv2.solvePnP``
+    """
+    plane_rotation, plane_centroid = plane_frame
+    candidates: list[tuple[float, np.ndarray, np.ndarray]] = []
+    for rotation in (plane_rotation, np.diag([1.0, -1.0, -1.0]) @ plane_rotation):
+        plane_points = ((object_points.reshape(-1, 3) - plane_centroid) @ rotation.T).reshape(-1, 1, 3)
+        ok, rvec, tvec = cv2.solvePnP(plane_points, image_points, camera_matrix, _NO_DISTORTION,
+                                      None, None, False, int(cv2.SOLVEPNP_IPPE))
+        if not ok or not np.isfinite(rvec).all() or not np.isfinite(tvec).all():
+            continue
+        rmat = np.asarray(cv2.Rodrigues(rvec)[0], dtype=np.float64) @ rotation
+        tvec = (np.asarray(tvec, dtype=np.float64).reshape(3) - rmat @ plane_centroid).reshape(3, 1)
+        rvec = np.asarray(cv2.Rodrigues(rmat)[0], dtype=np.float64)
+        error = _mean_reprojection_error(object_points, image_points, camera_matrix, rvec, tvec)
+        candidates.append((error, rvec, tvec))
+    if not candidates:
+        return False, np.full((3, 1), np.nan), np.full((3, 1), np.nan)
+    _, rvec, tvec = min(candidates, key=lambda candidate: candidate[0])
+    return True, rvec, tvec
+
+
+def _mean_reprojection_error(object_points: np.ndarray,
+                             image_points: np.ndarray,
+                             camera_matrix: np.ndarray,
+                             rvec: np.ndarray,
+                             tvec: np.ndarray) -> float:
+    projected, _ = cv2.projectPoints(object_points, rvec, tvec, camera_matrix, _NO_DISTORTION)
+    residuals = np.asarray(projected, dtype=np.float64).reshape(-1, 2) - image_points.reshape(-1, 2)
+    return float(np.mean(np.abs(residuals)))
