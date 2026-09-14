@@ -181,7 +181,7 @@ def _run_worker(url: str, username: str | None, password: str | None, sender: Me
                 if array is not None:
                     send(Frame(array=array, capture_time=capture_time))
         send(StreamEnded(reason=EndReason.ENDED))
-    except (BrokenPipeError, OSError):
+    except (BrokenPipeError, ConnectionResetError):
         return  # the parent is gone
     except httpx.ReadTimeout:
         send(StreamEnded(reason=EndReason.STALLED))

@@ -1,6 +1,8 @@
+import errno
 from collections.abc import Callable, Iterator
 from unittest.mock import patch
 
+import cv2
 import httpx
 import numpy as np
 import pytest
@@ -108,9 +110,13 @@ class _RecordingSender:
         pass
 
 
-def _run_worker_against(handler: Callable[[httpx.Request], httpx.Response]) -> list[Message]:
+JPEG_FRAME = cv2.imencode('.jpg', np.zeros((8, 8, 3), dtype=np.uint8))[1].tobytes()
+
+
+def _run_worker_against(handler: Callable[[httpx.Request], httpx.Response],
+                        sender: _RecordingSender | None = None) -> list[Message]:
     """Run one worker session against a mocked camera and return the messages it sent."""
-    sender = _RecordingSender()
+    sender = sender or _RecordingSender()
     client = httpx.Client(transport=httpx.MockTransport(handler))
     with patch('rosys.vision.mjpeg_camera.mjpeg_stream_worker.new_client', return_value=client):
         _run_worker('http://127.0.0.1/stream', None, None, sender)
@@ -131,6 +137,31 @@ def test_reports_a_camera_that_does_not_answer_as_unreachable() -> None:
         raise httpx.ConnectTimeout('timed out', request=request)
 
     assert _run_worker_against(handler) == [StreamEnded(reason=EndReason.UNREACHABLE, detail='timed out')]
+
+
+def test_stops_quietly_when_the_parent_is_gone() -> None:
+    class BrokenSender(_RecordingSender):
+        def send(self, message: Message) -> None:
+            raise BrokenPipeError
+
+    sender = BrokenSender()
+    _run_worker_against(lambda request: httpx.Response(200, content=JPEG_FRAME), sender)
+    assert sender.messages == []
+
+
+def test_reports_an_os_error_while_sending_a_frame() -> None:
+    class ExhaustedSender(_RecordingSender):
+        def send(self, message: Message) -> None:
+            if isinstance(message, Frame):
+                raise OSError(errno.EMFILE, 'Too many open files')
+            super().send(message)
+
+    sender = ExhaustedSender()
+    _run_worker_against(lambda request: httpx.Response(200, content=JPEG_FRAME), sender)
+    last = sender.messages[-1]
+    assert isinstance(last, StreamEnded)
+    assert last.reason is EndReason.FAILED
+    assert last.detail.startswith('OSError: ')
 
 
 @pytest.mark.parametrize('open_channel_', [
