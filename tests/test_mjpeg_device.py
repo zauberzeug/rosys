@@ -1,12 +1,22 @@
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from unittest.mock import patch
 
 import httpx
 import numpy as np
 import pytest
 
-from rosys.vision.mjpeg_camera.mjpeg_stream_worker import _open_stream, _parse_capture_timestamp, _split_frames
+from rosys.vision.mjpeg_camera.mjpeg_stream_worker import (
+    _open_stream,
+    _parse_capture_timestamp,
+    _run_worker,
+    _split_frames,
+)
 from rosys.vision.mjpeg_camera.stream_channel import (
+    EndReason,
     Frame,
+    Message,
+    StreamEnded,
+    StreamOpened,
     memfd_is_available,
     open_channel,
     open_memfd_channel,
@@ -84,6 +94,43 @@ def test_sends_no_credentials_without_username_and_password() -> None:
         return httpx.Response(401, headers={'www-authenticate': 'Basic realm="cam"'})
 
     assert _negotiate_stream(handler) == 401
+
+
+class _RecordingSender:
+
+    def __init__(self) -> None:
+        self.messages: list[Message] = []
+
+    def send(self, message: Message) -> None:
+        self.messages.append(message)
+
+    def close(self) -> None:
+        pass
+
+
+def _run_worker_against(handler: Callable[[httpx.Request], httpx.Response]) -> list[Message]:
+    """Run one worker session against a mocked camera and return the messages it sent."""
+    sender = _RecordingSender()
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    with patch('rosys.vision.mjpeg_camera.mjpeg_stream_worker.new_client', return_value=client):
+        _run_worker('http://127.0.0.1/stream', None, None, sender)
+    return sender.messages
+
+
+def test_reports_a_stream_that_stops_sending_data_as_stalled() -> None:
+    def stalling_body() -> Iterator[bytes]:
+        yield b'--boundary\r\n'
+        raise httpx.ReadTimeout('timed out')
+
+    messages = _run_worker_against(lambda request: httpx.Response(200, content=stalling_body()))
+    assert messages == [StreamOpened(), StreamEnded(reason=EndReason.STALLED)]
+
+
+def test_reports_a_camera_that_does_not_answer_as_unreachable() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectTimeout('timed out', request=request)
+
+    assert _run_worker_against(handler) == [StreamEnded(reason=EndReason.UNREACHABLE, detail='timed out')]
 
 
 @pytest.mark.parametrize('open_channel_', [

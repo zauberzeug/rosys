@@ -180,6 +180,8 @@ def _run_worker(url: str, username: str | None, password: str | None, sender: Me
         send(StreamEnded(reason=EndReason.ENDED))
     except (BrokenPipeError, OSError):
         return  # the parent is gone
+    except httpx.ReadTimeout:
+        send(StreamEnded(reason=EndReason.STALLED))
     except httpx.HTTPError as e:
         send(StreamEnded(reason=EndReason.UNREACHABLE, detail=str(e) or type(e).__name__))
     except Exception as e:  # pylint: disable=broad-exception-caught

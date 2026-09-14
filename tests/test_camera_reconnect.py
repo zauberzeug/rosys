@@ -567,6 +567,17 @@ async def test_mjpeg_device_reports_an_unreachable_camera_without_a_traceback(vi
         await device.shutdown()
 
 
+async def test_mjpeg_device_warns_about_a_stalled_stream(vision_log):
+    device = MjpegDevice(GOODCAM_MAC, '127.0.0.1:1',
+                         on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
+    try:
+        device._end_session(device.url, StreamEnded(reason=EndReason.STALLED))  # pylint: disable=protected-access
+        stalled = [record for record in vision_log.records if 'stopped sending data' in record.getMessage()]
+        assert [record.levelno for record in stalled] == [logging.WARNING]
+    finally:
+        await device.shutdown()
+
+
 async def test_mjpeg_device_retries_at_a_new_address_despite_back_off(rosys_integration):
     rejecting_server = FlakyMjpegServer(status=401)
     new_server = FlakyMjpegServer()

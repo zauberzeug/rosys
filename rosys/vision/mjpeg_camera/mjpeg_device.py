@@ -127,6 +127,8 @@ class MjpegDevice(CaptureDevice):
                 self._set_state(CaptureState.REFUSED)
             case EndReason.UNREACHABLE:
                 raise CameraUnreachable(message.detail)
+            case EndReason.STALLED:
+                self.log.warning('camera at %s stopped sending data', url)
             case EndReason.FAILED:
                 raise RuntimeError(message.detail)
 

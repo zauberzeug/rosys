@@ -22,6 +22,7 @@ class EndReason(enum.Enum):
     ENDED = enum.auto()
     REFUSED = enum.auto()  # the camera answered something other than a stream
     UNREACHABLE = enum.auto()  # http error
+    STALLED = enum.auto()  # the camera stopped sending data
     FAILED = enum.auto()  # anything else, including the worker dying
 
 
