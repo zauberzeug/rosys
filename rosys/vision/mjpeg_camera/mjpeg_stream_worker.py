@@ -7,10 +7,10 @@ from contextlib import contextmanager
 
 import httpx
 
+from ...helpers.spawning import SPAWN_CONTEXT
 from ..http import new_client
 from ..image_processing import decode_jpeg_image, remove_exif
 from .stream_channel import (
-    SPAWN_CONTEXT,
     EndReason,
     Frame,
     Message,

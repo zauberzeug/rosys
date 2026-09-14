@@ -2,7 +2,6 @@ import ctypes
 import enum
 import math
 import mmap
-import multiprocessing
 import os
 import sys
 from collections.abc import Callable
@@ -13,10 +12,8 @@ from typing import Protocol
 
 import numpy as np
 
+from ...helpers.spawning import SPAWN_CONTEXT
 from ..image import ImageArray
-
-# spawn, not fork (which is broken for Python), regardless of the global start method (see path planning, #19)
-SPAWN_CONTEXT = multiprocessing.get_context('spawn')
 
 
 class EndReason(enum.Enum):

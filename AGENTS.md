@@ -12,7 +12,7 @@ A few facts shape almost everything:
 - **Single asyncio event loop, built on NiceGUI.**
   Robot logic runs cooperatively on one loop — blocking it stalls the whole robot.
   Heavy work goes through `rosys.run.cpu_bound`/`io_bound`, and a few subsystems run their own process (e.g. path planning's `PlannerProcess`).
-  Those helpers use `multiprocessing.get_context('spawn')` locally (`PlannerProcess`, the MJPEG `stream_channel`); RoSys does not set or assert a global start method.
+  Those helpers are started from the shared `SPAWN_CONTEXT` in `rosys.helpers.spawning`; RoSys does not set or assert a global start method.
   `spawn` re-imports the user's `__main__`, so a script that creates an `MjpegCamera` or `PathPlanner` at import time must guard its startup with `if __name__ == '__main__':`.
 - **Two brains.**
   Time-critical and safety-critical logic (motor control, E-stop, bump-stop) lives on the microcontroller as [Lizard](https://lizard.dev/) code (the "Robot Brain"); Python orchestrates and reacts.
