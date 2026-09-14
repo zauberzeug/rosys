@@ -5,6 +5,7 @@ import multiprocessing
 import weakref
 from collections.abc import AsyncIterator
 from contextlib import nullcontext, suppress
+from typing import ClassVar
 from unittest.mock import AsyncMock, patch
 
 import cv2
@@ -34,7 +35,7 @@ from rosys.vision.mjpeg_camera.mjpeg_device_factory import MjpegDeviceFactory
 from rosys.vision.mjpeg_camera.mjpeg_stream_worker import MjpegStreamWorker, StreamEndedError
 from rosys.vision.mjpeg_camera.motec_mjpeg_device import MotecMjpegDevice
 from rosys.vision.mjpeg_camera.openipc_zauberzeug_mjpeg_device import OpenIpcZauberzeugMjpegDevice
-from rosys.vision.mjpeg_camera.stream_channel import EndReason, Frame
+from rosys.vision.mjpeg_camera.stream_channel import EndReason, Frame, open_channel
 from rosys.vision.reconnect import MAX_RECONNECT_INTERVAL, MIN_RECONNECT_INTERVAL
 from rosys.vision.rtsp_camera.rtsp_device import GDPPACKET_FORMAT, GDPPayloadType, RtspDevice
 from rosys.vision.simulated_camera.simulated_device import SimulatedDevice
@@ -184,9 +185,12 @@ class SlowFirstDecode:
 class GatedStreamWorker:
     """Stand-in for `MjpegStreamWorker` that yields its first frame once released, which shutting it down also does."""
 
+    instances: ClassVar[list['GatedStreamWorker']] = []
+
     def __init__(self, *args) -> None:
         self.release = asyncio.Event()
         self._closing = asyncio.Event()
+        GatedStreamWorker.instances.append(self)
 
     async def frames(self) -> AsyncIterator[Frame]:
         await self.release.wait()
@@ -517,7 +521,10 @@ async def test_mjpeg_device_reconnects_when_its_reader_fails(vision_log):
                          on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
     try:
         await wait_in_real_time(lambda: device.is_connected, message='expected the stream to be opened')
-        receiver_type = type(device._worker._receiver)  # pylint: disable=protected-access
+        receiver, sender = open_channel()
+        receiver_type = type(receiver)
+        receiver.close()
+        sender.close()
         with patch.object(receiver_type, 'recv', side_effect=RuntimeError('received 0 items of ancdata')):
             await wait_in_real_time(lambda: not device.is_connected,
                                     message='expected the failing reader to end the session')
@@ -827,18 +834,19 @@ async def test_mjpeg_device_is_connected_once_the_first_frame_arrives(rosys_inte
         nonlocal connect_calls
         connect_calls += 1
 
+    GatedStreamWorker.instances.clear()
     with patch('rosys.vision.mjpeg_camera.mjpeg_device.MjpegStreamWorker', GatedStreamWorker):
         device = MjpegDevice(GOODCAM_MAC, '127.0.0.1:1', on_new_image_data=lambda data, timestamp: None,
                              on_connect=count_connect)
         try:
-            await wait_in_real_time(lambda: device._worker is not None,  # pylint: disable=protected-access
+            await wait_in_real_time(lambda: bool(GatedStreamWorker.instances),
                                     message='expected the capture task to start its worker')
             await asyncio.sleep(0.05)
             assert device.is_active
             assert not device.is_connected, 'expected no connection while the worker has not delivered a frame'
             assert connect_calls == 0, 'expected on_connect to wait for the first frame'
 
-            device._worker.release.set()  # type: ignore[attr-defined]  # pylint: disable=protected-access
+            GatedStreamWorker.instances[-1].release.set()
             await wait_in_real_time(lambda: device.is_connected, message='expected the first frame to connect')
             assert connect_calls == 1
         finally:
@@ -853,11 +861,12 @@ async def test_mjpeg_device_ignores_a_frame_that_arrives_while_it_is_shutting_do
         nonlocal connect_calls
         connect_calls += 1
 
+    GatedStreamWorker.instances.clear()
     with patch('rosys.vision.mjpeg_camera.mjpeg_device.MjpegStreamWorker', GatedStreamWorker):
         device = MjpegDevice(GOODCAM_MAC, '127.0.0.1:1', on_new_image_data=lambda data, timestamp: None,
                              on_connect=count_connect)
         try:
-            await wait_in_real_time(lambda: device._worker is not None,  # pylint: disable=protected-access
+            await wait_in_real_time(lambda: bool(GatedStreamWorker.instances),
                                     message='expected the capture task to start its worker')
             await device.shutdown()
             assert not device.is_connected

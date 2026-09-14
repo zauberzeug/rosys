@@ -38,7 +38,6 @@ class MjpegDevice(CaptureDevice):
         self._on_new_image_data = on_new_image_data
         self._username = username
         self._password = password
-        self._worker: MjpegStreamWorker | None = None
 
         self._start_capture_task()
 
@@ -94,7 +93,6 @@ class MjpegDevice(CaptureDevice):
 
         await self._prepare_stream()
         worker = MjpegStreamWorker(self._mac, url, self._username, self._password)
-        self._worker = worker
         try:
             async for frame in worker.frames():
                 if not self._keeps_running():
@@ -110,8 +108,6 @@ class MjpegDevice(CaptureDevice):
                 self._end_session(url, end)
         finally:
             await worker.shutdown()
-            if self._worker is worker:
-                self._worker = None
 
     def _end_session(self, url: str, end: StreamEndedError) -> None:
         match end.reason:
@@ -131,14 +127,6 @@ class MjpegDevice(CaptureDevice):
             await invoke(self._on_new_image_data, frame.array, timestamp)
         except Exception as e:  # pylint: disable=broad-exception-caught
             self.log.error('Error processing image: %s', e)
-
-    async def _tear_down_session(self) -> None:
-        worker = self._worker
-        if worker is None:
-            return
-        await worker.shutdown()
-        if self._worker is worker:
-            self._worker = None
 
     async def get_fps(self) -> int | None:
         return None
