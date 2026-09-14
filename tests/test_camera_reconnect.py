@@ -209,6 +209,7 @@ class FlakyMjpegServer:
 
     def __init__(self, frames_per_connection: int | None = 1, status: int = 200) -> None:
         self.connections = 0
+        self.request_paths: list[str] = []
         self.frames_per_connection = frames_per_connection
         self.status = status
         self._server: asyncio.Server | None = None
@@ -225,7 +226,8 @@ class FlakyMjpegServer:
         self.connections += 1
         try:
             try:
-                await asyncio.wait_for(reader.readuntil(b'\r\n\r\n'), timeout=2)
+                request = await asyncio.wait_for(reader.readuntil(b'\r\n\r\n'), timeout=2)
+                self.request_paths.append(request.split(b'\r\n', 1)[0].split(b' ')[1].decode())
             except Exception:  # reading the request is best-effort
                 pass
             if self.status != 200:
@@ -762,9 +764,10 @@ async def test_mjpeg_device_reopens_the_stream_when_its_url_changes(rosys_integr
         await forward_until(lambda: device.is_connected, message='expected the stream to be opened')
         assert server.connections == 1
         await device.set_fps(12)
-        await forward_until(lambda: server.connections == 2,
+        await forward_until(lambda: len(server.request_paths) == 2,
                             message='expected the stream to reopen after the settings changed')
-        assert 'fps=12' in (device.url or '')
+        assert 'fps=10' in server.request_paths[0]
+        assert 'fps=12' in server.request_paths[1]
     finally:
         await device.shutdown()
         await server.stop()
