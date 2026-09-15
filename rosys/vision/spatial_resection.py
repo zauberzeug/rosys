@@ -66,11 +66,9 @@ class SpatialResection:
         object_points: np.ndarray = world_points.astype(np.float64).reshape(-1, 1, 3)
         image_points_undist = calibration.undistort_points(image_points.astype(np.float64).reshape(-1, 1, 2))
 
-        plane_frame = _fit_plane_frame(object_points)
-
         if algorithm is None:
             num_points = object_points.shape[0]
-            if num_points >= 4 and plane_frame.thickness < 1e-3:
+            if num_points >= 4 and _fit_plane_frame(object_points).thickness < 1e-3:
                 method_flag = cv2.SOLVEPNP_IPPE
             elif num_points >= 6:
                 method_flag = cv2.SOLVEPNP_EPNP
@@ -109,7 +107,7 @@ class SpatialResection:
             tvec_init = None
 
         if method_flag == cv2.SOLVEPNP_IPPE:
-            ok, rvec, tvec = _solve_ippe(object_points, image_points_undist, K_undist, plane_frame)
+            ok, rvec, tvec = _solve_ippe(object_points, image_points_undist, K_undist)
         else:
             ok, rvec, tvec = cv2.solvePnP(
                 object_points, image_points_undist, K_undist, _NO_DISTORTION,
@@ -288,17 +286,18 @@ def _fit_plane_frame(points: np.ndarray) -> _PlaneFrame:
 
 def _solve_ippe(object_points: np.ndarray,
                 image_points: np.ndarray,
-                camera_matrix: np.ndarray,
-                plane_frame: _PlaneFrame) -> tuple[bool, np.ndarray, np.ndarray]:
+                camera_matrix: np.ndarray) -> tuple[bool, np.ndarray, np.ndarray]:
     """Solve the PnP problem for coplanar points with OpenCV's IPPE.
-    This function is a wrapper around openCV. It solves the problem twice to avoid issues from the wrong plane orientation.
+
+    OpenCV's IPPE can return a wrong pose depending on which way the z axis of the plane frame points,
+    so the problem is solved for both orientations and the pose with the smaller reprojection error is kept.
 
     :param object_points: The 3D coordinates of the coplanar points in object space, shape (n, 1, 3)
     :param image_points: The undistorted 2D coordinates of the points in the image, shape (n, 1, 2)
     :param camera_matrix: The camera matrix of the undistorted image
-    :param plane_frame: The plane frame of the object points as returned by ``_fit_plane_frame``
     :return: Success flag, rotation vector and translation vector in object space, like ``cv2.solvePnP``
     """
+    plane_frame = _fit_plane_frame(object_points)
     candidates: list[tuple[float, np.ndarray, np.ndarray]] = []
     for rotation in (plane_frame.rotation, np.diag([1.0, -1.0, -1.0]) @ plane_frame.rotation):
         plane_points = ((object_points.reshape(-1, 3) - plane_frame.centroid) @ rotation.T).reshape(-1, 1, 3)
