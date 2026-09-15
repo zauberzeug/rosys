@@ -1,12 +1,14 @@
 import asyncio
 import json
 import os
+import threading
 from pathlib import Path
 
 import pytest
 from mcap.reader import make_reader
 
-from rosys.analysis.recording import McapRecorder, TopicSchema
+import rosys
+from rosys.analysis.recording import METADATA_NAME, McapRecorder, TopicSchema, is_auto_named
 
 NS = 1_000_000_000
 
@@ -607,15 +609,16 @@ async def test_failed_rotation_stops_recording_without_silent_loss(mcap_dir: Pat
     assert sum(_message_count(f) for f in files) == recorder.message_count
 
 
-def test_startup_removes_orphaned_reindex_temp_files(mcap_dir: Path) -> None:
-    """A reindex temp file left by a crash is cleared when a recorder is created; real recordings are kept."""
+@pytest.mark.parametrize('orphan_name', ['recording.mcap.reindex-deadbeef', 'recording.mcap.merge-deadbeef'])
+def test_startup_removes_orphaned_temporary_files(mcap_dir: Path, orphan_name: str) -> None:
+    """A reindex or merge temp file left by a crash is cleared when a recorder is created; real recordings are kept."""
     (mcap_dir / 'recording.mcap').write_bytes(b'a real recording')
-    orphan = mcap_dir / 'recording.mcap.reindex-deadbeef'
-    orphan.write_bytes(b'partial reindex output')
+    orphan = mcap_dir / orphan_name
+    orphan.write_bytes(b'partial output')
 
     McapRecorder(output_dir=mcap_dir, auto_start=False)
 
-    assert not orphan.exists()  # the orphaned reindex temp file was removed at startup
+    assert not orphan.exists()
     assert (mcap_dir / 'recording.mcap').exists()  # the real recording is untouched
 
 
@@ -667,3 +670,251 @@ async def test_start_deletes_old_recordings_over_budget(mcap_dir: Path) -> None:
     remaining = {path.name for path in mcap_dir.glob('*.mcap')}
     assert 'old_0.mcap' not in remaining  # oldest deleted to satisfy the budget
     assert 'old_2.mcap' in remaining  # newest kept
+
+
+async def test_duration_based_rotation(mcap_dir: Path) -> None:
+    """A file older than max_file_duration is rotated as soon as the next message is written."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start()
+
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder._flush()
+    rosys.set_time(rosys.time() + 61)
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=61 * NS)
+    recorder.log_message('/test', _json({'value': 2}), timestamp_ns=62 * NS)
+    await recorder.stop()
+
+    files = sorted(mcap_dir.glob('*.mcap'))
+    assert len(files) == 2, f'Expected duration rotation, got {len(files)} file(s)'
+    assert sum(_message_count(path) for path in files) == 3
+
+
+@pytest.mark.parametrize('kept_name', ['weeding on the north field.mcap',  # renamed by hand
+                                       '20200101_000000_000000_run0001_merged.mcap',  # the merged file of a run
+                                       '20200101_000000_000000_run0001_failure.mcap'])  # preserved around a failure
+async def test_disk_budget_deletes_kept_recordings_last(mcap_dir: Path, kept_name: str) -> None:
+    """The budget evicts the recorder's own numbered files (oldest first) before anything kept."""
+    kept = mcap_dir / kept_name
+    kept.write_bytes(os.urandom(60 * 1024))
+    os.utime(kept, (0, 0))  # the oldest file of all, yet not the recorder's own -> deleted last
+    for i in range(2):
+        path = mcap_dir / f'20200101_000000_000000_run0002_0{i + 1}.mcap'
+        path.write_bytes(os.urandom(60 * 1024))
+        os.utime(path, (i + 1, i + 1))
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.12, auto_start=False)  # ~126 KiB budget
+
+    recorder.start()
+    await recorder.stop()  # empty -> new file discarded
+
+    remaining = {path.name for path in mcap_dir.glob('*.mcap')}
+    assert kept.name in remaining
+    assert '20200101_000000_000000_run0002_01.mcap' not in remaining  # the oldest own file paid for the budget
+    assert '20200101_000000_000000_run0002_02.mcap' in remaining
+
+
+async def test_kept_recordings_beyond_their_bound_roll_away_oldest_first(mcap_dir: Path) -> None:
+    """Kept files cannot eat the rolling window; the newest kept file stays however large it is."""
+    kept_sizes = {'oldest kept.mcap': 60, 'older kept.mcap': 60, 'newest kept.mcap': 150}  # KiB
+    own_names = ['20200101_000000_000000_01.mcap', '20200101_000000_000000_02.mcap']
+    for age, (name, size) in enumerate(kept_sizes.items()):
+        (mcap_dir / name).write_bytes(os.urandom(size * 1024))
+        os.utime(mcap_dir / name, (age, age))
+    for age, name in enumerate(own_names, start=len(kept_sizes)):
+        (mcap_dir / name).write_bytes(os.urandom(60 * 1024))
+        os.utime(mcap_dir / name, (age, age))
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.3, max_kept_size_mb=0.12, auto_start=False)
+
+    recorder.start()
+    await recorder.stop()  # empty -> new file discarded
+
+    assert {path.name for path in mcap_dir.glob('*.mcap')} == {'newest kept.mcap', *own_names}
+
+
+_LONG_NAME = '_'.join(['word'] * 60)
+
+
+@pytest.mark.parametrize(('name', 'own'), [
+    ('20260911_120000_123456_01.mcap', True),  # a run without a name
+    ('20260911_120000_123456_mission_01.mcap', True),
+    ('20260911_120000_123456_mission_05_100.mcap', True),  # the name may end in digits, the part is last
+    (f'20260911_120000_123456_{_LONG_NAME}_01.mcap', True),
+    ('20260911_120000_123456.mcap', True),  # a single unnumbered file
+    ('20260911_120000_123456_mission_merged.mcap', False),
+    ('20260911_120000_123456_mission_failure.mcap', False),
+    (f'20260911_120000_123456_{_LONG_NAME}.mcap', False),
+    ('mission_01.mcap', False),  # numbered, but not by the recorder
+    ('weeding on the north field.mcap', False),
+])
+def test_the_recorders_own_files_are_told_apart_by_name(name: str, own: bool) -> None:
+    """Only the names the recorder generates count as its own, however long the run name gets."""
+    assert is_auto_named(name) is own
+
+
+def _metadata(path: Path) -> dict:
+    """Read the recording's metadata record back.
+
+    :param path: the MCAP file to read.
+    :return: the decoded JSON payload, or an empty dict when the file carries none.
+    """
+    with open(path, 'rb') as f:
+        records = [record for record in make_reader(f).iter_metadata() if record.name == METADATA_NAME]
+    return json.loads(records[0].metadata['json']) if records else {}
+
+
+async def test_the_files_of_one_recording_share_a_name_and_are_numbered(mcap_dir: Path) -> None:
+    """The run is named after its start time and the caller's name, and rotation numbers its parts."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    run = recorder.start(name='run0042')
+
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder._flush()
+    rosys.set_time(rosys.time() + 61)
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=61 * NS)
+    await recorder.stop()
+
+    assert run is not None and run.endswith('_run0042')
+    assert [path.name for path in sorted(mcap_dir.glob('*.mcap'))] == [f'{run}_01.mcap', f'{run}_02.mcap']
+
+
+async def test_a_rotation_leaves_no_part_without_messages(mcap_dir: Path) -> None:
+    """A part is opened only for a message to write into it, so no part of a run ends up empty."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start()
+
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder._flush()
+    rosys.set_time(rosys.time() + 61)
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=61 * NS)
+    await recorder._flush()
+    rosys.set_time(rosys.time() + 61)
+    await recorder.stop()
+
+    assert [_values(path) for path in sorted(mcap_dir.glob('*.mcap'))] == [[0], [1]]
+
+
+async def test_a_start_while_the_previous_recording_is_finalized_is_refused(mcap_dir: Path) -> None:
+    """The finished recording stays intact and no second one begins behind its back."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    draining = threading.Event()
+    release = threading.Event()
+
+    def slow_encode(value: int, _timestamp_ns: int) -> bytes:
+        draining.set()
+        release.wait(timeout=5)
+        return _json({'value': value})
+
+    recorder.start(name='first')
+    for i in range(3):
+        recorder.log_message('/test', i, encode=slow_encode, timestamp_ns=i * NS)
+    stopping = asyncio.create_task(recorder.stop())
+    while not draining.is_set():
+        await asyncio.sleep(0.01)
+
+    run = recorder.start(name='second')
+    release.set()
+    await stopping
+
+    assert run is None
+    assert not recorder.is_recording
+    assert [(path.name.endswith('_first_01.mcap'), _values(path)) for path in recorder.recordings] == \
+        [(True, [0, 1, 2])]
+
+
+async def test_every_file_of_a_recording_carries_the_metadata(mcap_dir: Path) -> None:
+    """A rotated part is as self-explaining as the first one."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start(name='run', metadata={'mission': 'Implement Demo', 'run_id': 42})
+
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder._flush()
+    rosys.set_time(rosys.time() + 61)
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=61 * NS)
+    await recorder.stop()
+
+    files = sorted(mcap_dir.glob('*.mcap'))
+    assert len(files) == 2
+    for path in files:
+        assert _metadata(path) == {'mission': 'Implement Demo', 'run_id': 42}
+
+
+async def test_a_named_recording_stays_within_the_disk_budget(mcap_dir: Path) -> None:
+    """A name from the caller does not turn its files into keepers the budget spares."""
+    kept = mcap_dir / 'weeding on the north field.mcap'
+    kept.write_bytes(os.urandom(60 * 1024))
+    os.utime(kept, (0, 0))
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.12, auto_start=False)  # ~126 KiB budget
+    recorder.add_topic('/test', _schema('Test', {'payload': {'type': 'string'}}))
+    recorder.start(name='mission')
+    for i in range(70):  # incompressible, so the part outgrows what the kept file leaves of the budget
+        recorder.log_message('/test', _json({'payload': os.urandom(1024).hex()}), timestamp_ns=i * NS)
+    await recorder.stop()
+    mission = recorder.recordings[0]
+
+    recorder.start()
+    await recorder.stop()
+
+    assert not mission.exists()
+    assert kept.exists()
+
+
+async def test_a_recording_cannot_be_renamed_into_one_of_the_recorders_own_names(mcap_dir: Path) -> None:
+    """A renamed file is kept on purpose, so a name the budget would delete first is refused."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    recorder.start()
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=NS)
+    await recorder.stop()
+    path = recorder.recordings[0]
+
+    with pytest.raises(ValueError):
+        recorder.rename_recording(path, '20260911_120000_123456_backup_02')
+
+    assert recorder.recordings == [path]
+
+
+@pytest.mark.parametrize('name', ['../escaped', 'sub/run', '..', '   ', ''])
+def test_a_run_name_cannot_leave_the_output_directory(mcap_dir: Path, name: str) -> None:
+    """A name that is no plain file name is refused before any file is opened."""
+    recorder = McapRecorder(output_dir=mcap_dir / 'recordings', auto_start=False)
+
+    with pytest.raises(ValueError):
+        recorder.start(name=name)
+
+    assert not recorder.is_recording
+    assert not list(mcap_dir.rglob('*.mcap'))
+
+
+async def test_the_metadata_is_taken_as_it_was_at_start(mcap_dir: Path) -> None:
+    """Changing the caller's dict after start does not change the parts written later."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    metadata = {'mission': 'Implement Demo'}
+    recorder.start(metadata=metadata)
+    metadata['mission'] = 'something else'
+
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder._flush()
+    rosys.set_time(rosys.time() + 61)
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=61 * NS)
+    recorder.log_message('/test', _json({'value': 2}), timestamp_ns=62 * NS)
+    await recorder.stop()
+
+    files = sorted(mcap_dir.glob('*.mcap'))
+    assert len(files) == 2
+    assert [_metadata(path) for path in files] == [{'mission': 'Implement Demo'}] * 2
+
+
+def test_metadata_that_is_no_json_is_refused_at_start(mcap_dir: Path) -> None:
+    """Metadata the recorder could not write fails the start, not a later rotation."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+
+    with pytest.raises(TypeError):
+        recorder.start(metadata={'when': object()})
+
+    assert not recorder.is_recording
+    assert not list(mcap_dir.glob('*.mcap'))

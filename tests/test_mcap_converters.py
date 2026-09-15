@@ -1,5 +1,6 @@
 import base64
 import json
+import logging
 import math
 from pathlib import Path
 from types import SimpleNamespace
@@ -13,6 +14,7 @@ from nicegui.page import page
 
 from rosys.analysis.recording import (
     Converter,
+    McapLogHandler,
     McapRecorder,
     TopicSchema,
     add_event_topic,
@@ -829,3 +831,68 @@ async def test_event_subscription_survives_client_deletion(mcap_dir: Path) -> No
 
     _, message = _read(_only_file(mcap_dir))[0]
     assert message['pose']['position']['x'] == 3.0
+
+
+def _recording_logger(recorder: McapRecorder) -> logging.Logger:
+    """A logger whose lines the given recorder records, with no handler left from an earlier test.
+
+    :param recorder: the recorder the log handler writes to.
+    :return: the logger to log through.
+    """
+    logger = logging.getLogger('rosys.test.recording')
+    logger.setLevel(logging.DEBUG)
+    logger.handlers.clear()
+    logger.addHandler(McapLogHandler(recorder))
+    return logger
+
+
+async def test_log_lines_are_recorded(mcap_dir: Path) -> None:
+    """A line logged while the handler is attached lands in the recording as a foxglove.Log message."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    logger = _recording_logger(recorder)
+    recorder.start()
+
+    logger.warning('found %d weeds', 3)
+    await recorder.stop()
+    logger.handlers.clear()
+
+    schema_name, message = _read(_only_file(mcap_dir))[0]
+    assert schema_name == 'foxglove.Log'
+    assert message['message'] == 'found 3 weeds'
+    assert message['level'] == 3  # foxglove WARNING
+    assert message['name'] == 'rosys.test.recording'
+    assert message['file'] == 'test_mcap_converters.py'
+
+
+async def test_log_levels_map_onto_foxglove(mcap_dir: Path) -> None:
+    """Foxglove colours and filters a line by its level, so every Python level needs its counterpart."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    logger = _recording_logger(recorder)
+    recorder.start()
+
+    for level in (logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL):
+        logger.log(level, 'a line')
+    await recorder.stop()
+    logger.handlers.clear()
+
+    assert [message['level'] for _, message in _read(_only_file(mcap_dir))] == [1, 2, 3, 4, 5]
+
+
+async def test_the_recorders_own_warning_about_a_full_queue_is_recorded(mcap_dir: Path) -> None:
+    """The recorder's own lines are recorded too, the one it logs while dropping queued messages included."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.max_queued_messages = 3
+    handler = McapLogHandler(recorder)
+    recorder.log.addHandler(handler)
+    recorder.add_topic('/test', TopicSchema('Test', b'{}', 'jsonschema', 'json'))
+    recorder.start()
+    try:
+        for _ in range(5):
+            recorder.log_message('/test', b'{}')
+        await recorder.stop()
+    finally:
+        recorder.log.removeHandler(handler)
+
+    log_lines = [message['message'] for schema_name, message in _read(_only_file(mcap_dir))
+                 if schema_name == 'foxglove.Log']
+    assert any(line.startswith('recording queue full') for line in log_lines)
