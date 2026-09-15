@@ -107,18 +107,20 @@ class SpatialResection:
             tvec_init = None
 
         if method_flag == cv2.SOLVEPNP_IPPE:
-            ok, rvec, tvec = _solve_ippe(object_points, image_points_undist, K_undist)
+            pose = _solve_ippe(object_points, image_points_undist, K_undist)
         else:
             ok, rvec, tvec = cv2.solvePnP(
                 object_points, image_points_undist, K_undist, _NO_DISTORTION,
                 rvec_init, tvec_init, use_guess, int(method_flag)
             )
-        if not ok and (use_guess or object_points.shape[0] >= 6):  # ITERATIVE without a guess needs 6 points
+            pose = (rvec, tvec) if ok else None
+        if pose is None and (use_guess or object_points.shape[0] >= 6):  # ITERATIVE without a guess needs 6 points
             ok, rvec, tvec = cv2.solvePnP(
                 object_points, image_points_undist, K_undist, _NO_DISTORTION,
                 rvec_init, tvec_init, use_guess, int(cv2.SOLVEPNP_ITERATIVE)
             )
-        if not ok:
+            pose = (rvec, tvec) if ok else None
+        if pose is None:
             return SpatialResectionResult(
                 success=False,
                 iterations=0,
@@ -128,6 +130,7 @@ class SpatialResection:
                 estimated_points_on_lines=[],
             )
 
+        rvec, tvec = pose
         cv2.solvePnPRefineLM(object_points, image_points_undist, K_undist, _NO_DISTORTION, rvec, tvec)
 
         Rwc = Rotation.from_rvec(rvec).T
@@ -286,7 +289,7 @@ def _fit_plane_frame(points: np.ndarray) -> _PlaneFrame:
 
 def _solve_ippe(object_points: np.ndarray,
                 image_points: np.ndarray,
-                camera_matrix: np.ndarray) -> tuple[bool, np.ndarray, np.ndarray]:
+                camera_matrix: np.ndarray) -> tuple[np.ndarray, np.ndarray] | None:
     """Solve the PnP problem for coplanar points with OpenCV's IPPE.
 
     OpenCV's IPPE can return a wrong pose depending on which way the z axis of the plane frame points,
@@ -295,7 +298,7 @@ def _solve_ippe(object_points: np.ndarray,
     :param object_points: The 3D coordinates of the coplanar points in object space, shape (n, 1, 3)
     :param image_points: The undistorted 2D coordinates of the points in the image, shape (n, 1, 2)
     :param camera_matrix: The camera matrix of the undistorted image
-    :return: Success flag, rotation vector and translation vector in object space, like ``cv2.solvePnP``
+    :return: Rotation vector and translation vector in object space, or ``None`` if IPPE fails for both orientations
     """
     plane_frame = _fit_plane_frame(object_points)
     candidates: list[tuple[float, np.ndarray, np.ndarray]] = []
@@ -312,9 +315,9 @@ def _solve_ippe(object_points: np.ndarray,
         if np.isfinite(error):
             candidates.append((error, rvec, tvec))
     if not candidates:
-        return False, np.full((3, 1), np.nan), np.full((3, 1), np.nan)
+        return None
     _, rvec, tvec = min(candidates, key=lambda candidate: candidate[0])
-    return True, rvec, tvec
+    return rvec, tvec
 
 
 def _mean_reprojection_error(object_points: np.ndarray,
