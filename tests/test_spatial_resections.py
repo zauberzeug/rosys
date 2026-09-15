@@ -154,3 +154,28 @@ def test_spatial_resection_with_planar_points(grid_shape: tuple[int, int], shift
     ground_truth_rotation = cam.calibration.extrinsics.rotation
     assert np.allclose(result.camera_pose.point_3d.array, ground_truth_translation.array, atol=0.001)
     assert np.allclose(result.camera_pose.rotation.quaternion, ground_truth_rotation.quaternion, atol=0.001)
+
+
+def test_spatial_resection_with_a_rational_distortion_model():
+    """Resects a camera pose from a noise-free planar target seen through a strongly distorting rational model,
+    with observations reaching the border of the image.
+    """
+    cam = CalibratableCamera(id='1')
+    cam.set_perfect_calibration(width=2560, height=1920, focal_length=1450,
+                                x=0.1, y=0.2, z=1.0,
+                                distortion=[0.982, 1.568, 0.0, 0.0, 0.107, 1.328, 1.939, 0.578,
+                                            0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    assert cam.calibration is not None
+
+    world_points = np.array([[x, y, 0.0]
+                             for x in np.linspace(-0.8, 0.8, 9)
+                             for y in np.linspace(-0.6, 0.6, 7)])
+    image_points = cam.calibration.project_to_image(world_points)
+
+    result = SpatialResection(cam.calibration.intrinsics).pnp_with_lsa(world_points=world_points,
+                                                                       image_points=image_points)
+
+    assert result.success
+    assert np.allclose(result.camera_pose.point_3d.array, cam.calibration.extrinsics.point_3d.array, atol=1e-6)
+    assert np.allclose(result.camera_pose.rotation.quaternion,
+                       cam.calibration.extrinsics.rotation.quaternion, atol=1e-6)
