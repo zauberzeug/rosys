@@ -29,6 +29,7 @@ dependencies = [
     "imgsize>=2.1,<3",
     "ifaddr>=0.2.0,<0.3",
     "httpx>=0.25.0",
+    "pyzmq>=27.2.0",  # carries camera frames from the stream worker processes to the event loop
     "matplotlib>=3.7.2,<4",
     "pyudev>=0.21.0",
     "pyquaternion>=0.9.9,<0.10",

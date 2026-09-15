@@ -1,8 +1,6 @@
+import asyncio
 import errno
-import sys
-import threading
 from collections.abc import Callable, Iterator
-from multiprocessing.connection import Connection
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -10,25 +8,23 @@ import cv2
 import httpx
 import numpy as np
 import pytest
+import zmq
 
 from rosys.vision.mjpeg_camera.mjpeg_stream_worker import (
     MjpegStreamWorker,
     StreamEndedError,
     _open_stream,
     _parse_capture_timestamp,
-    _run_worker,
     _split_frames,
+    _stream,
 )
 from rosys.vision.mjpeg_camera.stream_channel import (
     EndReason,
     Frame,
-    Memfd,
-    MemfdReceiver,
     Message,
     StreamEnded,
-    open_channel,
-    open_memfd_channel,
-    open_pickled_channel,
+    decode,
+    encode,
 )
 
 
@@ -125,7 +121,7 @@ def _run_worker_against(handler: Callable[[httpx.Request], httpx.Response],
     sender = sender or _RecordingSender()
     client = httpx.Client(transport=httpx.MockTransport(handler))
     with patch('rosys.vision.mjpeg_camera.mjpeg_stream_worker.new_client', return_value=client):
-        _run_worker('http://127.0.0.1/stream', None, None, sender)
+        _stream('http://127.0.0.1/stream', None, None, sender.send)
     return sender.messages
 
 
@@ -170,34 +166,6 @@ def test_reports_an_os_error_while_sending_a_frame() -> None:
     assert last.detail.startswith('OSError: ')
 
 
-def _memfd_is_available() -> bool:
-    if sys.platform != 'linux':
-        return False
-    try:
-        Memfd()
-    except (OSError, AttributeError):
-        return False
-    return True
-
-
-class _ScriptedReceiver:
-    """Hand out the given messages, then report EOF and flag that everything was read."""
-
-    def __init__(self, messages: list[Message]) -> None:
-        self._messages = iter(messages)
-        self.drained = threading.Event()
-
-    def recv(self) -> Message:
-        try:
-            return next(self._messages)
-        except StopIteration:
-            self.drained.set()
-            raise EOFError from None
-
-    def close(self) -> None:
-        pass
-
-
 class _IdleProcess:
     exitcode = 0
 
@@ -211,12 +179,27 @@ class _IdleProcess:
         pass
 
 
-def _worker_reading(receiver: _ScriptedReceiver) -> MjpegStreamWorker:
-    """Create a worker whose reader thread drains the given receiver instead of a spawned process."""
-    with patch('rosys.vision.mjpeg_camera.mjpeg_stream_worker.open_channel', return_value=(receiver, _RecordingSender())), \
-            patch('rosys.vision.mjpeg_camera.mjpeg_stream_worker.SPAWN_CONTEXT',
-                  SimpleNamespace(Process=lambda **kwargs: _IdleProcess())):
+def _worker_without_process() -> MjpegStreamWorker:
+    """Create a worker that listens on its socket, but with nothing spawned behind it."""
+    with patch('rosys.vision.mjpeg_camera.mjpeg_stream_worker.SPAWN_CONTEXT',
+               SimpleNamespace(Process=lambda **kwargs: _IdleProcess())):
         return MjpegStreamWorker('cam', 'http://127.0.0.1/stream', None, None)
+
+
+class _Pusher:
+    """Stand-in for the worker process: a socket sending to the worker's endpoint."""
+
+    def __init__(self, worker: MjpegStreamWorker) -> None:
+        self._context = zmq.Context()
+        self._socket = self._context.socket(zmq.PUSH)
+        self._socket.connect(worker._endpoint)  # pylint: disable=protected-access
+
+    def send(self, *messages: Message) -> None:
+        for message in messages:
+            self._socket.send(encode(message))
+
+    def close(self) -> None:
+        self._context.destroy(linger=1000)
 
 
 def _frame(capture_time: float) -> Frame:
@@ -224,56 +207,45 @@ def _frame(capture_time: float) -> Frame:
 
 
 async def test_stream_worker_keeps_only_the_newest_frame_while_the_loop_is_busy() -> None:
-    frames = [_frame(float(i)) for i in range(5)]
-    receiver = _ScriptedReceiver(list(frames))
-    worker = _worker_reading(receiver)
-    assert receiver.drained.wait(timeout=1), 'expected the reader thread to drain the stub without the loop running'
-    assert worker._inbox.frame is frames[-1]  # pylint: disable=protected-access
+    worker = _worker_without_process()
+    pusher = _Pusher(worker)
+    pusher.send(*[_frame(float(i)) for i in range(5)])
+    await asyncio.sleep(0.1)  # the socket conflates in its own thread while the loop is busy elsewhere
 
     received = []
     with pytest.raises(StreamEndedError) as end:
         async for frame in worker.frames():
             received.append(frame)
-    assert received == [frames[-1]]  # by identity
+    assert [frame.capture_time for frame in received] == [4.0]
     assert end.value.reason is EndReason.FAILED
+    pusher.close()
     await worker.shutdown()
 
 
 async def test_stream_worker_ends_quietly_when_the_camera_closes_the_stream() -> None:
-    frame = _frame(1.0)
-    worker = _worker_reading(_ScriptedReceiver([frame, StreamEnded(reason=EndReason.ENDED)]))
-    assert [received async for received in worker.frames()] == [frame]  # by identity
+    worker = _worker_without_process()
+    pusher = _Pusher(worker)
+    frames = worker.frames()
+    pusher.send(_frame(1.0))
+    assert (await anext(frames)).capture_time == 1.0
+
+    pusher.send(StreamEnded(reason=EndReason.ENDED))
+    with pytest.raises(StopAsyncIteration):
+        await anext(frames)
+    pusher.close()
     await worker.shutdown()
 
 
-@pytest.mark.parametrize('open_channel_', [
-    open_pickled_channel,
-    pytest.param(lambda: open_memfd_channel(Memfd()),
-                 marks=pytest.mark.skipif(not _memfd_is_available(), reason='no memfd')),
-])
-def test_frames_and_other_messages_survive_the_channel(open_channel_) -> None:
-    receiver, sender = open_channel_()
+@pytest.mark.parametrize('capture_time', [1.5, None])
+def test_frames_survive_the_channel(capture_time: float | None) -> None:
     array = np.random.default_rng(0).integers(0, 255, size=(4, 6, 3), dtype=np.uint8)
-    sender.send(Frame(array=array, capture_time=1.5))
-    sender.send('not a frame')
-    sender.close()
-
-    frame = receiver.recv()
+    frame = decode(memoryview(encode(Frame(array=array, capture_time=capture_time))))
     assert isinstance(frame, Frame)
-    assert frame.capture_time == 1.5
+    assert frame.capture_time == capture_time
     assert np.array_equal(frame.array, array)
-    assert receiver.recv() == 'not a frame'
-    receiver.close()
+    assert frame.array.flags.writeable, 'the pixels are handed on to rotation and cropping'
 
 
-def test_falls_back_to_the_pickled_channel_without_memfd() -> None:
-    with patch('rosys.vision.mjpeg_camera.stream_channel.Memfd', side_effect=OSError):
-        receiver, sender = open_channel()
-    assert isinstance(receiver, Connection)
-    assert isinstance(sender, Connection)
-
-
-@pytest.mark.skipif(not _memfd_is_available(), reason='no memfd')
-def test_prefers_the_memfd_channel() -> None:
-    receiver, _ = open_channel()
-    assert isinstance(receiver, MemfdReceiver)
+def test_stream_ends_survive_the_channel() -> None:
+    end = StreamEnded(reason=EndReason.UNREACHABLE, detail='timed out')
+    assert decode(memoryview(encode(end))) == end

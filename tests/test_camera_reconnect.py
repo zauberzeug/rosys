@@ -35,7 +35,7 @@ from rosys.vision.mjpeg_camera.mjpeg_device_factory import MjpegDeviceFactory
 from rosys.vision.mjpeg_camera.mjpeg_stream_worker import MjpegStreamWorker, StreamEndedError
 from rosys.vision.mjpeg_camera.motec_mjpeg_device import MotecMjpegDevice
 from rosys.vision.mjpeg_camera.openipc_zauberzeug_mjpeg_device import OpenIpcZauberzeugMjpegDevice
-from rosys.vision.mjpeg_camera.stream_channel import EndReason, Frame, open_channel
+from rosys.vision.mjpeg_camera.stream_channel import EndReason, Frame
 from rosys.vision.reconnect import MAX_RECONNECT_INTERVAL, MIN_RECONNECT_INTERVAL
 from rosys.vision.rtsp_camera.rtsp_device import GDPPACKET_FORMAT, GDPPayloadType, RtspDevice
 from rosys.vision.simulated_camera.simulated_device import SimulatedDevice
@@ -521,17 +521,13 @@ async def test_mjpeg_device_reconnects_when_its_reader_fails(vision_log):
                          on_new_image_data=lambda data, timestamp: None, reconnect_interval=0.2)
     try:
         await wait_in_real_time(lambda: device.is_connected, message='expected the stream to be opened')
-        receiver, sender = open_channel()
-        receiver_type = type(receiver)
-        receiver.close()
-        sender.close()
-        with patch.object(receiver_type, 'recv', side_effect=RuntimeError('received 0 items of ancdata')):
+        with patch.object(MjpegStreamWorker, '_receive', side_effect=RuntimeError('receiving failed')):
             await wait_in_real_time(lambda: not device.is_connected,
                                     message='expected the failing reader to end the session')
         await forward_until(lambda: server.connections >= 2 and device.is_connected,
                             message='expected the device to reconnect after its reader failed')
-        assert any('receiving from the stream worker failed: RuntimeError: received 0 items of ancdata'
-                   in record.getMessage() for record in vision_log.records), 'expected the failure to be reported'
+        assert any('capture session failed: receiving failed' in record.getMessage()
+                   for record in vision_log.records), 'expected the failure to be reported'
     finally:
         await device.shutdown()
         await cancel_leftover_loops(f'capture {GOODCAM_MAC}')

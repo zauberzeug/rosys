@@ -1,10 +1,15 @@
 import asyncio
 import logging
-import threading
-from collections.abc import AsyncIterator, Generator, Iterable, Iterator
+import shutil
+import tempfile
+import time
+from collections.abc import AsyncIterator, Callable, Generator, Iterable, Iterator
 from contextlib import contextmanager
+from typing import ClassVar
 
 import httpx
+import zmq
+import zmq.asyncio
 
 from ...helpers.spawning import SPAWN_CONTEXT
 from ..http import new_client
@@ -13,9 +18,9 @@ from .stream_channel import (
     EndReason,
     Frame,
     Message,
-    MessageSender,
     StreamEnded,
-    open_channel,
+    decode,
+    encode,
 )
 
 log = logging.getLogger('rosys.vision.mjpeg_camera.mjpeg_stream_worker')
@@ -30,58 +35,33 @@ class StreamEndedError(Exception):
         self.detail = detail
 
 
-class _Inbox:
-    """Hand-over from the reader thread to the loop: the newest frame not yet taken, how the stream ended, the wake."""
-
-    def __init__(self, loop: asyncio.AbstractEventLoop) -> None:
-        self._loop = loop
-        self._lock = threading.Lock()
-        self._arrived = asyncio.Event()
-        self.frame: Frame | None = None
-        self.end: StreamEnded | None = None
-
-    def put(self, message: Message) -> None:
-        """Store the message and wake the loop side; raises RuntimeError once the loop is closed."""
-        with self._lock:
-            if isinstance(message, Frame):
-                self.frame = message
-            else:
-                self.end = message
-        self._loop.call_soon_threadsafe(self._arrived.set)  # an asyncio.Event is not thread-safe
-
-    async def take(self) -> Frame | StreamEnded:
-        """Wait for and hand out the pending frame, else the end."""
-        while True:
-            self._arrived.clear()
-            with self._lock:
-                if self.frame is not None:
-                    frame, self.frame = self.frame, None
-                    return frame
-                if self.end is not None:
-                    return self.end
-            await self._arrived.wait()
-
-
 class MjpegStreamWorker:
     """Handle of the process that reads and decodes one MJPEG stream session."""
+
+    LIVENESS_INTERVAL: ClassVar[float] = 0.2
+    """Seconds between checks whether a worker that sends nothing is still alive."""
+
+    FLUSH_TIMEOUT: ClassVar[float] = 0.5
+    """Seconds a message sent just before the worker exited may still be on its way."""
 
     def __init__(self, name: str, url: str, username: str | None, password: str | None) -> None:
         self._loop = asyncio.get_running_loop()
         self.log = logging.getLogger(f'rosys.vision.mjpeg_camera.mjpeg_stream_worker.{name}')
-        self._inbox = _Inbox(self._loop)
         self._closing = False
 
-        self._receiver, sender = open_channel()
-        self._process = SPAWN_CONTEXT.Process(target=_run_worker, args=(url, username, password, sender),
+        self._directory = tempfile.mkdtemp(prefix='rosys-mjpeg-')  # only our user may reach the socket inside
+        self._endpoint = f'ipc://{self._directory}/frames'
+        self._socket = zmq.asyncio.Context.instance().socket(zmq.PULL)
+        self._socket.set(zmq.CONFLATE, 1)  # keep only the newest message, dropping frames the loop was too busy for
+        self._socket.bind(self._endpoint)
+        self._process = SPAWN_CONTEXT.Process(target=_run_worker, args=(url, username, password, self._endpoint),
                                               name=f'mjpeg stream {name}', daemon=True)
         self._process.start()
-        sender.close()  # the child holds the only sending end now, so the receiver sees EOF when it exits
-        threading.Thread(target=self._read_messages, daemon=True, name=f'mjpeg stream reader {name}').start()
 
     async def frames(self) -> AsyncIterator[Frame]:
         """Yield frames until the camera closes the stream; raise StreamEndedError for any other end."""
         while True:
-            match await self._inbox.take():
+            match await self._receive():
                 case Frame() as frame:
                     yield frame
                 case StreamEnded(reason=EndReason.ENDED):
@@ -98,30 +78,23 @@ class MjpegStreamWorker:
             self.log.warning('stream worker did not end; killing it')
             self._process.kill()
             await self._loop.run_in_executor(None, self._process.join, 1.0)
-        self._receiver.close()
+        self._socket.close()
+        shutil.rmtree(self._directory, ignore_errors=True)
 
-    def _read_messages(self) -> None:
-        while True:
-            message: Message
-            try:
-                message = self._receiver.recv()
-            except (EOFError, OSError):
-                message = self._end_of_stream()
-            except Exception as e:  # pylint: disable=broad-exception-caught
-                self.log.exception('receiving from the stream worker failed')
-                message = StreamEnded(reason=EndReason.FAILED,
-                                      detail=f'receiving from the stream worker failed: {type(e).__name__}: {e}')
-            try:
-                self._inbox.put(message)
-            except RuntimeError:
-                return  # the loop is closed
-            if isinstance(message, StreamEnded):
-                return
+    async def _receive(self) -> Message:
+        """Wait for the worker's next message, or report that the worker died without sending one."""
+        while not self._closing:
+            # a message sent just before the worker exited may still be on its way, so a dead worker gets a last chance
+            timeout = self.LIVENESS_INTERVAL if self._process.is_alive() else self.FLUSH_TIMEOUT
+            if await self._socket.poll(timeout=int(timeout * 1000)):
+                return decode((await self._socket.recv(copy=False)).buffer)
+            if not self._process.is_alive():
+                break
+        return self._end_of_stream()
 
     def _end_of_stream(self) -> StreamEnded:
         if self._closing:
             return StreamEnded(reason=EndReason.ENDED)
-        self._process.join(1.0)  # the exit code is only known once the child is reaped
         return StreamEnded(reason=EndReason.FAILED,
                            detail=f'the stream worker exited with code {self._process.exitcode}')
 
@@ -201,8 +174,38 @@ def _open_stream(client: httpx.Client, url: str,
             return
 
 
-def _run_worker(url: str, username: str | None, password: str | None, sender: MessageSender) -> None:
-    send = sender.send
+SEND_TIMEOUT: float = 5.0
+"""Seconds a message may wait for a parent that is no longer receiving before the worker gives up."""
+
+FAREWELL: float = 5.0
+"""Seconds the worker stays around after its last message, waiting to be ended by the parent that reads it."""
+
+
+def _run_worker(url: str, username: str | None, password: str | None, endpoint: str) -> None:
+    """Stream the camera to the parent, which listens on the given endpoint."""
+    context = zmq.Context()
+    socket = context.socket(zmq.PUSH)
+    socket.set(zmq.SNDTIMEO, int(SEND_TIMEOUT * 1000))
+    socket.connect(endpoint)
+    # a message sent before the parent's end of the connection is there would be dropped instead of queued
+    socket.poll(timeout=int(SEND_TIMEOUT * 1000), flags=zmq.POLLOUT)
+
+    def send(message: Message) -> None:
+        try:
+            socket.send(encode(message))
+        except zmq.Again as e:
+            raise BrokenPipeError('the parent is no longer receiving') from e
+
+    try:
+        _stream(url, username, password, send)
+    finally:
+        # a conflating socket drops the message it holds as soon as the sender disconnects, so let the parent -
+        # which ends the session, and with it this process, on the message just sent - disconnect us instead
+        time.sleep(FAREWELL)
+        context.destroy(linger=0)
+
+
+def _stream(url: str, username: str | None, password: str | None, send: Callable[[Message], None]) -> None:
     try:
         with new_client() as client, _open_stream(client, url, username, password) as response:
             if response.status_code != 200:
