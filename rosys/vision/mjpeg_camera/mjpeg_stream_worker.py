@@ -84,7 +84,6 @@ class MjpegStreamWorker:
     async def _receive(self) -> Message:
         """Wait for the worker's next message, or report that the worker died without sending one."""
         while not self._closing:
-            # a message sent just before the worker exited may still be on its way, so a dead worker gets a last chance
             timeout = self.LIVENESS_INTERVAL if self._process.is_alive() else self.FLUSH_TIMEOUT
             if await self._socket.poll(timeout=int(timeout * 1000)):
                 return decode((await self._socket.recv(copy=False)).buffer)
@@ -199,8 +198,8 @@ def _run_worker(url: str, username: str | None, password: str | None, endpoint: 
     try:
         _stream(url, username, password, send)
     finally:
-        # a conflating socket drops the message it holds as soon as the sender disconnects, so let the parent -
-        # which ends the session, and with it this process, on the message just sent - disconnect us instead
+        # a conflating socket drops the message it holds when its sender disconnects,
+        # so stay connected until the parent has read the last message and terminates this process
         time.sleep(FAREWELL)
         context.destroy(linger=0)
 
