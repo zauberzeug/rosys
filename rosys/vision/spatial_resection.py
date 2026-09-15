@@ -11,6 +11,17 @@ _NO_DISTORTION: np.ndarray = np.zeros((1, 5), dtype=np.float64)
 
 
 @dataclass(slots=True, kw_only=True)
+class _PlaneFrame:
+    """The right-handed frame whose z = 0 plane fits a point cloud best."""
+    rotation: np.ndarray
+    """rotation from object space into the plane frame"""
+    centroid: np.ndarray
+    """point in object space the frame is anchored at"""
+    thickness: float
+    """thickness of the point cloud relative to its extent (0 for exactly coplanar points)"""
+
+
+@dataclass(slots=True, kw_only=True)
 class SpatialResectionResult:
     """Result of the spatial resection with lines."""
     success: bool
@@ -59,7 +70,7 @@ class SpatialResection:
 
         if algorithm is None:
             num_points = object_points.shape[0]
-            if num_points >= 4 and plane_frame is not None:
+            if num_points >= 4 and plane_frame.thickness < 1e-3:
                 method_flag = cv2.SOLVEPNP_IPPE
             elif num_points >= 6:
                 method_flag = cv2.SOLVEPNP_EPNP
@@ -97,7 +108,7 @@ class SpatialResection:
             rvec_init = None
             tvec_init = None
 
-        if method_flag == cv2.SOLVEPNP_IPPE and plane_frame is not None:
+        if method_flag == cv2.SOLVEPNP_IPPE:
             ok, rvec, tvec = _solve_ippe(object_points, image_points_undist, K_undist, plane_frame)
         else:
             ok, rvec, tvec = cv2.solvePnP(
@@ -264,25 +275,21 @@ class SpatialResection:
         )
 
 
-def _fit_plane_frame(points: np.ndarray) -> tuple[np.ndarray, np.ndarray] | None:
-    """Find a right-handed frame whose z = 0 plane holds the given points.
+def _fit_plane_frame(points: np.ndarray) -> _PlaneFrame:
+    """Find the right-handed frame whose z = 0 plane fits the given points best.
 
     :param points: The points in object space, shape (n, 3) or (n, 1, 3)
-    :return: The rotation from object space into the plane frame and the centroid it is anchored at,
-        or ``None`` if the points are not coplanar
     """
     centroid = points.reshape(-1, 3).mean(axis=0)
     _, s, vt = np.linalg.svd(points.reshape(-1, 3) - centroid, full_matrices=False)
-    if s[-1] / max(s[0], 1e-12) >= 1e-3:
-        return None
     rotation = vt if np.linalg.det(vt) > 0 else vt * np.array([[1.0], [1.0], [-1.0]])
-    return rotation, centroid
+    return _PlaneFrame(rotation=rotation, centroid=centroid, thickness=s[-1] / max(s[0], 1e-12))
 
 
 def _solve_ippe(object_points: np.ndarray,
                 image_points: np.ndarray,
                 camera_matrix: np.ndarray,
-                plane_frame: tuple[np.ndarray, np.ndarray]) -> tuple[bool, np.ndarray, np.ndarray]:
+                plane_frame: _PlaneFrame) -> tuple[bool, np.ndarray, np.ndarray]:
     """Solve the PnP problem for coplanar points with OpenCV's IPPE.
     This function is a wrapper around openCV. It solves the problem twice to avoid issues from the wrong plane orientation.
 
@@ -292,16 +299,15 @@ def _solve_ippe(object_points: np.ndarray,
     :param plane_frame: The plane frame of the object points as returned by ``_fit_plane_frame``
     :return: Success flag, rotation vector and translation vector in object space, like ``cv2.solvePnP``
     """
-    plane_rotation, plane_centroid = plane_frame
     candidates: list[tuple[float, np.ndarray, np.ndarray]] = []
-    for rotation in (plane_rotation, np.diag([1.0, -1.0, -1.0]) @ plane_rotation):
-        plane_points = ((object_points.reshape(-1, 3) - plane_centroid) @ rotation.T).reshape(-1, 1, 3)
+    for rotation in (plane_frame.rotation, np.diag([1.0, -1.0, -1.0]) @ plane_frame.rotation):
+        plane_points = ((object_points.reshape(-1, 3) - plane_frame.centroid) @ rotation.T).reshape(-1, 1, 3)
         ok, rvec, tvec = cv2.solvePnP(plane_points, image_points, camera_matrix, _NO_DISTORTION,
                                       None, None, False, int(cv2.SOLVEPNP_IPPE))
         if not ok or not np.isfinite(rvec).all() or not np.isfinite(tvec).all():
             continue
         rmat = np.asarray(cv2.Rodrigues(rvec)[0], dtype=np.float64) @ rotation
-        tvec = (np.asarray(tvec, dtype=np.float64).reshape(3) - rmat @ plane_centroid).reshape(3, 1)
+        tvec = (np.asarray(tvec, dtype=np.float64).reshape(3) - rmat @ plane_frame.centroid).reshape(3, 1)
         rvec = np.asarray(cv2.Rodrigues(rmat)[0], dtype=np.float64)
         error = _mean_reprojection_error(object_points, image_points, camera_matrix, rvec, tvec)
         if np.isfinite(error):
