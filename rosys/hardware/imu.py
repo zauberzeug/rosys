@@ -78,10 +78,13 @@ class Imu(Module):
 class ImuHardware(Imu, ModuleHardware):
     """A hardware module that handles the communication with an IMU."""
 
+    DATA_SELECT = 0x0021
+    """Bit mask of the BNO055 blocks Lizard reads per step: calibration and quaternion."""
+
     def __init__(self, robot_brain: RobotBrain, name: str = 'imu', *, min_gyro_calibration: float = 1.0, **kwargs) -> None:
         self.name = name
         self.min_gyro_calibration = min_gyro_calibration
-        self.lizard_code = f'{name} = Imu()'
+        self.lizard_code = f'{name} = Imu()\n{name}.data_select = {self.DATA_SELECT}'
         self.core_message_fields = [
             f'{name}.cal_gyr',
             f'{name}.quat_w:4',
