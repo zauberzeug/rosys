@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -33,13 +34,13 @@ class LogsPage:
             with ui.card().tight().props('flat bordered'):
                 if logs:
                     with ui.list():
-                        for path in logs:
-                            with ui.item(on_click=lambda path=path: ui.navigate.to(f'/logs/{path.name}', new_tab=True)):
+                        for log in logs:
+                            with ui.item(on_click=lambda log=log: ui.navigate.to(f'/logs/{log.path.name}', new_tab=True)):
                                 with ui.item_section():
-                                    ui.item_label(path.name)
-                                    ui.item_label(_file_info(path)).props('caption')
+                                    ui.item_label(log.path.name)
+                                    ui.item_label(_file_info(log)).props('caption')
                                 with ui.item_section().props('side'):
-                                    ui.button(icon='download').on('click.stop', lambda path=path: ui.download(path)) \
+                                    ui.button(icon='download').on('click.stop', lambda log=log: ui.download(log.path)) \
                                         .props('flat fab-mini').tooltip('download')
                 else:
                     ui.label('No logs found')
@@ -49,21 +50,30 @@ class LogsPage:
         list_ui()
 
 
-async def _find_log_files(logs_dir: Path) -> list[Path]:
-    logs = await run.io_bound(logs_dir.glob, '*.log')
-    rotated = await run.io_bound(logs_dir.glob, '*.log.*')
-    paths = list({p.resolve(): p for p in [*logs, *rotated]}.values())
-    return sorted(paths, key=lambda p: p.stat().st_mtime, reverse=True)
+@dataclass(slots=True, kw_only=True)
+class _LogFile:
+    path: Path
+    mtime: float
+    size: int
 
 
-def _file_info(path: Path) -> str:
-    try:
-        mtime = datetime.fromtimestamp(path.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
-        size = _human_size(path.stat().st_size)
-    except FileNotFoundError:
-        mtime = 'n/a'
-        size = 'n/a'
-    return f'{mtime} • {size}'
+async def _find_log_files(logs_dir: Path) -> list[_LogFile]:
+    def scan() -> list[_LogFile]:
+        paths = {p.resolve(): p for p in [*logs_dir.glob('*.log'), *logs_dir.glob('*.log.*')]}
+        logs: list[_LogFile] = []
+        for path in paths.values():
+            try:
+                stat = path.stat()
+            except OSError:
+                continue
+            logs.append(_LogFile(path=path, mtime=stat.st_mtime, size=stat.st_size))
+        return sorted(logs, key=lambda log: log.mtime, reverse=True)
+    return await run.io_bound(scan) or []
+
+
+def _file_info(log: _LogFile) -> str:
+    mtime = datetime.fromtimestamp(log.mtime).strftime('%Y-%m-%d %H:%M:%S')
+    return f'{mtime} • {_human_size(log.size)}'
 
 
 def _human_size(num_bytes: int) -> str:
