@@ -94,13 +94,20 @@ class Automator:
     def is_pausing(self) -> bool:
         return self.automation is not None and self.automation.is_pausing
 
+    @property
+    def _is_pending(self) -> bool:
+        return self.automation is not None and self.automation.is_pending
+
     async def _handle_interrupt(self, automation: Automation | None, *, stop: bool = False) -> None:
         assert automation is not None
         # NOTE: once a new automation has taken over, don't wait for the old one to finish its cleanup: in the plain
         # restart case this handler runs before the new automation's first turn, so ``_on_interrupt`` (typically
-        # ``wheels.stop``) lands before its first drive command instead of overriding it later on
+        # ``wheels.stop``) lands before its first drive command; if the new automation is already running (because the
+        # old one was still cleaning up when it started), it owns the robot and ``_on_interrupt`` is skipped
         while automation.is_running and self.automation is automation:
             await rosys.sleep(0.1)
+        if self.automation is not automation and self.automation is not None and not self.automation.is_stopped:
+            return
         if self._on_interrupt:
             if asyncio.iscoroutinefunction(self._on_interrupt):
                 await self._on_interrupt()
@@ -162,9 +169,9 @@ class Automator:
 
         :param because: the reason for stopping the automation
         """
-        if self.is_pausing or self.is_stopping:
+        if self.is_stopping:
             return
-        if self.is_running or self.is_paused:
+        if self.is_running or self.is_paused or self.is_pausing or self._is_pending:
             assert self.automation is not None
             self.automation.stop()
             self.AUTOMATION_STOPPED.emit(because)
@@ -175,7 +182,7 @@ class Automator:
 
         :param because: the reason for aborting the automation
         """
-        if self.is_stopped:
+        if self.is_stopped and not self._is_pending:
             return
         assert self.automation is not None
         self.automation.stop()
