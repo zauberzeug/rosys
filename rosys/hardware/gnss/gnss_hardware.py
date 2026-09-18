@@ -14,7 +14,7 @@ from .nmea import Gga, GpsQuality, Gst, Pssn
 class GnssHardware(Gnss):
     """This hardware module connects to a Septentrio SimpleRTK3b (Mosaic-H) GNSS receiver."""
     NMEA_TYPES: ClassVar[set[str]] = {'GPGGA', 'GPGST', 'PSSN,HRP'}
-    NMEA_PATTERN = re.compile(r'\$(?P<type>[A-Z,]+),(?P<timestamp>\d{6}(?:\.\d+)?)[^*]*\*[0-9A-Fa-f]{2}\r\n')
+    NMEA_PATTERN = re.compile(r'\$(?P<type>[A-Z,]+),(?P<timestamp>\d{6}(?:\.\d+)?)[^*]*\*[0-9A-Fa-f]{2}')
 
     def __init__(self, *, antenna_pose: Pose | None, reconnect_interval: float = 3.0, max_measurement_age: float = 0.05) -> None:
         """
@@ -50,47 +50,37 @@ class GnssHardware(Gnss):
             result = self.serial_connection.read_all().decode('utf-8', errors='replace')
             if not result:
                 continue
-            buffer += result
-            matches = list(self.NMEA_PATTERN.finditer(buffer))
-            for match in reversed(matches):
+            *lines, buffer = (buffer + result).split('\n')
+            sentences: dict[str, str] | None = None
+            for line in lines:
+                match = self.NMEA_PATTERN.search(line)
+                if match is None:
+                    continue
                 type_, nmea_timestamp = match['type'], match['timestamp']
                 if type_ not in self.NMEA_TYPES:
                     self.log.debug('Skipping unknown type: %s', type_)
                     continue
                 sentence = match.group(0)
                 self.log.debug('%s, %s: %s', type_, nmea_timestamp, sentence)
-                sentence = sentence[:sentence.find('*')]
-                latest_messages[type_] = (nmea_timestamp, sentence)
-                buffer = buffer[:match.start()]
-                if not self.NMEA_TYPES.issubset(latest_messages):
-                    continue
-                timestamps = {latest_messages[msg_type][0] for msg_type in self.NMEA_TYPES}
-                if len(timestamps) != 1:
-                    latest_timestamp = max(timestamps)
-                    latest_messages = {msg_type: (timestamp, sentence)
-                                       for msg_type, (timestamp, sentence) in latest_messages.items()
-                                       if timestamp >= latest_timestamp}
-                    continue
-                if not self.NMEA_TYPES.issubset(latest_messages):
-                    continue
-                try:
-                    measurement = self._parse_measurement(latest_messages['GPGGA'][1],
-                                                          latest_messages['GPGST'][1],
-                                                          latest_messages['PSSN,HRP'][1])
-                except ValueError as e:
-                    self.log.debug('Failed to parse measurement: %s', e)
-                    continue
-                measurement_age = measurement.age
-                if abs(measurement_age) > self._max_measurement_age:
-                    self.log.warning('measurement age = %.3f (exceeds threshold of %s)',
-                                     measurement_age, self._max_measurement_age)
-                    continue
-                self.log.debug('dt: %.3f - %s', measurement_age, measurement)
-                self.last_measurement = measurement
-                self.NEW_MEASUREMENT.emit(measurement)
-                buffer = ''
-                latest_messages.clear()
-                break
+                latest_messages[type_] = (nmea_timestamp, sentence[:sentence.find('*')])
+                timestamps = {timestamp for timestamp, _ in latest_messages.values()}
+                if len(latest_messages) == len(self.NMEA_TYPES) and len(timestamps) == 1:
+                    sentences = {msg_type: text for msg_type, (_, text) in latest_messages.items()}
+            if sentences is None:
+                continue
+            try:
+                measurement = self._parse_measurement(sentences['GPGGA'], sentences['GPGST'], sentences['PSSN,HRP'])
+            except ValueError as e:
+                self.log.debug('Failed to parse measurement: %s', e)
+                continue
+            measurement_age = measurement.age
+            if abs(measurement_age) > self._max_measurement_age:
+                self.log.warning('measurement age = %.3f (exceeds threshold of %s)',
+                                 measurement_age, self._max_measurement_age)
+                continue
+            self.log.debug('dt: %.3f - %s', measurement_age, measurement)
+            self.last_measurement = measurement
+            self.NEW_MEASUREMENT.emit(measurement)
 
     async def _connect(self) -> bool:
         try:
