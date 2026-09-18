@@ -96,7 +96,10 @@ class Automator:
 
     async def _handle_interrupt(self, automation: Automation | None, *, stop: bool = False) -> None:
         assert automation is not None
-        while automation.is_running:
+        # NOTE: once a new automation has taken over, don't wait for the old one to finish its cleanup: in the plain
+        # restart case this handler runs before the new automation's first turn, so ``_on_interrupt`` (typically
+        # ``wheels.stop``) lands before its first drive command instead of overriding it later on
+        while automation.is_running and self.automation is automation:
             await rosys.sleep(0.1)
         if self._on_interrupt:
             if asyncio.iscoroutinefunction(self._on_interrupt):
@@ -121,8 +124,11 @@ class Automator:
             return
         self.stop(because='new automation starts')
         self.last_exception = None
-        self.automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
-        rosys.background_tasks.create(self.automation.run(), name='automation')  # type: ignore
+        automation = Automation(coro,
+                                lambda e: self._handle_exception(automation, e),
+                                on_complete=lambda: self._on_complete(automation))
+        self.automation = automation
+        rosys.background_tasks.create(automation.run(), name='automation')  # type: ignore
         self.AUTOMATION_STARTED.emit()
         self._notify('automation started')
         if paused:
@@ -202,14 +208,18 @@ class Automator:
         """
         self.default_automation = default_automation
 
-    def _handle_exception(self, e: Exception) -> None:
+    def _handle_exception(self, automation: Automation, e: Exception) -> None:
+        if self.automation is not automation:
+            self.log.warning('ignoring an exception from a superseded automation: %r', e)
+            return
         self.last_exception = e
         self.abort(because=f'an exception occurred in an automation{f": {e}" if str(e) else ""}')
         if rosys.is_test:
             self.log.exception('automation failed')
 
-    def _on_complete(self) -> None:
-        self.automation = None
+    def _on_complete(self, automation: Automation) -> None:
+        if self.automation is automation:
+            self.automation = None
         self.AUTOMATION_COMPLETED.emit()
         self._notify('automation completed', 'positive')
 

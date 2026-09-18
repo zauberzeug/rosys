@@ -10,7 +10,7 @@ from rosys.automation import Automator
 from rosys.automation.automation import Automation
 from rosys.driving import Driver
 from rosys.geometry import Pose, Spline
-from rosys.hardware import Robot
+from rosys.hardware import Robot, Wheels
 from rosys.testing import assert_pose, forward
 
 
@@ -136,6 +136,52 @@ async def test_stopping_an_automation_that_was_started_over_a_running_one(automa
     await forward(seconds=5)
     assert len(ticks) == ticks_at_stop, 'the automation kept running after stop()'
     assert automator.is_stopped
+
+
+async def test_interrupting_a_superseded_automation_does_not_override_the_new_drive_command(automator: Automator,
+                                                                                            wheels: Wheels):
+    """``on_interrupt`` of the old automation must land before the new automation's first drive command."""
+    async def old() -> None:
+        await wheels.drive(0.3, 0)
+        await rosys.sleep(100)
+
+    async def new() -> None:
+        await wheels.drive(0.5, 0)
+        await rosys.sleep(100)
+
+    automator.start(old())
+    await forward(seconds=1)
+    assert wheels.linear_target_speed == 0.3
+    automator.start(new())
+    await forward(seconds=1)
+    assert wheels.linear_target_speed == 0.5, 'the interrupted automation stopped the wheels of the new one'
+
+
+async def test_an_exception_in_the_cleanup_of_a_superseded_automation_is_ignored(automator: Automator):
+    """An exception while the old automation cleans up must neither abort the new one nor be attributed to it."""
+    ticks: list[int] = []
+
+    async def old() -> None:
+        try:
+            await rosys.sleep(100)
+        finally:
+            await rosys.sleep(3)
+            raise RuntimeError('cleanup of the old automation failed')
+
+    async def new() -> None:
+        while True:
+            await rosys.sleep(1)
+            ticks.append(1)
+
+    automator.start(old())
+    await forward(seconds=1)
+    automator.start(new())
+    await forward(seconds=4)  # the old automation raises after 3 s
+    ticks_after_exception = len(ticks)
+    await forward(seconds=2)
+    assert len(ticks) > ticks_after_exception, 'the new automation was aborted'
+    assert automator.is_running
+    assert automator.last_exception is None
 
 
 async def test_finally_block(automator: Automator):
