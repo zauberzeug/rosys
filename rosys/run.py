@@ -27,6 +27,8 @@ log = logging.getLogger('rosys.run')
 
 
 async def io_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R | None:
+    # NOTE: deliberately a wrapper, not an alias: rosys owns the `R | None` contract and decides here what to do
+    # when NiceGUI 4.0 starts raising CancelledError instead of returning None
     return await run.io_bound(callback, *args, **kwargs)
 
 
@@ -39,8 +41,6 @@ def awaitable(func: Callable) -> Callable:
 
 
 async def cpu_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R | None:
-    if is_stopping():
-        return None  # NiceGUI raises 'Process pool not set up.' while stopping, before its own shutdown guard runs
     with cpu():
         return await run.cpu_bound(callback, *args, **kwargs)
 
