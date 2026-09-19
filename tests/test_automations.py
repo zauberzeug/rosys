@@ -10,7 +10,7 @@ from rosys.automation import Automator
 from rosys.automation.automation import Automation
 from rosys.driving import Driver
 from rosys.geometry import Pose, Spline
-from rosys.hardware import Robot
+from rosys.hardware import Robot, Wheels
 from rosys.testing import assert_pose, forward
 
 
@@ -115,6 +115,121 @@ async def test_a_failure_stops_forwarding_to_a_condition_that_already_holds(auto
     await forward(seconds=1, fail_on_automation_failure=False)
     with pytest.raises(AssertionError, match='the automation broke'):
         await forward(until=lambda: True)
+
+
+async def _count(ticks: list[int]) -> None:
+    while True:
+        await rosys.sleep(1)
+        ticks.append(1)
+
+
+@pytest.mark.parametrize('gap', [2.0, 0.0])
+async def test_stopping_an_automation_that_was_started_over_another_one(automator: Automator, gap: float):
+    """``start()`` over a running (#461) or a not yet started automation must not orphan the new one."""
+    ticks: list[int] = []
+    events: list[str] = []
+    automator.AUTOMATION_STARTED.subscribe(lambda: events.append('started'))
+    automator.AUTOMATION_STOPPED.subscribe(lambda _: events.append('stopped'))
+
+    automator.start(_count(ticks))
+    if gap:
+        await forward(seconds=gap)  # without it, the first automation's task never had a turn
+    automator.start(_count(ticks))
+    await forward(seconds=2)
+    assert automator.is_running
+    automator.stop(because='test')
+    ticks_at_stop = len(ticks)
+    await forward(seconds=5)
+    assert len(ticks) == ticks_at_stop, 'an automation kept running after stop()'
+    assert automator.is_stopped
+    assert events == ['started', 'stopped', 'started', 'stopped']
+
+
+async def test_stopping_an_automation_that_has_not_started_yet(automator: Automator):
+    ticks: list[int] = []
+    automator.start(_count(ticks))
+    automator.stop(because='test')
+    await forward(seconds=3)
+    assert not ticks
+    assert automator.is_stopped
+
+
+@pytest.mark.parametrize('old_state', ['running', 'stopping'])
+async def test_a_superseded_automation_does_not_override_the_new_drive_command(automator: Automator, wheels: Wheels,
+                                                                               old_state: str):
+    """``on_interrupt`` of the old automation must land before the new one's first drive command, or not at all."""
+    async def old() -> None:
+        try:
+            await wheels.drive(0.3, 0)
+            await rosys.sleep(100)
+        finally:
+            await rosys.sleep(1)
+
+    async def new() -> None:
+        await wheels.drive(0.5, 0)
+        await rosys.sleep(100)
+
+    automator.start(old())
+    await forward(seconds=1)
+    if old_state == 'stopping':
+        automator.stop(because='test')
+        await forward(seconds=0.5)
+        assert automator.is_stopping
+    assert wheels.linear_target_speed == 0.3
+    automator.start(new())
+    await forward(seconds=2)
+    assert wheels.linear_target_speed == 0.5, 'the old automation stopped the wheels of the new one'
+
+
+async def test_an_exception_in_the_cleanup_of_a_superseded_automation_is_ignored(automator: Automator):
+    """An exception while the old automation cleans up must neither abort the new one nor be attributed to it."""
+    ticks: list[int] = []
+
+    async def old() -> None:
+        try:
+            await rosys.sleep(100)
+        finally:
+            await rosys.sleep(3)
+            raise RuntimeError('cleanup of the old automation failed')
+
+    automator.start(old())
+    await forward(seconds=1)
+    automator.start(_count(ticks))
+    await forward(seconds=4)  # the old automation raises after 3 s
+    ticks_after_exception = len(ticks)
+    await forward(seconds=2)
+    assert len(ticks) > ticks_after_exception, 'the new automation was aborted'
+    assert automator.is_running
+    assert automator.last_exception is None
+
+
+async def test_starting_over_a_pausing_automation(automator: Automator):
+    """A pending pause inside an uninterruptible section must not leave the old automation parked forever."""
+    events: list[str] = []
+
+    @rosys.automation.uninterruptible
+    async def uninterruptible_section() -> None:
+        await rosys.sleep(1)
+
+    async def old() -> None:
+        try:
+            await uninterruptible_section()
+            events.append('old continued')
+            await rosys.sleep(100)
+        finally:
+            events.append('old finished')
+
+    async def new() -> None:
+        await rosys.sleep(100)
+
+    automator.start(old())
+    await forward(seconds=0.5)
+    automator.pause(because='test')
+    assert automator.is_pausing
+    automator.start(new())
+    await forward(seconds=2)
+    assert events == ['old finished']
+    assert automator.is_running
 
 
 async def test_finally_block(automator: Automator):
