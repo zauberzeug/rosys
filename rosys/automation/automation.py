@@ -84,7 +84,10 @@ class Automation:
 
     @property
     def is_pending(self) -> bool:
-        """whether the automation is scheduled but has not had its first turn yet (it counts as stopped meanwhile)"""
+        """whether the automation is scheduled but has neither had its first turn nor been stopped yet
+
+        A pending automation counts as stopped.
+        """
         return not self._has_started and not self._stop
 
     async def run(self) -> Any | None:
@@ -120,7 +123,7 @@ class Automation:
                 except StopIteration as err:
                     self.log.info('automation is finished')
                     if self.on_complete and not stop_injected:
-                        self.on_complete()
+                        self.on_complete(self)
                     return err.value
                 send = iter_send
                 try:
@@ -130,7 +133,7 @@ class Automation:
         except Exception as e:
             self.log.exception('automation failed')
             if self.exception_handler:
-                self.exception_handler(e)
+                self.exception_handler(self, e)
             raise
         finally:
             self._is_waited = False
