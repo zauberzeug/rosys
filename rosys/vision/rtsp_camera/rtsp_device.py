@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import fcntl
 import logging
 import re
 import shlex
@@ -11,8 +12,9 @@ from asyncio.subprocess import Process
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Literal
+from typing import Literal, cast
 
+import cv2
 import numpy as np
 
 from ... import rosys
@@ -142,16 +144,17 @@ class RtspDevice(CaptureDevice):
         async def stream() -> AsyncGenerator[ImageArray, None]:
             nonlocal capture_process
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
-            # to try: replace avdec_h264 with nvh264dec ! nvvidconv (!videoconvert)
-            command = f'gst-launch-1.0 --quiet rtspsrc location="{url}" latency=0 protocols=tcp ! rtp{self._avdec}depay ! avdec_{self._avdec} ! videoconvert ! video/x-raw,format=RGB ! queue max-size-buffers=1 leaky=downstream ! gdppay ! fdsink sync=false'
+            command = f'gst-launch-1.0 --quiet rtspsrc location="{url}" latency=0 protocols=tcp ! rtp{self._avdec}depay ! avdec_{self._avdec} ! videoconvert ! video/x-raw,format=I420 ! queue max-size-buffers=1 leaky=downstream ! gdppay ! fdsink sync=false'
             self.log.debug('[%s] Running command: %s', self._mac, command)
             process = await asyncio.create_subprocess_exec(
                 *shlex.split(command),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                limit=STREAM_BUFFER_SIZE,
             )
             assert process.stdout is not None
             assert process.stderr is not None
+            enlarge_pipe_buffer(process.stdout, self.log)
             self._capture_process = process
             capture_process = process
 
@@ -181,10 +184,7 @@ class RtspDevice(CaptureDevice):
                 elif packet.payload_type == GDPPayloadType.BUFFER:
                     assert width is not None and height is not None
 
-                    assert width * height * 3 == len(packet.payload)
-                    frame = np.frombuffer(packet.payload, dtype=np.uint8).reshape(height, width, 3)
-
-                    yield frame
+                    yield i420_to_rgb(packet.payload, width, height)
 
             try:
                 await asyncio.wait_for(process.wait(), timeout=5)
@@ -261,6 +261,56 @@ class RtspDevice(CaptureDevice):
         return avdec
 
 
+def enlarge_pipe_buffer(stream: asyncio.StreamReader, log: logging.Logger) -> None:
+    """Grow the kernel pipe behind a stream, so a frame does not have to be handed over in 64 KiB pieces.
+
+    The kernel caps this at ``/proc/sys/fs/pipe-max-size`` for unprivileged processes; falling short only
+    costs throughput, so a rejected request is logged and ignored.
+    """
+    transport = getattr(stream, '_transport', None)
+    pipe = transport.get_extra_info('pipe') if transport is not None else None
+    if pipe is None:
+        return
+    try:
+        fcntl.fcntl(pipe.fileno(), F_SETPIPE_SZ, PIPE_BUFFER_SIZE)
+    except OSError as e:
+        log.debug('could not grow the capture pipe to %d bytes: %s', PIPE_BUFFER_SIZE, e)
+
+
+def i420_to_rgb(payload: bytes, width: int, height: int) -> ImageArray:
+    """Convert an I420 buffer to RGB on the calling thread.
+
+    Gstreamer pads each plane's rows to a four-byte stride, so a width that is not a multiple of four arrives
+    wider than it is; the padding columns are dropped before converting.
+
+    OpenCV would spread a conversion this small over its whole thread pool, where the dispatch costs several times
+    the conversion itself.
+    """
+    luma_stride = (width + 3) & ~3
+    chroma_stride = luma_stride // 2
+    expected = luma_stride * height + 2 * chroma_stride * (height // 2)
+    assert expected == len(payload), f'expected {expected} bytes for {width}x{height} I420, got {len(payload)}'
+
+    buffer = np.frombuffer(payload, dtype=np.uint8)
+    planes: np.ndarray
+    if luma_stride == width:  # an unpadded buffer already has the layout cvtColor wants
+        planes = buffer.reshape(height + height // 2, width)
+    else:
+        chroma_width = (width + 1) // 2
+        chroma_height = height // 2
+        planes = np.empty((height + chroma_height, width), dtype=np.uint8)
+        planes[:height] = buffer[:luma_stride * height].reshape(height, luma_stride)[:, :width]
+        chroma_rows = buffer[luma_stride * height:].reshape(2 * chroma_height, chroma_stride)[:, :chroma_width]
+        planes[height:] = chroma_rows.reshape(chroma_height, 2 * chroma_width)
+
+    threads = cv2.getNumThreads()
+    cv2.setNumThreads(1)
+    try:
+        return cast(ImageArray, cv2.cvtColor(planes, cv2.COLOR_YUV2RGB_I420))
+    finally:
+        cv2.setNumThreads(threads)
+
+
 class GDPPayloadType(Enum):
     NONE = 0
     BUFFER = 1
@@ -273,6 +323,15 @@ GDPPACKET_FORMAT = struct.Struct('>HcxHIQQQQH14sHH')
 GDP_CAPS_WIDTH_REGEX = re.compile(r'width=\(int\)\s*(\d+)')
 GDP_CAPS_HEIGHT_REGEX = re.compile(r'height=\(int\)\s*(\d+)')
 GDP_HEADER_SIZE = 62
+STREAM_BUFFER_SIZE = 2 * 1024 * 1024
+"""Read buffer for the decoder pipe.
+
+Large enough that a frame arrives without repeatedly pausing the transport, small enough that frames cannot
+pile up behind a slow consumer: the pipeline's leaky queue can only drop what it still holds.
+"""
+PIPE_BUFFER_SIZE = 256 * 1024
+"""Kernel pipe capacity for the decoder pipe; the default 64 KiB splits every frame into dozens of handovers."""
+F_SETPIPE_SZ = 1031
 
 
 @dataclass(slots=True, kw_only=True)
