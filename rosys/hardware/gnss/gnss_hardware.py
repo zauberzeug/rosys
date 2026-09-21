@@ -64,8 +64,9 @@ class GnssHardware(Gnss):
                 self.log.debug('%s, %s: %s', type_, nmea_timestamp, sentence)
                 latest_messages[type_] = (nmea_timestamp, sentence[:sentence.find('*')])
                 timestamps = {timestamp for timestamp, _ in latest_messages.values()}
-                if len(latest_messages) == len(self.NMEA_TYPES) and len(timestamps) == 1:
+                if self.NMEA_TYPES <= latest_messages.keys() and len(timestamps) == 1:
                     sentences = {msg_type: text for msg_type, (_, text) in latest_messages.items()}
+                    latest_messages.clear()
             if sentences is None:
                 continue
             try:
