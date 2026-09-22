@@ -4,7 +4,7 @@ RUN apt update && apt install -y \
     sudo vim less ack-grep rsync wget curl cmake arp-scan iproute2 iw python3-pip python3-autopep8 libgeos-dev graphviz graphviz-dev v4l-utils psmisc sysstat \
     libgl1 libglx-mesa0 ffmpeg libsm6 libxext6 libturbojpeg0 \
     avahi-utils iputils-ping \
-    jq \
+    jq kmod \
     gstreamer1.0-tools gstreamer1.0-plugins-base gstreamer1.0-plugins-good gstreamer1.0-plugins-bad gstreamer1.0-libav \
     && rm -rf /var/lib/apt/lists/*
 
