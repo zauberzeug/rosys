@@ -719,7 +719,8 @@ async def test_rtsp_device_is_connected_once_the_first_frame_arrives(rosys_integ
             assert connect_calls == 0, 'expected on_connect to wait for the first frame'
 
             process.stdout.feed_data(gdp_packet(GDPPayloadType.CAPS, b'video/x-raw, width=(int)2, height=(int)2'))
-            process.stdout.feed_data(gdp_packet(GDPPayloadType.BUFFER, bytes(12)))  # 2x2 I420 with gstreamer's 4-byte row stride
+            # a 2x2 I420 frame is 12 bytes once gstreamer has padded its rows to a four-byte stride
+            process.stdout.feed_data(gdp_packet(GDPPayloadType.BUFFER, bytes(12)))
             await wait_in_real_time(lambda: len(frames) == 1, message='expected the frame to reach the callback')
             assert device.is_connected
             assert connect_calls == 1
