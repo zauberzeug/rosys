@@ -140,7 +140,7 @@ class Detector(abc.ABC):
                            ) -> list[Detections] | None:
         """Runs detections on all images and fills each ``image.detections`` property.
 
-        Result order matches `images`.
+        Result order matches ``images``.
 
         """
 
