@@ -11,7 +11,7 @@ from .annotations import Annotations
 from .calibratable_camera_provider import CalibratableCameraProvider
 from .camera import CalibratableCamera
 from .detections import BoxDetection, Detections, PointDetection
-from .detector import Autoupload, Detector, DetectorInfo, ModelVersioningInfo
+from .detector import Autoupload, Detector, DetectorInfo, ImageState, ModelVersioningInfo
 from .image import Image
 
 
@@ -76,8 +76,9 @@ class DetectorSimulation(Detector):
                      source: str | None = None,
                      creation_date: datetime | str | None = None,
                      annotations: Annotations | None = None,
+                     state: ImageState | None = None,
                      ) -> None:
-        self.log.info('Uploading %s', image.id)
+        self.log.info('Uploading %s to %s', image.id, state.value if state else 'the default state')
 
     async def fetch_detector_info(self) -> DetectorInfo:
         return DetectorInfo(operation_mode='simulation',

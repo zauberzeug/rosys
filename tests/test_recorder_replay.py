@@ -14,8 +14,8 @@ from rosys.vision.record_replay.replay_camera_provider import ReplayCameraProvid
 @pytest.mark.usefixtures('rosys_integration')
 async def test_record_images(recordings_dir: Path):
     # ARRANGE
-    provider = SimulatedCameraProvider(auto_scan=False)
-    cam = SimulatedCamera(id='cam:0', width=64, height=48, fps=1)
+    provider = SimulatedCameraProvider()
+    cam = SimulatedCamera(id='cam:0', resolution=(64, 48), fps=1)
     provider.add_camera(cam)
     await cam.connect()
 
@@ -40,8 +40,8 @@ async def test_record_images(recordings_dir: Path):
 @pytest.mark.usefixtures('rosys_integration')
 async def test_playback_replays_images(recordings_dir: Path):
     # ARRANGE
-    provider = SimulatedCameraProvider(auto_scan=False)
-    cam = SimulatedCamera(id='cam:1', width=32, height=24, fps=1)
+    provider = SimulatedCameraProvider()
+    cam = SimulatedCamera(id='cam:1', resolution=(32, 24), fps=1)
     provider.add_camera(cam)
     await cam.connect()
     recorder = ImageRecorder(provider, recordings_dir)

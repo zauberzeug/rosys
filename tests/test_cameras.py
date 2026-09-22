@@ -10,13 +10,23 @@ from rosys.vision import RtspCamera, RtspCameraProvider, SimulatedCamera, UsbCam
 
 
 async def test_simulated_camera(rosys_integration):
-    camera = SimulatedCamera(id='test_cam', width=800, height=600, fps=1)
+    camera = SimulatedCamera(id='test_cam', resolution=(800, 600), fps=1)
     await camera.connect()
     assert camera.is_connected
     await forward(1.1)
     assert len(camera.images) >= 1
     assert camera.images[0].size.width == 800
     assert camera.images[0].size.height == 600
+
+
+async def test_changing_simulated_camera_resolution_while_connected(rosys_integration):
+    camera = SimulatedCamera(id='test_cam', resolution=(800, 600), fps=1)
+    await camera.connect()
+    await camera.set_parameters({'resolution': (100, 50)})
+    await forward(1.1)
+    assert camera.latest_captured_image is not None
+    assert camera.latest_captured_image.size.width == 100
+    assert camera.latest_captured_image.size.height == 50
 
 
 async def test_usb_camera(rosys_integration):
@@ -26,10 +36,12 @@ async def test_usb_camera(rosys_integration):
     if len(connected_uids) == 0:
         pytest.skip('No USB camera detected. This test requires a physical USB camera to be connected.')
     camera = UsbCamera(id=connected_uids[0])
-    await camera.connect()
-    for _ in range(5):
+    await camera.connect()  # the device opens the capture in its own loop, so wait for the first image
+    for _ in range(50):
         await forward(0.1)
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(0.1)
+        if camera.images:
+            break
     assert camera.is_connected
     assert len(camera.images) >= 1
 

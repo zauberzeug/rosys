@@ -83,4 +83,4 @@ class CameraProvider(Generic[T], persistence.Persistable, metaclass=abc.ABCMeta)
 
     @abc.abstractmethod
     async def update_device_list(self) -> None:
-        pass
+        """Add cameras for newly discovered devices and rebind known ones whose access has changed."""
