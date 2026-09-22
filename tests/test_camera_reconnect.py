@@ -1621,9 +1621,9 @@ async def test_rtsp_device_follows_a_resolution_change(rosys_integration):
 @pytest.fixture
 def _forget_nvdec_probe():
     """Reset the cached decoder probe, which otherwise leaks between tests."""
-    rtsp_device_module._nvdec_available = None
+    rtsp_device_module.Nvdec.available = None
     yield
-    rtsp_device_module._nvdec_available = None
+    rtsp_device_module.Nvdec.available = None
 
 
 @pytest.mark.usefixtures('_forget_nvdec_probe')
@@ -1633,7 +1633,7 @@ async def test_rtsp_device_picks_a_decoder_for_the_host(rosys_integration, avail
     process = FakeGstreamerProcess()
     create = AsyncMock(return_value=process)
 
-    with patch.object(rtsp_device_module, '_nvdec_available', available), \
+    with patch.object(rtsp_device_module.Nvdec, 'available', available), \
             patch('asyncio.create_subprocess_exec', create):
         device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
                             on_new_image_data=lambda array, timestamp: None)
@@ -1654,7 +1654,7 @@ async def test_rtsp_device_falls_back_when_hardware_decoding_stays_silent(rosys_
         commands.append(' '.join(args))
         return FakeGstreamerProcess()
 
-    with patch.object(rtsp_device_module, '_nvdec_available', True), \
+    with patch.object(rtsp_device_module.Nvdec, 'available', True), \
             patch.object(rtsp_device_module, 'NVDEC_FIRST_FRAME_TIMEOUT', 0.1), \
             patch('asyncio.create_subprocess_exec', spawn):
         device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
@@ -1662,7 +1662,7 @@ async def test_rtsp_device_falls_back_when_hardware_decoding_stays_silent(rosys_
         try:
             await forward_until(lambda: any('avdec_h264' in command for command in commands),
                                 message='expected a fallback to software decoding')
-            retired = rtsp_device_module._nvdec_available
+            retired = rtsp_device_module.Nvdec.available
         finally:
             await device.shutdown()
 

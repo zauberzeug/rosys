@@ -12,7 +12,7 @@ from asyncio.subprocess import Process
 from collections.abc import AsyncGenerator, Awaitable, Callable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Literal, cast
+from typing import ClassVar, Literal, cast
 
 import cv2
 import numpy as np
@@ -144,7 +144,7 @@ class RtspDevice(CaptureDevice):
         async def stream() -> AsyncGenerator[ImageArray, None]:
             nonlocal capture_process
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
-            hardware = await nvdec_is_available()
+            hardware = await Nvdec.is_available()
             # no parser between depay and nvv4l2decoder: an h265parse there negotiates a stream format the
             # hardware decoder accepts and then silently never emits a frame
             decoder = 'nvv4l2decoder ! nvvidconv' if hardware else f'avdec_{self._avdec} ! videoconvert'
@@ -179,7 +179,7 @@ class RtspDevice(CaptureDevice):
                 except TimeoutError:
                     self.log.warning('[%s] hardware decoding produced no frame within %.0f s; '
                                      'falling back to software decoding', self._mac, NVDEC_FIRST_FRAME_TIMEOUT)
-                    disable_nvdec()
+                    Nvdec.disable()
                     process.terminate()
                     break
 
@@ -359,30 +359,31 @@ A decoder that cannot reach the hardware still prerolls and then stalls forever 
 timeout is the only signal that distinguishes it from a healthy but slow start.
 """
 
-_nvdec_available: bool | None = None
 
-
-async def nvdec_is_available() -> bool:
-    """Whether to build a hardware-decoding pipeline.
+class Nvdec:
+    """Whether to build a hardware-decoding pipeline, probed once per process.
 
     Presence of the element is necessary but not sufficient: it also loads where it cannot reach the
-    hardware, so :func:`disable_nvdec` retires it when a pipeline proves unable to deliver frames.
+    hardware, so :meth:`disable` retires it when a pipeline proves unable to deliver frames.
     """
-    global _nvdec_available  # noqa: PLW0603
-    if _nvdec_available is None:
-        try:
-            process = await asyncio.create_subprocess_exec(
-                'gst-inspect-1.0', 'nvv4l2decoder',
-                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            _nvdec_available = await asyncio.wait_for(process.wait(), timeout=10) == 0
-        except (OSError, TimeoutError):
-            _nvdec_available = False
-    return _nvdec_available
 
+    available: ClassVar[bool | None] = None
 
-def disable_nvdec() -> None:
-    global _nvdec_available  # noqa: PLW0603
-    _nvdec_available = False
+    @classmethod
+    async def is_available(cls) -> bool:
+        if cls.available is None:
+            try:
+                process = await asyncio.create_subprocess_exec(
+                    'gst-inspect-1.0', 'nvv4l2decoder',
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                cls.available = await asyncio.wait_for(process.wait(), timeout=10) == 0
+            except (OSError, TimeoutError):
+                cls.available = False
+        return cls.available
+
+    @classmethod
+    def disable(cls) -> None:
+        cls.available = False
 
 
 @dataclass(slots=True, kw_only=True)
