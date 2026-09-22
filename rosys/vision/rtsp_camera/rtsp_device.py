@@ -323,14 +323,16 @@ GDPPACKET_FORMAT = struct.Struct('>HcxHIQQQQH14sHH')
 GDP_CAPS_WIDTH_REGEX = re.compile(r'width=\(int\)\s*(\d+)')
 GDP_CAPS_HEIGHT_REGEX = re.compile(r'height=\(int\)\s*(\d+)')
 GDP_HEADER_SIZE = 62
-STREAM_BUFFER_SIZE = 2 * 1024 * 1024
-"""Read buffer for the decoder pipe.
-
-Large enough that a frame arrives without repeatedly pausing the transport, small enough that frames cannot
-pile up behind a slow consumer: the pipeline's leaky queue can only drop what it still holds.
-"""
+STREAM_BUFFER_SIZE = 512 * 1024
+"""Read buffer for the decoder pipe, large enough that a frame arrives without repeatedly pausing the transport."""
 PIPE_BUFFER_SIZE = 256 * 1024
-"""Kernel pipe capacity for the decoder pipe; the default 64 KiB splits every frame into dozens of handovers."""
+"""Kernel pipe capacity for the decoder pipe.
+
+The default 64 KiB splits every frame into dozens of handovers, but the pipe is what buffers frames the
+pipeline's leaky queue has already released: whatever fits here can still reach a stalled consumer as stale
+images. A small-resolution substream has small frames, so this stays far below one frame of the largest
+stream rather than being sized for the largest.
+"""
 F_SETPIPE_SZ = 1031
 
 
