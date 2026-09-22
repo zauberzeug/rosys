@@ -246,6 +246,11 @@ class McapRecorder:
         return self._is_recording
 
     @property
+    def run_name(self) -> str:
+        """The running recording's name, ``<timestamp>`` or ``<timestamp>_<name>``; empty before the first start."""
+        return self._run_name
+
+    @property
     def message_count(self) -> int:
         """Number of messages written to the current recording."""
         return self._message_count
