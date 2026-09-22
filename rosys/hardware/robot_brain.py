@@ -26,8 +26,9 @@ class RobotBrain:
     If the offset changes significantly, a notification is sent and the offset history is cleared.
 
     Lizard prints one core message per iteration of its main loop, so the spacing of their hardware timestamps
-    is the loop period. The mean and maximum over the last ten seconds are exposed as ``loop_period`` and
-    ``max_loop_period`` and shown in the developer UI; a loop that keeps missing its 10 ms deadline is overloaded.
+    is the loop period. ``get_mean_loop_period()`` and ``get_max_loop_period()`` compute the statistics over the
+    last ten seconds and the developer UI shows them; a loop that keeps missing its 10 ms deadline is overloaded.
+    A lost line, whether dropped on the wire or by a stalled host, shows up as an outlier in the maximum only.
     """
 
     def __init__(self, communication: Communication, *,
@@ -91,9 +92,8 @@ class RobotBrain:
     def is_ready(self) -> bool:
         return self._hardware_time is not None
 
-    @property
-    def loop_period(self) -> float | None:
-        """Mean period of Lizard's main loop over the last seconds, in seconds.
+    def get_mean_loop_period(self) -> float | None:
+        """Compute the mean period of Lizard's main loop over the last seconds, in seconds.
 
         ``None`` until two core messages arrived and again once they cease, e.g. because the ESP is disabled or hangs.
         """
@@ -101,11 +101,11 @@ class RobotBrain:
             return None
         return (self._core_times[-1] - self._core_times[0]) / (len(self._core_times) - 1)
 
-    @property
-    def max_loop_period(self) -> float | None:
-        """Longest period of Lizard's main loop over the last seconds, in seconds.
+    def get_max_loop_period(self) -> float | None:
+        """Compute the longest period of Lizard's main loop over the last seconds, in seconds.
 
         ``None`` until two core messages arrived and again once they cease, e.g. because the ESP is disabled or hangs.
+        Walks over all timestamps of the window, so call it at UI pace rather than in a tight loop.
         """
         if not self._has_recent_core_messages():
             return None
@@ -207,8 +207,13 @@ class RobotBrain:
 
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
         ui.label().bind_text_from(self, 'is_ready', lambda ready: f'Ready: {ready}')
-        ui.label().bind_text_from(self, 'loop_period', lambda period: f'Loop period: {_format_ms(period)}')
-        ui.label().bind_text_from(self, 'max_loop_period', lambda period: f'Max loop period: {_format_ms(period)}')
+        mean_loop_period_label = ui.label()
+        max_loop_period_label = ui.label()
+
+        def update_loop_period() -> None:
+            mean_loop_period_label.text = f'Mean loop period: {_format_ms(self.get_mean_loop_period())}'
+            max_loop_period_label.text = f'Max loop period: {_format_ms(self.get_max_loop_period())}'
+        ui.timer(1.0, update_loop_period)
 
     async def send_heartbeat(self) -> None:
         """Send a ``core.keep_alive()`` command to the microcontroller to let it know that RoSys is still running."""

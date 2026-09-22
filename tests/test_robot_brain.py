@@ -103,33 +103,33 @@ async def test_check_runs_again_after_configuring(robot_brain: RobotBrain) -> No
 async def test_loop_period(robot_brain: RobotBrain) -> None:
     communication = robot_brain.communication
     assert isinstance(communication, CommunicationSimulation)
-    assert robot_brain.loop_period is None
-    assert robot_brain.max_loop_period is None
+    assert robot_brain.get_mean_loop_period() is None
+    assert robot_brain.get_max_loop_period() is None
 
     # the spacing of the core timestamps is the loop period
     communication.incoming.extend(f'core {millis}' for millis in (100, 110, 120, 180, 190))
     await forward(seconds=0.5)
-    assert robot_brain.loop_period == pytest.approx(0.0225)
-    assert robot_brain.max_loop_period == pytest.approx(0.060)
+    assert robot_brain.get_mean_loop_period() == pytest.approx(0.0225)
+    assert robot_brain.get_max_loop_period() == pytest.approx(0.060)
 
     # timestamps older than the window are forgotten
     communication.incoming.extend(f'core {millis}' for millis in (12_000, 12_010, 12_020))
     await forward(seconds=0.5)
-    assert robot_brain.loop_period == pytest.approx(0.010)
-    assert robot_brain.max_loop_period == pytest.approx(0.010)
+    assert robot_brain.get_mean_loop_period() == pytest.approx(0.010)
+    assert robot_brain.get_max_loop_period() == pytest.approx(0.010)
 
     # a backwards jump of the timestamps means the microcontroller restarted
     communication.incoming.append('core 100')
     await forward(seconds=0.5)
-    assert robot_brain.loop_period is None
+    assert robot_brain.get_mean_loop_period() is None
     communication.incoming.append('core 110')
     await forward(seconds=0.5)
-    assert robot_brain.max_loop_period == pytest.approx(0.010)
+    assert robot_brain.get_max_loop_period() == pytest.approx(0.010)
 
     # once the core messages cease, the loop period is unknown again
     await forward(seconds=2.0)
-    assert robot_brain.loop_period is None
-    assert robot_brain.max_loop_period is None
+    assert robot_brain.get_mean_loop_period() is None
+    assert robot_brain.get_max_loop_period() is None
 
 
 async def test_local_checksum_is_computed_over_utf8_bytes(robot_brain: RobotBrain) -> None:
