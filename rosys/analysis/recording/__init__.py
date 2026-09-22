@@ -36,9 +36,9 @@ from .mcap_recorder import (
     RecordingInfo,
     RecordingSource,
     TopicSchema,
-    is_auto_named,
 )
 from .merging import MERGE_METADATA_NAME, METADATA_NAME, merge_recordings
+from .naming import is_auto_named, run_and_part
 from .paths import DOWNLOAD_PATH, PAGE_PATH
 from .recordings_page_ import RecordingsPage
 
@@ -80,6 +80,7 @@ __all__ = [
     'pose_in_frame',
     'register',
     'reindex',
+    'run_and_part',
     'scalar',
     'text',
     'transform_3d',

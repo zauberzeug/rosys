@@ -10,7 +10,8 @@ from fastapi.responses import FileResponse, JSONResponse, Response
 from nicegui import app, ui
 
 from ... import rosys
-from .mcap_recorder import _OWN_NAME, McapRecorder, RecordingInfo
+from .mcap_recorder import McapRecorder, RecordingInfo
+from .naming import run_and_part
 from .paths import DOWNLOAD_PATH, PAGE_PATH
 
 _RIGHT_INSET = 'var(--nicegui-default-padding)'  # clears Quasar's 10 px thumb and keeps the page's rhythm
@@ -280,18 +281,18 @@ def _group_by_run(infos: list[RecordingInfo]) -> list[tuple[str | None, list[Rec
     entries: list[tuple[str | None, list[RecordingInfo]]] = []
     runs: dict[str, list[tuple[int, RecordingInfo]]] = {}
     for info in infos:
-        match = _OWN_NAME.fullmatch(info.path.name)
-        if match is None or match.group('run') is None:
+        numbered = run_and_part(info.path)
+        if numbered is None:
             entries.append((None, [info]))
             continue
-        run = match.group('run')
+        run, part = numbered
         if run not in runs:
             runs[run] = []
             entries.append((run, []))
-        runs[run].append((int(match.group('part')), info))
-    for run, parts in entries:
-        if run is not None:
-            parts.extend(info for _, info in sorted(runs[run], key=lambda numbered: numbered[0], reverse=True))
+        runs[run].append((part, info))
+    for entry_run, parts in entries:
+        if entry_run is not None:
+            parts.extend(info for _, info in sorted(runs[entry_run], key=lambda part: part[0], reverse=True))
     return entries
 
 

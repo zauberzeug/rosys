@@ -4,7 +4,6 @@ import asyncio
 import json
 import logging
 import os
-import re
 import threading
 from collections.abc import Callable, Collection
 from datetime import UTC, datetime
@@ -17,6 +16,7 @@ from nicegui import Event, ui
 from ... import rosys
 from .indexing import is_indexed, reindex
 from .merging import METADATA_NAME, STAGING_GLOB, merge_into_place
+from .naming import TIMESTAMP_FORMAT, check_file_name, is_auto_named
 from .paths import PAGE_PATH
 
 NANOSECONDS_PER_SECOND = 1_000_000_000
@@ -39,33 +39,6 @@ _DEFAULT_PAYLOAD_BYTES = 1024
 """Assumed size of a payload whose footprint cannot be measured (a small sensor value)."""
 
 _DROP_WARNING_INTERVAL = 10.0  # seconds between 'queue full' warnings, so drops do not spam the log
-
-_TIMESTAMP_FORMAT = r'%Y%m%d_%H%M%S_%f'  # microseconds -> unique per run
-
-# part <part> of the run <timestamp> or <timestamp>_<name>, or a single unnumbered <timestamp>.mcap
-_OWN_NAME = re.compile(r'(?P<run>\d{8}_\d{6}_\d{6}(?:_.+)?)_(?P<part>\d{2,})\.mcap|\d{8}_\d{6}_\d{6}\.mcap')
-
-
-def is_auto_named(path: Path | str) -> bool:
-    """Whether a recording is one the recorder wrote itself: ``<run>_<part>.mcap``, the run named by its start.
-
-    Any other name was given deliberately (a renamed, merged or preserved recording); the budget keeps it longer.
-
-    :param path: the recording file to test.
-    :return: ``True`` if the file name is one the recorder generated.
-    """
-    return _OWN_NAME.fullmatch(Path(path).name) is not None
-
-
-def _check_file_name(name: str) -> None:
-    """Refuse a name that is not a plain file name, so no recording lands outside the output directory.
-
-    :param name: the name to check.
-    :raises ValueError: if the name is empty, whitespace or dots only, or contains a path separator.
-    """
-    if Path(name).name != name or not name.strip('.').strip():
-        raise ValueError(f'not a plain file name: {name!r}')
-
 
 class _QueuedMessage(NamedTuple):
     """A queued entry awaiting the background writer.
@@ -420,7 +393,7 @@ class McapRecorder:
         :raises FileExistsError: if ``<name>.mcap`` exists or is being merged already.
         :raises RuntimeError: if the app shut down before the merge ran; the sources are kept.
         """
-        _check_file_name(name)
+        check_file_name(name)
         target = self.output_dir / f'{name}.mcap'
         if is_auto_named(target):
             raise ValueError(f'{target.name} reads as a file the recorder wrote itself, which its budget deletes first')
@@ -500,14 +473,14 @@ class McapRecorder:
             self.log.warning('not starting a recording while the previous one is still being finalized')
             return None
         if name is not None:
-            _check_file_name(name)
+            check_file_name(name)
         run_metadata = json.dumps(metadata) if metadata is not None else None
         try:
             self._loop = asyncio.get_running_loop()  # captured for loop-safe emits from the writer thread
         except RuntimeError:
             self._loop = None  # started outside a running loop (e.g. a synchronous test)
         self._selected_topics = set(topics) if topics is not None else None
-        timestamp = datetime.now(tz=UTC).strftime(_TIMESTAMP_FORMAT)
+        timestamp = datetime.now(tz=UTC).strftime(TIMESTAMP_FORMAT)
         self._run_name = f'{timestamp}_{name}' if name is not None else timestamp
         self._run_metadata = run_metadata
         self._part_index = 0
