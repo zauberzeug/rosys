@@ -1593,3 +1593,25 @@ def test_i420_to_rgb_rejects_a_truncated_buffer():
 
     with pytest.raises(AssertionError):
         i420_to_rgb(payload[:-1], 64, 48)
+
+
+async def test_rtsp_device_follows_a_resolution_change(rosys_integration):
+    """A camera that renegotiates its caps mid-stream keeps delivering, at the new size."""
+    process = FakeGstreamerProcess()
+    shapes: list = []
+
+    with patch('asyncio.create_subprocess_exec', AsyncMock(return_value=process)):
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: shapes.append(array.shape))
+        try:
+            for index, (width, height) in enumerate([(1280, 720), (854, 480), (640, 360)], start=1):
+                caps = f'video/x-raw, width=(int){width}, height=(int){height}'.encode()
+                process.stdout.feed_data(gdp_packet(GDPPayloadType.CAPS, caps))
+                process.stdout.feed_data(gdp_packet(GDPPayloadType.BUFFER,
+                                                    i420_payload(width, height, (128, 128, 128))))
+                await wait_in_real_time(lambda: len(shapes) == index,  # noqa: B023
+                                        message=f'expected a frame at {width}x{height}')
+        finally:
+            await device.shutdown()
+
+    assert shapes == [(720, 1280, 3), (480, 854, 3), (360, 640, 3)]
