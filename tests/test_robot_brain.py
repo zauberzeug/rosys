@@ -100,6 +100,38 @@ async def test_check_runs_again_after_configuring(robot_brain: RobotBrain) -> No
     assert robot_brain.lizard_firmware.checksums_match is True
 
 
+async def test_loop_period_follows_the_core_timestamps(robot_brain: RobotBrain) -> None:
+    communication = robot_brain.communication
+    assert isinstance(communication, CommunicationSimulation)
+    assert robot_brain.loop_period is None
+    assert robot_brain.max_loop_period is None
+
+    communication.incoming.extend(f'core {millis}' for millis in (100, 110, 120, 180, 190))
+    await forward(seconds=1.0)
+    assert robot_brain.loop_period == pytest.approx(0.0225)
+    assert robot_brain.max_loop_period == pytest.approx(0.060)
+
+
+async def test_loop_period_forgets_old_timestamps(robot_brain: RobotBrain) -> None:
+    communication = robot_brain.communication
+    assert isinstance(communication, CommunicationSimulation)
+    communication.incoming.extend(f'core {millis}' for millis in (100, 200, 12_000, 12_010, 12_020))
+    await forward(seconds=1.0)
+    assert robot_brain.loop_period == pytest.approx(0.010)
+    assert robot_brain.max_loop_period == pytest.approx(0.010)
+
+
+async def test_loop_period_restarts_with_the_microcontroller(robot_brain: RobotBrain) -> None:
+    communication = robot_brain.communication
+    assert isinstance(communication, CommunicationSimulation)
+    communication.incoming.extend(f'core {millis}' for millis in (5000, 5080, 100))
+    await forward(seconds=1.0)
+    assert robot_brain.loop_period is None
+    communication.incoming.append('core 110')
+    await forward(seconds=1.0)
+    assert robot_brain.max_loop_period == pytest.approx(0.010)
+
+
 async def test_local_checksum_is_computed_over_utf8_bytes(robot_brain: RobotBrain) -> None:
     robot_brain.lizard_code = 'grün'
     robot_brain.lizard_firmware.read_local_checksum()

@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from collections import deque
+from itertools import pairwise
 
 from nicegui import Event, ui
 
@@ -10,6 +11,7 @@ from .esp_pins import EspPins
 from .lizard_firmware import LizardFirmware
 
 CLOCK_OFFSET_HISTORY_LENGTH = 100
+LOOP_PERIOD_WINDOW_MS = 10_000
 
 
 class RobotBrain:
@@ -21,6 +23,10 @@ class RobotBrain:
     It also keeps track of the clock offset between the microcontroller and the host system, which is used to synchronize the hardware time with the system time.
     The clock offset is calculated by comparing the hardware time with the system time and averaging the differences over a number of samples.
     If the offset changes significantly, a notification is sent and the offset history is cleared.
+
+    Lizard prints one core message per iteration of its main loop, so the spacing of their hardware timestamps
+    is the loop period. The mean and maximum over the last ten seconds are exposed as ``loop_period`` and
+    ``max_loop_period`` and shown in the developer UI; a loop that keeps missing its 10 ms deadline is overloaded.
     """
 
     def __init__(self, communication: Communication, *,
@@ -59,6 +65,7 @@ class RobotBrain:
         self._clock_offset: float | None = None
         self._clock_offsets: deque[float] = deque(maxlen=CLOCK_OFFSET_HISTORY_LENGTH)
         self._hardware_time: float | None = None
+        self._core_millis: deque[float] = deque()
         self._use_espresso = use_espresso
         if enable_esp_on_startup:
             rosys.on_startup(self.enable_esp)
@@ -81,6 +88,20 @@ class RobotBrain:
     @property
     def is_ready(self) -> bool:
         return self._hardware_time is not None
+
+    @property
+    def loop_period(self) -> float | None:
+        """Mean period of Lizard's main loop over the last seconds, in seconds; ``None`` until two core messages arrived."""
+        if len(self._core_millis) < 2:
+            return None
+        return (self._core_millis[-1] - self._core_millis[0]) / (len(self._core_millis) - 1) / 1000
+
+    @property
+    def max_loop_period(self) -> float | None:
+        """Longest period of Lizard's main loop over the last seconds, in seconds; ``None`` until two core messages arrived."""
+        if len(self._core_millis) < 2:
+            return None
+        return max(b - a for a, b in pairwise(self._core_millis)) / 1000
 
     def developer_ui(self) -> None:
         version_select: ui.select
@@ -173,6 +194,8 @@ class RobotBrain:
 
         ui.label().bind_text_from(self, 'clock_offset', lambda offset: f'Clock offset: {offset or 0:.3f} s')
         ui.label().bind_text_from(self, 'is_ready', lambda ready: f'Ready: {ready}')
+        ui.label().bind_text_from(self, 'loop_period', lambda period: f'Loop period: {_format_ms(period)}')
+        ui.label().bind_text_from(self, 'max_loop_period', lambda period: f'Max loop period: {_format_ms(period)}')
 
     async def send_heartbeat(self) -> None:
         """Send a ``core.keep_alive()`` command to the microcontroller to let it know that RoSys is still running."""
@@ -218,6 +241,7 @@ class RobotBrain:
             hardware_time: float | None = None
             if first == 'core':
                 millis = float(words.pop(0))
+                self._record_core_millis(millis)
                 self.CORE_MESSAGE_RECEIVED.emit(millis)
                 if self.clock_offset is None:
                     continue
@@ -244,6 +268,13 @@ class RobotBrain:
         await self.lizard_firmware.read_core_checksum()
         if self.lizard_firmware.checksums_match is False:
             rosys.notify('Lizard startup code is outdated. Please configure.', 'negative', log_level=logging.WARNING)
+
+    def _record_core_millis(self, millis: float) -> None:
+        if self._core_millis and millis < self._core_millis[-1]:
+            self._core_millis.clear()
+        self._core_millis.append(millis)
+        while self._core_millis[0] < millis - LOOP_PERIOD_WINDOW_MS:
+            self._core_millis.popleft()
 
     def _handle_clock_offset(self, offset: float) -> None:
         if self._clock_offset is not None and abs(offset - self._clock_offset) > 0.1:
@@ -396,3 +427,7 @@ def check(line: str | None) -> str:
     if checksum != check_:
         return ''
     return line
+
+
+def _format_ms(seconds: float | None) -> str:
+    return '-' if seconds is None else f'{seconds * 1000:.0f} ms'
