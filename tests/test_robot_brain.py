@@ -108,7 +108,7 @@ async def test_loop_period(robot_brain: RobotBrain) -> None:
 
     # the spacing of the core timestamps is the loop period
     communication.incoming.extend(f'core {millis}' for millis in (100, 110, 120, 180, 190))
-    await forward(seconds=0.5)
+    await forward(seconds=0.5)  # NOTE: pauses between batches stay below CORE_MESSAGE_TIMEOUT
     assert robot_brain.get_mean_loop_period() == pytest.approx(0.0225)
     assert robot_brain.get_max_loop_period() == pytest.approx(0.060)
 
@@ -124,6 +124,13 @@ async def test_loop_period(robot_brain: RobotBrain) -> None:
     assert robot_brain.get_mean_loop_period() is None
     communication.incoming.append('core 110')
     await forward(seconds=0.5)
+    assert robot_brain.get_max_loop_period() == pytest.approx(0.010)
+
+    # a gap in the stream, e.g. a host-side stall, starts a fresh window instead of counting as a long period
+    await forward(seconds=5.0)
+    communication.incoming.extend(f'core {millis}' for millis in (5200, 5210, 5220))
+    await forward(seconds=0.5)
+    assert robot_brain.get_mean_loop_period() == pytest.approx(0.010)
     assert robot_brain.get_max_loop_period() == pytest.approx(0.010)
 
     # once the core messages cease, the loop period is unknown again

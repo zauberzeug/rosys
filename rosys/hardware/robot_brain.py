@@ -12,6 +12,7 @@ from .lizard_firmware import LizardFirmware
 
 CLOCK_OFFSET_HISTORY_LENGTH = 100
 LOOP_PERIOD_WINDOW = 10.0  # seconds of core timestamps kept for the loop period statistics
+LOOP_PERIOD_HISTORY_LENGTH = 10_000  # bounds the window even if the core timestamps stop advancing
 CORE_MESSAGE_TIMEOUT = 1.0  # seconds without core messages after which the loop period is unknown
 
 
@@ -26,8 +27,9 @@ class RobotBrain:
     If the offset changes significantly, a notification is sent and the offset history is cleared.
 
     Lizard prints one core message per iteration of its main loop, so the spacing of their hardware timestamps
-    is the loop period. ``get_mean_loop_period()`` and ``get_max_loop_period()`` compute the statistics over the
-    last ten seconds and the developer UI shows them; a loop that keeps missing its 10 ms deadline is overloaded.
+    is the loop period. ``get_mean_loop_period()`` and ``get_max_loop_period()`` compute the statistics over a sliding
+    window of ``LOOP_PERIOD_WINDOW`` seconds and the developer UI shows them; a loop that keeps missing its 10 ms
+    deadline is overloaded.
     A lost line, whether dropped on the wire or by a stalled host, shows up as an outlier in the maximum only.
     """
 
@@ -67,7 +69,7 @@ class RobotBrain:
         self._clock_offset: float | None = None
         self._clock_offsets: deque[float] = deque(maxlen=CLOCK_OFFSET_HISTORY_LENGTH)
         self._hardware_time: float | None = None
-        self._core_times: deque[float] = deque()
+        self._core_times: deque[float] = deque(maxlen=LOOP_PERIOD_HISTORY_LENGTH)
         self._last_core_message_time: float | None = None
         self._use_espresso = use_espresso
         if enable_esp_on_startup:
@@ -288,12 +290,16 @@ class RobotBrain:
             rosys.notify('Lizard startup code is outdated. Please configure.', 'negative', log_level=logging.WARNING)
 
     def _record_core_time(self, core_time: float) -> None:
-        if self._core_times and core_time < self._core_times[-1]:
+        now = rosys.time()
+        restarted = bool(self._core_times) and core_time < self._core_times[-1]
+        resumed = (self._last_core_message_time is not None
+                   and now - self._last_core_message_time >= CORE_MESSAGE_TIMEOUT)
+        if restarted or resumed:  # NOTE: a gap in the stream, e.g. a host-side stall, is not a long period
             self._core_times.clear()
         self._core_times.append(core_time)
         while self._core_times[0] < core_time - LOOP_PERIOD_WINDOW:
             self._core_times.popleft()
-        self._last_core_message_time = rosys.time()
+        self._last_core_message_time = now
 
     def _handle_clock_offset(self, offset: float) -> None:
         if self._clock_offset is not None and abs(offset - self._clock_offset) > 0.1:
