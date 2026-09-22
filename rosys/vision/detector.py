@@ -141,7 +141,6 @@ class Detector(abc.ABC):
         """Runs detections on all images and fills each ``image.detections`` property.
 
         Result order matches ``images``.
-
         """
 
     @abc.abstractmethod
