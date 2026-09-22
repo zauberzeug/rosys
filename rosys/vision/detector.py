@@ -138,9 +138,10 @@ class Detector(abc.ABC):
                            source: str | None = None,
                            creation_date: datetime | str | None = None,
                            ) -> list[Detections] | None:
-        """Runs detections on all images in one request and fills each ``image.detections`` property.
+        """Runs detections on all images and fills each ``image.detections`` property.
 
-        Same semantics as ``detect``; the result is ordered like ``images``.
+        Result order matches `images`.
+
         """
 
     @abc.abstractmethod
