@@ -144,7 +144,11 @@ class RtspDevice(CaptureDevice):
         async def stream() -> AsyncGenerator[ImageArray, None]:
             nonlocal capture_process
             self.log.debug('[%s] Starting gstreamer pipeline for %s', self._mac, url)
-            command = f'gst-launch-1.0 --quiet rtspsrc location="{url}" latency=0 protocols=tcp ! rtp{self._avdec}depay ! avdec_{self._avdec} ! videoconvert ! video/x-raw,format=I420 ! queue max-size-buffers=1 leaky=downstream ! gdppay ! fdsink sync=false'
+            hardware = await nvdec_is_available()
+            # no parser between depay and nvv4l2decoder: an h265parse there negotiates a stream format the
+            # hardware decoder accepts and then silently never emits a frame
+            decoder = 'nvv4l2decoder ! nvvidconv' if hardware else f'avdec_{self._avdec} ! videoconvert'
+            command = f'gst-launch-1.0 --quiet rtspsrc location="{url}" latency=0 protocols=tcp ! rtp{self._avdec}depay ! {decoder} ! video/x-raw,format=I420 ! queue max-size-buffers=1 leaky=downstream ! gdppay ! fdsink sync=false'
             self.log.debug('[%s] Running command: %s', self._mac, command)
             process = await asyncio.create_subprocess_exec(
                 *shlex.split(command),
@@ -160,12 +164,23 @@ class RtspDevice(CaptureDevice):
 
             width = None
             height = None
+            delivered_a_frame = False
             while process.returncode is None:
                 assert process.stdout is not None
 
                 try:
-                    packet = await GDPPacket.read(process.stdout)
+                    read = GDPPacket.read(process.stdout)
+                    # a hardware pipeline that cannot reach the decoder prerolls and then stalls silently,
+                    # so the first frame is bounded to keep an unusable pipeline from blocking the camera
+                    packet = await (asyncio.wait_for(read, timeout=NVDEC_FIRST_FRAME_TIMEOUT)
+                                    if hardware and not delivered_a_frame else read)
                 except asyncio.exceptions.IncompleteReadError:
+                    break
+                except TimeoutError:
+                    self.log.warning('[%s] hardware decoding produced no frame within %.0f s; '
+                                     'falling back to software decoding', self._mac, NVDEC_FIRST_FRAME_TIMEOUT)
+                    disable_nvdec()
+                    process.terminate()
                     break
 
                 if packet.payload_type == GDPPayloadType.CAPS:
@@ -184,6 +199,7 @@ class RtspDevice(CaptureDevice):
                 elif packet.payload_type == GDPPayloadType.BUFFER:
                     assert width is not None and height is not None
 
+                    delivered_a_frame = True
                     yield i420_to_rgb(packet.payload, width, height)
 
             try:
@@ -334,6 +350,39 @@ images. A small-resolution substream has small frames, so this stays far below o
 stream rather than being sized for the largest.
 """
 F_SETPIPE_SZ = 1031
+
+
+NVDEC_FIRST_FRAME_TIMEOUT = 15.0
+"""How long a hardware pipeline may negotiate caps without delivering a frame before it counts as broken.
+
+A decoder that cannot reach the hardware still prerolls and then stalls forever rather than failing, so a
+timeout is the only signal that distinguishes it from a healthy but slow start.
+"""
+
+_nvdec_available: bool | None = None
+
+
+async def nvdec_is_available() -> bool:
+    """Whether to build a hardware-decoding pipeline.
+
+    Presence of the element is necessary but not sufficient: it also loads where it cannot reach the
+    hardware, so :func:`disable_nvdec` retires it when a pipeline proves unable to deliver frames.
+    """
+    global _nvdec_available  # noqa: PLW0603
+    if _nvdec_available is None:
+        try:
+            process = await asyncio.create_subprocess_exec(
+                'gst-inspect-1.0', 'nvv4l2decoder',
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            _nvdec_available = await asyncio.wait_for(process.wait(), timeout=10) == 0
+        except (OSError, TimeoutError):
+            _nvdec_available = False
+    return _nvdec_available
+
+
+def disable_nvdec() -> None:
+    global _nvdec_available  # noqa: PLW0603
+    _nvdec_available = False
 
 
 @dataclass(slots=True, kw_only=True)

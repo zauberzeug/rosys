@@ -37,6 +37,7 @@ from rosys.vision.mjpeg_camera.motec_mjpeg_device import MotecMjpegDevice
 from rosys.vision.mjpeg_camera.openipc_zauberzeug_mjpeg_device import OpenIpcZauberzeugMjpegDevice
 from rosys.vision.mjpeg_camera.stream_channel import EndReason, Frame, open_channel
 from rosys.vision.reconnect import MAX_RECONNECT_INTERVAL, MIN_RECONNECT_INTERVAL
+from rosys.vision.rtsp_camera import rtsp_device as rtsp_device_module
 from rosys.vision.rtsp_camera.rtsp_device import GDPPACKET_FORMAT, GDPPayloadType, RtspDevice, i420_to_rgb
 from rosys.vision.simulated_camera.simulated_device import SimulatedDevice
 from rosys.vision.usb_camera.usb_device import UsbDevice, find_device_node
@@ -1615,3 +1616,55 @@ async def test_rtsp_device_follows_a_resolution_change(rosys_integration):
             await device.shutdown()
 
     assert shapes == [(720, 1280, 3), (480, 854, 3), (360, 640, 3)]
+
+
+@pytest.fixture
+def _forget_nvdec_probe():
+    """Reset the cached decoder probe, which otherwise leaks between tests."""
+    rtsp_device_module._nvdec_available = None
+    yield
+    rtsp_device_module._nvdec_available = None
+
+
+@pytest.mark.usefixtures('_forget_nvdec_probe')
+@pytest.mark.parametrize('available,expected', [(True, 'nvv4l2decoder ! nvvidconv'), (False, 'avdec_h264 ! videoconvert')])
+async def test_rtsp_device_picks_a_decoder_for_the_host(rosys_integration, available: bool, expected: str):
+    """A host without the hardware decoder must still stream, since RoSys also runs on non-Jetson machines."""
+    process = FakeGstreamerProcess()
+    create = AsyncMock(return_value=process)
+
+    with patch.object(rtsp_device_module, '_nvdec_available', available), \
+            patch('asyncio.create_subprocess_exec', create):
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: None)
+        try:
+            await wait_in_real_time(lambda: create.await_count > 0, message='expected a gstreamer process')
+        finally:
+            await device.shutdown()
+
+    assert expected in ' '.join(create.await_args.args)
+
+
+@pytest.mark.usefixtures('_forget_nvdec_probe')
+async def test_rtsp_device_falls_back_when_hardware_decoding_stays_silent(rosys_integration, vision_log):
+    """A decoder that negotiates caps and then never delivers must not strand the camera on a dead pipeline."""
+    commands: list[str] = []
+
+    async def spawn(*args, **kwargs):
+        commands.append(' '.join(args))
+        return FakeGstreamerProcess()
+
+    with patch.object(rtsp_device_module, '_nvdec_available', True), \
+            patch.object(rtsp_device_module, 'NVDEC_FIRST_FRAME_TIMEOUT', 0.1), \
+            patch('asyncio.create_subprocess_exec', spawn):
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: None, reconnect_interval=0.0)
+        try:
+            await forward_until(lambda: any('avdec_h264' in command for command in commands),
+                                message='expected a fallback to software decoding')
+            retired = rtsp_device_module._nvdec_available
+        finally:
+            await device.shutdown()
+
+    assert 'nvv4l2decoder' in commands[0], 'expected the first attempt to use the hardware decoder'
+    assert retired is False, 'expected the probe to stay retired rather than be retried per session'
