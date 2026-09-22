@@ -40,6 +40,7 @@ _DEFAULT_PAYLOAD_BYTES = 1024
 
 _DROP_WARNING_INTERVAL = 10.0  # seconds between 'queue full' warnings, so drops do not spam the log
 
+
 class _QueuedMessage(NamedTuple):
     """A queued entry awaiting the background writer.
 
