@@ -69,6 +69,22 @@ class DetectorSimulation(Detector):
         self.NEW_DETECTIONS.emit(image)
         return image.get_detections(self.name)
 
+    async def batch_detect(self,
+                           images: list[Image],
+                           *,
+                           autoupload: Autoupload = Autoupload.FILTERED,
+                           tags: list[str] | None = None,
+                           source: str | None = None,
+                           creation_date: datetime | str | None = None,
+                           ) -> list[Detections] | None:
+        results: list[Detections] = []
+        for image in images:
+            detections = await self.detect(image, autoupload=autoupload, tags=tags,
+                                           source=source, creation_date=creation_date)
+            assert detections is not None
+            results.append(detections)
+        return results
+
     async def upload(self,
                      image: Image,
                      *,
