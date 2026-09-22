@@ -11,7 +11,8 @@ from .esp_pins import EspPins
 from .lizard_firmware import LizardFirmware
 
 CLOCK_OFFSET_HISTORY_LENGTH = 100
-LOOP_PERIOD_WINDOW_MS = 10_000
+LOOP_PERIOD_WINDOW = 10.0  # seconds of core timestamps kept for the loop period statistics
+CORE_MESSAGE_TIMEOUT = 1.0  # seconds without core messages after which the loop period is unknown
 
 
 class RobotBrain:
@@ -65,7 +66,8 @@ class RobotBrain:
         self._clock_offset: float | None = None
         self._clock_offsets: deque[float] = deque(maxlen=CLOCK_OFFSET_HISTORY_LENGTH)
         self._hardware_time: float | None = None
-        self._core_millis: deque[float] = deque()
+        self._core_times: deque[float] = deque()
+        self._last_core_message_time: float | None = None
         self._use_espresso = use_espresso
         if enable_esp_on_startup:
             rosys.on_startup(self.enable_esp)
@@ -91,17 +93,28 @@ class RobotBrain:
 
     @property
     def loop_period(self) -> float | None:
-        """Mean period of Lizard's main loop over the last seconds, in seconds; ``None`` until two core messages arrived."""
-        if len(self._core_millis) < 2:
+        """Mean period of Lizard's main loop over the last seconds, in seconds.
+
+        ``None`` until two core messages arrived and again once they cease, e.g. because the ESP is disabled or hangs.
+        """
+        if not self._has_recent_core_messages():
             return None
-        return (self._core_millis[-1] - self._core_millis[0]) / (len(self._core_millis) - 1) / 1000
+        return (self._core_times[-1] - self._core_times[0]) / (len(self._core_times) - 1)
 
     @property
     def max_loop_period(self) -> float | None:
-        """Longest period of Lizard's main loop over the last seconds, in seconds; ``None`` until two core messages arrived."""
-        if len(self._core_millis) < 2:
+        """Longest period of Lizard's main loop over the last seconds, in seconds.
+
+        ``None`` until two core messages arrived and again once they cease, e.g. because the ESP is disabled or hangs.
+        """
+        if not self._has_recent_core_messages():
             return None
-        return max(b - a for a, b in pairwise(self._core_millis)) / 1000
+        return max(b - a for a, b in pairwise(self._core_times))
+
+    def _has_recent_core_messages(self) -> bool:
+        return (len(self._core_times) >= 2
+                and self._last_core_message_time is not None
+                and rosys.time() - self._last_core_message_time < CORE_MESSAGE_TIMEOUT)
 
     def developer_ui(self) -> None:
         version_select: ui.select
@@ -241,7 +254,7 @@ class RobotBrain:
             hardware_time: float | None = None
             if first == 'core':
                 millis = float(words.pop(0))
-                self._record_core_millis(millis)
+                self._record_core_time(millis / 1000)
                 self.CORE_MESSAGE_RECEIVED.emit(millis)
                 if self.clock_offset is None:
                     continue
@@ -269,12 +282,13 @@ class RobotBrain:
         if self.lizard_firmware.checksums_match is False:
             rosys.notify('Lizard startup code is outdated. Please configure.', 'negative', log_level=logging.WARNING)
 
-    def _record_core_millis(self, millis: float) -> None:
-        if self._core_millis and millis < self._core_millis[-1]:
-            self._core_millis.clear()
-        self._core_millis.append(millis)
-        while self._core_millis[0] < millis - LOOP_PERIOD_WINDOW_MS:
-            self._core_millis.popleft()
+    def _record_core_time(self, core_time: float) -> None:
+        if self._core_times and core_time < self._core_times[-1]:
+            self._core_times.clear()
+        self._core_times.append(core_time)
+        while self._core_times[0] < core_time - LOOP_PERIOD_WINDOW:
+            self._core_times.popleft()
+        self._last_core_message_time = rosys.time()
 
     def _handle_clock_offset(self, offset: float) -> None:
         if self._clock_offset is not None and abs(offset - self._clock_offset) > 0.1:
