@@ -62,12 +62,7 @@ class DetectorSimulation(Detector):
                      ) -> Detections | None:
         is_blocked = image.camera_id in self.blocked_cameras
         await rosys.sleep(self.detection_delay)
-        image.set_detections(self.name, Detections())
-        if not is_blocked:
-            self.update_simulated_objects(image)
-            self.detect_from_simulated_objects(image)
-        self.NEW_DETECTIONS.emit(image)
-        return image.get_detections(self.name)
+        return self._detect_single_image(image, is_blocked)
 
     async def batch_detect(self,
                            images: list[Image],
@@ -77,13 +72,9 @@ class DetectorSimulation(Detector):
                            source: str | None = None,
                            creation_date: datetime | str | None = None,
                            ) -> list[Detections] | None:
-        results: list[Detections] = []
-        for image in images:
-            detections = await self.detect(image, autoupload=autoupload, tags=tags,
-                                           source=source, creation_date=creation_date)
-            assert detections is not None
-            results.append(detections)
-        return results
+        blocked = [image.camera_id in self.blocked_cameras for image in images]
+        await rosys.sleep(self.detection_delay)
+        return [self._detect_single_image(image, is_blocked) for image, is_blocked in zip(images, blocked, strict=True)]
 
     async def upload(self,
                      image: Image,
@@ -164,3 +155,13 @@ class DetectorSimulation(Detector):
                     height=image_points[:, 1].max() - image_points[:, 1].min() + self.noise * np.random.randn(),
                     uuid=obj.uuid,
                 ))
+
+    def _detect_single_image(self, image: Image, is_blocked: bool) -> Detections:
+        image.set_detections(self.name, Detections())
+        if not is_blocked:
+            self.update_simulated_objects(image)
+            self.detect_from_simulated_objects(image)
+        self.NEW_DETECTIONS.emit(image)
+        detections = image.get_detections(self.name)
+        assert detections is not None
+        return detections
