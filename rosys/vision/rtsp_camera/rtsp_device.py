@@ -16,8 +16,8 @@ from typing import Literal
 import numpy as np
 
 from ... import rosys
-from ...vision.image import ImageArray
-from ..capture_device import CaptureDevice, CaptureState
+from ..capture_device import CaptureDevice, CaptureState, ImageDataHandler
+from ..image import ImageArray
 from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
 from .arkvision_rtsp_interface import ArkVisionRtspInterface
 from .jovision_rtsp_interface import JovisionInterface
@@ -27,7 +27,7 @@ from .vendors import VendorType, mac_to_url, mac_to_vendor
 class RtspDevice(CaptureDevice):
 
     def __init__(self, mac: str, ip: str | None = None, *,
-                 substream: int, fps: int, on_new_image_data: Callable[[ImageArray, float], Awaitable | None],
+                 substream: int, fps: int, on_new_image_data: ImageDataHandler,
                  on_connect: Callable[[], Awaitable | None] | None = None,
                  avdec: Literal['h264', 'h265'] = 'h264',
                  reconnect_interval: float = 3.0) -> None:

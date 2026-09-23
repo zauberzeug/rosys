@@ -128,6 +128,9 @@ CPU-bound:
 If you need to do some heavy computation and want to spawn another process,
 you should wrap the code in a function and await it with `await rosys.run.cpu_bound(...)`.
 
+RoSys starts helper processes (MJPEG stream workers, path planning) with the `spawn` start method, which re-imports your main script in the child.
+A script that creates these at import time must therefore put its startup under `if __name__ == '__main__':`, or the helpers start recursively.
+
 ### Safety
 
 Python (and Linux) is fast enough for most high-level logic, but has no realtime guarantees.

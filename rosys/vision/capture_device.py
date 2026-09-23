@@ -8,6 +8,7 @@ from typing import ClassVar
 from nicegui import background_tasks
 
 from .. import rosys
+from .image import ImageArray
 from .reconnect import MAX_RECONNECT_INTERVAL, clamp_reconnect_interval
 
 
@@ -17,6 +18,10 @@ class CaptureState(enum.Enum):
     STREAMING = enum.auto()
     REFUSED = enum.auto()  # camera answered without a stream; loop backs off before trying again
     STOPPED = enum.auto()
+
+
+ImageDataHandler = Callable[[ImageArray, float], Awaitable | None]
+"""Receives a decoded frame together with its capture timestamp."""
 
 
 class CaptureDevice(abc.ABC):

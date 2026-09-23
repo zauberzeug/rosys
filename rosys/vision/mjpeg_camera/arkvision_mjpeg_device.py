@@ -1,7 +1,8 @@
+
 from collections.abc import Awaitable, Callable
 
 from .arkvision_settings_interface import ArkVisionSettingsInterface
-from .mjpeg_device import CameraAddressUnknown, MjpegDevice
+from .mjpeg_device import CameraAddressUnknown, ImageDataHandler, MjpegDevice
 from .vendors import VendorType, mac_to_vendor
 
 
@@ -12,7 +13,7 @@ class ArkVisionMjpegDevice(MjpegDevice):
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 on_new_image_data: ImageDataHandler,
                  on_connect: Callable[[], Awaitable | None] | None = None,
                  reconnect_interval: float = 3.0) -> None:
         vendor = mac_to_vendor(mac)

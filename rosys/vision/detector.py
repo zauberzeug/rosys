@@ -130,6 +130,20 @@ class Detector(abc.ABC):
         """
 
     @abc.abstractmethod
+    async def batch_detect(self,
+                           images: list[Image],
+                           *,
+                           autoupload: Autoupload = Autoupload.FILTERED,
+                           tags: list[str] | None = None,
+                           source: str | None = None,
+                           creation_date: datetime | str | None = None,
+                           ) -> list[Detections] | None:
+        """Runs detections on all images and fills each ``image.detections`` property.
+
+        Result order matches ``images``.
+        """
+
+    @abc.abstractmethod
     async def upload(self,
                      image: Image,
                      *,

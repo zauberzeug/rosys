@@ -3,7 +3,7 @@ from dataclasses import dataclass
 
 import httpx
 
-from .mjpeg_device import MjpegDevice
+from .mjpeg_device import ImageDataHandler, MjpegDevice
 from .vendors import VendorType, mac_to_vendor
 
 
@@ -29,14 +29,14 @@ class AxisMjpegDevice(MjpegDevice):
                  index: int | None = None,
                  username: str | None = None,
                  password: str | None = None,
-                 on_new_image_data: Callable[[bytes, float], Awaitable | None],
+                 on_new_image_data: ImageDataHandler,
                  on_connect: Callable[[], Awaitable | None] | None = None,
                  reconnect_interval: float = 3.0) -> None:
         vendor = mac_to_vendor(mac)
         if vendor != VendorType.AXIS:
             raise ValueError(f'AxisMjpegDevice can only be used with AXIS devices. Got {vendor} for mac="{mac}"')
 
-        self.axis_settings = AxisSettings(fps=6, resolution=(640, 480), mirrored=False)
+        self.axis_settings = AxisSettings(fps=10, resolution=(640, 480), mirrored=False)
 
         super().__init__(mac, ip, index=index, username=username, password=password,
                          on_new_image_data=on_new_image_data, on_connect=on_connect,

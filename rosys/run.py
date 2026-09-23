@@ -27,16 +27,9 @@ log = logging.getLogger('rosys.run')
 
 
 async def io_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R | None:
-    if is_stopping():
-        return None
-    try:
-        return await run.io_bound(callback, *args, **kwargs)
-    except RuntimeError as e:
-        if 'cannot schedule new futures after shutdown' not in str(e):
-            raise
-    except asyncio.exceptions.CancelledError:
-        pass
-    return None
+    # NOTE: deliberately a wrapper, not an alias: rosys owns the `R | None` contract and decides here what to do
+    # when NiceGUI 4.0 starts raising CancelledError instead of returning None
+    return await run.io_bound(callback, *args, **kwargs)
 
 
 def awaitable(func: Callable) -> Callable:
@@ -48,17 +41,8 @@ def awaitable(func: Callable) -> Callable:
 
 
 async def cpu_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R | None:
-    if is_stopping():
-        return None
     with cpu():
-        try:
-            return await run.cpu_bound(callback, *args, **kwargs)
-        except RuntimeError as e:
-            if 'cannot schedule new futures after shutdown' not in str(e):
-                raise
-        except asyncio.exceptions.CancelledError:
-            pass
-    return None
+        return await run.cpu_bound(callback, *args, **kwargs)
 
 
 @contextmanager
