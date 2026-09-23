@@ -96,7 +96,10 @@ class Automator:
 
     @property
     def is_pending(self) -> bool:
-        """whether an automation has been started but not had its first turn yet (it counts as stopped meanwhile)"""
+        """whether an automation is scheduled but has neither had its first turn nor been stopped yet
+
+        A pending automation counts as stopped.
+        """
         return self.automation is not None and self.automation.is_pending
 
     async def _handle_interrupt(self, automation: Automation | None, *, stop: bool = False) -> None:
@@ -126,7 +129,10 @@ class Automator:
         if not self.enabled:
             coro.close()
             return
+        previous = self.automation
         self.stop(because='new automation starts')
+        if self.automation is not previous:
+            self.stop(because='new automation starts')  # a subscriber started another automation re-entrantly
         self.last_exception = None
         automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
         self.automation = automation
