@@ -7,14 +7,7 @@ from mcap.reader import make_reader
 from mcap.writer import Writer
 
 import rosys
-from rosys.analysis.recording import (
-    MERGE_METADATA_NAME,
-    METADATA_NAME,
-    McapRecorder,
-    TopicSchema,
-    is_auto_named,
-    merge_recordings,
-)
+from rosys.analysis.recording import MERGE_METADATA_NAME, METADATA_NAME, McapRecorder, TopicSchema, merge_recordings
 from rosys.analysis.recording.merging import merge_into_place
 
 NS = 1_000_000_000
@@ -26,7 +19,7 @@ def _schema(properties: dict | None = None) -> TopicSchema:
 
 
 def _recorder(mcap_dir: Path) -> McapRecorder:
-    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder = McapRecorder(output_dir=mcap_dir, max_part_duration=60, auto_start=False)
     recorder.add_topic('/test', _schema())
     return recorder
 
@@ -39,7 +32,9 @@ async def _record(recorder: McapRecorder, parts: list[list[int]], **start_argume
     :param start_arguments: passed on to ``start()``.
     :return: the parts of the run, oldest first.
     """
-    run = recorder.start(**start_arguments)
+    finished: list[Path] = []
+    recorder.RECORDING_STOPPED.subscribe(finished.append)
+    recorder.start(**start_arguments)
     for index, values in enumerate(parts):
         if index:
             rosys.set_time(rosys.time() + 61)
@@ -47,7 +42,31 @@ async def _record(recorder: McapRecorder, parts: list[list[int]], **start_argume
             recorder.log_message('/test', json.dumps({'value': value}).encode())
         await recorder._flush()
     await recorder.stop()
-    return sorted(recorder.output_dir.glob(f'{run}_[0-9]*.mcap'))
+    await asyncio.sleep(0)  # the rotations emit from the writer thread onto the loop
+    recorder.RECORDING_STOPPED.unsubscribe(finished.append)
+    return finished
+
+
+def _write_source(path: Path, records: dict[str, dict], values: list[int]) -> Path:
+    """Write a finished recording carrying the given metadata records and values.
+
+    :param path: the MCAP file to write.
+    :param records: the JSON payload of each metadata record, by record name.
+    :param values: the values of the messages to write.
+    :return: ``path``.
+    """
+    with open(path, 'wb') as f:
+        writer = Writer(f)
+        writer.start()
+        for name, payload in records.items():
+            writer.add_metadata(name, {'json': json.dumps(payload)})
+        channel = writer.register_channel('/test', 'json', writer.register_schema('Test', 'jsonschema', b'{}'))
+        for index, value in enumerate(values):
+            log_time = int(rosys.time() * NS) + index
+            writer.add_message(channel, log_time=log_time, data=json.dumps({'value': value}).encode(),
+                               publish_time=log_time)
+        writer.finish()
+    return path
 
 
 def _values(path: Path) -> list:
@@ -66,7 +85,12 @@ def _records(path: Path) -> dict[str, dict]:
 
 
 def _files(mcap_dir: Path) -> set[str]:
-    return {path.name for path in mcap_dir.iterdir()}
+    """Every file below ``mcap_dir``, named relative to it."""
+    return _names(mcap_dir, [path for path in mcap_dir.rglob('*') if path.is_file()])
+
+
+def _names(mcap_dir: Path, paths: list[Path]) -> set[str]:
+    return {str(path.relative_to(mcap_dir)) for path in paths}
 
 
 async def test_a_merged_recording_keeps_the_context_of_its_sources(mcap_dir: Path) -> None:
@@ -139,6 +163,33 @@ async def test_merging_merged_recordings_keeps_every_context(mcap_dir: Path) -> 
         == [1, 2]
 
 
+async def test_a_merge_carries_every_metadata_record_over(mcap_dir: Path) -> None:
+    """A source's records beyond the recorder's own, such as a calibration, survive the merge."""
+    source = _write_source(mcap_dir / 'source.mcap', {METADATA_NAME: {'run_id': 1}, 'calibration': {'f': 1.5}}, [0])
+
+    target = mcap_dir / 'merged.mcap'
+    merge_recordings([source], target)
+
+    records = _records(target)
+    assert set(records) == {METADATA_NAME, 'calibration', MERGE_METADATA_NAME}
+    assert records['calibration'] == {'f': 1.5}
+
+
+async def test_differing_records_of_the_same_name_are_numbered_apart(mcap_dir: Path) -> None:
+    """Two sources with different calibrations each keep theirs; a shared one is written once."""
+    first = _write_source(mcap_dir / 'first.mcap', {'calibration': {'f': 1.5}, 'robot': {'id': 'f21'}}, [0])
+    second = _write_source(mcap_dir / 'second.mcap', {'calibration': {'f': 2.5}, 'robot': {'id': 'f21'}}, [1])
+
+    target = mcap_dir / 'merged.mcap'
+    merge_recordings([first, second], target)
+
+    records = _records(target)
+    assert records['calibration'] == {'f': 1.5}
+    assert records['calibration_2'] == {'f': 2.5}
+    assert records['robot'] == {'id': 'f21'}
+    assert 'robot_2' not in records
+
+
 async def test_a_topic_keeps_the_schema_each_source_recorded_it_with(mcap_dir: Path) -> None:
     """The same topic recorded before and after a schema change stays readable in both forms."""
     recorder = _recorder(mcap_dir)
@@ -165,7 +216,6 @@ async def test_a_run_merges_into_a_kept_recording_that_replaces_its_parts(mcap_d
     assert target == mcap_dir / 'mission_merged.mcap'
     assert _files(mcap_dir) == {'mission_merged.mcap'}
     assert _values(target) == [0, 1, 2]
-    assert not is_auto_named(target)
 
 
 async def test_a_run_with_an_unindexed_part_can_be_merged(mcap_dir: Path) -> None:
@@ -216,7 +266,7 @@ async def test_a_merge_never_overwrites_a_recording(mcap_dir: Path) -> None:
         merge_into_place(parts, existing)
 
     assert existing.read_bytes() == b'a recording of its own'
-    assert _files(mcap_dir) == {existing.name, *(part.name for part in parts)}
+    assert _files(mcap_dir) == _names(mcap_dir, [existing, *parts])
 
 
 async def test_a_failed_merge_keeps_its_sources(mcap_dir: Path) -> None:
@@ -228,7 +278,7 @@ async def test_a_failed_merge_keeps_its_sources(mcap_dir: Path) -> None:
     with pytest.raises(FileNotFoundError):
         await recorder.merge([*parts, vanished], 'merged')
 
-    assert _files(mcap_dir) == {part.name for part in parts}
+    assert _files(mcap_dir) == _names(mcap_dir, parts)
 
 
 async def test_a_merge_with_nothing_left_to_merge_keeps_its_sources(mcap_dir: Path) -> None:
@@ -239,19 +289,19 @@ async def test_a_merge_with_nothing_left_to_merge_keeps_its_sources(mcap_dir: Pa
     target = await recorder.merge(parts, 'merged', start_time_ns=int((rosys.time() + 3600) * NS))
 
     assert target is None
-    assert _files(mcap_dir) == {part.name for part in parts}
+    assert _files(mcap_dir) == _names(mcap_dir, parts)
 
 
-@pytest.mark.parametrize('name', ['20260911_120000_123456_merged_01', '../merged', 'sub/merged'])
-async def test_a_merged_name_must_be_a_kept_file_name(mcap_dir: Path, name: str) -> None:
-    """A merged recording cannot land outside the directory or read as a file the budget deletes first."""
+@pytest.mark.parametrize('name', ['../merged', 'sub/merged'])
+async def test_a_merged_name_must_be_a_plain_file_name(mcap_dir: Path, name: str) -> None:
+    """A merged recording cannot land outside the output directory."""
     recorder = _recorder(mcap_dir)
     parts = await _record(recorder, [[0], [1]])
 
     with pytest.raises(ValueError):
         await recorder.merge(parts, name)
 
-    assert _files(mcap_dir) == {part.name for part in parts}
+    assert _files(mcap_dir) == _names(mcap_dir, parts)
 
 
 async def test_the_live_recording_cannot_be_merged(mcap_dir: Path) -> None:

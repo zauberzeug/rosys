@@ -1,8 +1,12 @@
 """Merge MCAP recordings into one file, keeping the context they were recorded in."""
 import json
 import os
+from collections import defaultdict
+from collections.abc import Sequence
+from contextlib import ExitStack
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import BinaryIO
 from uuid import uuid4
 
 from mcap.reader import make_reader
@@ -62,9 +66,13 @@ def merge_into_place(sources: list[Path], target: Path, *, start_time_ns: int = 
 def merge_recordings(sources: list[Path], target: Path, *, start_time_ns: int = 0) -> int:
     """Write the messages of ``sources`` (in the given order) into ``target``.
 
-    The metadata of the sources is carried over, so a merged recording still says which
-    robot, run and mission it belongs to. Identical records are written once; sources
-    from different runs each keep their own, and so do the merges a merged source went through.
+    Every metadata record of the sources is carried over, so a merged recording still says which
+    robot, run and mission it belongs to. Identical records are written once; records of the same
+    name with different payloads are numbered ``<name>``, ``<name>_2``, ... (the merges a merged
+    source went through start at ``merge_2``, leaving ``merge`` to the merge at hand).
+
+    All sources are opened before anything is written, so a source the recorder's disk budget
+    deletes meanwhile stays readable and still lands in the result.
 
     Every source needs its summary index (see :func:`~.indexing.reindex`). Blocking I/O and
     ZSTD recompression; call via ``rosys.run.io_bound``.
@@ -77,18 +85,20 @@ def merge_recordings(sources: list[Path], target: Path, *, start_time_ns: int = 
     count = 0
     schema_ids: dict[tuple[str, str, bytes], int] = {}
     channel_ids: dict[tuple[str, str, int], int] = {}
-    with open(target, 'wb') as file:
-        writer = Writer(file, compression=CompressionType.ZSTD)
-        writer.start(profile='rosys', library='rosys-merge')
-        for name, payload in _collected_metadata(sources).items():
-            writer.add_metadata(name, payload)
-        writer.add_metadata(MERGE_METADATA_NAME, {'json': json.dumps({
-            'merged_at': datetime.now(tz=UTC).isoformat(),
-            'sources': [source.name for source in sources],
-            'trimmed': bool(start_time_ns),
-        })})
-        for source in sources:
-            with open(source, 'rb') as stream:
+    with ExitStack() as stack:
+        streams = [stack.enter_context(open(source, 'rb')) for source in sources]
+        with open(target, 'wb') as file:
+            writer = Writer(file, compression=CompressionType.ZSTD)
+            writer.start(profile='rosys', library='rosys-merge')
+            for name, payload in _collected_metadata(streams).items():
+                writer.add_metadata(name, payload)
+            writer.add_metadata(MERGE_METADATA_NAME, {'json': json.dumps({
+                'merged_at': datetime.now(tz=UTC).isoformat(),
+                'sources': [source.name for source in sources],
+                'trimmed': bool(start_time_ns),
+            })})
+            for stream in streams:
+                stream.seek(0)
                 for schema, channel, message in make_reader(stream).iter_messages(start_time=start_time_ns):
                     schema_id = 0
                     if schema is not None:
@@ -103,36 +113,34 @@ def merge_recordings(sources: list[Path], target: Path, *, start_time_ns: int = 
                     writer.add_message(channel_ids[channel_key], message.log_time, message.data,
                                        message.publish_time)
                     count += 1
-        writer.finish()
+            writer.finish()
     return count
 
 
-def _collected_metadata(sources: list[Path]) -> dict[str, dict[str, str]]:
-    """The distinct context and merge records of ``sources``, named for the merged file.
+def _collected_metadata(streams: Sequence[BinaryIO]) -> dict[str, dict[str, str]]:
+    """The distinct metadata records of ``streams``, named for the merged file.
 
-    A file carries its records ahead of its first chunk, so the scan stops there without
-    decompressing any data. Context records are numbered ``recording``, ``recording_2``, ...;
-    the merges a source went through keep their records as ``merge_2``, ``merge_3``, ...,
+    Records of the same name with identical payloads come out once; differing payloads are
+    numbered ``<name>``, ``<name>_2``, ... in the order they were found (a source's ``recording_2``
+    counts as a ``recording``). The ``merge`` records of the sources start at ``merge_2``,
     leaving ``merge`` to the merge at hand.
 
-    :param sources: the recordings to read.
-    :return: the records to write into the merged file.
+    :param streams: the open recordings to read; each is rewound first.
+    :return: the records to write into the merged file, by name.
     """
-    found: dict[str, list[dict[str, str]]] = {METADATA_NAME: [], MERGE_METADATA_NAME: []}
-    for source in sources:
-        with open(source, 'rb') as stream:
-            for record in StreamReader(stream, emit_chunks=True).records:
-                if isinstance(record, (Chunk, DataEnd)):
-                    break
-                if not isinstance(record, Metadata):
-                    continue
-                records = found.get(_base_name(record.name))
-                if records is not None and record.metadata not in records:
-                    records.append(record.metadata)
-    collected = {METADATA_NAME if index == 0 else f'{METADATA_NAME}_{index + 1}': payload
-                 for index, payload in enumerate(found[METADATA_NAME])}
-    collected.update({f'{MERGE_METADATA_NAME}_{index + 2}': payload
-                      for index, payload in enumerate(found[MERGE_METADATA_NAME])})
+    found: dict[str, list[dict[str, str]]] = defaultdict(list)
+    for stream in streams:
+        stream.seek(0)
+        for record in StreamReader(stream, emit_chunks=True).records:
+            if isinstance(record, (Chunk, DataEnd)):
+                break  # metadata sits ahead of the first chunk, so nothing is decompressed
+            if isinstance(record, Metadata) and record.metadata not in found[_base_name(record.name)]:
+                found[_base_name(record.name)].append(record.metadata)
+    collected: dict[str, dict[str, str]] = {}
+    for base, payloads in found.items():
+        first = 2 if base == MERGE_METADATA_NAME else 1
+        for number, payload in enumerate(payloads, start=first):
+            collected[base if number == 1 else f'{base}_{number}'] = payload
     return collected
 
 
