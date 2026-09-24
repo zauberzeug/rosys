@@ -11,7 +11,7 @@ from nicegui import app, ui
 
 from ... import rosys
 from .mcap_recorder import McapRecorder, RecordingInfo
-from .naming import run_and_part
+from .naming import run_and_part, run_start
 from .paths import DOWNLOAD_PATH, PAGE_PATH
 
 _RIGHT_INSET = 'var(--nicegui-default-padding)'  # clears Quasar's 10 px thumb and keeps the page's rhythm
@@ -30,9 +30,9 @@ class RecordingsPage:
     check) runs off the event loop via ``rosys.run.io_bound``; the render reads only a
     cached snapshot, so opening the page never blocks the loop on disk I/O.
 
-    A download endpoint at ``DOWNLOAD_PATH/{name}`` serves finished recordings over
-    HTTP (basename only, refusing the live file with 409 and missing files with 404),
-    so recordings can be fetched without scp.
+    A download endpoint at ``DOWNLOAD_PATH/{name}`` serves kept recordings and parts over
+    HTTP by basename from the top level or the parts folder (refusing the live file with
+    409 and missing files with 404), so recordings can be fetched without scp.
     """
 
     def __init__(self, recorder: McapRecorder, *, header: Callable[[], None] | None = None) -> None:
@@ -97,11 +97,10 @@ class RecordingsPage:
             The entry keeps the shape of a single recording's row, so a run and a lone
             recording sit on the same edges; only the parts inside are indented.
 
-            :param run: the name the run's files share.
-            :param parts: the run's files, newest first.
+            :param run: the name the run's parts share.
+            :param parts: the run's parts, newest first.
             """
-            first = datetime.fromtimestamp(min(part.mtime for part in parts), tz=local_tz)
-            last = datetime.fromtimestamp(max(part.mtime for part in parts), tz=local_tz)
+            first, last = _run_span(run, parts, local_tz)
             size = sum(part.size for part in parts)
             is_expanded = run in expanded_runs
 
@@ -163,8 +162,8 @@ class RecordingsPage:
         async def _merge_run(run: str, parts: list[RecordingInfo]) -> None:
             """Merge a run in the background, so closing the page does not cancel it.
 
-            :param run: the run whose files are merged.
-            :param parts: the run's files, newest first.
+            :param run: the run whose parts are merged.
+            :param parts: the run's parts, newest first.
             """
             rosys.background_tasks.create(_merge(run, [part.path for part in reversed(parts)]), name=f'merge {run}')
             await asyncio.sleep(0)  # lets the merge claim its name, so the list shows it in progress
@@ -173,8 +172,8 @@ class RecordingsPage:
         async def _merge(run: str, sources: list[Path]) -> None:
             """Merge the run's files and tell how it went.
 
-            :param run: the run whose files are merged.
-            :param sources: the run's files, oldest first.
+            :param run: the run whose parts are merged.
+            :param sources: the run's parts, oldest first.
             """
             try:
                 target = await recorder.merge(sources, _merged_name(run))
@@ -246,7 +245,7 @@ class RecordingsPage:
         def _change_token() -> tuple[tuple[Path, ...], Path | None, frozenset[str]]:
             """A cheap change token — the recording paths, the live file and the merges in progress.
 
-            Both accessors glob the output directory, so this runs off the event loop.
+            Both accessors glob the recorder's folders, so this runs off the event loop.
             """
             return tuple(recorder.recordings), recorder.current_recording, recorder.merging
 
@@ -271,8 +270,8 @@ class RecordingsPage:
 def _group_by_run(infos: list[RecordingInfo]) -> list[tuple[str | None, list[RecordingInfo]]]:
     """Group the files that belong to the same run, keeping the order of their newest file.
 
-    A run's files are the parts the recorder numbered apart while rotating; every other
-    file (a renamed, merged or preserved recording) forms an entry of its own.
+    A run's files are the parts the recorder numbered apart while rotating; every kept
+    recording (renamed, merged or preserved) forms an entry of its own.
 
     :param infos: the recordings to group, in display order.
     :return: one entry per run with its parts, the highest part number first; ``None`` as the
@@ -296,33 +295,49 @@ def _group_by_run(infos: list[RecordingInfo]) -> list[tuple[str | None, list[Rec
     return entries
 
 
+def _run_span(run: str, parts: list[RecordingInfo], local_tz: timezone) -> tuple[datetime, datetime]:
+    """When a run started and when its newest part was last written, in the viewer's zone.
+
+    A part's mtime is when it was rotated out, so the start comes from the run's name.
+
+    :param run: the name the run's parts share.
+    :param parts: the run's parts.
+    :param local_tz: the timezone to show the span in.
+    :return: the start and the end of the span.
+    """
+    first = run_start(run).astimezone(local_tz)
+    last = datetime.fromtimestamp(max(part.mtime for part in parts), tz=local_tz)
+    return first, last
+
+
 def _merged_name(run: str) -> str:
-    """The name a run takes once merged, which never reads as one of the recorder's own files."""
+    """The name a run takes once merged."""
     return f'{run}_merged'
 
 
 def _download_response(recorder: McapRecorder, name: str) -> Response:
     """Build the HTTP response for a recording download request.
 
-    Serves a finished recording by basename only (no path traversal), refusing the
-    live file with 409 and anything missing, non-``.mcap``, or containing a NUL byte
-    with 404.
+    Serves a kept recording or a part by basename only (no path traversal), looked up
+    at the top level first and then in the parts folder, refusing the live file with
+    409 and anything missing, non-``.mcap``, or containing a NUL byte with 404.
 
-    :param recorder: the recorder whose output directory holds the recordings.
+    :param recorder: the recorder whose folders hold the recordings.
     :param name: the requested recording name from the URL (reduced to its basename).
     :return: a :class:`FileResponse` for a valid recording, else a JSON error response.
     """
     if '\x00' in name:  # a NUL byte makes is_file() raise ValueError -> reject up front (else an unhandled 500)
         return _not_found()
-    file_path = recorder.output_dir / Path(name).name  # basename only, no path traversal
-    if file_path.suffix != '.mcap':  # never serve transient *.mcap.reindex temp files
+    basename = Path(name).name  # basename only, no path traversal
+    if Path(basename).suffix != '.mcap':  # never serve transient *.mcap.reindex temp files
         return _not_found()
-    if file_path == recorder.current_recording:
-        return JSONResponse(content={'status': 'error', 'message': 'Recording is currently being written'},
-                            status_code=status.HTTP_409_CONFLICT)
-    if not file_path.is_file():
-        return _not_found()
-    return FileResponse(file_path, media_type='application/octet-stream', filename=file_path.name)
+    for file_path in (recorder.output_dir / basename, recorder.parts_dir / basename):
+        if file_path == recorder.current_recording:
+            return JSONResponse(content={'status': 'error', 'message': 'Recording is currently being written'},
+                                status_code=status.HTTP_409_CONFLICT)
+        if file_path.is_file():
+            return FileResponse(file_path, media_type='application/octet-stream', filename=file_path.name)
+    return _not_found()
 
 
 def _not_found() -> JSONResponse:

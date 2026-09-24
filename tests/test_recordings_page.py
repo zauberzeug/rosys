@@ -1,4 +1,5 @@
 import tempfile
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -6,7 +7,7 @@ from fastapi import status
 from fastapi.responses import FileResponse, JSONResponse
 
 from rosys.analysis.recording import McapRecorder, RecordingInfo, TopicSchema
-from rosys.analysis.recording.recordings_page_ import _download_response, _group_by_run
+from rosys.analysis.recording.recordings_page_ import _download_response, _group_by_run, _run_span
 
 # The download endpoint is registered as a closure on the global nicegui ``app`` once per
 # RecordingsPage instance (path-matched first-registration-wins), and exercising it over HTTP
@@ -21,17 +22,28 @@ def recorder():
         yield McapRecorder(output_dir=Path(tmp), auto_start=False)
 
 
-def _make_recording(recorder: McapRecorder, name: str) -> Path:
-    path = recorder.output_dir / name
+def _make_recording(directory: Path, name: str) -> Path:
+    path = directory / name
     path.write_bytes(b'not really mcap, but a real file on disk')
     return path
 
 
-def test_download_serves_a_finished_recording(recorder: McapRecorder) -> None:
-    """A valid .mcap name returns the file with a 200 response."""
-    path = _make_recording(recorder, 'recording.mcap')
+def test_download_serves_a_kept_recording(recorder: McapRecorder) -> None:
+    """A valid .mcap name at the top level returns the file with a 200 response."""
+    path = _make_recording(recorder.output_dir, 'recording.mcap')
 
     response = _download_response(recorder, 'recording.mcap')
+
+    assert isinstance(response, FileResponse)
+    assert Path(response.path) == path
+    assert response.status_code == status.HTTP_200_OK
+
+
+def test_download_serves_a_part(recorder: McapRecorder) -> None:
+    """A part is found in the parts folder when the top level has no file of that name."""
+    path = _make_recording(recorder.parts_dir, '20260911_052815_000000_run0002_01.mcap')
+
+    response = _download_response(recorder, '20260911_052815_000000_run0002_01.mcap')
 
     assert isinstance(response, FileResponse)
     assert Path(response.path) == path
@@ -65,7 +77,7 @@ def test_download_404_for_traversal_that_ends_in_mcap(recorder: McapRecorder) ->
 
 def test_download_404_for_non_mcap_name(recorder: McapRecorder) -> None:
     """A name without the .mcap suffix is never served."""
-    _make_recording(recorder, 'notes.txt')
+    _make_recording(recorder.output_dir, 'notes.txt')
 
     response = _download_response(recorder, 'notes.txt')
 
@@ -75,7 +87,7 @@ def test_download_404_for_non_mcap_name(recorder: McapRecorder) -> None:
 
 def test_download_404_for_reindex_temp_name(recorder: McapRecorder) -> None:
     """A transient .reindex- temp file is never served even though it exists on disk."""
-    _make_recording(recorder, 'recording.mcap.reindex-deadbeef')
+    _make_recording(recorder.output_dir, 'recording.mcap.reindex-deadbeef')
 
     response = _download_response(recorder, 'recording.mcap.reindex-deadbeef')
 
@@ -162,3 +174,15 @@ def test_a_file_without_a_part_number_stays_on_its_own(name: str) -> None:
     info = _info(name)
 
     assert _group_by_run([info]) == [(None, [info])]
+
+
+def test_a_run_spans_from_its_start_to_its_newest_part() -> None:
+    """The span starts when the run began, not when its first part was rotated out."""
+    start = datetime(2026, 9, 11, 5, 28, 15, tzinfo=UTC)
+    parts = [_info('20260911_052815_000000_run0002_02.mcap', mtime=start.timestamp() + 1200),
+             _info('20260911_052815_000000_run0002_01.mcap', mtime=start.timestamp() + 600)]
+
+    first, last = _run_span('20260911_052815_000000_run0002', parts, UTC)
+
+    assert f'{first:%H:%M:%S}' == '05:28:15'
+    assert last == datetime(2026, 9, 11, 5, 48, 15, tzinfo=UTC)
