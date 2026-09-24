@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import re
+from datetime import UTC, datetime
 from pathlib import Path
 
 TIMESTAMP_FORMAT = r'%Y%m%d_%H%M%S_%f'  # microseconds -> unique per run
+TIMESTAMP_LENGTH = 22
 
 # part <part> of the run <timestamp> or <timestamp>_<name>, or a single unnumbered <timestamp>.mcap
 _OWN_NAME = re.compile(r'(?P<run>\d{8}_\d{6}_\d{6}(?:_.+)?)_(?P<part>\d{2,})\.mcap|\d{8}_\d{6}_\d{6}\.mcap')
@@ -31,6 +33,15 @@ def run_and_part(path: Path | str) -> tuple[str, int] | None:
     if match is None or match.group('run') is None:
         return None
     return match.group('run'), int(match.group('part'))
+
+
+def run_start(run: str) -> datetime:
+    """When a run started, read from the timestamp its name begins with.
+
+    :param run: the run's name, ``<timestamp>`` or ``<timestamp>_<name>``.
+    :return: the start as an aware UTC datetime.
+    """
+    return datetime.strptime(run[:TIMESTAMP_LENGTH], TIMESTAMP_FORMAT).replace(tzinfo=UTC)
 
 
 def check_file_name(name: str) -> None:

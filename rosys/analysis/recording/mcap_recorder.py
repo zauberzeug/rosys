@@ -164,7 +164,8 @@ class McapRecorder:
         """
         self.log = logging.getLogger(logger_name)
         self.output_dir = Path(output_dir).expanduser()
-        self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.parts_dir = self.output_dir / 'parts'
+        self.parts_dir.mkdir(parents=True, exist_ok=True)
         self.max_file_size = int(max_file_size_mb * 1_048_576)
         self.max_file_duration = max_file_duration
         self.max_total_size = int(max_total_size_mb * 1_048_576)
