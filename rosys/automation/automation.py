@@ -59,6 +59,7 @@ class Automation:
         self._can_run.set()
         self._stop = False
         self._is_waited = False
+        self._has_started = False
         self._uninterruptible_depth = 0  # >0 while inside an @uninterruptible section
 
     @property
@@ -81,6 +82,14 @@ class Automation:
     def is_stopping(self) -> bool:
         return self._stop and not self.is_stopped
 
+    @property
+    def is_pending(self) -> bool:
+        """whether the automation is scheduled but has neither had its first turn nor been stopped yet
+
+        A pending automation counts as stopped.
+        """
+        return not self._has_started and not self._stop
+
     async def run(self) -> Any | None:
         return await self
 
@@ -88,6 +97,7 @@ class Automation:
         coro_iter = self.coro.__await__()
         token = _CURRENT_AUTOMATION.set(self)  # bind this Automation instance into the task context
         try:
+            self._has_started = True
             self._is_waited = True
             iter_send, iter_throw = coro_iter.send, coro_iter.throw
             send: Callable = iter_send
@@ -113,7 +123,7 @@ class Automation:
                 except StopIteration as err:
                     self.log.info('automation is finished')
                     if self.on_complete and not stop_injected:
-                        self.on_complete()
+                        self.on_complete(self)
                     return err.value
                 send = iter_send
                 try:
@@ -123,7 +133,7 @@ class Automation:
         except Exception as e:
             self.log.exception('automation failed')
             if self.exception_handler:
-                self.exception_handler(e)
+                self.exception_handler(self, e)
             raise
         finally:
             self._is_waited = False

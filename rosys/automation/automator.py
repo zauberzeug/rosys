@@ -21,7 +21,8 @@ class Automator:
     (e.g. via an "Play"-button like offered by the [automation controls](https://rosys.io/reference/rosys/automation/#rosys.automation.automation_controls)).
     The passed function should return a new coroutine on every call (see [Play-pause-stop](https://rosys.io/examples/play-pause-stop/) example).
 
-    _on_interrupt_: Optional callback that will be called when an automation pauses or stops (the cause is provided as string parameter).
+    _on_interrupt_: Optional callback that will be called when an automation pauses, stops or fails,
+    unless a new automation has already taken over.
 
     _notify_: If True, the automator will send notifications when an automation starts, pauses, resumes, stops or fails.
     """
@@ -63,9 +64,10 @@ class Automator:
         if steerer:
             steerer.STEERING_STARTED.subscribe(lambda: self.pause(because='steering started'))
 
-        self.AUTOMATION_PAUSED.subscribe(lambda _: self._handle_interrupt())
-        self.AUTOMATION_STOPPED.subscribe(lambda _: self._handle_interrupt(stop=True))
-        self.AUTOMATION_FAILED.subscribe(lambda _: self._handle_interrupt(stop=True))
+        # capture the current automation: start() may replace the field before the coroutine runs
+        self.AUTOMATION_PAUSED.subscribe(lambda _: self._handle_interrupt(self.automation))
+        self.AUTOMATION_STOPPED.subscribe(lambda _: self._handle_interrupt(self.automation, stop=True))
+        self.AUTOMATION_FAILED.subscribe(lambda _: self._handle_interrupt(self.automation, stop=True))
 
         rosys.on_shutdown(self._stop_on_shutdown)
 
@@ -92,16 +94,26 @@ class Automator:
     def is_pausing(self) -> bool:
         return self.automation is not None and self.automation.is_pausing
 
-    async def _handle_interrupt(self, *, stop: bool = False) -> None:
-        assert self.automation is not None
-        while self.automation.is_running:
+    @property
+    def is_pending(self) -> bool:
+        """whether an automation is scheduled but has neither had its first turn nor been stopped yet
+
+        A pending automation counts as stopped.
+        """
+        return self.automation is not None and self.automation.is_pending
+
+    async def _handle_interrupt(self, automation: Automation | None, *, stop: bool = False) -> None:
+        assert automation is not None
+        while automation.is_running and self.automation is automation:
             await rosys.sleep(0.1)
+        if self.automation is not automation and self.automation is not None and not self.automation.is_stopped:
+            return  # a new automation owns the robot; the old one's cleanup must not override its commands
         if self._on_interrupt:
             if asyncio.iscoroutinefunction(self._on_interrupt):
                 await self._on_interrupt()
             else:
                 self._on_interrupt()
-        if stop:
+        if stop and self.automation is automation:
             self.automation = None
 
     def start(self, coro: Coroutine | None = None, *, paused: bool = False) -> None:
@@ -117,14 +129,18 @@ class Automator:
         if not self.enabled:
             coro.close()
             return
+        previous = self.automation
         self.stop(because='new automation starts')
+        if self.automation is not previous:
+            self.stop(because='new automation starts')  # a subscriber started another automation re-entrantly
         self.last_exception = None
-        self.automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
-        rosys.background_tasks.create(self.automation.run(), name='automation')  # type: ignore
+        automation = Automation(coro, self._handle_exception, on_complete=self._on_complete)
+        self.automation = automation
+        rosys.background_tasks.create(automation.run(), name='automation')  # type: ignore
         self.AUTOMATION_STARTED.emit()
         self._notify('automation started')
         if paused:
-            self.automation.pause()
+            automation.pause()
 
     def pause(self, because: str) -> None:
         """Pauses the current automation.
@@ -154,9 +170,9 @@ class Automator:
 
         :param because: the reason for stopping the automation
         """
-        if self.is_pausing or self.is_stopping:
+        if self.is_stopping:
             return
-        if self.is_running or self.is_paused:
+        if self.is_running or self.is_paused or self.is_pending:
             assert self.automation is not None
             self.automation.stop()
             self.AUTOMATION_STOPPED.emit(because)
@@ -167,7 +183,7 @@ class Automator:
 
         :param because: the reason for aborting the automation
         """
-        if self.is_stopped:
+        if self.is_stopped and not self.is_pending:
             return
         assert self.automation is not None
         self.automation.stop()
@@ -200,13 +216,18 @@ class Automator:
         """
         self.default_automation = default_automation
 
-    def _handle_exception(self, e: Exception) -> None:
+    def _handle_exception(self, automation: Automation, e: Exception) -> None:
+        if self.automation is not automation:
+            self.log.warning('ignoring an exception from a superseded automation: %r', e)
+            return
         self.last_exception = e
         self.abort(because=f'an exception occurred in an automation{f": {e}" if str(e) else ""}')
         if rosys.is_test:
             self.log.exception('automation failed')
 
-    def _on_complete(self) -> None:
+    def _on_complete(self, automation: Automation) -> None:
+        if self.automation is not automation:
+            return  # a superseded automation completed, e.g. by starting the new one itself and returning
         self.automation = None
         self.AUTOMATION_COMPLETED.emit()
         self._notify('automation completed', 'positive')
