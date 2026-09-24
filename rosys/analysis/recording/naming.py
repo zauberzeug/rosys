@@ -8,19 +8,8 @@ from pathlib import Path
 TIMESTAMP_FORMAT = r'%Y%m%d_%H%M%S_%f'  # microseconds -> unique per run
 TIMESTAMP_LENGTH = 22
 
-# part <part> of the run <timestamp> or <timestamp>_<name>, or a single unnumbered <timestamp>.mcap
-_OWN_NAME = re.compile(r'(?P<run>\d{8}_\d{6}_\d{6}(?:_.+)?)_(?P<part>\d{2,})\.mcap|\d{8}_\d{6}_\d{6}\.mcap')
-
-
-def is_auto_named(path: Path | str) -> bool:
-    """Whether a recording is one the recorder wrote itself: ``<run>_<part>.mcap``, the run named by its start.
-
-    Any other name was given deliberately (a renamed, merged or preserved recording); the budget keeps it longer.
-
-    :param path: the recording file to test.
-    :return: ``True`` if the file name is one the recorder generated.
-    """
-    return _OWN_NAME.fullmatch(Path(path).name) is not None
+# part <part> of the run <timestamp> or <timestamp>_<name>
+_PART_NAME = re.compile(r'(?P<run>\d{8}_\d{6}_\d{6}(?:_.+)?)_(?P<part>\d{2,})\.mcap')
 
 
 def run_and_part(path: Path | str) -> tuple[str, int] | None:
@@ -29,8 +18,8 @@ def run_and_part(path: Path | str) -> tuple[str, int] | None:
     :param path: the recording file to read.
     :return: the run's name and the part's number, or ``None`` for a file that is no numbered part.
     """
-    match = _OWN_NAME.fullmatch(Path(path).name)
-    if match is None or match.group('run') is None:
+    match = _PART_NAME.fullmatch(Path(path).name)
+    if match is None:
         return None
     return match.group('run'), int(match.group('part'))
 
@@ -44,7 +33,7 @@ def run_start(run: str) -> datetime:
     return datetime.strptime(run[:TIMESTAMP_LENGTH], TIMESTAMP_FORMAT).replace(tzinfo=UTC)
 
 
-def check_file_name(name: str) -> None:
+def ensure_plain_file_name(name: str) -> None:
     """Refuse a name that is not a plain file name, so no recording lands outside the output directory.
 
     :param name: the name to check.

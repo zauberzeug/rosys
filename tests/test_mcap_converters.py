@@ -80,7 +80,7 @@ def _read_raw(path: Path) -> list[bytes]:
 
 
 def _only_file(mcap_dir: Path) -> Path:
-    files = list(mcap_dir.glob('*.mcap'))
+    files = list(mcap_dir.rglob('*.mcap'))
     assert len(files) == 1
     return files[0]
 

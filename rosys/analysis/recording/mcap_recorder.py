@@ -16,7 +16,7 @@ from nicegui import Event, ui
 from ... import rosys
 from .indexing import is_indexed, reindex
 from .merging import METADATA_NAME, STAGING_GLOB, merge_into_place
-from .naming import TIMESTAMP_FORMAT, check_file_name, is_auto_named
+from .naming import TIMESTAMP_FORMAT, ensure_plain_file_name
 from .paths import PAGE_PATH
 
 NANOSECONDS_PER_SECOND = 1_000_000_000
@@ -94,11 +94,15 @@ class RecordingSource(Protocol):
 class McapRecorder:
     """Records sensor data to MCAP files for replay and analysis in Foxglove Studio.
 
-    Supports automatic file rotation by size and duration, and disk budget enforcement.
-    Peak disk usage is ``max_total_size_mb + max_file_size_mb``: the budget is enforced only
-    before a file is opened, so the currently growing file can exceed it by up to one file's
-    worth. The budget deletes the recorder's own files (oldest first) before kept ones (see
-    :func:`is_auto_named`), which have a bound of their own so they cannot eat the rolling window.
+    A run is written as numbered parts, ``<run>_<part>.mcap``, into the ``parts/`` folder of
+    the output directory, rotated by size and duration; every ``.mcap`` at the top level of the
+    output directory is a kept recording (renamed, merged or placed there deliberately). The
+    folder decides the kind, not the name. Peak disk usage is ``max_total_size_mb +
+    max_part_size_mb``: the budget is enforced only before a part is opened, so the growing
+    part can exceed it by up to one part's worth. The budget deletes parts (oldest first)
+    before kept recordings, which have a bound of their own so they cannot eat the rolling
+    window. A merge holds its sources open, so the space the budget frees during one only
+    returns when the merge finishes, and the peak then also carries the merge's size.
 
     Messages are enqueued from the event loop (cheap, non-blocking) and written to disk by a
     single background consumer via ``rosys.run.io_bound`` so that encoding, ZSTD compression
@@ -127,8 +131,8 @@ class McapRecorder:
         self,
         *,
         output_dir: Path | str = '~/.rosys/mcap',
-        max_file_size_mb: float = 100,
-        max_file_duration: float | None = None,
+        max_part_size_mb: float = 100,
+        max_part_duration: float | None = None,
         max_total_size_mb: float = 1000,
         max_kept_size_mb: float = 500,
         chunk_size: int = 1_048_576,
@@ -141,14 +145,15 @@ class McapRecorder:
     ) -> None:
         """Create an MCAP recorder.
 
-        :param output_dir: directory recordings are written to (created if missing).
-        :param max_file_size_mb: on-disk size at which the active file is rotated to a new one.
-        :param max_file_duration: seconds after which the active file is rotated to a new one
+        :param output_dir: directory recordings are written to (created if missing); parts go into its
+            ``parts/`` folder, every ``.mcap`` at its top level counts as kept.
+        :param max_part_size_mb: on-disk size at which the active part is rotated to a new one.
+        :param max_part_duration: seconds after which the active part is rotated to a new one
             (default: no duration-based rotation). Checked as messages are written, so an idle
             recording only rotates once data flows again.
-        :param max_total_size_mb: disk budget for the directory; the oldest recordings are deleted before
-            a new file is opened to stay under it, the recorder's own numbered files first. Peak disk usage
-            is therefore ``max_total_size_mb + max_file_size_mb``, as the growing file is not counted.
+        :param max_total_size_mb: disk budget for the output directory including ``parts/``; the oldest
+            recordings are deleted before a part is opened to stay under it, parts first. Peak disk usage
+            is therefore ``max_total_size_mb + max_part_size_mb``, as the growing part is not counted.
         :param max_kept_size_mb: bound for kept recordings within the budget; beyond it the oldest are
             deleted, sparing the newest (the one just filed away) however large it is.
         :param chunk_size: MCAP chunk size in bytes (larger chunks compress better and flush
@@ -166,8 +171,8 @@ class McapRecorder:
         self.output_dir = Path(output_dir).expanduser()
         self.parts_dir = self.output_dir / 'parts'
         self.parts_dir.mkdir(parents=True, exist_ok=True)
-        self.max_file_size = int(max_file_size_mb * 1_048_576)
-        self.max_file_duration = max_file_duration
+        self.max_part_size = int(max_part_size_mb * 1_048_576)
+        self.max_part_duration = max_part_duration
         self.max_total_size = int(max_total_size_mb * 1_048_576)
         self.max_kept_size = int(max_kept_size_mb * 1_048_576)
         self.chunk_size = chunk_size
@@ -243,11 +248,11 @@ class McapRecorder:
 
     @property
     def total_size(self) -> int:
-        return sum(_safe_size(f) for f in self.output_dir.glob('*.mcap'))
+        return sum(_safe_size(f) for f in self._recording_files())
 
     @property
     def file_count(self) -> int:
-        return len(list(self.output_dir.glob('*.mcap')))
+        return len(self._recording_files())
 
     @property
     def topics(self) -> list[str]:
@@ -263,8 +268,8 @@ class McapRecorder:
 
     @property
     def recordings(self) -> list[Path]:
-        """All recording files, newest first (by modification time, so renames keep the order)."""
-        return sorted(self.output_dir.glob('*.mcap'), key=_safe_mtime, reverse=True)
+        """All parts and kept recordings, newest first (by modification time, so renames keep the order)."""
+        return sorted(self._recording_files(), key=_safe_mtime, reverse=True)
 
     @property
     def current_recording(self) -> Path | None:
@@ -314,12 +319,12 @@ class McapRecorder:
         return infos
 
     def delete_recording(self, path: Path | str) -> None:
-        """Delete a recording file (only within this recorder's output directory).
+        """Delete a part or a kept recording (only within this recorder's folders).
 
-        The currently-recording file is never deleted (the writer holds it open).
+        The currently-recording part is never deleted (the writer holds it open).
         """
         path = Path(path)
-        if path.parent == self.output_dir and path.exists() and path != self.current_recording:
+        if path.parent in (self.output_dir, self.parts_dir) and path.exists() and path != self.current_recording:
             path.unlink()
             self.log.info('deleted recording: %s', path.name)
 
@@ -330,19 +335,18 @@ class McapRecorder:
                 self.delete_recording(path)
 
     def rename_recording(self, path: Path | str, new_name: str) -> Path | None:
-        """Rename a recording within the output directory; returns the new path or None.
+        """Rename a part or a kept recording, filing it away as kept at the top level of the output directory.
 
-        The currently-recording file cannot be renamed (the writer holds it open). Empty,
+        The currently-recording part cannot be renamed (the writer holds it open). Empty,
         whitespace-only or dots-only names would escape the output directory and are rejected.
-        A renamed recording counts as kept (see :func:`is_auto_named`).
 
         :param path: the recording to rename.
         :param new_name: the desired name (reduced to a bare ``.mcap`` filename).
         :return: the new path, or ``None`` if the rename was rejected or the target exists.
-        :raises ValueError: if the new name reads as one of the recorder's own files.
         """
         path = Path(path)
-        if path.parent != self.output_dir or not path.exists() or path == self.current_recording:
+        if path.parent not in (self.output_dir, self.parts_dir) or not path.exists() \
+                or path == self.current_recording:
             return None
         name = Path(new_name.strip()).name
         if not name.strip('.'):  # empty, whitespace-only, or only dots ('.', '..', '...')
@@ -352,9 +356,6 @@ class McapRecorder:
             target = target.with_suffix('.mcap')
         if target == path:
             return None
-        if is_auto_named(target):
-            raise ValueError(f'{target.name} reads as a file the recorder wrote itself, '
-                             'which its disk budget deletes first')
         try:
             os.link(path, target)  # atomic: fails if the target exists, so a racing rename cannot clobber a recording
         except OSError:
@@ -386,22 +387,20 @@ class McapRecorder:
         Runs off the loop; a failed merge leaves the sources untouched (see :func:`~.merging.merge_into_place`),
         a source that cannot be deleted afterwards is only logged.
 
-        :param sources: finished recordings in the output directory, oldest first.
+        :param sources: finished parts or kept recordings of this recorder, oldest first.
         :param name: the name of the merged recording, without ``.mcap``.
         :param start_time_ns: messages logged before this time are dropped (default: keep all).
         :return: the merged recording, or ``None`` if no message was left to merge (the sources are kept).
-        :raises ValueError: if ``name`` is no plain file name or reads as the recorder's own, or a
-            source is no finished recording in the output directory.
+        :raises ValueError: if ``name`` is no plain file name, or a source is no finished recording of
+            this recorder.
         :raises FileExistsError: if ``<name>.mcap`` exists or is being merged already.
         :raises RuntimeError: if the app shut down before the merge ran; the sources are kept.
         """
-        check_file_name(name)
+        ensure_plain_file_name(name)
         target = self.output_dir / f'{name}.mcap'
-        if is_auto_named(target):
-            raise ValueError(f'{target.name} reads as a file the recorder wrote itself, which its budget deletes first')
-        if not sources or any(source.parent != self.output_dir or source == self.current_recording
-                              for source in sources):
-            raise ValueError('only finished recordings in the output directory can be merged')
+        if not sources or any(source.parent not in (self.output_dir, self.parts_dir)
+                              or source == self.current_recording for source in sources):
+            raise ValueError('only finished parts and kept recordings of this recorder can be merged')
         if name in self._merging or target.exists():
             raise FileExistsError(f'{target.name} exists or is being merged already')
         self._merging.add(name)
@@ -475,7 +474,7 @@ class McapRecorder:
             self.log.warning('not starting a recording while the previous one is still being finalized')
             return None
         if name is not None:
-            check_file_name(name)
+            ensure_plain_file_name(name)
         run_metadata = json.dumps(metadata) if metadata is not None else None
         try:
             self._loop = asyncio.get_running_loop()  # captured for loop-safe emits from the writer thread
@@ -650,7 +649,7 @@ class McapRecorder:
             if data is None:
                 continue  # converter chose to skip this value
             assert self._file is not None
-            if self._file.tell() >= self.max_file_size or self._file_is_expired():  # rotate only for a message
+            if self._file.tell() >= self.max_part_size or self._file_is_expired():  # rotate only for a message
                 if not self._rotate_file(dropped_on_failure=len(batch) - index):
                     return
             if message.topic not in self._topics:
@@ -666,8 +665,8 @@ class McapRecorder:
             self._file_message_count += 1
 
     def _file_is_expired(self) -> bool:
-        """Whether the current file has been open longer than ``max_file_duration``."""
-        return self.max_file_duration is not None and rosys.time() - self._file_started_at >= self.max_file_duration
+        """Whether the current part has been open longer than ``max_part_duration``."""
+        return self.max_part_duration is not None and rosys.time() - self._file_started_at >= self.max_part_duration
 
     def warn_converter_failure(self, topic: str, stage: str) -> None:
         """Log a converter failure once per topic and stage, so one bad message never floods the log.
@@ -767,7 +766,7 @@ class McapRecorder:
         if self._file is not None:  # never overwrite or leak a still-open file (defensive against a double open)
             self._close_file()
         self._part_index += 1
-        self._file_path = self.output_dir / f'{self._run_name}_{self._part_index:02d}.mcap'
+        self._file_path = self.parts_dir / f'{self._run_name}_{self._part_index:02d}.mcap'
         self._file = open(self._file_path, 'wb')  # pylint: disable=consider-using-with
         self._writer = Writer(self._file, compression=CompressionType.ZSTD, chunk_size=self.chunk_size)
         self._writer.start(profile=self.profile, library=self.library)
@@ -812,24 +811,31 @@ class McapRecorder:
         assert self._file_path is not None
         self._emit_on_loop(self.RECORDING_STARTED.emit, self._file_path)
 
+    def _recording_files(self) -> list[Path]:
+        """Every part in ``parts/`` and every kept recording at the top level of the output directory."""
+        return [*self.output_dir.glob('*.mcap'), *self.parts_dir.glob('*.mcap')]
+
     def _enforce_disk_budget(self) -> None:
-        """Delete the oldest recordings until kept files fit ``max_kept_size`` and all fit ``max_total_size``."""
-        own: list[tuple[Path, int, float]] = []
+        """Delete the oldest recordings until the kept ones fit ``max_kept_size`` and all fit ``max_total_size``.
+
+        The kept bound spares the newest kept recording; the total is then met by parts first, oldest first.
+        """
+        parts: list[tuple[Path, int, float]] = []
         kept: list[tuple[Path, int, float]] = []
-        for path in self.output_dir.glob('*.mcap'):
+        for path in self._recording_files():
             try:
                 stat = path.stat()
             except FileNotFoundError:
                 continue  # vanished concurrently (e.g. deleted from the recordings page)
-            (own if is_auto_named(path) else kept).append((path, stat.st_size, stat.st_mtime))
-        own.sort(key=lambda item: item[2])
+            (parts if path.parent == self.parts_dir else kept).append((path, stat.st_size, stat.st_mtime))
+        parts.sort(key=lambda item: item[2])
         kept.sort(key=lambda item: item[2])
         deleted: list[tuple[Path, int, float]] = []
         kept_size = sum(size for _, size, _ in kept)
         while kept_size > self.max_kept_size and len(kept) > 1:  # the newest kept file is the one just filed away
             deleted.append(kept.pop(0))
             kept_size -= deleted[-1][1]
-        remaining = own + kept
+        remaining = parts + kept
         total = sum(size for _, size, _ in remaining)
         while total > self.max_total_size and remaining:
             deleted.append(remaining.pop(0))
@@ -843,14 +849,16 @@ class McapRecorder:
 
         Deleting one mid-run would destroy the result, so this never runs from the disk-budget path.
         Orphans are otherwise invisible to the budget, scan and UI (they do not match ``*.mcap``).
+        A reindex stages beside the file it rebuilds, in either folder; a merge beside its top-level target.
         """
-        for pattern in ('*.mcap.reindex*', STAGING_GLOB):
-            for path in self.output_dir.glob(pattern):
-                try:
-                    path.unlink()
-                    self.log.warning('removed orphaned temporary file: %s', path.name)
-                except OSError:
-                    pass
+        orphans = [*self.output_dir.glob('*.mcap.reindex*'), *self.parts_dir.glob('*.mcap.reindex*'),
+                   *self.output_dir.glob(STAGING_GLOB)]
+        for path in orphans:
+            try:
+                path.unlink()
+                self.log.warning('removed orphaned temporary file: %s', path.name)
+            except OSError:
+                pass
 
     def developer_ui(self) -> None:
         """Developer panel: auto-refreshing stats, start/stop buttons, and a topic selection.

@@ -8,7 +8,7 @@ import pytest
 from mcap.reader import make_reader
 
 import rosys
-from rosys.analysis.recording import METADATA_NAME, McapRecorder, TopicSchema, is_auto_named
+from rosys.analysis.recording import METADATA_NAME, McapRecorder, TopicSchema, run_and_part
 
 NS = 1_000_000_000
 
@@ -53,7 +53,7 @@ async def test_write_and_read_messages(mcap_dir: Path) -> None:
     await recorder.stop()
 
     assert recorder.message_count == 5
-    files = list(mcap_dir.glob('*.mcap'))
+    files = list(recorder.parts_dir.glob('*.mcap'))
     assert len(files) == 1
 
     with open(files[0], 'rb') as f:
@@ -68,7 +68,7 @@ async def test_write_and_read_messages(mcap_dir: Path) -> None:
 async def test_file_rotation(mcap_dir: Path) -> None:
     # Rotation triggers on actual on-disk (compressed) size, so use incompressible
     # payloads and a small chunk size to make the writer flush bytes frequently.
-    recorder = McapRecorder(output_dir=mcap_dir, max_file_size_mb=0.05, chunk_size=4096, auto_start=False)
+    recorder = McapRecorder(output_dir=mcap_dir, max_part_size_mb=0.05, chunk_size=4096, auto_start=False)
     recorder.add_topic('/test', _schema('Test', {'payload': {'type': 'string'}}))
     recorder.start()
 
@@ -77,14 +77,14 @@ async def test_file_rotation(mcap_dir: Path) -> None:
 
     await recorder.stop()
 
-    files = list(mcap_dir.glob('*.mcap'))
+    files = list(recorder.parts_dir.glob('*.mcap'))
     assert len(files) >= 2, f'Expected rotation, got {len(files)} file(s)'
 
 
 async def test_disk_budget_enforcement(mcap_dir: Path) -> None:
     recorder = McapRecorder(
         output_dir=mcap_dir,
-        max_file_size_mb=0.05,
+        max_part_size_mb=0.05,
         max_total_size_mb=0.15,
         chunk_size=4096,
         auto_start=False,
@@ -97,8 +97,8 @@ async def test_disk_budget_enforcement(mcap_dir: Path) -> None:
 
     await recorder.stop()
 
-    total = sum(f.stat().st_size for f in mcap_dir.glob('*.mcap'))
-    max_allowed = (0.15 + 0.05) * 1_048_576  # budget + one active (not-yet-rotated) file
+    total = sum(f.stat().st_size for f in mcap_dir.rglob('*.mcap'))
+    max_allowed = (0.15 + 0.05) * 1_048_576  # budget + one active (not-yet-rotated) part
     assert total <= max_allowed, f'Total {total} exceeds budget+active {max_allowed}'
 
 
@@ -121,7 +121,7 @@ async def test_add_topic_while_recording(mcap_dir: Path) -> None:
     await recorder.stop()
 
     assert recorder.message_count == 1
-    files = list(mcap_dir.glob('*.mcap'))
+    files = list(recorder.parts_dir.glob('*.mcap'))
     with open(files[0], 'rb') as f:
         reader = make_reader(f)
         messages = [json.loads(msg.data) for _, _, msg in reader.iter_messages()]
@@ -140,7 +140,7 @@ async def test_topic_selection_records_only_selected(mcap_dir: Path) -> None:
     recorder.log_message('/wanted', _json({'value': 3}), timestamp_ns=2)
     await recorder.stop()
 
-    files = list(mcap_dir.glob('*.mcap'))
+    files = list(recorder.parts_dir.glob('*.mcap'))
     with open(files[0], 'rb') as f:
         reader = make_reader(f)
         messages = [(channel.topic, json.loads(msg.data)) for _, channel, msg in reader.iter_messages()]
@@ -181,7 +181,7 @@ async def test_declared_topic_selectable_before_schema_registration(mcap_dir: Pa
 
 async def test_rotation_registers_only_selected_channels(mcap_dir: Path) -> None:
     """Rotated files do not declare channels for topics the selection drops."""
-    recorder = McapRecorder(output_dir=mcap_dir, max_file_size_mb=0.05, chunk_size=4096, auto_start=False)
+    recorder = McapRecorder(output_dir=mcap_dir, max_part_size_mb=0.05, chunk_size=4096, auto_start=False)
     recorder.add_topic('/wanted', _schema('Wanted', {'payload': {'type': 'string'}}))
     recorder.add_topic('/unwanted', _schema('Unwanted'))
     recorder.start(topics=['/wanted'])
@@ -190,7 +190,7 @@ async def test_rotation_registers_only_selected_channels(mcap_dir: Path) -> None
         recorder.log_message('/wanted', _json({'payload': os.urandom(1024).hex()}), timestamp_ns=i * NS)
     await recorder.stop()
 
-    files = list(mcap_dir.glob('*.mcap'))
+    files = list(recorder.parts_dir.glob('*.mcap'))
     assert len(files) >= 2, f'Expected rotation, got {len(files)} file(s)'
     for file in files:
         with open(file, 'rb') as f:
@@ -235,7 +235,7 @@ async def test_stop_without_start(mcap_dir: Path) -> None:
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
     await recorder.stop()
     assert not recorder.is_recording
-    assert list(mcap_dir.glob('*.mcap')) == []
+    assert recorder.recordings == []
 
 
 async def test_double_start(mcap_dir: Path) -> None:
@@ -261,7 +261,7 @@ async def test_background_flush_writes_messages(mcap_dir: Path) -> None:
     assert not recorder._queue
 
     await recorder.stop()
-    files = list(mcap_dir.glob('*.mcap'))
+    files = list(recorder.parts_dir.glob('*.mcap'))
     with open(files[0], 'rb') as f:
         reader = make_reader(f)
         values = [json.loads(msg.data)['value'] for _, _, msg in reader.iter_messages()]
@@ -287,7 +287,7 @@ async def test_recording_events_fire(mcap_dir: Path) -> None:
 
 async def test_rotation_emits_stopped_and_started_per_file(mcap_dir: Path) -> None:
     """Size rotation emits RECORDING_STOPPED/STARTED per file, so consumers see every middle file."""
-    recorder = McapRecorder(output_dir=mcap_dir, max_file_size_mb=0.05, chunk_size=4096, auto_start=False)
+    recorder = McapRecorder(output_dir=mcap_dir, max_part_size_mb=0.05, chunk_size=4096, auto_start=False)
     recorder.add_topic('/test', _schema('Test', {'payload': {'type': 'string'}}))
     started: list[Path] = []
     stopped: list[Path] = []
@@ -302,7 +302,7 @@ async def test_rotation_emits_stopped_and_started_per_file(mcap_dir: Path) -> No
     await recorder.stop()  # emits STOPPED for the final file
     await asyncio.sleep(0)
 
-    files = list(mcap_dir.glob('*.mcap'))
+    files = list(recorder.parts_dir.glob('*.mcap'))
     assert len(files) >= 2, f'Expected rotation, got {len(files)} file(s)'
     assert len(started) == len(files)  # exactly one STARTED per file
     assert len(stopped) == len(files)  # exactly one STOPPED per file
@@ -361,7 +361,9 @@ async def test_delete_all_recordings(mcap_dir: Path) -> None:
         recorder.start()
         recorder.log_message('/test', _json({'value': i}), timestamp_ns=i * NS)
         await recorder.stop()
-    assert recorder.recordings  # some were created
+    kept = mcap_dir / 'weeding on the north field.mcap'
+    kept.write_bytes(b'a kept recording')
+    assert len(recorder.recordings) == 4
 
     recorder.delete_all_recordings()
     assert recorder.recordings == []
@@ -393,7 +395,7 @@ async def test_empty_recording_discarded(mcap_dir: Path) -> None:
     recorder.add_topic('/test', _schema())
     recorder.start()
     await recorder.stop()  # nothing recorded -> file discarded (e.g. rapid toggling)
-    assert list(mcap_dir.glob('*.mcap')) == []
+    assert recorder.recordings == []
 
 
 async def test_nonempty_recording_kept(mcap_dir: Path) -> None:
@@ -402,7 +404,7 @@ async def test_nonempty_recording_kept(mcap_dir: Path) -> None:
     recorder.start()
     recorder.log_message('/test', _json({'value': 1}), timestamp_ns=NS)
     await recorder.stop()
-    assert len(list(mcap_dir.glob('*.mcap'))) == 1
+    assert len(recorder.recordings) == 1
 
 
 async def test_rename_recording(mcap_dir: Path) -> None:
@@ -412,13 +414,14 @@ async def test_rename_recording(mcap_dir: Path) -> None:
     recorder.log_message('/test', _json({'value': 1}), timestamp_ns=NS)
     await recorder.stop()
     path = recorder.recordings[0]
+    assert path.parent == recorder.parts_dir
 
     new_path = recorder.rename_recording(path, 'my run')
 
-    assert new_path is not None
-    assert new_path.name == 'my run.mcap'
+    assert new_path == mcap_dir / 'my run.mcap'
     assert recorder.recordings == [new_path]
     assert not path.exists()
+    assert recorder.rename_recording(new_path, 'my other run') == mcap_dir / 'my other run.mcap'
 
 
 async def test_rename_active_recording_refused(mcap_dir: Path) -> None:
@@ -440,8 +443,7 @@ async def test_mixed_encodings_in_one_file(mcap_dir: Path) -> None:
     await recorder.stop()
 
     encodings = {}
-    file = next(iter(mcap_dir.glob('*.mcap')))
-    with open(file, 'rb') as f:
+    with open(recorder.recordings[0], 'rb') as f:
         reader = make_reader(f)
         for _, channel, message in reader.iter_messages():
             encodings[channel.topic] = (channel.message_encoding, bytes(message.data))
@@ -574,7 +576,7 @@ async def test_stop_finalizes_file_even_if_the_drain_raises(mcap_dir: Path) -> N
 
     assert recorder._writer is None  # the file was finalized in the finally, not leaked
     assert recorder._file is None
-    files = list(mcap_dir.glob('*.mcap'))
+    files = list(recorder.parts_dir.glob('*.mcap'))
     assert len(files) == 1
     assert _values(files[0]) == [1]  # the message written before the failure is preserved and readable
 
@@ -586,7 +588,7 @@ async def test_failed_rotation_stops_recording_without_silent_loss(mcap_dir: Pat
     every subsequent batch would be swapped out and discarded while the UI still showed a live
     recording — a silent black hole.
     """
-    recorder = McapRecorder(output_dir=mcap_dir, max_file_size_mb=0.05, chunk_size=4096, auto_start=False)
+    recorder = McapRecorder(output_dir=mcap_dir, max_part_size_mb=0.05, chunk_size=4096, auto_start=False)
     recorder.add_topic('/test', _schema('Test', {'payload': {'type': 'string'}}))
     recorder.start()  # opens the first file successfully
 
@@ -603,17 +605,19 @@ async def test_failed_rotation_stops_recording_without_silent_loss(mcap_dir: Pat
     assert recorder.dropped_message_count > 0  # the loss is counted, not silent
 
     await recorder.stop()  # already stopped -> no-op, no error
-    files = list(mcap_dir.glob('*.mcap'))
+    files = list(recorder.parts_dir.glob('*.mcap'))
     assert files, 'the messages written before the failed rotation must be kept'
     # every written message is preserved and readable; none silently vanished
     assert sum(_message_count(f) for f in files) == recorder.message_count
 
 
-@pytest.mark.parametrize('orphan_name', ['recording.mcap.reindex-deadbeef', 'recording.mcap.merge-deadbeef'])
+@pytest.mark.parametrize('orphan_name', ['recording.mcap.reindex-deadbeef', 'recording.mcap.merge-deadbeef',
+                                         'parts/20200101_000000_000000_01.mcap.reindex-deadbeef'])
 def test_startup_removes_orphaned_temporary_files(mcap_dir: Path, orphan_name: str) -> None:
     """A reindex or merge temp file left by a crash is cleared when a recorder is created; real recordings are kept."""
     (mcap_dir / 'recording.mcap').write_bytes(b'a real recording')
     orphan = mcap_dir / orphan_name
+    orphan.parent.mkdir(exist_ok=True)
     orphan.write_bytes(b'partial output')
 
     McapRecorder(output_dir=mcap_dir, auto_start=False)
@@ -673,8 +677,8 @@ async def test_start_deletes_old_recordings_over_budget(mcap_dir: Path) -> None:
 
 
 async def test_duration_based_rotation(mcap_dir: Path) -> None:
-    """A file older than max_file_duration is rotated as soon as the next message is written."""
-    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    """A part older than max_part_duration is rotated as soon as the next message is written."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_part_duration=60, auto_start=False)
     recorder.add_topic('/test', _schema())
     recorder.start()
 
@@ -685,70 +689,69 @@ async def test_duration_based_rotation(mcap_dir: Path) -> None:
     recorder.log_message('/test', _json({'value': 2}), timestamp_ns=62 * NS)
     await recorder.stop()
 
-    files = sorted(mcap_dir.glob('*.mcap'))
+    files = sorted(recorder.parts_dir.glob('*.mcap'))
     assert len(files) == 2, f'Expected duration rotation, got {len(files)} file(s)'
     assert sum(_message_count(path) for path in files) == 3
 
 
 @pytest.mark.parametrize('kept_name', ['weeding on the north field.mcap',  # renamed by hand
                                        '20200101_000000_000000_run0001_merged.mcap',  # the merged file of a run
-                                       '20200101_000000_000000_run0001_failure.mcap'])  # preserved around a failure
+                                       '20200101_000000_000000_run0001_01.mcap'])  # a part's name, filed at the top
 async def test_disk_budget_deletes_kept_recordings_last(mcap_dir: Path, kept_name: str) -> None:
-    """The budget evicts the recorder's own numbered files (oldest first) before anything kept."""
+    """The budget evicts parts (oldest first) before anything at the top level, whatever its name."""
     kept = mcap_dir / kept_name
     kept.write_bytes(os.urandom(60 * 1024))
-    os.utime(kept, (0, 0))  # the oldest file of all, yet not the recorder's own -> deleted last
+    os.utime(kept, (0, 0))  # the oldest file of all, yet kept -> deleted last
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.12, auto_start=False)  # ~126 KiB budget
     for i in range(2):
-        path = mcap_dir / f'20200101_000000_000000_run0002_0{i + 1}.mcap'
+        path = recorder.parts_dir / f'20200101_000000_000000_run0002_0{i + 1}.mcap'
         path.write_bytes(os.urandom(60 * 1024))
         os.utime(path, (i + 1, i + 1))
-    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.12, auto_start=False)  # ~126 KiB budget
 
     recorder.start()
-    await recorder.stop()  # empty -> new file discarded
+    await recorder.stop()  # empty -> new part discarded
 
-    remaining = {path.name for path in mcap_dir.glob('*.mcap')}
+    remaining = {path.name for path in mcap_dir.rglob('*.mcap')}
     assert kept.name in remaining
-    assert '20200101_000000_000000_run0002_01.mcap' not in remaining  # the oldest own file paid for the budget
+    assert '20200101_000000_000000_run0002_01.mcap' not in remaining  # the oldest part paid for the budget
     assert '20200101_000000_000000_run0002_02.mcap' in remaining
 
 
 async def test_kept_recordings_beyond_their_bound_roll_away_oldest_first(mcap_dir: Path) -> None:
     """Kept files cannot eat the rolling window; the newest kept file stays however large it is."""
     kept_sizes = {'oldest kept.mcap': 60, 'older kept.mcap': 60, 'newest kept.mcap': 150}  # KiB
-    own_names = ['20200101_000000_000000_01.mcap', '20200101_000000_000000_02.mcap']
+    part_names = ['20200101_000000_000000_01.mcap', '20200101_000000_000000_02.mcap']
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.3, max_kept_size_mb=0.12, auto_start=False)
     for age, (name, size) in enumerate(kept_sizes.items()):
         (mcap_dir / name).write_bytes(os.urandom(size * 1024))
         os.utime(mcap_dir / name, (age, age))
-    for age, name in enumerate(own_names, start=len(kept_sizes)):
-        (mcap_dir / name).write_bytes(os.urandom(60 * 1024))
-        os.utime(mcap_dir / name, (age, age))
-    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.3, max_kept_size_mb=0.12, auto_start=False)
+    for age, name in enumerate(part_names, start=len(kept_sizes)):
+        (recorder.parts_dir / name).write_bytes(os.urandom(60 * 1024))
+        os.utime(recorder.parts_dir / name, (age, age))
 
     recorder.start()
-    await recorder.stop()  # empty -> new file discarded
+    await recorder.stop()  # empty -> new part discarded
 
-    assert {path.name for path in mcap_dir.glob('*.mcap')} == {'newest kept.mcap', *own_names}
+    assert {path.name for path in mcap_dir.rglob('*.mcap')} == {'newest kept.mcap', *part_names}
 
 
 _LONG_NAME = '_'.join(['word'] * 60)
 
 
-@pytest.mark.parametrize(('name', 'own'), [
-    ('20260911_120000_123456_01.mcap', True),  # a run without a name
-    ('20260911_120000_123456_mission_01.mcap', True),
-    ('20260911_120000_123456_mission_05_100.mcap', True),  # the name may end in digits, the part is last
-    (f'20260911_120000_123456_{_LONG_NAME}_01.mcap', True),
-    ('20260911_120000_123456.mcap', True),  # a single unnumbered file
-    ('20260911_120000_123456_mission_merged.mcap', False),
-    ('20260911_120000_123456_mission_failure.mcap', False),
-    (f'20260911_120000_123456_{_LONG_NAME}.mcap', False),
-    ('mission_01.mcap', False),  # numbered, but not by the recorder
-    ('weeding on the north field.mcap', False),
+@pytest.mark.parametrize(('name', 'expected'), [
+    ('20260911_120000_123456_01.mcap', ('20260911_120000_123456', 1)),  # a run without a name
+    ('20260911_120000_123456_mission_01.mcap', ('20260911_120000_123456_mission', 1)),
+    ('20260911_120000_123456_mission_05_100.mcap', ('20260911_120000_123456_mission_05', 100)),  # the part is last
+    (f'20260911_120000_123456_{_LONG_NAME}_01.mcap', (f'20260911_120000_123456_{_LONG_NAME}', 1)),
+    ('20260911_120000_123456.mcap', None),  # a timestamp alone is no part
+    ('20260911_120000_123456_mission_merged.mcap', None),
+    (f'20260911_120000_123456_{_LONG_NAME}.mcap', None),
+    ('mission_01.mcap', None),  # numbered, but not by the recorder
+    ('weeding on the north field.mcap', None),
 ])
-def test_the_recorders_own_files_are_told_apart_by_name(name: str, own: bool) -> None:
-    """Only the names the recorder generates count as its own, however long the run name gets."""
-    assert is_auto_named(name) is own
+def test_a_parts_name_tells_its_run_and_number(name: str, expected: tuple[str, int] | None) -> None:
+    """A part's name reads back as its run and number, however long the run name gets; any other name does not."""
+    assert run_and_part(name) == expected
 
 
 def _metadata(path: Path) -> dict:
@@ -764,7 +767,7 @@ def _metadata(path: Path) -> dict:
 
 async def test_the_files_of_one_recording_share_a_name_and_are_numbered(mcap_dir: Path) -> None:
     """The run is named after its start time and the caller's name, and rotation numbers its parts."""
-    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder = McapRecorder(output_dir=mcap_dir, max_part_duration=60, auto_start=False)
     recorder.add_topic('/test', _schema())
     run = recorder.start(name='run0042')
 
@@ -775,12 +778,13 @@ async def test_the_files_of_one_recording_share_a_name_and_are_numbered(mcap_dir
     await recorder.stop()
 
     assert run is not None and run.endswith('_run0042')
-    assert [path.name for path in sorted(mcap_dir.glob('*.mcap'))] == [f'{run}_01.mcap', f'{run}_02.mcap']
+    assert sorted(mcap_dir.rglob('*.mcap')) == [mcap_dir / 'parts' / f'{run}_01.mcap',
+                                                mcap_dir / 'parts' / f'{run}_02.mcap']
 
 
 async def test_a_rotation_leaves_no_part_without_messages(mcap_dir: Path) -> None:
     """A part is opened only for a message to write into it, so no part of a run ends up empty."""
-    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder = McapRecorder(output_dir=mcap_dir, max_part_duration=60, auto_start=False)
     recorder.add_topic('/test', _schema())
     recorder.start()
 
@@ -792,7 +796,7 @@ async def test_a_rotation_leaves_no_part_without_messages(mcap_dir: Path) -> Non
     rosys.set_time(rosys.time() + 61)
     await recorder.stop()
 
-    assert [_values(path) for path in sorted(mcap_dir.glob('*.mcap'))] == [[0], [1]]
+    assert [_values(path) for path in sorted(recorder.parts_dir.glob('*.mcap'))] == [[0], [1]]
 
 
 async def test_a_start_while_the_previous_recording_is_finalized_is_refused(mcap_dir: Path) -> None:
@@ -826,7 +830,7 @@ async def test_a_start_while_the_previous_recording_is_finalized_is_refused(mcap
 
 async def test_every_file_of_a_recording_carries_the_metadata(mcap_dir: Path) -> None:
     """A rotated part is as self-explaining as the first one."""
-    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder = McapRecorder(output_dir=mcap_dir, max_part_duration=60, auto_start=False)
     recorder.add_topic('/test', _schema())
     recorder.start(name='run', metadata={'mission': 'Implement Demo', 'run_id': 42})
 
@@ -836,7 +840,7 @@ async def test_every_file_of_a_recording_carries_the_metadata(mcap_dir: Path) ->
     recorder.log_message('/test', _json({'value': 1}), timestamp_ns=61 * NS)
     await recorder.stop()
 
-    files = sorted(mcap_dir.glob('*.mcap'))
+    files = sorted(recorder.parts_dir.glob('*.mcap'))
     assert len(files) == 2
     for path in files:
         assert _metadata(path) == {'mission': 'Implement Demo', 'run_id': 42}
@@ -862,19 +866,52 @@ async def test_a_named_recording_stays_within_the_disk_budget(mcap_dir: Path) ->
     assert kept.exists()
 
 
-async def test_a_recording_cannot_be_renamed_into_one_of_the_recorders_own_names(mcap_dir: Path) -> None:
-    """A renamed file is kept on purpose, so a name the budget would delete first is refused."""
+def test_recordings_lists_parts_and_kept_recordings_newest_first(mcap_dir: Path) -> None:
+    """Parts and kept recordings form one list, ordered by age across both folders."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    older_part = recorder.parts_dir / '20200101_000000_000000_01.mcap'
+    kept = mcap_dir / 'weeding on the north field.mcap'
+    newer_part = recorder.parts_dir / '20200102_000000_000000_01.mcap'
+    for age, path in enumerate([older_part, kept, newer_part]):
+        path.write_bytes(b'x' * 10)
+        os.utime(path, (age, age))
+
+    assert recorder.recordings == [newer_part, kept, older_part]
+    assert recorder.file_count == 3
+    assert recorder.total_size == 30
+
+
+async def test_merging_parts_files_the_result_away_as_kept(mcap_dir: Path) -> None:
+    """The parts of a run merge into one recording at the top level, and only that one is left."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_part_duration=60, auto_start=False)
     recorder.add_topic('/test', _schema())
-    recorder.start()
-    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=NS)
+    run = recorder.start()
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder._flush()
+    rosys.set_time(rosys.time() + 61)
+    recorder.log_message('/test', _json({'value': 1}), timestamp_ns=61 * NS)
     await recorder.stop()
-    path = recorder.recordings[0]
+    parts = sorted(recorder.parts_dir.glob('*.mcap'))
+    assert len(parts) == 2
+
+    target = await recorder.merge(parts, f'{run}_merged')
+
+    assert target == mcap_dir / f'{run}_merged.mcap'
+    assert recorder.recordings == [target]
+    assert _values(target) == [0, 1]
+
+
+async def test_only_recordings_of_the_recorder_can_be_merged(mcap_dir: Path) -> None:
+    """A file outside the output directory and its parts folder is refused, so nothing foreign is deleted."""
+    recorder = McapRecorder(output_dir=mcap_dir / 'recordings', auto_start=False)
+    foreign = mcap_dir / 'elsewhere.mcap'
+    foreign.write_bytes(b'not ours')
 
     with pytest.raises(ValueError):
-        recorder.rename_recording(path, '20260911_120000_123456_backup_02')
+        await recorder.merge([foreign], 'merged')
 
-    assert recorder.recordings == [path]
+    assert foreign.exists()
+    assert recorder.recordings == []
 
 
 @pytest.mark.parametrize('name', ['../escaped', 'sub/run', '..', '   ', ''])
@@ -891,7 +928,7 @@ def test_a_run_name_cannot_leave_the_output_directory(mcap_dir: Path, name: str)
 
 async def test_the_metadata_is_taken_as_it_was_at_start(mcap_dir: Path) -> None:
     """Changing the caller's dict after start does not change the parts written later."""
-    recorder = McapRecorder(output_dir=mcap_dir, max_file_duration=60, auto_start=False)
+    recorder = McapRecorder(output_dir=mcap_dir, max_part_duration=60, auto_start=False)
     recorder.add_topic('/test', _schema())
     metadata = {'mission': 'Implement Demo'}
     recorder.start(metadata=metadata)
@@ -904,7 +941,7 @@ async def test_the_metadata_is_taken_as_it_was_at_start(mcap_dir: Path) -> None:
     recorder.log_message('/test', _json({'value': 2}), timestamp_ns=62 * NS)
     await recorder.stop()
 
-    files = sorted(mcap_dir.glob('*.mcap'))
+    files = sorted(recorder.parts_dir.glob('*.mcap'))
     assert len(files) == 2
     assert [_metadata(path) for path in files] == [{'mission': 'Implement Demo'}] * 2
 
@@ -917,4 +954,4 @@ def test_metadata_that_is_no_json_is_refused_at_start(mcap_dir: Path) -> None:
         recorder.start(metadata={'when': object()})
 
     assert not recorder.is_recording
-    assert not list(mcap_dir.glob('*.mcap'))
+    assert recorder.recordings == []
