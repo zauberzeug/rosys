@@ -20,7 +20,6 @@ class UsbCameraProvider(CameraProvider[UsbCamera]):
 
         self.log = logging.getLogger('rosys.usb_camera_provider')
 
-        rosys.on_shutdown(self.shutdown)
         if auto_scan:
             rosys.on_repeat(self.update_device_list, self.SCAN_INTERVAL)
 
@@ -38,15 +37,10 @@ class UsbCameraProvider(CameraProvider[UsbCamera]):
         return (await rosys.run.io_bound(scan_for_connected_devices)) or set()
 
     async def update_device_list(self) -> None:
-        camera_uids = await self.scan_for_cameras()
-        for uid in camera_uids:
+        for uid in await self.scan_for_cameras():
             if uid not in self._cameras:
+                self.log.info('found new camera "%s"', uid)
                 self.add_camera(UsbCamera(id=uid))
-            await self._cameras[uid].connect()
-
-    async def shutdown(self) -> None:
-        for camera in self._cameras.values():
-            await camera.disconnect()
 
     @staticmethod
     def is_operable() -> bool:

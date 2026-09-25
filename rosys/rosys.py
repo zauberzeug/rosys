@@ -45,7 +45,6 @@ class _state:
     start_time: float = 0.0 if is_test else pytime.time()
     time = start_time
     last_time_request: float = start_time
-    exception: BaseException | None = None  # NOTE: used for tests
     startup_finished: bool = False
     is_simulation: bool = False
 
@@ -58,10 +57,6 @@ def is_simulation() -> bool:
 def enter_simulation() -> None:
     """Enter system time simulation mode."""
     _state.is_simulation = True
-
-
-def get_last_exception() -> BaseException | None:
-    return _state.exception
 
 
 notifications: list[Notification] = []
@@ -351,7 +346,7 @@ async def startup() -> None:
 
 
 async def _garbage_collection() -> None:
-    if psutil.virtual_memory().free < config.garbage_collection_mbyte_limit * 1_000_000:
+    if psutil.virtual_memory().available < config.garbage_collection_mbyte_limit * 1_000_000:
         log.warning('less than %s mb of memory remaining -> start garbage collection',
                     config.garbage_collection_mbyte_limit)
         gc.collect()
@@ -385,7 +380,6 @@ async def shutdown() -> None:
 def reset_before_test() -> None:
     assert is_test
     set_time(0)  # NOTE: in tests we start at zero for better readability
-    _state.exception = None
 
 
 def reset_after_test() -> None:

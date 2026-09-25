@@ -9,10 +9,10 @@ from nicegui import Event
 from .. import persistence, rosys, run
 from ..driving import PathSegment
 from ..geometry import Point, Pose, Prism, Spline
+from ..helpers.spawning import SPAWN_CONTEXT
 from .area import Area
 from .obstacle import Obstacle
 from .planner_process import (
-    SPAWN_CONTEXT,
     PlannerCommand,
     PlannerGrowMapCommand,
     PlannerObstacleDistanceCommand,

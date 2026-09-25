@@ -19,6 +19,8 @@ from typing import Any
 
 import httpx
 
+from .http import new_async_client
+
 # Bitrate is in kbps on both sides: RoSys models kbps and divinus forwards mp4_bitrate
 # straight to the encoder, whose bitrate fields are kbps. Passed through unchanged.
 
@@ -38,7 +40,7 @@ class OpenIpcZauberzeugSettingsInterface:
 
     async def _request(self, path: str, **params: Any) -> dict[str, Any]:
         params = {key: value for key, value in params.items() if value is not None}
-        async with httpx.AsyncClient(auth=self._auth, timeout=REQUEST_TIMEOUT) as client:
+        async with new_async_client(auth=self._auth, timeout=REQUEST_TIMEOUT) as client:
             response = await client.get(f'{self.base_url}{path}', params=params)
             response.raise_for_status()
             return response.json()
