@@ -20,7 +20,7 @@ async def test_timeouts(automator: Automator):
     assert len(failures) == 0
 
     automator.start(run.wait_for(func, timeout=0.25))
-    await forward(seconds=2.0)
+    await forward(seconds=2.0, fail_on_automation_failure=False)
     assert automator.is_stopped
     assert len(failures) == 1
 
@@ -30,7 +30,7 @@ async def test_timeouts(automator: Automator):
     assert len(failures) == 1
 
     automator.start(run.retry(func, max_attempts=1, max_timeout=0.25))
-    await forward(seconds=2.0)
+    await forward(seconds=2.0, fail_on_automation_failure=False)
     assert automator.is_stopped
     assert len(failures) == 2
 

@@ -102,8 +102,6 @@ class Image:
         array = decode_jpeg_image(jpeg_bytes)
         if array is None:
             return None
-        if len(array.shape) == 2:
-            array = np.repeat(np.expand_dims(array, -1), repeats=3, axis=2)
         return cls.from_array(array, camera_id=camera_id, time=time, metadata=metadata)
 
     @classmethod

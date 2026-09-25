@@ -10,7 +10,7 @@ from rosys.automation import Automator
 from rosys.automation.automation import Automation
 from rosys.driving import Driver
 from rosys.geometry import Pose, Spline
-from rosys.hardware import Robot
+from rosys.hardware import Robot, Wheels
 from rosys.testing import assert_pose, forward
 
 
@@ -39,9 +39,10 @@ async def test_driving_a_spline(driver: Driver, automator: Automator, robot: Rob
     assert_pose(dx, 1, deg=0, position_tolerance=0.035)
 
 
-@pytest.mark.parametrize('dx', [2, -2])
-async def test_driving_a_curved_spline(driver: Driver, automator: Automator, robot: Robot, dx: float):
+@pytest.mark.parametrize(('dx', 'gain'), [(2, 0.0), (-2, 0.0), (-2, 1.0)])
+async def test_driving_a_curved_spline(driver: Driver, automator: Automator, robot: Robot, dx: float, gain: float):
     assert_pose(0, 0, deg=0)
+    driver.parameters.curvature_feedforward_gain = gain
     yaw_degrees = 90 if dx > 0 else -90
     spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=dx, y=2, yaw=np.radians(yaw_degrees)), backward=dx < 0)
     automator.start(driver.drive_spline(spline, flip_hook=dx < 0))
@@ -58,9 +59,318 @@ async def test_aborting_a_drive(driver: Driver, automator: Automator, robot: Rob
     await forward(x=1)
     assert_pose(1, 0, deg=0)
     driver.abort()
-    await forward(seconds=1)
+    await forward(seconds=1, fail_on_automation_failure=False)
     assert_pose(1, 0, deg=0)
     assert cause == ['an exception occurred in an automation']
+
+
+async def test_a_raising_automation_stops_forwarding(automator: Automator):
+    """Forwarding stops at the failure instead of stepping through the whole span it was given."""
+    async def run() -> None:
+        raise RuntimeError('the automation broke')
+    automator.start(run())
+    started_at = rosys.time()
+    with pytest.raises(AssertionError, match='the automation broke') as exception_info:
+        await forward(seconds=60)
+    assert rosys.time() - started_at == pytest.approx(0, abs=0.1)
+    assert isinstance(exception_info.value.__cause__, RuntimeError), 'the original failure stays attached'
+
+
+async def test_a_new_automation_forwards_past_an_earlier_failure(automator: Automator):
+    """A failure belongs to the automation that raised it, so the next run forwards freely."""
+    async def failing() -> None:
+        raise RuntimeError('the automation broke')
+
+    completed = False
+
+    async def working() -> None:
+        nonlocal completed
+        await rosys.sleep(1.0)
+        completed = True
+
+    automator.start(failing())
+    await forward(seconds=1, fail_on_automation_failure=False)
+    automator.start(working())
+    await forward(seconds=2)
+    assert completed
+
+
+async def test_a_failure_during_the_wait_stops_forwarding(automator: Automator):
+    """Forwarding stops even when the failure satisfies the condition it is waiting for."""
+    async def failing() -> None:
+        await rosys.sleep(0.5)
+        raise RuntimeError('the automation broke')
+    automator.start(failing())
+    # the automation counts as stopped until its task has started, which would satisfy the condition right away
+    await forward(seconds=0.1)
+    with pytest.raises(AssertionError, match='the automation broke'):
+        await forward(until=lambda: automator.is_stopped)
+
+
+async def test_a_failure_stops_forwarding_to_a_condition_that_already_holds(automator: Automator):
+    """Forwarding stops before waiting, not only in between two steps."""
+    async def failing() -> None:
+        raise RuntimeError('the automation broke')
+    automator.start(failing())
+    await forward(seconds=1, fail_on_automation_failure=False)
+    with pytest.raises(AssertionError, match='the automation broke'):
+        await forward(until=lambda: True)
+
+
+async def _count(ticks: list[int]) -> None:
+    while True:
+        await rosys.sleep(1)
+        ticks.append(1)
+
+
+@pytest.mark.parametrize('gap', [2.0, 0.0], ids=['over a running automation', 'in the same loop turn'])
+async def test_stopping_an_automation_that_was_started_over_another_one(automator: Automator, gap: float):
+    """``start()`` over a running (#461) or a not yet started automation must not orphan the new one."""
+    ticks: list[int] = []
+    events: list[str] = []
+    automator.AUTOMATION_STARTED.subscribe(lambda: events.append('started'))
+    automator.AUTOMATION_STOPPED.subscribe(lambda _: events.append('stopped'))
+
+    automator.start(_count(ticks))
+    if gap > 0:
+        await forward(seconds=gap)
+    automator.start(_count(ticks))
+    await forward(seconds=2)
+    assert automator.is_running
+    automator.stop(because='test')
+    ticks_at_stop = len(ticks)
+    await forward(seconds=5)
+    assert len(ticks) == ticks_at_stop, 'an automation kept running after stop()'
+    assert automator.is_stopped
+    assert events == ['started', 'stopped', 'started', 'stopped']
+
+
+@pytest.mark.parametrize('method', ['stop', 'abort'])
+async def test_stopping_an_automation_that_has_not_started_yet(automator: Automator, method: Literal['stop', 'abort']):
+    ticks: list[int] = []
+    automator.start(_count(ticks))
+    assert automator.is_pending
+    if method == 'stop':
+        automator.stop(because='test')
+    else:
+        automator.abort(because='test')
+    assert not automator.is_pending
+    await forward(seconds=3)
+    assert not ticks
+    assert automator.is_stopped
+
+
+@pytest.mark.parametrize('old_state', ['running', 'stopping'])
+async def test_a_superseded_automation_does_not_override_the_new_drive_command(
+        automator: Automator, wheels: Wheels, old_state: Literal['running', 'stopping']):
+    """``on_interrupt`` of the old automation must land before the new one's first drive command, or not at all."""
+    async def old() -> None:
+        try:
+            await wheels.drive(0.3, 0)
+            await rosys.sleep(100)
+        finally:
+            await rosys.sleep(1)
+
+    async def new() -> None:
+        await wheels.drive(0.5, 0)
+        await rosys.sleep(100)
+
+    automator.start(old())
+    await forward(seconds=1)
+    if old_state == 'stopping':
+        automator.stop(because='test')
+        await forward(seconds=0.5)
+        assert automator.is_stopping
+    assert wheels.linear_target_speed == 0.3
+    automator.start(new())
+    await forward(seconds=2)
+    assert wheels.linear_target_speed == 0.5, 'the old automation stopped the wheels of the new one'
+
+
+async def test_a_superseded_automation_stops_the_wheels_the_new_one_leaves_alone(automator: Automator, wheels: Wheels):
+    """``on_interrupt`` of the old automation runs before the new automation's first turn."""
+    async def old() -> None:
+        try:
+            await wheels.drive(0.3, 0)
+            await rosys.sleep(100)
+        finally:
+            await rosys.sleep(1)
+
+    async def new() -> None:
+        await rosys.sleep(100)
+
+    automator.start(old())
+    await forward(seconds=1)
+    assert wheels.linear_target_speed == 0.3
+    automator.start(new())
+    await forward(seconds=2)
+    assert wheels.linear_target_speed == 0.0, 'the superseded automation never stopped the wheels'
+
+
+async def test_an_exception_in_the_cleanup_of_a_superseded_automation_is_ignored(automator: Automator):
+    """An exception while the old automation cleans up must neither abort the new one nor be attributed to it."""
+    ticks: list[int] = []
+
+    async def old() -> None:
+        try:
+            await rosys.sleep(100)
+        finally:
+            await rosys.sleep(3)
+            raise RuntimeError('cleanup of the old automation failed')
+
+    automator.start(old())
+    await forward(seconds=1)
+    automator.start(_count(ticks))
+    await forward(seconds=4)
+    ticks_after_exception = len(ticks)
+    await forward(seconds=2)
+    assert len(ticks) > ticks_after_exception, 'the new automation was aborted'
+    assert automator.is_running
+    assert automator.last_exception is None
+
+
+async def test_starting_over_a_pausing_automation(automator: Automator):
+    """A pending pause inside an uninterruptible section must not leave the old automation parked forever."""
+    events: list[str] = []
+
+    @rosys.automation.uninterruptible
+    async def uninterruptible_section() -> None:
+        await rosys.sleep(1)
+
+    async def old() -> None:
+        try:
+            await uninterruptible_section()
+            events.append('old continued')
+            await rosys.sleep(100)
+        finally:
+            events.append('old finished')
+
+    async def new() -> None:
+        await rosys.sleep(100)
+
+    automator.start(old())
+    await forward(seconds=0.5)
+    automator.pause(because='test')
+    assert automator.is_pausing
+    automator.start(new())
+    await forward(seconds=2)
+    assert events == ['old finished']
+    assert automator.is_running
+
+
+async def test_an_automation_that_starts_another_one_and_returns(automator: Automator):
+    """The old automation completes after ``start()`` replaced it, which must not clear the handle or emit COMPLETED."""
+    ticks: list[int] = []
+    completed: list[int] = []
+    automator.AUTOMATION_COMPLETED.subscribe(lambda: completed.append(1))
+
+    async def old() -> None:
+        automator.start(_count(ticks))
+
+    automator.start(old())
+    await forward(seconds=3)
+    assert automator.is_running
+    assert not completed
+    automator.stop(because='test')
+    ticks_at_stop = len(ticks)
+    await forward(seconds=3)
+    assert len(ticks) == ticks_at_stop, 'the automation kept running after stop()'
+
+
+async def test_starting_paused_while_a_subscriber_starts_another_automation(automator: Automator):
+    """``paused=True`` must pause the automation that was started, not one started re-entrantly by a subscriber."""
+    ticks: list[int] = []
+    started = 0
+
+    def start_another() -> None:
+        nonlocal started
+        started += 1
+        if started == 1:
+            automator.start(_count(ticks))
+
+    automator.AUTOMATION_STARTED.subscribe(start_another)
+
+    async def main() -> None:
+        await rosys.sleep(100)
+
+    automator.start(main(), paused=True)
+    await forward(seconds=3)
+    assert automator.is_running, 'the re-entrantly started automation was paused instead'
+    assert ticks
+
+
+async def test_starting_while_a_stopped_subscriber_starts_another_automation(automator: Automator):
+    """``start()`` must also retire an automation that an ``AUTOMATION_STOPPED`` subscriber starts re-entrantly."""
+    ticks: list[int] = []
+    events: list[str] = []
+    automator.AUTOMATION_STARTED.subscribe(lambda: events.append('started'))
+    automator.AUTOMATION_STOPPED.subscribe(lambda _: events.append('stopped'))
+    stops = 0
+
+    def start_another(_: str) -> None:
+        nonlocal stops
+        stops += 1
+        if stops == 1:
+            automator.start(_count(ticks))
+
+    automator.AUTOMATION_STOPPED.subscribe(start_another)
+    automator.start(_count([]))
+    await forward(seconds=2)
+    automator.start(_count([]))  # its stop() lets the subscriber start another automation in between
+    await forward(seconds=3)
+    automator.stop(because='test')
+    ticks_at_stop = len(ticks)
+    await forward(seconds=5)
+    assert len(ticks) == ticks_at_stop, 'an automation kept running after stop()'
+    assert automator.is_stopped
+    assert events == ['started', 'stopped', 'started', 'stopped', 'started', 'stopped']
+
+
+async def test_stopping_a_pausing_automation(automator: Automator):
+    """A stop during a pending pause inside an uninterruptible section is executed, not ignored."""
+    events: list[str] = []
+
+    @rosys.automation.uninterruptible
+    async def uninterruptible_section() -> None:
+        await rosys.sleep(1)
+
+    async def run() -> None:
+        try:
+            await uninterruptible_section()
+            events.append('continued')
+            await rosys.sleep(100)
+        finally:
+            events.append('finished')
+
+    automator.start(run())
+    await forward(seconds=0.5)
+    automator.pause(because='test')
+    assert automator.is_pausing
+    automator.stop(because='test')
+    await forward(seconds=3)
+    assert events == ['finished']
+    assert automator.is_stopped
+
+
+async def test_stopping_twice_while_the_automation_cleans_up(automator: Automator):
+    """A second ``stop()`` during the cleanup neither emits ``AUTOMATION_STOPPED`` nor runs ``on_interrupt`` again."""
+    stops: list[str] = []
+    automator.AUTOMATION_STOPPED.subscribe(stops.append)
+
+    async def run() -> None:
+        try:
+            await rosys.sleep(100)
+        finally:
+            await rosys.sleep(2)
+
+    automator.start(run())
+    await forward(seconds=1)
+    automator.stop(because='first press')
+    await forward(seconds=1)
+    assert automator.is_stopping
+    automator.stop(because='second press')
+    await forward(seconds=3)
+    assert stops == ['first press']
 
 
 async def test_finally_block(automator: Automator):
@@ -255,7 +565,7 @@ async def test_parallelize_exception(automator: Automator):
         await rosys.automation.parallelize(slow(), fast())
 
     automator.start(run())
-    await forward(seconds=10)
+    await forward(seconds=10, fail_on_automation_failure=False)
     assert failures == ['an exception occurred in an automation: i is 3']
 
 
@@ -325,3 +635,68 @@ async def test_uninterruptible(automator: Automator, method: Literal['pause', 's
         automator.stop(because='we can')
     await forward(seconds=2.0)
     assert state['count'] == 20
+
+
+@pytest.mark.parametrize(('gain', 'max_allowed_cross_track'), [(0.0, 0.05), (1.0, 0.005)])
+async def test_curvature_feedforward_improves_tracking(driver: Driver, automator: Automator, robot: Robot,
+                                                       gain: float, max_allowed_cross_track: float):
+    driver.parameters.curvature_feedforward_gain = gain
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=2, yaw=np.radians(90)))
+    automator.start(driver.drive_spline(spline))
+    await forward(until=lambda: automator.is_running)
+    max_cross_track = 0.0
+
+    def is_stopped() -> bool:
+        nonlocal max_cross_track
+        foot = spline.closest_point(driver.pose.x, driver.pose.y)
+        max_cross_track = max(max_cross_track, driver.pose.distance(spline.pose(foot)))
+        return automator.is_stopped
+    await forward(until=is_stopped)
+    assert max_cross_track < max_allowed_cross_track
+
+
+async def test_curvature_feedforward_is_clamped_to_the_minimum_turning_radius(driver: Driver, automator: Automator,
+                                                                              robot: Robot):
+    driver.parameters.curvature_feedforward_gain = 4.0
+    driver.parameters.minimum_turning_radius = 1.0
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=2, yaw=np.radians(90)))
+    automator.start(driver.drive_spline(spline))
+    await forward(until=lambda: automator.is_running)
+    max_curvature = 0.0
+
+    def is_stopped() -> bool:
+        nonlocal max_curvature
+        if driver.state is not None:
+            max_curvature = max(max_curvature, abs(driver.state.curvature))
+        return automator.is_stopped
+    await forward(until=is_stopped)
+    assert max_curvature == pytest.approx(1 / driver.parameters.minimum_turning_radius)
+
+
+async def test_curvature_feedforward_handles_degenerate_splines(driver: Driver, automator: Automator, robot: Robot):
+    driver.parameters.curvature_feedforward_gain = 1.0
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=2, yaw=np.radians(90)), control_dist=0)
+    automator.start(driver.drive_spline(spline))
+    await forward(until=lambda: automator.is_running)
+    await forward(until=lambda: automator.is_stopped)
+    assert_pose(2, 2, deg=45, position_tolerance=0.035)  # NOTE: the degenerate spline is a straight chord
+
+
+async def test_curvature_feedforward_is_bounded_for_near_degenerate_splines(driver: Driver, automator: Automator,
+                                                                            robot: Robot):
+    driver.parameters.curvature_feedforward_gain = 1.0
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=2, yaw=np.radians(90)), control_dist=0.01)
+    automator.start(driver.drive_spline(spline))
+    await forward(until=lambda: automator.is_running)
+    await forward(until=lambda: automator.is_stopped)  # NOTE: an unbounded feed-forward would stall the drive here
+    assert_pose(2, 2, position_tolerance=0.05)
+
+
+async def test_curvature_feedforward_without_driving_backwards(driver: Driver, automator: Automator, robot: Robot):
+    driver.parameters.can_drive_backwards = False
+    driver.parameters.curvature_feedforward_gain = 1.0
+    spline = Spline.from_poses(Pose(x=0, y=0, yaw=0), Pose(x=2, y=2, yaw=np.radians(90)))
+    automator.start(driver.drive_spline(spline))
+    await forward(until=lambda: automator.is_running)
+    await forward(until=lambda: automator.is_stopped)
+    assert_pose(2, 2, deg=90, position_tolerance=0.035)

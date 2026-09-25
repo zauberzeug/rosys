@@ -67,4 +67,4 @@ class Step:
         return \
             np.abs(angle(dir_, yaw0)) < np.pi / 2 and \
             np.abs(angle(dir_, yaw1)) < np.pi / 2 and \
-            np.abs(self.spline.max_curvature()) < curvature_limit  # NOTE: max_curvature can be NaN
+            np.abs(self.spline.max_curvature()) < curvature_limit  # NOTE: max_curvature is infinite for degenerate splines

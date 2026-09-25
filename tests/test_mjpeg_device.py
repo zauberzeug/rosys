@@ -1,73 +1,279 @@
-from collections.abc import Callable
+import errno
+import sys
+import threading
+from collections.abc import Callable, Iterator
+from multiprocessing.connection import Connection
+from types import SimpleNamespace
+from unittest.mock import patch
 
+import cv2
 import httpx
+import numpy as np
 import pytest
 
-from rosys.vision.mjpeg_camera.mjpeg_device import open_stream, parse_capture_timestamp
+from rosys.vision.mjpeg_camera.mjpeg_stream_worker import (
+    MjpegStreamWorker,
+    StreamEndedError,
+    _open_stream,
+    _parse_capture_timestamp,
+    _run_worker,
+    _split_frames,
+)
+from rosys.vision.mjpeg_camera.stream_channel import (
+    EndReason,
+    Frame,
+    Memfd,
+    MemfdReceiver,
+    Message,
+    StreamEnded,
+    open_channel,
+    open_memfd_channel,
+    open_pickled_channel,
+)
 
 
 def test_parses_x_timestamp():
     header = b'\r\n--boundary\r\nContent-Type: image/jpeg\r\nContent-Length: 1234\r\nX-Timestamp: 1718900000.123456\r\n\r\n'
-    assert parse_capture_timestamp(header) == 1718900000.123456
+    assert _parse_capture_timestamp(header) == 1718900000.123456
 
 
 def test_parses_x_timestamp_case_insensitively():
     header = b'--boundary\r\nx-timestamp:1718900000.5\r\n\r\n'
-    assert parse_capture_timestamp(header) == 1718900000.5
+    assert _parse_capture_timestamp(header) == 1718900000.5
 
 
 def test_returns_none_without_header():
     header = b'\r\n--boundary\r\nContent-Type: image/jpeg\r\nContent-Length: 1234\r\n\r\n'
-    assert parse_capture_timestamp(header) is None
+    assert _parse_capture_timestamp(header) is None
 
 
 def test_returns_none_for_unparsable_value():
     header = b'X-Timestamp: not-a-number\r\n\r\n'
-    assert parse_capture_timestamp(header) is None
+    assert _parse_capture_timestamp(header) is None
 
 
 def test_uses_last_header_when_multiple_present():
     header = b'X-Timestamp: 1.0\r\n\r\n<jpeg>\r\n--boundary\r\nX-Timestamp: 2.0\r\n\r\n'
-    assert parse_capture_timestamp(header) == 2.0
+    assert _parse_capture_timestamp(header) == 2.0
 
 
-async def _negotiate_stream(handler: Callable[[httpx.Request], httpx.Response],
-                            *,
-                            username: str | None = None,
-                            password: str | None = None) -> httpx.Response | None:
-    """Open a stream against a mocked camera and return the negotiated response."""
-    async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
-        async with open_stream(client, 'http://127.0.0.1/stream', username, password) as response:
-            return response
+def test_yields_the_newest_complete_frame_per_chunk_with_its_capture_time():
+    jpeg = b'\xff\xd8' + bytes(8) + b'\xff\xd9'
+    stream = (b'--frame\r\nX-Timestamp: 1.5\r\n\r\n' + jpeg + b'\r\n--frame\r\nX-Timestamp: 2.0\r\n\r\n' + jpeg[:5],
+              jpeg[5:] + b'\r\n--frame\r\nX-Timestamp: 3.0\r\n\r\n' + jpeg,
+              b'\r\n--frame\r\nContent-Type: image/jpeg\r\n\r\n' + jpeg)
+    assert list(_split_frames(stream)) == [(jpeg, 1.5), (jpeg, 3.0), (jpeg, None)]
+
+
+def _negotiate_stream(handler: Callable[[httpx.Request], httpx.Response],
+                      *,
+                      username: str | None = None,
+                      password: str | None = None) -> int:
+    """Open a stream against a mocked camera and return the status of the negotiated response."""
+    with httpx.Client(transport=httpx.MockTransport(handler)) as client:
+        with _open_stream(client, 'http://127.0.0.1/stream', username, password) as response:
+            return response.status_code
 
 
 @pytest.mark.parametrize('challenge, auth_prefix', [
     ('Digest realm="cam", nonce="abc"', 'Digest '),
     ('Basic realm="cam"', 'Basic '),
 ])
-async def test_answers_challenge_with_matching_auth(challenge: str, auth_prefix: str) -> None:
+def test_answers_challenge_with_matching_auth(challenge: str, auth_prefix: str) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         if request.headers.get('authorization', '').startswith(auth_prefix):
             return httpx.Response(200)
         return httpx.Response(401, headers={'www-authenticate': challenge})
 
-    response = await _negotiate_stream(handler, username='user', password='secret')
-    assert response is not None and response.status_code == 200
+    assert _negotiate_stream(handler, username='user', password='secret') == 200
 
 
-async def test_sends_no_credentials_when_not_challenged() -> None:
+def test_sends_no_credentials_when_not_challenged() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert 'authorization' not in request.headers
         return httpx.Response(200)
 
-    response = await _negotiate_stream(handler, username='user', password='secret')
-    assert response is not None and response.status_code == 200
+    assert _negotiate_stream(handler, username='user', password='secret') == 200
 
 
-async def test_sends_no_credentials_without_username_and_password() -> None:
+def test_sends_no_credentials_without_username_and_password() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert 'authorization' not in request.headers
         return httpx.Response(401, headers={'www-authenticate': 'Basic realm="cam"'})
 
-    response = await _negotiate_stream(handler)
-    assert response is None
+    assert _negotiate_stream(handler) == 401
+
+
+class _RecordingSender:
+
+    def __init__(self) -> None:
+        self.messages: list[Message] = []
+
+    def send(self, message: Message) -> None:
+        self.messages.append(message)
+
+    def close(self) -> None:
+        pass
+
+
+JPEG_FRAME = cv2.imencode('.jpg', np.zeros((8, 8, 3), dtype=np.uint8))[1].tobytes()
+
+
+def _run_worker_against(handler: Callable[[httpx.Request], httpx.Response],
+                        sender: _RecordingSender | None = None) -> list[Message]:
+    """Run one worker session against a mocked camera and return the messages it sent."""
+    sender = sender or _RecordingSender()
+    client = httpx.Client(transport=httpx.MockTransport(handler))
+    with patch('rosys.vision.mjpeg_camera.mjpeg_stream_worker.new_client', return_value=client):
+        _run_worker('http://127.0.0.1/stream', None, None, sender)
+    return sender.messages
+
+
+def test_reports_a_stream_that_stops_sending_data_as_stalled() -> None:
+    def stalling_body() -> Iterator[bytes]:
+        yield b'--boundary\r\n'
+        raise httpx.ReadTimeout('timed out')
+
+    messages = _run_worker_against(lambda request: httpx.Response(200, content=stalling_body()))
+    assert messages == [StreamEnded(reason=EndReason.STALLED)]
+
+
+def test_reports_a_camera_that_does_not_answer_as_unreachable() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectTimeout('timed out', request=request)
+
+    assert _run_worker_against(handler) == [StreamEnded(reason=EndReason.UNREACHABLE, detail='timed out')]
+
+
+def test_stops_quietly_when_the_parent_is_gone() -> None:
+    class BrokenSender(_RecordingSender):
+        def send(self, message: Message) -> None:
+            raise BrokenPipeError
+
+    sender = BrokenSender()
+    _run_worker_against(lambda request: httpx.Response(200, content=JPEG_FRAME), sender)
+    assert sender.messages == []
+
+
+def test_reports_an_os_error_while_sending_a_frame() -> None:
+    class ExhaustedSender(_RecordingSender):
+        def send(self, message: Message) -> None:
+            if isinstance(message, Frame):
+                raise OSError(errno.EMFILE, 'Too many open files')
+            super().send(message)
+
+    sender = ExhaustedSender()
+    _run_worker_against(lambda request: httpx.Response(200, content=JPEG_FRAME), sender)
+    last = sender.messages[-1]
+    assert isinstance(last, StreamEnded)
+    assert last.reason is EndReason.FAILED
+    assert last.detail.startswith('OSError: ')
+
+
+def _memfd_is_available() -> bool:
+    if sys.platform != 'linux':
+        return False
+    try:
+        Memfd()
+    except (OSError, AttributeError):
+        return False
+    return True
+
+
+class _ScriptedReceiver:
+    """Hand out the given messages, then report EOF and flag that everything was read."""
+
+    def __init__(self, messages: list[Message]) -> None:
+        self._messages = iter(messages)
+        self.drained = threading.Event()
+
+    def recv(self) -> Message:
+        try:
+            return next(self._messages)
+        except StopIteration:
+            self.drained.set()
+            raise EOFError from None
+
+    def close(self) -> None:
+        pass
+
+
+class _IdleProcess:
+    exitcode = 0
+
+    def start(self) -> None:
+        pass
+
+    def is_alive(self) -> bool:
+        return False
+
+    def join(self, timeout: float | None = None) -> None:
+        pass
+
+
+def _worker_reading(receiver: _ScriptedReceiver) -> MjpegStreamWorker:
+    """Create a worker whose reader thread drains the given receiver instead of a spawned process."""
+    with patch('rosys.vision.mjpeg_camera.mjpeg_stream_worker.open_channel', return_value=(receiver, _RecordingSender())), \
+            patch('rosys.vision.mjpeg_camera.mjpeg_stream_worker.SPAWN_CONTEXT',
+                  SimpleNamespace(Process=lambda **kwargs: _IdleProcess())):
+        return MjpegStreamWorker('cam', 'http://127.0.0.1/stream', None, None)
+
+
+def _frame(capture_time: float) -> Frame:
+    return Frame(array=np.zeros((1, 1, 3), dtype=np.uint8), capture_time=capture_time)
+
+
+async def test_stream_worker_keeps_only_the_newest_frame_while_the_loop_is_busy() -> None:
+    frames = [_frame(float(i)) for i in range(5)]
+    receiver = _ScriptedReceiver(list(frames))
+    worker = _worker_reading(receiver)
+    assert receiver.drained.wait(timeout=1), 'expected the reader thread to drain the stub without the loop running'
+    assert worker._inbox.frame is frames[-1]  # pylint: disable=protected-access
+
+    received = []
+    with pytest.raises(StreamEndedError) as end:
+        async for frame in worker.frames():
+            received.append(frame)
+    assert received == [frames[-1]]  # by identity
+    assert end.value.reason is EndReason.FAILED
+    await worker.shutdown()
+
+
+async def test_stream_worker_ends_quietly_when_the_camera_closes_the_stream() -> None:
+    frame = _frame(1.0)
+    worker = _worker_reading(_ScriptedReceiver([frame, StreamEnded(reason=EndReason.ENDED)]))
+    assert [received async for received in worker.frames()] == [frame]  # by identity
+    await worker.shutdown()
+
+
+@pytest.mark.parametrize('open_channel_', [
+    open_pickled_channel,
+    pytest.param(lambda: open_memfd_channel(Memfd()),
+                 marks=pytest.mark.skipif(not _memfd_is_available(), reason='no memfd')),
+])
+def test_frames_and_other_messages_survive_the_channel(open_channel_) -> None:
+    receiver, sender = open_channel_()
+    array = np.random.default_rng(0).integers(0, 255, size=(4, 6, 3), dtype=np.uint8)
+    sender.send(Frame(array=array, capture_time=1.5))
+    sender.send('not a frame')
+    sender.close()
+
+    frame = receiver.recv()
+    assert isinstance(frame, Frame)
+    assert frame.capture_time == 1.5
+    assert np.array_equal(frame.array, array)
+    assert receiver.recv() == 'not a frame'
+    receiver.close()
+
+
+def test_falls_back_to_the_pickled_channel_without_memfd() -> None:
+    with patch('rosys.vision.mjpeg_camera.stream_channel.Memfd', side_effect=OSError):
+        receiver, sender = open_channel()
+    assert isinstance(receiver, Connection)
+    assert isinstance(sender, Connection)
+
+
+@pytest.mark.skipif(not _memfd_is_available(), reason='no memfd')
+def test_prefers_the_memfd_channel() -> None:
+    receiver, _ = open_channel()
+    assert isinstance(receiver, MemfdReceiver)
