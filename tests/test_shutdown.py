@@ -69,6 +69,24 @@ async def test_a_handler_removed_during_shutdown_does_not_skip_another_handler()
     assert calls == ['victim', 'dropper', 'last']
 
 
+@pytest.mark.usefixtures('rosys_lifecycle')
+async def test_a_raising_handler_does_not_skip_another_handler():
+    calls: list[str] = []
+
+    async def failing() -> None:
+        calls.append('failing')
+        raise RuntimeError('cannot shut down cleanly')
+
+    def last() -> None:
+        calls.append('last')
+
+    rosys.on_shutdown(failing)
+    rosys.on_shutdown(last)
+    await rosys.startup()
+    await rosys.shutdown()
+    assert calls == ['failing', 'last']
+
+
 @pytest.mark.usefixtures('rosys_integration')
 async def test_a_handler_registered_from_a_temporary_leaves_no_dead_entry():
     count = len(shutdown_handlers)
