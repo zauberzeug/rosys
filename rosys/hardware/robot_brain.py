@@ -12,6 +12,7 @@ from .lizard_firmware import LizardFirmware
 
 CLOCK_OFFSET_HISTORY_LENGTH = 100
 MAX_CONFIGURE_ATTEMPTS = 3
+STARTUP_CHECKSUM_TIMEOUT = 5.0  # seconds to wait for the restarted Core to answer the checksum readback
 LOOP_PERIOD_WINDOW = 10.0  # seconds of core timestamps kept for the loop period statistics
 LOOP_PERIOD_HISTORY_LENGTH = 10_000  # bounds the window even if the core timestamps stop advancing
 CORE_MESSAGE_TIMEOUT = 1.0  # seconds without core messages after which the loop period is unknown
@@ -229,8 +230,10 @@ class RobotBrain:
 
         The transferred script is verified before it is persisted, so a lossy connection
         cannot leave a corrupt script in the microcontroller's storage.
+        Because the persist command itself is not acknowledged, the persisted script is verified once more
+        after the restart; this also catches a Core that boots silently because its stored script is broken.
 
-        :return: whether the script was transferred, verified and persisted
+        :return: whether the script was transferred, persisted and verified
         """
         rosys.notify('Configuring Lizard...')
         self.lizard_firmware.read_local_checksum()
@@ -242,18 +245,31 @@ class RobotBrain:
             checksum = await self.read_startup_checksum(timeout=3.0, force=True)
             if checksum == self.lizard_firmware.local_checksum:
                 break
-            reason = 'no checksum received' if checksum is None else \
-                f'checksum mismatch ({checksum} instead of {self.lizard_firmware.local_checksum})'
         else:
-            rosys.notify(f'Configuring Lizard failed: {reason}.', 'negative', log_level=logging.ERROR)
+            rosys.notify(f'Configuring Lizard failed: {self._describe_checksum(checksum)}.',
+                         'negative', log_level=logging.ERROR)
             # NOTE: restart to reload the persisted script into RAM; otherwise core.startup_checksum() would keep
             # reporting the unpersisted upload and the startup check could show a false "checksums match"
             await self.restart()
             return False
         await self.send('!.', force=True)
         await self.restart()
+        # NOTE: the Core answers direct commands even if its startup script fails, so this works for a silent Core
+        checksum = None
+        deadline = rosys.time() + STARTUP_CHECKSUM_TIMEOUT
+        while checksum is None and rosys.time() < deadline:
+            checksum = await self.read_startup_checksum(timeout=1.0, force=True)
+        if checksum != self.lizard_firmware.local_checksum:
+            rosys.notify(f'Verifying the persisted Lizard script failed: {self._describe_checksum(checksum)}.',
+                         'negative', log_level=logging.ERROR)
+            return False
         rosys.notify('Lizard configured successfully.', 'positive')
         return True
+
+    def _describe_checksum(self, checksum: str | None) -> str:
+        if checksum is None:
+            return 'no checksum received'
+        return f'checksum mismatch ({checksum} instead of {self.lizard_firmware.local_checksum})'
 
     async def read_startup_checksum(self, *, timeout: float = 3.0, force: bool = False) -> str | None:
         """Read the checksum of the startup script that the microcontroller currently holds.

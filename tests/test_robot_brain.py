@@ -20,7 +20,7 @@ class CommunicationSimulation(Communication):
         super().__init__()
         self.incoming: deque[str] = deque()
         self.sent: list[str] = []
-        self.startup_checksum = ''
+        self.startup_checksum: str | None = ''  # NOTE: ``None`` simulates a Core that does not answer
         self.startup_checksums: deque[str | None] = deque()  # NOTE: ``None`` simulates a missing response
 
     @classmethod
@@ -130,6 +130,36 @@ async def test_configure_verifies_startup_checksum(robot_brain: RobotBrain,
         'restart applies the persisted script -- or restores it into RAM after a failed upload'
     assert task.result() == (reason is None)
     assert any(f'Configuring Lizard failed: {reason}' in message for message in notifications) == (reason is not None)
+
+
+@pytest.mark.parametrize('persisted, reason', [
+    (MATCHING, None),
+    ('ffff', 'checksum mismatch (ffff instead of'),
+    (None, 'no checksum received'),
+], ids=['match', 'mismatch', 'silent_core'])
+async def test_configure_verifies_the_persisted_script_after_restart(robot_brain: RobotBrain,
+                                                                     persisted: str | None,
+                                                                     reason: str | None) -> None:
+    notifications: list[str] = []
+    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
+    communication = robot_brain.communication
+    assert isinstance(communication, CommunicationSimulation)
+    communication.startup_checksum = matching_checksum(robot_brain)
+    await connect(communication)
+    communication.startup_checksums.extend(['0000', matching_checksum(robot_brain)])  # NOTE: drain, then the upload
+    communication.startup_checksum = matching_checksum(robot_brain) if persisted == MATCHING else persisted
+    task = background_tasks.create(robot_brain.configure(), name='configure')
+    await forward(seconds=15.0)
+    assert communication.sent.count('!.') == 1
+    assert communication.sent.count('core.restart()') == 1
+    readbacks = communication.sent[communication.sent.index('core.restart()'):].count('core.startup_checksum()')
+    if persisted is None:
+        assert readbacks > 1, 'a silent Core is polled until the deadline'
+    else:
+        assert readbacks == 1
+    assert task.result() == (reason is None)
+    assert any(f'Verifying the persisted Lizard script failed: {reason}' in message
+               for message in notifications) == (reason is not None)
 
 
 async def test_startup_checksum_requests_are_serialized(robot_brain: RobotBrain) -> None:
