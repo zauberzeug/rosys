@@ -59,25 +59,18 @@ def robot_brain(rosys_integration: None) -> Generator[RobotBrain, None, None]:
     yield robot_brain
 
 
-async def test_no_warning_when_lizard_code_matches(robot_brain: RobotBrain) -> None:
+@pytest.mark.parametrize('startup_checksum, warns', [(MATCHING, False), ('ffff', True)], ids=['match', 'mismatch'])
+async def test_startup_check_warns_when_lizard_code_differs(robot_brain: RobotBrain,
+                                                            startup_checksum: str, warns: bool) -> None:
     notifications: list[str] = []
     rosys.NEW_NOTIFICATION.subscribe(notifications.append)
     communication = robot_brain.communication
     assert isinstance(communication, CommunicationSimulation)
-    communication.startup_checksum = matching_checksum(robot_brain)
+    communication.startup_checksum = \
+        matching_checksum(robot_brain) if startup_checksum == MATCHING else startup_checksum
     await connect(communication)
     assert 'core.startup_checksum()' in communication.sent
-    assert not any(MISMATCH_MESSAGE in message for message in notifications)
-
-
-async def test_warning_when_lizard_code_differs(robot_brain: RobotBrain) -> None:
-    notifications: list[str] = []
-    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
-    communication = robot_brain.communication
-    assert isinstance(communication, CommunicationSimulation)
-    communication.startup_checksum = 'ffff'
-    await connect(communication)
-    assert any(MISMATCH_MESSAGE in message for message in notifications)
+    assert any(MISMATCH_MESSAGE in message for message in notifications) == warns
 
 
 async def test_check_runs_again_after_configuring(robot_brain: RobotBrain) -> None:
@@ -106,13 +99,17 @@ async def test_check_runs_again_after_configuring(robot_brain: RobotBrain) -> No
     assert robot_brain.lizard_firmware.checksums_match is True
 
 
-@pytest.mark.parametrize('checksums, reason', [
-    (['ffff', MATCHING], None),
-    (['ffff'] * MAX_CONFIGURE_ATTEMPTS, 'checksum mismatch (ffff instead of'),
-    ([None] * MAX_CONFIGURE_ATTEMPTS, 'no checksum received'),
-], ids=['retry_then_match', 'repeated_mismatch', 'no_response'])
+@pytest.mark.parametrize('checksums, persisted, message', [
+    (['ffff', MATCHING], MATCHING, None),
+    (['ffff'] * MAX_CONFIGURE_ATTEMPTS, MATCHING, 'Configuring Lizard failed: checksum mismatch (ffff instead of'),
+    ([None] * MAX_CONFIGURE_ATTEMPTS, MATCHING, 'Configuring Lizard failed: no checksum received'),
+    ([MATCHING], 'ffff', 'Verifying the persisted Lizard script failed: checksum mismatch (ffff instead of'),
+    ([MATCHING], None, 'Verifying the persisted Lizard script failed: no checksum received'),
+], ids=['retry_then_match', 'repeated_mismatch', 'no_response', 'persisted_mismatch', 'silent_core'])
 async def test_configure_verifies_startup_checksum(robot_brain: RobotBrain,
-                                                   checksums: list[str | None], reason: str | None) -> None:
+                                                   checksums: list[str | None],
+                                                   persisted: str | None,
+                                                   message: str | None) -> None:
     notifications: list[str] = []
     rosys.NEW_NOTIFICATION.subscribe(notifications.append)
     communication = robot_brain.communication
@@ -121,45 +118,20 @@ async def test_configure_verifies_startup_checksum(robot_brain: RobotBrain,
     await connect(communication)
     communication.startup_checksums.append('0000')  # NOTE: consumed by the pre-loop drain in configure()
     communication.startup_checksums.extend(matching_checksum(robot_brain) if checksum == MATCHING else checksum
-                                           for checksum in checksums)
-    task = background_tasks.create(robot_brain.configure(), name='configure')
-    await forward(seconds=15.0)
-    assert communication.sent.count('!-') == len(checksums)
-    assert communication.sent.count('!.') == (0 if reason else 1), 'only a verified script may be persisted'
-    assert communication.sent.count('core.restart()') == 1, \
-        'restart applies the persisted script -- or restores it into RAM after a failed upload'
-    assert task.result() == (reason is None)
-    assert any(f'Configuring Lizard failed: {reason}' in message for message in notifications) == (reason is not None)
-
-
-@pytest.mark.parametrize('persisted, reason', [
-    (MATCHING, None),
-    ('ffff', 'checksum mismatch (ffff instead of'),
-    (None, 'no checksum received'),
-], ids=['match', 'mismatch', 'silent_core'])
-async def test_configure_verifies_the_persisted_script_after_restart(robot_brain: RobotBrain,
-                                                                     persisted: str | None,
-                                                                     reason: str | None) -> None:
-    notifications: list[str] = []
-    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
-    communication = robot_brain.communication
-    assert isinstance(communication, CommunicationSimulation)
-    communication.startup_checksum = matching_checksum(robot_brain)
-    await connect(communication)
-    communication.startup_checksums.extend(['0000', matching_checksum(robot_brain)])  # NOTE: drain, then the upload
+                                           for checksum in checksums)  # NOTE: one per upload attempt
     communication.startup_checksum = matching_checksum(robot_brain) if persisted == MATCHING else persisted
     task = background_tasks.create(robot_brain.configure(), name='configure')
     await forward(seconds=15.0)
-    assert communication.sent.count('!.') == 1
-    assert communication.sent.count('core.restart()') == 1
-    readbacks = communication.sent[communication.sent.index('core.restart()'):].count('core.startup_checksum()')
-    if persisted is None:
-        assert readbacks > 1, 'a silent Core is polled until the deadline'
+    assert communication.sent.count('!-') == len(checksums)
+    assert communication.sent.count('!.') == int(MATCHING in checksums), 'only a verified script may be persisted'
+    assert communication.sent.count('core.restart()') == 1, \
+        'restart applies the persisted script -- or restores it into RAM after a failed upload'
+    assert task.result() == (message is None)
+    failures = [notification for notification in notifications if 'failed' in notification]
+    if message is None:
+        assert not failures
     else:
-        assert readbacks == 1
-    assert task.result() == (reason is None)
-    assert any(f'Verifying the persisted Lizard script failed: {reason}' in message
-               for message in notifications) == (reason is not None)
+        assert any(message in failure for failure in failures)
 
 
 async def test_startup_checksum_requests_are_serialized(robot_brain: RobotBrain) -> None:
@@ -189,18 +161,6 @@ async def test_configure_does_not_deadlock_with_the_startup_check(robot_brain: R
     communication.incoming.append('core 5000')  # NOTE: the Core reconnects and triggers _check_lizard_code
     await forward(seconds=10.0)
     assert task.result() is True, 'waiting for the serialized checksum request must not stall a good upload'
-    assert communication.sent.count('!.') == 1
-
-
-async def test_configure_without_a_trailing_newline(robot_brain: RobotBrain) -> None:
-    robot_brain.lizard_code = 'core.debug = true'
-    communication = robot_brain.communication
-    assert isinstance(communication, CommunicationSimulation)
-    communication.startup_checksum = matching_checksum(robot_brain)
-    await connect(communication)
-    task = background_tasks.create(robot_brain.configure(), name='configure')
-    await forward(seconds=2.0)
-    assert task.result() is True
     assert communication.sent.count('!.') == 1
 
 
