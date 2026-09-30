@@ -12,7 +12,7 @@ from .lizard_firmware import LizardFirmware
 
 CLOCK_OFFSET_HISTORY_LENGTH = 100
 MAX_CONFIGURE_ATTEMPTS = 3
-STARTUP_CHECKSUM_TIMEOUT = 5.0  # seconds to wait for the restarted Core to answer the checksum readback
+STARTUP_CHECKSUM_TIMEOUT = 15.0  # seconds to wait for the restarted Core to answer the checksum readback
 LOOP_PERIOD_WINDOW = 10.0  # seconds of core timestamps kept for the loop period statistics
 LOOP_PERIOD_HISTORY_LENGTH = 10_000  # bounds the window even if the core timestamps stop advancing
 CORE_MESSAGE_TIMEOUT = 1.0  # seconds without core messages after which the loop period is unknown

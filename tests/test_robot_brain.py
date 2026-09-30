@@ -121,7 +121,7 @@ async def test_configure_verifies_startup_checksum(robot_brain: RobotBrain,
                                            for checksum in checksums)  # NOTE: one per upload attempt
     communication.startup_checksum = matching_checksum(robot_brain) if persisted == MATCHING else persisted
     task = background_tasks.create(robot_brain.configure(), name='configure')
-    await forward(seconds=15.0)
+    await forward(seconds=25.0)
     assert communication.sent.count('!-') == len(checksums)
     assert communication.sent.count('!.') == int(MATCHING in checksums), 'only a verified script may be persisted'
     assert communication.sent.count('core.restart()') == 1, \
