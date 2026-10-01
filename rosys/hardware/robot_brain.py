@@ -1,6 +1,6 @@
 import asyncio
 import logging
-from collections import deque
+from collections import defaultdict, deque
 from itertools import pairwise
 
 from nicegui import Event, ui
@@ -68,6 +68,7 @@ class RobotBrain:
         self.ESP_CONNECTED.subscribe(self._check_lizard_code)
 
         self.waiting_list: dict[str, str | None] = {}
+        self._ack_locks: defaultdict[str, asyncio.Lock] = defaultdict(asyncio.Lock)
         self._clock_offset: float | None = None
         self._clock_offsets: deque[float] = deque(maxlen=CLOCK_OFFSET_HISTORY_LENGTH)
         self._hardware_time: float | None = None
@@ -83,7 +84,6 @@ class RobotBrain:
         self.esp_pins_p0 = EspPins(name='p0', robot_brain=self)
 
         self._esp_lock = asyncio.Lock()
-        self._checksum_lock = asyncio.Lock()
 
     @property
     def clock_offset(self) -> float | None:
@@ -274,19 +274,14 @@ class RobotBrain:
     async def read_startup_checksum(self, *, timeout: float = 3.0, force: bool = False) -> str | None:
         """Read the checksum of the startup script that the microcontroller currently holds.
 
-        Requests are serialized, because responses are matched by their ``checksum:`` prefix and would
-        otherwise be delivered to whichever concurrent request happens to wake up first.
-        The timeout must be finite, because an unanswered request would hold the lock
-        and stall all future requests, including the ones sent by ``configure()``.
-
         :param timeout: Response timeout
         :param force: Whether to send the message even if the ESP is not ready
         :return: The checksum, or ``None`` if the timeout is reached or the ESP is not ready
         """
-        async with self._checksum_lock:
-            if not self.is_ready and not force:
-                return None  # NOTE: the ESP may have gone away while we were waiting for the lock
+        try:
             response = await self.send_and_await('core.startup_checksum()', 'checksum:', timeout=timeout, force=force)
+        except EspNotReadyException:
+            return None
         return response.split()[-1] if response else None
 
     async def restart(self) -> None:
@@ -375,24 +370,28 @@ class RobotBrain:
             raise EspNotReadyException('Sending message failed because ESP is not ready')
         await self.communication.send(augment(msg))
 
-    async def send_and_await(self, msg: str, ack: str, *, timeout: float = float('inf'), force: bool = False) -> str | None:
+    async def send_and_await(self, msg: str, ack: str, *, timeout: float = 3.0, force: bool = False) -> str | None:
         """Send a Lizard command to the ESP and await a response.
+
+        Responses carry no request id, so calls that share an ``ack`` are serialized:
+        a call first waits for earlier calls with the same ``ack`` to receive their response or time out.
+        The timeout must be finite, because an unanswered request would otherwise block
+        all later calls with that ``ack``.
 
         :param msg: The Lizard command to send
         :param ack: The first word of the response message to wait for
-        :param timeout: Response timeout
+        :param timeout: Response timeout, counted from sending
         :param force: Whether to send the message even if the ESP is not ready
         :raises EspNotReadyException: When the ESP is not ready and force is ``False``
         :return: The response message or ``None`` if the timeout is reached
         """
-        if not self.is_ready and not force:
-            raise EspNotReadyException('Sending message failed because ESP is not ready')
-        self.waiting_list[ack] = None
-        await self.send(msg, force=force)
-        t0 = rosys.time()
-        while self.waiting_list.get(ack) is None and rosys.time() < t0 + timeout:
-            await rosys.sleep(0.1)
-        return self.waiting_list.pop(ack) if ack in self.waiting_list else None
+        async with self._ack_locks[ack]:
+            self.waiting_list[ack] = None
+            await self.send(msg, force=force)
+            t0 = rosys.time()
+            while self.waiting_list[ack] is None and rosys.time() < t0 + timeout:
+                await rosys.sleep(0.1)
+            return self.waiting_list.pop(ack)
 
     async def enable_esp(self) -> None:
         if self._esp_lock.locked():
