@@ -214,7 +214,9 @@ async def test_local_checksum_matches_what_lizard_stores(robot_brain: RobotBrain
     assert robot_brain.lizard_firmware.local_checksum == '02d0', 'a trailing newline must not change the checksum'
 
 
-async def test_concurrent_waiters_on_one_ack_get_their_own_responses(robot_brain: RobotBrain) -> None:
+@pytest.mark.parametrize('version_answered', [True, False], ids=['answered', 'timed_out'])
+async def test_concurrent_waiters_on_one_ack_get_their_own_responses(robot_brain: RobotBrain,
+                                                                     version_answered: bool) -> None:
     communication = robot_brain.communication
     assert isinstance(communication, CommunicationSimulation)
     communication.startup_checksum = matching_checksum(robot_brain)
@@ -225,14 +227,18 @@ async def test_concurrent_waiters_on_one_ack_get_their_own_responses(robot_brain
     pin_task = background_tasks.create(robot_brain.esp_pins_p0.update_pin(pin), name='update_pin')
     await forward(seconds=0.05)
 
-    communication.incoming.append('p0: version: v0.11.0')
-    await forward(seconds=0.5)
+    if version_answered:
+        communication.incoming.append('p0: version: v0.11.0')
+        await forward(seconds=0.5)
+    else:
+        await forward(seconds=1.5)  # NOTE: let the version request time out, which hands the lock to the pin request
     communication.incoming.append('p0: GPIO_Status[0]| Level: 1| InputEn: 1| OutputEn: 0| '
                                   'OpenDrain: 0| Pullup: 1| Pulldown: 0| DriveStrength: 2| SleepSel: 0')
-    await forward(seconds=3.0)
+    await forward(seconds=5.0)
 
-    assert communication.sent[-2:] == ['p0.version()', 'p0.get_pin_status(0)']
-    assert robot_brain.lizard_firmware.p0_version == '0.11.0'
+    sent = communication.sent
+    assert sent.index('p0.version()') < sent.index('p0.get_pin_status(0)')
+    assert robot_brain.lizard_firmware.p0_version == ('0.11.0' if version_answered else None)
     assert pin_task.done() and pin_task.exception() is None
     assert pin.level and pin.is_pullup and pin.drive_strength == 2
 
