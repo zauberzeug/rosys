@@ -68,6 +68,7 @@ class RobotBrain:
         self.ESP_CONNECTED.subscribe(self._check_lizard_code)
 
         self.waiting_list: dict[str, str | None] = {}
+        self._ack_locks: dict[str, asyncio.Lock] = {}
         self._clock_offset: float | None = None
         self._clock_offsets: deque[float] = deque(maxlen=CLOCK_OFFSET_HISTORY_LENGTH)
         self._hardware_time: float | None = None
@@ -380,19 +381,21 @@ class RobotBrain:
 
         :param msg: The Lizard command to send
         :param ack: The first word of the response message to wait for
-        :param timeout: Response timeout
+        :param timeout: Response timeout, counted from sending; a call first waits for earlier calls with the same ``ack``
         :param force: Whether to send the message even if the ESP is not ready
         :raises EspNotReadyException: When the ESP is not ready and force is ``False``
         :return: The response message or ``None`` if the timeout is reached
         """
         if not self.is_ready and not force:
             raise EspNotReadyException('Sending message failed because ESP is not ready')
-        self.waiting_list[ack] = None
-        await self.send(msg, force=force)
-        t0 = rosys.time()
-        while self.waiting_list.get(ack) is None and rosys.time() < t0 + timeout:
-            await rosys.sleep(0.1)
-        return self.waiting_list.pop(ack) if ack in self.waiting_list else None
+        # NOTE: one waiter per ack, responses carry no request id
+        async with self._ack_locks.setdefault(ack, asyncio.Lock()):
+            self.waiting_list[ack] = None
+            await self.send(msg, force=force)
+            t0 = rosys.time()
+            while self.waiting_list.get(ack) is None and rosys.time() < t0 + timeout:
+                await rosys.sleep(0.1)
+            return self.waiting_list.pop(ack) if ack in self.waiting_list else None
 
     async def enable_esp(self) -> None:
         if self._esp_lock.locked():
