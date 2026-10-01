@@ -386,14 +386,12 @@ class RobotBrain:
         :return: The response message or ``None`` if the timeout is reached
         """
         async with self._ack_locks[ack]:
-            if not self.is_ready and not force:  # NOTE: the ESP may have gone away while we were waiting for the lock
-                raise EspNotReadyException('Sending message failed because ESP is not ready')
             self.waiting_list[ack] = None
             await self.send(msg, force=force)
             t0 = rosys.time()
-            while self.waiting_list.get(ack) is None and rosys.time() < t0 + timeout:
+            while self.waiting_list[ack] is None and rosys.time() < t0 + timeout:
                 await rosys.sleep(0.1)
-            return self.waiting_list.pop(ack) if ack in self.waiting_list else None
+            return self.waiting_list.pop(ack)
 
     async def enable_esp(self) -> None:
         if self._esp_lock.locked():

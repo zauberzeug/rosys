@@ -232,6 +232,7 @@ async def test_concurrent_waiters_on_one_ack_get_their_own_responses(robot_brain
         await forward(seconds=0.5)
     else:
         await forward(seconds=1.5)  # NOTE: let the version request time out, which hands the lock to the pin request
+    assert communication.sent[-1] == 'p0.get_pin_status(0)', 'the pin request must be out before its response arrives'
     communication.incoming.append('p0: GPIO_Status[0]| Level: 1| InputEn: 1| OutputEn: 0| '
                                   'OpenDrain: 0| Pullup: 1| Pulldown: 0| DriveStrength: 2| SleepSel: 0')
     await forward(seconds=5.0)
