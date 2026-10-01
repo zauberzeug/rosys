@@ -2103,6 +2103,50 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotBrain.configure" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        configure
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotBrain.get_max_loop_period" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_max_loop_period
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotBrain.get_mean_loop_period" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        get_mean_loop_period
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.hardware.RobotBrain.read_startup_checksum" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        read_startup_checksum
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rosys.hardware.RobotBrain.send" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -4299,6 +4343,11 @@ Besides providing some basic methods like configuring or restarting the microcon
 <p>It also keeps track of the clock offset between the microcontroller and the host system, which is used to synchronize the hardware time with the system time.
 The clock offset is calculated by comparing the hardware time with the system time and averaging the differences over a number of samples.
 If the offset changes significantly, a notification is sent and the offset history is cleared.</p>
+<p>Lizard prints one core message per iteration of its main loop, so the spacing of their hardware timestamps
+is the loop period. <code>get_mean_loop_period()</code> and <code>get_max_loop_period()</code> compute the statistics over a sliding
+window of <code>LOOP_PERIOD_WINDOW</code> seconds and the developer UI shows them; a loop that keeps missing its 10 ms
+deadline is overloaded.
+A lost line, whether dropped on the wire or by a stalled host, shows up as an outlier in the maximum only.</p>
 
         <p>Initialize the RobotBrain and connect to the microcontroller.</p>
 
@@ -4443,6 +4492,196 @@ downloaded and flashed, e.g. <code>'&lt;0.14.0'</code> (default: <code>None</cod
 <div class="doc doc-object doc-function">
 
 
+<h3 id="rosys.hardware.RobotBrain.configure" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">configure</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.hardware.RobotBrain.configure" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">configure</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Write the Lizard startup script to the microcontroller and restart it.</p>
+<p>The transferred script is verified before it is persisted, so a lossy connection
+cannot leave a corrupt script in the microcontroller's storage.
+Because the persist command itself is not acknowledged, the persisted script is verified once more
+after the restart; this also catches a Core that boots silently because its stored script is broken.</p>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>whether the script was transferred, persisted and verified</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.hardware.RobotBrain.get_max_loop_period" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_max_loop_period</span>
+
+
+<a href="#rosys.hardware.RobotBrain.get_max_loop_period" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_max_loop_period</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Compute the longest period of Lizard's main loop over the last seconds, in seconds.</p>
+<p><code>None</code> until two core messages arrived and again once they cease, e.g. because the ESP is disabled or hangs.
+Walks over all timestamps of the window, so call it at UI pace rather than in a tight loop.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.hardware.RobotBrain.get_mean_loop_period" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">get_mean_loop_period</span>
+
+
+<a href="#rosys.hardware.RobotBrain.get_mean_loop_period" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">get_mean_loop_period</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Compute the mean period of Lizard's main loop over the last seconds, in seconds.</p>
+<p><code>None</code> until two core messages arrived and again once they cease, e.g. because the ESP is disabled or hangs.</p>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.hardware.RobotBrain.read_startup_checksum" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">read_startup_checksum</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.hardware.RobotBrain.read_startup_checksum" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">read_startup_checksum</span><span class="p">(</span>
+    <span class="o">*</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span> <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Read the checksum of the startup script that the microcontroller currently holds.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                <code>timeout</code>
+            </td>
+            <td>
+                  <code><span title="float">float</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Response timeout</p>
+              </div>
+            </td>
+            <td>
+                  <code>3.0</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td>
+                <code>force</code>
+            </td>
+            <td>
+                  <code><span title="bool">bool</span></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to send the message even if the ESP is not ready</p>
+              </div>
+            </td>
+            <td>
+                  <code>False</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td>
+                  <code><span title="str">str</span> | None</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The checksum, or <code>None</code> if the timeout is reached or the ESP is not ready</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
 <h3 id="rosys.hardware.RobotBrain.send" class="doc doc-heading">
             <span class="doc doc-object-name doc-function-name">send</span>
 
@@ -4550,7 +4789,7 @@ downloaded and flashed, e.g. <code>'&lt;0.14.0'</code> (default: <code>None</cod
     <span class="n">msg</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">ack</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="o">*</span><span class="p">,</span>
-    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;inf&quot;</span><span class="p">),</span>
+    <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">3.0</span><span class="p">,</span>
     <span class="n">force</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span>
 </code></pre></div>
@@ -4558,6 +4797,10 @@ downloaded and flashed, e.g. <code>'&lt;0.14.0'</code> (default: <code>None</cod
     <div class="doc doc-contents ">
 
         <p>Send a Lizard command to the ESP and await a response.</p>
+<p>Responses carry no request id, so calls that share an <code>ack</code> are serialized:
+a call first waits for earlier calls with the same <code>ack</code> to receive their response or time out.
+The timeout must be finite, because an unanswered request would otherwise block
+all later calls with that <code>ack</code>.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -4612,11 +4855,11 @@ downloaded and flashed, e.g. <code>'&lt;0.14.0'</code> (default: <code>None</cod
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Response timeout</p>
+                <p>Response timeout, counted from sending</p>
               </div>
             </td>
             <td>
-                  <code><span title="float">float</span>(&#39;inf&#39;)</code>
+                  <code>3.0</code>
             </td>
           </tr>
           <tr class="doc-section-item">

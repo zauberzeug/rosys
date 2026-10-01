@@ -544,6 +544,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#automatic-reconnection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic Reconnection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#streaming-rtsp-cameras" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1691,6 +1702,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#automatic-reconnection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Automatic Reconnection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#streaming-rtsp-cameras" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1735,7 +1757,7 @@ Make sure the container can access the USB devices by starting it with <code>--p
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">rosys.vision</span><span class="w"> </span><span class="kn">import</span> <span class="n">SimulatedCamera</span>
 
-<span class="n">camera</span> <span class="o">=</span> <span class="n">SimulatedCamera</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;test_cam&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+<span class="n">camera</span> <span class="o">=</span> <span class="n">SimulatedCamera</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;test_cam&#39;</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
 
 <span class="n">image</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">()</span>
 <span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="n">image</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">get_latest_image_url</span><span class="p">()))</span>
@@ -1768,7 +1790,7 @@ Here we use the <code>NEW_CAMERA</code> event to display the first camera to con
     <span class="n">robot</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">hardware</span><span class="o">.</span><span class="n">RobotSimulation</span><span class="p">([</span><span class="n">wheels</span><span class="p">])</span>
     <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">SimulatedCameraProvider</span><span class="o">.</span><span class="n">USE_PERSISTENCE</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="n">camera_provider</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">SimulatedCameraProvider</span><span class="p">()</span>
-    <span class="n">camera</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">SimulatedCamera</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;test_cam&#39;</span><span class="p">,</span> <span class="n">width</span><span class="o">=</span><span class="mi">800</span><span class="p">,</span> <span class="n">height</span><span class="o">=</span><span class="mi">600</span><span class="p">)</span>
+    <span class="n">camera</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">SimulatedCamera</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="s1">&#39;test_cam&#39;</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="p">(</span><span class="mi">800</span><span class="p">,</span> <span class="mi">600</span><span class="p">))</span>
     <span class="n">rosys</span><span class="o">.</span><span class="n">on_startup</span><span class="p">(</span><span class="k">lambda</span><span class="p">:</span> <span class="n">camera_provider</span><span class="o">.</span><span class="n">add_camera</span><span class="p">(</span><span class="n">camera</span><span class="p">))</span>
 <span class="n">steerer</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">Steerer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
 <span class="n">odometer</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">driving</span><span class="o">.</span><span class="n">Odometer</span><span class="p">(</span><span class="n">wheels</span><span class="p">)</span>
@@ -1811,26 +1833,6 @@ It automatically updates every 0.1 seconds to detect and display new cameras, an
 <span class="kn">import</span><span class="w"> </span><span class="nn">rosys.vision</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">add_card</span><span class="p">(</span><span class="n">camera</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">Camera</span><span class="p">,</span> <span class="n">container</span><span class="p">:</span> <span class="n">ui</span><span class="o">.</span><span class="n">element</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">uid</span> <span class="o">=</span> <span class="n">camera</span><span class="o">.</span><span class="n">id</span>
-    <span class="k">if</span> <span class="n">uid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">streams</span><span class="p">:</span>
-        <span class="k">with</span> <span class="n">container</span><span class="p">:</span>
-            <span class="n">camera_card</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">()</span>
-            <span class="n">camera_cards</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span> <span class="o">=</span> <span class="n">camera_card</span>
-            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;adding card for </span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-            <span class="k">with</span> <span class="n">camera_grid</span><span class="p">:</span>
-                <span class="k">with</span> <span class="n">camera_card</span><span class="p">:</span>
-                    <span class="n">streams</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">()</span>
-                    <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-2&#39;</span><span class="p">)</span>
-                    <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
-                        <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;disconnect&#39;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">camera</span><span class="o">.</span><span class="n">disconnect</span><span class="p">)</span> \
-                            <span class="o">.</span><span class="n">bind_enabled_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;is_connected&#39;</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">ConfigurableCamera</span><span class="p">):</span>
-                        <span class="n">create_camera_settings_panel</span><span class="p">(</span><span class="n">camera</span><span class="p">)</span>
-
-    <span class="n">streams</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">get_latest_image_url</span><span class="p">())</span>
-
-
 <span class="k">def</span><span class="w"> </span><span class="nf">resolution_to_str</span><span class="p">(</span><span class="n">resolution</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
     <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">resolution</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">x</span><span class="si">{</span><span class="n">resolution</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">if</span> <span class="n">resolution</span> <span class="k">else</span> <span class="kc">None</span>
 
@@ -1844,7 +1846,7 @@ It automatically updates every 0.1 seconds to detect and display new cameras, an
     <span class="n">camera_parameters</span> <span class="o">=</span> <span class="n">camera</span><span class="o">.</span><span class="n">get_capabilities</span><span class="p">()</span>
     <span class="n">parameter_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">parameter</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="n">camera_parameters</span><span class="p">]</span>
     <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">expansion</span><span class="p">(</span><span class="s1">&#39;Settings&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;w-full&#39;</span><span class="p">)</span> \
-            <span class="o">.</span><span class="n">bind_enabled_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;is_connected&#39;</span><span class="p">):</span>
+            <span class="o">.</span><span class="n">bind_enabled_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;is_active&#39;</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">RtspCamera</span><span class="p">):</span>
             <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="s1">&#39;URL&#39;</span><span class="p">)</span> \
                 <span class="o">.</span><span class="n">bind_text_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;url&#39;</span><span class="p">,</span>
@@ -1901,34 +1903,58 @@ It automatically updates every 0.1 seconds to detect and display new cameras, an
                     <span class="n">ui</span><span class="o">.</span><span class="n">color_picker</span><span class="p">(</span><span class="n">on_pick</span><span class="o">=</span><span class="k">lambda</span> <span class="n">e</span><span class="p">:</span> <span class="n">camera</span><span class="o">.</span><span class="n">set_parameters</span><span class="p">({</span><span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="n">e</span><span class="o">.</span><span class="n">color</span><span class="p">}))</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">update_camera_cards</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
-    <span class="n">providers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">CameraProvider</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
-        <span class="n">rtsp_camera_provider</span><span class="p">,</span>
-        <span class="n">mjpeg_camera_provider</span><span class="p">,</span>
-        <span class="n">usb_camera_provider</span><span class="p">,</span>
-        <span class="n">simulated_camera_provider</span><span class="p">,</span>
-    <span class="p">]</span>
-    <span class="k">for</span> <span class="n">provider</span> <span class="ow">in</span> <span class="n">providers</span><span class="p">:</span>
-        <span class="k">for</span> <span class="n">camera</span> <span class="ow">in</span> <span class="n">provider</span><span class="o">.</span><span class="n">cameras</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-            <span class="n">add_card</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="n">camera_grid</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">root</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">streams</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">camera_grid</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">add_card</span><span class="p">(</span><span class="n">camera</span><span class="p">:</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">Camera</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">uid</span> <span class="o">=</span> <span class="n">camera</span><span class="o">.</span><span class="n">id</span>
+        <span class="k">if</span> <span class="n">uid</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">streams</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;adding card for </span><span class="si">{</span><span class="n">uid</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">with</span> <span class="n">camera_grid</span><span class="p">,</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">()</span><span class="o">.</span><span class="n">tight</span><span class="p">():</span>
+                <span class="n">streams</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">()</span>
+                <span class="n">ui</span><span class="o">.</span><span class="n">label</span><span class="p">(</span><span class="n">uid</span><span class="p">)</span><span class="o">.</span><span class="n">classes</span><span class="p">(</span><span class="s1">&#39;m-2&#39;</span><span class="p">)</span>
+                <span class="k">with</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">():</span>
+                    <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;connect&#39;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">camera</span><span class="o">.</span><span class="n">connect</span><span class="p">)</span> \
+                        <span class="o">.</span><span class="n">bind_enabled_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;is_active&#39;</span><span class="p">,</span> <span class="n">backward</span><span class="o">=</span><span class="k">lambda</span> <span class="n">active</span><span class="p">:</span> <span class="ow">not</span> <span class="n">active</span><span class="p">)</span>
+                    <span class="n">ui</span><span class="o">.</span><span class="n">button</span><span class="p">(</span><span class="s1">&#39;disconnect&#39;</span><span class="p">,</span> <span class="n">on_click</span><span class="o">=</span><span class="n">camera</span><span class="o">.</span><span class="n">disconnect</span><span class="p">)</span> \
+                        <span class="o">.</span><span class="n">bind_enabled_from</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="s1">&#39;is_active&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">camera</span><span class="p">,</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">ConfigurableCamera</span><span class="p">):</span>
+                    <span class="n">create_camera_settings_panel</span><span class="p">(</span><span class="n">camera</span><span class="p">)</span>
+
+        <span class="n">streams</span><span class="p">[</span><span class="n">uid</span><span class="p">]</span><span class="o">.</span><span class="n">set_source</span><span class="p">(</span><span class="n">camera</span><span class="o">.</span><span class="n">get_latest_image_url</span><span class="p">())</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">update_camera_cards</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">provider</span> <span class="ow">in</span> <span class="n">providers</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">camera</span> <span class="ow">in</span> <span class="n">provider</span><span class="o">.</span><span class="n">cameras</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+                <span class="n">add_card</span><span class="p">(</span><span class="n">camera</span><span class="p">)</span>
+
+    <span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">update_camera_cards</span><span class="p">)</span>
 
 
 <span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
-<span class="n">streams</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ui</span><span class="o">.</span><span class="n">interactive_image</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">camera_cards</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">ui</span><span class="o">.</span><span class="n">card</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
-<span class="n">camera_grid</span> <span class="o">=</span> <span class="n">ui</span><span class="o">.</span><span class="n">row</span><span class="p">()</span>
 
-<span class="n">rtsp_camera_provider</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">RtspCameraProvider</span><span class="p">()</span>
-<span class="n">mjpeg_camera_provider</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">MjpegCameraProvider</span><span class="p">()</span>
-<span class="n">usb_camera_provider</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">UsbCameraProvider</span><span class="p">()</span>
 <span class="n">simulated_camera_provider</span> <span class="o">=</span> <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">SimulatedCameraProvider</span><span class="p">()</span>
-
-<span class="n">ui</span><span class="o">.</span><span class="n">timer</span><span class="p">(</span><span class="mf">0.1</span><span class="p">,</span> <span class="n">update_camera_cards</span><span class="p">)</span>
-
 <span class="n">simulated_camera_provider</span><span class="o">.</span><span class="n">add_cameras</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">providers</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">CameraProvider</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">RtspCameraProvider</span><span class="p">(),</span>
+    <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">MjpegCameraProvider</span><span class="p">(),</span>
+    <span class="n">rosys</span><span class="o">.</span><span class="n">vision</span><span class="o">.</span><span class="n">UsbCameraProvider</span><span class="p">(),</span>
+    <span class="n">simulated_camera_provider</span><span class="p">,</span>
+<span class="p">]</span>
 
-<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8080</span><span class="p">)</span>
+<span class="n">ui</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">root</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s1">&#39;RoSys&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8080</span><span class="p">)</span>
 </code></pre></div>
+<h2 id="automatic-reconnection">Automatic Reconnection<a class="headerlink" href="#automatic-reconnection" title="Permanent link">&para;</a></h2>
+<p>Cameras can lose their connection due to network glitches, a bad cable or a power hiccup.
+Every camera reconnects on its own: after <code>connect()</code>, the underlying device keeps trying to restore its stream every <code>reconnect_interval</code> seconds (default 3.0) for as long as the camera stays active.
+Reconnection runs until the camera is disconnected, so <code>disconnect()</code> both stops the retries and tears down the device connection.
+<code>is_connected</code> tells whether a camera is streaming right now, while <code>is_active</code> tells whether a connection is wanted at all, i.e. whether the camera keeps trying to reconnect.</p>
+<p><code>connect()</code> always creates a Device, even when the camera cannot be reached at all — because its address is not known yet, or no <code>/dev/video*</code> node exists.
+Such a camera reports <code>is_active</code> but not <code>is_connected</code>, and starts streaming as soon as the address or the video device appears.</p>
+<p>Camera providers therefore do not reconnect cameras themselves.
+A newly discovered camera still connects on its own, because <code>connect_after_init</code> defaults to <code>True</code>.
+A deliberately disconnected camera stays disconnected, even with <code>auto_scan</code> enabled.</p>
 <h2 id="streaming-rtsp-cameras">Streaming RTSP Cameras<a class="headerlink" href="#streaming-rtsp-cameras" title="Permanent link">&para;</a></h2>
 <p>The following example shows how to stream images from an RTSP camera.</p>
 <div class="highlight"><pre><span></span><code><span class="ch">#!/usr/bin/env python3</span>

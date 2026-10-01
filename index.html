@@ -2123,7 +2123,7 @@ Another module can register on <code>NEW_SENSOR_DATA</code> and act accordingly 
 <h3 id="automations">Automations<a class="headerlink" href="#automations" title="Permanent link">&para;</a></h3>
 <p>RoSys provides an <code>Automator</code> module for running "automations".
 Automations are coroutines that can not only be started and stopped, but also paused and resumed, e.g. using <code>AutomationControls</code>.
-Have a look at our <a href="examples/click-and-drive/">Click-and-drive</a> example.</p>
+Have a look at our <a href="https://rosys.io/examples/click-and-drive/">Click-and-drive</a> example.</p>
 <h3 id="persistence">Persistence<a class="headerlink" href="#persistence" title="Permanent link">&para;</a></h3>
 <p>Modules can register backup and restore methods to read and write their state to disk.</p>
 <h3 id="time">Time<a class="headerlink" href="#time" title="Permanent link">&para;</a></h3>
@@ -2141,6 +2141,8 @@ you should wrap the code in a function and await it with <code>await rosys.run.i
 <p>CPU-bound:
 If you need to do some heavy computation and want to spawn another process,
 you should wrap the code in a function and await it with <code>await rosys.run.cpu_bound(...)</code>.</p>
+<p>RoSys starts helper processes (MJPEG stream workers, path planning) with the <code>spawn</code> start method, which re-imports your main script in the child.
+A script that creates these at import time must therefore put its startup under <code>if __name__ == '__main__':</code>, or the helpers start recursively.</p>
 <h3 id="safety">Safety<a class="headerlink" href="#safety" title="Permanent link">&para;</a></h3>
 <p>Python (and Linux) is fast enough for most high-level logic, but has no realtime guarantees.
 Safety-relevant behavior should therefore be put on a suitable microcontroller.
@@ -2154,7 +2156,7 @@ It is a domain-specific language interpreted by the microcontroller which enable
 <p>RoSys builds upon the open source project <a href="https://nicegui.io/">NiceGUI</a> and offers many robot-related UI elements.
 NiceGUI is a high-level UI framework for the web.
 This means you can write all UI code in Python and the state is automatically reflected in the browser through WebSockets.
-See any of our <a href="examples/steering/">examples</a>.</p>
+See any of our <a href="https://rosys.io/examples/steering/">examples</a>.</p>
 <p>RoSys can also be used with other user interfaces or interaction models if required, for example a completely app-based control through Bluetooth Low Energy with Flutter.</p>
 <h3 id="notifications">Notifications<a class="headerlink" href="#notifications" title="Permanent link">&para;</a></h3>
 <p>Modules can notify the user through <code>rosys.notify('message to the user')</code>.

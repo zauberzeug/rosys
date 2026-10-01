@@ -1605,14 +1605,28 @@
 <dt>Recorder</dt>
 <dd>The <code>McapRecorder</code> writes every registered topic to rotating MCAP files under <code>~/.rosys/mcap</code>.
 With <code>auto_start=False</code> it stays idle until you press the record button in <code>developer_ui</code>.</dd>
+<dt>Runs and parts</dt>
+<dd>Each recording is a run named after its start time, written as numbered parts into the <code>parts/</code> folder of the output directory: <code>parts/&lt;run&gt;_01.mcap</code>, <code>parts/&lt;run&gt;_02.mcap</code>, ...
+A part is rotated by size (<code>max_part_size_mb</code>) and, with <code>max_part_duration</code>, by age; every part is a complete recording that Foxglove opens as it is.
+<code>recorder.start(name='mission', metadata={'field': 'north'})</code> names the run <code>&lt;timestamp&gt;_mission</code>, writes the metadata into every part and returns the run's name.</dd>
+<dt>Disk budget</dt>
+<dd>Before a part is opened, the oldest recordings are deleted to stay within <code>max_total_size_mb</code>, parts first.
+Every <code>.mcap</code> at the top level of the output directory is a kept recording (renamed, merged or placed there by hand); the folder decides, not the name.
+Kept recordings have a bound of their own, <code>max_kept_size_mb</code>, which spares the newest kept file.</dd>
 <dt>Topics</dt>
 <dd><code>add_event_topic</code> and <code>add_pose_topic</code> bind a topic to a RoSys event; the matching Foxglove converter is picked from the payload type automatically.
 The subscription is only active while a recording is open.</dd>
 <dt>Image quality</dt>
 <dd>Camera topics dominate a recording's size.
 Keyword arguments are forwarded to the converter, so <code>add_event_topic(recorder, '/camera/front/image', event=camera.NEW_IMAGE, quality=75)</code> records JPEGs at quality 75 instead of the default 90, roughly halving the bytes per frame.</dd>
+<dt>Log lines</dt>
+<dd><code>logger.addHandler(McapLogHandler(recorder))</code> records what a logger logs on the <code>/log</code> topic, so Foxglove shows the log next to the data it explains.</dd>
+<dt>Merging</dt>
+<dd><code>await recorder.merge(parts, 'mission_merged', start_time_ns=...)</code> merges finished parts or kept recordings into one kept <code>mission_merged.mcap</code> at the top level and deletes the sources once it is in place.
+Messages before <code>start_time_ns</code> are dropped, and the merged file keeps the metadata of every run it holds.</dd>
 <dt>Recordings page</dt>
-<dd><code>RecordingsPage</code> mounts a page for listing, renaming, reindexing and downloading recordings, plus a download endpoint at <code>/api/recordings/{name}</code>.
+<dd><code>RecordingsPage</code> mounts a page for listing, renaming, reindexing, merging and downloading recordings, plus a download endpoint at <code>/api/recordings/{name}</code>.
+The parts of a run are listed as one entry that can be merged with a click; renaming a part files it away as a kept recording at the top level.
 The optional <code>header</code> callback renders shared navigation at the top of the page.</dd>
 </dl>
 

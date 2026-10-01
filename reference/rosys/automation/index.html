@@ -1072,6 +1072,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#rosys.automation.Automator.is_pending" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_pending
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.automation.Automator.last_exception" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        last_exception
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rosys.automation.Automator.abort" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1803,6 +1825,28 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#rosys.automation.Automator.is_pending" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        is_pending
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.automation.Automator.last_exception" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        last_exception
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#rosys.automation.Automator.abort" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2041,7 +2085,8 @@
 <p><em>default_automation</em>: If provided, it allows the automator to start a new automation without passing an automation
 (e.g. via an "Play"-button like offered by the <a href="https://rosys.io/reference/rosys/automation/#rosys.automation.automation_controls">automation controls</a>).
 The passed function should return a new coroutine on every call (see <a href="https://rosys.io/examples/play-pause-stop/">Play-pause-stop</a> example).</p>
-<p><em>on_interrupt</em>: Optional callback that will be called when an automation pauses or stops (the cause is provided as string parameter).</p>
+<p><em>on_interrupt</em>: Optional callback that will be called when an automation pauses, stops or fails,
+unless a new automation has already taken over.</p>
 <p><em>notify</em>: If True, the automator will send notifications when an automation starts, pauses, resumes, stops or fails.</p>
 
 
@@ -2060,6 +2105,55 @@ The passed function should return a new coroutine on every call (see <a href="ht
 
 
 
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.automation.Automator.is_pending" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">is_pending</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-property"><code>property</code></small>
+  </span>
+
+<a href="#rosys.automation.Automator.is_pending" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">is_pending</span><span class="p">:</span> <span class="nb">bool</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>whether an automation is scheduled but has neither had its first turn nor been stopped yet</p>
+<p>A pending automation counts as stopped.</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.automation.Automator.last_exception" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">last_exception</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.automation.Automator.last_exception" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">last_exception</span><span class="p">:</span> <span class="ne">Exception</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>why the most recent automation failed; reset by <code>start()</code>, even from an <code>AUTOMATION_FAILED</code> handler</p>
+
+    </div>
+
+</div>
 
 
 

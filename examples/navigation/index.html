@@ -1694,6 +1694,13 @@ Additionally, there is a virtual "hook" attached to the robot, which is pulled t
 It turns the hook 180 degrees to the back of the robot, while preserving the distance <code>hook_offset</code> to the robot's coordinate center.
 This allows the robot to drive backwards to a point behind it instead of turning around and approaching it forwards.</p>
 </div>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>The carrot mechanism is pure feedback: on a curved spline the robot only steers once an error has built up, so the command trails the path.
+With <code>curvature_feedforward_gain</code> the driver additionally steers the spline's own curvature at the robot's current position up front, leaving the feedback only the disturbances (1.0 matches the path geometry; higher values compensate yaw slip on loose ground).
+The feed-forward term itself is bounded by <code>curvature_feedforward_limit</code>, because near-degenerate splines (with control points very close to their end points) reach enormous curvature near <code>t=0</code> and <code>t=1</code>.
+The sum of feedback and feed-forward is additionally limited by <code>minimum_turning_radius</code> (if set).</p>
+</div>
 <p>A more complex example can be found in the <a href="https://github.com/zauberzeug/rosys/tree/main/examples/obstacles">RoSys GitHub repository</a>.
 There you can create new obstacles and choose between straight driving or navigation.</p>
 

@@ -1657,6 +1657,17 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#rosys.vision.CameraProvider.update_device_list" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        update_device_list
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#events_1" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1694,6 +1705,17 @@
   
     <nav class="md-nav" aria-label="Detector">
       <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.Detector.batch_detect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        batch_detect
+      
+    </span>
+  </a>
+  
+</li>
         
           <li class="md-nav__item">
   <a href="#rosys.vision.Detector.detect" class="md-nav__link">
@@ -1834,6 +1856,34 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rosys.vision.ImageState" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ImageState
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ImageState">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#events_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rosys.vision.MultiCameraProvider" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1929,10 +1979,10 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#rosys.vision.SimulatedCameraProvider.scan_for_cameras" class="md-nav__link">
+  <a href="#rosys.vision.SimulatedCameraProvider.update_device_list" class="md-nav__link">
     <span class="md-ellipsis">
       
-        scan_for_cameras
+        update_device_list
       
     </span>
   </a>
@@ -2250,6 +2300,31 @@ This way respective events are emitted and consistency can be taken care of.</p>
 
 
 
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.CameraProvider.update_device_list" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">update_device_list</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.vision.CameraProvider.update_device_list" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">update_device_list</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Add cameras for newly discovered devices and rebind known ones whose access has changed.</p>
+
+
+    </div>
+
+</div>
+
 
 
   </div>
@@ -2366,6 +2441,39 @@ like the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Lear
 
 
 
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="rosys.vision.Detector.batch_detect" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">batch_detect</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-abstractmethod"><code>abstractmethod</code></small>
+      <small class="doc doc-label doc-label-async"><code>async</code></small>
+  </span>
+
+<a href="#rosys.vision.Detector.batch_detect" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">batch_detect</span><span class="p">(</span>
+    <span class="n">images</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Image</span><span class="p">],</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">autoupload</span><span class="p">:</span> <span class="n">Autoupload</span> <span class="o">=</span> <span class="n">Autoupload</span><span class="o">.</span><span class="n">FILTERED</span><span class="p">,</span>
+    <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">creation_date</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Detections</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>Runs detections on all images and fills each <code>image.detections</code> property.</p>
+<p>Result order matches <code>images</code>.</p>
+
+
+    </div>
+
+</div>
 
 <div class="doc doc-object doc-function">
 
@@ -2665,7 +2773,8 @@ Set to a version number (e.g. "1.2") to use a specific version.</p>
     <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">source</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">creation_date</span><span class="p">:</span> <span class="n">datetime</span> <span class="o">|</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="n">annotations</span><span class="p">:</span> <span class="n">Annotations</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">annotations</span><span class="p">:</span> <span class="n">Annotations</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">state</span><span class="p">:</span> <span class="n">ImageState</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
@@ -2674,6 +2783,9 @@ Set to a version number (e.g. "1.2") to use a specific version.</p>
         <p>Uploads an image (and its annotations) to the Learning Loop.</p>
 <p>The parameters <code>tags</code>, <code>source</code>, and <code>creation_date</code> are added as metadata.
 If the image has detections, they are also uploaded.</p>
+<p>The <code>state</code> determines which state the image enters the Learning Loop in,
+for example <code>ImageState.TRASH</code>.
+If it is omitted, the Learning Loop applies its own default.</p>
 
 
 <p><span class="doc-section-title">Raises:</span></p>
@@ -3000,6 +3112,66 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
     </div>
 
 </div>
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.ImageState" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">ImageState</span>
+
+
+<a href="#rosys.vision.ImageState" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="enum.Enum">Enum</span></code></p>
+
+
+        <p>Target state for an image when uploaded to the Learning Loop</p>
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="events_3">Events<a class="headerlink" href="#events_3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NEW_DETECTIONS</td>
+<td>detection on an image is completed (argument: image)</td>
+</tr>
+</tbody>
+</table>
+
 
 <div class="doc doc-object doc-class">
 
@@ -3439,22 +3611,21 @@ You may use negative values to play backwards.</p>
 <div class="doc doc-object doc-function">
 
 
-<h3 id="rosys.vision.SimulatedCameraProvider.scan_for_cameras" class="doc doc-heading">
-            <span class="doc doc-object-name doc-function-name">scan_for_cameras</span>
+<h3 id="rosys.vision.SimulatedCameraProvider.update_device_list" class="doc doc-heading">
+            <span class="doc doc-object-name doc-function-name">update_device_list</span>
 
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-async"><code>async</code></small>
   </span>
 
-<a href="#rosys.vision.SimulatedCameraProvider.scan_for_cameras" class="headerlink" title="Permanent link">&para;</a></h3>
-<div class="doc-signature highlight"><pre><span></span><code><span class="nf">scan_for_cameras</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">AsyncGenerator</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+<a href="#rosys.vision.SimulatedCameraProvider.update_device_list" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="nf">update_device_list</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span>
 </code></pre></div>
 
     <div class="doc doc-contents ">
 
-        <p>Simulated device discovery by returning all camera's IDs.</p>
-<p>If simulate_device_failure is set, disconnected cameras are returned with a fixed probability.</p>
+        <p>Simulated cameras are created explicitly with <code>add_cameras</code>, so there is nothing to discover.</p>
 
 
     </div>
@@ -3540,7 +3711,7 @@ Therefore the program v4l2ctl and openCV (including python bindings) must be ava
 
     <div class="doc doc-contents first">
             <p class="doc doc-class-bases">
-              Bases: <code><span title="nicegui.elements.scene.scene_objects.Group">Group</span></code></p>
+              Bases: <code><span title="nicegui.elements.scene.objects.Group">Group</span></code></p>
 
 
         <p>This module provides a UI element for displaying cameras in a 3D scene.</p>
