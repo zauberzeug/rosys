@@ -9,7 +9,7 @@ import rosys
 from rosys.testing import forward
 from rosys.vision import GmslCamera, GmslCameraProvider
 from rosys.vision.gmsl_camera.gmsl_device import GmslDevice, build_argus_command
-from rosys.vision.gstreamer import parse_caps_dimensions
+from rosys.vision.gstreamer import parse_caps_dimensions, read_tail
 
 
 def gstreamer_available():
@@ -44,6 +44,13 @@ def test_build_command_sets_resolution_and_framerate() -> None:
 def test_parse_caps_dimensions() -> None:
     caps = 'video/x-raw, format=(string)RGB, width=(int)1920, height=(int)1200, framerate=(fraction)30/1'
     assert parse_caps_dimensions(caps) == (1920, 1200)
+
+
+async def test_read_tail_keeps_the_last_bytes_until_eof() -> None:
+    stream = asyncio.StreamReader()
+    stream.feed_data(b'x' * 10_000 + b'ERROR: no camera')
+    stream.feed_eof()
+    assert await read_tail(stream, 20) == b'xxxxERROR: no camera'
 
 
 def test_to_dict_round_trip() -> None:

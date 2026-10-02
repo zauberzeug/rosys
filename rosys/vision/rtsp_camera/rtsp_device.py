@@ -10,10 +10,11 @@ from collections.abc import AsyncGenerator, Awaitable, Callable
 from typing import Literal
 
 import numpy as np
+from nicegui import background_tasks
 
 from ... import rosys
 from ..capture_device import CaptureDevice, CaptureState, ImageDataHandler
-from ..gstreamer import GDPPacket, GDPPayloadType, parse_caps_dimensions
+from ..gstreamer import STDERR_TAIL_SIZE, GDPPacket, GDPPayloadType, parse_caps_dimensions, read_tail
 from ..image import ImageArray
 from ..openipc_zauberzeug_settings_interface import OpenIpcZauberzeugSettingsInterface
 from .arkvision_rtsp_interface import ArkVisionRtspInterface
@@ -151,6 +152,8 @@ class RtspDevice(CaptureDevice):
             assert process.stderr is not None
             self._capture_process = process
             capture_process = process
+            stderr_tail = background_tasks.create(read_tail(process.stderr, STDERR_TAIL_SIZE),
+                                                  name=f'stderr {self._mac}')
 
             width = None
             height = None
@@ -185,8 +188,7 @@ class RtspDevice(CaptureDevice):
             if return_code == -1 * signal.SIGTERM:
                 self.log.debug('gstreamer process %s was terminated using SIGTERM', process.pid)
             else:
-                error = await process.stderr.read()
-                error_message = error.decode()
+                error_message = (await stderr_tail).decode(errors='replace')
                 self.log.error('gstreamer process %s exited with code %s.\nstderr: %s',
                                process.pid, return_code, error_message)
 

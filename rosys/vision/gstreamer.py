@@ -11,6 +11,7 @@ GDPPACKET_FORMAT = struct.Struct('>HcxHIQQQQH14sHH')
 GDP_CAPS_WIDTH_REGEX = re.compile(r'width=\(int\)\s*(\d+)')
 GDP_CAPS_HEIGHT_REGEX = re.compile(r'height=\(int\)\s*(\d+)')
 GDP_HEADER_SIZE = 62
+STDERR_TAIL_SIZE = 2000
 
 
 class GDPPayloadType(Enum):
@@ -43,3 +44,14 @@ def parse_caps_dimensions(cap_text: str) -> tuple[int, int]:
     if width_match is None or height_match is None:
         raise ValueError(f'could not parse width and height from caps: {cap_text}')
     return int(width_match.group(1)), int(height_match.group(1))
+
+
+async def read_tail(stream: asyncio.StreamReader, size: int) -> bytes:
+    """Consume `stream` until EOF and return its last `size` bytes.
+
+    Reading continuously keeps the writing process from blocking once the pipe buffer is full.
+    """
+    tail = b''
+    while chunk := await stream.read(4096):
+        tail = (tail + chunk)[-size:]
+    return tail

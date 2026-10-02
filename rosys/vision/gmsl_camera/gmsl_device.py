@@ -13,7 +13,7 @@ from nicegui import background_tasks
 
 from ... import rosys
 from ..capture_device import CaptureDevice, ImageDataHandler
-from ..gstreamer import GDPPacket, GDPPayloadType, parse_caps_dimensions
+from ..gstreamer import STDERR_TAIL_SIZE, GDPPacket, GDPPayloadType, parse_caps_dimensions, read_tail
 
 
 def build_argus_command(sensor_id: int, *,
@@ -167,6 +167,8 @@ class GmslDevice(CaptureDevice):
         assert process.stdout is not None
         assert process.stderr is not None
         self._capture_process = process
+        stderr_tail = background_tasks.create(read_tail(process.stderr, STDERR_TAIL_SIZE),
+                                              name=f'stderr {self._name}')
 
         try:
             width: int | None = None
@@ -197,9 +199,9 @@ class GmslDevice(CaptureDevice):
                 self.log.warning('[%s] timeout while waiting for gstreamer process to terminate', self._name)
                 return
             if process.returncode not in (0, -signal.SIGTERM):
-                error_message = (await process.stderr.read()).decode().strip()
+                error_message = (await stderr_tail).decode(errors='replace').strip()
                 self.log.warning('[%s] gstreamer pipeline exited with code %s.\nstderr: %s',
-                                 self._name, process.returncode, error_message[-500:])
+                                 self._name, process.returncode, error_message)
         finally:
             if process.returncode is None:
                 self.log.debug('[%s] terminating leftover gstreamer process', self._name)
