@@ -17,14 +17,9 @@ from .gmsl_device import GmslDevice
 class GmslCamera(ConfigurableCamera, TransformableCamera, CalibratableCamera):
     """A GMSL2/FPD-Link camera connected through a deserializer board.
 
-    Frames are captured through NVIDIA's Argus stack via `GmslDevice`, so the hardware ISP
-    handles debayering, white balance and tone mapping. Exposure and gain can run on the ISP's
-    auto algorithms or be pinned to fixed values.
-
     The hardware is located by its Argus ``sensor_id`` (the GMSL port on the board), while ``id``
-    is the stable application-level identity used for persistence and image tagging.
-    Keeping them separate lets a camera move between ports without losing its persisted state;
-    ``id`` defaults to ``f'gmsl-{sensor_id}'`` when not given.
+    is the stable identity used for persistence and image tagging, so a camera can move between
+    ports without losing its persisted state. ``id`` defaults to ``gmsl-<sensor_id>``.
     """
 
     def __init__(self,

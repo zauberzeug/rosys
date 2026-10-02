@@ -24,11 +24,7 @@ def build_argus_command(sensor_id: int, *,
                         fps: int = 30,
                         width: int = 1920,
                         height: int = 1200) -> str:
-    """Build the `gst-launch-1.0` Argus pipeline command for the given configuration.
-
-    The pipeline pulls frames from `nvarguscamerasrc` (hardware ISP: debayer/AWB/tonemap),
-    converts to RGB and emits GDP packets on stdout via `gdppay ! fdsink`. Exposure and gain
-    are left to the ISP's auto algorithms unless pinned to a fixed value.
+    """Build the `gst-launch-1.0` command for an Argus pipeline that writes RGB frames as GDP packets to stdout.
 
     Pinning the gain also pins the ISP's digital gain: it is a third brightness lever that
     otherwise stays automatic and compensates for the pinned exposure and analog gain, which
@@ -53,22 +49,10 @@ def build_argus_command(sensor_id: int, *,
 class GmslDevice(CaptureDevice):
     """Captures frames from a GMSL2/FPD-Link camera attached to an NVIDIA Jetson.
 
-    Frames are grabbed through NVIDIA's Argus stack (`nvarguscamerasrc`), so the
-    hardware ISP performs debayering, auto white balance and tone mapping.
-    Exposure and gain can be left to the ISP's auto algorithms or pinned to fixed
-    values (e.g. for long-exposure capture), which is the main reason this backend
-    is used instead of the raw Video4Linux path.
-
-    The pipeline is run as a `gst-launch-1.0 ... ! gdppay ! fdsink` subprocess and
-    its frames are read off a pipe, reusing the same mechanism as the RTSP camera.
-    Because `nvarguscamerasrc` properties are fixed at pipeline construction time,
-    changing a parameter restarts the pipeline (debounced, so a batch of changes
-    only triggers a single restart).
-
-    The capture loop restarts the pipeline after ``reconnect_interval`` if it exits unexpectedly.
-    This matters on Jetson, where the Argus stack intermittently fails to create a
-    capture session (e.g. transient `NvBufSurfaceFromFd` errors or a session held by
-    another client), and over a long GMSL coax run where the link may drop.
+    The Argus stack (`nvarguscamerasrc`) is used instead of the raw Video4Linux path so the
+    hardware ISP processes the frames while exposure and gain can still be pinned, e.g. for
+    long-exposure capture. Its properties are fixed at pipeline construction time, so a
+    parameter change rebuilds the pipeline.
     """
 
     def __init__(self,
@@ -105,7 +89,6 @@ class GmslDevice(CaptureDevice):
         self._start_capture_task()
 
     def build_command(self) -> str:
-        """Build the `gst-launch-1.0` command for the current configuration."""
         if not self.auto_exposure and self.exposure * self.fps > 1:
             self.log.warning('exposure %.3fs exceeds the frame period at %dfps; lower the fps for long exposures',
                              self.exposure, self.fps)
@@ -131,7 +114,6 @@ class GmslDevice(CaptureDevice):
         await self.restart_gstreamer()
 
     async def restart_gstreamer(self) -> None:
-        """Rebuild the pipeline with the current configuration."""
         await self.shutdown()
         self._start_capture_task()
 
@@ -157,7 +139,6 @@ class GmslDevice(CaptureDevice):
                 self._capture_process = None
 
     async def _run_session(self) -> None:
-        """Run one pipeline lifetime: spawn the subprocess and forward frames until it exits."""
         command = self.build_command()
         self.log.debug('[%s] running command: %s', self._name, command)
         try:
