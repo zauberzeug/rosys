@@ -27,8 +27,7 @@ def build_argus_command(sensor_id: int, *,
     """Build the `gst-launch-1.0` command for an Argus pipeline that writes RGB frames as GDP packets to stdout.
 
     Pinning the gain also pins the ISP's digital gain: it is a third brightness lever that
-    otherwise stays automatic and compensates for the pinned exposure and analog gain, which
-    leaves the image looking unchanged.
+    otherwise stays automatic and compensates for the pinned exposure and analog gain.
     """
     source_args = [f'sensor-id={sensor_id}']
     if not auto_exposure:
