@@ -29,6 +29,10 @@ def build_argus_command(sensor_id: int, *,
     The pipeline pulls frames from `nvarguscamerasrc` (hardware ISP: debayer/AWB/tonemap),
     converts to RGB and emits GDP packets on stdout via `gdppay ! fdsink`. Exposure and gain
     are left to the ISP's auto algorithms unless pinned to a fixed value.
+
+    Pinning the gain also pins the ISP's digital gain: it is a third brightness lever that
+    otherwise stays automatic and compensates for the pinned exposure and analog gain, which
+    leaves the image looking unchanged.
     """
     source_args = [f'sensor-id={sensor_id}']
     if not auto_exposure:
@@ -36,6 +40,7 @@ def build_argus_command(sensor_id: int, *,
         source_args.append(f'exposuretimerange="{exposure_ns} {exposure_ns}"')
     if not auto_gain:
         source_args.append(f'gainrange="{gain} {gain}"')
+        source_args.append('ispdigitalgainrange="1 1"')
     return (
         f'gst-launch-1.0 --quiet nvarguscamerasrc {" ".join(source_args)} ! '
         f'video/x-raw(memory:NVMM),width={width},height={height},framerate={fps}/1 ! '

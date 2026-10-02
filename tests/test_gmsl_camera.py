@@ -22,6 +22,7 @@ def test_build_command_auto_by_default() -> None:
     assert 'nvarguscamerasrc sensor-id=5' in command
     assert 'exposuretimerange' not in command
     assert 'gainrange' not in command
+    assert 'ispdigitalgainrange' not in command
     assert 'gdppay ! fdsink' in command
     assert 'format=RGB' in command
 
@@ -31,9 +32,10 @@ def test_build_command_pins_manual_exposure_in_nanoseconds() -> None:
     assert 'exposuretimerange="250000000 250000000"' in command
 
 
-def test_build_command_pins_manual_gain() -> None:
+def test_build_command_pins_manual_gain_and_isp_digital_gain() -> None:
     command = build_argus_command(0, auto_gain=False, gain=4.0)
     assert 'gainrange="4.0 4.0"' in command
+    assert 'ispdigitalgainrange="1 1"' in command, 'expected the ISP not to compensate the pinned analog gain'
 
 
 def test_build_command_sets_resolution_and_framerate() -> None:
