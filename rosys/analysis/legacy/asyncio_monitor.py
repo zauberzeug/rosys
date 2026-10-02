@@ -21,6 +21,9 @@ task_pattern = re.compile(r".*name=['\"](.*)['\"] coro=<(.*)> .*")
 coro_pattern = re.compile(r'(.*) (running at .*)')
 
 
+_monitors: list['AsyncioMonitor'] = []  # NOTE: keeps the monitors alive so their repetitions run until shutdown
+
+
 class AsyncioMonitor:
 
     def __init__(self, log_filepath: Path = Path('~/.rosys/debug.log')) -> None:
@@ -30,6 +33,7 @@ class AsyncioMonitor:
         self.timings: dict[str, list[Measurement]] = defaultdict(list)
         self.log_position: int | None = None
 
+        _monitors.append(self)
         on_repeat(self.step, 10)
 
     async def step(self) -> None:

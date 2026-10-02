@@ -26,10 +26,22 @@ class CameraProjector:
 
     def __init__(self, camera_provider: CalibratableCameraProvider, *, interval: float = 1.0) -> None:
         self.camera_provider = camera_provider
+        self._consumer_count = 0
+        self._repeater = rosys.Repeater(self.step, interval)
 
         self.projections: dict[str, Projection] = {}
 
-        rosys.on_repeat(self.step, interval)
+    def acquire(self) -> None:
+        """Register interest in up-to-date projections; the projector only runs while at least one consumer holds it."""
+        self._consumer_count += 1
+        self._repeater.start()  # idempotent: no-op while already running
+
+    def release(self) -> None:
+        """Give up interest previously registered with acquire()."""
+        assert self._consumer_count > 0, 'release() without matching acquire()'
+        self._consumer_count -= 1
+        if self._consumer_count == 0:
+            self._repeater.stop()
 
     async def step(self) -> None:
         for id_ in list(self.projections):

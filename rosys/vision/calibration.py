@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from copy import deepcopy
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import TypeAlias, cast, overload
@@ -9,7 +10,7 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from ..geometry import Frame3d, Point, Point3d, Pose3d, Rotation
+from ..geometry import Frame3d, Point, Point3d, Pose3d, Rectangle, Rotation
 from .image import Image, ImageSize
 
 FloatArray: TypeAlias = NDArray[np.float32] | NDArray[np.float64]
@@ -42,12 +43,14 @@ class Intrinsics:
     :param xi: The omnidirectional camera parameter xi (only for ``CameraModel.OMNIDIRECTIONAL``).
     :param rotation: An inner rotation matrix, useful for visual-inertial calibration or omnidirectional projection.
     :param size: The size of the image.
+    :param undistortion_iterations: Upper bound for the fixed-point iteration that inverts a pinhole distortion model.
     """
     model: CameraModel = CameraModel.PINHOLE
     matrix: list[list[float]]
     distortion: list[float]
     omnidir_params: OmnidirParameters | None = None
     size: ImageSize
+    undistortion_iterations: int = 200
 
     @staticmethod
     def create_default(width: int = 800,
@@ -64,6 +67,56 @@ class Intrinsics:
             distortion=distortion or [0.0, 0.0, 0.0, 0.0, 0.0],
             size=ImageSize(width=width, height=height),
         )
+
+    def scale(self, size: ImageSize) -> Intrinsics:
+        """Derive the intrinsics for an image that is scaled to ``size``.
+
+        Assumes the original and the scaled image share the same field of view, so the camera matrix scales with
+        the resolution while the distortion coefficients (defined in normalized coordinates) stay valid.
+
+        :param size: the size the image is scaled to (same field of view)
+        :return: new independent intrinsics matching the scaled image
+        """
+        scale_x = size.width / self.size.width
+        scale_y = size.height / self.size.height
+        matrix = self.matrix
+        scaled_matrix = [
+            [matrix[0][0] * scale_x, matrix[0][1] * scale_x, matrix[0][2] * scale_x],
+            [0.0, matrix[1][1] * scale_y, matrix[1][2] * scale_y],
+            [0.0, 0.0, 1.0],
+        ]
+        return Intrinsics(model=self.model,
+                          matrix=scaled_matrix,
+                          distortion=list(self.distortion),
+                          omnidir_params=deepcopy(self.omnidir_params),
+                          size=ImageSize(width=size.width, height=size.height),
+                          undistortion_iterations=self.undistortion_iterations)
+
+    def crop(self, crop: Rectangle) -> Intrinsics:
+        """Derive the intrinsics for an image that is cropped to ``crop``.
+
+        The crop only shifts the principal point; the distortion coefficients stay valid.
+
+        :param crop: the region cut out of the image, in pixel coordinates
+        :return: new independent intrinsics matching the cropped image
+        :raises ValueError: if the crop has fractional coordinates or reaches beyond the image
+        """
+        if any(value != int(value) for value in crop.tuple):
+            raise ValueError(f'crop must have integer coordinates, got {crop}')
+        if crop.x < 0 or crop.y < 0 or crop.x + crop.width > self.size.width or crop.y + crop.height > self.size.height:
+            raise ValueError(f'crop {crop} must lie inside the image size {self.size}')
+        matrix = self.matrix
+        cropped_matrix = [
+            [matrix[0][0], matrix[0][1], matrix[0][2] - crop.x],
+            [0.0, matrix[1][1], matrix[1][2] - crop.y],
+            [0.0, 0.0, 1.0],
+        ]
+        return Intrinsics(model=self.model,
+                          matrix=cropped_matrix,
+                          distortion=list(self.distortion),
+                          omnidir_params=deepcopy(self.omnidir_params),
+                          size=ImageSize(width=int(crop.width), height=int(crop.height)),
+                          undistortion_iterations=self.undistortion_iterations)
 
 
 log = logging.getLogger('rosys.vision.calibration')
@@ -248,12 +301,14 @@ class Calibration:
     def project_from_image(self,
                            image_coordinates: Point,
                            target_height: float = 0, *,
-                           reprojection_tolerance: float = 0.002) -> Point3d | None:
+                           reprojection_tolerance: float = 0.002,
+                           frame: Frame3d | None = None) -> Point3d | None:
         """Project a point in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: The image coordinates to project.
-        :param target_height: The height of the plane in world coordinates.
+        :param target_height: The height of the plane in ``frame`` or world coordinates.
         :param reprojection_tolerance: The reprojection tolerance as a fraction of the maximum image dimension.
+        :param frame: The coordinate frame to project to. If none is given, project to world coordinates.
         :return: The world coordinates of the projected point, or None if projection failed.
         """
 
@@ -261,12 +316,14 @@ class Calibration:
     def project_from_image(self,
                            image_coordinates: list[Point],
                            target_height: float = 0, *,
-                           reprojection_tolerance: float = 0.002) -> list[Point3d | None]:
+                           reprojection_tolerance: float = 0.002,
+                           frame: Frame3d | None = None) -> list[Point3d | None]:
         """Project points in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: The list of image coordinates to project.
-        :param target_height: The height of the plane in world coordinates.
+        :param target_height: The height of the plane in ``frame`` or world coordinates.
         :param reprojection_tolerance: The reprojection tolerance as a fraction of the maximum image dimension.
+        :param frame: The coordinate frame to project to. If none is given, project to world coordinates.
         :return: The world coordinates of the projected points, or None if any projection failed.
         """
 
@@ -274,34 +331,42 @@ class Calibration:
     def project_from_image(self,
                            image_coordinates: FloatArray,
                            target_height: float = 0, *,
-                           reprojection_tolerance: float = 0.002) -> FloatArray:
+                           reprojection_tolerance: float = 0.002,
+                           frame: Frame3d | None = None) -> FloatArray:
         """Project points in image coordinates to a plane in world coordinates.
 
         :param image_coordinates: (Nx2) The image coordinates to project.
-        :param target_height: The height of the plane in world coordinates.
+        :param target_height: The height of the plane in ``frame`` or world coordinates.
         :param reprojection_tolerance: The reprojection tolerance as a fraction of the maximum image dimension.
+        :param frame: The coordinate frame to project to. If none is given, project to world coordinates.
         :return: (Nx3) The world coordinates of the projected points.
         """
 
     def project_from_image(self,
                            image_coordinates: Point | list[Point] | FloatArray,
                            target_height: float = 0, *,
-                           reprojection_tolerance: float = 0.002) -> Point3d | None | list[Point3d | None] | FloatArray:
+                           reprojection_tolerance: float = 0.002,
+                           frame: Frame3d | None = None) -> Point3d | None | list[Point3d | None] | FloatArray:
         if isinstance(image_coordinates, Point):
             return self.project_from_image([image_coordinates],
                                            target_height=target_height,
-                                           reprojection_tolerance=reprojection_tolerance)[0]
+                                           reprojection_tolerance=reprojection_tolerance,
+                                           frame=frame)[0]
         if not isinstance(image_coordinates, np.ndarray):
             image_array = np.array([point.tuple for point in image_coordinates], dtype=np.float64)
             world_array = self.project_from_image(image_array,
                                                   target_height=target_height,
-                                                  reprojection_tolerance=reprojection_tolerance)
-            return [Point3d(x=point[0], y=point[1], z=point[2]) if not np.isnan(point).any() else None for point in world_array]
+                                                  reprojection_tolerance=reprojection_tolerance,
+                                                  frame=frame)
+            return [
+                Point3d(x=point[0], y=point[1], z=point[2]).in_frame(frame) if not np.isnan(point).any() else None
+                for point in world_array
+            ]
 
         if len(image_coordinates) == 0:
             return np.empty((0, 3), dtype=np.float64)
 
-        world_extrinsics = self.extrinsics.resolve()
+        world_extrinsics = self.extrinsics.relative_to(frame)
         image_rays = self._points_to_rays(image_coordinates.astype(np.float64).reshape(-1, 1, 2))
         objPoints = image_rays @ world_extrinsics.rotation.matrix.T
         Z = world_extrinsics.z
@@ -315,24 +380,28 @@ class Calibration:
         # Check if the point is within the reprojection tolerance
         if reprojection_tolerance != float('inf'):
             tolerance_px = max(self.intrinsics.size.width, self.intrinsics.size.height) * reprojection_tolerance
-            reprojection = self.project_to_image(world_array)
+            reprojection = self.project_to_image(world_array, frame=frame)
             distance = np.linalg.norm(reprojection - image_coordinates.reshape(-1, 2), axis=1)
             world_array[distance > tolerance_px, :] = np.nan
 
         return world_array
 
+    def _undistortion_criteria(self) -> tuple[int, int, float]:
+        return (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_MAX_ITER, self.intrinsics.undistortion_iterations, 1e-10)
+
     def _points_to_rays(self, image_points: np.ndarray) -> np.ndarray:
         """Convert image points to rays in homogeneous coordinates with respect to the camera coordinate frame."""
-        K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
-        D = np.array(self.intrinsics.distortion)
+        K = np.array(self.intrinsics.matrix, dtype=np.float64).reshape((3, 3))
+        D = np.array(self.intrinsics.distortion, dtype=np.float64)
         if self.intrinsics.model == CameraModel.PINHOLE:
-            undistorted = cv2.undistortPoints(image_points, K, D)
+            undistorted = cv2.undistortPointsIter(image_points, K, D, np.eye(3), np.eye(3),
+                                                  self._undistortion_criteria())
         elif self.intrinsics.model == CameraModel.FISHEYE:
             undistorted = cv2.fisheye.undistortPoints(image_points, K, D)
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
-            R: FloatArray = self.intrinsics.omnidir_params.rotation.matrix.astype(np.float32)
-            xi = np.array(self.intrinsics.omnidir_params.xi, dtype=np.float32)
+            R: FloatArray = self.intrinsics.omnidir_params.rotation.matrix.astype(np.float64)
+            xi = np.array(self.intrinsics.omnidir_params.xi, dtype=np.float64)
             undistorted = cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R)
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
@@ -380,21 +449,22 @@ class Calibration:
 
         image_points = image_points.reshape(-1, 1, 2)
 
-        K = np.array(self.intrinsics.matrix, dtype=np.float32).reshape((3, 3))
-        D = np.array(self.intrinsics.distortion)
+        K = np.array(self.intrinsics.matrix, dtype=np.float64).reshape((3, 3))
+        D = np.array(self.intrinsics.distortion, dtype=np.float64)
 
         if self.intrinsics.model == CameraModel.PINHOLE:
             if crop:
                 log.warning('Cropping is not yet supported for pinhole cameras')
             new_K = self.get_undistorted_camera_matrix(crop=False)
-            return cast(FloatArray, cv2.undistortPoints(image_points, K, D, P=new_K, R=np.eye(3)).reshape(-1, 2))
+            undistorted = cv2.undistortPointsIter(image_points, K, D, np.eye(3), new_K, self._undistortion_criteria())
+            return cast(FloatArray, undistorted.reshape(-1, 2))
         elif self.intrinsics.model == CameraModel.FISHEYE:
             new_K = self.get_undistorted_camera_matrix(crop=crop)
             return cast(FloatArray, cv2.fisheye.undistortPoints(image_points, K, D, P=new_K).reshape(-1, 2))
         elif self.intrinsics.model == CameraModel.OMNIDIRECTIONAL:
             assert self.intrinsics.omnidir_params is not None, 'Omnidirectional parameters are unset'
-            R = np.array(self.intrinsics.omnidir_params.rotation, dtype=np.float32)
-            xi = np.array(self.intrinsics.omnidir_params.xi, dtype=np.float32)
+            R: FloatArray = self.intrinsics.omnidir_params.rotation.matrix.astype(np.float64)
+            xi = np.array(self.intrinsics.omnidir_params.xi, dtype=np.float64)
             return cast(FloatArray, cv2.omnidir.undistortPoints(image_points, K, D, xi=xi, R=R).reshape(-1, 2))
         else:
             raise ValueError(f'Unknown camera model "{self.intrinsics.model}"')
@@ -411,7 +481,6 @@ class Calibration:
     @overload
     def distort_points(self, image_points: list[Point], *, crop: bool = False) -> list[Point]:
         """Distort a list of image points.
-        Note: For pinhole models the redistortion can be off by more than 1px for large distortions.
 
         :param image_points: The list of image points to distort.
         :param crop: Whether cropping is applied to the image during distortion.
@@ -421,7 +490,6 @@ class Calibration:
     @overload
     def distort_points(self, image_points: FloatArray, *, crop: bool = False) -> FloatArray:
         """Apply lens distortion to image points using the camera calibration.
-        Note: For pinhole models the redistortion can be off by more than 1px for large distortions.
 
         :param image_points: (Nx2) The image points to distort.
         :param crop: Whether cropping is applied to the image during distortion.

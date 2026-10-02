@@ -3,6 +3,8 @@ from typing import Any
 
 import httpx
 
+from .http import new_async_client
+
 # The achievable frame rates depend on the sensor mode, which fixes a "base" frame rate.
 # (frequency, mode) -> base fps.  frequency: 0 = 50 Hz, 1 = 60 Hz.  See /imageSensorMode in the REST spec.
 SENSOR_MODE_BASE_FPS: dict[tuple[int, int], int] = {
@@ -39,7 +41,7 @@ class ArkVisionRestClient:
 
     async def _get(self, endpoint: str) -> dict[str, Any] | None:
         try:
-            async with httpx.AsyncClient() as client:
+            async with new_async_client() as client:
                 response = await client.get(f'{self.base_url}/{endpoint}', timeout=5)
             response.raise_for_status()
             return response.json()
@@ -49,7 +51,7 @@ class ArkVisionRestClient:
 
     async def _post(self, endpoint: str, data: dict[str, Any]) -> None:
         try:
-            async with httpx.AsyncClient() as client:
+            async with new_async_client() as client:
                 response = await client.post(f'{self.base_url}/{endpoint}', json=data, timeout=5)
             response.raise_for_status()
         except httpx.HTTPError as e:

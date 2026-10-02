@@ -47,3 +47,25 @@ def test_inverse_pose():
     pose = Pose3d(x=1, y=2, z=3, rotation=Rotation.from_euler(roll=0.1, pitch=0.2, yaw=0.3))
     assert poses_equal(pose.inverse().inverse(), pose)
     assert poses_equal(pose @ pose.inverse(), Pose3d())
+
+
+def test_matrix():
+    pose = Pose3d(x=1, y=2, z=3, rotation=Rotation.from_euler(roll=0.1, pitch=0.2, yaw=0.3))
+    M = pose.matrix
+    assert M.shape == (4, 4)
+    assert np.allclose(M[:3, :3], pose.rotation.matrix)
+    assert np.allclose(M[:3, 3], [1, 2, 3])
+    assert np.allclose(M[3], [0, 0, 0, 1])
+    assert poses_equal(Pose3d.from_matrix(M), pose)
+
+
+def test_inverse_matrix():
+    pose = Pose3d(x=1, y=2, z=3, rotation=Rotation.from_euler(roll=0.1, pitch=0.2, yaw=0.3))
+    assert np.allclose(pose.inverse_matrix, np.linalg.inv(pose.matrix))
+    assert np.allclose(pose.inverse_matrix[3], [0, 0, 0, 1])
+
+
+def test_matmul_matches_matrix_product():
+    p = Pose3d(x=1, y=2, z=3, rotation=Rotation.from_euler(roll=0.1, pitch=0.2, yaw=0.3))
+    q = Pose3d(x=-2, y=0.5, z=0.1, rotation=Rotation.from_euler(roll=-0.7, pitch=0.4, yaw=0.2))
+    assert np.allclose((p @ q).matrix, p.matrix @ q.matrix)

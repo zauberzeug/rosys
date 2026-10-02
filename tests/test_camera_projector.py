@@ -1,6 +1,50 @@
-import numpy as np
+from types import SimpleNamespace
 
+import numpy as np
+import pytest
+
+from rosys.testing import forward
 from rosys.vision import CalibratableCamera, CameraProjector
+
+
+def test_release_without_acquire_raises():
+    projector = CameraProjector(SimpleNamespace(cameras={}))
+    with pytest.raises(AssertionError):
+        projector.release()
+
+
+@pytest.mark.usefixtures('rosys_integration')
+async def test_repeater_only_runs_while_acquired():
+    cam = CalibratableCamera(id='1')
+    cam.set_perfect_calibration(z=3)
+    provider = SimpleNamespace(cameras={'1': cam})
+    projector = CameraProjector(provider, interval=0.1)
+
+    await forward(0.5)
+    assert not projector.projections, 'no consumer -> repeater is not running'
+
+    projector.acquire()
+    projector.acquire()
+    await forward(0.5)
+    assert '1' in projector.projections
+
+    projector.release()
+    cam2 = CalibratableCamera(id='2')
+    cam2.set_perfect_calibration(z=3)
+    provider.cameras['2'] = cam2
+    await forward(0.5)
+    assert '2' in projector.projections, 'one of two consumers released -> repeater keeps running'
+
+    projector.release()
+    cam3 = CalibratableCamera(id='3')
+    cam3.set_perfect_calibration(z=3)
+    provider.cameras['3'] = cam3
+    await forward(0.5)
+    assert '3' not in projector.projections, 'all consumers released -> repeater is stopped'
+
+    projector.acquire()
+    await forward(0.5)
+    assert '3' in projector.projections, 're-acquiring restarts the repeater'
 
 
 def test_projection():

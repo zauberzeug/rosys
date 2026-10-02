@@ -58,11 +58,18 @@ class Pose3d(Object3d):
 
     @property
     def matrix(self) -> np.ndarray:
-        return np.block([[self.rotation.matrix, self.translation_vector], [0, 0, 0, 1]])
+        M = np.eye(4)
+        M[:3, :3] = self.rotation.matrix
+        M[:3, 3] = self.translation
+        return M
 
     @property
     def inverse_matrix(self) -> np.ndarray:
-        return np.block([[self.rotation.T.matrix, -self.rotation.matrix.T @ self.translation_vector], [0, 0, 0, 1]])
+        R_T = self.rotation.matrix.T
+        M = np.eye(4)
+        M[:3, :3] = R_T
+        M[:3, 3] = R_T @ (-np.array(self.translation))
+        return M
 
     def inverse(self) -> Pose3d:
         return Pose3d.from_matrix(self.inverse_matrix)
@@ -136,7 +143,7 @@ class AxesObject(ui.scene.group):
                     ui.scene.cylinder(0.00 * length, 0.05 * length, 0.2 * length).move(y=0.9 * length).material(color)
             if name:
                 ui.scene.text(name).move(z=-0.03)
-        rosys.on_repeat(self.update, rosys.config.ui_update_interval)
+        ui.timer(rosys.config.ui_update_interval, self.update)
 
     def update(self) -> None:
         resolved_pose = self.frame.resolve()

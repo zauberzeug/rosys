@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any, ClassVar, Self
 
 import numpy as np
@@ -9,7 +11,7 @@ import PIL.ImageDraw
 
 from .. import rosys
 from .detections import Detections
-from .image_processing import decode_jpeg_image, encode_image_as_jpeg
+from .image_processing import DEFAULT_JPEG_QUALITY, decode_jpeg_image, encode_image_as_jpeg
 
 
 @dataclass(slots=True, kw_only=True)
@@ -44,6 +46,14 @@ class Image:
             raise RuntimeError(
                 f'Image has multiple detection types ({", ".join(self._detections.keys())}). Use `get_detections(type)` instead.')
         return next(iter(self._detections.values()))
+
+    @property
+    def detections_by_detector_id(self) -> Mapping[str, Detections]:
+        """A read-only view of all detections keyed by the detector that produced them.
+
+        :return: a mapping from detector id to its :class:`Detections`.
+        """
+        return MappingProxyType(self._detections)
 
     @property
     def array(self) -> ImageArray:
@@ -92,8 +102,6 @@ class Image:
         array = decode_jpeg_image(jpeg_bytes)
         if array is None:
             return None
-        if len(array.shape) == 2:
-            array = np.repeat(np.expand_dims(array, -1), repeats=3, axis=2)
         return cls.from_array(array, camera_id=camera_id, time=time, metadata=metadata)
 
     @classmethod
@@ -116,9 +124,13 @@ class Image:
         """Convert the image to a PIL image."""
         return PIL.Image.fromarray(self.array)
 
-    def to_jpeg_bytes(self) -> bytes:
-        """Convert the image to a JPEG image by encoding it."""
-        return encode_image_as_jpeg(self.array)
+    def to_jpeg_bytes(self, quality: int = DEFAULT_JPEG_QUALITY) -> bytes:
+        """Convert the image to a JPEG image by encoding it.
+
+        :param quality: JPEG quality from 1 (smallest file) to 100 (best quality).
+        :return: the encoded JPEG bytes.
+        """
+        return encode_image_as_jpeg(self.array, quality)
 
     def byte_size(self) -> int:
         """Compute the size of the stored image representation in bytes."""

@@ -20,9 +20,15 @@ async def test_mjpeg_camera(rosys_integration):
     uid, ip = connected_uids[0]
     camera = MjpegCamera(id=uid, ip=ip, connect_after_init=False)
     await camera.connect()
-    await asyncio.sleep(0.5)
-    assert camera.is_connected
-    assert len(camera.images) >= 1
+    try:
+        for _ in range(100):  # the stream worker needs a moment to spawn
+            if camera.images:
+                break
+            await asyncio.sleep(0.1)
+        assert camera.is_connected
+        assert len(camera.images) >= 1
+    finally:
+        await camera.disconnect()
 
 
 @pytest_asyncio.fixture()

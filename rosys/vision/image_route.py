@@ -14,13 +14,15 @@ from .. import run
 from ..geometry import Rectangle
 from .calibration import Calibration
 from .image import Image
-from .image_processing import encode_image_as_jpeg, process_ndarray_image
+from .image_processing import DEFAULT_JPEG_QUALITY, encode_image_as_jpeg, process_ndarray_image, validate_jpeg_quality
 from .image_rotation import ImageRotation
 
 if TYPE_CHECKING:
     from .camera import Camera
 
 log = logging.getLogger('rosys.image_route')
+
+_route_owners: dict[str, weakref.ref[Camera]] = {}
 
 
 def create_image_route(camera: Camera) -> None:
@@ -33,12 +35,15 @@ def create_image_route(camera: Camera) -> None:
     app.remove_route(undistorted_url)
 
     camera_ref = weakref.ref(camera)
+    urls = (placeholder_url, timestamp_url, undistorted_url)
+    for url in urls:
+        _route_owners[url] = camera_ref  # NOTE: claim the urls before adding, so a pending finalizer cannot remove them
 
     async def get_camera_image(timestamp: str,
                                shrink: float = 1.0,
                                max_dimension: float | None = None,
                                fast: bool = True,
-                               compression: int = 60,
+                               compression: int = DEFAULT_JPEG_QUALITY,
                                crop_x: int | None = None,
                                crop_y: int | None = None,
                                crop_w: int | None = None,
@@ -48,6 +53,7 @@ def create_image_route(camera: Camera) -> None:
         if not camera:
             return Response(content='Camera was removed', status_code=404)
         try:
+            validate_jpeg_quality(compression)
             crop = Rectangle(x=crop_x, y=crop_y, width=crop_w, height=crop_h) \
                 if crop_x is not None and crop_y is not None and crop_w is not None and crop_h is not None else None
             image_rotation = ImageRotation.from_degrees(rotation)
@@ -66,7 +72,7 @@ def create_image_route(camera: Camera) -> None:
                                            shrink: float = 1.0,
                                            max_dimension: float | None = None,
                                            fast: bool = True,
-                                           compression: int = 60,
+                                           compression: int = DEFAULT_JPEG_QUALITY,
                                            crop_x: int | None = None,
                                            crop_y: int | None = None,
                                            crop_w: int | None = None,
@@ -76,6 +82,7 @@ def create_image_route(camera: Camera) -> None:
         if not camera:
             return Response(content='Camera was removed', status_code=404)
         try:
+            validate_jpeg_quality(compression)
             crop = Rectangle(x=crop_x, y=crop_y, width=crop_w, height=crop_h) \
                 if crop_x is not None and crop_y is not None and crop_w is not None and crop_h is not None else None
             image_rotation = ImageRotation.from_degrees(rotation)
@@ -94,6 +101,15 @@ def create_image_route(camera: Camera) -> None:
     app.add_api_route(placeholder_url, _get_placeholder)
     app.add_api_route(timestamp_url, get_camera_image)
     app.add_api_route(undistorted_url, get_camera_image_undistorted)
+
+    weakref.finalize(camera, _remove_image_routes, camera_ref, urls)
+
+
+def _remove_image_routes(camera_ref: weakref.ref[Camera], urls: tuple[str, ...]) -> None:
+    for url in urls:
+        if _route_owners.get(url) is camera_ref:  # NOTE: a newer camera with the same id may own them by now
+            app.remove_route(url)
+            del _route_owners[url]
 
 
 def _create_placeholder(shrink: int) -> bytes:
@@ -152,9 +168,8 @@ async def _try_get_jpeg(camera: Camera,
 
             shrink = max(1, shrink, shrink_from_max)
 
-            if shrink == 1 and not undistort and compression == 60 \
-                    and crop is None and rotation == ImageRotation.NONE:
-                return await run.cpu_bound(encode_image_as_jpeg, image.array)
+            if shrink == 1 and not undistort and crop is None and rotation == ImageRotation.NONE:
+                return await run.cpu_bound(encode_image_as_jpeg, image.array, compression)
 
             calibration = camera.calibration if undistort else None  # type: ignore
             return await run.cpu_bound(_process, image, calibration, shrink, undistort, fast, compression,
@@ -193,4 +208,4 @@ def _process(image: Image,
             # INTER_AREA is optimal for downsampling
             image_array = cv2.resize(image_array, (new_width, new_height), interpolation=cv2.INTER_AREA)
 
-    return encode_image_as_jpeg(image_array, compression_level=compression)
+    return encode_image_as_jpeg(image_array, quality=compression)

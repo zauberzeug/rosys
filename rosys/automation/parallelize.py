@@ -79,12 +79,15 @@ class parallelize:
                             cancel_unfinished(e, propagate=True)
 
                 if all(waiting[i] is not None or completed[i] for i in active_coros):
-                    try:
-                        yield  # allow the event loop to process other tasks while all coroutines are waiting
-                    except GeneratorExit:
-                        raise
-                    except BaseException as e:
-                        cancel_unfinished(e, propagate=True)
+                    pending = [w for w in (waiting[i] for i in active_coros) if w is not None]
+                    if pending:
+                        try:
+                            # suspend until any coroutine can make progress instead of busy-polling the event loop
+                            yield from asyncio.wait(pending, return_when=asyncio.FIRST_COMPLETED).__await__()
+                        except GeneratorExit:
+                            raise
+                        except BaseException as e:
+                            cancel_unfinished(e, propagate=True)
 
             if exception_to_reraise:
                 # re-raise the external stop now that every coroutine has cleaned up

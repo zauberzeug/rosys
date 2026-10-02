@@ -1,6 +1,8 @@
 import asyncio
+import gc
 import time
 import uuid
+import weakref
 
 import numpy as np
 import pytest
@@ -83,6 +85,17 @@ def test_grow_map(shape: Prism) -> None:
     assert planner.obstacle_map.grid.bbox == pytest.approx((-2.4, -2.4, 8.6, 5.8))
 
 
+def test_turning_in_place_is_planned_as_shunting_maneuver(shape: Prism) -> None:
+    planner = DelaunayPlanner(shape.outline)
+    start = Pose(x=0, y=0, yaw=0)
+    goal = Pose(x=0, y=0, yaw=np.deg2rad(90))
+    planner.update_map([], [], [start, goal], time.time() + 3.0)
+    path = planner.search(start, goal)
+    assert path is not None
+    assert all(segment.spline.start.distance(segment.spline.end) > 0.1 for segment in path), \
+        'a zero-length spline cannot turn the robot toward the goal yaw'
+
+
 async def test_overlapping_commands(path_planner: PathPlanner) -> None:
     await forward(1.0)
 
@@ -96,3 +109,20 @@ async def test_overlapping_commands(path_planner: PathPlanner) -> None:
     path, test = await asyncio.gather(task1, task2)
     assert isinstance(path, list)
     assert isinstance(test, bool)
+
+
+@pytest.mark.usefixtures('rosys_integration')
+async def test_a_discarded_path_planner_stops_its_process(shape: Prism) -> None:
+    planner = PathPlanner(shape)  # startup already ran, so the process starts immediately
+    process = planner.process  # holds no reference back to the planner
+    assert process.is_alive()
+    reference = weakref.ref(planner)
+
+    del planner
+    gc.collect()
+
+    assert reference() is None  # nothing pins the planner
+    deadline = time.time() + 5
+    while process.is_alive() and time.time() < deadline:
+        await asyncio.sleep(0.1)
+    assert not process.is_alive()  # dropping the planner closes the pipe, so the process ends on EOF

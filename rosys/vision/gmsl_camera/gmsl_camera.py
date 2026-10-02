@@ -8,7 +8,7 @@ from ... import rosys
 from ..camera.calibratable_camera import CalibratableCamera
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
-from ..image import Image
+from ..image import Image, ImageArray
 from ..image_processing import process_ndarray_image
 from ..image_rotation import ImageRotation
 from .gmsl_device import GmslDevice
@@ -68,41 +68,53 @@ class GmslCamera(ConfigurableCamera, TransformableCamera, CalibratableCamera):
     def is_connected(self) -> bool:
         return self.device is not None and self.device.is_connected
 
+    @property
+    def is_active(self) -> bool:
+        return self.device is not None and self.device.is_active
+
     async def connect(self) -> None:
-        if self.is_connected:
-            return
-        if shutil.which('gst-launch-1.0') is None:
-            self.log.warning('cannot connect camera %s: gst-launch-1.0 is not available '
-                             '(requires a Jetson with the Argus GStreamer stack)', self.id)
-            return
-        self.device = GmslDevice(
-            self.sensor_id,
-            on_new_image_data=self._handle_new_image_data,
-            auto_exposure=self._parameters['auto_exposure'].value,
-            exposure=self._parameters['exposure'].value,
-            auto_gain=self._parameters['auto_gain'].value,
-            gain=self._parameters['gain'].value,
-            fps=self._parameters['fps'].value,
-            width=self._parameters['width'].value,
-            height=self._parameters['height'].value,
-        )
-        self.log.info('connecting camera %s (sensor-id %s)', self.id, self.sensor_id)
+        async with self._device_connection():
+            if self.device is not None:
+                if self.device.is_active:
+                    return
+                await self._tear_down_device()
+            if shutil.which('gst-launch-1.0') is None:
+                self.log.warning('cannot connect camera %s: gst-launch-1.0 is not available '
+                                 '(requires a Jetson with the Argus GStreamer stack)', self.id)
+                return
+            self.device = GmslDevice(
+                self.sensor_id,
+                on_new_image_data=self._handle_new_image_data,
+                auto_exposure=self._parameters['auto_exposure'].value,
+                exposure=self._parameters['exposure'].value,
+                auto_gain=self._parameters['auto_gain'].value,
+                gain=self._parameters['gain'].value,
+                fps=self._parameters['fps'].value,
+                width=self._parameters['width'].value,
+                height=self._parameters['height'].value,
+                reconnect_interval=self.reconnect_interval,
+            )
+            self.log.info('connecting camera %s (sensor-id %s)', self.id, self.sensor_id)
 
     async def disconnect(self) -> None:
+        async with self._device_connection():
+            await self._tear_down_device()
+
+    async def _tear_down_device(self) -> None:
+        """Tear down the device. The caller must hold `device_connection_lock`."""
         if self.device is None:
             return
         await self.device.shutdown()
         self.device = None
         self.log.info('camera %s: disconnected', self.id)
 
-    async def _handle_new_image_data(self, image_array, timestamp: float) -> None:
-        if not self.is_connected:
-            return
+    async def _handle_new_image_data(self, image_array: ImageArray, timestamp: float) -> None:
+        processed: ImageArray | None = image_array
         if self.crop or self.rotation != ImageRotation.NONE:
-            image_array = await rosys.run.cpu_bound(process_ndarray_image, image_array, self.rotation, self.crop)
-        if image_array is None:
+            processed = await rosys.run.cpu_bound(process_ndarray_image, image_array, self.rotation, self.crop)
+        if processed is None:
             return
-        image = Image.from_array(image_array, camera_id=self.id, time=timestamp)
+        image = Image.from_array(processed, camera_id=self.id, time=timestamp)
         self._add_image(image)
 
     def _set_auto_exposure(self, value: bool) -> None:

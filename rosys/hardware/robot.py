@@ -3,7 +3,6 @@ import logging
 from typing import cast
 
 from .. import rosys
-from ..helpers import remove_indentation
 from .expander import ExpanderHardware
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot_brain import RobotBrain
@@ -29,9 +28,19 @@ class RobotHardware(Robot):
     It generates Lizard code, forwards output to the hardware modules and sends commands to the robot brain.
     """
 
-    def __init__(self, modules: list[Module], robot_brain: RobotBrain) -> None:
+    def __init__(self, modules: list[Module], robot_brain: RobotBrain, *,
+                 rdyp_pin: int | None = 15, en3_pin: int | None = 12) -> None:
+        """Assemble the hardware robot from its modules and generate the Lizard code for the Robot Brain.
+
+        :param rdyp_pin: pin of the RDYP enable output, or ``None`` to omit it (default: 15).
+        :param en3_pin: pin of the EN3 enable output, or ``None`` to omit it (default: 12).
+
+        Both default to the standard Robot Brain pins; override them (or pass ``None``) for robots wired differently.
+        """
         super().__init__(modules)
         self.robot_brain = robot_brain
+        self._rdyp_pin = rdyp_pin
+        self._en3_pin = en3_pin
         self._expected_output_length = 0
         self._warning_cooldown = 30.0
         self._last_warning_time = 0.0
@@ -44,20 +53,22 @@ class RobotHardware(Robot):
         self.robot_brain.lizard_code = self.generate_lizard_code()
 
     def generate_lizard_code(self) -> str:
-        code = remove_indentation('''
-            rdyp = Output(15)
-            en3 = Output(12)
-        ''')
+        code = ''
+        if self._rdyp_pin is not None:
+            code += f'rdyp = Output({self._rdyp_pin})\n'
+        if self._en3_pin is not None:
+            code += f'en3 = Output({self._en3_pin})\n'
         for module in self.modules:
             code += cast(ModuleHardware, module).lizard_code + '\n'
         output_fields = []
         for module in self.modules:
             output_fields.extend(cast(ModuleHardware, module).core_message_fields)
-        code += remove_indentation(f'''
-            core.output("core.millis {' '.join(output_fields)}")
-            rdyp.on()
-            en3.on()
-        ''')
+        fields = ' '.join(output_fields)
+        code += f'core.output("core.millis {fields}")\n'
+        if self._rdyp_pin is not None:
+            code += 'rdyp.on()\n'
+        if self._en3_pin is not None:
+            code += 'en3.on()\n'
         self._expected_output_length = len(output_fields) + 2  # account for the two words "core" and `core.millis`
         return code
 

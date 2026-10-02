@@ -24,6 +24,14 @@ async def rosys_integration() -> AsyncGenerator:
     yield
     await rosys.shutdown()
     rosys.reset_after_test()
+    _forget_helper_globals()
+
+
+def _forget_helper_globals() -> None:
+    """Drop the objects ``rosys.testing.helpers`` works on, so no test inherits the previous one's."""
+    helpers.automator = None
+    helpers.driver = None
+    helpers.odometer = None
 
 
 @pytest.fixture

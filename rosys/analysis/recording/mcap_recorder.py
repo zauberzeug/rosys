@@ -1,0 +1,985 @@
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+import threading
+from collections.abc import Callable, Collection
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any, BinaryIO, NamedTuple, Protocol
+
+from mcap.writer import CompressionType, Writer
+from nicegui import Event, ui
+
+from ... import rosys
+from .indexing import is_indexed, reindex
+from .merging import METADATA_NAME, STAGING_GLOB, merge_into_place
+from .naming import TIMESTAMP_FORMAT, ensure_plain_file_name
+from .paths import PAGE_PATH
+
+NANOSECONDS_PER_SECOND = 1_000_000_000
+
+MAX_QUEUED_MESSAGES = 10_000
+"""Cap on the number of unwritten messages held in memory, a few seconds of backlog at a robot's topic mix.
+
+A count alone does not bound memory: a queued camera frame holds a full uncompressed image,
+so :data:`MAX_QUEUED_BYTES` caps the footprint too. Whichever limit is hit first drops the
+oldest messages, so a stuck writer cannot grow the queue until the process runs out of memory.
+"""
+
+MAX_QUEUED_BYTES = 256 * 1_048_576
+"""Cap on the approximate memory footprint of unwritten messages (256 MB), see :data:`MAX_QUEUED_MESSAGES`.
+
+On an 8 GB Jetson, 10k raw camera frames would be tens of gigabytes — far below the count cap, yet fatal.
+"""
+
+_DEFAULT_PAYLOAD_BYTES = 1024
+"""Assumed size of a payload whose footprint cannot be measured (a small sensor value)."""
+
+_DROP_WARNING_INTERVAL = 10.0  # seconds between 'queue full' warnings, so drops do not spam the log
+
+
+class _QueuedMessage(NamedTuple):
+    """A queued entry awaiting the background writer.
+
+    ``payload`` is already-serialized ``bytes`` when ``encode`` is ``None``; otherwise
+    ``encode(payload, timestamp_ns)`` runs on the writer to produce the bytes. ``size`` is
+    the approximate payload footprint, tracked so the queue can be bounded by bytes as well
+    as by message count.
+    """
+    topic: str
+    payload: Any
+    encode: Callable[[Any, int], bytes | None] | None
+    timestamp_ns: int
+    size: int
+
+
+class TopicSchema(NamedTuple):
+    """Everything the writer needs to register a topic's channel and schema."""
+    schema_name: str
+    schema: bytes
+    schema_encoding: str  # e.g. 'ros2msg' or 'jsonschema'
+    message_encoding: str  # e.g. 'cdr' or 'json'
+
+
+class RecordingInfo(NamedTuple):
+    """A snapshot of one recording's on-disk facts, gathered off the event loop."""
+    path: Path
+    mtime: float
+    size: int
+    is_live: bool
+    indexed: bool  # has a summary index; always False for the live file (not indexed until stopped)
+
+
+class _DiskStats(NamedTuple):
+    """Directory statistics for the developer panel, collected off the event loop."""
+    current_file_size: int
+    total_size: int
+    file_count: int
+
+
+class RecordingSource(Protocol):
+    """A topic data source whose lifetime is bound to the recorder's recording state.
+
+    Sources are activated when recording starts and deactivated when it stops, so
+    event subscriptions and timers only run while a recording is actually open.
+    """
+
+    def start(self) -> None: ...
+    def stop(self) -> None: ...
+
+
+class McapRecorder:
+    """Records sensor data to MCAP files for replay and analysis in Foxglove Studio.
+
+    A run is written as numbered parts, ``<run>_<part>.mcap``, into the ``parts/`` folder of
+    the output directory, rotated by size and duration; every ``.mcap`` at the top level of the
+    output directory is a kept recording (renamed, merged or placed there deliberately). The
+    folder decides the kind, not the name. Peak disk usage is ``max_total_size_mb +
+    max_part_size_mb``: the budget is enforced only before a part is opened, so the growing
+    part can exceed it by up to one part's worth. The budget deletes parts (oldest first)
+    before kept recordings, which have a bound of their own so they cannot eat the rolling
+    window. A merge holds its sources open, so the space the budget frees during one only
+    returns when the merge finishes, and the peak then also carries the merge's size.
+
+    Messages are enqueued from the event loop (cheap, non-blocking) and written to disk by a
+    single background consumer via ``rosys.run.io_bound`` so that encoding, ZSTD compression
+    and file I/O never block the loop. Encoding runs on the writer too: sources enqueue the
+    raw payload plus an ``encode`` callable, so no JSON/JPEG work happens on the loop. The log
+    time is captured at enqueue, but encoding is deferred, so payloads are expected to be
+    immutable value snapshots (as RoSys sensor events emit); a payload mutated after being
+    enqueued would encode its later state.
+
+    Two locks keep the loop responsive. ``_lock`` serializes all writer access so the drain in
+    ``stop()`` cannot race the background consumer; it may be held for the duration of a
+    multi-second write. ``_queue_lock`` guards only queue mutation (enqueue, cap-drop, swap)
+    and is held for microseconds, so the event loop never blocks behind a write when appending
+    a message. Lock order is ``_lock`` outer, ``_queue_lock`` inner; the loop takes
+    ``_queue_lock`` alone, so there is no deadlock.
+
+    The recorder is encoding-agnostic: a topic carries a :class:`TopicSchema` (schema
+    name/bytes plus schema- and message-encoding). ``log_message`` takes either
+    already-serialized bytes or a payload plus an ``encode`` callback. Conversion from
+    application data types lives entirely in ``converters.py`` / ``foxglove.py``. Topics are
+    fed by opaque :class:`RecordingSource` objects that are activated on ``start()`` and
+    deactivated on ``stop()``.
+    """
+
+    def __init__(
+        self,
+        *,
+        output_dir: Path | str = '~/.rosys/mcap',
+        max_part_size_mb: float = 100,
+        max_part_duration: float | None = None,
+        max_total_size_mb: float = 1000,
+        max_kept_size_mb: float = 500,
+        chunk_size: int = 1_048_576,
+        flush_interval: float = 1.0,
+        profile: str = 'rosys',
+        library: str = 'rosys-mcap-recorder',
+        logger_name: str = 'rosys.mcap_recorder',
+        auto_start: bool = True,
+        max_queued_bytes: float = MAX_QUEUED_BYTES,
+    ) -> None:
+        """Create an MCAP recorder.
+
+        :param output_dir: directory recordings are written to (created if missing); parts go into its
+            ``parts/`` folder, every ``.mcap`` at its top level counts as kept.
+        :param max_part_size_mb: on-disk size at which the active part is rotated to a new one.
+        :param max_part_duration: seconds after which the active part is rotated to a new one
+            (default: no duration-based rotation). Checked as messages are written, so an idle
+            recording only rotates once data flows again.
+        :param max_total_size_mb: disk budget for the output directory including ``parts/``; the oldest
+            recordings are deleted before a part is opened to stay under it, parts first. Peak disk usage
+            is therefore ``max_total_size_mb + max_part_size_mb``, as the growing part is not counted.
+        :param max_kept_size_mb: bound for kept recordings within the budget; beyond it the oldest are
+            deleted, sparing the newest (the one just filed away) however large it is.
+        :param chunk_size: MCAP chunk size in bytes (larger chunks compress better and flush
+            less often).
+        :param flush_interval: seconds between background flushes of the queue to disk.
+        :param profile: MCAP profile written into each file's header.
+        :param library: MCAP library string written into each file's header.
+        :param logger_name: name of the logger this recorder logs to.
+        :param auto_start: start recording automatically on ``rosys`` startup.
+        :param max_queued_bytes: approximate memory cap for unwritten messages; the oldest are
+            dropped once the queue exceeds this (or :attr:`max_queued_messages`), so a stalled
+            writer cannot exhaust memory with raw camera frames (see :data:`MAX_QUEUED_BYTES`).
+        """
+        self.log = logging.getLogger(logger_name)
+        self.output_dir = Path(output_dir).expanduser()
+        self.parts_dir = self.output_dir / 'parts'
+        self.parts_dir.mkdir(parents=True, exist_ok=True)
+        self.max_part_size = int(max_part_size_mb * 1_048_576)
+        self.max_part_duration = max_part_duration
+        self.max_total_size = int(max_total_size_mb * 1_048_576)
+        self.max_kept_size = int(max_kept_size_mb * 1_048_576)
+        self.chunk_size = chunk_size
+        self.profile = profile
+        self.library = library
+        self.max_queued_messages = MAX_QUEUED_MESSAGES
+        self.max_queued_bytes = int(max_queued_bytes)
+
+        self.RECORDING_STARTED = Event[Path]()
+        """a recording file has been opened (argument: path); emitted per file, including on every rotation"""
+        self.RECORDING_STOPPED = Event[Path]()
+        """a recording file has been finalized (argument: path); emitted per file, including on every rotation"""
+
+        self._declared_topics: set[str] = set()
+        self._selected_topics: set[str] | None = None
+        self._topic_selection: dict[str, bool] = {}  # developer-panel checkbox state, default True
+        self._writer: Writer | None = None
+        self._file: BinaryIO | None = None
+        self._file_path: Path | None = None
+        self._topics: dict[str, int] = {}
+        self._schemas: dict[str, TopicSchema] = {}
+        self._queue: list[_QueuedMessage] = []
+        self._queued_bytes: int = 0  # approximate footprint of _queue; guarded by _queue_lock
+        self._lock = threading.Lock()  # serializes writer access; may be held for a full write
+        self._queue_lock = threading.Lock()  # guards queue mutation only; held for microseconds
+        self._sources: list[RecordingSource] = []
+        self._run_name: str = ''
+        self._run_metadata: str | None = None  # JSON, serialized once at start
+        self._part_index: int = 0
+        self._loop: asyncio.AbstractEventLoop | None = None  # captured at start for loop-safe emits
+        self._message_count: int = 0
+        self._file_message_count: int = 0
+        self._file_started_at: float = 0.0
+        self._dropped_message_count: int = 0
+        self._last_drop_warning: float = float('-inf')
+        self._is_recording: bool = False
+        self._is_stopping: bool = False  # stop() is finalizing the last part; start() is refused meanwhile
+        self._warned_topics: set[str] = set()
+        self._warned_converter_topics: set[tuple[str, str]] = set()
+        self._disk_stats = _DiskStats(0, 0, 0)
+        self._merging: set[str] = set()
+
+        self._remove_orphaned_temporary_files()
+        if auto_start:
+            rosys.on_startup(self.start)
+        rosys.on_repeat(self._flush, flush_interval)
+        rosys.on_shutdown(self.stop)
+
+    @property
+    def is_recording(self) -> bool:
+        return self._is_recording
+
+    @property
+    def run_name(self) -> str:
+        """The running recording's name, ``<timestamp>`` or ``<timestamp>_<name>``; empty before the first start."""
+        return self._run_name
+
+    @property
+    def message_count(self) -> int:
+        """Number of messages written to the current recording."""
+        return self._message_count
+
+    @property
+    def dropped_message_count(self) -> int:
+        """Messages dropped (queue overflow or an aborted recording) since the recording started."""
+        return self._dropped_message_count
+
+    @property
+    def current_file_size(self) -> int:
+        if self._file_path is None:
+            return 0
+        return _safe_size(self._file_path)
+
+    @property
+    def total_size(self) -> int:
+        return sum(_safe_size(f) for f in self._recording_files())
+
+    @property
+    def file_count(self) -> int:
+        return len(self._recording_files())
+
+    @property
+    def topics(self) -> list[str]:
+        """All declared topic names (including those whose schema is not registered yet)."""
+        return sorted(self._declared_topics)
+
+    @property
+    def disabled_topics(self) -> set[str]:
+        """Declared topics that the current selection drops (empty when everything is recorded)."""
+        if self._selected_topics is None:
+            return set()
+        return self._declared_topics - self._selected_topics
+
+    @property
+    def recordings(self) -> list[Path]:
+        """All parts and kept recordings, newest first (by modification time, so renames keep the order)."""
+        return sorted(self._recording_files(), key=_safe_mtime, reverse=True)
+
+    @property
+    def current_recording(self) -> Path | None:
+        """The file currently being written (unindexed until stopped), else None."""
+        return self._file_path if self._is_recording else None
+
+    @property
+    def merging(self) -> frozenset[str]:
+        """The names of the recordings being merged right now (see :meth:`merge`)."""
+        return frozenset(self._merging)
+
+    def accepts(self, topic: str) -> bool:
+        """Whether a message on ``topic`` would currently be recorded.
+
+        Cheap, loop-safe pre-check (recording is active and the topic is not
+        deselected) so callers can skip expensive encoding for topics that would
+        be dropped anyway.
+
+        :param topic: the topic name to test.
+        :return: ``True`` if a message on this topic would be enqueued.
+        """
+        if not self._is_recording:
+            return False
+        return self._selected_topics is None or topic in self._selected_topics
+
+    def scan_recordings(self) -> list[RecordingInfo]:
+        """Stat every recording and check its summary index; newest first.
+
+        Globs and stats every file and probes its summary index, which is blocking
+        I/O; call via ``rosys.run.io_bound``. The live file is flagged and never
+        index-probed (the writer holds it open and it has no summary index until
+        stopped). Files that vanish during the scan (e.g. deleted from the
+        recordings page) are skipped.
+
+        :return: one :class:`RecordingInfo` per file, ordered newest first.
+        """
+        current = self.current_recording
+        infos: list[RecordingInfo] = []
+        for path in self.recordings:
+            try:
+                stat = path.stat()
+            except FileNotFoundError:
+                continue  # deleted concurrently while scanning
+            is_live = path == current
+            indexed = False if is_live else is_indexed(path)  # never read the open live file
+            infos.append(RecordingInfo(path, stat.st_mtime, stat.st_size, is_live, indexed))
+        return infos
+
+    def delete_recording(self, path: Path | str) -> None:
+        """Delete a part or a kept recording (only within this recorder's folders).
+
+        The currently-recording part is never deleted (the writer holds it open).
+        """
+        path = Path(path)
+        if path.parent in (self.output_dir, self.parts_dir) and path.exists() and path != self.current_recording:
+            path.unlink()
+            self.log.info('deleted recording: %s', path.name)
+
+    def delete_all_recordings(self) -> None:
+        """Delete all recordings except the one currently being written."""
+        for path in self.recordings:
+            if path != self.current_recording:
+                self.delete_recording(path)
+
+    def rename_recording(self, path: Path | str, new_name: str) -> Path | None:
+        """Rename a part or a kept recording, filing it away as kept at the top level of the output directory.
+
+        The currently-recording part cannot be renamed (the writer holds it open). Empty,
+        whitespace-only or dots-only names would escape the output directory and are rejected.
+
+        :param path: the recording to rename.
+        :param new_name: the desired name (reduced to a bare ``.mcap`` filename).
+        :return: the new path, or ``None`` if the rename was rejected or the target exists.
+        """
+        path = Path(path)
+        if path.parent not in (self.output_dir, self.parts_dir) or not path.exists() \
+                or path == self.current_recording:
+            return None
+        name = Path(new_name.strip()).name
+        if not name.strip('.'):  # empty, whitespace-only, or only dots ('.', '..', '...')
+            return None
+        target = self.output_dir / name
+        if target.suffix != '.mcap':
+            target = target.with_suffix('.mcap')
+        if target == path:
+            return None
+        try:
+            os.link(path, target)  # atomic: fails if the target exists, so a racing rename cannot clobber a recording
+        except OSError:
+            return None
+        path.unlink()
+        self.log.info('renamed recording: %s -> %s', path.name, target.name)
+        return target
+
+    def unindexed_recordings(self) -> list[Path]:
+        """Finished recordings without a summary index (e.g. left by a crash).
+
+        Opens and probes every finished file, which is blocking I/O; call via
+        ``rosys.run.io_bound``.
+        """
+        return [path for path in self.recordings if path != self.current_recording and not is_indexed(path)]
+
+    async def reindex_unindexed(self) -> None:
+        """Rebuild the index of every unindexed recording on a background thread."""
+        unindexed = await rosys.run.io_bound(self.unindexed_recordings)  # per-file open + index probe: off the loop
+        for path in unindexed or []:
+            self.log.warning('reindexing unindexed recording: %s', path.name)
+            recovered = await rosys.run.io_bound(reindex, path)
+            if recovered is not None:
+                self.log.info('reindexed %s (%d messages recovered)', path.name, recovered)
+
+    async def merge(self, sources: list[Path], name: str, *, start_time_ns: int = 0) -> Path | None:
+        """Merge finished recordings into the kept recording ``<name>.mcap``, deleting them once it is in place.
+
+        Runs off the loop; a failed merge leaves the sources untouched (see :func:`~.merging.merge_into_place`),
+        a source that cannot be deleted afterwards is only logged.
+
+        :param sources: finished parts or kept recordings of this recorder, oldest first.
+        :param name: the name of the merged recording, without ``.mcap``.
+        :param start_time_ns: messages logged before this time are dropped (default: keep all).
+        :return: the merged recording, or ``None`` if no message was left to merge (the sources are kept).
+        :raises ValueError: if ``name`` is no plain file name, or a source is no finished recording of
+            this recorder.
+        :raises FileExistsError: if ``<name>.mcap`` exists or is being merged already.
+        :raises RuntimeError: if the app shut down before the merge ran; the sources are kept.
+        """
+        ensure_plain_file_name(name)
+        target = self.output_dir / f'{name}.mcap'
+        if not sources or any(source.parent not in (self.output_dir, self.parts_dir)
+                              or source == self.current_recording for source in sources):
+            raise ValueError('only finished parts and kept recordings of this recorder can be merged')
+        if name in self._merging or target.exists():
+            raise FileExistsError(f'{target.name} exists or is being merged already')
+        self._merging.add(name)
+        try:
+            result = await rosys.run.io_bound(merge_into_place, sources, target, start_time_ns=start_time_ns)
+        finally:
+            self._merging.discard(name)
+        if result is None:
+            raise RuntimeError('the merge did not run, the app is shutting down')
+        count, undeleted = result
+        if not count:
+            return None
+        self.log.info('merged %d recordings into %s (%d messages)', len(sources), target.name, count)
+        if undeleted:
+            self.log.warning('merged into %s, but could not delete %s', target.name, [path.name for path in undeleted])
+        return target
+
+    def add_topic(self, topic: str, schema: TopicSchema) -> None:
+        """Register a topic with its schema and encoding.
+
+        Can be called before or after start(). The channel is registered with
+        the writer lazily on first message (or eagerly when a new file opens),
+        so this method never touches the writer and is safe to call from the
+        event loop while the background consumer is writing.
+        """
+        self._declared_topics.add(topic)
+        self._schemas[topic] = schema
+
+    def declare_topic(self, topic: str) -> None:
+        """Announce a topic whose schema will only be registered on its first message.
+
+        Auto-dispatched converters cannot know their schema before a payload arrives,
+        but declaring the name up front makes the topic visible in ``topics`` — so
+        selections computed before the first message (e.g. "everything but camera
+        images") still cover it.
+        """
+        self._declared_topics.add(topic)
+
+    def add_source(self, source: RecordingSource) -> None:
+        """Register a data source whose lifetime is bound to the recording state.
+
+        Activated immediately if recording is already running, otherwise on the
+        next ``start()``.
+        """
+        self._sources.append(source)
+        if self._is_recording:
+            source.start()
+
+    def start(self, topics: Collection[str] | None = None, *,
+              name: str | None = None, metadata: dict | None = None) -> str | None:
+        """Start a new recording.
+
+        :param topics: record only these topics; all others are dropped (default: record
+            every registered topic). A selected topic that is registered only after the
+            recording started is picked up as soon as it exists. The selection lasts for
+            this recording; the next ``start()`` records everything again unless a new
+            selection is passed.
+        :param name: appended to the start time to name the run, ``<timestamp>_<name>``
+            (default: the start time alone). The run's parts are numbered ``<run>_01.mcap``,
+            ``<run>_02.mcap``, ... as they rotate, so they sort and read as a unit.
+        :param metadata: written into every part of this run as a JSON metadata record, so a
+            part carries the context it was recorded in.
+        :return: the name of the run, or ``None`` if a recording is already running or the
+            previous one is still being finalized.
+        :raises ValueError: if ``name`` is not a plain file name.
+        :raises TypeError: if ``metadata`` cannot be serialized to JSON.
+        """
+        if self._is_recording:
+            return None
+        if self._is_stopping:
+            self.log.warning('not starting a recording while the previous one is still being finalized')
+            return None
+        if name is not None:
+            ensure_plain_file_name(name)
+        run_metadata = json.dumps(metadata) if metadata is not None else None
+        try:
+            self._loop = asyncio.get_running_loop()  # captured for loop-safe emits from the writer thread
+        except RuntimeError:
+            self._loop = None  # started outside a running loop (e.g. a synchronous test)
+        self._selected_topics = set(topics) if topics is not None else None
+        timestamp = datetime.now(tz=UTC).strftime(TIMESTAMP_FORMAT)
+        self._run_name = f'{timestamp}_{name}' if name is not None else timestamp
+        self._run_metadata = run_metadata
+        self._part_index = 0
+        self._message_count = 0
+        self._dropped_message_count = 0
+        with self._queue_lock:  # drop any backlog left by a previously aborted recording
+            self._queue.clear()
+            self._queued_bytes = 0
+        # on the loop: callers read current_recording right after start; rotations enforce it off the loop
+        self._enforce_disk_budget()
+        with self._lock:
+            self._open_new_file()
+        assert self._file_path is not None
+        self._is_recording = True
+        for source in self._sources:
+            source.start()
+        self.log.info('started MCAP recording: %s', self._file_path)
+        self.RECORDING_STARTED.emit(self._file_path)
+        return self._run_name
+
+    async def stop(self) -> None:
+        """Stop recording, drain the queue, and finalize the file off the event loop.
+
+        The drain encodes and writes every still-queued message (JPEG/JSON/ZSTD) and finishes
+        the MCAP file, which can take seconds for a large backlog; it runs on a worker thread
+        via :func:`asyncio.to_thread` — deliberately not ``rosys.run.io_bound``, which refuses
+        work once the app is stopping (and ``stop`` is wired to ``rosys.on_shutdown``) — so it
+        never blocks the event loop; ``start()`` is refused meanwhile. A final part without
+        messages is discarded, otherwise ``RECORDING_STOPPED`` is emitted with its path.
+        """
+        if not self._is_recording:
+            return
+        self._is_recording = False
+        self._is_stopping = True
+        try:
+            self._stop_sources()
+            file_path, file_message_count = await asyncio.to_thread(self._drain_and_close)
+        finally:
+            self._is_stopping = False
+        if file_path is None:
+            return
+        if file_message_count == 0:
+            file_path.unlink(missing_ok=True)
+            self.log.info('discarded empty recording: %s', file_path.name)
+        else:
+            self.log.info('stopped MCAP recording: %s', file_path.name)
+            self.RECORDING_STOPPED.emit(file_path)
+
+    def log_message(self, topic: str, data: Any, *,
+                    encode: Callable[[Any, int], bytes | None] | None = None,
+                    timestamp_ns: int | None = None) -> None:
+        """Enqueue a message for the background writer.
+
+        :param topic: the (registered) topic to write to; unknown topics are dropped
+            with a one-time warning.
+        :param data: already-serialized ``bytes`` when ``encode`` is ``None``, otherwise
+            the raw payload passed to ``encode`` on the writer thread.
+        :param encode: optional ``(payload, timestamp_ns) -> bytes | None`` run off the
+            event loop by the background writer; returning ``None`` drops the message.
+        :param timestamp_ns: log time in nanoseconds (default: current ``rosys.time()``).
+        """
+        if not self.accepts(topic):
+            return
+        if topic not in self._schemas:
+            if topic not in self._warned_topics:
+                self.log.warning('unknown topic: %s', topic)
+                self._warned_topics.add(topic)
+            return
+        if timestamp_ns is None:
+            timestamp_ns = int(rosys.time() * NANOSECONDS_PER_SECOND)
+        size = _payload_size(data)
+        with self._queue_lock:  # microsecond hold; never blocks behind a write
+            self._queue.append(_QueuedMessage(topic, data, encode, timestamp_ns, size))
+            self._queued_bytes += size
+            warn = self._enforce_queue_cap()
+        if warn:  # outside the lock: a log handler may record the line, which enqueues again
+            self.log.warning('recording queue full (cap %d messages / %d MB); dropping oldest — disk cannot keep up '
+                             '(%d dropped so far)', self.max_queued_messages, self.max_queued_bytes // 1_048_576,
+                             self._dropped_message_count)
+
+    def _enforce_queue_cap(self) -> bool:
+        """Drop the oldest queued messages when the disk cannot keep up. Caller holds ``_queue_lock``.
+
+        The oldest messages are dropped until the queue is under both :attr:`max_queued_messages`
+        and :attr:`max_queued_bytes` (see :data:`MAX_QUEUED_BYTES`).
+
+        :return: whether the drop is due to be logged, at most once per ``_DROP_WARNING_INTERVAL``.
+        """
+        if len(self._queue) <= self.max_queued_messages and self._queued_bytes <= self.max_queued_bytes:
+            return False
+        drop = max(0, len(self._queue) - self.max_queued_messages)
+        freed = sum(self._queue[i].size for i in range(drop))
+        while drop < len(self._queue) and self._queued_bytes - freed > self.max_queued_bytes:
+            freed += self._queue[drop].size
+            drop += 1
+        if drop == 0:
+            return False
+        del self._queue[:drop]
+        self._queued_bytes -= freed
+        self._dropped_message_count += drop
+        now = rosys.time()
+        if now - self._last_drop_warning < _DROP_WARNING_INTERVAL:
+            return False
+        self._last_drop_warning = now
+        return True
+
+    async def _flush(self) -> None:
+        if not self._is_recording or not self._queue:
+            return
+        await rosys.run.io_bound(self._write_batch)
+
+    def _write_batch(self) -> None:
+        """Drain the queue and write it. Runs on the background writer thread."""
+        with self._lock:
+            with self._queue_lock:  # brief: only the swap, not the write
+                batch, self._queue = self._queue, []
+                self._queued_bytes = 0
+            self._write_messages(batch)
+
+    def _drain_and_close(self) -> tuple[Path | None, int]:
+        """Write everything still queued and finalize the file. Runs off the loop; takes ``_lock``.
+
+        The final drain may rotate, so the path is read after writing; ``_close_file`` runs in a
+        ``finally`` so even a raising write still finalizes the open file.
+
+        :return: the finalized file (``None`` if none was open) and the number of messages it holds.
+        """
+        with self._lock:
+            try:
+                with self._queue_lock:  # brief: only the swap, not the write
+                    batch, self._queue = self._queue, []
+                    self._queued_bytes = 0
+                self._write_messages(batch)
+            finally:
+                file_path = None if self._file is None else self._file_path
+                self._close_file()
+        return file_path, self._file_message_count
+
+    def _write_messages(self, batch: list[_QueuedMessage]) -> None:
+        """Encode and write a batch of messages. Caller must hold ``_lock``; runs on the writer thread.
+
+        Resilient to two failures that would otherwise lose data silently:
+
+        * a converter that raises for one message is logged (once per topic) and skipped, so
+          the rest of the batch still lands (see :meth:`warn_converter_failure`);
+        * a lost writer — ``None`` while still recording, e.g. after a failed rotation — is
+          reopened once; if that fails the recorder hard-stops with an error and a drop count
+          rather than silently swallowing every future message (see :meth:`_hard_stop`).
+        """
+        if self._writer is None:
+            if not self._is_recording:
+                return  # already finalized (stop / hard stop); nothing to write to
+            if not self._reopen_file(dropped_on_failure=len(batch)):
+                return
+        for index, message in enumerate(batch):
+            schema = self._schemas.get(message.topic)
+            if schema is None:
+                continue
+            try:
+                data = message.encode(message.payload, message.timestamp_ns) \
+                    if message.encode is not None else message.payload
+            except Exception:
+                self.warn_converter_failure(message.topic, 'encoding')
+                continue
+            if data is None:
+                continue  # converter chose to skip this value
+            assert self._file is not None
+            if self._file.tell() >= self.max_part_size or self._file_is_expired():  # rotate only for a message
+                if not self._rotate_file(dropped_on_failure=len(batch) - index):
+                    return
+            if message.topic not in self._topics:
+                self._register_topic(message.topic, schema)
+            assert self._writer is not None
+            self._writer.add_message(
+                channel_id=self._topics[message.topic],
+                log_time=message.timestamp_ns,
+                data=data,
+                publish_time=message.timestamp_ns,
+            )
+            self._message_count += 1
+            self._file_message_count += 1
+
+    def _file_is_expired(self) -> bool:
+        """Whether the current part has been open longer than ``max_part_duration``."""
+        return self.max_part_duration is not None and rosys.time() - self._file_started_at >= self.max_part_duration
+
+    def warn_converter_failure(self, topic: str, stage: str) -> None:
+        """Log a converter failure once per topic and stage, so one bad message never floods the log.
+
+        Both halves of a converter can raise, in different places: ``sample`` on the event loop, at
+        the topic's full rate, and ``encode`` on the writer thread. Both report here, so a broken
+        converter costs one log line rather than one per message. Call from an exception handler.
+
+        :param topic: the topic whose converter raised.
+        :param stage: which half raised, ``'sampling'`` or ``'encoding'``; keyed separately so a
+            failing ``sample`` does not mute a later ``encode`` failure on the same topic.
+        """
+        if (topic, stage) in self._warned_converter_topics:
+            return
+        self._warned_converter_topics.add((topic, stage))
+        self.log.exception('%s a message for topic %s failed; skipping it '
+                           '(further %s failures on this topic are silent)', stage, topic, stage)
+
+    def _reopen_file(self, *, dropped_on_failure: int) -> bool:
+        """Reopen a fresh file after the writer was lost (e.g. a failed rotation). Caller holds ``_lock``.
+
+        :param dropped_on_failure: messages to count as lost if reopening fails and the recorder hard-stops.
+        :return: ``True`` if a writable file is open, ``False`` after a hard stop.
+        """
+        try:
+            self._open_new_file()
+        except OSError as error:
+            self._hard_stop(f'could not reopen the recording file ({error})', dropped_on_failure)
+            return False
+        self.log.warning('reopened MCAP recording after the writer was lost: %s', self._file_path)
+        assert self._file_path is not None
+        self._emit_on_loop(self.RECORDING_STARTED.emit, self._file_path)
+        return True
+
+    def _rotate_file(self, *, dropped_on_failure: int) -> bool:
+        """Rotate to a new file, hard-stopping if the new file cannot be opened. Caller holds ``_lock``.
+
+        :param dropped_on_failure: messages to count as lost if rotation fails and the recorder hard-stops.
+        :return: ``True`` if a new file is open, ``False`` after a hard stop.
+        """
+        try:
+            self._rotate()
+        except OSError as error:
+            self._hard_stop(f'could not open a new file during rotation ({error})', dropped_on_failure)
+            return False
+        return True
+
+    def _hard_stop(self, reason: str, dropped: int) -> None:
+        """Abandon a recording whose writer can no longer be reopened. Runs on the writer thread, holds ``_lock``.
+
+        Without this, a failed rotation leaves ``_writer`` ``None`` while ``_is_recording``
+        stays ``True``, so every later batch is silently discarded while the UI still shows a
+        live recording. Instead this marks the recorder not-recording, finalizes whatever file
+        is still open, counts the lost messages (so the loss surfaces in
+        ``dropped_message_count`` and the log rather than silently), and stops the sources back
+        on the event loop (they own loop-bound subscriptions and timers).
+
+        :param reason: human-readable cause, logged at error level.
+        :param dropped: number of messages lost with the dead writer.
+        """
+        self.log.error('MCAP recording aborted: %s (%d messages lost)', reason, dropped)
+        self._dropped_message_count += dropped
+        self._is_recording = False
+        self._close_file()
+        self._emit_on_loop(self._stop_sources)
+
+    def _stop_sources(self) -> None:
+        """Deactivate every source (must run on the event loop; sources own loop-bound state)."""
+        for source in self._sources:
+            source.stop()
+
+    def _emit_on_loop(self, callback: Callable[..., Any], *args: Any) -> None:
+        """Run a callback on the event loop from the writer thread.
+
+        Events and source lifecycle must run on the loop (subscribers touch UI; sources own
+        loop-bound subscriptions), never on the background writer, so they are scheduled
+        thread-safely. Outside a running loop (e.g. a synchronous unit test) the call is skipped.
+        """
+        loop = self._loop
+        if loop is not None:
+            loop.call_soon_threadsafe(callback, *args)
+
+    def _register_topic(self, topic: str, schema: TopicSchema) -> None:
+        assert self._writer is not None
+        schema_id = self._writer.register_schema(
+            name=schema.schema_name,
+            encoding=schema.schema_encoding,
+            data=schema.schema,
+        )
+        self._topics[topic] = self._writer.register_channel(
+            schema_id=schema_id,
+            topic=topic,
+            message_encoding=schema.message_encoding,
+        )
+
+    def _open_new_file(self) -> None:
+        if self._file is not None:  # never overwrite or leak a still-open file (defensive against a double open)
+            self._close_file()
+        self._part_index += 1
+        self._file_path = self.parts_dir / f'{self._run_name}_{self._part_index:02d}.mcap'
+        self._file = open(self._file_path, 'wb')  # pylint: disable=consider-using-with
+        self._writer = Writer(self._file, compression=CompressionType.ZSTD, chunk_size=self.chunk_size)
+        self._writer.start(profile=self.profile, library=self.library)
+        if self._run_metadata is not None:  # per part: a rotated part must carry it too
+            self._writer.add_metadata(METADATA_NAME, {'json': self._run_metadata})
+        self._file_started_at = rosys.time()
+        self._file_message_count = 0
+        self._topics.clear()
+        # add_topic mutates _schemas lock-free from the loop, and start() may replace
+        # _selected_topics; snapshot both so this writer-thread iteration cannot race them.
+        selected = self._selected_topics
+        for topic, schema in list(self._schemas.items()):
+            if selected is None or topic in selected:
+                self._register_topic(topic, schema)
+
+    def _close_file(self) -> None:
+        try:
+            if self._writer is not None:
+                self._writer.finish()
+        finally:
+            self._writer = None
+            if self._file is not None:
+                self._file.close()
+                self._file = None
+            self._topics.clear()
+
+    def _rotate(self) -> None:
+        """Close the current file and start a fresh one. Caller must hold ``_lock``; runs on the writer thread.
+
+        Emits ``RECORDING_STOPPED`` for the finalized file and ``RECORDING_STARTED`` for the
+        new one, loop-safely, so per-file consumers (upload/post-processing) see every file of
+        a long run — not just the first and last. The events are therefore per-file.
+        """
+        assert self._file is not None
+        finalized = self._file_path
+        self.log.info('rotating MCAP file (%.1f MB)', self._file.tell() / 1_048_576)
+        self._close_file()
+        if finalized is not None:
+            self._emit_on_loop(self.RECORDING_STOPPED.emit, finalized)
+        self._enforce_disk_budget()
+        self._open_new_file()
+        assert self._file_path is not None
+        self._emit_on_loop(self.RECORDING_STARTED.emit, self._file_path)
+
+    def _recording_files(self) -> list[Path]:
+        """Every part in ``parts/`` and every kept recording at the top level of the output directory."""
+        return [*self.output_dir.glob('*.mcap'), *self.parts_dir.glob('*.mcap')]
+
+    def _enforce_disk_budget(self) -> None:
+        """Delete the oldest recordings until the kept ones fit ``max_kept_size`` and all fit ``max_total_size``.
+
+        The kept bound spares the newest kept recording; the total is then met by parts first, oldest first.
+        """
+        parts: list[tuple[Path, int, float]] = []
+        kept: list[tuple[Path, int, float]] = []
+        for path in self._recording_files():
+            try:
+                stat = path.stat()
+            except FileNotFoundError:
+                continue  # vanished concurrently (e.g. deleted from the recordings page)
+            (parts if path.parent == self.parts_dir else kept).append((path, stat.st_size, stat.st_mtime))
+        parts.sort(key=lambda item: item[2])
+        kept.sort(key=lambda item: item[2])
+        deleted: list[tuple[Path, int, float]] = []
+        kept_size = sum(size for _, size, _ in kept)
+        while kept_size > self.max_kept_size and len(kept) > 1:  # the newest kept file is the one just filed away
+            deleted.append(kept.pop(0))
+            kept_size -= deleted[-1][1]
+        remaining = parts + kept
+        total = sum(size for _, size, _ in remaining)
+        while total > self.max_total_size and remaining:
+            deleted.append(remaining.pop(0))
+            total -= deleted[-1][1]
+        for path, size, _ in deleted:
+            path.unlink(missing_ok=True)
+            self.log.info('deleted old recording: %s (freed %.1f MB)', path.name, size / 1_048_576)
+
+    def _remove_orphaned_temporary_files(self) -> None:
+        """Remove reindex and merge temp files left by a crash. Run once at construction, never during operation.
+
+        Deleting one mid-run would destroy the result, so this never runs from the disk-budget path.
+        Orphans are otherwise invisible to the budget, scan and UI (they do not match ``*.mcap``).
+        A reindex stages beside the file it rebuilds, in either folder; a merge beside its top-level target.
+        """
+        orphans = [*self.output_dir.glob('*.mcap.reindex*'), *self.parts_dir.glob('*.mcap.reindex*'),
+                   *self.output_dir.glob(STAGING_GLOB)]
+        for path in orphans:
+            try:
+                path.unlink()
+                self.log.warning('removed orphaned temporary file: %s', path.name)
+            except OSError:
+                pass
+
+    def developer_ui(self) -> None:
+        """Developer panel: auto-refreshing stats, start/stop buttons, and a topic selection.
+
+        Only the stats grid is rebuilt on the timer; the buttons are built once and
+        toggle their visibility reactively, so they never flicker. The timer refreshes
+        cached directory stats collected off the event loop (globbing and statting the
+        directory would otherwise block the loop every second) and is bound to the
+        client, so it is cleaned up on disconnect (no global event subscriptions).
+        The topic checkboxes live in a collapsed expansion to keep the panel compact;
+        the selection applies to the next start (a running recording is unaffected).
+        """
+        with ui.column():
+            ui.label('MCAP Recording').classes('text-center text-bold')
+            self._stats_ui()
+            ui.timer(1.0, self._refresh_stats)
+            with ui.row().classes('items-center'):
+                ui.button(icon='fiber_manual_record', color='red', on_click=self._start_with_selection) \
+                    .tooltip('Start recording') \
+                    .bind_visibility_from(self, 'is_recording', backward=lambda recording: not recording)
+                ui.button(icon='stop', color='red', on_click=self.stop).tooltip('Stop recording') \
+                    .bind_visibility_from(self, 'is_recording')
+                ui.link('Recordings', PAGE_PATH)
+            # topics can still be declared after page build, so the list is rebuilt
+            # every time the expansion is opened rather than once at page build
+            expansion = ui.expansion('Topics').props('dense').classes('w-full')
+            with expansion:
+                self._topic_selection_ui()
+            expansion.on_value_change(self._topic_selection_ui.refresh)
+
+    def _start_with_selection(self) -> None:
+        """Start recording the topics selected in the developer panel (default: all)."""
+        selected = [topic for topic in self.topics if self._topic_selection.get(topic, True)]
+        if not selected:
+            rosys.notify('Select at least one topic to record', type='negative')
+            return
+        self.start(topics=None if len(selected) == len(self.topics) else selected)
+
+    @ui.refreshable_method
+    def _topic_selection_ui(self) -> None:
+        def set_all(value: bool) -> None:
+            for topic in self.topics:
+                self._topic_selection[topic] = value
+            self._topic_selection_ui.refresh()
+
+        with ui.row().classes('gap-2'):
+            ui.button('all', on_click=lambda: set_all(True)).props('flat dense')
+            ui.button('none', on_click=lambda: set_all(False)).props('flat dense')
+        with ui.column().classes('gap-0'):
+            for topic in sorted(self.topics):
+                ui.checkbox(topic, value=self._topic_selection.get(topic, True),
+                            on_change=lambda event, topic=topic: self._topic_selection.__setitem__(topic, event.value)) \
+                    .props('dense size=xs')
+
+    async def _refresh_stats(self) -> None:
+        """Refresh the cached directory stats off the event loop, then rebuild the stats grid."""
+        stats = await rosys.run.io_bound(self._collect_disk_stats)
+        if stats is not None:
+            self._disk_stats = stats
+        self._stats_ui.refresh()
+
+    def _collect_disk_stats(self) -> _DiskStats:
+        """Stat the output directory (blocking I/O; run off the loop)."""
+        return _DiskStats(self.current_file_size, self.total_size, self.file_count)
+
+    @ui.refreshable_method
+    def _stats_ui(self) -> None:
+        mb = 1_048_576
+        stats = self._disk_stats
+        with ui.grid(columns='auto auto').classes('gap-y-1'):
+            ui.label('Messages:')
+            ui.label(str(self.message_count))
+            ui.label('Dropped:')
+            ui.label(str(self.dropped_message_count))
+            ui.label('File:')
+            ui.label(self._file_path.name if self._file_path else '-')
+            ui.label('File size:')
+            ui.label(f'{stats.current_file_size / mb:.1f} MB')
+            ui.label('Total:')
+            ui.label(f'{stats.total_size / mb:.1f} / {self.max_total_size / mb:.0f} MB')
+            ui.label('Files:')
+            ui.label(str(stats.file_count))
+
+
+def _payload_size(payload: Any) -> int:
+    """Approximate the in-memory size of a queued payload in bytes, for the queue's byte cap.
+
+    Camera frames enqueue a raw :class:`rosys.vision.Image` (or numpy array) whose
+    uncompressed pixels dwarf a message-count cap, so the queue must be bounded by bytes too.
+
+    :param payload: the enqueued payload (serialized bytes, a numpy array, a rosys ``Image``,
+        or any other object).
+    :return: an estimate of the payload's memory footprint in bytes.
+    """
+    if isinstance(payload, (bytes, bytearray, memoryview)):
+        return len(payload)
+    nbytes = getattr(payload, 'nbytes', None)  # numpy arrays and similar buffers
+    if isinstance(nbytes, int):
+        return nbytes
+    byte_size = getattr(payload, 'byte_size', None)  # rosys Image and other sized payloads
+    if callable(byte_size):
+        try:
+            size = byte_size()
+        except Exception:
+            size = None
+        if isinstance(size, int):
+            return size
+    return _DEFAULT_PAYLOAD_BYTES
+
+
+def _safe_mtime(path: Path) -> float:
+    """Modification time of ``path``, or 0 if it vanished (e.g. deleted concurrently)."""
+    try:
+        return path.stat().st_mtime
+    except FileNotFoundError:
+        return 0.0
+
+
+def _safe_size(path: Path) -> int:
+    """Size of ``path`` in bytes, or 0 if it vanished (e.g. deleted concurrently)."""
+    try:
+        return path.stat().st_size
+    except FileNotFoundError:
+        return 0
