@@ -1,12 +1,20 @@
 import asyncio
 import os
 import shutil
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
+import rosys
+from rosys.testing import forward
 from rosys.vision import GmslCamera, GmslCameraProvider
-from rosys.vision.gmsl_camera.gmsl_device import build_argus_command
+from rosys.vision.gmsl_camera.gmsl_device import GmslDevice, build_argus_command
 from rosys.vision.gstreamer import parse_caps_dimensions
+
+
+def gstreamer_available():
+    """Let `GmslCamera.connect()` proceed on a machine without the Argus GStreamer stack."""
+    return patch('shutil.which', return_value='/usr/bin/gst-launch-1.0')
 
 
 def test_build_command_auto_by_default() -> None:
@@ -78,3 +86,49 @@ async def test_gmsl_camera_capture(rosys_integration):
         assert camera.images[-1].size.width > 0
     finally:
         await camera.disconnect()
+
+
+async def test_parameters_set_before_the_first_frame_reach_the_device(rosys_integration):
+    first_frame = asyncio.Event()
+
+    async def session(self: GmslDevice) -> None:
+        await first_frame.wait()
+        await self._enter_streaming()  # pylint: disable=protected-access
+        await rosys.sleep(60.0)
+
+    camera = GmslCamera(sensor_id=0, connect_after_init=False)
+    with gstreamer_available(), patch.object(GmslDevice, '_run_session', session):
+        await camera.connect()
+        try:
+            assert camera.device is not None
+            assert not camera.is_connected, 'expected no connection before the first frame'
+            await camera.set_parameters({'exposure': 0.25})
+            first_frame.set()
+            await forward(until=lambda: camera.is_connected)
+            assert camera.device.exposure == 0.25, 'expected the parameter to reach the device once it streams'
+        finally:
+            await camera.disconnect()
+
+
+async def _connected_session(self: GmslDevice) -> None:
+    """Stand-in for a pipeline that delivers frames right away but spawns nothing."""
+    await self._enter_streaming()  # pylint: disable=protected-access
+    await rosys.sleep(60.0)
+
+
+async def test_reapplying_parameters_on_connect_does_not_restart_the_pipeline(rosys_integration):
+    camera = GmslCamera(sensor_id=0, connect_after_init=False)
+    with gstreamer_available(), \
+            patch.object(GmslDevice, '_run_session', _connected_session), \
+            patch.object(GmslDevice, 'restart_gstreamer', new_callable=AsyncMock) as restart:
+        await camera.connect()
+        try:
+            await forward(until=lambda: camera.is_connected)
+            await forward(1.0)  # give a debounced restart the chance to run
+            restart.assert_not_called()
+
+            await camera.set_parameters({'fps': 7})
+            await forward(1.0)
+            restart.assert_called_once()
+        finally:
+            await camera.disconnect()

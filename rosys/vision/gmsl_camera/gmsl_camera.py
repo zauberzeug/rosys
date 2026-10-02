@@ -85,6 +85,7 @@ class GmslCamera(ConfigurableCamera, TransformableCamera, CalibratableCamera):
             self.device = GmslDevice(
                 self.sensor_id,
                 on_new_image_data=self._handle_new_image_data,
+                on_connect=self._apply_all_parameters,
                 auto_exposure=self._parameters['auto_exposure'].value,
                 exposure=self._parameters['exposure'].value,
                 auto_gain=self._parameters['auto_gain'].value,
@@ -117,64 +118,57 @@ class GmslCamera(ConfigurableCamera, TransformableCamera, CalibratableCamera):
         image = Image.from_array(processed, camera_id=self.id, time=timestamp)
         self._add_image(image)
 
-    def _set_auto_exposure(self, value: bool) -> None:
+    def _set_device_value(self, name: str, value: Any) -> None:
         assert self.device is not None
-        self.device.auto_exposure = value
+        if getattr(self.device, name) == value:
+            return  # reapplying the cached parameters after a reconnect must not restart the pipeline
+        setattr(self.device, name, value)
         self.device.request_restart()
+
+    def _set_auto_exposure(self, value: bool) -> None:
+        self._set_device_value('auto_exposure', value)
 
     def _get_auto_exposure(self) -> bool:
         assert self.device is not None
         return self.device.auto_exposure
 
     def _set_exposure(self, value: float) -> None:
-        assert self.device is not None
-        self.device.exposure = value
-        self.device.request_restart()
+        self._set_device_value('exposure', value)
 
     def _get_exposure(self) -> float:
         assert self.device is not None
         return self.device.exposure
 
     def _set_auto_gain(self, value: bool) -> None:
-        assert self.device is not None
-        self.device.auto_gain = value
-        self.device.request_restart()
+        self._set_device_value('auto_gain', value)
 
     def _get_auto_gain(self) -> bool:
         assert self.device is not None
         return self.device.auto_gain
 
     def _set_gain(self, value: float) -> None:
-        assert self.device is not None
-        self.device.gain = value
-        self.device.request_restart()
+        self._set_device_value('gain', value)
 
     def _get_gain(self) -> float:
         assert self.device is not None
         return self.device.gain
 
     def _set_fps(self, value: int) -> None:
-        assert self.device is not None
-        self.device.fps = value
-        self.device.request_restart()
+        self._set_device_value('fps', value)
 
     def _get_fps(self) -> int:
         assert self.device is not None
         return self.device.fps
 
     def _set_width(self, value: int) -> None:
-        assert self.device is not None
-        self.device.width = value
-        self.device.request_restart()
+        self._set_device_value('width', value)
 
     def _get_width(self) -> int:
         assert self.device is not None
         return self.device.width
 
     def _set_height(self, value: int) -> None:
-        assert self.device is not None
-        self.device.height = value
-        self.device.request_restart()
+        self._set_device_value('height', value)
 
     def _get_height(self) -> int:
         assert self.device is not None
