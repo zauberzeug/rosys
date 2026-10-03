@@ -87,8 +87,8 @@ class GnssHardware(Gnss):
         try:
             serial_device_path = self._find_device()
             self.serial_connection = self._connect_to_device(serial_device_path)
-        except RuntimeError:
-            self.log.error('Could not connect to GNSS device: %s', serial_device_path)
+        except RuntimeError as e:
+            self.log.error('%s', e)
             await rosys.sleep(self._reconnect_interval)
             return False
         self.log.info('Connected to GNSS device: %s', serial_device_path)

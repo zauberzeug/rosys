@@ -1,6 +1,8 @@
+import logging
 import os
 import pty
 from collections.abc import Generator
+from types import SimpleNamespace
 
 import pytest
 import serial
@@ -93,3 +95,30 @@ async def test_which_sentence_sets_are_emitted(receiver: tuple[GnssHardware, int
         os.write(controller, read.encode())
         await forward(seconds=0.1)
     assert [m.gnss_time for m in measurements] == [timestamp_from_nmea(t) for t in expected_gnss_times]
+
+
+@pytest.mark.usefixtures('rosys_integration')
+async def test_connect_without_device(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
+    ports: list[SimpleNamespace] = []
+    monkeypatch.setattr('rosys.hardware.gnss.gnss_hardware.list_ports.comports', lambda: ports)
+    gnss = GnssHardware(antenna_pose=None, reconnect_interval=0.1, max_measurement_age=float('inf'))
+    gnss.log.addHandler(caplog.handler)
+    monkeypatch.setattr(gnss, '_connect_to_device', serial.Serial)
+    controller, device = pty.openpty()
+    try:
+        await forward(seconds=0.05)
+        assert not gnss.is_connected
+        assert [r.getMessage() for r in caplog.records if r.levelno == logging.ERROR] == ['No GNSS device found']
+
+        ports.append(SimpleNamespace(device=os.ttyname(device), description='Septentrio USB'))
+        await forward(seconds=0.3)
+        assert gnss.is_connected
+        os.write(controller, SENTENCES.encode())
+        await forward(seconds=0.1)
+        assert gnss.last_measurement is not None
+    finally:
+        gnss.log.removeHandler(caplog.handler)
+        if gnss.serial_connection is not None:
+            gnss.serial_connection.close()
+        os.close(controller)
+        os.close(device)
