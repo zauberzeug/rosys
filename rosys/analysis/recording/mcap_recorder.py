@@ -99,10 +99,11 @@ class McapRecorder:
     output directory is a kept recording (renamed, merged or placed there deliberately). The
     folder decides the kind, not the name. Peak disk usage is ``max_total_size_mb +
     max_part_size_mb``: the budget is enforced only before a part is opened, so the growing
-    part can exceed it by up to one part's worth. The budget deletes parts (oldest first)
-    before kept recordings, which have a bound of their own so they cannot eat the rolling
-    window. A merge holds its sources open, so the space the budget frees during one only
-    returns when the merge finishes, and the peak then also carries the merge's size.
+    part can exceed it by up to one part's worth. The budget deletes the oldest recording
+    first, whichever folder it sits in; kept recordings have a bound of their own so they
+    cannot eat the rolling window. A merge holds its sources open, so the space the budget
+    frees during one only returns when the merge finishes, and the peak then also carries
+    the merge's size.
 
     Messages are enqueued from the event loop (cheap, non-blocking) and written to disk by a
     single background consumer via ``rosys.run.io_bound`` so that encoding, ZSTD compression
@@ -152,7 +153,7 @@ class McapRecorder:
             (default: no duration-based rotation). Checked as messages are written, so an idle
             recording only rotates once data flows again.
         :param max_total_size_mb: disk budget for the output directory including ``parts/``; the oldest
-            recordings are deleted before a part is opened to stay under it, parts first. Peak disk usage
+            recordings are deleted before a part is opened to stay under it, oldest first. Peak disk usage
             is therefore ``max_total_size_mb + max_part_size_mb``, as the growing part is not counted.
         :param max_kept_size_mb: bound for kept recordings within the budget; beyond it the oldest are
             deleted, sparing the newest (the one just filed away) however large it is.
@@ -818,7 +819,7 @@ class McapRecorder:
     def _enforce_disk_budget(self) -> None:
         """Delete the oldest recordings until the kept ones fit ``max_kept_size`` and all fit ``max_total_size``.
 
-        The kept bound spares the newest kept recording; the total is then met by parts first, oldest first.
+        The kept bound spares the newest kept recording; the total is then met oldest first across both folders.
         """
         parts: list[tuple[Path, int, float]] = []
         kept: list[tuple[Path, int, float]] = []
@@ -835,7 +836,7 @@ class McapRecorder:
         while kept_size > self.max_kept_size and len(kept) > 1:  # the newest kept file is the one just filed away
             deleted.append(kept.pop(0))
             kept_size -= deleted[-1][1]
-        remaining = parts + kept
+        remaining = sorted(parts + kept, key=lambda item: item[2])
         total = sum(size for _, size, _ in remaining)
         while total > self.max_total_size and remaining:
             deleted.append(remaining.pop(0))

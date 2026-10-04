@@ -18,7 +18,7 @@ A part is rotated by size (`max_part_size_mb`) and, with `max_part_duration`, by
 `recorder.start(name='mission', metadata={'field': 'north'})` names the run `<timestamp>_mission`, writes the metadata into every part and returns the run's name.
 
 Disk budget
-: Before a part is opened, the oldest recordings are deleted to stay within `max_total_size_mb`, parts first.
+: Before a part is opened, the oldest recordings are deleted to stay within `max_total_size_mb`, whichever folder they sit in.
 Every `.mcap` at the top level of the output directory is a kept recording (renamed, merged or placed there by hand); the folder decides, not the name.
 Kept recordings have a bound of their own, `max_kept_size_mb`, which spares the newest kept file.
 
