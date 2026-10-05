@@ -877,6 +877,7 @@ async def test_a_named_recording_stays_within_the_disk_budget(mcap_dir: Path) ->
     recorder.start()
     await recorder.stop()
 
+    assert mission.parent == recorder.parts_dir
     assert not mission.exists()
     assert kept.exists()
 
