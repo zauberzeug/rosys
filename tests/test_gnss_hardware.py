@@ -97,6 +97,26 @@ async def test_which_sentence_sets_are_emitted(receiver: tuple[GnssHardware, int
     assert [m.gnss_time for m in measurements] == [timestamp_from_nmea(t) for t in expected_gnss_times]
 
 
+async def test_reconnect_after_losing_the_device(receiver: tuple[GnssHardware, int],
+                                                 monkeypatch: pytest.MonkeyPatch) -> None:
+    gnss, controller = receiver
+    assert gnss.serial_connection is not None
+    lost_connection = gnss.serial_connection
+    port = SimpleNamespace(device=lost_connection.port, description='Septentrio USB')
+    monkeypatch.setattr('rosys.hardware.gnss.gnss_hardware.list_ports.comports', lambda: [port])
+    monkeypatch.setattr(gnss, '_connect_to_device', serial.Serial)
+
+    def read_all() -> bytes:
+        raise OSError(5, 'Input/output error')
+    monkeypatch.setattr(lost_connection, 'read_all', read_all)
+    await forward(seconds=0.3)
+    assert not lost_connection.is_open
+    assert gnss.is_connected
+    os.write(controller, SENTENCES.encode())
+    await forward(seconds=0.1)
+    assert gnss.last_measurement is not None
+
+
 @pytest.mark.usefixtures('rosys_integration')
 async def test_connect_without_device(monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture) -> None:
     ports: list[SimpleNamespace] = []
