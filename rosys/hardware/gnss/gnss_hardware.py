@@ -47,7 +47,12 @@ class GnssHardware(Gnss):
             if not self.is_connected and not await self._connect():
                 continue
             assert self.serial_connection is not None
-            result = self.serial_connection.read_all().decode('utf-8', errors='replace')
+            try:
+                result = self.serial_connection.read_all().decode('utf-8', errors='replace')
+            except OSError as e:
+                self.log.error('Lost connection to GNSS device: %s', e)
+                self.serial_connection.close()
+                continue
             if not result:
                 continue
             *lines, buffer = (buffer + result).split('\n')
@@ -87,8 +92,8 @@ class GnssHardware(Gnss):
         try:
             serial_device_path = self._find_device()
             self.serial_connection = self._connect_to_device(serial_device_path)
-        except RuntimeError:
-            self.log.error('Could not connect to GNSS device: %s', serial_device_path)
+        except RuntimeError as e:
+            self.log.error('%s', e)
             await rosys.sleep(self._reconnect_interval)
             return False
         self.log.info('Connected to GNSS device: %s', serial_device_path)
@@ -128,8 +133,8 @@ class GnssHardware(Gnss):
         self.log.debug('Connecting to GNSS device "%s"...', port)
         try:
             return serial.Serial(port=port, baudrate=baudrate, timeout=timeout)
-        except serial.SerialException as e:
-            raise RuntimeError(f'Could not connect to GNSS device: {port}') from e
+        except OSError as e:
+            raise RuntimeError(f'Could not connect to GNSS device {port}: {e}') from e
 
     def developer_ui(self) -> None:
         with ui.column():
