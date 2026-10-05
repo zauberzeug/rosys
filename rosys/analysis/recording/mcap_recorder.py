@@ -829,7 +829,6 @@ class McapRecorder:
             except FileNotFoundError:
                 continue  # vanished concurrently (e.g. deleted from the recordings page)
             (parts if path.parent == self.parts_dir else kept).append((path, stat.st_size, stat.st_mtime))
-        parts.sort(key=lambda item: item[2])
         kept.sort(key=lambda item: item[2])
         deleted: list[tuple[Path, int, float]] = []
         kept_size = sum(size for _, size, _ in kept)
