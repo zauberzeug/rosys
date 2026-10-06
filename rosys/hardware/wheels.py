@@ -56,7 +56,14 @@ class WheelsHardware(Wheels, ModuleHardware):
                  m_per_tick: float = 0.01,
                  width: float = 0.5,
                  is_left_reversed: bool = False,
-                 is_right_reversed: bool = False) -> None:
+                 is_right_reversed: bool = False,
+                 max_linear_speed: float | None = None,
+                 max_angular_speed: float | None = None) -> None:
+        """
+        :param max_linear_speed: The robot's maximum forward speed (m/s) for a :class:`JoystickHardware`;
+            not enforced for ``drive()``, leave ``None`` to keep Lizard's default
+        :param max_angular_speed: The robot's maximum turning speed (rad/s), like ``max_linear_speed``
+        """
         self.name = name
         lizard_code = remove_indentation(f'''
             l = ODriveMotor({can.name}, {left_can_address})
@@ -68,6 +75,10 @@ class WheelsHardware(Wheels, ModuleHardware):
             {name} = ODriveWheels(l, r)
             {name}.width = {width}
         ''')
+        if max_linear_speed is not None:
+            lizard_code += f'\n{name}.max_linear_speed = {max_linear_speed}'
+        if max_angular_speed is not None:
+            lizard_code += f'\n{name}.max_angular_speed = {max_angular_speed}'
         core_message_fields = [f'{self.name}.linear_speed:3', f'{self.name}.angular_speed:3']
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 

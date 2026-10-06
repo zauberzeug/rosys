@@ -8,6 +8,7 @@ from .estop import EStop, EStopHardware, EStopSimulation
 from .expander import ExpanderHardware
 from .gnss import Gnss, GnssHardware, GnssMeasurement, GnssSimulation
 from .imu import Imu, ImuHardware, ImuMeasurement, ImuSimulation
+from .joystick import Joystick, JoystickHardware, JoystickSimulation
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot import Robot, RobotHardware, RobotSimulation
 from .robot_brain import EspNotReadyException, RobotBrain
@@ -38,6 +39,9 @@ __all__ = [
     'ImuHardware',
     'ImuMeasurement',
     'ImuSimulation',
+    'Joystick',
+    'JoystickHardware',
+    'JoystickSimulation',
     'Module',
     'ModuleHardware',
     'ModuleSimulation',
