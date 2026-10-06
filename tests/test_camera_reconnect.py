@@ -37,7 +37,7 @@ from rosys.vision.mjpeg_camera.motec_mjpeg_device import MotecMjpegDevice
 from rosys.vision.mjpeg_camera.openipc_zauberzeug_mjpeg_device import OpenIpcZauberzeugMjpegDevice
 from rosys.vision.mjpeg_camera.stream_channel import EndReason, Frame, open_channel
 from rosys.vision.reconnect import MAX_RECONNECT_INTERVAL, MIN_RECONNECT_INTERVAL
-from rosys.vision.rtsp_camera.rtsp_device import GDPPACKET_FORMAT, GDPPayloadType, RtspDevice
+from rosys.vision.rtsp_camera.rtsp_device import GDPPACKET_FORMAT, GDPPayloadType, RtspDevice, i420_to_rgb
 from rosys.vision.simulated_camera.simulated_device import SimulatedDevice
 from rosys.vision.usb_camera.usb_device import UsbDevice, find_device_node
 
@@ -719,7 +719,8 @@ async def test_rtsp_device_is_connected_once_the_first_frame_arrives(rosys_integ
             assert connect_calls == 0, 'expected on_connect to wait for the first frame'
 
             process.stdout.feed_data(gdp_packet(GDPPayloadType.CAPS, b'video/x-raw, width=(int)2, height=(int)2'))
-            process.stdout.feed_data(gdp_packet(GDPPayloadType.BUFFER, bytes(2 * 2 * 3)))
+            # a 2x2 I420 frame is 12 bytes once gstreamer has padded its rows to a four-byte stride
+            process.stdout.feed_data(gdp_packet(GDPPayloadType.BUFFER, bytes(12)))
             await wait_in_real_time(lambda: len(frames) == 1, message='expected the frame to reach the callback')
             assert device.is_connected
             assert connect_calls == 1
@@ -1554,3 +1555,63 @@ async def test_a_device_being_torn_down_is_not_restarted(rosys_integration):
 
         await asyncio.gather(device.shutdown(), restart_while_shutting_down())
         assert not device.is_active, 'expected the device to stay down while it was being torn down'
+
+
+def i420_payload(width: int, height: int, colour: tuple[int, int, int]) -> bytes:
+    """Build an I420 buffer of a single colour, with the four-byte row stride gstreamer emits."""
+    luma_stride = (width + 3) & ~3
+    chroma_stride = luma_stride // 2
+    y, u, v = colour
+    rows = [bytes([y] * width + [0] * (luma_stride - width)) for _ in range(height)]
+    for value in (u, v):
+        chroma_width = (width + 1) // 2
+        rows += [bytes([value] * chroma_width + [0] * (chroma_stride - chroma_width)) for _ in range(height // 2)]
+    return b''.join(rows)
+
+
+@pytest.mark.parametrize('width,height', [(1280, 720), (854, 480), (2, 2), (6, 4)])
+def test_i420_to_rgb_handles_padded_row_strides(width: int, height: int):
+    """Gstreamer pads rows to a four-byte stride, so widths that are not a multiple of four arrive wider."""
+    frame = i420_to_rgb(i420_payload(width, height, (128, 128, 128)), width, height)
+
+    assert frame.shape == (height, width, 3)
+    assert frame.dtype == np.uint8
+
+
+def test_i420_to_rgb_keeps_colours_distinguishable():
+    """A red-ish and a blue-ish frame must not decode to the same thing, which a channel mix-up would cause."""
+    red = i420_to_rgb(i420_payload(8, 4, (81, 90, 240)), 8, 4)
+    blue = i420_to_rgb(i420_payload(8, 4, (41, 240, 110)), 8, 4)
+
+    assert red[..., 0].mean() > red[..., 2].mean(), 'expected the red channel to dominate for a red frame'
+    assert blue[..., 2].mean() > blue[..., 0].mean(), 'expected the blue channel to dominate for a blue frame'
+
+
+def test_i420_to_rgb_rejects_a_truncated_buffer():
+    """A short buffer means the caps and the payload disagree, which must fail loudly rather than render garbage."""
+    payload = i420_payload(64, 48, (128, 128, 128))
+
+    with pytest.raises(AssertionError):
+        i420_to_rgb(payload[:-1], 64, 48)
+
+
+async def test_rtsp_device_follows_a_resolution_change(rosys_integration):
+    """A camera that renegotiates its caps mid-stream keeps delivering, at the new size."""
+    process = FakeGstreamerProcess()
+    shapes: list = []
+
+    with patch('asyncio.create_subprocess_exec', AsyncMock(return_value=process)):
+        device = RtspDevice(GOODCAM_MAC, '192.168.0.5', substream=0, fps=5,
+                            on_new_image_data=lambda array, timestamp: shapes.append(array.shape))
+        try:
+            for index, (width, height) in enumerate([(1280, 720), (854, 480), (640, 360)], start=1):
+                caps = f'video/x-raw, width=(int){width}, height=(int){height}'.encode()
+                process.stdout.feed_data(gdp_packet(GDPPayloadType.CAPS, caps))
+                process.stdout.feed_data(gdp_packet(GDPPayloadType.BUFFER,
+                                                    i420_payload(width, height, (128, 128, 128))))
+                await wait_in_real_time(lambda: len(shapes) == index,  # noqa: B023
+                                        message=f'expected a frame at {width}x{height}')
+        finally:
+            await device.shutdown()
+
+    assert shapes == [(720, 1280, 3), (480, 854, 3), (360, 640, 3)]
