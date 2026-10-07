@@ -56,7 +56,7 @@ class GeoPoint:
         If no current geo reference is set, x will be applied in North direction and y in West direction.
         """
         distance = math.sqrt(x**2 + y**2)
-        angle = math.atan2(-y, x) + GeoReference.current.direction if GeoReference.current is not None else 0
+        angle = math.atan2(-y, x) + (GeoReference.current.direction if GeoReference.current is not None else 0)
         return self.polar(distance, angle)
 
     def to_local(self) -> Point:
