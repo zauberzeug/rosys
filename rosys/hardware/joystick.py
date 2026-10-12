@@ -12,18 +12,17 @@ class Joystick(Module, abc.ABC):
     """A remote control drives the wheels with relative values through Lizard's Joystick module.
 
     The remote (e.g. the Zauberzeug app via Bluetooth) sends `joystick.drive(forward, turn)` with values in -1..1
-    straight to the microcontroller; Lizard ramps them, scales them to the wheels' maximum speeds and drives the wheels.
-    This module only creates the Lizard code and reports whether a remote is currently driving,
-    so an automation can step aside while someone steers by hand.
+    straight to the microcontroller; Lizard ramps them, scales them to the joystick's maximum speeds and drives the wheels.
+    This module only creates the Lizard code and reports whether the joystick is currently moving the wheels.
     """
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
 
         self.ACTIVATED = Event[[]]()
-        """a remote started driving the wheels"""
+        """the joystick started moving the wheels (non-zero setpoints)"""
         self.DEACTIVATED = Event[[]]()
-        """the remote released the stick or went silent"""
+        """the joystick stopped moving the wheels: stick released, remote silent or wheels disabled or locked"""
 
         self.is_active: bool = False
 
@@ -40,31 +39,45 @@ class Joystick(Module, abc.ABC):
 class JoystickHardware(Joystick, ModuleHardware):
     """Hardware implementation of the joystick module.
 
-    Needs a Lizard firmware with the Joystick module.
+    Needs a Lizard firmware with the Joystick module (see https://lizard.dev/module_reference/#joystick).
+    Put it after its wheels in the robot's modules, since the Lizard code refers to them.
     Keep the name `joystick`: the Zauberzeug app looks for a module of that name when it connects
     and drives robots without it the old way, with `wheels.speed(...)`.
-    The wheels' maximum speeds come from their `max_linear_speed`/`max_angular_speed` or, if those are 0,
-    from the drivetrain's own speed limit (see https://lizard.dev/module_reference/#joystick).
+    After `DEACTIVATED` Lizard repeats the stop for a moment, but falls silent as soon as anyone else drives the wheels,
+    so an automation can take over right away.
     """
 
     def __init__(self, robot_brain: RobotBrain, *,
                  wheels: Wheels,
+                 max_linear_speed: float = 0.0,
+                 max_angular_speed: float = 0.0,
                  name: str = 'joystick',
                  ramp: float = 2.0,
                  turn_reduction: float = 0.5,
                  timeout: float = 1.0) -> None:
         """
         :param robot_brain: The robot brain instance to communicate with
-        :param wheels: The wheels to drive; their Lizard module name must be the wheels' ``name``
+        :param wheels: The wheels to drive, a Lizard module on the same microcontroller
+        :param max_linear_speed: Forward speed at full deflection (m/s, 0 = from ``max_angular_speed``)
+        :param max_angular_speed: Turning speed at full deflection (rad/s, 0 = from ``max_linear_speed``)
         :param name: The Lizard module name (default: 'joystick', which the Zauberzeug app expects)
         :param ramp: Maximum change of the relative setpoints per second (0 = no ramp)
-        :param turn_reduction: Share of the turn rate left at full forward speed (0..1, 1 = no reduction)
-        :param timeout: Stop when no drive command arrives for this long (s, 0 = off)
+        :param turn_reduction: Share of the turn rate left at full forward speed (clamped to 0..1, 1 = no reduction)
+        :param timeout: Stop when no drive command arrives for this long (s, must be positive)
         """
+        if not isinstance(wheels, ModuleHardware) or not hasattr(wheels, 'name'):
+            raise ValueError('the joystick needs wheels that are a Lizard module with a name')
+        if max_linear_speed < 0 or max_angular_speed < 0 or max_linear_speed == max_angular_speed == 0:
+            raise ValueError('the joystick needs a positive max_linear_speed or max_angular_speed')
+        if ramp < 0:
+            raise ValueError('the joystick ramp must not be negative')
+        if timeout <= 0:
+            raise ValueError('the joystick timeout must be positive')
         self.name = name
-        wheels_name = getattr(wheels, 'name', 'wheels')
         lizard_code = remove_indentation(f'''
-            {name} = Joystick({wheels_name})
+            {name} = Joystick({wheels.name})
+            {name}.max_linear_speed = {max_linear_speed}
+            {name}.max_angular_speed = {max_angular_speed}
             {name}.ramp = {ramp}
             {name}.turn_reduction = {turn_reduction}
             {name}.timeout = {timeout}
