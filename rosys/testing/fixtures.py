@@ -1,6 +1,6 @@
 # pylint: disable=redefined-outer-name,unused-argument
 import asyncio
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Generator
 
 import pytest
 from nicegui import core, run
@@ -83,6 +83,8 @@ def setup_run_pool() -> None:
 
 
 @pytest.fixture
-def geo_reference() -> None:
-    geo_reference = GeoReference(GeoPoint.from_degrees(lat=0, lon=0))
-    GeoReference.update_current(geo_reference)
+def geo_reference() -> Generator[None, None, None]:
+    previous_reference = GeoReference.current
+    GeoReference.current = GeoReference(GeoPoint.from_degrees(lat=0, lon=0))
+    yield
+    GeoReference.current = previous_reference
