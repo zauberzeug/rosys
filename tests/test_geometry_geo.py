@@ -61,6 +61,15 @@ def test_shifted_without_reference(monkeypatch: pytest.MonkeyPatch,
     assert point_1.direction(point_2) == pytest.approx(math.radians(expected_direction_degrees))
 
 
+def test_shifted_with_rotated_reference(monkeypatch: pytest.MonkeyPatch) -> None:
+    reference = GeoReference(GeoPoint.from_degrees(lat=0, lon=0), direction=math.radians(90))
+    monkeypatch.setattr(GeoReference, 'current', reference)
+    east = reference.origin.shift_by(x=ONE_DEGREE_ARC_LENGTH)
+    north = reference.origin.shift_by(y=ONE_DEGREE_ARC_LENGTH)
+    assert east.degree_tuple == pytest.approx((0, 1))
+    assert north.degree_tuple == pytest.approx((1, 0))
+
+
 def test_reference_from_fixpoints() -> None:
     fixpoint_1 = Fixpoint(Point(x=0, y=0), GeoPoint.from_degrees(lat=0, lon=1))
     fixpoint_2 = Fixpoint(Point(x=0, y=ONE_DEGREE_ARC_LENGTH), GeoPoint.from_degrees(lat=0, lon=0))
