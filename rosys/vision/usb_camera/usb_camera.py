@@ -8,7 +8,7 @@ from ...helpers.deprecation import deprecated_param
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image
-from ..image_processing import process_jpeg_image, process_ndarray_image
+from ..image_processing import decode_jpeg_image, process_jpeg_image, process_ndarray_image
 from ..image_rotation import ImageRotation
 from .usb_device import UsbDevice
 
@@ -99,8 +99,10 @@ class UsbCamera(ConfigurableCamera, TransformableCamera):
                 image_array = process_ndarray_image(image_data, self.rotation, self.crop)
             else:
                 image_array = image_data
-        else:
+        elif self.crop or self.rotation != ImageRotation.NONE:
             image_array = await rosys.run.cpu_bound(process_jpeg_image, image_data, self.rotation, self.crop)
+        else:
+            image_array = await rosys.run.io_bound(decode_jpeg_image, image_data)
 
         if image_array is None:
             return
