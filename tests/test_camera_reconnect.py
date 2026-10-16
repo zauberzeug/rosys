@@ -28,6 +28,7 @@ from rosys.vision import (
     UsbCamera,
     UsbCameraProvider,
 )
+from rosys.vision.gstreamer import GDPPACKET_FORMAT, GDPPayloadType
 from rosys.vision.mjpeg_camera.arkvision_mjpeg_device import ArkVisionMjpegDevice
 from rosys.vision.mjpeg_camera.axis_mjpeg_device import AxisMjpegDevice
 from rosys.vision.mjpeg_camera.mjpeg_device import CameraAddressUnknown, CaptureState, MjpegDevice
@@ -37,7 +38,7 @@ from rosys.vision.mjpeg_camera.motec_mjpeg_device import MotecMjpegDevice
 from rosys.vision.mjpeg_camera.openipc_zauberzeug_mjpeg_device import OpenIpcZauberzeugMjpegDevice
 from rosys.vision.mjpeg_camera.stream_channel import EndReason, Frame, open_channel
 from rosys.vision.reconnect import MAX_RECONNECT_INTERVAL, MIN_RECONNECT_INTERVAL
-from rosys.vision.rtsp_camera.rtsp_device import GDPPACKET_FORMAT, GDPPayloadType, RtspDevice
+from rosys.vision.rtsp_camera.rtsp_device import RtspDevice
 from rosys.vision.simulated_camera.simulated_device import SimulatedDevice
 from rosys.vision.usb_camera.usb_device import UsbDevice, find_device_node
 
