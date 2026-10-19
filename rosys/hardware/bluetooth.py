@@ -24,9 +24,11 @@ class BluetoothHardware(ModuleHardware):
     async def send(self, message: str) -> None:
         """Send a message via Bluetooth notification.
 
-        :param message: The message to send. The needed quotation marks will be added automatically.
+        :param message: The message to send. The needed quotation marks will be added automatically,
+            and quotation marks or backslashes inside the message are escaped for Lizard.
         """
-        await self.robot_brain.send(f'bluetooth.send("{message}")')
+        escaped = message.replace('\\', '\\\\').replace('"', '\\"')
+        await self.robot_brain.send(f'bluetooth.send("{escaped}")')
 
     async def set_pin_code(self, pin_code: int | None | Literal['default']) -> None:
         """Set a PIN code for pairing.
