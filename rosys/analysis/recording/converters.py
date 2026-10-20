@@ -54,8 +54,9 @@ class Converter:
     ``sample`` must return an immutable snapshot (a number, or a value object that is replaced rather
     than mutated, as ``Odometer.pose`` is) — or an explicit copy. Returning a live mutable object only
     moves the reference onto the queue, so the writer still encodes whatever that object holds later
-    and the staircase remains. The same applies to the payload itself when there is no ``sample``
-    (e.g. ``Odometer.FRAME_UPDATED`` re-emits one in-place-mutated ``Frame3d``).
+    and the staircase remains. The same applies to the payload itself when there is no ``sample``;
+    emitters are free to mutate their payload (``Bms.state``, a ``Frame3d``), so the converters for
+    poses, transforms and battery states copy it in their ``sample``.
 
     That copy has to stay cheap, though: ``sample`` runs on the event loop at the topic's full rate,
     so a field read or a small copy is the budget. Where a snapshot would cost more than that —
