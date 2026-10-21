@@ -30,6 +30,8 @@ translator: Any | None = None
 
 core.is_test = is_test = helpers.is_test()
 
+_YIELD_TO_CPU_BOUND_SECONDS = 0.001
+
 
 @dataclass(slots=True, kw_only=True)
 class Notification:
@@ -118,7 +120,7 @@ async def sleep(seconds: float) -> None:
     if is_test:
         sleep_end_time = time() + seconds
         while time() <= sleep_end_time:
-            await asyncio.sleep(0)
+            await asyncio.sleep(_YIELD_TO_CPU_BOUND_SECONDS if run.running_cpu_bound_processes else 0)
     else:
         if config.simulation_speed <= 0:
             config.simulation_speed = 0.01
