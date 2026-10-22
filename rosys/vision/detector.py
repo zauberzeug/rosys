@@ -44,7 +44,7 @@ class ImageTransmissionFormat(Enum):
     """The pixel array with dtype and shape (default): large, but lossless and nothing to encode; best on the same host"""
 
     JPEG = 'jpeg'
-    """The image encoded as JPEG: lossy and takes time to encode, but about 15 times smaller; best over a network"""
+    """The image encoded as JPEG: lossy and takes time to encode, but much smaller; best over a (slow) network"""
 
 
 class DetectorException(Exception):
