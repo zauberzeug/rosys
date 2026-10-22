@@ -299,7 +299,8 @@ class DetectorHardware(Detector):
     async def _prepare_image(self, image: Image) -> dict[str, Any]:
         """Prepare the image for sending: the raw pixel array by default, or encoded as JPEG if configured so."""
         if self.image_transmission_format == ImageTransmissionFormat.JPEG:
-            jpeg_bytes = await run.cpu_bound(encode_image_as_jpeg, image.array, self.jpeg_quality)
+            # the encoder releases the GIL
+            jpeg_bytes = await run.io_bound(encode_image_as_jpeg, image.array, self.jpeg_quality)
             if jpeg_bytes is None:
                 raise DetectorException('JPEG encoding failed')
             return {'format': 'jpeg', 'bytes': jpeg_bytes}
