@@ -145,7 +145,7 @@ class DetectorHardware(Detector):
                 })
 
             await self.sio.emit('upload', {
-                'image': await self._image_to_dict(image),
+                'image': await self._prepare_image(image),
                 'metadata': metadata,
             })
 
@@ -191,7 +191,7 @@ class DetectorHardware(Detector):
                       creation_date: datetime | str | None = None) -> Detections:
         try:
             response = await self.sio.call('detect', {
-                'image': await self._image_to_dict(image),
+                'image': await self._prepare_image(image),
                 'camera_id': image.camera_id,
                 'tags': tags,
                 'source': source,
@@ -267,7 +267,7 @@ class DetectorHardware(Detector):
 
         try:
             # List of image data dictionaries, each with the same structure as the `image` entry in the `detect` endpoint
-            images_dict = [await self._image_to_dict(image) for image in images]
+            images_dict = [await self._prepare_image(image) for image in images]
             response = await self.sio.call('batch_detect', {
                 'images': images_dict,
                 'camera_id': images[0].camera_id if images else None,
@@ -296,8 +296,8 @@ class DetectorHardware(Detector):
 
         return all_detections
 
-    async def _image_to_dict(self, image: Image) -> dict[str, Any]:
-        """The image as the node expects it in a message, encoded as JPEG if configured so."""
+    async def _prepare_image(self, image: Image) -> dict[str, Any]:
+        """Prepare the image for sending: the raw pixel array by default, or encoded as JPEG if configured so."""
         if self.image_transmission_format == ImageTransmissionFormat.JPEG:
             jpeg_bytes = await run.cpu_bound(encode_image_as_jpeg, image.array, self.jpeg_quality)
             if jpeg_bytes is None:
