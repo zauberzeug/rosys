@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 import pytest
@@ -57,3 +58,17 @@ async def test_sleep_wakes_on_time_while_cpu_bound_jobs_come_and_go():
     await forward(until=jobs.done, dt=step)
     assert overshoots
     assert max(overshoots) <= step + 1e-9
+
+
+@pytest.mark.usefixtures('rosys_integration')
+async def test_sleep_parks_instead_of_polling_while_cpu_bound_job_runs():
+    sleeper = rosys.background_tasks.create(rosys.sleep(1.0))
+    job = rosys.background_tasks.create(rosys.run.cpu_bound(time.sleep, 0.05))
+    for _ in range(3):
+        await asyncio.sleep(0)  # let the sleeper notice the job
+    assert rosys.rosys._sleepers_awaiting_tick, 'sleeper should wait for the next tick instead of polling'
+    await job
+    assert not sleeper.done()
+    await forward(1.0)
+    assert sleeper.done()
+    assert not rosys.rosys._sleepers_awaiting_tick

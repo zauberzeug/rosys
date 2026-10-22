@@ -410,6 +410,7 @@ def reset_after_test() -> None:
     tasks.clear()
     _state.startup_finished = False
     shutdown_handlers.clear()
+    _sleepers_awaiting_tick.clear()
     frame_registry.clear()
 
     Persistable.instances.clear()
