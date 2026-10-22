@@ -21,7 +21,8 @@ from .helpers import is_stopping
 P = ParamSpec('P')
 R = TypeVar('R')
 
-running_cpu_bound_processes: list[str] = []  # NOTE is used in tests to advance time slower until computation is done
+# NOTE: in tests, forward() holds the clock and rosys.sleep parks its sleepers while a job runs
+running_cpu_bound_processes: list[str] = []
 running_sh_processes: list[subprocess.Popen] = []
 log = logging.getLogger('rosys.run')
 
