@@ -40,9 +40,7 @@ class DetectorHardware(Detector):
     Note: Images must be smaller than ``MAX_IMAGE_SIZE`` bytes (default: 64 MB).
 
     By default images are sent as raw pixel arrays.
-    With ``image_transmission_format=ImageTransmissionFormat.JPEG`` they are encoded as JPEG with ``jpeg_quality`` first,
-    which makes them about 15 times smaller and speeds up detection over slow connections.
-    The detector node must support JPEG transmission (learning_loop_node 0.19 or newer).
+    With ``image_transmission_format=ImageTransmissionFormat.JPEG`` they are encoded as JPEG with ``jpeg_quality`` first.
     """
     MAX_IMAGE_SIZE = 64 * 1024 * 1024
     MAX_TIMEOUTS_BEFORE_DISCONNECT = 5
