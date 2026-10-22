@@ -14,8 +14,6 @@ from ..geometry import Point, Point3d, Pose3d
 
 log = logging.getLogger(__name__)
 
-_CPU_BOUND_POLL_SECONDS = 0.01
-
 automator: Automator | None = None
 driver: Driver | None = None
 odometer: Odometer | None = None
@@ -63,7 +61,6 @@ async def forward(seconds: float | None = None,
         raise ValueError('invalid arguments')
 
     log.info('\033[94m%s\033[0m', msg)
-    waited_for_cpu_bound = False
     while True:
         if fail_on_automation_failure and automator is not None and automator.last_exception is not None:
             raise AssertionError(f'automation failed: {automator.last_exception!r}') from automator.last_exception
@@ -71,16 +68,11 @@ async def forward(seconds: float | None = None,
             break
         if rosys.time() > start_time + timeout:
             raise TimeoutError(f'condition took more than {timeout} s')
-        if run.running_cpu_bound_processes:
-            waited_for_cpu_bound = True
-            await asyncio.sleep(_CPU_BOUND_POLL_SECONDS)
-        elif waited_for_cpu_bound:
-            # sleepers that yielded to the cpu_bound job must see the clock before it moves on
-            waited_for_cpu_bound = False
-            await asyncio.sleep(_CPU_BOUND_POLL_SECONDS)
-        else:
+        if not run.running_cpu_bound_processes:
             rosys.set_time(rosys.time() + dt)
             await asyncio.sleep(0)
+        else:
+            await asyncio.sleep(0.01)
 
 
 def assert_pose(x: float, y: float, *, deg: float | None = None, position_tolerance: float = 0.1, deg_tolerance: float = 1.0) -> None:

@@ -30,8 +30,6 @@ translator: Any | None = None
 
 core.is_test = is_test = helpers.is_test()
 
-_YIELD_TO_CPU_BOUND_SECONDS = 0.001
-
 
 @dataclass(slots=True, kw_only=True)
 class Notification:
@@ -92,6 +90,7 @@ def notify(message: str,
 
 
 time_lock = threading.Lock()
+_sleepers_awaiting_tick: list[asyncio.Future[None]] = []
 
 
 def time() -> float:
@@ -110,6 +109,21 @@ def time() -> float:
 def set_time(value: float) -> None:
     assert is_test, 'only tests can change the time'
     _state.time = value
+    _tick_test_clock()
+
+
+def _tick_test_clock() -> None:
+    waiting = _sleepers_awaiting_tick.copy()
+    _sleepers_awaiting_tick.clear()
+    for tick in waiting:
+        if not tick.done() and not tick.get_loop().is_closed():
+            tick.set_result(None)
+
+
+async def _wait_for_next_tick() -> None:
+    tick = asyncio.get_running_loop().create_future()
+    _sleepers_awaiting_tick.append(tick)
+    await tick
 
 
 def uptime() -> float:
@@ -120,7 +134,10 @@ async def sleep(seconds: float) -> None:
     if is_test:
         sleep_end_time = time() + seconds
         while time() <= sleep_end_time:
-            await asyncio.sleep(_YIELD_TO_CPU_BOUND_SECONDS if run.running_cpu_bound_processes else 0)
+            if run.running_cpu_bound_processes:
+                await _wait_for_next_tick()  # NOTE: idle instead of competing with the cpu_bound job for the CPU
+            else:
+                await asyncio.sleep(0)
     else:
         if config.simulation_speed <= 0:
             config.simulation_speed = 0.01
