@@ -2980,10 +2980,11 @@ the output directory, rotated by size and duration; every <code>.mcap</code> at 
 output directory is a kept recording (renamed, merged or placed there deliberately). The
 folder decides the kind, not the name. Peak disk usage is <code>max_total_size_mb +
 max_part_size_mb</code>: the budget is enforced only before a part is opened, so the growing
-part can exceed it by up to one part's worth. The budget deletes parts (oldest first)
-before kept recordings, which have a bound of their own so they cannot eat the rolling
-window. A merge holds its sources open, so the space the budget frees during one only
-returns when the merge finishes, and the peak then also carries the merge's size.</p>
+part can exceed it by up to one part's worth. The budget deletes the oldest recording
+first, whichever folder it sits in; kept recordings have a bound of their own so they
+cannot eat the rolling window. A merge holds its sources open, so the space the budget
+frees during one only returns when the merge finishes, and the peak then also carries
+the merge's size.</p>
 <p>Messages are enqueued from the event loop (cheap, non-blocking) and written to disk by a
 single background consumer via <code>rosys.run.io_bound</code> so that encoding, ZSTD compression
 and file I/O never block the loop. Encoding runs on the writer too: sources enqueue the
@@ -3079,7 +3080,7 @@ recording only rotates once data flows again.</p>
             <td>
               <div class="doc-md-description">
                 <p>disk budget for the output directory including <code>parts/</code>; the oldest
-recordings are deleted before a part is opened to stay under it, parts first. Peak disk usage
+recordings are deleted before a part is opened to stay under it, oldest first. Peak disk usage
 is therefore <code>max_total_size_mb + max_part_size_mb</code>, as the growing part is not counted.</p>
               </div>
             </td>
@@ -3537,7 +3538,7 @@ thread-safely. Outside a running loop (e.g. a synchronous unit test) the call is
     <div class="doc doc-contents ">
 
         <p>Delete the oldest recordings until the kept ones fit <code>max_kept_size</code> and all fit <code>max_total_size</code>.</p>
-<p>The kept bound spares the newest kept recording; the total is then met by parts first, oldest first.</p>
+<p>The kept bound spares the newest kept recording; the total is then met oldest first across both folders.</p>
 
 
     </div>

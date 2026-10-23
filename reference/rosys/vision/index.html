@@ -1884,6 +1884,56 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#rosys.vision.ImageTransmissionFormat" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ImageTransmissionFormat
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="ImageTransmissionFormat">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.ImageTransmissionFormat.JPEG" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        JPEG
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#rosys.vision.ImageTransmissionFormat.RAW" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RAW
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#events_4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Events
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#rosys.vision.MultiCameraProvider" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -2853,7 +2903,9 @@ If it is omitted, the Learning Loop applies its own default.</p>
     <span class="n">port</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8004</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">auto_disconnect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
-    <span class="n">sio_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">sio_timeout</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="n">image_transmission_format</span><span class="p">:</span> <span class="n">ImageTransmissionFormat</span> <span class="o">=</span> <span class="n">ImageTransmissionFormat</span><span class="o">.</span><span class="n">RAW</span><span class="p">,</span>
+    <span class="n">jpeg_quality</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">DEFAULT_JPEG_QUALITY</span>
 <span class="p">)</span>
 </code></pre></div>
 
@@ -2866,6 +2918,8 @@ If it is omitted, the Learning Loop applies its own default.</p>
 <p>It automatically connects and reconnects, submits and receives detections and sends images
 that should be uploaded to the <a href="https://zauberzeug.com/products/learning-loop">Zauberzeug Learning Loop</a>.</p>
 <p>Note: Images must be smaller than <code>MAX_IMAGE_SIZE</code> bytes (default: 64 MB).</p>
+<p>By default images are sent as raw pixel arrays.
+With <code>image_transmission_format=ImageTransmissionFormat.JPEG</code> they are encoded as JPEG with <code>jpeg_quality</code> first.</p>
 
 
 
@@ -3157,6 +3211,116 @@ An optional <code>detection_delay</code> parameter simulates the time it takes t
     </div>
 
 </div><h3 id="events_3">Events<a class="headerlink" href="#events_3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NEW_DETECTIONS</td>
+<td>detection on an image is completed (argument: image)</td>
+</tr>
+</tbody>
+</table>
+
+
+<div class="doc doc-object doc-class">
+
+
+
+<h2 id="rosys.vision.ImageTransmissionFormat" class="doc doc-heading">
+            <span class="doc doc-object-name doc-class-name">ImageTransmissionFormat</span>
+
+
+<a href="#rosys.vision.ImageTransmissionFormat" class="headerlink" title="Permanent link">&para;</a></h2>
+
+
+    <div class="doc doc-contents first">
+            <p class="doc doc-class-bases">
+              Bases: <code><span title="enum.Enum">Enum</span></code></p>
+
+
+        <p>How images are sent to a detector node</p>
+
+
+
+
+
+
+
+
+
+
+  <div class="doc doc-children">
+
+
+
+
+
+
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.vision.ImageTransmissionFormat.JPEG" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">JPEG</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.vision.ImageTransmissionFormat.JPEG" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">JPEG</span> <span class="o">=</span> <span class="s1">&#39;jpeg&#39;</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The image encoded as JPEG: lossy and takes time to encode, but much smaller; best over a (slow) network</p>
+
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-attribute">
+
+
+
+<h3 id="rosys.vision.ImageTransmissionFormat.RAW" class="doc doc-heading">
+            <span class="doc doc-object-name doc-attribute-name">RAW</span>
+
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-class-attribute"><code>class-attribute</code></small>
+      <small class="doc doc-label doc-label-instance-attribute"><code>instance-attribute</code></small>
+  </span>
+
+<a href="#rosys.vision.ImageTransmissionFormat.RAW" class="headerlink" title="Permanent link">&para;</a></h3>
+<div class="doc-signature highlight"><pre><span></span><code><span class="n">RAW</span> <span class="o">=</span> <span class="s1">&#39;raw&#39;</span>
+</code></pre></div>
+
+    <div class="doc doc-contents ">
+
+        <p>The pixel array with dtype and shape: large, but lossless and nothing to encode; best on the same host</p>
+
+    </div>
+
+</div>
+
+
+
+
+
+  </div>
+
+    </div>
+
+</div><h3 id="events_4">Events<a class="headerlink" href="#events_4" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>

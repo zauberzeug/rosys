@@ -1610,7 +1610,7 @@ With <code>auto_start=False</code> it stays idle until you press the record butt
 A part is rotated by size (<code>max_part_size_mb</code>) and, with <code>max_part_duration</code>, by age; every part is a complete recording that Foxglove opens as it is.
 <code>recorder.start(name='mission', metadata={'field': 'north'})</code> names the run <code>&lt;timestamp&gt;_mission</code>, writes the metadata into every part and returns the run's name.</dd>
 <dt>Disk budget</dt>
-<dd>Before a part is opened, the oldest recordings are deleted to stay within <code>max_total_size_mb</code>, parts first.
+<dd>Before a part is opened, the oldest recordings are deleted to stay within <code>max_total_size_mb</code>, whichever folder they sit in.
 Every <code>.mcap</code> at the top level of the output directory is a kept recording (renamed, merged or placed there by hand); the folder decides, not the name.
 Kept recordings have a bound of their own, <code>max_kept_size_mb</code>, which spares the newest kept file.</dd>
 <dt>Topics</dt>
