@@ -41,7 +41,7 @@ class ImageTransmissionFormat(Enum):
     """How images are sent to a detector node"""
 
     RAW = 'raw'
-    """The pixel array with dtype and shape (default): large, but lossless and nothing to encode; best on the same host"""
+    """The pixel array with dtype and shape: large, but lossless and nothing to encode; best on the same host"""
 
     JPEG = 'jpeg'
     """The image encoded as JPEG: lossy and takes time to encode, but much smaller; best over a (slow) network"""
