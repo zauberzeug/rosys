@@ -267,7 +267,7 @@ class DetectorHardware(Detector):
 
         try:
             # List of image data dictionaries, each with the same structure as the `image` entry in the `detect` endpoint
-            images_dict = [await self._prepare_image(image) for image in images]
+            images_dict = list(await asyncio.gather(*(self._prepare_image(image) for image in images)))
             response = await self.sio.call('batch_detect', {
                 'images': images_dict,
                 'camera_id': images[0].camera_id if images else None,
