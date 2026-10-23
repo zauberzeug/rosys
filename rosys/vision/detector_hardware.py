@@ -6,7 +6,7 @@ import numpy as np
 import socketio
 import socketio.exceptions
 
-from .. import rosys
+from .. import rosys, run
 from ..helpers import LazyWorker
 from ..persistence import from_dict
 from .annotations import Annotations
@@ -18,8 +18,17 @@ from .detections import (
     PointDetection,
     SegmentationDetection,
 )
-from .detector import Autoupload, Detector, DetectorException, DetectorInfo, ImageState, ModelVersioningInfo
+from .detector import (
+    Autoupload,
+    Detector,
+    DetectorException,
+    DetectorInfo,
+    ImageState,
+    ImageTransmissionFormat,
+    ModelVersioningInfo,
+)
 from .image import Image
+from .image_processing import DEFAULT_JPEG_QUALITY, encode_image_as_jpeg, validate_jpeg_quality
 
 
 class DetectorHardware(Detector):
@@ -29,6 +38,9 @@ class DetectorHardware(Detector):
     that should be uploaded to the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
 
     Note: Images must be smaller than ``MAX_IMAGE_SIZE`` bytes (default: 64 MB).
+
+    By default images are sent as raw pixel arrays.
+    With ``image_transmission_format=ImageTransmissionFormat.JPEG`` they are encoded as JPEG with ``jpeg_quality`` first.
     """
     MAX_IMAGE_SIZE = 64 * 1024 * 1024
     MAX_TIMEOUTS_BEFORE_DISCONNECT = 5
@@ -39,8 +51,11 @@ class DetectorHardware(Detector):
                  port: int = 8004,
                  name: str | None = None,
                  auto_disconnect: bool = True,
-                 sio_timeout: int = 5) -> None:
+                 sio_timeout: int = 5,
+                 image_transmission_format: ImageTransmissionFormat = ImageTransmissionFormat.RAW,
+                 jpeg_quality: int = DEFAULT_JPEG_QUALITY) -> None:
         super().__init__(name=name)
+        validate_jpeg_quality(jpeg_quality)
 
         self.lazy_worker = LazyWorker()
         self.host = host
@@ -49,6 +64,8 @@ class DetectorHardware(Detector):
 
         self.sio_timeout = sio_timeout
         self.timeout_count = 0
+        self.image_transmission_format = image_transmission_format
+        self.jpeg_quality = jpeg_quality
 
         self.sio = socketio.AsyncClient(websocket_extra_options={'max_msg_size': self.MAX_IMAGE_SIZE + 1000})
         self.sio.on('disconnect', lambda: self.log.warning('disconnect on %s:%s', self.host, self.port))
@@ -128,7 +145,7 @@ class DetectorHardware(Detector):
                 })
 
             await self.sio.emit('upload', {
-                'image': _array_to_dict(image.array),
+                'image': await self._prepare_image(image),
                 'metadata': metadata,
             })
 
@@ -174,7 +191,7 @@ class DetectorHardware(Detector):
                       creation_date: datetime | str | None = None) -> Detections:
         try:
             response = await self.sio.call('detect', {
-                'image': _array_to_dict(image.array),
+                'image': await self._prepare_image(image),
                 'camera_id': image.camera_id,
                 'tags': tags,
                 'source': source,
@@ -250,7 +267,7 @@ class DetectorHardware(Detector):
 
         try:
             # List of image data dictionaries, each with the same structure as the `image` entry in the `detect` endpoint
-            images_dict = [_array_to_dict(image.array) for image in images]
+            images_dict = list(await asyncio.gather(*(self._prepare_image(image) for image in images)))
             response = await self.sio.call('batch_detect', {
                 'images': images_dict,
                 'camera_id': images[0].camera_id if images else None,
@@ -278,6 +295,16 @@ class DetectorHardware(Detector):
             raise DetectorException('Failed to parse detections') from e
 
         return all_detections
+
+    async def _prepare_image(self, image: Image) -> dict[str, Any]:
+        """Return the image as a payload in the configured transmission format."""
+        if self.image_transmission_format == ImageTransmissionFormat.JPEG:
+            # the encoder releases the GIL, so concurrent encodes run in parallel
+            jpeg_bytes = await run.io_bound(encode_image_as_jpeg, image.array, self.jpeg_quality)
+            if jpeg_bytes is None:
+                raise DetectorException('JPEG encoding failed')
+            return {'format': 'jpeg', 'bytes': jpeg_bytes}
+        return _array_to_dict(image.array)
 
     def __str__(self) -> str:
         return f'{type(self).__name__} ({"connected" if self.is_connected else "disconnected"})'
