@@ -130,6 +130,10 @@ class UsbDevice(CaptureDevice):
         self.log.info('[%s] connected on %s', self.uid, device_node)
         self._device_node = device_node
         self._capture = capture
+        await self.load_value_ranges()
+        if not self._keeps_running():
+            await self._release()
+            return
         self.set_video_format()
         await self._enter_streaming()
 
@@ -162,7 +166,8 @@ class UsbDevice(CaptureDevice):
         else:
             self._has_manual_exposure = False
         output = await self.run_v4l('--list-formats')
-        matches = re.finditer(r"$.*'(.*)'.*", output)
+        self._video_formats.clear()
+        matches = re.finditer(r"\[\d+\]:\s*'([^']*)'", output)
         for m in matches:
             self._video_formats.add(m.group(1))
 

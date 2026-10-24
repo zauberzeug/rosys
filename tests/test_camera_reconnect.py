@@ -414,6 +414,37 @@ async def test_usb_device_reconnects_after_disconnect(rosys_integration):
             await device.shutdown()
 
 
+async def test_usb_device_stays_stopped_when_shut_down_while_probing_formats(rosys_integration):
+    probing = asyncio.Event()
+    finish_probe = asyncio.Event()
+
+    async def slow_v4l(_self, *_args) -> str:
+        probing.set()
+        try:
+            await finish_probe.wait()
+        except asyncio.CancelledError:
+            pass  # NOTE: like rosys.run.sh, a cancelled v4l2-ctl call returns instead of raising
+        return ''
+
+    frames: list = []
+    with patch.object(UsbDevice, 'create_capture', lambda _device_node: FakeCapture()), \
+            patch.object(UsbDevice, 'run_v4l', slow_v4l), \
+            patch('rosys.vision.usb_camera.usb_device.find_device_node', return_value='/dev/video0'):
+        device = UsbDevice('fakecam', on_new_image_data=lambda data, timestamp: frames.append(data),
+                           reconnect_interval=0.3)
+        try:
+            await forward_until(probing.is_set, real_step=0.02, message='device did not probe its formats')
+            await device.shutdown()
+            finish_probe.set()
+            for _ in range(5):
+                await forward(0.3)
+                await asyncio.sleep(0.02)
+            assert not device.is_connected
+            assert not frames, 'the capture loop resumed streaming after shutdown'
+        finally:
+            await device.shutdown()
+
+
 async def test_usb_device_releases_a_capture_that_only_fails_to_read(rosys_integration):
     """A cable pulled mid-stream leaves an opened capture whose reads fail; the session must end."""
     captures: list[FakeCapture] = []
