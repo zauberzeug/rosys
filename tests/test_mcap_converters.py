@@ -588,6 +588,24 @@ async def test_image_annotations_from_detections(mcap_dir: Path) -> None:
     assert {t['text'] for t in message['texts']} == {'weed (0.90)', 'crop (0.80)'}
 
 
+async def test_image_annotations_record_the_detections_present_when_emitted(mcap_dir: Path) -> None:
+    """Detections a second detector adds after the image was emitted stay out of that image's overlay."""
+    image = Image.create_placeholder('x', camera_id='front', time=2.0)
+    image.set_detections('first', Detections(
+        points=[PointDetection(category_name='crop', model_name='m', confidence=0.8, x=5.0, y=6.0)]))
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    event = FakeEvent()
+    add_event_topic(recorder, '/camera/front/annotations', event=event, converter=image_annotations())
+    recorder.start()
+    event.emit(image)
+    image.set_detections('second', Detections(
+        points=[PointDetection(category_name='weed', model_name='m', confidence=0.9, x=7.0, y=8.0)]))
+    await recorder.stop()
+
+    _, message = _read(_only_file(mcap_dir))[0]
+    assert [t['text'] for t in message['texts']] == ['crop (0.80)']
+
+
 async def test_image_annotations_filters_by_camera_id(mcap_dir: Path) -> None:
     """``image_annotations(camera_id=...)`` skips images from other cameras."""
     recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
