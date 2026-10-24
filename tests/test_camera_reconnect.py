@@ -128,10 +128,7 @@ JPEG_FRAME = cv2.imencode('.jpg', np.zeros((8, 8, 3), dtype=np.uint8))[1].tobyte
 
 @pytest.fixture
 def vision_log(rosys_integration: None, caplog: pytest.LogCaptureFixture):
-    logger = logging.getLogger('rosys.vision')  # NOTE: the test log configuration disables propagation to the root
-    logger.addHandler(caplog.handler)
-    yield caplog
-    logger.removeHandler(caplog.handler)
+    return caplog
 
 
 async def wait_in_real_time(condition, *, step: float = 0.02, attempts: int = 200,

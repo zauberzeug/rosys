@@ -5,7 +5,7 @@ description = "Modular Robot System With Elegant Automation Capabilities"
 authors = [{ name = "Zauberzeug GmbH", email = "info@zauberzeug.com" }]
 license = "MIT"
 readme = "README.md"
-requires-python = ">=3.11, <3.14"
+requires-python = ">=3.11, <3.16"
 keywords = ["robot", "framework", "automation", "control", "steer"]
 dependencies = [
     "nicegui>=3.16.0,<4",
@@ -22,7 +22,7 @@ dependencies = [
     "uvloop>=0.17.0",
     "dataclasses-json>=0.5.7,<0.6",
     "suntime>=1.2.5,<2",
-    "line-profiler>=4.1.3,<5",
+    "line-profiler>=4.1.3,<6",
     "yappi>=1.6.0,<2",
     "pyloot>=0.1.0,<0.2",
     "objgraph>=3.6.1,<4",
@@ -50,7 +50,7 @@ dependencies = [
     "marshmallow>=3.26.2,<4",  # https://github.com/zauberzeug/rosys/security/dependabot/81
     "pyturbojpeg>=1.8.2,<2",
     "virtualenv>=21.14.9",  # https://github.com/zauberzeug/rosys/security/dependabot/223
-    "mcap>=1.1.0,<2",
+    "mcap>=1.6.0,<2",
     "zstandard>=0.23.0",  # imported directly in analysis/recording/indexing.py (also a transitive dep of mcap)
 ]
 
@@ -64,7 +64,7 @@ rosys = "rosys.testing.fixtures"
 dev = [
     {include-group = "types"},
     "autopep8>=2.0.0,<3",
-    "pytest>=9.0.3,<10",  # https://github.com/zauberzeug/rosys/security/dependabot/113
+    "pytest>=9.1.0,<10",  # 9.1 captures non-propagating loggers like rosys.*
     "pytest-watch>=4.2.0,<5",
     "pytest-flakefinder>=1.0.0,<2",
     "pytest-profiling>=1.7.0,<2",
@@ -161,6 +161,7 @@ disable = [
     "C0111", # Missing docstring (in function/class/method)
     "C0301", # Line too long (exceeds character limit)
     "R0801", # Similar lines in %s files
+    "R0901", # Too many ancestors
     "R0902", # Too many public methods
     "R0903", # Too few public methods
     "R0904", # Too many public methods
