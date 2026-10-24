@@ -99,7 +99,7 @@ def merge_recordings(sources: list[Path], target: Path, *, start_time_ns: int = 
             })})
             for stream in streams:
                 stream.seek(0)
-                for schema, channel, message in make_reader(stream).iter_messages(start_time=start_time_ns):
+                for schema, channel, message in make_reader(stream).iter_messages(starting_at=start_time_ns):
                     schema_id = 0
                     if schema is not None:
                         schema_key = (schema.name, schema.encoding, bytes(schema.data))

@@ -3,10 +3,10 @@ import enum
 import math
 import mmap
 import os
+import socket
 import sys
 from collections.abc import Callable
 from dataclasses import dataclass
-from multiprocessing import reduction
 from multiprocessing.connection import Connection
 from typing import Protocol
 
@@ -112,7 +112,9 @@ class MemfdSender:
         try:
             os.write(fd, np.ascontiguousarray(message.array).data)
             self._connection.send(_FrameHeader(shape=message.array.shape, capture_time=message.capture_time))
-            reduction.send_handle(self._connection, fd, None)
+            # NOTE: not multiprocessing.reduction.send_handle, which blocks until the receiver acknowledges since Python 3.14
+            with socket.fromfd(self._connection.fileno(), socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+                socket.send_fds(sock, [b'\0'], [fd])
         finally:
             os.close(fd)
 
@@ -129,7 +131,13 @@ class MemfdReceiver:
         message = self._connection.recv()
         if not isinstance(message, _FrameHeader):
             return message
-        fd = reduction.recv_handle(self._connection)
+        with socket.fromfd(self._connection.fileno(), socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+            data, fds, _, _ = socket.recv_fds(sock, 1, 1)
+        if not data and not fds:
+            raise EOFError
+        if len(fds) != 1:
+            raise RuntimeError(f'expected one file descriptor, got {len(fds)}')
+        fd = fds[0]
         try:
             buffer = mmap.mmap(fd, math.prod(message.shape), flags=mmap.MAP_SHARED | mmap.MAP_POPULATE)
         finally:

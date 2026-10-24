@@ -15,7 +15,7 @@ from rosys.rosys import shutdown_handlers
 @pytest.fixture
 async def rosys_lifecycle():
     # NOTE: for tests that drive rosys.startup()/rosys.shutdown() themselves, unlike rosys_integration
-    core.loop = asyncio.get_event_loop()
+    core.loop = asyncio.get_running_loop()
     rosys.reset_before_test()
     yield
     rosys.reset_after_test()

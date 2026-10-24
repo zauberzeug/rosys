@@ -15,10 +15,7 @@ from rosys.testing import forward
 
 @pytest.fixture
 def rosys_log(rosys_integration: None, caplog: pytest.LogCaptureFixture):
-    logger = logging.getLogger('rosys.core')  # NOTE: the test log configuration disables propagation to the root
-    logger.addHandler(caplog.handler)
-    yield caplog
-    logger.removeHandler(caplog.handler)
+    return caplog
 
 
 def plain_function() -> str:
@@ -170,7 +167,7 @@ def test_weak_handler_does_not_keep_object_alive():
 async def test_collected_object_does_not_start_orphan_task_after_startup():
     # NOTE: a repeater created pre-startup defers its start; if the object dies first,
     # the replayed start (during startup) must see the dead handler and not launch an orphan task.
-    core.loop = asyncio.get_event_loop()
+    core.loop = asyncio.get_running_loop()
     rosys.reset_before_test()
     assert not _state.startup_finished
 
@@ -195,7 +192,7 @@ async def test_collected_object_does_not_start_orphan_task_after_startup():
 
 async def test_stop_before_startup_prevents_the_deferred_start():
     # NOTE: a repeater created pre-startup defers its start; stopping it must also drop that pending start.
-    core.loop = asyncio.get_event_loop()
+    core.loop = asyncio.get_running_loop()
     rosys.reset_before_test()
     assert not _state.startup_finished
 
@@ -219,7 +216,7 @@ async def test_stop_before_startup_prevents_the_deferred_start():
 
 async def test_restart_before_startup_keeps_the_deferred_start():
     # NOTE: stopping and starting again before startup must leave the start queued exactly once.
-    core.loop = asyncio.get_event_loop()
+    core.loop = asyncio.get_running_loop()
     rosys.reset_before_test()
     assert not _state.startup_finished
 
@@ -242,7 +239,7 @@ async def test_restart_before_startup_keeps_the_deferred_start():
 
 async def test_stopping_a_repeater_during_startup_keeps_the_other_handlers():
     # NOTE: stop() removes a pending start from the list that startup() is iterating; it must not skip a sibling.
-    core.loop = asyncio.get_event_loop()
+    core.loop = asyncio.get_running_loop()
     rosys.reset_before_test()
     assert not _state.startup_finished
 
