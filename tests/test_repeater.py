@@ -13,11 +13,6 @@ from rosys.rosys import Repeater, _handler_name, _prepare_handler, _state, _Weak
 from rosys.testing import forward
 
 
-@pytest.fixture
-def rosys_log(rosys_integration: None, caplog: pytest.LogCaptureFixture):
-    return caplog
-
-
 def plain_function() -> str:
     return 'function'
 
@@ -300,7 +295,8 @@ async def test_never_stored_check_does_not_linger_in_task_registry():
     assert not any(task.done() for task in tasks)  # the finished check task got pruned from the registry
 
 
-async def test_never_stored_object_logs_warning(rosys_log: pytest.LogCaptureFixture):
+@pytest.mark.usefixtures('rosys_integration')
+async def test_never_stored_object_logs_warning(caplog: pytest.LogCaptureFixture):
     calls: list[float] = []
     repeater = rosys.on_repeat(Ticker(calls).step, 0.1)  # NOTE: the Ticker is not stored anywhere
 
@@ -308,11 +304,12 @@ async def test_never_stored_object_logs_warning(rosys_log: pytest.LogCaptureFixt
 
     assert not repeater.running
     assert not calls  # never ticked
-    assert any('will never be called' in record.message for record in rosys_log.records)
+    assert any('will never be called' in record.message for record in caplog.records)
 
 
-async def test_object_collected_later_logs_debug_instead_of_warning(rosys_log: pytest.LogCaptureFixture):
-    rosys_log.set_level(logging.DEBUG, logger='rosys.core')
+@pytest.mark.usefixtures('rosys_integration')
+async def test_object_collected_later_logs_debug_instead_of_warning(caplog: pytest.LogCaptureFixture):
+    caplog.set_level(logging.DEBUG, logger='rosys.core')
     calls: list[float] = []
     ticker = Ticker(calls)
     repeater = rosys.on_repeat(ticker.step, 0.1)
@@ -323,9 +320,9 @@ async def test_object_collected_later_logs_debug_instead_of_warning(rosys_log: p
     await forward(0.5)
 
     assert not repeater.running
-    assert not any('will never be called' in record.message for record in rosys_log.records)
+    assert not any('will never be called' in record.message for record in caplog.records)
     assert any('garbage-collected' in record.message and record.levelno == logging.DEBUG
-               for record in rosys_log.records)
+               for record in caplog.records)
 
 
 @pytest.mark.usefixtures('rosys_integration')
