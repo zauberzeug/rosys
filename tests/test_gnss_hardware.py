@@ -122,7 +122,6 @@ async def test_connect_without_device(monkeypatch: pytest.MonkeyPatch, caplog: p
     ports: list[SimpleNamespace] = []
     monkeypatch.setattr('rosys.hardware.gnss.gnss_hardware.list_ports.comports', lambda: ports)
     gnss = GnssHardware(antenna_pose=None, reconnect_interval=0.1, max_measurement_age=float('inf'))
-    gnss.log.addHandler(caplog.handler)
     monkeypatch.setattr(gnss, '_connect_to_device', serial.Serial)
     controller, device = pty.openpty()
     try:
@@ -137,7 +136,6 @@ async def test_connect_without_device(monkeypatch: pytest.MonkeyPatch, caplog: p
         await forward(seconds=0.1)
         assert gnss.last_measurement is not None
     finally:
-        gnss.log.removeHandler(caplog.handler)
         if gnss.serial_connection is not None:
             gnss.serial_connection.close()
         os.close(controller)

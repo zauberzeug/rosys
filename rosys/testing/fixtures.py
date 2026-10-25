@@ -18,7 +18,7 @@ from rosys.testing import helpers, log_configuration
 @pytest.fixture
 async def rosys_integration() -> AsyncGenerator:
     log_configuration.setup()
-    core.loop = asyncio.get_event_loop()
+    core.loop = asyncio.get_running_loop()
     rosys.reset_before_test()
     await rosys.startup()
     yield

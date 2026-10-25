@@ -461,7 +461,7 @@ async def test_async_finally_runs_when_stopped_while_parked_on_future(automator:
         """Awaitable that yields an unresolved ``Future`` like production ``asyncio.sleep``, resolved next tick."""
 
         def __await__(self):
-            loop = asyncio.get_event_loop()
+            loop = asyncio.get_running_loop()
             future = loop.create_future()
             loop.call_soon(future.set_result, None)
             return (yield from future.__await__())
