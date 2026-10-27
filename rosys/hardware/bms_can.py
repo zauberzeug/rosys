@@ -1,14 +1,16 @@
+import abc
 import dataclasses
 from collections.abc import Callable
+from contextlib import suppress
 from dataclasses import dataclass, field
 
 from nicegui import Event, ui
 
 from .. import rosys
-from .bms import Bms
+from .bms import Bms, BmsSimulation
 from .can import CanHardware
 from .module import ModuleHardware
-from .robot_brain import RobotBrain
+from .robot_brain import EspNotReadyException, RobotBrain
 
 PREFIX = 0x1F
 SHUTDOWN = 0x00
@@ -41,7 +43,6 @@ ERROR_TEXTS = {
     0x0A: 'battery bus not connected',
 }
 WARNING_CODES = {0x01, 0x05, 0x07, 0x0A}
-MIN_LENGTHS = {ERROR: 7, HEARTBEAT: 8, BMS_1: 8, BMS_2: 8, BMS_FIXED: 7, IDENTITY: 8, DIAGNOSTICS: 8, CELLS: 7}
 INFO_CODES = {0x08}
 
 
@@ -88,7 +89,44 @@ class BatteryPack:
         return self.chip_id or f'{self.node_id:04x}'
 
 
-class BmsCanHardware(Bms, ModuleHardware):
+class BmsCan(Bms, abc.ABC):
+    """A battery of several packs, each switched by an ESP that reports it over CAN.
+
+    Besides the ``Bms`` interface it can start a load-free measurement phase, request cell voltages and switch off all relays.
+    """
+
+    MEASUREMENT_PHASE_DURATION = 4.0
+    """Time the load has to stay low after a measurement phase was started (s)"""
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self.MEASUREMENT_PHASE_STARTED = Event[[]]()
+        """A load-free measurement phase was started; keep the load low for ``MEASUREMENT_PHASE_DURATION`` seconds"""
+        self.packs: dict[int, BatteryPack] = {}
+        self.last_measurement_phase = -float('inf')
+        self.is_shutting_down = False
+
+    @property
+    def is_measurement_phase_running(self) -> bool:
+        return rosys.time() < self.last_measurement_phase + self.MEASUREMENT_PHASE_DURATION
+
+    @abc.abstractmethod
+    async def start_measurement_phase(self) -> None:
+        """Let every ESP measure its load-free voltage for 3 s, so that a pack that is off can join.
+
+        The load has to stay low for ``MEASUREMENT_PHASE_DURATION`` seconds.
+        """
+
+    @abc.abstractmethod
+    async def request_cell_voltages(self, node_id: int) -> None:
+        """Ask the ESP of one pack for its cell voltages and balancing state."""
+
+    @abc.abstractmethod
+    async def shut_down(self) -> None:
+        """Switch off the relays of all packs until the power switch is turned off and on again."""
+
+
+class BmsCanHardware(BmsCan, ModuleHardware):
     """This module reads several battery packs over CAN, each reported by the ESP that switches its relay.
 
     The ESPs decide on their own which pack is connected to the battery bus.
@@ -100,8 +138,6 @@ class BmsCanHardware(Bms, ModuleHardware):
 
     PACK_TIMEOUT = 3.5
     """Time after the last heartbeat until a pack counts as missing (s)"""
-    MEASUREMENT_PHASE_DURATION = 4.0
-    """Time the load has to stay low after a measurement phase was started (s)"""
     SHUTDOWN_REPEAT_INTERVAL = 0.1
     SHUTDOWN_CHECK_DELAY = 2.0
 
@@ -123,25 +159,31 @@ class BmsCanHardware(Bms, ModuleHardware):
         self.charge_detect_threshold = charge_detect_threshold
         self.measurement_phase_interval = measurement_phase_interval
         self.is_load_low = is_load_low
-        self.packs: dict[int, BatteryPack] = {}
-        self.last_measurement_phase = -float('inf')
-        self.is_shutting_down = False
         mask = PREFIX << 24
         lizard_code = f'{can.name}.output_extended({mask:#010x}, {mask:#010x})'
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, **kwargs)
-        self.MEASUREMENT_PHASE_STARTED = Event[[]]()
-        """A load-free measurement phase was started; keep the load low for ``MEASUREMENT_PHASE_DURATION`` seconds"""
+        self._frame_handlers: dict[int, tuple[int, Callable[[BatteryPack, bytes], None]]] = {
+            ERROR: (7, self._handle_error),
+            HEARTBEAT: (8, self._handle_heartbeat),
+            BMS_1: (8, self._handle_bms_1),
+            BMS_2: (8, self._handle_bms_2),
+            BMS_FIXED: (7, self._handle_bms_fixed),
+            IDENTITY: (8, self._handle_identity),
+            DIAGNOSTICS: (8, self._handle_diagnostics),
+            CELLS: (7, self._handle_cells),
+        }
+        """Minimum data length and handler per message type"""
         self.message_hooks[can.name] = self._handle_can
         rosys.on_repeat(self._update_state, 1.0)
+
+    def is_fresh(self, pack: BatteryPack) -> bool:
+        """Whether the pack's heartbeat is not older than ``PACK_TIMEOUT``."""
+        return rosys.time() - pack.last_heartbeat < self.PACK_TIMEOUT
 
     @property
     def fresh_packs(self) -> list[BatteryPack]:
         """Packs whose heartbeat is not older than ``PACK_TIMEOUT``."""
-        return [pack for pack in self.packs.values() if rosys.time() - pack.last_heartbeat < self.PACK_TIMEOUT]
-
-    @property
-    def is_measurement_phase_running(self) -> bool:
-        return rosys.time() < self.last_measurement_phase + self.MEASUREMENT_PHASE_DURATION
+        return [pack for pack in self.packs.values() if self.is_fresh(pack)]
 
     def is_outdated(self, pack: BatteryPack) -> bool:
         """Whether the pack speaks an older protocol version than another pack on the bus."""
@@ -149,17 +191,12 @@ class BmsCanHardware(Bms, ModuleHardware):
         return pack.protocol_version is not None and pack.protocol_version < max(versions, default=0)
 
     async def start_measurement_phase(self) -> None:
-        """Let every ESP measure its load-free voltage for 3 s, so that a pack that is off can join.
-
-        The load has to stay low for ``MEASUREMENT_PHASE_DURATION`` seconds.
-        """
         self.log.info('starting a load-free measurement phase')
         self.last_measurement_phase = rosys.time()
         await self._send(MEASUREMENT_PHASE, 0)
         self.MEASUREMENT_PHASE_STARTED.emit()
 
     async def request_cell_voltages(self, node_id: int) -> None:
-        """Ask the ESP of one pack for its cell voltages and balancing state."""
         await self._send(CELL_REQUEST, node_id)
 
     async def shut_down(self) -> None:
@@ -173,13 +210,18 @@ class BmsCanHardware(Bms, ModuleHardware):
         self.log.warning('switching off all battery relays')
         start = rosys.time()
         reported = False
-        while True:
-            await self._send(SHUTDOWN, 0, SHUTDOWN_MAGIC)
-            if not reported and rosys.time() > start + self.SHUTDOWN_CHECK_DELAY:
-                reported = True
-                if remaining := [pack.name for pack in self.fresh_packs if pack.relay_on]:
-                    rosys.notify(f'Battery relays still on: {", ".join(remaining)}', 'negative')
-            await rosys.sleep(self.SHUTDOWN_REPEAT_INTERVAL)
+        try:
+            while True:
+                with suppress(EspNotReadyException):  # NOTE: keep repeating until the Core is ready again
+                    await self._send(SHUTDOWN, 0, SHUTDOWN_MAGIC)
+                if not reported and rosys.time() > start + self.SHUTDOWN_CHECK_DELAY:
+                    reported = True
+                    if remaining := [pack.name if self.is_fresh(pack) else f'{pack.name} (no heartbeat)'
+                                     for pack in self.packs.values() if pack.relay_on]:
+                        rosys.notify(f'Battery relays still on: {", ".join(remaining)}', 'negative')
+                await rosys.sleep(self.SHUTDOWN_REPEAT_INTERVAL)
+        finally:
+            self.is_shutting_down = False
 
     async def _send(self, message_type: int, node_id: int, data: bytes = bytes(8)) -> None:
         identifier = PREFIX << 24 | message_type << 16 | node_id
@@ -195,23 +237,14 @@ class BmsCanHardware(Bms, ModuleHardware):
         message_type = frame_id >> 16 & 0xFF
         node_id = frame_id & 0xFFFF
         data = bytes(int(value, 16) for value in values)
-        handlers: dict[int, Callable[[BatteryPack, bytes], None]] = {
-            ERROR: self._handle_error,
-            HEARTBEAT: self._handle_heartbeat,
-            BMS_1: self._handle_bms_1,
-            BMS_2: self._handle_bms_2,
-            BMS_FIXED: self._handle_bms_fixed,
-            IDENTITY: self._handle_identity,
-            DIAGNOSTICS: self._handle_diagnostics,
-            CELLS: self._handle_cells,
-        }
-        if message_type not in handlers:
+        if message_type not in self._frame_handlers:
             return
-        if len(data) < MIN_LENGTHS[message_type]:
+        min_length, handler = self._frame_handlers[message_type]
+        if len(data) < min_length:
             self.log.warning('battery frame %s is too short', identifier)
             return
         pack = self.packs.setdefault(node_id, BatteryPack(node_id=node_id))
-        handlers[message_type](pack, data)
+        handler(pack, data)
 
     def _handle_heartbeat(self, pack: BatteryPack, data: bytes) -> None:
         flags = data[0]
@@ -263,9 +296,8 @@ class BmsCanHardware(Bms, ModuleHardware):
     def _handle_cells(self, pack: BatteryPack, data: bytes) -> None:
         part = data[0]
         if part == 0:
-            count = data[1]
             pack.balancing = int.from_bytes(data[2:6], 'little')
-            pack.cell_voltages = (pack.cell_voltages + [None] * count)[:count]
+            pack.cell_voltages = [None] * data[1]
             return
         for i in range(3):
             cell = 3 * (part - 1) + i
@@ -289,14 +321,14 @@ class BmsCanHardware(Bms, ModuleHardware):
 
     async def _update_state(self) -> None:
         packs = [pack for pack in self.fresh_packs if pack.bms_valid]
-        if not packs:
-            return
-        remaining = [p.remaining_capacity for p in packs if p.remaining_capacity is not None]
-        nominal = [p.nominal_capacity for p in packs if p.nominal_capacity is not None]
+        usable = [p for p in packs if not p.error_active and not p.shut_down]
+        remaining = [p.remaining_capacity for p in usable if p.remaining_capacity is not None]
+        nominal = [p.nominal_capacity for p in usable if p.nominal_capacity is not None]
         connected = [p.voltage for p in packs if p.relay_on and p.voltage is not None]
         temperatures = [t for p in packs for t in p.temperatures]
         currents = [p.current for p in packs if p.current is not None]
-        percentage = 100 * sum(remaining) / sum(nominal) if len(remaining) == len(packs) and sum(nominal) > 0 else None
+        is_complete = len(remaining) == len(nominal) == len(usable) and sum(nominal) > 0
+        percentage = 100 * sum(remaining) / sum(nominal) if is_complete else None
         if percentage is not None:
             self._send_battery_low_event(percentage)
         self.state.percentage = percentage
@@ -306,7 +338,8 @@ class BmsCanHardware(Bms, ModuleHardware):
         is_charging = self.state.current is not None and self.state.current > self.charge_detect_threshold
         self._send_charging_events(is_charging)
         self.state.is_charging = is_charging
-        self.state.last_update = rosys.time()
+        if packs:
+            self.state.last_update = rosys.time()
         self.raw_data = {pack.name: dataclasses.asdict(pack) for pack in self.packs.values()}
         self.STATE_UPDATED.emit(self.state)
         await self._start_measurement_phase_if_needed()
@@ -329,7 +362,7 @@ class BmsCanHardware(Bms, ModuleHardware):
         ui.timer(1.0, lambda: label.set_text('\n'.join(self._pack_summary(p) for p in self.packs.values())))
 
     def _pack_summary(self, pack: BatteryPack) -> str:
-        if rosys.time() - pack.last_heartbeat >= self.PACK_TIMEOUT:
+        if not self.is_fresh(pack):
             return f'{pack.name}: missing'
         parts = ['on' if pack.relay_on else 'off']
         parts += [f'{pack.voltage:.2f}V'] if pack.voltage is not None else []
@@ -338,6 +371,21 @@ class BmsCanHardware(Bms, ModuleHardware):
         parts += ['error'] if pack.error_active else []
         parts += ['outdated'] if self.is_outdated(pack) else []
         return f'{pack.name}: {", ".join(parts)}'
+
+
+class BmsCanSimulation(BmsCan, BmsSimulation):
+    """This module simulates the battery as one pack; it has no ``packs`` and sends no commands."""
+
+    async def start_measurement_phase(self) -> None:
+        self.last_measurement_phase = rosys.time()
+        self.MEASUREMENT_PHASE_STARTED.emit()
+
+    async def request_cell_voltages(self, node_id: int) -> None:
+        pass
+
+    async def shut_down(self) -> None:
+        self.log.warning('switching off all battery relays')
+        self.is_shutting_down = True
 
 
 def _u16(data: bytes, offset: int) -> int:

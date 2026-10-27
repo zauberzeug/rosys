@@ -3,7 +3,7 @@ from typing import cast
 import pytest
 
 import rosys
-from rosys.hardware import BmsCanHardware, CanHardware, RobotBrain
+from rosys.hardware import BmsCanHardware, BmsCanSimulation, CanHardware, EspNotReadyException, RobotBrain
 from rosys.testing import forward
 
 # NOTE: lines printed by Lizard for two battery ESPs on a bench, both relays closed
@@ -20,14 +20,18 @@ CELLS_AB58 = ['can 1f21ab58,00,08,00,00,00,00,ff,ff',
 HEARTBEAT_A8F4 = 'can 1f10a8f4,07,1d,ff,ff,41,0a,00,00'
 BMS_1_A8F4 = 'can 1f11a8f4,0b,09,b8,0b,00,00,4d,03'
 BMS_2_A8F4 = 'can 1f12a8f4,9d,0b,82,0b,86,0b,ff,ff'
+RELAY_OFF_A8F4 = 'can 1f10a8f4,0c,1d,41,0a,41,0a,00,00'
 
 
 class RobotBrainStub:
 
     def __init__(self) -> None:
         self.sent: list[str] = []
+        self.is_ready = True
 
     async def send(self, msg: str) -> None:
+        if not self.is_ready:
+            raise EspNotReadyException('Sending message failed because ESP is not ready')
         self.sent.append(msg)
 
 
@@ -162,3 +166,103 @@ def test_error_frame(bms: BmsCanHardware) -> None:
 def test_ignores_other_frames(bms: BmsCanHardware) -> None:
     receive(bms, 'can 181,01,02', 'can 1e10ab58,07,1b,ff,ff,40,0a,00,00', 'can 1f0cab58,40,0a', 'can 1f10ab58,07')
     assert not bms.packs
+
+
+async def receive_every_second(bms: BmsCanHardware, seconds: int, *lines: str) -> None:
+    for _ in range(seconds):
+        receive(bms, *lines)
+        await forward(seconds=1.0)
+
+
+async def test_percentage_ignores_packs_off_with_error(bms: BmsCanHardware) -> None:
+    error = 'can 1f10a8f4,14,1d,ff,ff,41,0a,00,00'
+    receive(bms, HEARTBEAT_AB58, BMS_1_AB58, error, BMS_1_A8F4)
+    await forward(seconds=1.5)
+    assert bms.state.percentage == pytest.approx(100 * 24.95 / 30.0)
+
+
+async def test_percentage_unknown_without_nominal_capacity(bms: BmsCanHardware) -> None:
+    unknown_nominal = 'can 1f11a8f4,0b,09,ff,ff,00,00,4d,03'
+    receive(bms, HEARTBEAT_AB58, BMS_1_AB58, HEARTBEAT_A8F4, unknown_nominal)
+    await forward(seconds=1.5)
+    assert bms.state.percentage is None
+
+
+async def test_state_is_cleared_when_all_packs_are_missing(bms: BmsCanHardware) -> None:
+    charging = 'can 1f10ab58,07,1b,ff,ff,40,0a,c8,00'
+    receive(bms, charging, BMS_1_AB58, BMS_2_AB58)
+    await forward(seconds=1.5)
+    assert bms.state.is_charging
+    await forward(seconds=5.0)
+    assert bms.state.percentage is None
+    assert bms.state.voltage is None
+    assert bms.state.current is None
+    assert bms.state.temperature is None
+    assert not bms.state.is_charging
+    assert bms.state.last_update < bms.PACK_TIMEOUT
+
+
+async def test_shutdown_survives_core_not_ready(bms: BmsCanHardware) -> None:
+    robot_brain = cast(RobotBrainStub, bms.robot_brain)
+    robot_brain.is_ready = False
+    task = rosys.background_tasks.create(bms.shut_down(), name='shut_down')
+    await forward(seconds=0.5)
+    assert not sent(bms)
+    robot_brain.is_ready = True
+    await forward(seconds=0.5)
+    assert sent(bms)
+    assert bms.is_shutting_down
+    task.cancel()
+    await forward(seconds=0.1)
+    assert not bms.is_shutting_down
+
+
+async def test_shutdown_reports_relays_of_missing_packs(bms: BmsCanHardware) -> None:
+    notifications: list[str] = []
+    rosys.NEW_NOTIFICATION.subscribe(notifications.append)
+    receive(bms, HEARTBEAT_A8F4)
+    await forward(seconds=4.0)
+    rosys.background_tasks.create(bms.shut_down(), name='shut_down')
+    await forward(seconds=2.5)
+    assert any('a8f4 (no heartbeat)' in n for n in notifications)
+
+
+def test_new_cell_request_drops_old_voltages(bms: BmsCanHardware) -> None:
+    receive(bms, HEARTBEAT_AB58, *CELLS_AB58)
+    receive(bms, *CELLS_AB58[:2])
+    assert bms.packs[0xAB58].cell_voltages == pytest.approx([3.281, 3.281, 3.281, None, None, None, None, None])
+
+
+@pytest.mark.parametrize('heartbeat', [
+    'can 1f10a8f4,14,1d,ff,ff,41,0a,00,00',  # error active
+    'can 1f10a8f4,24,1d,ff,ff,41,0a,00,00',  # shut down
+    'can 1f10a8f4,0c,0d,41,0a,41,0a,00,00',  # protocol version 0 next to version 1
+])
+async def test_no_automatic_measurement_phase_for_excluded_packs(rosys_integration: None, heartbeat: str) -> None:
+    robot_brain = cast(RobotBrain, RobotBrainStub())
+    bms = BmsCanHardware(robot_brain, can=CanHardware(robot_brain), is_load_low=lambda: True)
+    await receive_every_second(bms, 3, HEARTBEAT_AB58, BMS_1_AB58, heartbeat, BMS_1_A8F4)
+    assert not sent(bms)
+
+
+async def test_automatic_measurement_phase_interval(rosys_integration: None) -> None:
+    robot_brain = cast(RobotBrain, RobotBrainStub())
+    bms = BmsCanHardware(robot_brain, can=CanHardware(robot_brain), is_load_low=lambda: True)
+    await receive_every_second(bms, 3, HEARTBEAT_AB58, BMS_1_AB58, RELAY_OFF_A8F4, BMS_1_A8F4)
+    assert len(sent(bms)) == 1
+    await receive_every_second(bms, 55, HEARTBEAT_AB58, BMS_1_AB58, RELAY_OFF_A8F4, BMS_1_A8F4)
+    assert len(sent(bms)) == 1
+    await receive_every_second(bms, 5, HEARTBEAT_AB58, BMS_1_AB58, RELAY_OFF_A8F4, BMS_1_A8F4)
+    assert len(sent(bms)) == 2
+
+
+async def test_simulation(rosys_integration: None) -> None:
+    bms = BmsCanSimulation()
+    started: list[bool] = []
+    bms.MEASUREMENT_PHASE_STARTED.subscribe(lambda: started.append(True))
+    await bms.start_measurement_phase()
+    assert started
+    assert bms.is_measurement_phase_running
+    await bms.request_cell_voltages(0xAB58)
+    await bms.shut_down()
+    assert bms.is_shutting_down
