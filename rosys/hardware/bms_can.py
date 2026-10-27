@@ -235,10 +235,10 @@ class BmsCanHardware(BmsCan, ModuleHardware):
             return
         message_type = frame_id >> 16 & 0xFF
         node_id = frame_id & 0xFFFF
-        data = bytes(int(value, 16) for value in values)
         if message_type not in self._frame_handlers:
             return
         min_length, handler = self._frame_handlers[message_type]
+        data = bytes(int(value, 16) for value in values)
         if len(data) < min_length:
             self.log.warning('battery frame %s is too short', identifier)
             return
