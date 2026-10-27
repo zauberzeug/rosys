@@ -1,5 +1,6 @@
 import abc
 import dataclasses
+import logging
 from collections.abc import Callable
 from contextlib import suppress
 from dataclasses import dataclass, field
@@ -16,7 +17,6 @@ PREFIX = 0x1F
 SHUTDOWN = 0x00
 ERROR = 0x01
 MEASUREMENT_PHASE = 0x08
-ANNOUNCEMENT = 0x0C
 HEARTBEAT = 0x10
 BMS_1 = 0x11
 BMS_2 = 0x12
@@ -30,20 +30,18 @@ SHUTDOWN_MAGIC = b'AKKU-AUS'
 UNKNOWN_U8 = 0xFF
 UNKNOWN_U16 = 0xFFFF
 
-ERROR_TEXTS = {
-    0x01: 'ESP missing',
-    0x02: 'BMS does not answer, relay off',
-    0x03: 'BMS reports a protection flag, relay off',
-    0x04: 'duplicate node ID, relay off',
-    0x05: 'CAN controller restarted after bus-off',
-    0x06: 'reset reason does not match RTC memory, relay off',
-    0x07: 'announcement unanswered',
-    0x08: 'error cleared',
-    0x09: 'restart loop, relay released',
-    0x0A: 'battery bus not connected',
+ERRORS = {
+    0x01: ('ESP missing', logging.WARNING),
+    0x02: ('BMS does not answer, relay off', logging.ERROR),
+    0x03: ('BMS reports a protection flag, relay off', logging.ERROR),
+    0x04: ('duplicate node ID, relay off', logging.ERROR),
+    0x05: ('CAN controller restarted after bus-off', logging.WARNING),
+    0x06: ('reset reason does not match RTC memory, relay off', logging.ERROR),
+    0x07: ('announcement unanswered', logging.WARNING),
+    0x08: ('error cleared', logging.INFO),
+    0x09: ('restart loop, relay released', logging.ERROR),
+    0x0A: ('battery bus not connected', logging.WARNING),
 }
-WARNING_CODES = {0x01, 0x05, 0x07, 0x0A}
-INFO_CODES = {0x08}
 
 
 @dataclass(slots=True, kw_only=True)
@@ -88,6 +86,11 @@ class BatteryPack:
     def name(self) -> str:
         return self.chip_id or f'{self.node_id:04x}'
 
+    @property
+    def is_usable(self) -> bool:
+        """Whether the pack has valid BMS data and is not off because of an error or the shutdown latch."""
+        return self.bms_valid and not self.error_active and not self.shut_down
+
 
 class BmsCan(Bms, abc.ABC):
     """A battery of several packs, each switched by an ESP that reports it over CAN.
@@ -105,10 +108,6 @@ class BmsCan(Bms, abc.ABC):
         self.packs: dict[int, BatteryPack] = {}
         self.last_measurement_phase = -float('inf')
         self.is_shutting_down = False
-
-    @property
-    def is_measurement_phase_running(self) -> bool:
-        return rosys.time() < self.last_measurement_phase + self.MEASUREMENT_PHASE_DURATION
 
     @abc.abstractmethod
     async def start_measurement_phase(self) -> None:
@@ -308,20 +307,16 @@ class BmsCanHardware(BmsCan, ModuleHardware):
         code = data[0]
         affected = _u16(data, 1)
         detail = int.from_bytes(data[3:7], 'little')
-        text = ERROR_TEXTS.get(code, f'unknown code {code:#04x}')
+        text, level = ERRORS.get(code, (f'unknown code {code:#04x}', logging.ERROR))
         message = f'battery {pack.name}: {text} (code {code:#04x}, node {affected:04x}, detail {detail})'
         pack.last_message = message
-        if code in INFO_CODES:
-            self.log.info(message)
-        elif code in WARNING_CODES:
-            self.log.warning(message)
-        else:
-            self.log.error(message)
+        self.log.log(level, message)
+        if level >= logging.ERROR:
             rosys.notify(message, 'negative')
 
     async def _update_state(self) -> None:
         packs = [pack for pack in self.fresh_packs if pack.bms_valid]
-        usable = [p for p in packs if not p.error_active and not p.shut_down]
+        usable = [p for p in packs if p.is_usable]
         remaining = [p.remaining_capacity for p in usable if p.remaining_capacity is not None]
         nominal = [p.nominal_capacity for p in usable if p.nominal_capacity is not None]
         connected = [p.voltage for p in packs if p.relay_on and p.voltage is not None]
@@ -349,8 +344,7 @@ class BmsCanHardware(BmsCan, ModuleHardware):
             return
         if rosys.time() < self.last_measurement_phase + self.measurement_phase_interval:
             return
-        if not any(not p.relay_on and p.bms_valid and not p.error_active and not p.shut_down and not self.is_outdated(p)
-                   for p in self.fresh_packs):
+        if not any(not p.relay_on and p.is_usable and not self.is_outdated(p) for p in self.fresh_packs):
             return
         if not self.is_load_low():
             return
@@ -364,13 +358,15 @@ class BmsCanHardware(BmsCan, ModuleHardware):
     def _pack_summary(self, pack: BatteryPack) -> str:
         if not self.is_fresh(pack):
             return f'{pack.name}: missing'
-        parts = ['on' if pack.relay_on else 'off']
-        parts += [f'{pack.voltage:.2f}V'] if pack.voltage is not None else []
-        parts += [f'{pack.current:.2f}A'] if pack.current is not None else []
-        parts += [f'{pack.percentage}%'] if pack.percentage is not None else []
-        parts += ['error'] if pack.error_active else []
-        parts += ['outdated'] if self.is_outdated(pack) else []
-        return f'{pack.name}: {", ".join(parts)}'
+        parts = [
+            'on' if pack.relay_on else 'off',
+            f'{pack.voltage:.2f}V' if pack.voltage is not None else '',
+            f'{pack.current:.2f}A' if pack.current is not None else '',
+            f'{pack.percentage}%' if pack.percentage is not None else '',
+            'error' if pack.error_active else '',
+            'outdated' if self.is_outdated(pack) else '',
+        ]
+        return f'{pack.name}: {", ".join(part for part in parts if part)}'
 
 
 class BmsCanSimulation(BmsCan, BmsSimulation):
