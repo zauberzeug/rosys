@@ -11,6 +11,7 @@ lives in :mod:`.converters`.
 from __future__ import annotations
 
 import base64
+import dataclasses
 import logging
 import math
 from collections.abc import Callable
@@ -323,9 +324,8 @@ def battery_state(*, frame: str = 'battery') -> Converter:
 
 
 def _battery_snapshot(state: BmsState) -> BmsState:
-    """A copy of the fields ``battery_state`` encodes; ``Bms`` updates its one state object in place."""
-    return BmsState(percentage=state.percentage, voltage=state.voltage, current=state.current,
-                    temperature=state.temperature, is_charging=state.is_charging)
+    """A copy of the state; ``Bms`` updates its one state object in place."""
+    return dataclasses.replace(state)
 
 
 # --------------------------------------------------------------------------- #

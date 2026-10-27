@@ -320,7 +320,7 @@ async def test_a_frame_mutated_after_the_event_is_recorded_as_emitted(mcap_dir: 
     frame = Frame3d(x=1.0, y=0.0, z=0.5)
     event.emit(frame)
     frame.x = 5.0
-    frame.rotation.R[0][0] = -1.0
+    frame.rotation = Rotation.from_euler(0, 0, math.pi / 2)
     await recorder.stop()
 
     _, message = _read(_only_file(mcap_dir))[0]
@@ -684,8 +684,8 @@ async def test_battery_maps_bms_state_to_ros_battery_state(mcap_dir: Path) -> No
     add_event_topic(recorder, '/battery', event=event,
                     timestamp=lambda state: state.last_update, converter=battery_state())
     recorder.start()
-    event.emit(SimpleNamespace(percentage=87.5, voltage=25.2, current=-3.1,
-                               temperature=24.0, is_charging=False, last_update=5.0))
+    event.emit(BmsState(percentage=87.5, voltage=25.2, current=-3.1,
+                        temperature=24.0, is_charging=False, last_update=5.0))
     await recorder.stop()
 
     with open(_only_file(mcap_dir), 'rb') as f:
