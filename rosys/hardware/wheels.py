@@ -60,10 +60,8 @@ class WheelsHardware(Wheels, ModuleHardware):
                  is_right_reversed: bool = False,
                  max_wheel_speed: float | None = None) -> None:
         """
-        :param max_wheel_speed: speed limit of the faster wheel [m/s] (``None`` = no limit), see ``cap_wheel_speed``.
-            Lizard enforces it too, as a safety net, which needs a firmware containing zauberzeug/lizard#321:
-            older firmware rejects the property and aborts the whole startup script.
-            Keep it at or below the motor controllers' own velocity limit, which would clip only the faster wheel.
+        :param max_wheel_speed: speed limit of the faster wheel [m/s] (``None`` = no limit), see ``cap_wheel_speed``;
+            also set in Lizard, which needs a firmware with zauberzeug/lizard#321 (older ones abort the startup script).
         """
         _validate_max_wheel_speed(max_wheel_speed)
         self._max_wheel_speed = max_wheel_speed
@@ -143,7 +141,7 @@ class WheelsSimulation(Wheels, ModuleSimulation, PoseProvider):
 
     @property
     def max_wheel_speed(self) -> float | None:
-        """The speed limit of the faster wheel [m/s] (``None`` = no limit), see ``cap_wheel_speed``."""
+        """The speed limit of the faster wheel [m/s] (``None`` = no limit)."""
         return self._max_wheel_speed
 
     @property
