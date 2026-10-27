@@ -340,7 +340,7 @@ class BmsCanHardware(BmsCan, ModuleHardware):
         await self._start_measurement_phase_if_needed()
 
     async def _start_measurement_phase_if_needed(self) -> None:
-        if self.is_load_low is None or self.is_shutting_down:
+        if self.is_load_low is None or self.is_shutting_down or not self.robot_brain.is_ready:
             return
         if rosys.time() < self.last_measurement_phase + self.measurement_phase_interval:
             return

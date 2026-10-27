@@ -165,6 +165,21 @@ async def test_automatic_measurement_phase(rosys_integration: None) -> None:
     assert len(sent(bms)) == 2
 
 
+async def test_no_automatic_measurement_phase_while_core_is_not_ready(rosys_integration: None) -> None:
+    bms = create_bms(is_load_low=lambda: True)
+    started: list[bool] = []
+    bms.MEASUREMENT_PHASE_STARTED.subscribe(lambda: started.append(True))
+    robot_brain = cast(RobotBrainStub, bms.robot_brain)
+    robot_brain.is_ready = False
+    frames = (HEARTBEAT_AB58, BMS_1_AB58, RELAY_OFF_A8F4, BMS_1_A8F4)
+    await receive_every_second(bms, 3, *frames)
+    assert not started
+    robot_brain.is_ready = True
+    await receive_every_second(bms, 3, *frames)
+    assert sent(bms) == ['can.send(0x1f080000, 0, 0, 0, 0, 0, 0, 0, 0)']
+    assert started
+
+
 def test_error_frame(bms: BmsCanHardware) -> None:
     receive(bms, HEARTBEAT_A8F4, 'can 1f01a8f4,02,f4,a8,88,13,00,00')
     assert bms.packs[0xA8F4].last_message == \
