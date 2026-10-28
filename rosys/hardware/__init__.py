@@ -1,6 +1,7 @@
 from .battery_control import BatteryControlHardware
 from .bluetooth import BluetoothHardware
 from .bms import Bms, BmsHardware, BmsSimulation
+from .bms_can import BatteryPack, BmsCan, BmsCanHardware, BmsCanSimulation
 from .bumper import Bumper, BumperHardware, BumperSimulation
 from .can import CanHardware
 from .communication import Communication, SerialCommunication, WebCommunication
@@ -16,8 +17,12 @@ from .wheels import Wheels, WheelsHardware, WheelsSimulation
 
 __all__ = [
     'BatteryControlHardware',
+    'BatteryPack',
     'BluetoothHardware',
     'Bms',
+    'BmsCan',
+    'BmsCanHardware',
+    'BmsCanSimulation',
     'BmsHardware',
     'BmsSimulation',
     'Bumper',
