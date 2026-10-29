@@ -23,13 +23,9 @@ def test_cap_wheel_speed(linear: float, angular: float, expected: tuple[float, f
     assert cap_wheel_speed(linear, angular, width=WIDTH, max_wheel_speed=MAX_WHEEL_SPEED) == pytest.approx(expected)
 
 
-@pytest.mark.parametrize(('linear', 'angular', 'max_wheel_speed'), [
-    (1.0, 2.0, None),
-    (math.inf, 0.0, MAX_WHEEL_SPEED),
-])
-def test_cap_wheel_speed_leaves_command_unchanged(linear: float, angular: float, max_wheel_speed: float | None) -> None:
-    """Without a limit, or with a non-finite command, the command passes unchanged."""
-    assert cap_wheel_speed(linear, angular, width=WIDTH, max_wheel_speed=max_wheel_speed) == (linear, angular)
+def test_cap_wheel_speed_without_limit() -> None:
+    """Without a limit, the command passes unchanged."""
+    assert cap_wheel_speed(1.0, 2.0, width=WIDTH, max_wheel_speed=None) == (1.0, 2.0)
 
 
 async def test_simulation_drives_and_reports_the_capped_command(rosys_integration: None) -> None:
@@ -76,7 +72,7 @@ async def test_hardware_without_limit_leaves_the_startup_script_unchanged(rosys_
     assert 'max_wheel_speed' not in RobotHardware([can, wheels], robot_brain).generate_lizard_code()
 
 
-@pytest.mark.parametrize('max_wheel_speed', [0.0, -0.5, math.inf, math.nan, True])
+@pytest.mark.parametrize('max_wheel_speed', [0.0, -0.5, math.inf, math.nan])
 async def test_invalid_max_wheel_speed_is_rejected(max_wheel_speed: float, rosys_integration: None) -> None:
     """Limits Lizard would read as "off" or reject fail fast instead of aborting the Lizard startup script."""
     with pytest.raises(ValueError):

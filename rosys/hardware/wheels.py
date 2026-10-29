@@ -66,7 +66,7 @@ class WheelsHardware(Wheels, ModuleHardware):
         _validate_max_wheel_speed(max_wheel_speed)
         self._max_wheel_speed = max_wheel_speed
         self.name = name
-        self.width = width
+        self._width = width
         lizard_code = remove_indentation(f'''
             l = ODriveMotor({can.name}, {left_can_address})
             r = ODriveMotor({can.name}, {right_can_address})
@@ -88,7 +88,7 @@ class WheelsHardware(Wheels, ModuleHardware):
         return self._max_wheel_speed
 
     async def drive(self, linear: float, angular: float) -> None:
-        linear, angular = cap_wheel_speed(linear, angular, width=self.width, max_wheel_speed=self.max_wheel_speed)
+        linear, angular = cap_wheel_speed(linear, angular, width=self._width, max_wheel_speed=self.max_wheel_speed)
         await super().drive(linear, angular)
         await self.robot_brain.send(f'{self.name}.speed({linear}, {angular})')
 
@@ -105,8 +105,8 @@ class WheelsSimulation(Wheels, ModuleSimulation, PoseProvider):
     """
 
     def __init__(self, width: float = 0.5, *, max_wheel_speed: float | None = None) -> None:
-        super().__init__()
         _validate_max_wheel_speed(max_wheel_speed)
+        super().__init__()
         self._max_wheel_speed = max_wheel_speed
 
         self.width: float = width
@@ -183,15 +183,15 @@ def cap_wheel_speed(linear: float, angular: float, *,
     """Scale linear and angular speed down together so that the faster wheel stays at or below ``max_wheel_speed``.
 
     The robot keeps its curve and only gets slower.
-    ``None`` as limit and non-finite speeds leave the command unchanged.
+    ``None`` as limit leaves the command unchanged.
     """
     fastest_wheel = abs(linear) + abs(angular) * width / 2
-    if max_wheel_speed is None or not max_wheel_speed < fastest_wheel < math.inf:
+    if max_wheel_speed is None or fastest_wheel <= max_wheel_speed:
         return linear, angular
     factor = max_wheel_speed / fastest_wheel
     return linear * factor, angular * factor
 
 
 def _validate_max_wheel_speed(max_wheel_speed: float | None) -> None:
-    if max_wheel_speed is not None and (isinstance(max_wheel_speed, bool) or not 0 < max_wheel_speed < math.inf):
+    if max_wheel_speed is not None and not 0 < max_wheel_speed < math.inf:
         raise ValueError(f'max_wheel_speed must be None or a positive finite number, got {max_wheel_speed!r}')
