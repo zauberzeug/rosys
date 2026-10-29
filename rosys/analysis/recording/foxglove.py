@@ -11,12 +11,13 @@ lives in :mod:`.converters`.
 from __future__ import annotations
 
 import base64
+import dataclasses
 import logging
 import math
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Any, NamedTuple
 
-from ...geometry import Pose, Velocity
+from ...geometry import Pose, Pose3d, Rotation, Velocity
 from ...hardware.bms_state import BmsState
 from ...hardware.gnss.gnss import GnssMeasurement
 from ...hardware.imu import ImuMeasurement
@@ -94,7 +95,7 @@ def pose_in_frame(*, frame: str = 'map', extract: Callable[[Any], Any] | None = 
                      'orientation': _quaternion_from_yaw(pose.yaw)},
         }
 
-    return custom_message('foxglove.PoseInFrame', schema, build, sample=extract)
+    return custom_message('foxglove.PoseInFrame', schema, build, sample=_pose_snapshot(extract))
 
 
 def frame_transform(*, child: str, parent: str = 'map',
@@ -119,7 +120,7 @@ def frame_transform(*, child: str, parent: str = 'map',
             'rotation': _quaternion_from_yaw(pose.yaw),
         }
 
-    return custom_message('foxglove.FrameTransform', schema, build, sample=extract)
+    return custom_message('foxglove.FrameTransform', schema, build, sample=_pose_snapshot(extract))
 
 
 def transform_3d(*, child: str, parent: str = 'base_link',
@@ -145,7 +146,25 @@ def transform_3d(*, child: str, parent: str = 'base_link',
             'rotation': {'x': x, 'y': y, 'z': z, 'w': w},
         }
 
-    return custom_message('foxglove.FrameTransform', schema, build, sample=extract)
+    return custom_message('foxglove.FrameTransform', schema, build, sample=_pose3d_snapshot(extract))
+
+
+def _pose_snapshot(extract: Callable[[Any], Any] | None) -> Callable[[Any], Pose | None]:
+    """A ``sample`` copying the (extracted) pose, so a pose mutated after the event is recorded as it was."""
+    def sample(payload: Any) -> Pose | None:
+        pose = payload if extract is None else extract(payload)
+        return None if pose is None else Pose(x=pose.x, y=pose.y, yaw=pose.yaw)
+    return sample
+
+
+def _pose3d_snapshot(extract: Callable[[Any], Any] | None) -> Callable[[Any], Pose3d | None]:
+    """A ``sample`` copying the (extracted) 3D pose; a ``Frame3d`` has to stay one object, so it is always mutated."""
+    def sample(payload: Any) -> Pose3d | None:
+        pose = payload if extract is None else extract(payload)
+        if pose is None:
+            return None
+        return Pose3d(x=pose.x, y=pose.y, z=pose.z, rotation=Rotation(R=[list(row) for row in pose.rotation.R]))
+    return sample
 
 
 # --------------------------------------------------------------------------- #
@@ -301,7 +320,12 @@ def battery_state(*, frame: str = 'battery') -> Converter:
             'cell_voltage': [], 'cell_temperature': [], 'location': '', 'serial_number': '',
         }
 
-    return custom_message('sensor_msgs/msg/BatteryState', schema, build)
+    return custom_message('sensor_msgs/msg/BatteryState', schema, build, sample=_battery_snapshot)
+
+
+def _battery_snapshot(state: BmsState) -> BmsState:
+    """A copy of the state; ``Bms`` updates its one state object in place."""
+    return dataclasses.replace(state)
 
 
 # --------------------------------------------------------------------------- #
