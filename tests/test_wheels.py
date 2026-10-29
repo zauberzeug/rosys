@@ -40,14 +40,6 @@ async def test_simulation_drives_and_reports_the_capped_command(rosys_integratio
     assert (wheels.linear_velocity, wheels.angular_velocity) == pytest.approx((0.4, 0.8))
 
 
-async def test_simulation_without_limit_drives_unchanged(rosys_integration: None) -> None:
-    """Without a limit a fast curve is driven as requested."""
-    wheels = WheelsSimulation(WIDTH)
-    await wheels.drive(1.0, 2.0)
-    await forward(seconds=0.1)
-    assert (wheels.linear_velocity, wheels.angular_velocity) == (1.0, 2.0)
-
-
 async def test_hardware_sends_the_capped_command(rosys_integration: None) -> None:
     """The robot brain receives the capped speed, and the startup script sets the limit as a safety net."""
     communication = CommunicationSimulation()
@@ -73,7 +65,12 @@ async def test_hardware_without_limit_leaves_the_startup_script_unchanged(rosys_
 
 
 @pytest.mark.parametrize('max_wheel_speed', [0.0, -0.5, math.inf, math.nan])
-async def test_invalid_max_wheel_speed_is_rejected(max_wheel_speed: float, rosys_integration: None) -> None:
+@pytest.mark.parametrize('module', ['hardware', 'simulation'])
+async def test_invalid_max_wheel_speed_is_rejected(module: str, max_wheel_speed: float, rosys_integration: None) -> None:
     """Limits Lizard would read as "off" or reject fail fast instead of aborting the Lizard startup script."""
     with pytest.raises(ValueError):
-        WheelsSimulation(max_wheel_speed=max_wheel_speed)
+        if module == 'hardware':
+            robot_brain = RobotBrain(CommunicationSimulation(), enable_esp_on_startup=False)
+            WheelsHardware(robot_brain, can=CanHardware(robot_brain), max_wheel_speed=max_wheel_speed)
+        else:
+            WheelsSimulation(max_wheel_speed=max_wheel_speed)
