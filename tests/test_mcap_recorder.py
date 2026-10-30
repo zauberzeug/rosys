@@ -751,6 +751,59 @@ async def test_kept_recordings_beyond_their_bound_roll_away_oldest_first(mcap_di
     assert {path.name for path in mcap_dir.rglob('*.mcap')} == {'newest kept.mcap', *part_names}
 
 
+async def test_disk_budget_spares_protected_recordings(mcap_dir: Path) -> None:
+    """The oldest kept recording survives the budget while protected; the unprotected ones above it pay instead."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.12, auto_start=False)  # ~126 KiB budget
+    names = ['protected.mcap', 'unprotected.mcap', 'newest.mcap']
+    for age, name in enumerate(names):
+        (mcap_dir / name).write_bytes(os.urandom(60 * 1024))
+        os.utime(mcap_dir / name, (age, age))
+    recorder.protected = frozenset({'protected.mcap'})
+    sacrificed: list[Path] = []
+    recorder.PROTECTED_RECORDING_DELETED.subscribe(sacrificed.append)
+
+    recorder.start()
+    await recorder.stop()  # empty -> new part discarded
+
+    assert {path.name for path in mcap_dir.rglob('*.mcap')} == {'protected.mcap', 'newest.mcap'}
+    assert sacrificed == []
+
+
+async def test_disk_budget_deletes_protected_recordings_when_nothing_else_is_left(mcap_dir: Path) -> None:
+    """When protected recordings alone exceed the budget, the oldest is deleted and reported, so the disk stays bounded."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.12, auto_start=False)  # ~126 KiB budget
+    names = ['oldest.mcap', 'older.mcap', 'newest.mcap']
+    for age, name in enumerate(names):
+        (mcap_dir / name).write_bytes(os.urandom(60 * 1024))
+        os.utime(mcap_dir / name, (age, age))
+    recorder.protected = frozenset(names)
+    sacrificed: list[Path] = []
+    recorder.PROTECTED_RECORDING_DELETED.subscribe(sacrificed.append)
+
+    recorder.start()
+    await recorder.stop()  # empty -> new part discarded
+
+    assert {path.name for path in mcap_dir.rglob('*.mcap')} == {'older.mcap', 'newest.mcap'}
+    assert sacrificed == [mcap_dir / 'oldest.mcap']
+
+
+async def test_kept_recordings_are_announced_with_their_previous_path(mcap_dir: Path) -> None:
+    """Merging announces the new recording without a predecessor, renaming it announces the old path too."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    run = recorder.start()
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder.stop()
+    kept: list[tuple[Path, Path | None]] = []
+    recorder.RECORDING_KEPT.subscribe(lambda path, previous: kept.append((path, previous)))
+
+    merged = await recorder.merge(list(recorder.parts_dir.glob('*.mcap')), f'{run}_merged')
+    assert merged is not None
+    renamed = recorder.rename_recording(merged, 'north field')
+
+    assert kept == [(merged, None), (renamed, merged)]
+
+
 _LONG_NAME = '_'.join(['word'] * 60)
 
 
