@@ -192,8 +192,6 @@ class McapRecorder:
         """a recording file has been opened (argument: path); emitted per file, including on every rotation"""
         self.RECORDING_STOPPED = Event[Path]()
         """a recording file has been finalized (argument: path); emitted per file, including on every rotation"""
-        self.RECORDING_KEPT = Event[Path, Path | None]()
-        """a kept recording is in place (arguments: its path, and its previous path if it was renamed, else None)"""
         self.PROTECTED_RECORDING_DELETED = Event[Path]()
         """the disk budget deleted a protected recording, as deleting unprotected ones was not enough (argument: path)"""
 
@@ -376,7 +374,6 @@ class McapRecorder:
             return None
         path.unlink()
         self.log.info('renamed recording: %s -> %s', path.name, target.name)
-        self.RECORDING_KEPT.emit(target, path)
         return target
 
     def unindexed_recordings(self) -> list[Path]:
@@ -421,13 +418,11 @@ class McapRecorder:
         self._merging.add(name)
         try:
             result = await rosys.run.io_bound(merge_into_place, sources, target, start_time_ns=start_time_ns)
-            if result is None:
-                raise RuntimeError('the merge did not run, the app is shutting down')
-            count, undeleted = result
-            if count:
-                self.RECORDING_KEPT.emit(target, None)  # while still merging, so the budget spares it until protected
         finally:
             self._merging.discard(name)
+        if result is None:
+            raise RuntimeError('the merge did not run, the app is shutting down')
+        count, undeleted = result
         if not count:
             return None
         self.log.info('merged %d recordings into %s (%d messages)', len(sources), target.name, count)
@@ -835,9 +830,9 @@ class McapRecorder:
     def _enforce_disk_budget(self) -> None:
         """Delete the oldest recordings until the kept ones fit ``max_kept_size`` and all fit ``max_total_size``.
 
-        See :func:`.budget.select_deletions`; the target of a running merge is never deleted.
+        See :func:`.budget.select_deletions`.
         """
-        protected, merging = self.protected, frozenset(self._merging)
+        protected = self.protected
         recordings: list[StoredRecording] = []
         for path in self._recording_files():
             try:
@@ -845,8 +840,6 @@ class McapRecorder:
             except FileNotFoundError:
                 continue  # vanished concurrently (e.g. deleted from the recordings page)
             kept = path.parent == self.output_dir
-            if kept and path.stem in merging:
-                continue
             recordings.append(StoredRecording(path, stat.st_size, stat.st_mtime, kept, kept and path.name in protected))
         deletions = select_deletions(recordings, max_kept_size=self.max_kept_size, max_total_size=self.max_total_size)
         for recording in deletions.unprotected:

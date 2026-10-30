@@ -790,40 +790,6 @@ async def test_disk_budget_deletes_protected_recordings_when_nothing_else_is_lef
     assert sacrificed == [mcap_dir / 'oldest.mcap']
 
 
-async def test_a_merged_recording_is_spared_while_it_is_announced(mcap_dir: Path) -> None:
-    """A budget check that runs while RECORDING_KEPT is handled leaves the merged recording alone."""
-    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.06, auto_start=False)
-    recorder.add_topic('/test', _schema())
-    run = recorder.start()
-    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
-    await recorder.stop()
-    (mcap_dir / 'protected.mcap').write_bytes(os.urandom(61 * 1024))
-    recorder.protected = frozenset({'protected.mcap'})
-    recorder.RECORDING_KEPT.subscribe(lambda path, previous: recorder.start())  # stands in for a rotation
-
-    merged = await recorder.merge(list(recorder.parts_dir.glob('*.mcap')), f'{run}_merged')
-    await recorder.stop()
-
-    assert merged is not None and merged.exists()
-
-
-async def test_kept_recordings_are_announced_with_their_previous_path(mcap_dir: Path) -> None:
-    """Merging announces the new recording without a predecessor, renaming it announces the old path too."""
-    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
-    recorder.add_topic('/test', _schema())
-    run = recorder.start()
-    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
-    await recorder.stop()
-    kept: list[tuple[Path, Path | None]] = []
-    recorder.RECORDING_KEPT.subscribe(lambda path, previous: kept.append((path, previous)))
-
-    merged = await recorder.merge(list(recorder.parts_dir.glob('*.mcap')), f'{run}_merged')
-    assert merged is not None
-    renamed = recorder.rename_recording(merged, 'north field')
-
-    assert kept == [(merged, None), (renamed, merged)]
-
-
 _LONG_NAME = '_'.join(['word'] * 60)
 
 
