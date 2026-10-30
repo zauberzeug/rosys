@@ -22,6 +22,12 @@ Disk budget
 Every `.mcap` at the top level of the output directory is a kept recording (renamed, merged or placed there by hand); the folder decides, not the name.
 Kept recordings have a bound of their own, `max_kept_size_mb`, which spares the newest kept file.
 
+Protecting kept recordings
+: `recorder.protected = frozenset({'mission_merged.mcap'})` makes the disk budget pass over these kept recordings, e.g. until they are uploaded elsewhere; replace the set as a whole, never mutate it.
+Protected recordings count toward `max_kept_size_mb`, but that bound never deletes them: protecting more than it holds deletes every other kept recording except the newest and leaves less room for the parts, without a warning or an event, so keep what you protect well below `max_kept_size_mb`.
+Only when the protected recordings alone exceed `max_total_size_mb` are they deleted too, oldest first, and `PROTECTED_RECORDING_DELETED` reports each.
+The budget only runs before a part is opened, so a kept recording is safe if it is protected before the next part starts.
+
 Topics
 : `add_event_topic` and `add_pose_topic` bind a topic to a RoSys event; the matching Foxglove converter is picked from the payload type automatically.
 The subscription is only active while a recording is open.
