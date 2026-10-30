@@ -1,4 +1,5 @@
 import abc
+import math
 
 from nicegui import Event
 
@@ -56,8 +57,16 @@ class WheelsHardware(Wheels, ModuleHardware):
                  m_per_tick: float = 0.01,
                  width: float = 0.5,
                  is_left_reversed: bool = False,
-                 is_right_reversed: bool = False) -> None:
+                 is_right_reversed: bool = False,
+                 max_wheel_speed: float | None = None) -> None:
+        """
+        :param max_wheel_speed: speed limit of the faster wheel [m/s] (``None`` = no limit), see ``cap_wheel_speed``;
+            also set in Lizard, which needs a firmware with zauberzeug/lizard#321 (older ones abort the startup script).
+        """
+        _validate_max_wheel_speed(max_wheel_speed)
+        self._max_wheel_speed = max_wheel_speed
         self.name = name
+        self._width = width
         lizard_code = remove_indentation(f'''
             l = ODriveMotor({can.name}, {left_can_address})
             r = ODriveMotor({can.name}, {right_can_address})
@@ -68,10 +77,18 @@ class WheelsHardware(Wheels, ModuleHardware):
             {name} = ODriveWheels(l, r)
             {name}.width = {width}
         ''')
+        if max_wheel_speed is not None:
+            lizard_code += f'\n{name}.max_wheel_speed = {max_wheel_speed}'
         core_message_fields = [f'{self.name}.linear_speed:3', f'{self.name}.angular_speed:3']
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, core_message_fields=core_message_fields)
 
+    @property
+    def max_wheel_speed(self) -> float | None:
+        """The speed limit of the faster wheel [m/s] (``None`` = no limit)."""
+        return self._max_wheel_speed
+
     async def drive(self, linear: float, angular: float) -> None:
+        linear, angular = cap_wheel_speed(linear, angular, width=self._width, max_wheel_speed=self.max_wheel_speed)
         await super().drive(linear, angular)
         await self.robot_brain.send(f'{self.name}.speed({linear}, {angular})')
 
@@ -87,8 +104,10 @@ class WheelsSimulation(Wheels, ModuleSimulation, PoseProvider):
     A simulated pose is regularly updated with these velocities, while the velocities are emitted as an event.
     """
 
-    def __init__(self, width: float = 0.5) -> None:
+    def __init__(self, width: float = 0.5, *, max_wheel_speed: float | None = None) -> None:
+        _validate_max_wheel_speed(max_wheel_speed)
         super().__init__()
+        self._max_wheel_speed = max_wheel_speed
 
         self.width: float = width
         """The distance between the wheels -- used to calculate actual drift when slip_factor_* is used."""
@@ -121,6 +140,11 @@ class WheelsSimulation(Wheels, ModuleSimulation, PoseProvider):
         """Emitted when the pose has been updated (argument: current ``Pose``)."""
 
     @property
+    def max_wheel_speed(self) -> float | None:
+        """The speed limit of the faster wheel [m/s] (``None`` = no limit)."""
+        return self._max_wheel_speed
+
+    @property
     def pose(self) -> Pose:
         return self._pose
 
@@ -133,6 +157,7 @@ class WheelsSimulation(Wheels, ModuleSimulation, PoseProvider):
         self.POSE_UPDATED.emit(self._pose)
 
     async def drive(self, linear: float, angular: float) -> None:
+        linear, angular = cap_wheel_speed(linear, angular, width=self.width, max_wheel_speed=self.max_wheel_speed)
         await super().drive(linear, angular)
         f = self.inertia_factor
         self.linear_velocity = 0 if self.is_blocking else f * self.linear_velocity + (1 - f) * linear
@@ -151,3 +176,22 @@ class WheelsSimulation(Wheels, ModuleSimulation, PoseProvider):
         velocity = Velocity(linear=self.linear_velocity, angular=self.angular_velocity, time=self._pose.time)
         self.POSE_UPDATED.emit(self._pose)
         self.VELOCITY_MEASURED.emit([velocity])
+
+
+def cap_wheel_speed(linear: float, angular: float, *,
+                    width: float, max_wheel_speed: float | None) -> tuple[float, float]:
+    """Scale linear and angular speed down together so that the faster wheel stays at or below ``max_wheel_speed``.
+
+    The robot keeps its curve and only gets slower.
+    ``None`` as limit leaves the command unchanged.
+    """
+    fastest_wheel = abs(linear) + abs(angular) * width / 2
+    if max_wheel_speed is None or fastest_wheel <= max_wheel_speed:
+        return linear, angular
+    factor = max_wheel_speed / fastest_wheel
+    return linear * factor, angular * factor
+
+
+def _validate_max_wheel_speed(max_wheel_speed: float | None) -> None:
+    if max_wheel_speed is not None and not 0 < max_wheel_speed < math.inf:
+        raise ValueError(f'max_wheel_speed must be None or a positive finite number, got {max_wheel_speed!r}')

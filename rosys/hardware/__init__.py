@@ -13,7 +13,7 @@ from .module import Module, ModuleHardware, ModuleSimulation
 from .robot import Robot, RobotHardware, RobotSimulation
 from .robot_brain import EspNotReadyException, RobotBrain
 from .serial import SerialHardware
-from .wheels import Wheels, WheelsHardware, WheelsSimulation
+from .wheels import Wheels, WheelsHardware, WheelsSimulation, cap_wheel_speed
 
 __all__ = [
     'BatteryControlHardware',
@@ -56,4 +56,5 @@ __all__ = [
     'Wheels',
     'WheelsHardware',
     'WheelsSimulation',
+    'cap_wheel_speed',
 ]
