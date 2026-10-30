@@ -106,9 +106,10 @@ class McapRecorder:
     frees during one only returns when the merge finishes, and the peak then also carries
     the merge's size.
 
-    The budget spares kept recordings named in :attr:`protected` (e.g. not uploaded yet) unless
-    they alone exceed it; then it deletes them too and emits :attr:`PROTECTED_RECORDING_DELETED`,
-    so whoever protects should bound what they protect well below ``max_kept_size_mb``.
+    The budget spares kept recordings named in :attr:`protected` (e.g. not uploaded yet) unless they
+    alone exceed it; then it deletes them too and emits :attr:`PROTECTED_RECORDING_DELETED`. They count
+    toward ``max_kept_size_mb`` without ever being deleted by it, so protecting more than that bound
+    silently deletes every other kept recording but the newest: keep protection well below it.
 
     Messages are enqueued from the event loop (cheap, non-blocking) and written to disk by a
     single background consumer via ``rosys.run.io_bound`` so that encoding, ZSTD compression
@@ -161,7 +162,7 @@ class McapRecorder:
             recordings are deleted before a part is opened to stay under it, oldest first. Peak disk usage
             is therefore ``max_total_size_mb + max_part_size_mb``, as the growing part is not counted.
         :param max_kept_size_mb: bound for kept recordings within the budget; beyond it the oldest are
-            deleted, sparing the newest (the one just filed away) however large it is.
+            deleted, sparing the newest (the one just filed away) however large it is and every protected one.
         :param chunk_size: MCAP chunk size in bytes (larger chunks compress better and flush
             less often).
         :param flush_interval: seconds between background flushes of the queue to disk.

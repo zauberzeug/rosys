@@ -751,9 +751,12 @@ async def test_kept_recordings_beyond_their_bound_roll_away_oldest_first(mcap_di
     assert {path.name for path in mcap_dir.rglob('*.mcap')} == {'newest kept.mcap', *part_names}
 
 
-async def test_disk_budget_spares_protected_recordings(mcap_dir: Path) -> None:
-    """The oldest kept recording survives the budget while protected; the unprotected ones above it pay instead."""
-    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.12, auto_start=False)  # ~126 KiB budget
+@pytest.mark.parametrize(('max_total_size_mb', 'max_kept_size_mb'), [(0.12, 500), (1000, 0.12)], ids=['total', 'kept'])
+async def test_disk_budget_spares_protected_recordings(mcap_dir: Path,
+                                                       max_total_size_mb: float, max_kept_size_mb: float) -> None:
+    """The oldest kept recording survives either bound while protected; the unprotected one above it pays instead."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=max_total_size_mb,
+                            max_kept_size_mb=max_kept_size_mb, auto_start=False)  # ~126 KiB for the tested bound
     names = ['protected.mcap', 'unprotected.mcap', 'newest.mcap']
     for age, name in enumerate(names):
         (mcap_dir / name).write_bytes(os.urandom(60 * 1024))
@@ -785,6 +788,23 @@ async def test_disk_budget_deletes_protected_recordings_when_nothing_else_is_lef
 
     assert {path.name for path in mcap_dir.rglob('*.mcap')} == {'older.mcap', 'newest.mcap'}
     assert sacrificed == [mcap_dir / 'oldest.mcap']
+
+
+async def test_a_merged_recording_is_spared_while_it_is_announced(mcap_dir: Path) -> None:
+    """A budget check that runs while RECORDING_KEPT is handled leaves the merged recording alone."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.06, auto_start=False)
+    recorder.add_topic('/test', _schema())
+    run = recorder.start()
+    recorder.log_message('/test', _json({'value': 0}), timestamp_ns=0)
+    await recorder.stop()
+    (mcap_dir / 'protected.mcap').write_bytes(os.urandom(61 * 1024))
+    recorder.protected = frozenset({'protected.mcap'})
+    recorder.RECORDING_KEPT.subscribe(lambda path, previous: recorder.start())  # stands in for a rotation
+
+    merged = await recorder.merge(list(recorder.parts_dir.glob('*.mcap')), f'{run}_merged')
+    await recorder.stop()
+
+    assert merged is not None and merged.exists()
 
 
 async def test_kept_recordings_are_announced_with_their_previous_path(mcap_dir: Path) -> None:
