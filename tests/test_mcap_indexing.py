@@ -106,3 +106,19 @@ async def test_current_recording_excluded_from_unindexed(mcap_dir: Path) -> None
     recorder.start()  # active file has no index yet, but must not count as a reindex orphan
     assert recorder.unindexed_recordings() == []
     await recorder.stop()
+
+
+def test_a_scan_reports_the_index_state_a_recording_has_now(mcap_dir: Path) -> None:
+    """A crashed recording scans as unindexed, as indexed once reindexed, and as unindexed again when
+    another crashed recording takes its place, however often it was scanned before."""
+    recorder = McapRecorder(output_dir=mcap_dir, auto_start=False)
+    path = mcap_dir / 'crash.mcap'
+    _write_unindexed(path)
+    assert [info.indexed for info in recorder.scan_recordings()] == [False]
+
+    reindex(path)
+    assert [info.indexed for info in recorder.scan_recordings()] == [True]
+    assert [info.indexed for info in recorder.scan_recordings()] == [True]
+
+    _write_unindexed(path, messages=10)
+    assert [info.indexed for info in recorder.scan_recordings()] == [False]

@@ -215,6 +215,7 @@ class McapRecorder:
         self._warned_converter_topics: set[tuple[str, str]] = set()
         self._disk_stats = _DiskStats(0, 0, 0)
         self._merging: set[str] = set()
+        self._indexed: dict[tuple[Path, float, int], bool] = {}  # by path, mtime and size of the last scan's files
 
         self._remove_orphaned_temporary_files()
         if auto_start:
@@ -299,11 +300,9 @@ class McapRecorder:
     def scan_recordings(self) -> list[RecordingInfo]:
         """Stat every recording and check its summary index; newest first.
 
-        Globs and stats every file and probes its summary index, which is blocking
-        I/O; call via ``rosys.run.io_bound``. The live file is flagged and never
-        index-probed (the writer holds it open and it has no summary index until
-        stopped). Files that vanish during the scan (e.g. deleted from the
-        recordings page) are skipped.
+        Blocking I/O; call via ``rosys.run.io_bound``. Only a file whose size or modification time changed since
+        the last scan is opened to probe its index, and never the live file (the writer holds it open, and it has
+        no summary index until stopped). Files that vanish during the scan are skipped.
 
         :return: one :class:`RecordingInfo` per file, ordered newest first.
         """
@@ -315,8 +314,10 @@ class McapRecorder:
             except FileNotFoundError:
                 continue  # deleted concurrently while scanning
             is_live = path == current
-            indexed = False if is_live else is_indexed(path)  # never read the open live file
+            known = self._indexed.get((path, stat.st_mtime, stat.st_size))
+            indexed = known if known is not None else not is_live and is_indexed(path)
             infos.append(RecordingInfo(path, stat.st_mtime, stat.st_size, is_live, indexed))
+        self._indexed = {(info.path, info.mtime, info.size): info.indexed for info in infos if not info.is_live}
         return infos
 
     def delete_recording(self, path: Path | str) -> None:
