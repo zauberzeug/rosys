@@ -5,7 +5,16 @@ from typing import Any
 import numpy as np
 import pytest
 
+from rosys.geometry import Point
 from rosys.vision import DetectorHardware, Image, ImageState, ImageTransmissionFormat
+from rosys.vision.detections import (
+    BoxDetection,
+    ClassificationDetection,
+    Detections,
+    PointDetection,
+    SegmentationDetection,
+    Shape,
+)
 from rosys.vision.image_processing import decode_jpeg_image
 
 Payloads = dict[str, dict[str, Any]]
@@ -17,11 +26,18 @@ def payloads() -> Payloads:
 
 
 @pytest.fixture
-def make_detector(monkeypatch: pytest.MonkeyPatch, payloads: Payloads) -> Callable[..., DetectorHardware]:
+def answer() -> dict[str, Any]:
+    """The detections the detector node answers for every image; none unless a test adds some."""
+    return {}
+
+
+@pytest.fixture
+def make_detector(monkeypatch: pytest.MonkeyPatch, payloads: Payloads,
+                  answer: dict[str, Any]) -> Callable[..., DetectorHardware]:
     """Build a detector whose socket.io messages are captured in ``payloads`` instead of being sent."""
     async def capture(event: str, data: dict[str, Any], **_: Any) -> dict[str, Any]:
         payloads[event] = data
-        return {'items': [{} for _ in data.get('images', [])]}
+        return {'items': [answer for _ in data['images']]} if event == 'batch_detect' else answer
 
     def make(**kwargs: Any) -> DetectorHardware:
         detector = DetectorHardware(port=1234, **kwargs)
@@ -97,3 +113,35 @@ async def test_jpeg_transmission_encodes_the_images_before_sending(make_detector
 def test_an_invalid_jpeg_quality_is_rejected_when_the_detector_is_created():
     with pytest.raises(ValueError):
         DetectorHardware(port=1234, jpeg_quality=0)
+
+
+async def test_detections_are_read_from_the_answer_of_the_node(detector: DetectorHardware, answer: dict[str, Any]):
+    """Every kind of detection the node answers with arrives, its pixel coordinates as floats and the keys
+    rosys has no field for, such as the category id, left out."""
+    answer.update({
+        'box_detections': [{'category_name': 'weed', 'x': 10, 'y': 20, 'width': 30, 'height': 40,
+                            'model_name': '1.2', 'confidence': 0.9, 'category_id': 'c1'}],
+        'point_detections': [{'category_name': 'crop', 'x': 1.5, 'y': 2.5,
+                              'model_name': '1.2', 'confidence': 0.8, 'category_id': 'c2'}],
+        'segmentation_detections': [{'category_name': 'row', 'shape': {'points': [{'x': 0, 'y': 0}, {'x': 4, 'y': 3}]},
+                                     'model_name': '1.2', 'confidence': 0.7, 'category_id': 'c3'}],
+        'classification_detections': [{'category_name': 'field', 'model_name': '1.2', 'confidence': 0.6,
+                                       'category_id': 'c4'}],
+    })
+    image = _image()
+
+    detections = await detector.detect(image, lazy=False)
+    batch_detections = await detector.batch_detect([image])
+
+    assert detections == Detections(
+        boxes=[BoxDetection(category_name='weed', model_name='1.2', confidence=0.9, x=10, y=20, width=30, height=40)],
+        points=[PointDetection(category_name='crop', model_name='1.2', confidence=0.8, x=1.5, y=2.5)],
+        segmentations=[SegmentationDetection(category_name='row', model_name='1.2', confidence=0.7,
+                                             shape=Shape(points=[Point(x=0, y=0), Point(x=4, y=3)]))],
+        classifications=[ClassificationDetection(category_name='field', model_name='1.2', confidence=0.6)],
+    )
+    assert batch_detections == [detections]
+    assert detections is not None
+    box, segmentation = detections.boxes[0], detections.segmentations[0]
+    coordinates = [box.x, box.y, box.width, box.height, *(c for p in segmentation.shape.points for c in p.tuple)]
+    assert all(isinstance(value, float) for value in coordinates)
