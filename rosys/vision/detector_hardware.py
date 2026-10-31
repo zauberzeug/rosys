@@ -7,8 +7,8 @@ import socketio
 import socketio.exceptions
 
 from .. import rosys
+from ..geometry import Point
 from ..helpers import LazyWorker
-from ..persistence import from_dict
 from .annotations import Annotations
 from .detections import (
     BoxDetection,
@@ -17,6 +17,7 @@ from .detections import (
     Detections,
     PointDetection,
     SegmentationDetection,
+    Shape,
 )
 from .detector import Autoupload, Detector, DetectorException, DetectorInfo, ImageState, ModelVersioningInfo
 from .image import Image
@@ -436,12 +437,48 @@ def _creation_date_to_isoformat(creation_date: datetime | str | None) -> str | N
 
 
 def _detections_from_dict(data: dict[str, Any]) -> Detections:
+    # NOTE: built field by field, because the generic persistence.from_dict is too slow for every answer on the loop
     return Detections(
-        boxes=[from_dict(BoxDetection, d) for d in data.get('box_detections', [])],
-        points=[from_dict(PointDetection, d) for d in data.get('point_detections', [])],
-        segmentations=[from_dict(SegmentationDetection, d) for d in data.get('segmentation_detections', [])],
-        classifications=[from_dict(ClassificationDetection, d) for d in data.get('classification_detections', [])],
+        boxes=[_box_detection(d) for d in data.get('box_detections', [])],
+        points=[_point_detection(d) for d in data.get('point_detections', [])],
+        segmentations=[_segmentation_detection(d) for d in data.get('segmentation_detections', [])],
+        classifications=[_classification_detection(d) for d in data.get('classification_detections', [])],
     )
+
+
+def _box_detection(d: dict[str, Any]) -> BoxDetection:
+    return BoxDetection(category_name=d['category_name'],
+                        model_name=d['model_name'],
+                        confidence=float(d['confidence']),
+                        x=float(d['x']),
+                        y=float(d['y']),
+                        width=float(d['width']),
+                        height=float(d['height']),
+                        uuid=d.get('uuid', ''))
+
+
+def _point_detection(d: dict[str, Any]) -> PointDetection:
+    return PointDetection(category_name=d['category_name'],
+                          model_name=d['model_name'],
+                          confidence=float(d['confidence']),
+                          x=float(d['x']),
+                          y=float(d['y']),
+                          uuid=d.get('uuid', ''))
+
+
+def _segmentation_detection(d: dict[str, Any]) -> SegmentationDetection:
+    return SegmentationDetection(category_name=d['category_name'],
+                                 model_name=d['model_name'],
+                                 confidence=float(d['confidence']),
+                                 shape=Shape(points=[Point(x=float(p['x']), y=float(p['y']))
+                                                     for p in d['shape']['points']]))
+
+
+def _classification_detection(d: dict[str, Any]) -> ClassificationDetection:
+    return ClassificationDetection(category_name=d['category_name'],
+                                   model_name=d['model_name'],
+                                   confidence=float(d['confidence']),
+                                   uuid=d.get('uuid', ''))
 
 
 def _array_to_dict(array: np.ndarray) -> dict[str, bytes | str | tuple[int, ...]]:
