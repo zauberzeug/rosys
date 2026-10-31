@@ -33,7 +33,8 @@ def merge_into_place(sources: list[Path], target: Path, *, start_time_ns: int = 
     file beside ``target`` and only a finished file takes the target name, refusing an existing
     one, so an interrupted or failed merge leaves the sources untouched.
 
-    Blocking I/O and ZSTD recompression; call via ``rosys.run.io_bound``.
+    Blocking I/O and ZSTD recompression that holds the GIL most of the time; run it in a process
+    of its own, as :meth:`~.mcap_recorder.McapRecorder.merge` does.
 
     :param sources: the recordings to merge, oldest first.
     :param target: the file the merged recording takes.
@@ -75,7 +76,7 @@ def merge_recordings(sources: list[Path], target: Path, *, start_time_ns: int = 
     deletes meanwhile stays readable and still lands in the result.
 
     Every source needs its summary index (see :func:`~.indexing.reindex`). Blocking I/O and
-    ZSTD recompression; call via ``rosys.run.io_bound``.
+    ZSTD recompression that holds the GIL most of the time; run it in a process of its own.
 
     :param sources: the recordings to merge, oldest first.
     :param target: the file to write.
