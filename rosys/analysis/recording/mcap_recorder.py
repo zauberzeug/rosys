@@ -385,8 +385,9 @@ class McapRecorder:
     async def merge(self, sources: list[Path], name: str, *, start_time_ns: int = 0) -> Path | None:
         """Merge finished recordings into the kept recording ``<name>.mcap``, deleting them once it is in place.
 
-        Runs off the loop; a failed merge leaves the sources untouched (see :func:`~.merging.merge_into_place`),
-        a source that cannot be deleted afterwards is only logged.
+        Runs in a process of the ``rosys.run.cpu_bound`` pool, as the recompression holds the GIL most of
+        the time; a failed merge leaves the sources untouched (see :func:`~.merging.merge_into_place`), a
+        source that cannot be deleted afterwards is only logged.
 
         :param sources: finished parts or kept recordings of this recorder, oldest first.
         :param name: the name of the merged recording, without ``.mcap``.
@@ -395,6 +396,7 @@ class McapRecorder:
         :raises ValueError: if ``name`` is no plain file name, or a source is no finished recording of
             this recorder.
         :raises FileExistsError: if ``<name>.mcap`` exists or is being merged already.
+        :raises OSError: if a source cannot be read or the merged recording cannot be written; the sources are kept.
         :raises RuntimeError: if the app shut down before the merge ran; the sources are kept.
         """
         ensure_plain_file_name(name)
@@ -406,11 +408,13 @@ class McapRecorder:
             raise FileExistsError(f'{target.name} exists or is being merged already')
         self._merging.add(name)
         try:
-            result = await rosys.run.io_bound(merge_into_place, sources, target, start_time_ns=start_time_ns)
+            result = await rosys.run.cpu_bound(_merge_in_process, sources, target, start_time_ns)
         finally:
             self._merging.discard(name)
         if result is None:
             raise RuntimeError('the merge did not run, the app is shutting down')
+        if isinstance(result, OSError):
+            raise result
         count, undeleted = result
         if not count:
             return None
@@ -941,6 +945,15 @@ class McapRecorder:
             ui.label(f'{stats.total_size / mb:.1f} / {self.max_total_size / mb:.0f} MB')
             ui.label('Files:')
             ui.label(str(stats.file_count))
+
+
+def _merge_in_process(sources: list[Path], target: Path, start_time_ns: int) -> tuple[int, list[Path]] | OSError:
+    """:func:`~.merging.merge_into_place` for ``rosys.run.cpu_bound``, handing back an ``OSError`` as the result,
+    as NiceGUI turns a raised one into a ``SubprocessException`` that only names its type."""
+    try:
+        return merge_into_place(sources, target, start_time_ns=start_time_ns)
+    except OSError as error:
+        return error
 
 
 def _payload_size(payload: Any) -> int:

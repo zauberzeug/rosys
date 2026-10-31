@@ -36,6 +36,7 @@ Log lines
 Merging
 : `await recorder.merge(parts, 'mission_merged', start_time_ns=...)` merges finished parts or kept recordings into one kept `mission_merged.mcap` at the top level and deletes the sources once it is in place.
 Messages before `start_time_ns` are dropped, and the merged file keeps the metadata of every run it holds.
+The merge runs in a process of the `rosys.run.cpu_bound` pool, so recompressing a long run does not slow the event loop.
 
 Recordings page
 : `RecordingsPage` mounts a page for listing, renaming, reindexing, merging and downloading recordings, plus a download endpoint at `/api/recordings/{name}`.
