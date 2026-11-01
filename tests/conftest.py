@@ -1,11 +1,21 @@
 import tempfile
-from collections.abc import Iterator
+from collections.abc import AsyncGenerator, Iterator
 from pathlib import Path
 
 import pytest
+from nicegui import run
+from nicegui.testing import User, user_simulation
 
 from rosys import rosys as rosys_core
 from rosys.testing.fixtures import *  # pylint: disable=wildcard-import,unused-wildcard-import # noqa: F403
+
+
+@pytest.fixture
+async def user() -> AsyncGenerator[User, None]:
+    """A headless NiceGUI user for a page that the test registers itself."""
+    async with user_simulation() as simulated_user:
+        yield simulated_user
+    run.setup()  # NOTE: the simulation's reset shuts down the process pool that the later tests share
 
 
 @pytest.fixture

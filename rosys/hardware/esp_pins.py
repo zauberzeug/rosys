@@ -104,8 +104,12 @@ class EspPins:
                             self._pin_context_menu(pin)
 
     def _pin_context_menu(self, pin: GpioPin) -> None:
-        with ui.context_menu().props('auto-close=false') as context_menu:
-            with ui.card():
+        context_menu = ui.context_menu().props('auto-close=false')
+
+        def build_details() -> None:
+            if context_menu.default_slot.children:
+                return
+            with context_menu, ui.card():
                 with ui.row().classes('w-full'):
                     ui.label(f'GPIO {pin.gpio}')
                     ui.space()
@@ -128,3 +132,5 @@ class EspPins:
                     ui.label().bind_text_from(pin, 'is_pulldown', lambda is_pulldown: f'PullDown: {is_pulldown}')
                     ui.label().bind_text_from(pin, 'drive_strength', lambda strength: f'Drive Strength: {strength}')
                     ui.label().bind_text_from(pin, 'sleep_sel', lambda sleep_sel: f'Sleep Sel: {sleep_sel}')
+            context_menu.run_method('updatePosition')  # NOTE: Quasar does not position a menu while it is empty
+        context_menu.on('before-show', build_details)

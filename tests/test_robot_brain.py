@@ -2,7 +2,8 @@ from collections import deque
 from collections.abc import Generator
 
 import pytest
-from nicegui import background_tasks
+from nicegui import background_tasks, ui
+from nicegui.testing import User
 
 import rosys
 from rosys.hardware import RobotBrain, RobotHardware
@@ -242,6 +243,24 @@ async def test_concurrent_waiters_on_one_ack_get_their_own_responses(robot_brain
     assert robot_brain.lizard_firmware.p0_version == ('0.11.0' if version_answered else None)
     assert pin_task.done() and pin_task.exception() is None
     assert pin.level and pin.is_pullup and pin.drive_strength == 2
+
+
+async def test_pin_details_are_built_once_when_their_context_menu_opens(user: User) -> None:
+    pins = RobotBrain(CommunicationSimulation(), enable_esp_on_startup=False).esp_pins_core
+
+    @ui.page('/')
+    def page() -> None:
+        pins.developer_ui()
+
+    await user.open('/')
+    await user.should_see('GPIO 05')
+    await user.should_not_see('Drive Strength')
+
+    menus = user.find(ui.context_menu)
+    menus.trigger('beforeShow')
+    menus.trigger('beforeShow')
+    await user.should_see('Drive Strength: 0')
+    assert len(user.find('Drive Strength').elements) == len(menus.elements)
 
 
 @pytest.mark.parametrize('line, checksum', [
