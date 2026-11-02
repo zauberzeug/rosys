@@ -63,8 +63,8 @@ class RobotHardware(Robot):
         output_fields = []
         for module in self.modules:
             output_fields.extend(cast(ModuleHardware, module).core_message_fields)
-        if self.robot_brain.core_telemetry is not None:
-            code += self.robot_brain.core_telemetry.plan(output_fields)
+        if self.robot_brain.telemetry_frames:
+            code += self.robot_brain.core_telemetry.lizard_code(output_fields)
         else:
             fields = ' '.join(output_fields)
             code += f'core.output("core.millis {fields}")\n'

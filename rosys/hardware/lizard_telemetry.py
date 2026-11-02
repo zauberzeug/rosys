@@ -1,7 +1,7 @@
 """Decoder for Lizard's telemetry frames (see "Telemetry frames" in Lizard's docs/module_reference.md).
 
-Vendored verbatim from Lizard's ``lizard_host/telemetry.py`` (zauberzeug/lizard@0b78ad6), since ``lizard_host`` is no
-installable package; only this docstring and the lint exceptions below differ.
+Copied from Lizard's ``lizard_host/telemetry.py`` (zauberzeug/lizard@0b78ad6), since ``lizard_host`` is not an
+installable package; unchanged except for this docstring and the lint exceptions below.
 
 A frame line is "~<base64>" with the body frame ID, layout ID, sequence number, millis, payload and CRC-16;
 layout lines "__LAYOUT__v1 <frame>.<index>/<count> <layout ID> <name>:<type>" name and type its fields.

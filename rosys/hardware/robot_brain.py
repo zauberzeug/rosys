@@ -68,8 +68,9 @@ class RobotBrain:
 
         self.communication = communication
         self.lizard_code = ''
-        self.core_telemetry = CoreTelemetry(self._request_telemetry_info) if telemetry_frames else None
-        """Translates the core's telemetry frames into its text line; ``None`` while the core prints the line."""
+        self.telemetry_frames = telemetry_frames
+        self.core_telemetry = CoreTelemetry(self._request_telemetry_layouts)
+        """Turns the core's telemetry frames into its text line and notices those of an outdated startup script."""
         self.lizard_firmware = LizardFirmware(self, supported_versions=supported_lizard_versions)
         self.ESP_CONNECTED.subscribe(self._check_lizard_code)
 
@@ -309,11 +310,7 @@ class RobotBrain:
             line = check(unchecked)
             if not line:
                 break
-            if self.core_telemetry is not None and line.startswith(('~', '__LAYOUT__')):
-                translated = self.core_telemetry.translate(line)
-                if translated is None:
-                    continue
-                line = translated
+            line = self.core_telemetry.translate(line)
             words = line.split()
             if not words:
                 continue
@@ -343,8 +340,8 @@ class RobotBrain:
             self._handle_clock_offset(rosys.time() - millis / 1000)
         return lines
 
-    def _request_telemetry_info(self) -> None:
-        # forced, since the brain is not ready before the first frame is decoded
+    def _request_telemetry_layouts(self) -> None:
+        # forced: without the layouts no core message arrives, so the brain cannot become ready
         background_tasks.create(self.send('core.telemetry_info()', force=True), name='core.telemetry_info')
 
     async def _check_lizard_code(self) -> None:
