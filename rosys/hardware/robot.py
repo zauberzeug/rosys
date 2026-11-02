@@ -63,8 +63,11 @@ class RobotHardware(Robot):
         output_fields = []
         for module in self.modules:
             output_fields.extend(cast(ModuleHardware, module).core_message_fields)
-        fields = ' '.join(output_fields)
-        code += f'core.output("core.millis {fields}")\n'
+        if self.robot_brain.core_telemetry is not None:
+            code += self.robot_brain.core_telemetry.plan(output_fields)
+        else:
+            fields = ' '.join(output_fields)
+            code += f'core.output("core.millis {fields}")\n'
         if self._rdyp_pin is not None:
             code += 'rdyp.on()\n'
         if self._en3_pin is not None:
