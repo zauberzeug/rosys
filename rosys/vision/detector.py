@@ -1,5 +1,6 @@
 import abc
 import logging
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
@@ -8,9 +9,11 @@ from uuid import uuid4
 
 from nicegui import Event
 
+from ..geometry import Polygon
 from .annotations import Annotations
 from .detections import Category, Detections
 from .image import Image
+from .image_masks import ImageMasks
 
 
 class Autoupload(Enum):
@@ -106,10 +109,15 @@ class Detector(abc.ABC):
 
     It also holds an upload queue for sending images with uncertain results to an active learning infrastructure
     like the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
+
+    With ``masks`` a region of interest can be defined per camera id as polygons in normalized image coordinates.
+    Only pixels inside these polygons reach the detector, everything outside is grayed out first;
+    this applies to detection and upload alike, while the images themselves stay untouched.
     """
 
-    def __init__(self, *, name: str | None = None) -> None:
+    def __init__(self, *, name: str | None = None, masks: Mapping[str, Sequence[Polygon]] | None = None) -> None:
         self.name = name or str(uuid4())
+        self.masks = ImageMasks(masks)
 
         self.NEW_DETECTIONS = Event[Image]()
         """detection on an image is completed (argument: image)"""

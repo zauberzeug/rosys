@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from typing import Any, Literal
 
@@ -7,6 +8,7 @@ import socketio
 import socketio.exceptions
 
 from .. import rosys, run
+from ..geometry import Polygon
 from ..helpers import LazyWorker
 from ..persistence import from_dict
 from .annotations import Annotations
@@ -41,6 +43,7 @@ class DetectorHardware(Detector):
 
     By default images are sent as raw pixel arrays.
     With ``image_transmission_format=ImageTransmissionFormat.JPEG`` they are encoded as JPEG with ``jpeg_quality`` first.
+    Regions of interest given as ``masks`` are applied before either format is produced.
     """
     MAX_IMAGE_SIZE = 64 * 1024 * 1024
     MAX_TIMEOUTS_BEFORE_DISCONNECT = 5
@@ -53,8 +56,9 @@ class DetectorHardware(Detector):
                  auto_disconnect: bool = True,
                  sio_timeout: int = 5,
                  image_transmission_format: ImageTransmissionFormat = ImageTransmissionFormat.RAW,
-                 jpeg_quality: int = DEFAULT_JPEG_QUALITY) -> None:
-        super().__init__(name=name)
+                 jpeg_quality: int = DEFAULT_JPEG_QUALITY,
+                 masks: Mapping[str, Sequence[Polygon]] | None = None) -> None:
+        super().__init__(name=name, masks=masks)
         validate_jpeg_quality(jpeg_quality)
 
         self.lazy_worker = LazyWorker()
@@ -297,14 +301,22 @@ class DetectorHardware(Detector):
         return all_detections
 
     async def _prepare_image(self, image: Image) -> dict[str, Any]:
-        """Return the image as a payload in the configured transmission format."""
+        """Return the masked image as a payload in the configured transmission format."""
         if self.image_transmission_format == ImageTransmissionFormat.JPEG:
-            # the encoder releases the GIL, so concurrent encodes run in parallel
-            jpeg_bytes = await run.io_bound(encode_image_as_jpeg, image.array, self.jpeg_quality)
+            # masking and encoding release the GIL, so concurrent preparations run in parallel
+            jpeg_bytes = await run.io_bound(self._mask_and_encode, image)
             if jpeg_bytes is None:
                 raise DetectorException('JPEG encoding failed')
             return {'format': 'jpeg', 'bytes': jpeg_bytes}
-        return _array_to_dict(image.array)
+        if image.camera_id not in self.masks:
+            return _array_to_dict(image.array)
+        masked = await run.io_bound(self.masks.apply, image)
+        if masked is None:
+            raise DetectorException('Masking failed')
+        return _array_to_dict(masked)
+
+    def _mask_and_encode(self, image: Image) -> bytes:
+        return encode_image_as_jpeg(self.masks.apply(image), self.jpeg_quality)
 
     def __str__(self) -> str:
         return f'{type(self).__name__} ({"connected" if self.is_connected else "disconnected"})'

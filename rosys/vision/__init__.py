@@ -11,6 +11,7 @@ from .detector import Autoupload, Detector, ImageState, ImageTransmissionFormat
 from .detector_hardware import DetectorHardware
 from .detector_simulation import DetectorSimulation, SimulatedObject
 from .image import Image, ImageArray, ImageSize
+from .image_masks import ImageMasks
 from .image_processing import DEFAULT_JPEG_QUALITY, validate_jpeg_quality
 from .image_rotation import ImageRotation
 from .mjpeg_camera import MjpegCamera, MjpegCameraProvider
@@ -43,6 +44,7 @@ __all__ = [
     'DetectorSimulation',
     'Image',
     'ImageArray',
+    'ImageMasks',
     'ImageRecorder',
     'ImageRotation',
     'ImageSize',
