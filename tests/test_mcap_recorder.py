@@ -751,6 +751,45 @@ async def test_kept_recordings_beyond_their_bound_roll_away_oldest_first(mcap_di
     assert {path.name for path in mcap_dir.rglob('*.mcap')} == {'newest kept.mcap', *part_names}
 
 
+@pytest.mark.parametrize(('max_total_size_mb', 'max_kept_size_mb'), [(0.12, 500), (1000, 0.12)], ids=['total', 'kept'])
+async def test_disk_budget_spares_protected_recordings(mcap_dir: Path,
+                                                       max_total_size_mb: float, max_kept_size_mb: float) -> None:
+    """The oldest kept recording survives either bound while protected; the unprotected one above it pays instead."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=max_total_size_mb,
+                            max_kept_size_mb=max_kept_size_mb, auto_start=False)  # ~126 KiB for the tested bound
+    names = ['protected.mcap', 'unprotected.mcap', 'newest.mcap']
+    for age, name in enumerate(names):
+        (mcap_dir / name).write_bytes(os.urandom(60 * 1024))
+        os.utime(mcap_dir / name, (age, age))
+    recorder.protected = frozenset({'protected.mcap'})
+    sacrificed: list[Path] = []
+    recorder.PROTECTED_RECORDING_DELETED.subscribe(sacrificed.append)
+
+    recorder.start()
+    await recorder.stop()  # empty -> new part discarded
+
+    assert {path.name for path in mcap_dir.rglob('*.mcap')} == {'protected.mcap', 'newest.mcap'}
+    assert sacrificed == []
+
+
+async def test_disk_budget_deletes_protected_recordings_when_nothing_else_is_left(mcap_dir: Path) -> None:
+    """When protected recordings alone exceed the budget, the oldest is deleted and reported, so the disk stays bounded."""
+    recorder = McapRecorder(output_dir=mcap_dir, max_total_size_mb=0.12, auto_start=False)  # ~126 KiB budget
+    names = ['oldest.mcap', 'older.mcap', 'newest.mcap']
+    for age, name in enumerate(names):
+        (mcap_dir / name).write_bytes(os.urandom(60 * 1024))
+        os.utime(mcap_dir / name, (age, age))
+    recorder.protected = frozenset(names)
+    sacrificed: list[Path] = []
+    recorder.PROTECTED_RECORDING_DELETED.subscribe(sacrificed.append)
+
+    recorder.start()
+    await recorder.stop()  # empty -> new part discarded
+
+    assert {path.name for path in mcap_dir.rglob('*.mcap')} == {'older.mcap', 'newest.mcap'}
+    assert sacrificed == [mcap_dir / 'oldest.mcap']
+
+
 _LONG_NAME = '_'.join(['word'] * 60)
 
 
