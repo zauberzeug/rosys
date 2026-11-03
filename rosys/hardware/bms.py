@@ -208,7 +208,7 @@ class BmsHardware(Bms, ModuleHardware):
         words = line.split(maxsplit=2)
         if len(words) < 3 or words[1] != self.name:
             return
-        text = words[2]  # NOTE: without "bus[2]: bms"
+        text = words[2]  # NOTE: without "p0: bms"
         if text.startswith('cell voltages:'):
             self.raw_data = {**self.raw_data, 'voltages': [float(word) for word in text.split()[2:]]}
         elif text.startswith('hardware version:'):

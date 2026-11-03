@@ -19,7 +19,7 @@ from rosys.hardware.communication import Communication
 from rosys.hardware.robot_brain import augment
 from rosys.testing import forward
 
-FLASHED = 'expander bus p0 flashed its expander, which restarts as bus node 2'
+FLASHED = 'expander bus p0 flashed its expander, which restarts now'
 BOOTSTRAP = ['serial = Serial(3, 1, 460800, 0)', 'bus = SerialBus(serial, 2)']
 EXPANDER_STARTUP = '''rdyp = Output(15)
 en3 = Output(12)
@@ -55,14 +55,14 @@ class CoreSimulation(Communication):
         self.mirrors: dict[str, float] = {}
         self.routines: dict[str, tuple[str, list[str]]] = {}
         """Routines of the core startup that print mirrors, by name: the printed string and the mirrors."""
-        self.routines: dict[str, tuple[str, list[str]]] = {}
-        """Routines of the core startup that print mirrors, by name: the printed string and the mirrors."""
         self.p0_edit: list[str] = []
         self.p0_saved: list[str] = []
         self.p0_drops: set[str] = set()
         """Startup lines that get lost on the bus."""
         self.p0_noise: list[str] = []
         """Lines that the expander prints before each answer."""
+        self.peer_2_lines: list[str] = []
+        """Lines of a peer 2 of another serial bus on the core that arrive before each answer of the expander."""
 
     @classmethod
     def is_possible(cls) -> bool:
@@ -82,10 +82,10 @@ class CoreSimulation(Communication):
             if self.flash_answer == FLASHED:
                 self.p0_edit = list(BOOTSTRAP)
                 self.p0_saved = list(BOOTSTRAP)
-                self.incoming.append('bus[2]: Ready.')
+                self.incoming.append('p0: Ready.')
         elif line == 'p0.restart()':
             self.p0_edit = list(self.p0_saved)
-            self.incoming.append('bus[2]: Ready.')
+            self.incoming.append('p0: Ready.')
         elif match := re.fullmatch(r'p0\.send\("(.*)"\)', line):
             self._run_on_p0(match.group(1).replace('\\"', '"').replace('%%', '%'))
         elif match := re.fullmatch(r'(\w+)\(\)', line):
@@ -95,7 +95,8 @@ class CoreSimulation(Communication):
                                                          for value in values))
 
     def _run_on_p0(self, command: str) -> None:
-        self.incoming.extend(f'bus[2]: {noise}' for noise in self.p0_noise)
+        self.incoming.extend(self.peer_2_lines)
+        self.incoming.extend(f'p0: {noise}' for noise in self.p0_noise)
         if command == '!-':
             self.p0_edit = []
         elif command.startswith('!+'):
@@ -104,16 +105,16 @@ class CoreSimulation(Communication):
         elif command == '!.':
             self.p0_saved = list(self.p0_edit)
         elif command == 'core.startup_checksum()':
-            self.incoming.append(f'bus[2]: checksum: {checksum(self.p0_edit)}')
+            self.incoming.append(f'p0: checksum: {checksum(self.p0_edit)}')
         elif command == 'core.version()':
-            self.incoming.append('bus[2]: version: lizard v0.16.0-12-gabcdef0')
+            self.incoming.append('p0: version: lizard v0.16.0-12-gabcdef0')
         elif match := re.fullmatch(r'core\.get_pin_status\((\d+)\)', command):
-            self.incoming.append(f'bus[2]: GPIO_Status[{match.group(1)}]| Level: 1| InputEn: 1| OutputEn: 0| '
+            self.incoming.append(f'p0: GPIO_Status[{match.group(1)}]| Level: 1| InputEn: 1| OutputEn: 0| '
                                  'OpenDrain: 0| Pullup: 1| Pulldown: 0| DriveStrength: 2| SleepSel: 0')
         elif command == 'bms.cell_voltages()':
-            self.incoming.append('bus[2]: bms cell voltages: 3.650 3.657')
+            self.incoming.append('p0: bms cell voltages: 3.650 3.657')
         elif command == 'bms.hardware_version()':
-            self.incoming.append('bus[2]: bms hardware version: OH17SA01-L17S-100A')
+            self.incoming.append('p0: bms hardware version: OH17SA01-L17S-100A')
 
     async def read(self) -> str | None:
         return augment(self.incoming.popleft()) if self.incoming else None
@@ -281,7 +282,7 @@ async def test_the_expander_times_the_relay_pulse(robot: Robot) -> None:
 
 async def test_commands_wait_for_the_startup_of_the_expander(robot: Robot) -> None:
     robot.core.p0_edit = robot.core.p0_saved = list(BOOTSTRAP)  # NOTE: e.g. right after flashing
-    robot.core.incoming.append('bus[2]: Ready.')
+    robot.core.incoming.append('p0: Ready.')
     await forward(seconds=0.1)
     assert not robot.p0.runs_startup
     await run(robot.battery.release_battery_relay())
@@ -295,11 +296,11 @@ async def test_commands_wait_for_the_startup_of_the_expander(robot: Robot) -> No
 
 async def test_a_restarted_expander_is_checked(robot: Robot) -> None:
     robot.core.p0_edit = robot.core.p0_saved = ['old = Output(2)']
-    robot.core.incoming.append('bus[2]: Ready.')
+    robot.core.incoming.append('p0: Ready.')
     await forward(seconds=3.0)
     assert any('please configure p0' in message for message in robot.notifications)
 
-    robot.core.incoming.append('bus[2]: error: startup skipped after 2 failed boots (panic)')
+    robot.core.incoming.append('p0: error: startup skipped after 2 failed boots (panic)')
     await forward(seconds=0.1)
     assert robot.notifications[-1] == 'p0: error: startup skipped after 2 failed boots (panic)'
 
@@ -336,26 +337,27 @@ async def test_configure_and_flash_refuse_to_run_twice(robot: Robot) -> None:
 
 
 async def test_a_skipped_startup_is_no_running_startup(robot: Robot) -> None:
-    robot.core.incoming.append('bus[2]: Ready.')
-    robot.core.incoming.append('bus[2]: error: startup skipped after 2 failed boots (panic)')
+    robot.core.incoming.append('p0: Ready.')
+    robot.core.incoming.append('p0: error: startup skipped after 2 failed boots (panic)')
     await forward(seconds=3.0)  # NOTE: the check after the restart finds the saved script, which did not run
     assert not robot.p0.runs_startup
     await run(robot.battery.release_battery_relay())
     assert 'battery_control_release()' not in robot.core.p0_commands
 
 
-async def test_other_peers_2_keep_their_lines(robot: Robot) -> None:
+async def test_a_peer_2_of_another_serial_bus_is_not_the_expander(robot: Robot) -> None:
     lines: list[str] = []
     robot.battery.message_hooks['bus[2]:'] = lines.append  # NOTE: e.g. a plexus as peer 2 of another serial bus
-    robot.core.incoming.append('bus[2]: checksum: abcd')
-    await forward(seconds=0.1)
-    assert lines == ['bus[2]: checksum: abcd']
+    robot.core.peer_2_lines = ['bus[2]: Ready.', 'bus[2]: checksum: abcd']
+    assert await run(robot.p0.read_checksum()) == robot.p0.local_checksum
+    assert lines == ['bus[2]: Ready.', 'bus[2]: checksum: abcd']
+    assert robot.p0.runs_startup  # NOTE: the other peer restarted, not the expander
 
 
 async def test_a_failed_request_leaves_no_reply_behind(robot: Robot) -> None:
     with pytest.raises(ValueError):
         await robot.p0.request('x' * 300, 'checksum:')
-    robot.core.incoming.append('bus[2]: checksum: abcd')
+    robot.core.incoming.append('p0: checksum: abcd')
     await forward(seconds=0.1)
     assert await run(robot.p0.read_checksum()) == robot.p0.local_checksum
 

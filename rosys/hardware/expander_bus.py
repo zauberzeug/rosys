@@ -40,7 +40,8 @@ class ExpanderBusHardware(ModuleHardware):
     It replaces ``ExpanderHardware`` for an expander that is wired the same way.
     The expander runs a startup script of its own, which modules extend with ``add_lizard_code``,
     and sends their values in telemetry frames, which the core mirrors as properties of the bus, e.g. ``p0.button.level``.
-    Lines of the expander arrive as ``bus[2]: ...``; commands go to the expander with ``send``.
+    Lines of the expander arrive as ``p0: ...``, with the name of the bus like those of an expander;
+    commands go to the expander with ``send``.
 
     ``configure()`` writes the expander's startup script over the bus;
     ``flash()`` copies the core's firmware onto the expander and configures it afterwards, since flashing erases it.
@@ -81,8 +82,8 @@ class ExpanderBusHardware(ModuleHardware):
 
     @property
     def line_prefix(self) -> str:
-        """The core prints the expander's lines as ``bus[2]: <line>``, like those of any serial bus peer 2."""
-        return f'bus[{PEER_ID}]:'
+        """The core prints the expander's lines as ``p0: <line>``, unlike ``bus[2]:`` of a serial bus peer 2."""
+        return f'{self.name}:'
 
     def add_lizard_code(self, code: str, fields: Sequence[tuple[str, FieldType]] = (), *,
                         interval: float = 0.1) -> str:
@@ -170,7 +171,7 @@ class ExpanderBusHardware(ModuleHardware):
 
         Requests with the same ``reply`` are serialized, since replies carry no request ID.
 
-        :return: the expander's line without ``bus[2]:``, or ``None`` after the timeout
+        :return: the expander's line without ``p0:``, or ``None`` after the timeout
         """
         async with self._reply_locks[reply]:
             self._replies[reply] = None
@@ -337,7 +338,7 @@ class ExpanderBusHardware(ModuleHardware):
             self.log.warning('%s: %s', self.name, payload)
 
     def _handle_flash_line(self, line: str) -> None:
-        if line == f'expander bus {self.name} flashed its expander, which restarts as bus node {PEER_ID}':
+        if line == f'expander bus {self.name} flashed its expander, which restarts now':
             self._flash_result = 'flashed'
         elif line.startswith('error processing uart0:') and \
                 (f'"{self.name}"' in line or f'"{self.serial.name}"' in line):
