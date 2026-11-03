@@ -8,8 +8,21 @@ from ..helpers import remove_indentation
 from .bms_message import BmsMessage
 from .bms_state import BmsState
 from .expander import ExpanderHardware
+from .expander_bus import ExpanderBusHardware, FieldType
 from .module import Module, ModuleHardware, ModuleSimulation
 from .robot_brain import RobotBrain
+
+JBD_FIELDS: list[tuple[str, FieldType]] = [
+    ('voltage', 'float'),
+    ('current', 'float'),
+    ('percentage', 'int'),
+    ('temperature', 'float'),
+    ('protections', 'int'),
+    ('last_message_age', 'int'),
+]
+"""Properties of Lizard's ``JbdBms`` that the core mirrors from an expander bus."""
+ANSWER_TOLERANCE_MS = 100
+"""Milliseconds by which the dates of one BMS answer may differ, as millis and age come from different steps."""
 
 
 class Bms(Module, abc.ABC):
@@ -85,7 +98,7 @@ class BmsHardware(Bms, ModuleHardware):
     UPDATE_INTERVAL = 5.0
 
     def __init__(self, robot_brain: RobotBrain, *,
-                 expander: ExpanderHardware | None = None,
+                 expander: ExpanderHardware | ExpanderBusHardware | None = None,
                  name: str = 'bms',
                  rx_pin: int = 26,
                  tx_pin: int = 27,
@@ -96,6 +109,7 @@ class BmsHardware(Bms, ModuleHardware):
                  ) -> None:
         """
         :param expander: If provided, the BMS module will use the expander module to create the serial connection.
+            On an expander bus, Lizard's ``JbdBms`` module asks the BMS on the expander, and the core mirrors its values.
         :param name: The name of the BMS module.
         :param rx_pin: The GPIO pin number to use for the RX line.
         :param tx_pin: The GPIO pin number to use for the TX line.
@@ -105,18 +119,52 @@ class BmsHardware(Bms, ModuleHardware):
         """
         self.name = name
         self.expander = expander
+        self.expander_bus = expander if isinstance(expander, ExpanderBusHardware) else None
         self.charge_detect_threshold = charge_detect_threshold
-        lizard_code = remove_indentation(f'''
-            {name} = {expander.name + "." if expander else ""}Serial({rx_pin}, {tx_pin}, {baud}, {num})
-            {name}.unmute()
-        ''')
+        self._answer_millis: int | None = None
+        if self.expander_bus is not None:
+            # NOTE: the expander's millis date the BMS answer, so that a silent expander or BMS updates no state
+            fields = [*((f'{name}.{field}', type_) for field, type_ in JBD_FIELDS), ('core.millis', 'int')]
+            declarations = self.expander_bus.add_lizard_code(remove_indentation(f'''
+                {name}_serial = Serial({rx_pin}, {tx_pin}, {baud}, {num})
+                {name} = JbdBms({name}_serial)
+            '''), fields, interval=1.0)
+            # NOTE: a routine is parsed once at startup; parsing the print line with every reading stalls the core
+            mirrors = ', '.join(f'{self.expander_bus.name}.{field}' for field, _ in fields)
+            lizard_code = f'{declarations}\nlet {name}_read do core.print("{name}", {mirrors}); end'
+        else:
+            lizard_code = remove_indentation(f'''
+                {name} = {expander.name + "." if expander else ""}Serial({rx_pin}, {tx_pin}, {baud}, {num})
+                {name}.unmute()
+            ''')
         super().__init__(robot_brain=robot_brain, lizard_code=lizard_code, **kwargs)
         rosys.on_repeat(self._request, 1.0)
-        self.message_hooks[name] = self._handle_bms
+        if self.expander_bus is not None:
+            self.message_hooks[self.expander_bus.line_prefix] = self._handle_jbd_bms
+        else:
+            self.message_hooks[name] = self._handle_bms
 
     async def _request(self) -> None:
         if self.robot_brain.is_ready and rosys.time() > self.state.last_update + self.UPDATE_INTERVAL:
-            await self.robot_brain.send(f'{self.name}.send(0xdd, 0xa5, 0x03, 0x00, 0xff, 0xfd, 0x77)')
+            if self.expander_bus is not None:
+                if not self.expander_bus.busy:
+                    await self._read_mirrors()
+            else:
+                await self.robot_brain.send(f'{self.name}.send(0xdd, 0xa5, 0x03, 0x00, 0xff, 0xfd, 0x77)')
+
+    async def request_cell_voltages(self) -> None:
+        """Ask the BMS for its cell voltages, which arrive in ``raw_data['voltages']``."""
+        if self.expander_bus is not None:
+            await self.expander_bus.send_after_startup(f'{self.name}.cell_voltages()')
+        else:
+            await self.robot_brain.send(f'{self.name}.send(0xdd, 0xa5, 0x04, 0x00, 0xff, 0xfc, 0x77)')
+
+    async def request_hardware_version(self) -> None:
+        """Ask the BMS for its hardware version, which arrives in ``raw_data['hardware version']``."""
+        if self.expander_bus is not None:
+            await self.expander_bus.send_after_startup(f'{self.name}.hardware_version()')
+        else:
+            await self.robot_brain.send(f'{self.name}.send(0xdd, 0xa5, 0x05, 0x00, 0xff, 0xfb, 0x77)')
 
     def _handle_bms(self, line: str) -> None:
         skip = 2 if self.expander else 1
@@ -124,18 +172,60 @@ class BmsHardware(Bms, ModuleHardware):
         msg = BmsMessage([int(w, 16) for w in words])
         msg.check()
         result = msg.interpret()
-        percentage = result.get('capacity percent')
+        self.raw_data = result
+        self._update_state(percentage=result.get('capacity percent'),
+                           voltage=result.get('total voltage'),
+                           current=result.get('current'),
+                           temperature=float(np.mean(result['temperatures'])) if 'temperatures' in result else None,
+                           last_update=rosys.time())
+
+    async def _read_mirrors(self) -> None:
+        line = await self.robot_brain.send_and_await(f'{self.name}_read()', f'"{self.name}"', timeout=1.0)
+        if line is None:
+            return
+        words = line.split()[1:]
+        voltage, current, temperature = float(words[0]), float(words[1]), float(words[3])
+        percentage, protections, age, millis = int(words[2]), int(words[4]), int(words[5]), int(words[6])
+        answer_millis = millis - age
+        if voltage == 0:
+            return  # NOTE: JbdBms reports 0 V until the BMS answers
+        if self._answer_millis is not None and abs(answer_millis - self._answer_millis) < ANSWER_TOLERANCE_MS:
+            return  # NOTE: no newer answer, or the mirrors keep their values because the expander fell silent
+        self._answer_millis = answer_millis
+        self.raw_data = {
+            **self.raw_data,  # NOTE: keeps the cell voltages and the hardware version
+            'total voltage': voltage,
+            'current': current,
+            'capacity percent': percentage,
+            'temperature': temperature,
+            'protections': protections,
+            'last message age': age,
+        }
+        self._update_state(percentage=percentage, voltage=voltage, current=current, temperature=temperature,
+                           last_update=rosys.time() - age / 1000)
+
+    def _handle_jbd_bms(self, line: str) -> None:
+        words = line.split(maxsplit=2)
+        if len(words) < 3 or words[1] != self.name:
+            return
+        text = words[2]  # NOTE: without "bus[2]: bms"
+        if text.startswith('cell voltages:'):
+            self.raw_data = {**self.raw_data, 'voltages': [float(word) for word in text.split()[2:]]}
+        elif text.startswith('hardware version:'):
+            self.raw_data = {**self.raw_data, 'hardware version': text.removeprefix('hardware version:').strip()}
+
+    def _update_state(self, *, percentage: float | None, voltage: float | None, current: float | None,
+                      temperature: float | None, last_update: float) -> None:
         if percentage is not None:
             self._send_battery_low_event(percentage)
         self.state.percentage = percentage
-        self.state.voltage = result.get('total voltage')
-        self.state.current = result.get('current')
-        self.state.temperature = float(np.mean(result['temperatures'])) if 'temperatures' in result else None
+        self.state.voltage = voltage
+        self.state.current = current
+        self.state.temperature = temperature
         is_charging = (self.state.current or 0) > self.charge_detect_threshold
         self._send_charging_events(is_charging)
         self.state.is_charging = is_charging
-        self.state.last_update = rosys.time()
-        self.raw_data = result
+        self.state.last_update = last_update
         self.STATE_UPDATED.emit(self.state)
 
 
