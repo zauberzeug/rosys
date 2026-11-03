@@ -253,6 +253,24 @@ async def test_the_bms_reads_the_mirrors_of_new_answers(robot: Robot) -> None:
     await forward(seconds=1.0)
     assert states == [26.5, 26.4]
 
+    robot.bms.state.last_update = -10
+    mirror(0.0, 2000, 2003)  # NOTE: the expander restarted, and its BMS has not answered since
+    await forward(seconds=1.0)
+    assert states == [26.5, 26.4]
+
+    mirror(26.3, 300, 2**31 - 1)  # NOTE: the expander's millis just before the int field turns negative
+    await forward(seconds=1.0)
+    assert states == [26.5, 26.4, 26.3]
+
+    robot.bms.state.last_update = -10
+    mirror(26.3, 1000, -2**31 + 699)  # NOTE: the same answer 0.7 s later, after the int field turned negative
+    await forward(seconds=1.0)
+    assert states == [26.5, 26.4, 26.3]
+
+    mirror(26.2, 200, -2**31 + 1699)
+    await forward(seconds=1.0)
+    assert states == [26.5, 26.4, 26.3, 26.2]
+
 
 async def test_the_bms_asks_the_expander_for_cell_voltages_and_its_version(robot: Robot) -> None:
     await run(robot.bms.request_cell_voltages())

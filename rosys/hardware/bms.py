@@ -23,6 +23,14 @@ JBD_FIELDS: list[tuple[str, FieldType]] = [
 """Properties of Lizard's ``JbdBms`` that the core mirrors from an expander bus."""
 ANSWER_TOLERANCE_MS = 100
 """Milliseconds by which the dates of one BMS answer may differ, as millis and age come from different steps."""
+MILLIS_RANGE = 2**32
+"""The expander's millis wrap after 2**32 ms; as an int field of its frame they turn negative after 24.9 days."""
+
+
+def _millis_apart(a: int, b: int) -> int:
+    """Milliseconds between two dates of the expander's clock, across its wrap."""
+    difference = (a - b) % MILLIS_RANGE
+    return min(difference, MILLIS_RANGE - difference)
 
 
 class Bms(Module, abc.ABC):
@@ -187,9 +195,9 @@ class BmsHardware(Bms, ModuleHardware):
         voltage, current, temperature = float(words[0]), float(words[1]), float(words[3])
         percentage, protections, age, millis = int(words[2]), int(words[4]), int(words[5]), int(words[6])
         answer_millis = millis - age
-        if voltage == 0:
-            return  # NOTE: JbdBms reports 0 V until the BMS answers
-        if self._answer_millis is not None and abs(answer_millis - self._answer_millis) < ANSWER_TOLERANCE_MS:
+        if _millis_apart(answer_millis, 0) < ANSWER_TOLERANCE_MS:
+            return  # NOTE: no answer since the expander booted, as JbdBms counts last_message_age from the boot
+        if self._answer_millis is not None and _millis_apart(answer_millis, self._answer_millis) < ANSWER_TOLERANCE_MS:
             return  # NOTE: no newer answer, or the mirrors keep their values because the expander fell silent
         self._answer_millis = answer_millis
         self.raw_data = {
