@@ -13,6 +13,7 @@ from ..run import awaitable
 from .communication import SerialCommunication
 
 if TYPE_CHECKING:
+    from rosys.hardware.expander_bus import ExpanderBusHardware
     from rosys.hardware.robot_brain import RobotBrain
 
 
@@ -48,6 +49,9 @@ class LizardFirmware:
 
         self.local_checksum: str | None = None
         self.core_checksum: str | None = None
+
+        self.expander_bus: ExpanderBusHardware | None = None
+        """P0's expander bus, which an ``ExpanderBusHardware`` sets; ``None`` while P0 is an expander."""
 
         self._p0_flash_last_complete: float = 0.0
         self.robot_brain.FLASH_P0_COMPLETE.subscribe(lambda: setattr(self, '_p0_flash_last_complete', rosys.time()))
@@ -146,7 +150,11 @@ class LizardFirmware:
             return
         deadline = rosys.time() + 5.0
         while rosys.time() < deadline:
-            if response := await self.robot_brain.send_and_await('p0.version()', 'p0:', timeout=1):
+            if self.expander_bus is not None:
+                response = await self.expander_bus.request('core.version()', 'version:', timeout=1)
+            else:
+                response = await self.robot_brain.send_and_await('p0.version()', 'p0:', timeout=1)
+            if response:
                 self.p0_project, self.p0_version = self._parse_version_line(response)
                 self._refuse_version(self.p0_version, 'P0')
                 return
@@ -234,6 +242,13 @@ class LizardFirmware:
             return
         if not self.robot_brain.is_ready:
             rosys.notify('Flashing P0 failed. Robot Brain is not ready.', 'negative')
+            return
+        if self.expander_bus is not None:
+            # NOTE: an expander bus checks no strapping pins; an expander that does not enter its bootloader fails
+            # the transfer before anything is erased
+            if await self.expander_bus.flash(timeout=timeout):
+                await self.read_p0_version()
+                rosys.notify('Finished.', 'positive')
             return
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
         # NOTE: GPIO0 idles high in normal operation and is pulled low by Lizard itself during flashing,
