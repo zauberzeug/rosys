@@ -61,7 +61,7 @@ class Bms(Module, abc.ABC):
     def _send_battery_low_event(self, percentage: float) -> None:
         if self.battery_low_threshold is None or self.state.percentage is None:
             return
-        if percentage < self.battery_low_threshold and self.state.percentage >= self.battery_low_threshold:
+        if percentage < self.battery_low_threshold <= self.state.percentage:
             self.BATTERY_LOW.emit()
 
     def developer_ui(self) -> None:
