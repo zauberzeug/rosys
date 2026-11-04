@@ -302,21 +302,16 @@ class DetectorHardware(Detector):
 
     async def _prepare_image(self, image: Image) -> dict[str, Any]:
         """Return the masked image as a payload in the configured transmission format."""
-        if self.image_transmission_format == ImageTransmissionFormat.JPEG:
-            # masking and encoding release the GIL, so concurrent preparations run in parallel
-            jpeg_bytes = await run.io_bound(self._mask_and_encode, image)
-            if jpeg_bytes is None:
-                raise DetectorException('JPEG encoding failed')
-            return {'format': 'jpeg', 'bytes': jpeg_bytes}
-        if image.camera_id not in self.masks:
-            return _array_to_dict(image.array)
-        masked = await run.io_bound(self.masks.apply, image)
-        if masked is None:
-            raise DetectorException('Masking failed')
-        return _array_to_dict(masked)
+        payload = await run.io_bound(self._image_payload, image)
+        if payload is None:
+            raise DetectorException('Image preparation failed')
+        return payload
 
-    def _mask_and_encode(self, image: Image) -> bytes:
-        return encode_image_as_jpeg(self.masks.apply(image), self.jpeg_quality)
+    def _image_payload(self, image: Image) -> dict[str, Any]:
+        array = self.masks.apply(image)
+        if self.image_transmission_format == ImageTransmissionFormat.JPEG:
+            return {'format': 'jpeg', 'bytes': encode_image_as_jpeg(array, self.jpeg_quality)}
+        return _array_to_dict(array)
 
     def __str__(self) -> str:
         return f'{type(self).__name__} ({"connected" if self.is_connected else "disconnected"})'
