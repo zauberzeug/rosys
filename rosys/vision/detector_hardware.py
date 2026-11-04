@@ -3,7 +3,6 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime
 from typing import Any, Literal
 
-import numpy as np
 import socketio
 import socketio.exceptions
 
@@ -308,10 +307,9 @@ class DetectorHardware(Detector):
         return payload
 
     def _image_payload(self, image: Image) -> dict[str, Any]:
-        array = self.masks.apply(image)
         if self.image_transmission_format == ImageTransmissionFormat.JPEG:
-            return {'format': 'jpeg', 'bytes': encode_image_as_jpeg(array, self.jpeg_quality)}
-        return _array_to_dict(array)
+            return {'format': 'jpeg', 'bytes': encode_image_as_jpeg(self.masks.apply(image), self.jpeg_quality)}
+        return {'bytes': self.masks.apply_as_bytes(image), 'dtype': str(image.array.dtype), 'shape': image.array.shape}
 
     def __str__(self) -> str:
         return f'{type(self).__name__} ({"connected" if self.is_connected else "disconnected"})'
@@ -476,11 +474,3 @@ def _detections_from_dict(data: dict[str, Any]) -> Detections:
         segmentations=[from_dict(SegmentationDetection, d) for d in data.get('segmentation_detections', [])],
         classifications=[from_dict(ClassificationDetection, d) for d in data.get('classification_detections', [])],
     )
-
-
-def _array_to_dict(array: np.ndarray) -> dict[str, bytes | str | tuple[int, ...]]:
-    return {
-        'bytes': array.tobytes(order='C'),
-        'dtype': str(array.dtype),
-        'shape': array.shape,
-    }

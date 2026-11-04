@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import functools
 from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 from typing import ClassVar
@@ -8,9 +9,7 @@ import cv2
 import numpy as np
 
 from ..geometry import Polygon
-from .image import Image, ImageArray, ImageSize
-
-Raster = np.ndarray[tuple[int, int], np.dtype[np.uint8]]
+from .image import Image, ImageArray
 
 
 class ImageMasks:
@@ -18,11 +17,9 @@ class ImageMasks:
 
     Each camera id maps to polygons in normalized image coordinates (x and y between 0 and 1),
     so the same polygons fit every resolution a camera may deliver.
-    Pixels inside any of a camera's polygons are kept, all other pixels are replaced by ``FILL_VALUE``.
+    Pixels inside a camera's polygons or on their outlines are kept, all others are replaced by ``FILL_VALUE``.
+    Polygons may overlap, and a polygon reaching 0 and 1 keeps the full width or height of the image.
     A camera without polygons passes its images through unchanged.
-
-    The rasterized mask is cached per camera for the last image size seen,
-    so sending images of changing size from the same camera rasterizes on every call.
     """
 
     FILL_VALUE: ClassVar[int] = 114
@@ -33,7 +30,6 @@ class ImageMasks:
 
     def __init__(self, polygons: Mapping[str, Sequence[Polygon]] | None = None) -> None:
         self._polygons: dict[str, tuple[Polygon, ...]] = {}
-        self._rasters: dict[str, tuple[int, int, Raster]] = {}
         for camera_id, camera_polygons in (polygons or {}).items():
             self.set(camera_id, camera_polygons)
 
@@ -63,12 +59,10 @@ class ImageMasks:
                     raise ValueError(f'Polygon for camera "{camera_id}" has a point outside the normalized range: '
                                      f'{point}')
         self._polygons[camera_id] = tuple(polygons)
-        self._rasters.pop(camera_id, None)
 
     def remove(self, camera_id: str) -> None:
         """Remove the polygons of a camera so its images pass through unchanged."""
         self._polygons.pop(camera_id, None)
-        self._rasters.pop(camera_id, None)
 
     def apply(self, image: Image) -> ImageArray:
         """Return the pixels of an image with everything outside the camera's polygons replaced by ``FILL_VALUE``.
@@ -76,22 +70,47 @@ class ImageMasks:
         The image itself is left untouched.
         If the camera has no polygons, the image's own array is returned without a copy.
         """
-        if image.camera_id not in self._polygons:
+        polygons = self._polygons.get(image.camera_id)
+        if polygons is None:
             return image.array
-        raster = self._raster(image.camera_id, image.size)
-        masked: ImageArray = np.full_like(image.array, self.FILL_VALUE)
-        cv2.copyTo(image.array, raster, masked)
+        masked: ImageArray = np.frombuffer(self._mask(image.array, polygons), np.uint8).reshape(image.array.shape)
         return masked
 
-    def _raster(self, camera_id: str, size: ImageSize) -> Raster:
-        cached = self._rasters.get(camera_id)
-        if cached is not None and cached[0] == size.width and cached[1] == size.height:
-            return cached[2]
-        raster: Raster = np.zeros((size.height, size.width), dtype=np.uint8)
-        contours: list[np.ndarray] = [
-            np.round([[point.x * size.width, point.y * size.height] for point in polygon.outline]).astype(np.int32)
-            for polygon in self._polygons[camera_id]
-        ]
-        cv2.fillPoly(raster, contours, 255)
-        self._rasters[camera_id] = (size.width, size.height, raster)
-        return raster
+    def apply_as_bytes(self, image: Image) -> bytes | bytearray:
+        """Return the masked pixels in C order, like ``apply(image).tobytes()`` but without copying them twice."""
+        polygons = self._polygons.get(image.camera_id)
+        if polygons is None:
+            return image.array.tobytes()
+        return self._mask(image.array, polygons)
+
+    def _mask(self, array: ImageArray, polygons: tuple[Polygon, ...]) -> bytearray:
+        buffer = bytearray([self.FILL_VALUE]) * array.nbytes
+        masked = np.frombuffer(buffer, np.uint8).reshape(array.shape)
+        height, width = array.shape[:2]
+        for polygon in polygons:
+            raster = _raster(width, height, _contour(polygon, width, height).tobytes())
+            if raster is None:
+                continue
+            left, top, mask = raster
+            bottom, right = top + mask.shape[0], left + mask.shape[1]
+            cv2.copyTo(array[top:bottom, left:right], mask, masked[top:bottom, left:right])
+        return buffer
+
+
+def _contour(polygon: Polygon, width: int, height: int) -> np.ndarray:
+    """Convert a polygon in normalized coordinates to integer pixel coordinates for OpenCV."""
+    points = np.array([[point.x * width, point.y * height] for point in polygon.outline])
+    return np.round(points).astype(np.int32)
+
+
+@functools.lru_cache(maxsize=16)
+def _raster(width: int, height: int, contour: bytes) -> tuple[int, int, np.ndarray] | None:
+    """Rasterize a contour within its bounding box clipped to the image, and return the box's left and top with it."""
+    polygon = np.frombuffer(contour, np.int32).reshape(-1, 2)
+    x, y, w, h = cv2.boundingRect(polygon)
+    left, top, right, bottom = x, y, min(x + w, width), min(y + h, height)
+    if left >= right or top >= bottom:
+        return None
+    mask: np.ndarray = np.zeros((bottom - top, right - left), dtype=np.uint8)
+    cv2.fillPoly(mask, [polygon], 255, offset=(-left, -top))
+    return left, top, mask
