@@ -127,7 +127,7 @@ async def test_masked_cameras_send_the_masked_pixels_and_keep_the_image_untouche
     await detector.batch_detect([image])
     await detector.upload(image)
     expected = detector.masks.apply(image)
-    assert np.all(expected[:, 5:] == ImageMasks.FILL_VALUE)
+    assert np.all(expected[:, :5] == ImageMasks.FILL_VALUE)
     for sent in (payloads['detect']['image'], payloads['batch_detect']['images'][0], payloads['upload']['image']):
         assert sent == {'bytes': expected.tobytes(), 'dtype': 'uint8', 'shape': (4, 8, 3)}
     assert np.array_equal(image.array, original)
@@ -167,7 +167,7 @@ class _Cameras:
         self.cameras = {camera.id: camera}
 
 
-async def test_the_simulation_only_detects_objects_inside_the_masks(rosys_integration):
+async def test_the_simulation_does_not_detect_objects_inside_the_masks(rosys_integration):
     camera = CalibratableCamera.create_calibrated(id='cam', width=800, height=600, connect_after_init=False)
     detector = DetectorSimulation(_Cameras(camera), noise=0, masks={'cam': [LEFT_HALF]})
     detector.simulated_objects = [SimulatedObject(category_name='obj', position=Point3d(x=x, y=0, z=0))
@@ -180,4 +180,4 @@ async def test_the_simulation_only_detects_objects_inside_the_masks(rosys_integr
 
     assert detections is not None
     assert len(detections.points) == 1
-    assert detections.points[0].x < 400
+    assert detections.points[0].x > 400

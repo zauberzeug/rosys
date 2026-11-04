@@ -36,7 +36,7 @@ class DetectorSimulation(Detector):
     A list of `simulated_objects` can be filled to define what can be detected.
     An optional `noise` parameter controls the spatial accuracy in pixels.
     An optional `detection_delay` parameter simulates the time it takes to process an image.
-    Objects projected outside a camera's `masks` are not detected.
+    Objects projected into a camera's `masks` are not detected.
     """
 
     def __init__(self,
@@ -128,11 +128,9 @@ class DetectorSimulation(Detector):
                 continue
             if not (0 <= image_point.x < image.size.width and 0 <= image_point.y < image.size.height):
                 continue
-            polygons = self.masks.polygons.get(image.camera_id)
-            if polygons:
-                normalized_point = Point(x=image_point.x / image.size.width, y=image_point.y / image.size.height)
-                if not any(polygon.contains(normalized_point) for polygon in polygons):
-                    continue
+            normalized_point = Point(x=image_point.x / image.size.width, y=image_point.y / image.size.height)
+            if any(polygon.contains(normalized_point) for polygon in self.masks.polygons.get(image.camera_id, ())):
+                continue
 
             if obj.size is None:
                 detections.points.append(PointDetection(

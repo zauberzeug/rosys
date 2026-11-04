@@ -42,7 +42,7 @@ class DetectorHardware(Detector):
 
     By default images are sent as raw pixel arrays.
     With ``image_transmission_format=ImageTransmissionFormat.JPEG`` they are encoded as JPEG with ``jpeg_quality`` first.
-    Regions of interest given as ``masks`` are applied before either format is produced.
+    The ``masks`` are applied before either format is produced.
     """
     MAX_IMAGE_SIZE = 64 * 1024 * 1024
     MAX_TIMEOUTS_BEFORE_DISCONNECT = 5
@@ -301,6 +301,8 @@ class DetectorHardware(Detector):
 
     async def _prepare_image(self, image: Image) -> dict[str, Any]:
         """Return the masked image as a payload in the configured transmission format."""
+        if self.image_transmission_format == ImageTransmissionFormat.RAW and image.camera_id not in self.masks:
+            return self._image_payload(image)
         payload = await run.io_bound(self._image_payload, image)
         if payload is None:
             raise DetectorException('Image preparation failed')

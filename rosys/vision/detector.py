@@ -110,8 +110,8 @@ class Detector(abc.ABC):
     It also holds an upload queue for sending images with uncertain results to an active learning infrastructure
     like the [Zauberzeug Learning Loop](https://zauberzeug.com/products/learning-loop).
 
-    With ``masks`` a region of interest can be defined per camera id as polygons in normalized image coordinates.
-    Only pixels inside these polygons reach the detector, everything outside is grayed out first;
+    With ``masks`` image regions can be grayed out per camera id, given as polygons in normalized image coordinates.
+    Pixels inside these polygons are replaced by gray before they reach the detector;
     this applies to detection and upload alike, while the images themselves stay untouched.
     """
 

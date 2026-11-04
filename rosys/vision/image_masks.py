@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 from collections.abc import Mapping, Sequence
 from types import MappingProxyType
 from typing import ClassVar
@@ -13,17 +12,17 @@ from .image import Image, ImageArray
 
 
 class ImageMasks:
-    """Per-camera regions of interest for detectors.
+    """Per-camera masks that gray out image regions before they reach a detector.
 
     Each camera id maps to polygons in normalized image coordinates (x and y between 0 and 1),
     so the same polygons fit every resolution a camera may deliver.
-    Pixels inside a camera's polygons or on their outlines are kept, all others are replaced by ``FILL_VALUE``.
-    Polygons may overlap, and a polygon reaching 0 and 1 keeps the full width or height of the image.
+    Pixels inside a camera's polygons or on their outlines are replaced by ``FILL_VALUE``, all others are kept.
+    Polygons may overlap, and a polygon reaching 0 and 1 covers the full width or height of the image.
     A camera without polygons passes its images through unchanged.
     """
 
     FILL_VALUE: ClassVar[int] = 114
-    """Gray value for the pixels outside the kept region.
+    """Gray value for the pixels inside the polygons.
 
     It matches the letterbox padding common detectors are trained with.
     """
@@ -65,7 +64,7 @@ class ImageMasks:
         self._polygons.pop(camera_id, None)
 
     def apply(self, image: Image) -> ImageArray:
-        """Return the pixels of an image with everything outside the camera's polygons replaced by ``FILL_VALUE``.
+        """Return the pixels of an image with everything inside the camera's polygons replaced by ``FILL_VALUE``.
 
         The image itself is left untouched.
         If the camera has no polygons, the image's own array is returned without a copy.
@@ -84,16 +83,11 @@ class ImageMasks:
         return self._mask(image.array, polygons)
 
     def _mask(self, array: ImageArray, polygons: tuple[Polygon, ...]) -> bytearray:
-        buffer = bytearray([self.FILL_VALUE]) * array.nbytes
+        buffer = bytearray(array.data)
         masked = np.frombuffer(buffer, np.uint8).reshape(array.shape)
         height, width = array.shape[:2]
-        for polygon in polygons:
-            raster = _raster(width, height, _contour(polygon, width, height).tobytes())
-            if raster is None:
-                continue
-            left, top, mask = raster
-            bottom, right = top + mask.shape[0], left + mask.shape[1]
-            cv2.copyTo(array[top:bottom, left:right], mask, masked[top:bottom, left:right])
+        for polygon in polygons:  # one call per polygon, because a single call would leave overlaps unfilled
+            cv2.fillPoly(masked, [_contour(polygon, width, height)], (self.FILL_VALUE,) * 3)
         return buffer
 
 
@@ -101,16 +95,3 @@ def _contour(polygon: Polygon, width: int, height: int) -> np.ndarray:
     """Convert a polygon in normalized coordinates to integer pixel coordinates for OpenCV."""
     points = np.array([[point.x * width, point.y * height] for point in polygon.outline])
     return np.round(points).astype(np.int32)
-
-
-@functools.lru_cache(maxsize=16)
-def _raster(width: int, height: int, contour: bytes) -> tuple[int, int, np.ndarray] | None:
-    """Rasterize a contour within its bounding box clipped to the image, and return the box's left and top with it."""
-    polygon = np.frombuffer(contour, np.int32).reshape(-1, 2)
-    x, y, w, h = cv2.boundingRect(polygon)
-    left, top, right, bottom = x, y, min(x + w, width), min(y + h, height)
-    if left >= right or top >= bottom:
-        return None
-    mask: np.ndarray = np.zeros((bottom - top, right - left), dtype=np.uint8)
-    cv2.fillPoly(mask, [polygon], 255, offset=(-left, -top))
-    return left, top, mask

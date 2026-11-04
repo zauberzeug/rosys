@@ -25,40 +25,37 @@ def _image(camera_id: str = 'cam', *, width: int = 8, height: int = 4) -> Image:
 def _rasterized(image: Image, polygons: Sequence[Polygon]) -> np.ndarray:
     """Mask an image by rasterizing every polygon over the full image."""
     height, width = image.array.shape[:2]
-    kept = np.zeros((height, width), dtype=np.uint8)
+    filled = np.zeros((height, width), dtype=np.uint8)
     for polygon in polygons:
         contour = np.round([[point.x * width, point.y * height] for point in polygon.outline]).astype(np.int32)
-        cv2.fillPoly(kept, [contour], 1)
-    return np.where(kept[..., None] == 1, image.array, np.uint8(ImageMasks.FILL_VALUE))
+        cv2.fillPoly(filled, [contour], 1)
+    return np.where(filled[..., None] == 1, np.uint8(ImageMasks.FILL_VALUE), image.array)
 
 
-def test_pixels_inside_the_polygons_and_on_their_outline_are_kept_and_the_rest_is_filled():
+def test_pixels_inside_the_polygons_and_on_their_outline_are_filled_and_the_rest_is_kept():
     masks = ImageMasks({'cam': [LEFT_HALF]})
     image = _image()
     masked = masks.apply(image)
-    assert np.array_equal(masked[:, :5], image.array[:, :5])  # the outline runs through column 4
-    assert np.all(masked[:, 5:] == ImageMasks.FILL_VALUE)
+    assert np.all(masked[:, :5] == ImageMasks.FILL_VALUE)  # the outline runs through column 4
+    assert np.array_equal(masked[:, 5:], image.array[:, 5:])
 
 
-def test_a_polygon_over_the_full_range_keeps_the_whole_image():
+def test_a_polygon_over_the_full_range_fills_the_whole_image():
     masks = ImageMasks({'cam': [FULL_RANGE]})
-    image = _image()
-    assert np.array_equal(masks.apply(image), image.array)
+    assert np.all(masks.apply(_image()) == ImageMasks.FILL_VALUE)
 
 
 def test_several_polygons_are_combined():
     masks = ImageMasks({'cam': [LEFT_HALF, RIGHT_HALF]})
-    image = _image()
-    assert np.array_equal(masks.apply(image), image.array)
+    assert np.all(masks.apply(_image()) == ImageMasks.FILL_VALUE)
 
 
-def test_overlapping_and_nested_polygons_keep_their_union():
+def test_overlapping_and_nested_polygons_fill_their_union():
     left = _polygon((0, 0), (0.7, 0), (0.7, 1), (0, 1))
     right = _polygon((0.3, 0), (1, 0), (1, 1), (0.3, 1))
     nested = _polygon((0.1, 0.25), (0.4, 0.25), (0.4, 0.75), (0.1, 0.75))
     masks = ImageMasks({'cam': [left, right, nested]})
-    image = _image(width=20, height=8)
-    assert np.array_equal(masks.apply(image), image.array)
+    assert np.all(masks.apply(_image(width=20, height=8)) == ImageMasks.FILL_VALUE)
 
 
 @pytest.mark.parametrize('seed', range(20))
@@ -102,20 +99,20 @@ def test_polygons_scale_with_the_image_size():
     for width, height in [(8, 4), (16, 8), (8, 4)]:
         image = _image(width=width, height=height)
         masked = masks.apply(image)
-        kept = width // 2 + 1
-        assert np.array_equal(masked[:, :kept], image.array[:, :kept])
-        assert np.all(masked[:, kept:] == ImageMasks.FILL_VALUE)
+        filled = width // 2 + 1
+        assert np.all(masked[:, :filled] == ImageMasks.FILL_VALUE)
+        assert np.array_equal(masked[:, filled:], image.array[:, filled:])
 
 
 def test_setting_new_polygons_replaces_the_old_ones():
     masks = ImageMasks({'cam': [LEFT_HALF]})
     image = _image()
-    assert np.all(masks.apply(image)[:, 5:] == ImageMasks.FILL_VALUE)
+    assert np.all(masks.apply(image)[:, :5] == ImageMasks.FILL_VALUE)
     masks.set('cam', [RIGHT_HALF])
     assert masks.polygons['cam'] == (RIGHT_HALF,)
     masked = masks.apply(image)
-    assert np.all(masked[:, :4] == ImageMasks.FILL_VALUE)
-    assert np.array_equal(masked[:, 4:], image.array[:, 4:])
+    assert np.array_equal(masked[:, :4], image.array[:, :4])
+    assert np.all(masked[:, 4:] == ImageMasks.FILL_VALUE)
 
 
 def test_removing_the_polygons_lets_the_camera_pass_through_again():
