@@ -7,7 +7,7 @@ from uuid import uuid4
 import numpy as np
 
 from .. import rosys
-from ..geometry import Point3d, Polygon
+from ..geometry import Point, Point3d, Polygon
 from .annotations import Annotations
 from .calibratable_camera_provider import CalibratableCameraProvider
 from .camera import CalibratableCamera
@@ -128,8 +128,11 @@ class DetectorSimulation(Detector):
                 continue
             if not (0 <= image_point.x < image.size.width and 0 <= image_point.y < image.size.height):
                 continue
-            if not self.masks.covers(image.camera_id, image_point, image.size):
-                continue
+            polygons = self.masks.polygons.get(image.camera_id)
+            if polygons:
+                normalized_point = Point(x=image_point.x / image.size.width, y=image_point.y / image.size.height)
+                if not any(polygon.contains(normalized_point) for polygon in polygons):
+                    continue
 
             if obj.size is None:
                 detections.points.append(PointDetection(

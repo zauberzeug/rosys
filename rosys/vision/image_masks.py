@@ -7,7 +7,7 @@ from typing import ClassVar
 import cv2
 import numpy as np
 
-from ..geometry import Point, Polygon
+from ..geometry import Polygon
 from .image import Image, ImageArray, ImageSize
 
 Raster = np.ndarray[tuple[int, int], np.dtype[np.uint8]]
@@ -82,14 +82,6 @@ class ImageMasks:
         masked: ImageArray = np.full_like(image.array, self.FILL_VALUE)
         cv2.copyTo(image.array, raster, masked)
         return masked
-
-    def covers(self, camera_id: str, point: Point, size: ImageSize) -> bool:
-        """Whether a pixel position lies inside the kept region of a camera (always true without polygons)."""
-        if camera_id not in self._polygons:
-            return True
-        x = min(max(int(point.x), 0), size.width - 1)
-        y = min(max(int(point.y), 0), size.height - 1)
-        return bool(self._raster(camera_id, size)[y, x])
 
     def _raster(self, camera_id: str, size: ImageSize) -> Raster:
         cached = self._rasters.get(camera_id)

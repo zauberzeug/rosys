@@ -97,14 +97,6 @@ def test_removing_the_polygons_lets_the_camera_pass_through_again():
     assert masks.apply(image) is image.array
 
 
-def test_covers_reports_whether_a_pixel_lies_in_the_kept_region():
-    masks = ImageMasks({'cam': [LEFT_HALF]})
-    size = ImageSize(width=8, height=4)
-    assert masks.covers('cam', Point(x=1, y=1), size)
-    assert not masks.covers('cam', Point(x=6, y=1), size)
-    assert masks.covers('other', Point(x=6, y=1), size)
-
-
 @pytest.mark.parametrize('polygons, message', [
     ([], 'At least one polygon'),
     ([_polygon((0, 0), (1, 1))], 'at least three points'),
