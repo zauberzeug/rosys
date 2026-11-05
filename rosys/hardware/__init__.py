@@ -13,6 +13,7 @@ from .module import Module, ModuleHardware, ModuleSimulation
 from .robot import Robot, RobotHardware, RobotSimulation
 from .robot_brain import EspNotReadyException, RobotBrain
 from .serial import SerialHardware
+from .state_counter import StateCounter
 from .wheels import Wheels, WheelsHardware, WheelsSimulation, cap_wheel_speed
 
 __all__ = [
@@ -52,6 +53,7 @@ __all__ = [
     'RobotSimulation',
     'SerialCommunication',
     'SerialHardware',
+    'StateCounter',
     'WebCommunication',
     'Wheels',
     'WheelsHardware',
