@@ -1,3 +1,7 @@
+import asyncio
+import threading
+from unittest.mock import patch
+
 import pytest
 
 from rosys import run, sleep
@@ -83,3 +87,40 @@ async def test_retry_failed_with_on_failed_and_args():
     assert events == ['call', 'failed 0/3',
                       'call', 'failed 1/3',
                       'call', 'failed 2/3']
+
+
+@pytest.mark.parametrize('bound', ['io_bound', 'cpu_bound'])
+async def test_a_call_refused_by_the_shut_down_pools_returns_none(bound: str):
+    async def refuse(*_) -> None:
+        raise asyncio.CancelledError('The app has shut down.')
+
+    with patch(f'nicegui.run.{bound}', refuse):
+        assert await getattr(run, bound)(print) is None
+    assert not run.running_cpu_bound_processes
+
+
+@pytest.mark.parametrize('bound', ['io_bound', 'cpu_bound'])
+async def test_cancelling_the_task_propagates(bound: str):
+    async def wait_forever(*_) -> None:
+        await asyncio.Event().wait()
+
+    with patch(f'nicegui.run.{bound}', wait_forever):
+        task = asyncio.create_task(getattr(run, bound)(print))
+        await asyncio.sleep(0)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    assert task.cancelled()
+    assert not run.running_cpu_bound_processes
+
+
+async def test_cancelling_a_running_io_bound_call_does_not_wait_for_the_thread():
+    release = threading.Event()
+    task = asyncio.create_task(run.io_bound(release.wait))
+    await asyncio.sleep(0.01)
+    task.cancel()
+    try:
+        with pytest.raises(asyncio.CancelledError):
+            await task
+    finally:
+        release.set()
