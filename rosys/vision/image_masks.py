@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping
 from types import MappingProxyType
 from typing import ClassVar
 
@@ -12,11 +12,12 @@ from .image import Image, ImageArray
 
 
 class ImageMasks:
-    """Per-camera masks that gray out image regions before they reach a detector.
+    """Per-camera masks that gray out regions of an image.
 
     Each camera id maps to polygons in normalized image coordinates (x and y between 0 and 1),
     so the same polygons fit every resolution a camera may deliver.
-    Pixels inside a camera's polygons or on their outlines are replaced by ``FILL_VALUE``, all others are kept.
+    Pixels inside a camera's polygons are replaced by ``FILL_VALUE``, all others are kept;
+    along the outlines, which are grayed out as well, the result is accurate to about a pixel.
     Polygons may overlap, and a polygon reaching 0 and 1 covers the full width or height of the image.
     A camera without polygons passes its images through unchanged.
     """
@@ -27,7 +28,7 @@ class ImageMasks:
     It matches the letterbox padding common detectors are trained with.
     """
 
-    def __init__(self, polygons: Mapping[str, Sequence[Polygon]] | None = None) -> None:
+    def __init__(self, polygons: Mapping[str, Iterable[Polygon]] | None = None) -> None:
         self._polygons: dict[str, tuple[Polygon, ...]] = {}
         for camera_id, camera_polygons in (polygons or {}).items():
             self.set(camera_id, camera_polygons)
@@ -40,16 +41,19 @@ class ImageMasks:
     def __contains__(self, camera_id: object) -> bool:
         return camera_id in self._polygons
 
-    def set(self, camera_id: str, polygons: Sequence[Polygon]) -> None:
+    def set(self, camera_id: str, polygons: Iterable[Polygon]) -> None:
         """Replace the polygons of a camera.
 
         :param camera_id: the camera the polygons apply to
-        :param polygons: at least one polygon with at least three points, all coordinates between 0 and 1
-        :raises ValueError: if the polygons are empty, degenerate or outside the normalized range
+        :param polygons: polygons with at least three points each and all coordinates between 0 and 1;
+            without any polygons the camera passes its images through unchanged
+        :raises ValueError: if a polygon has fewer than three points or a point lies outside the normalized range
         """
-        if not polygons:
-            raise ValueError(f'At least one polygon is required for camera "{camera_id}"')
-        for polygon in polygons:
+        camera_polygons = tuple(polygons)
+        if not camera_polygons:
+            self.remove(camera_id)
+            return
+        for polygon in camera_polygons:
             if len(polygon.outline) < 3:
                 raise ValueError(f'Polygon for camera "{camera_id}" needs at least three points, '
                                  f'got {len(polygon.outline)}')
@@ -57,7 +61,7 @@ class ImageMasks:
                 if not (0.0 <= point.x <= 1.0 and 0.0 <= point.y <= 1.0):
                     raise ValueError(f'Polygon for camera "{camera_id}" has a point outside the normalized range: '
                                      f'{point}')
-        self._polygons[camera_id] = tuple(polygons)
+        self._polygons[camera_id] = camera_polygons
 
     def remove(self, camera_id: str) -> None:
         """Remove the polygons of a camera so its images pass through unchanged."""
@@ -87,11 +91,17 @@ class ImageMasks:
         masked = np.frombuffer(buffer, np.uint8).reshape(array.shape)
         height, width = array.shape[:2]
         for polygon in polygons:  # one call per polygon, because a single call would leave overlaps unfilled
-            cv2.fillPoly(masked, [_contour(polygon, width, height)], (self.FILL_VALUE,) * 3)
+            cv2.fillPoly(masked, [_contour(polygon, width, height)], (self.FILL_VALUE,) * 3, shift=_FRACTIONAL_BITS)
         return buffer
 
 
+_FRACTIONAL_BITS = 8
+
+
 def _contour(polygon: Polygon, width: int, height: int) -> np.ndarray:
-    """Convert a polygon in normalized coordinates to integer pixel coordinates for OpenCV."""
-    points = np.array([[point.x * width, point.y * height] for point in polygon.outline])
-    return np.round(points).astype(np.int32)
+    """Convert a polygon in normalized coordinates to fixed-point pixel coordinates for OpenCV.
+
+    Normalized 0 and 1 are the outer edges of the image, while OpenCV places pixel centers at integer coordinates.
+    """
+    points = np.array([[point.x * width, point.y * height] for point in polygon.outline]) - 0.5
+    return np.round(points * (1 << _FRACTIONAL_BITS)).astype(np.int32)

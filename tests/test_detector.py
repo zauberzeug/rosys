@@ -6,6 +6,7 @@ from typing import Any
 import numpy as np
 import pytest
 
+from rosys import run
 from rosys.geometry import Point, Point3d, Polygon
 from rosys.testing import forward
 from rosys.vision import (
@@ -18,6 +19,7 @@ from rosys.vision import (
     ImageTransmissionFormat,
     SimulatedObject,
 )
+from rosys.vision.detector import DetectorException
 from rosys.vision.image_processing import decode_jpeg_image, encode_image_as_jpeg
 
 Payloads = dict[str, dict[str, Any]]
@@ -159,6 +161,18 @@ async def test_masks_can_be_set_after_creation(make_detector: Callable[..., Dete
     image = _camera_image()
     await detector.detect(image, lazy=False)
     assert payloads['detect']['image']['bytes'] == detector.masks.apply(image).tobytes()
+
+
+async def test_interrupted_masking_cancels_the_call_instead_of_failing(make_detector: Callable[..., DetectorHardware],
+                                                                       monkeypatch: pytest.MonkeyPatch):
+    async def interrupted(*_: Any, **__: Any) -> None:
+        return None
+    monkeypatch.setattr(run, 'io_bound', interrupted)
+    detector = make_detector(masks={'cam': [LEFT_HALF]})
+    with pytest.raises(asyncio.CancelledError):
+        await detector.upload(_camera_image())
+    with pytest.raises(DetectorException, match='Detection cancelled'):
+        await detector.detect(_camera_image(), lazy=False)
 
 
 class _Cameras:
