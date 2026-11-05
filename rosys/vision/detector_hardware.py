@@ -1,12 +1,13 @@
 import asyncio
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from typing import Any, Literal
 
-import numpy as np
 import socketio
 import socketio.exceptions
 
 from .. import rosys, run
+from ..geometry import Polygon
 from ..helpers import LazyWorker
 from ..persistence import from_dict
 from .annotations import Annotations
@@ -41,6 +42,7 @@ class DetectorHardware(Detector):
 
     By default images are sent as raw pixel arrays.
     With ``image_transmission_format=ImageTransmissionFormat.JPEG`` they are encoded as JPEG with ``jpeg_quality`` first.
+    The ``masks`` are applied before either format is produced.
     """
     MAX_IMAGE_SIZE = 64 * 1024 * 1024
     MAX_TIMEOUTS_BEFORE_DISCONNECT = 5
@@ -53,8 +55,9 @@ class DetectorHardware(Detector):
                  auto_disconnect: bool = True,
                  sio_timeout: int = 5,
                  image_transmission_format: ImageTransmissionFormat = ImageTransmissionFormat.RAW,
-                 jpeg_quality: int = DEFAULT_JPEG_QUALITY) -> None:
-        super().__init__(name=name)
+                 jpeg_quality: int = DEFAULT_JPEG_QUALITY,
+                 masks: Mapping[str, Sequence[Polygon]] | None = None) -> None:
+        super().__init__(name=name, masks=masks)
         validate_jpeg_quality(jpeg_quality)
 
         self.lazy_worker = LazyWorker()
@@ -297,14 +300,18 @@ class DetectorHardware(Detector):
         return all_detections
 
     async def _prepare_image(self, image: Image) -> dict[str, Any]:
-        """Return the image as a payload in the configured transmission format."""
+        """Return the masked image as a payload in the configured transmission format."""
+        if self.image_transmission_format == ImageTransmissionFormat.RAW and image.camera_id not in self.masks:
+            return self._image_payload(image)
+        payload = await run.io_bound(self._image_payload, image)
+        if payload is None:
+            raise asyncio.CancelledError
+        return payload
+
+    def _image_payload(self, image: Image) -> dict[str, Any]:
         if self.image_transmission_format == ImageTransmissionFormat.JPEG:
-            # the encoder releases the GIL, so concurrent encodes run in parallel
-            jpeg_bytes = await run.io_bound(encode_image_as_jpeg, image.array, self.jpeg_quality)
-            if jpeg_bytes is None:
-                raise DetectorException('JPEG encoding failed')
-            return {'format': 'jpeg', 'bytes': jpeg_bytes}
-        return _array_to_dict(image.array)
+            return {'format': 'jpeg', 'bytes': encode_image_as_jpeg(self.masks.apply(image), self.jpeg_quality)}
+        return {'bytes': self.masks.apply_as_bytes(image), 'dtype': str(image.array.dtype), 'shape': image.array.shape}
 
     def __str__(self) -> str:
         return f'{type(self).__name__} ({"connected" if self.is_connected else "disconnected"})'
@@ -469,11 +476,3 @@ def _detections_from_dict(data: dict[str, Any]) -> Detections:
         segmentations=[from_dict(SegmentationDetection, d) for d in data.get('segmentation_detections', [])],
         classifications=[from_dict(ClassificationDetection, d) for d in data.get('classification_detections', [])],
     )
-
-
-def _array_to_dict(array: np.ndarray) -> dict[str, bytes | str | tuple[int, ...]]:
-    return {
-        'bytes': array.tobytes(order='C'),
-        'dtype': str(array.dtype),
-        'shape': array.shape,
-    }
