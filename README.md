@@ -130,6 +130,8 @@ you should wrap the code in a function and await it with `await rosys.run.cpu_bo
 
 RoSys starts helper processes (MJPEG stream workers, path planning) with the `spawn` start method, which re-imports your main script in the child.
 A script that creates these at import time must therefore put its startup under `if __name__ == '__main__':`, or the helpers start recursively.
+The workers of `rosys.run.cpu_bound` are spawned as well, so anything your main script does at import time runs once per worker.
+Move opening a serial port and the like into `rosys.on_startup` or under the same guard, or a worker opens the port a second time.
 
 ### Safety
 
