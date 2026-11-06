@@ -104,20 +104,25 @@ async def test_download_refusal(lizard_firmware: LizardFirmware, notifications: 
     assert lizard_firmware.local_version is None
 
 
-@pytest.mark.parametrize('target, attr', [('core', 'local_version'), ('p0', 'core_version')])
+@pytest.mark.parametrize('target, attr, proceeds_to', [('core', 'local_version', 'does not answer'),
+                                                       ('p0', 'core_version', 'not ready')])
 @pytest.mark.parametrize('version, expected_message', [
     (None, 'version is unknown'),
     ('0.14.0', 'not supported'),
-    ('0.13.0', 'not ready'),
+    ('0.13.0', None),
 ])
 async def test_flash_version_gate(lizard_firmware: LizardFirmware, notifications: list[str],
                                   monkeypatch: pytest.MonkeyPatch, tmp_path: Path,
-                                  target: str, attr: str, version: str | None, expected_message: str) -> None:
-    """The version gate refuses unknown and unsupported versions; supported ones proceed to the readiness check."""
+                                  target: str, attr: str, proceeds_to: str,
+                                  version: str | None, expected_message: str | None) -> None:
+    """The version gate refuses unknown and unsupported versions; supported ones proceed to the next check."""
+    expected_message = expected_message or proceeds_to
     monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
     if version is not None:
         setattr(lizard_firmware, attr, version)
-    await getattr(lizard_firmware, f'flash_{target}')()
+    task = background_tasks.create(getattr(lizard_firmware, f'flash_{target}')(), name=f'flash {target}')
+    await forward(seconds=3.0)
+    assert task.done()
     assert any(expected_message in message for message in notifications)
 
 
@@ -127,10 +132,12 @@ async def test_flash_core_reads_local_version(lizard_firmware: LizardFirmware, n
     monkeypatch.setattr(LizardFirmware, 'PATH', tmp_path)
     (tmp_path / 'build').mkdir()
     (tmp_path / 'build' / 'lizard.bin').write_bytes(app_image('v0.13.0'))
-    await lizard_firmware.flash_core()
+    task = background_tasks.create(lizard_firmware.flash_core(), name='flash core')
+    await forward(seconds=3.0)
+    assert task.done()
     assert lizard_firmware.local_version == '0.13.0'
     assert not any('version is unknown' in message for message in notifications)
-    assert any('not ready' in message for message in notifications)
+    assert any('does not answer' in message for message in notifications)
 
 
 @pytest.mark.parametrize('target', ['core', 'p0'])

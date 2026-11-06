@@ -211,16 +211,18 @@ class LizardFirmware:
             self.read_local_version()
         if self._refuse_version(self.local_version, 'Flashing Core failed'):
             return
-        if not self.robot_brain.is_ready:
-            rosys.notify('Flashing Core failed. Robot Brain is not ready.', 'negative')
-            return
-        assert isinstance(self.robot_brain.communication, SerialCommunication)
         rosys.notify(f'Flashing Lizard firmware {self.local_version} to Core...')
         # NOTE: GPIO0 idles high in normal operation and is pulled low by Lizard itself during flashing,
         # so only GPIO2 and GPIO12 can be pre-checked here (https://github.com/zauberzeug/rosys/issues/430)
-        if any(await self.robot_brain.esp_pins_core.get_strapping_pins(numbers=(2, 12))):
+        try:
+            strapping_pins = await self.robot_brain.esp_pins_core.get_strapping_pins(numbers=(2, 12))
+        except TimeoutError:
+            rosys.notify('Flashing Core failed. Core does not answer.', 'negative')
+            return
+        if any(strapping_pins):
             rosys.notify('Flashing Core failed. Check strapping pins.', 'negative')
             return
+        assert isinstance(self.robot_brain.communication, SerialCommunication)
         self.robot_brain.communication.disconnect()
         await rosys.sleep(0.3)
         output = await rosys.run.sh(['sudo', './flash.py', *self.flash_params], timeout=None, working_dir=self.PATH)
