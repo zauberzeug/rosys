@@ -7,7 +7,7 @@ from .camera_projector import CameraProjector
 from .camera_provider import CameraProvider
 from .camera_scene_object import CameraSceneObject
 from .detections import BoxDetection, Detection, Detections, PointDetection
-from .detector import Autoupload, Detector, ImageState, ImageTransmissionFormat
+from .detector import Autoupload, BatchImageMetadata, Detector, ImageState, ImageTransmissionFormat
 from .detector_hardware import DetectorHardware
 from .detector_simulation import DetectorSimulation, SimulatedObject
 from .image import Image, ImageArray, ImageSize
@@ -25,6 +25,7 @@ __all__ = [
     'DEFAULT_JPEG_QUALITY',
     'Annotations',
     'Autoupload',
+    'BatchImageMetadata',
     'BoxAnnotation',
     'BoxDetection',
     'CalibratableCamera',
