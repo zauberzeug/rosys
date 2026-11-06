@@ -75,7 +75,7 @@ class RobotBrain:
         self._hardware_time: float | None = None
         self._core_times: deque[float] = deque(maxlen=LOOP_PERIOD_HISTORY_LENGTH)
         self._last_core_message_time: float | None = None
-        self._use_espresso = use_espresso
+        self.use_espresso = use_espresso
         if enable_esp_on_startup:
             rosys.on_startup(self.enable_esp)
         if heartbeat_interval is not None:
@@ -403,7 +403,7 @@ class RobotBrain:
     async def enable_esp(self) -> None:
         if self._esp_lock.locked():
             return
-        if self._use_espresso:
+        if self.use_espresso:
             await self._enable_espresso()
             return
         self.log.warning("Lizard's flash.py will be deprecated in the future. "
@@ -451,7 +451,7 @@ class RobotBrain:
     async def reset_esp(self) -> None:
         if self._esp_lock.locked():
             return
-        if self._use_espresso:
+        if self.use_espresso:
             await self._reset_espresso()
             return
         self.log.warning("Lizard's flash.py will be deprecated in the future. "

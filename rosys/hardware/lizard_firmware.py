@@ -234,7 +234,10 @@ class LizardFirmware:
         self.robot_brain.communication.disconnect()
         await rosys.sleep(0.3)
         try:
-            await self._stream(['sudo', './flash.py', *self.flash_params])
+            if self.robot_brain.use_espresso:
+                await self._stream(['sudo', './espresso.py', 'flash', *self.flash_params])
+            else:
+                await self._stream(['sudo', './flash.py', *self.flash_params])
         finally:
             self.robot_brain.communication.connect()
         await self.read_core_version()
