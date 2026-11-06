@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import re
 import subprocess
@@ -48,6 +49,9 @@ class LizardFirmware:
 
         self.local_checksum: str | None = None
         self.core_checksum: str | None = None
+
+        self.progress = ''
+        """The last line the running flash reported, for status pages."""
 
         self._p0_flash_last_complete: float = 0.0
         self.robot_brain.FLASH_P0_COMPLETE.subscribe(lambda: setattr(self, '_p0_flash_last_complete', rosys.time()))
@@ -212,6 +216,7 @@ class LizardFirmware:
 
         :raises FirmwareFlashError: when the Core cannot be flashed; it keeps its old firmware
         """
+        self.progress = ''
         if self.local_version is None:
             self.read_local_version()
         if (reason := self._version_refusal(self.local_version, 'Flashing Core failed')) is not None:
@@ -228,9 +233,10 @@ class LizardFirmware:
         assert isinstance(self.robot_brain.communication, SerialCommunication)
         self.robot_brain.communication.disconnect()
         await rosys.sleep(0.3)
-        output = await rosys.run.sh(['sudo', './flash.py', *self.flash_params], timeout=None, working_dir=self.PATH)
-        self.log.info('flashed Lizard:\n%s', output)
-        self.robot_brain.communication.connect()
+        try:
+            await self._stream(['sudo', './flash.py', *self.flash_params])
+        finally:
+            self.robot_brain.communication.connect()
         await self.read_core_version()
         rosys.notify('Finished.', 'positive')
 
@@ -239,6 +245,7 @@ class LizardFirmware:
 
         :raises FirmwareFlashError: when the P0 cannot be flashed; it keeps its old firmware
         """
+        self.progress = ''
         if (reason := self._version_refusal(self.core_version, 'Flashing P0 failed')) is not None:
             self._fail(reason)
         if not self.robot_brain.is_ready:
@@ -249,18 +256,36 @@ class LizardFirmware:
         if any(await self.robot_brain.esp_pins_p0.get_strapping_pins(numbers=(2, 12))):
             self._fail('Flashing P0 failed. Check strapping pins.')
         await self.robot_brain.send('p0.flash()')
+        self.progress = 'waiting for the Core to replicate its firmware to the P0'
         start = rosys.time()
         deadline = start + timeout
         while self._p0_flash_last_complete < start:
             if rosys.time() > deadline:
                 self._fail(f'Flashing P0 failed. No replica after {timeout:.0f} s.')
             await rosys.sleep(0.1)
+        self.progress = 'restarting the Robot Brain'
         await self.robot_brain.restart()
         await rosys.sleep(3.0)
         await self.read_p0_version()
         rosys.notify('Finished.', 'positive')
 
+    async def _stream(self, command: list[str]) -> None:
+        process = await asyncio.create_subprocess_exec(*command, cwd=self.PATH, stdout=asyncio.subprocess.PIPE,
+                                                       stderr=asyncio.subprocess.STDOUT)
+        assert process.stdout is not None
+        lines = []
+        async for raw in process.stdout:
+            line = raw.decode(errors='replace').rstrip()
+            lines.append(line)
+            if line:
+                self.progress = line
+        await process.wait()
+        self.log.info('%s (exit %s):\n%s', ' '.join(command), process.returncode, '\n'.join(lines))
+        if process.returncode != 0:
+            self._fail(f'Flashing failed: {self.progress}')
+
     def _fail(self, message: str) -> NoReturn:
+        self.progress = message
         raise FirmwareFlashError(message)
 
     def _warn_version(self, version: str | None, context: str) -> None:
