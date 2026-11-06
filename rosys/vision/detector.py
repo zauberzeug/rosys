@@ -52,6 +52,15 @@ class DetectorException(Exception):
 
 
 @dataclass(slots=True, kw_only=True)
+class BatchImageMetadata:
+    """Per-image metadata of a batch; tags add to the batch's, source and creation date replace the batch's."""
+
+    tags: list[str] = field(default_factory=list)
+    source: str | None = None
+    creation_date: datetime | str | None = None
+
+
+@dataclass(slots=True, kw_only=True)
 class DetectorInfo:
     """Information about the detector."""
 
@@ -147,10 +156,11 @@ class Detector(abc.ABC):
                            tags: list[str] | None = None,
                            source: str | None = None,
                            creation_date: datetime | str | None = None,
+                           image_metadata: list[BatchImageMetadata] | None = None,
                            ) -> list[Detections] | None:
         """Runs detections on all images and fills each ``image.detections`` property.
 
-        Result order matches ``images``.
+        Result order matches ``images``, and so must ``image_metadata``.
         """
 
     @abc.abstractmethod
