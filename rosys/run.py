@@ -5,7 +5,7 @@ import shlex
 import signal
 import subprocess
 import uuid
-from collections.abc import Awaitable, Callable, Coroutine, Generator
+from collections.abc import Callable, Coroutine, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from functools import partial, wraps
@@ -27,8 +27,8 @@ running_sh_processes: list[subprocess.Popen] = []
 log = logging.getLogger('rosys.run')
 
 
-async def io_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R | None:
-    return await _none_if_shut_down(run.io_bound(callback, *args, **kwargs))
+async def io_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
+    return await run.io_bound(callback, *args, **kwargs)
 
 
 def awaitable(func: Callable) -> Callable:
@@ -39,21 +39,9 @@ def awaitable(func: Callable) -> Callable:
     return inner
 
 
-async def cpu_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R | None:
+async def cpu_bound(callback: Callable[P, R], *args: P.args, **kwargs: P.kwargs) -> R:
     with cpu():
-        return await _none_if_shut_down(run.cpu_bound(callback, *args, **kwargs))
-
-
-async def _none_if_shut_down(call: Awaitable[R]) -> R | None:
-    # NOTE: rosys owns the `R | None` contract: NiceGUI 4 raises CancelledError for a call it refuses because its pools
-    # are shut down, which is no cancellation of this task; a real one has to propagate, or `task.cancel()` gets lost
-    try:
-        return await call
-    except asyncio.CancelledError:
-        task = asyncio.current_task()
-        if task is not None and task.cancelling():
-            raise
-        return None
+        return await run.cpu_bound(callback, *args, **kwargs)
 
 
 @contextmanager

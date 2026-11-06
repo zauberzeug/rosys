@@ -90,12 +90,12 @@ async def test_retry_failed_with_on_failed_and_args():
 
 
 @pytest.mark.parametrize('bound', ['io_bound', 'cpu_bound'])
-async def test_a_call_refused_by_the_shut_down_pools_returns_none(bound: str):
+async def test_a_call_refused_by_the_shut_down_pools_raises_cancelled_error(bound: str):
     async def refuse(*_) -> None:
         raise asyncio.CancelledError('The app has shut down.')
 
-    with patch(f'nicegui.run.{bound}', refuse):
-        assert await getattr(run, bound)(print) is None
+    with patch(f'nicegui.run.{bound}', refuse), pytest.raises(asyncio.CancelledError):
+        await getattr(run, bound)(print)
     assert not run.running_cpu_bound_processes
 
 

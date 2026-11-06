@@ -37,7 +37,7 @@ A few facts shape almost everything:
   `rosys.on_startup` runs _after_ persisted state is restored (each `Persistable` restores itself when `.persistent()` is called), so configuring through `app.on_startup` lets the restored state overwrite whatever you set (see the README note).
   Note `on_repeat` waits one interval before its first call — it is not immediate.
 - **Don't block the loop:** wrap CPU-heavy work in `await rosys.run.cpu_bound(...)` and blocking I/O in `await rosys.run.io_bound(...)`.
-  Both return `R | None` — `None` when the pools are already shut down, so guard the result; cancelling the awaiting task raises `CancelledError` as usual.
+  Both raise `CancelledError` when the pools are already shut down, just as when the awaiting task is cancelled.
   `cpu_bound` runs in a _spawned_ subprocess, so its callback and arguments must be picklable (module-level functions, no closures or `self`), and each worker re-imports the user's `__main__`.
 - **Events** are typed `Event[T]` with `.emit()` / `.subscribe()` (imported from `nicegui`, not defined in `rosys` — grepping the `rosys` package for `class Event` finds nothing); event names are `SCREAMING_SNAKE_CASE` (e.g. `VELOCITY_MEASURED`).
 
