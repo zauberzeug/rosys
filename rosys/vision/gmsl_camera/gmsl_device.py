@@ -12,8 +12,17 @@ import numpy as np
 from nicegui import background_tasks
 
 from ... import rosys
+from ...geometry import Rectangle
 from ..capture_device import CaptureDevice, ImageDataHandler
 from ..gstreamer import STDERR_TAIL_SIZE, GDPPacket, GDPPayloadType, parse_caps_dimensions, read_tail
+from ..image_rotation import ImageRotation
+
+FLIP_METHODS = {
+    ImageRotation.NONE: 0,
+    ImageRotation.LEFT: 1,
+    ImageRotation.UPSIDE_DOWN: 2,
+    ImageRotation.RIGHT: 3,
+}
 
 
 def build_argus_command(sensor_id: int, *,
@@ -23,11 +32,15 @@ def build_argus_command(sensor_id: int, *,
                         gain: float = 1.0,
                         fps: int = 30,
                         width: int = 1920,
-                        height: int = 1200) -> str:
+                        height: int = 1200,
+                        rotation: ImageRotation = ImageRotation.NONE,
+                        crop: Rectangle | None = None) -> str:
     """Build the `gst-launch-1.0` command for an Argus pipeline that writes RGB frames as GDP packets to stdout.
 
     Pinning the gain also pins the ISP's digital gain: it is a third brightness lever that
     otherwise stays automatic and compensates for the pinned exposure and analog gain.
+
+    Crop and rotation run in the hardware converter, so transformed frames cost no CPU time.
     """
     source_args = [f'sensor-id={sensor_id}']
     if not auto_exposure:
@@ -36,13 +49,56 @@ def build_argus_command(sensor_id: int, *,
     if not auto_gain:
         source_args.append(f'gainrange="{gain} {gain}"')
         source_args.append('ispdigitalgainrange="1 1"')
+    flip = '' if rotation == ImageRotation.NONE else f' flip-method={FLIP_METHODS[rotation]}'
     return (
         f'gst-launch-1.0 --quiet nvarguscamerasrc {" ".join(source_args)} ! '
         f'video/x-raw(memory:NVMM),width={width},height={height},framerate={fps}/1 ! '
-        'nvvidconv ! video/x-raw,format=BGRx ! '
+        f'{_crop_stage(crop, width, height, rotation)}'
+        f'nvvidconv{flip} ! video/x-raw,format=BGRx ! '
         'videoconvert ! video/x-raw,format=RGB ! '
         'queue max-size-buffers=1 leaky=downstream ! gdppay ! fdsink sync=false'
     )
+
+
+def _crop_stage(crop: Rectangle | None, width: int, height: int, rotation: ImageRotation) -> str:
+    """Return a conversion step that crops the frame before it gets rotated, or nothing if there is no crop.
+
+    The crop is widened to what the converter can do exactly; the rotating step after it sizes its output itself.
+    """
+    if crop is None:
+        return ''
+    x_span = _aligned_span(crop.x, crop.x + crop.width, width)
+    y_span = _aligned_span(crop.y, crop.y + crop.height, height)
+    if x_span is None or y_span is None:
+        return ''
+    (left, right), (top, bottom) = x_span, y_span
+    if rotation in (ImageRotation.LEFT, ImageRotation.RIGHT):
+        # the converter rejects turning a frame whose long side exceeds 16 times its short side
+        left, right = _widened(left, right, width, -(-(bottom - top) // 16))
+        top, bottom = _widened(top, bottom, height, -(-(right - left) // 16))
+    # without the explicit size, nvvidconv scales the crop back up to the input size
+    return (f'nvvidconv left={left} top={top} right={right} bottom={bottom} ! '
+            f'video/x-raw(memory:NVMM),width={right - left},height={bottom - top} ! ')
+
+
+def _aligned_span(start: float, end: float, limit: int) -> tuple[int, int] | None:
+    """Widen ``[start, end)`` to what nvvidconv crops exactly within ``[0, limit)``, or ``None`` if it lies outside.
+
+    nvvidconv only crops exactly on even coordinates and fails on sides shorter than 16 pixels,
+    and GStreamer pads RGB rows whose width is not divisible by 4, which the frame reader would reject.
+    """
+    first = max(0, int(start) // 2 * 2)
+    last = min(limit, int(end))
+    if last <= first:
+        return None
+    return _widened(first, last, limit, 16)
+
+
+def _widened(first: int, last: int, limit: int, min_length: int) -> tuple[int, int]:
+    """Grow ``[first, last)`` to at least ``min_length`` and a length divisible by 4, shifted back into the frame."""
+    length = min(-(-max(last - first, min_length) // 4) * 4, limit // 4 * 4)
+    first = min(first, (limit - length) // 2 * 2)
+    return first, first + length
 
 
 class GmslDevice(CaptureDevice):
@@ -66,6 +122,8 @@ class GmslDevice(CaptureDevice):
                  fps: int = 30,
                  width: int = 1920,
                  height: int = 1200,
+                 rotation: ImageRotation = ImageRotation.NONE,
+                 crop: Rectangle | None = None,
                  reconnect_interval: float = 3.0) -> None:
         super().__init__(name=f'gmsl-{sensor_id}',
                          log=logging.getLogger(f'rosys.vision.gmsl_camera.gmsl_device.{sensor_id}'),
@@ -81,6 +139,8 @@ class GmslDevice(CaptureDevice):
         self.fps = fps
         self.width = width
         self.height = height
+        self.rotation = rotation
+        self.crop = crop
 
         self._capture_process: Process | None = None
         self._restart_task: asyncio.Task | None = None
@@ -98,7 +158,9 @@ class GmslDevice(CaptureDevice):
                                    gain=self.gain,
                                    fps=self.fps,
                                    width=self.width,
-                                   height=self.height)
+                                   height=self.height,
+                                   rotation=self.rotation,
+                                   crop=self.crop)
 
     def request_restart(self) -> None:
         """Schedule a single pipeline restart after the current batch of parameter changes."""

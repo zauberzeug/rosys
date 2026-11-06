@@ -4,12 +4,11 @@ import logging
 import shutil
 from typing import Any
 
-from ... import rosys
+from ...geometry import Rectangle
 from ..camera.calibratable_camera import CalibratableCamera
 from ..camera.configurable_camera import ConfigurableCamera
 from ..camera.transformable_camera import TransformableCamera
 from ..image import Image, ImageArray
-from ..image_processing import process_ndarray_image
 from ..image_rotation import ImageRotation
 from .gmsl_device import GmslDevice
 
@@ -36,13 +35,13 @@ class GmslCamera(ConfigurableCamera, TransformableCamera, CalibratableCamera):
                  width: int = 1920,
                  height: int = 1200,
                  **kwargs) -> None:
+        self.device: GmslDevice | None = None  # before super().__init__, which already sets rotation and crop
         super().__init__(id=id or f'gmsl-{sensor_id}',
                          name=name,
                          connect_after_init=connect_after_init,
                          **kwargs)
         self.log = logging.getLogger(f'rosys.vision.gmsl_camera.{self.id}')
         self.sensor_id = sensor_id
-        self.device: GmslDevice | None = None
 
         self._register_parameter('auto_exposure', self._get_auto_exposure, self._set_auto_exposure, auto_exposure)
         self._register_parameter('exposure', self._get_exposure, self._set_exposure, exposure)
@@ -58,6 +57,26 @@ class GmslCamera(ConfigurableCamera, TransformableCamera, CalibratableCamera):
         } | {
             name: param.value for name, param in self._parameters.items()
         }
+
+    @property
+    def rotation(self) -> ImageRotation:
+        return self._rotation
+
+    @rotation.setter
+    def rotation(self, value: ImageRotation) -> None:
+        self._rotation = value
+        if self.device is not None:
+            self._set_device_value('rotation', value)
+
+    @property
+    def crop(self) -> Rectangle | None:
+        return self._crop
+
+    @crop.setter
+    def crop(self, value: Rectangle | None) -> None:
+        self._crop = value
+        if self.device is not None:
+            self._set_device_value('crop', value)
 
     @property
     def is_connected(self) -> bool:
@@ -88,6 +107,8 @@ class GmslCamera(ConfigurableCamera, TransformableCamera, CalibratableCamera):
                 fps=self._parameters['fps'].value,
                 width=self._parameters['width'].value,
                 height=self._parameters['height'].value,
+                rotation=self.rotation,
+                crop=self.crop,
                 reconnect_interval=self.reconnect_interval,
             )
             self.log.info('connecting camera %s (sensor-id %s)', self.id, self.sensor_id)
@@ -104,14 +125,8 @@ class GmslCamera(ConfigurableCamera, TransformableCamera, CalibratableCamera):
         self.device = None
         self.log.info('camera %s: disconnected', self.id)
 
-    async def _handle_new_image_data(self, image_array: ImageArray, timestamp: float) -> None:
-        processed: ImageArray | None = image_array
-        if self.crop or self.rotation != ImageRotation.NONE:
-            processed = await rosys.run.cpu_bound(process_ndarray_image, image_array, self.rotation, self.crop)
-        if processed is None:
-            return
-        image = Image.from_array(processed, camera_id=self.id, time=timestamp)
-        self._add_image(image)
+    def _handle_new_image_data(self, image_array: ImageArray, timestamp: float) -> None:
+        self._add_image(Image.from_array(image_array, camera_id=self.id, time=timestamp))
 
     def _set_device_value(self, name: str, value: Any) -> None:
         assert self.device is not None

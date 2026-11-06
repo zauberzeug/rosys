@@ -6,8 +6,9 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 import rosys
+from rosys.geometry import Rectangle
 from rosys.testing import forward
-from rosys.vision import GmslCamera, GmslCameraProvider
+from rosys.vision import GmslCamera, GmslCameraProvider, ImageRotation
 from rosys.vision.gmsl_camera.gmsl_device import GmslDevice, build_argus_command
 from rosys.vision.gstreamer import parse_caps_dimensions, read_tail
 
@@ -41,6 +42,48 @@ def test_build_command_pins_manual_gain_and_isp_digital_gain() -> None:
 def test_build_command_sets_resolution_and_framerate() -> None:
     command = build_argus_command(0, width=1920, height=1200, fps=4)
     assert 'width=1920,height=1200,framerate=4/1' in command
+
+
+@pytest.mark.parametrize(('rotation', 'flip_method'), [
+    (ImageRotation.RIGHT, 3),
+    (ImageRotation.UPSIDE_DOWN, 2),
+    (ImageRotation.LEFT, 1),
+])
+def test_build_command_rotates_in_the_hardware_converter(rotation: ImageRotation, flip_method: int) -> None:
+    command = build_argus_command(0, rotation=rotation)
+    assert f'nvvidconv flip-method={flip_method} ! video/x-raw,format=BGRx !' in command
+
+
+def test_build_command_without_transform_leaves_the_converter_alone() -> None:
+    command = build_argus_command(0)
+    assert 'framerate=30/1 ! nvvidconv ! video/x-raw,format=BGRx !' in command
+
+
+def test_build_command_crops_on_aligned_coordinates_before_rotating() -> None:
+    command = build_argus_command(0, rotation=ImageRotation.RIGHT,
+                                  crop=Rectangle(x=101, y=51, width=1000, height=600))
+    assert 'nvvidconv left=100 top=50 right=1104 bottom=654 ! video/x-raw(memory:NVMM),width=1004,height=604 ! ' \
+        'nvvidconv flip-method=3 ! video/x-raw,format=BGRx !' in command
+
+
+def test_build_command_keeps_the_aligned_crop_inside_the_frame() -> None:
+    command = build_argus_command(0, width=1920, height=1200,
+                                  crop=Rectangle(x=-10, y=1100, width=3000, height=500))
+    assert 'nvvidconv left=0 top=1100 right=1920 bottom=1200 ! video/x-raw(memory:NVMM),width=1920,height=100 !' \
+        in command
+
+
+def test_build_command_ignores_a_crop_outside_the_frame() -> None:
+    command = build_argus_command(0, width=1920, height=1200, crop=Rectangle(x=2000, y=0, width=100, height=100))
+    assert 'left=' not in command
+
+
+def test_build_command_widens_crops_the_converter_cannot_handle() -> None:
+    command = build_argus_command(0, width=1920, height=1200, crop=Rectangle(x=1919, y=0, width=1, height=1200))
+    assert 'nvvidconv left=1904 top=0 right=1920 bottom=1200 !' in command, 'expected at least 16 pixels'
+    command = build_argus_command(0, width=1920, height=1200, rotation=ImageRotation.LEFT,
+                                  crop=Rectangle(x=0, y=1100, width=1920, height=100))
+    assert 'nvvidconv left=0 top=1080 right=1920 bottom=1200 !' in command, 'expected at most 16:1 when rotating'
 
 
 def test_parse_caps_dimensions() -> None:
@@ -139,5 +182,33 @@ async def test_reapplying_parameters_on_connect_does_not_restart_the_pipeline(ro
             await camera.set_parameters({'fps': 7})
             await forward(1.0)
             restart.assert_called_once()
+        finally:
+            await camera.disconnect()
+
+
+async def test_rotation_and_crop_reach_the_device_and_restart_the_pipeline(rosys_integration):
+    camera = GmslCamera(sensor_id=0, connect_after_init=False, rotation=ImageRotation.RIGHT)
+    with gstreamer_available(), \
+            patch.object(GmslDevice, '_run_session', _connected_session), \
+            patch.object(GmslDevice, 'restart_gstreamer', new_callable=AsyncMock) as restart:
+        await camera.connect()
+        try:
+            await forward(until=lambda: camera.is_connected)
+            assert camera.device is not None
+            assert camera.device.rotation == ImageRotation.RIGHT, 'expected the rotation set before connecting'
+
+            camera.rotate_clockwise()
+            await forward(1.0)
+            assert camera.device.rotation == ImageRotation.UPSIDE_DOWN
+            assert restart.call_count == 1
+
+            camera.crop = Rectangle(x=0, y=0, width=640, height=480)
+            await forward(1.0)
+            assert camera.device.crop == Rectangle(x=0, y=0, width=640, height=480)
+            assert restart.call_count == 2
+
+            camera.crop = Rectangle(x=0, y=0, width=640, height=480)
+            await forward(1.0)
+            assert restart.call_count == 2, 'expected an unchanged crop not to restart the pipeline'
         finally:
             await camera.disconnect()
