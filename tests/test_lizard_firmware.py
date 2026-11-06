@@ -8,7 +8,7 @@ from test_robot_brain import CommunicationSimulation, connect  # pylint: disable
 
 import rosys
 from rosys.hardware import RobotBrain, RobotHardware
-from rosys.hardware.lizard_firmware import LizardFirmware
+from rosys.hardware.lizard_firmware import FirmwareFlashError, LizardFirmware
 from rosys.testing import forward
 
 
@@ -122,8 +122,8 @@ async def test_flash_version_gate(lizard_firmware: LizardFirmware, notifications
         setattr(lizard_firmware, attr, version)
     task = background_tasks.create(getattr(lizard_firmware, f'flash_{target}')(), name=f'flash {target}')
     await forward(seconds=3.0)
-    assert task.done()
-    assert any(expected_message in message for message in notifications)
+    assert isinstance(task.exception(), FirmwareFlashError)
+    assert expected_message in str(task.exception())
 
 
 async def test_flash_core_reads_local_version(lizard_firmware: LizardFirmware, notifications: list[str],
@@ -134,10 +134,8 @@ async def test_flash_core_reads_local_version(lizard_firmware: LizardFirmware, n
     (tmp_path / 'build' / 'lizard.bin').write_bytes(app_image('v0.13.0'))
     task = background_tasks.create(lizard_firmware.flash_core(), name='flash core')
     await forward(seconds=3.0)
-    assert task.done()
     assert lizard_firmware.local_version == '0.13.0'
-    assert not any('version is unknown' in message for message in notifications)
-    assert any('does not answer' in message for message in notifications)
+    assert 'does not answer' in str(task.exception())
 
 
 @pytest.mark.parametrize('target', ['core', 'p0'])

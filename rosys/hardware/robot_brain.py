@@ -1,6 +1,7 @@
 import asyncio
 import logging
 from collections import defaultdict, deque
+from collections.abc import Awaitable, Callable
 from itertools import pairwise
 
 from nicegui import Event, ui
@@ -8,7 +9,7 @@ from nicegui import Event, ui
 from .. import rosys
 from .communication import Communication
 from .esp_pins import EspPins
-from .lizard_firmware import LizardFirmware
+from .lizard_firmware import FirmwareFlashError, LizardFirmware
 
 CLOCK_OFFSET_HISTORY_LENGTH = 100
 MAX_CONFIGURE_ATTEMPTS = 3
@@ -130,6 +131,12 @@ class RobotBrain:
             if version_select.options:
                 version_select.value = version_select.options[0]
 
+        async def notify_failure(flash: Callable[[], Awaitable[None]]) -> None:
+            try:
+                await flash()
+            except FirmwareFlashError as e:
+                rosys.notify(str(e), 'negative')
+
         async def local_update() -> None:
             await self.lizard_firmware.flash_core()
             await self.restart()
@@ -146,11 +153,11 @@ class RobotBrain:
                 .bind_value_to(self.lizard_firmware, 'selected_online_version')
             ui.button(on_click=read_online_versions).props('icon=refresh flat round dense') \
                 .tooltip('Read all available versions from GitHub')
-            online_update_button = ui.button(on_click=online_update).props('icon=file_download flat round dense') \
+            online_update_button = ui.button(on_click=lambda: notify_failure(online_update)).props('icon=file_download flat round dense') \
                 .tooltip('Download and flash online version to Core and P0 microcontrollers')
         with ui.row().classes('items-center'):
             ui.label().bind_text_from(self.lizard_firmware, 'local_description', backward=lambda x: f'Local: {x}')
-            local_update_button = ui.button(on_click=local_update).props('icon=file_download flat round dense') \
+            local_update_button = ui.button(on_click=lambda: notify_failure(local_update)).props('icon=file_download flat round dense') \
                 .tooltip('Flash local version to Core and P0 microcontrollers')
         with ui.row().classes('items-center'):
             ui.label().bind_text_from(self.lizard_firmware, 'core_description', backward=lambda x: f'Core: {x}')
@@ -181,14 +188,14 @@ class RobotBrain:
                         ui.notify(await self.esp_pins_core.get_strapping_pins())
                     ui.menu_item('Check Core Strapping Pins', on_click=check_strapping_pins_core) \
                         .tooltip('Check if the Core strapping pins are in the correct state for flashing.')
-                    ui.menu_item('Flash Core', on_click=self.lizard_firmware.flash_core) \
+                    ui.menu_item('Flash Core', on_click=lambda: notify_failure(self.lizard_firmware.flash_core)) \
                         .tooltip('Flash the downloaded Lizard firmware to the Core microcontroller')
 
                     async def check_strapping_pins_p0():
                         ui.notify(await self.esp_pins_p0.get_strapping_pins())
                     ui.menu_item('Check P0 Strapping Pins', on_click=check_strapping_pins_p0) \
                         .tooltip('Check if the P0 strapping pins are in the correct state for flashing.')
-                    ui.menu_item('Flash P0', on_click=self.lizard_firmware.flash_p0) \
+                    ui.menu_item('Flash P0', on_click=lambda: notify_failure(self.lizard_firmware.flash_p0)) \
                         .tooltip('Flash the downloaded Lizard firmware to the P0 microcontroller')
 
                     ui.separator()

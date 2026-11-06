@@ -2,7 +2,7 @@ import logging
 import re
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, NoReturn
 
 import requests
 from packaging.specifiers import SpecifierSet
@@ -136,7 +136,7 @@ class LizardFirmware:
         while rosys.time() < deadline:
             if response := await self.robot_brain.send_and_await('core.version()', 'version:', timeout=1):
                 self.core_project, self.core_version = self._parse_version_line(response)
-                self._refuse_version(self.core_version, 'Core')
+                self._warn_version(self.core_version, 'Core')
                 return
         self.log.error('Could not read Lizard version from Core')
 
@@ -148,7 +148,7 @@ class LizardFirmware:
         while rosys.time() < deadline:
             if response := await self.robot_brain.send_and_await('p0.version()', 'p0:', timeout=1):
                 self.p0_project, self.p0_version = self._parse_version_line(response)
-                self._refuse_version(self.p0_version, 'P0')
+                self._warn_version(self.p0_version, 'P0')
                 return
         self.log.error('Could not read Lizard version from P0')
 
@@ -196,7 +196,8 @@ class LizardFirmware:
         if not self.selected_online_version:
             rosys.notify('No version selected.', 'warning')
             return
-        if self._refuse_version(self.selected_online_version, 'Downloading failed'):
+        if self._version_refusal(self.selected_online_version, 'Downloading failed') is not None:
+            self._warn_version(self.selected_online_version, 'Downloading failed')
             return
         assert self.selected_online_version in self.online_versions
         url = self.online_versions[self.selected_online_version]
@@ -207,21 +208,23 @@ class LizardFirmware:
         self.read_local_version()
 
     async def flash_core(self) -> None:
+        """Flash the local firmware to the Core.
+
+        :raises FirmwareFlashError: when the Core cannot be flashed; it keeps its old firmware
+        """
         if self.local_version is None:
             self.read_local_version()
-        if self._refuse_version(self.local_version, 'Flashing Core failed'):
-            return
+        if (reason := self._version_refusal(self.local_version, 'Flashing Core failed')) is not None:
+            self._fail(reason)
         rosys.notify(f'Flashing Lizard firmware {self.local_version} to Core...')
         # NOTE: GPIO0 idles high in normal operation and is pulled low by Lizard itself during flashing,
         # so only GPIO2 and GPIO12 can be pre-checked here (https://github.com/zauberzeug/rosys/issues/430)
         try:
             strapping_pins = await self.robot_brain.esp_pins_core.get_strapping_pins(numbers=(2, 12))
         except TimeoutError:
-            rosys.notify('Flashing Core failed. Core does not answer.', 'negative')
-            return
+            self._fail('Flashing Core failed. Core does not answer.')
         if any(strapping_pins):
-            rosys.notify('Flashing Core failed. Check strapping pins.', 'negative')
-            return
+            self._fail('Flashing Core failed. Check strapping pins.')
         assert isinstance(self.robot_brain.communication, SerialCommunication)
         self.robot_brain.communication.disconnect()
         await rosys.sleep(0.3)
@@ -232,44 +235,48 @@ class LizardFirmware:
         rosys.notify('Finished.', 'positive')
 
     async def flash_p0(self, timeout: float = 120) -> None:
-        if self._refuse_version(self.core_version, 'Flashing P0 failed'):
-            return
+        """Let the Core replicate its firmware to the P0 and restart.
+
+        :raises FirmwareFlashError: when the P0 cannot be flashed; it keeps its old firmware
+        """
+        if (reason := self._version_refusal(self.core_version, 'Flashing P0 failed')) is not None:
+            self._fail(reason)
         if not self.robot_brain.is_ready:
-            rosys.notify('Flashing P0 failed. Robot Brain is not ready.', 'negative')
-            return
+            self._fail('Flashing P0 failed. Robot Brain is not ready.')
         rosys.notify(f'Flashing Lizard firmware {self.core_version} to P0...')
         # NOTE: GPIO0 idles high in normal operation and is pulled low by Lizard itself during flashing,
         # so only GPIO2 and GPIO12 can be pre-checked here (https://github.com/zauberzeug/rosys/issues/430)
         if any(await self.robot_brain.esp_pins_p0.get_strapping_pins(numbers=(2, 12))):
-            rosys.notify('Flashing P0 failed. Check strapping pins.', 'negative')
-            return
+            self._fail('Flashing P0 failed. Check strapping pins.')
         await self.robot_brain.send('p0.flash()')
         start = rosys.time()
         deadline = start + timeout
         while self._p0_flash_last_complete < start:
             if rosys.time() > deadline:
-                rosys.notify('Failed.', 'negative')
-                return
+                self._fail(f'Flashing P0 failed. No replica after {timeout:.0f} s.')
             await rosys.sleep(0.1)
         await self.robot_brain.restart()
         await rosys.sleep(3.0)
         await self.read_p0_version()
         rosys.notify('Finished.', 'positive')
 
-    def _refuse_version(self, version: str | None, context: str) -> bool:
-        """Notify when the given version is unknown or violates the ``supported_versions`` specifier.
+    def _fail(self, message: str) -> NoReturn:
+        raise FirmwareFlashError(message)
 
-        :param version: the Lizard version to check (``None`` if unknown)
-        :param context: prefix for the notification, e.g. ``'Core'`` or ``'Flashing Core failed'``
-        :return: ``True`` if a restriction is configured and the version is unknown or not supported
-        """
+    def _warn_version(self, version: str | None, context: str) -> None:
+        if (reason := self._version_refusal(version, context)) is not None:
+            rosys.notify(reason, 'negative', log_level=logging.WARNING)
+
+    def _version_refusal(self, version: str | None, context: str) -> str | None:
+        """Why the given version must not be flashed under the ``supported_versions`` specifier, or ``None``."""
         if self.supported_versions is None:
-            return False
+            return None
         if version is None:
-            rosys.notify(f'{context}: The Lizard version is unknown.', 'negative')
-            return True
+            return f'{context}: The Lizard version is unknown.'
         if self.is_version_supported(version):
-            return False
-        msg = f'{context}: Lizard {version} is not supported by this Robot Brain (requires {self.supported_versions}).'
-        rosys.notify(msg, 'negative', log_level=logging.WARNING)
-        return True
+            return None
+        return f'{context}: Lizard {version} is not supported by this Robot Brain (requires {self.supported_versions}).'
+
+
+class FirmwareFlashError(Exception):
+    pass
